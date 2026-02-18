@@ -37,206 +37,232 @@ export const useExport = ({ competition, showToast }: UseExportProps) => {
   }, []);
 
   // Export liste de tireurs (TXT ou FFF)
-  const exportFencersList = useCallback(async (fencers: Fencer[], format: 'txt' | 'fff') => {
-    try {
-      const isFFF = format === 'fff';
-      const extension = isFFF ? 'fff' : 'txt';
-      const filterName = isFFF ? 'Fichier FFE' : 'Fichier texte';
+  const exportFencersList = useCallback(
+    async (fencers: Fencer[], format: 'txt' | 'fff') => {
+      try {
+        const isFFF = format === 'fff';
+        const extension = isFFF ? 'fff' : 'txt';
+        const filterName = isFFF ? 'Fichier FFE' : 'Fichier texte';
 
-      const result = await window.electronAPI?.dialog?.saveFile({
-        title: `Exporter les tireurs (.${extension})`,
-        defaultPath: `tireurs_${competition.title.replace(/[^a-z0-9]/gi, '_')}.${extension}`,
-        filters: [
-          { name: filterName, extensions: [extension] },
-          { name: 'Tous les fichiers', extensions: ['*'] },
-        ],
-      });
+        const result = await window.electronAPI?.dialog?.saveFile({
+          title: `Exporter les tireurs (.${extension})`,
+          defaultPath: `tireurs_${competition.title.replace(/[^a-z0-9]/gi, '_')}.${extension}`,
+          filters: [
+            { name: filterName, extensions: [extension] },
+            { name: 'Tous les fichiers', extensions: ['*'] },
+          ],
+        });
 
-      if (result && !result.canceled && result.filePath) {
-        const content = isFFF
-          ? exportFencersToFFF(fencers)
-          : exportFencersToTXT(fencers, competition.title);
-        await window.electronAPI?.file?.writeContent(result.filePath, content);
-        showToast(`Export ${extension.toUpperCase()} des tireurs réussi`, 'success');
+        if (result && !result.canceled && result.filePath) {
+          const content = isFFF
+            ? exportFencersToFFF(fencers)
+            : exportFencersToTXT(fencers, competition.title);
+          await window.electronAPI?.file?.writeContent(result.filePath, content);
+          showToast(`Export ${extension.toUpperCase()} des tireurs réussi`, 'success');
+        }
+      } catch (error) {
+        console.error('Export fencers failed:', error);
+        showToast('Export des tireurs échoué', 'error');
       }
-    } catch (error) {
-      console.error('Export fencers failed:', error);
-      showToast('Export des tireurs échoué', 'error');
-    }
-  }, [competition.title, showToast]);
+    },
+    [competition.title, showToast]
+  );
 
   // Export classement (CSV ou JSON)
-  const exportRanking = useCallback((ranking: PoolRanking[], format: 'csv' | 'json', isLaserSabre: boolean) => {
-    try {
-      let content = '';
-      let filename = '';
-      let mimeType = '';
+  const exportRanking = useCallback(
+    (ranking: PoolRanking[], format: 'csv' | 'json', isLaserSabre: boolean) => {
+      try {
+        let content = '';
+        let filename = '';
+        let mimeType = '';
 
-      switch (format) {
-        case 'csv': {
-          const headers = ['Rg', 'Nom', 'Prénom', 'Club', 'V', 'M', 'V/M', 'TD', 'TR', 'Indice'];
-          if (isLaserSabre) headers.push('Quest');
+        switch (format) {
+          case 'csv': {
+            const headers = ['Rg', 'Nom', 'Prénom', 'Club', 'V', 'M', 'V/M', 'TD', 'TR', 'Indice'];
+            if (isLaserSabre) headers.push('Quest');
 
-          const rows = ranking.map(r => [
-            r.rank,
-            r.fencer.lastName,
-            r.fencer.firstName,
-            r.fencer.club || '',
-            r.victories,
-            r.victories + r.defeats,
-            ((r.victories / (r.victories + r.defeats)) * 100).toFixed(1) + '%',
-            r.touchesScored,
-            r.touchesReceived,
-            r.index,
-            isLaserSabre ? (r.questPoints || '') : '',
-          ]);
+            const rows = ranking.map(r => [
+              r.rank,
+              r.fencer.lastName,
+              r.fencer.firstName,
+              r.fencer.club || '',
+              r.victories,
+              r.victories + r.defeats,
+              ((r.victories / (r.victories + r.defeats)) * 100).toFixed(1) + '%',
+              r.touchesScored,
+              r.touchesReceived,
+              r.index,
+              isLaserSabre ? r.questPoints || '' : '',
+            ]);
 
-          content = [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
-          filename = `classement_${competition.title.replace(/[^a-z0-9]/gi, '_')}.csv`;
-          mimeType = 'text/csv';
-          break;
+            content = [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
+            filename = `classement_${competition.title.replace(/[^a-z0-9]/gi, '_')}.csv`;
+            mimeType = 'text/csv';
+            break;
+          }
+          case 'json':
+            content = JSON.stringify(
+              {
+                competition: competition.title,
+                date: competition.date,
+                ranking,
+              },
+              null,
+              2
+            );
+            filename = `classement_${competition.title.replace(/[^a-z0-9]/gi, '_')}.json`;
+            mimeType = 'application/json';
+            break;
+          default:
+            showToast(`Format ${format} non supporté`, 'error');
+            return;
         }
-        case 'json':
-          content = JSON.stringify({
-            competition: competition.title,
-            date: competition.date,
-            ranking,
-          }, null, 2);
-          filename = `classement_${competition.title.replace(/[^a-z0-9]/gi, '_')}.json`;
-          mimeType = 'application/json';
-          break;
-        default:
-          showToast(`Format ${format} non supporté`, 'error');
-          return;
-      }
 
-      downloadFile(content, filename, mimeType);
-      showToast(`Export ${format.toUpperCase()} du classement réussi`, 'success');
-    } catch (error) {
-      console.error('Export ranking failed:', error);
-      showToast(`Export ${format.toUpperCase()} échoué`, 'error');
-    }
-  }, [competition.title, competition.date, downloadFile, showToast]);
+        downloadFile(content, filename, mimeType);
+        showToast(`Export ${format.toUpperCase()} du classement réussi`, 'success');
+      } catch (error) {
+        console.error('Export ranking failed:', error);
+        showToast(`Export ${format.toUpperCase()} échoué`, 'error');
+      }
+    },
+    [competition.title, competition.date, downloadFile, showToast]
+  );
 
   // Export résultats finaux (CSV ou JSON)
-  const exportResults = useCallback((finalResults: FinalResult[], format: 'csv' | 'json') => {
-    try {
-      let content = '';
-      let filename = '';
-      let mimeType = '';
+  const exportResults = useCallback(
+    (finalResults: FinalResult[], format: 'csv' | 'json') => {
+      try {
+        let content = '';
+        let filename = '';
+        let mimeType = '';
 
-      switch (format) {
-        case 'csv': {
-          const headers = ['Rang', 'Nom', 'Prénom', 'Club', 'Éliminé à'];
-          const rows = finalResults.map(r => [
-            r.rank,
-            r.fencer.lastName,
-            r.fencer.firstName,
-            r.fencer.club || '',
-            r.eliminatedAt || '',
-          ]);
+        switch (format) {
+          case 'csv': {
+            const headers = ['Rang', 'Nom', 'Prénom', 'Club', 'Éliminé à'];
+            const rows = finalResults.map(r => [
+              r.rank,
+              r.fencer.lastName,
+              r.fencer.firstName,
+              r.fencer.club || '',
+              r.eliminatedAt || '',
+            ]);
 
-          content = [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
-          filename = `resultats_${competition.title.replace(/[^a-z0-9]/gi, '_')}.csv`;
-          mimeType = 'text/csv';
-          break;
+            content = [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
+            filename = `resultats_${competition.title.replace(/[^a-z0-9]/gi, '_')}.csv`;
+            mimeType = 'text/csv';
+            break;
+          }
+          case 'json':
+            content = JSON.stringify(
+              {
+                competition: competition.title,
+                date: competition.date,
+                results: finalResults,
+              },
+              null,
+              2
+            );
+            filename = `resultats_${competition.title.replace(/[^a-z0-9]/gi, '_')}.json`;
+            mimeType = 'application/json';
+            break;
+          default:
+            showToast(`Format ${format} non supporté`, 'error');
+            return;
         }
-        case 'json':
-          content = JSON.stringify({
-            competition: competition.title,
-            date: competition.date,
-            results: finalResults,
-          }, null, 2);
-          filename = `resultats_${competition.title.replace(/[^a-z0-9]/gi, '_')}.json`;
-          mimeType = 'application/json';
-          break;
-        default:
-          showToast(`Format ${format} non supporté`, 'error');
-          return;
-      }
 
-      downloadFile(content, filename, mimeType);
-      showToast(`Export ${format.toUpperCase()} des résultats réussi`, 'success');
-    } catch (error) {
-      console.error('Export results failed:', error);
-      showToast(`Export ${format.toUpperCase()} échoué`, 'error');
-    }
-  }, [competition.title, competition.date, downloadFile, showToast]);
+        downloadFile(content, filename, mimeType);
+        showToast(`Export ${format.toUpperCase()} des résultats réussi`, 'success');
+      } catch (error) {
+        console.error('Export results failed:', error);
+        showToast(`Export ${format.toUpperCase()} échoué`, 'error');
+      }
+    },
+    [competition.title, competition.date, downloadFile, showToast]
+  );
 
   // Export PDF de toutes les poules
-  const exportPoolsPDF = useCallback(async (pools: Pool[], currentPoolRound: number) => {
-    try {
-      await exportMultiplePoolsToPDF(
-        pools,
-        `Toutes les Poules - ${competition.title} - Tour ${currentPoolRound}`
-      );
-      showToast(`Export PDF de ${pools.length} poules généré avec succès`, 'success');
-    } catch (error) {
-      console.error('Erreur lors de l\'export PDF des poules:', error);
-      showToast(`Erreur lors de la génération du PDF: ${error instanceof Error ? error.message : 'Erreur inconnue'}`, 'error');
-    }
-  }, [competition.title, showToast]);
+  const exportPoolsPDF = useCallback(
+    async (pools: Pool[], currentPoolRound: number) => {
+      try {
+        await exportMultiplePoolsToPDF(
+          pools,
+          `Toutes les Poules - ${competition.title} - Tour ${currentPoolRound}`
+        );
+        showToast(`Export PDF de ${pools.length} poules généré avec succès`, 'success');
+      } catch (error) {
+        console.error("Erreur lors de l'export PDF des poules:", error);
+        showToast(
+          `Erreur lors de la génération du PDF: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
+          'error'
+        );
+      }
+    },
+    [competition.title, showToast]
+  );
 
   // Export HTML des résultats
-  const exportResultsHTMLFormat = useCallback((
-    poolRanking: PoolRanking[],
-    finalResults: FinalResult[]
-  ) => {
-    try {
-      const content = exportResultsHTML(competition, poolRanking, finalResults);
-      const filename = `resultats_${competition.title.replace(/[^a-z0-9]/gi, '_')}.html`;
-      downloadFile(content, filename, 'text/html');
-      showToast('Export HTML des résultats réussi', 'success');
-    } catch (error) {
-      console.error('Export HTML failed:', error);
-      showToast('Export HTML échoué', 'error');
-    }
-  }, [competition, downloadFile, showToast]);
+  const exportResultsHTMLFormat = useCallback(
+    (poolRanking: PoolRanking[], finalResults: FinalResult[]) => {
+      try {
+        const content = exportResultsHTML(competition, poolRanking, finalResults);
+        const filename = `resultats_${competition.title.replace(/[^a-z0-9]/gi, '_')}.html`;
+        downloadFile(content, filename, 'text/html');
+        showToast('Export HTML des résultats réussi', 'success');
+      } catch (error) {
+        console.error('Export HTML failed:', error);
+        showToast('Export HTML échoué', 'error');
+      }
+    },
+    [competition, downloadFile, showToast]
+  );
 
   // Export CSV Excel avec formules
-  const exportRankingExcelCSV = useCallback((poolRanking: PoolRanking[]) => {
-    try {
-      const content = exportRankingCSV(poolRanking, true);
-      const filename = `classement_${competition.title.replace(/[^a-z0-9]/gi, '_')}_excel.csv`;
-      downloadFile(content, filename, 'text/csv');
-      showToast('Export CSV Excel réussi', 'success');
-    } catch (error) {
-      console.error('Export CSV Excel failed:', error);
-      showToast('Export CSV Excel échoué', 'error');
-    }
-  }, [competition.title, downloadFile, showToast]);
+  const exportRankingExcelCSV = useCallback(
+    (poolRanking: PoolRanking[]) => {
+      try {
+        const content = exportRankingCSV(poolRanking, true);
+        const filename = `classement_${competition.title.replace(/[^a-z0-9]/gi, '_')}_excel.csv`;
+        downloadFile(content, filename, 'text/csv');
+        showToast('Export CSV Excel réussi', 'success');
+      } catch (error) {
+        console.error('Export CSV Excel failed:', error);
+        showToast('Export CSV Excel échoué', 'error');
+      }
+    },
+    [competition.title, downloadFile, showToast]
+  );
 
   // Export XML FFE
-  const exportResultsXML = useCallback((
-    poolRanking: PoolRanking[],
-    finalResults: FinalResult[]
-  ) => {
-    try {
-      const content = exportResultsXMLFFE(competition, poolRanking, finalResults);
-      const filename = `resultats_${competition.title.replace(/[^a-z0-9]/gi, '_')}.xml`;
-      downloadFile(content, filename, 'application/xml');
-      showToast('Export XML FFE réussi', 'success');
-    } catch (error) {
-      console.error('Export XML failed:', error);
-      showToast('Export XML échoué', 'error');
-    }
-  }, [competition, downloadFile, showToast]);
+  const exportResultsXML = useCallback(
+    (poolRanking: PoolRanking[], finalResults: FinalResult[]) => {
+      try {
+        const content = exportResultsXMLFFE(competition, poolRanking, finalResults);
+        const filename = `resultats_${competition.title.replace(/[^a-z0-9]/gi, '_')}.xml`;
+        downloadFile(content, filename, 'application/xml');
+        showToast('Export XML FFE réussi', 'success');
+      } catch (error) {
+        console.error('Export XML failed:', error);
+        showToast('Export XML échoué', 'error');
+      }
+    },
+    [competition, downloadFile, showToast]
+  );
 
   // Export statistiques détaillées CSV
-  const exportDetailedStats = useCallback((
-    pools: Pool[],
-    poolRanking: PoolRanking[]
-  ) => {
-    try {
-      const content = exportDetailedStatsCSV(competition, pools, poolRanking);
-      const filename = `stats_${competition.title.replace(/[^a-z0-9]/gi, '_')}.csv`;
-      downloadFile(content, filename, 'text/csv');
-      showToast('Export statistiques détaillées réussi', 'success');
-    } catch (error) {
-      console.error('Export stats failed:', error);
-      showToast('Export statistiques échoué', 'error');
-    }
-  }, [competition, downloadFile, showToast]);
+  const exportDetailedStats = useCallback(
+    (pools: Pool[], poolRanking: PoolRanking[]) => {
+      try {
+        const content = exportDetailedStatsCSV(competition, pools, poolRanking);
+        const filename = `stats_${competition.title.replace(/[^a-z0-9]/gi, '_')}.csv`;
+        downloadFile(content, filename, 'text/csv');
+        showToast('Export statistiques détaillées réussi', 'success');
+      } catch (error) {
+        console.error('Export stats failed:', error);
+        showToast('Export statistiques échoué', 'error');
+      }
+    },
+    [competition, downloadFile, showToast]
+  );
 
   return {
     exportFencersList,

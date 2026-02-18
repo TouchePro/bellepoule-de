@@ -99,7 +99,7 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
       if (state) {
         const typedState = state as SessionState;
         const restoredPhase = numberToPhase[typedState.currentPhase || 0];
-        
+
         setRestoredState({
           currentPhase: typedState.currentPhase,
           pools: typedState.pools || [],

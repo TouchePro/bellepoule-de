@@ -22,12 +22,16 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
 
   // Update local settings when global language/theme changes (e.g., from localStorage)
   useEffect(() => {
-    console.log(`🔄 SettingsModal: Global language changed to ${language}, theme to ${theme}, updating local state`);
+    console.log(
+      `🔄 SettingsModal: Global language changed to ${language}, theme to ${theme}, updating local state`
+    );
     setSettings(prev => ({ ...prev, language, theme }));
   }, [language, theme]);
 
   const handleLanguageChange = (newLanguage: 'fr' | 'en' | 'br') => {
-    console.log(`🔄 SettingsModal: Language selected: ${newLanguage} (current: ${settings.language})`);
+    console.log(
+      `🔄 SettingsModal: Language selected: ${newLanguage} (current: ${settings.language})`
+    );
     setSettings(prev => ({ ...prev, language: newLanguage }));
   };
 
@@ -39,12 +43,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
   const handleSave = () => {
     // Appliquer le changement de langue seulement à la sauvegarde
     if (settings.language !== language) {
-      console.log(`🌍 SettingsModal: Applying language change from ${language} to ${settings.language}`);
+      console.log(
+        `🌍 SettingsModal: Applying language change from ${language} to ${settings.language}`
+      );
       changeLanguage(settings.language);
     } else {
       console.log(`🌍 SettingsModal: No language change needed`);
     }
-    
+
     // Appliquer le changement de thème
     if (settings.theme !== theme) {
       console.log(`🎨 SettingsModal: Applying theme change from ${theme} to ${settings.theme}`);
@@ -52,34 +58,34 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
     } else {
       console.log(`🎨 SettingsModal: No theme change needed`);
     }
-    
+
     onSave(settings);
     onClose();
   };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+      <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
         <div className="modal-header">
           <h2 className="modal-title">{t('settings.title')}</h2>
         </div>
-        
+
         <div className="modal-body">
           <div className="form-group">
-            <LanguageSelector 
-              showLabel={true} 
+            <LanguageSelector
+              showLabel={true}
               value={settings.language}
               onLanguageChange={handleLanguageChange}
             />
           </div>
-          
+
           {/* Ajouter d'autres paramètres ici */}
           <div className="form-group">
             <label>{t('settings.theme')}</label>
             <select
               className="form-input form-select"
               value={settings.theme}
-              onChange={(e) => handleThemeChange(e.target.value as 'default' | 'light' | 'dark')}
+              onChange={e => handleThemeChange(e.target.value as 'default' | 'light' | 'dark')}
             >
               <option value="default">Default</option>
               <option value="light">Light</option>
@@ -87,7 +93,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
             </select>
           </div>
         </div>
-        
+
         <div className="modal-footer">
           <button className="btn btn-secondary" onClick={onClose}>
             {t('actions.cancel')}

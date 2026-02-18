@@ -28,7 +28,7 @@ export const PresentationMode: React.FC<PresentationModeProps> = ({
         await document.documentElement.requestFullscreen();
         setIsFullscreen(true);
       } catch (error) {
-        console.warn('Impossible d\'activer le plein écran:', error);
+        console.warn("Impossible d'activer le plein écran:", error);
       }
     };
 
@@ -106,9 +106,7 @@ export const PresentationMode: React.FC<PresentationModeProps> = ({
         }}
       >
         <div>
-          <h1 style={{ margin: 0, fontSize: '2.5rem', fontWeight: 'bold' }}>
-            {competition.title}
-          </h1>
+          <h1 style={{ margin: 0, fontSize: '2.5rem', fontWeight: 'bold' }}>{competition.title}</h1>
           <p style={{ margin: '10px 0 0 0', fontSize: '1.2rem', color: '#94a3b8' }}>
             Poule {currentPool.number} sur {pools.length}
           </p>
@@ -146,9 +144,7 @@ export const PresentationMode: React.FC<PresentationModeProps> = ({
       <div style={{ flex: 1, display: 'flex', gap: '30px' }}>
         {/* Liste des tireurs */}
         <div style={{ flex: 1 }}>
-          <h2 style={{ marginBottom: '20px', fontSize: '1.5rem', color: '#94a3b8' }}>
-            Classement
-          </h2>
+          <h2 style={{ marginBottom: '20px', fontSize: '1.5rem', color: '#94a3b8' }}>Classement</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
             {currentPool.ranking?.slice(0, 8).map((rank, index) => (
               <div

@@ -85,9 +85,10 @@ export function parseCSV(csvContent: string): string[][] {
  * Parse Excel content (simple TSV format)
  */
 export function parseExcel(tsvContent: string): string[][] {
-  return tsvContent.trim().split('\n').map(line => 
-    line.split('\t').map(cell => cell.trim())
-  );
+  return tsvContent
+    .trim()
+    .split('\n')
+    .map(line => line.split('\t').map(cell => cell.trim()));
 }
 
 /**
@@ -126,18 +127,22 @@ export function autoDetectMapping(headers: string[]): CSVColumnMapping {
 /**
  * Get column value by index or name
  */
-function getColumnValue(row: string[], mapping: string | number | undefined, headers?: string[]): string {
+function getColumnValue(
+  row: string[],
+  mapping: string | number | undefined,
+  headers?: string[]
+): string {
   if (mapping === undefined) return '';
-  
+
   if (typeof mapping === 'number') {
     return row[mapping] || '';
   }
-  
+
   if (headers) {
     const index = headers.findIndex(h => h.toLowerCase().trim() === mapping.toLowerCase().trim());
     return index >= 0 ? row[index] || '' : '';
   }
-  
+
   return '';
 }
 
@@ -158,10 +163,7 @@ function parseGender(value: string): Gender {
 /**
  * Validate fencer data
  */
-function validateFencer(
-  fencer: Partial<Fencer>,
-  rowIndex: number
-): ImportValidationError[] {
+function validateFencer(fencer: Partial<Fencer>, rowIndex: number): ImportValidationError[] {
   const errors: ImportValidationError[] = [];
 
   if (!fencer.lastName || fencer.lastName.trim().length === 0) {
@@ -232,7 +234,7 @@ export function importFencers(
 
   for (let i = startRow; i < data.length; i++) {
     const row = data[i];
-    
+
     // Skip empty rows
     if (row.every(cell => !cell || cell.trim() === '')) {
       continue;
@@ -293,12 +295,12 @@ export function detectFileType(content: string): 'csv' | 'excel' | 'unknown' {
   if (content.includes('\t')) {
     return 'excel';
   }
-  
+
   // Check for CSV (commas)
   if (content.includes(',')) {
     return 'csv';
   }
-  
+
   return 'unknown';
 }
 
@@ -310,9 +312,9 @@ export async function bulkImportFencers(
   fileType?: 'csv' | 'excel'
 ): Promise<ImportResult> {
   const detectedType = fileType || detectFileType(fileContent);
-  
+
   let data: string[][];
-  
+
   if (detectedType === 'excel') {
     data = parseExcel(fileContent);
   } else {

@@ -93,7 +93,7 @@ export function validateMatchScore(
     if (winnerScore !== maxScore) {
       result.warnings.push({
         type: 'INCONSISTENT_RESULT',
-        message: 'Le vainqueur n\'a pas le score maximum',
+        message: "Le vainqueur n'a pas le score maximum",
         severity: 'warning',
         details: `Le vainqueur devrait avoir ${maxScore} touches`,
       });

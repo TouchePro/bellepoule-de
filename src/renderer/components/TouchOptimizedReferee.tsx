@@ -24,7 +24,7 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
   maxScore,
   onScoreUpdate,
   onMatchEnd,
-  onVoiceCommand
+  onVoiceCommand,
 }) => {
   const [scoreA, setScoreA] = useState(match.scoreA?.value || 0);
   const [scoreB, setScoreB] = useState(match.scoreB?.value || 0);
@@ -33,10 +33,10 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  
+
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
-  
+
   // Timer management
   useEffect(() => {
     if (isRunning) {
@@ -49,7 +49,7 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
         intervalRef.current = null;
       }
     }
-    
+
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -61,21 +61,21 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartRef.current = {
       x: e.touches[0].clientX,
-      y: e.touches[0].clientY
+      y: e.touches[0].clientY,
     };
   }, []);
 
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
     if (!touchStartRef.current) return;
-    
+
     const touchEnd = {
       x: e.changedTouches[0].clientX,
-      y: e.changedTouches[0].clientY
+      y: e.changedTouches[0].clientY,
     };
-    
+
     const deltaX = touchEnd.x - touchStartRef.current.x;
     const deltaY = Math.abs(touchEnd.y - touchStartRef.current.y);
-    
+
     // Horizontal swipe detected (more horizontal than vertical)
     if (Math.abs(deltaX) > 50 && deltaY < 100) {
       if (deltaX > 0) {
@@ -85,10 +85,10 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
         setSwipeDirection('left');
         handleScoreIncrement('A');
       }
-      
+
       setTimeout(() => setSwipeDirection(null), 300);
     }
-    
+
     touchStartRef.current = null;
   }, []);
 
@@ -104,7 +104,7 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
     recognition.onresult = (event: any) => {
       const last = event.results.length - 1;
       const command = event.results[last][0].transcript.toLowerCase();
-      
+
       onVoiceCommand(command);
       processVoiceCommand(command);
     };
@@ -151,7 +151,7 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
       const newScore = Math.min(scoreA + 1, maxScore);
       setScoreA(newScore);
       onScoreUpdate(newScore, scoreB);
-      
+
       if (newScore >= maxScore) {
         handleMatchEnd();
       }
@@ -159,7 +159,7 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
       const newScore = Math.min(scoreB + 1, maxScore);
       setScoreB(newScore);
       onScoreUpdate(scoreA, newScore);
-      
+
       if (newScore >= maxScore) {
         handleMatchEnd();
       }
@@ -195,7 +195,7 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
   };
 
   return (
-    <div 
+    <div
       className="touch-referee-interface h-screen bg-gray-100 flex flex-col"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
@@ -209,9 +209,7 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
             <button
               onClick={() => setIsRunning(!isRunning)}
               className={`px-4 py-2 rounded-lg font-medium ${
-                isRunning 
-                  ? 'bg-red-500 text-white' 
-                  : 'bg-green-500 text-white'
+                isRunning ? 'bg-red-500 text-white' : 'bg-green-500 text-white'
               }`}
             >
               {isRunning ? 'PAUSE' : 'START'}
@@ -228,7 +226,9 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
             {/* Fencer A */}
             <div className={`text-center ${getSwipeAnimation()}`}>
               <div className="bg-red-500 text-white rounded-lg p-6 mb-4">
-                <div className="text-lg font-medium">{fencerA.firstName} {fencerA.lastName}</div>
+                <div className="text-lg font-medium">
+                  {fencerA.firstName} {fencerA.lastName}
+                </div>
                 <div className="text-sm opacity-75">N°{fencerA.ref}</div>
               </div>
               <div className="bg-white rounded-lg shadow-lg p-8">
@@ -261,7 +261,9 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
             {/* Fencer B */}
             <div className={`text-center ${getSwipeAnimation()}`}>
               <div className="bg-green-500 text-white rounded-lg p-6 mb-4">
-                <div className="text-lg font-medium">{fencerB.firstName} {fencerB.lastName}</div>
+                <div className="text-lg font-medium">
+                  {fencerB.firstName} {fencerB.lastName}
+                </div>
                 <div className="text-sm opacity-75">N°{fencerB.ref}</div>
               </div>
               <div className="bg-white rounded-lg shadow-lg p-8">
@@ -290,20 +292,21 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
           {/* Progress Bar */}
           <div className="bg-white rounded-lg p-4 mb-8">
             <div className="flex justify-between text-sm text-gray-600 mb-2">
-              <span>{scoreA} / {maxScore}</span>
+              <span>
+                {scoreA} / {maxScore}
+              </span>
               <span>Premier à {maxScore} points</span>
-              <span>{scoreB} / {maxScore}</span>
+              <span>
+                {scoreB} / {maxScore}
+              </span>
             </div>
             <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
-              <div 
-                className="h-full flex"
-                style={{ width: '100%' }}
-              >
-                <div 
+              <div className="h-full flex" style={{ width: '100%' }}>
+                <div
                   className="bg-red-500 transition-all duration-300"
                   style={{ width: `${(scoreA / maxScore) * 100}%` }}
                 />
-                <div 
+                <div
                   className="bg-green-500 transition-all duration-300"
                   style={{ width: `${(scoreB / maxScore) * 100}%` }}
                 />
@@ -345,9 +348,7 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
                 }
               }}
               className={`px-4 py-2 rounded-lg font-medium ${
-                voiceEnabled
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-300 text-gray-700'
+                voiceEnabled ? 'bg-blue-500 text-white' : 'bg-gray-300 text-gray-700'
               }`}
             >
               🎤 {voiceEnabled ? 'Actif' : 'Inactif'}
@@ -365,7 +366,9 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
         </div>
       </div>
 
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
         @keyframes swipe-left {
           0% { transform: translateX(0); }
           50% { transform: translateX(-20px); }
@@ -385,7 +388,9 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
         .animate-swipe-right {
           animation: swipe-right 0.3s ease-out;
         }
-      ` }} />
+      `,
+        }}
+      />
     </div>
   );
 };

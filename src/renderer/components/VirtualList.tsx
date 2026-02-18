@@ -31,7 +31,7 @@ const VirtualList = <T,>({
   const { startIndex, endIndex } = useMemo(() => {
     const start = Math.floor(scrollTop / itemHeight);
     const visibleCount = Math.ceil(containerHeight / itemHeight);
-    
+
     return {
       startIndex: Math.max(0, start - overscan),
       endIndex: Math.min(items.length - 1, start + visibleCount + overscan),

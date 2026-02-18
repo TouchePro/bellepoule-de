@@ -26,17 +26,23 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
   const [weapon, setWeapon] = useState<Weapon>(competition.weapon);
   const [gender, setGender] = useState<Gender>(competition.gender);
   const [category, setCategory] = useState<Category>(competition.category);
-  
+
   // Paramètres de compétition
   const [poolRounds, setPoolRounds] = useState(competition.settings?.poolRounds ?? 1);
-  const [hasDirectElimination, setHasDirectElimination] = useState(competition.settings?.hasDirectElimination ?? true);
+  const [hasDirectElimination, setHasDirectElimination] = useState(
+    competition.settings?.hasDirectElimination ?? true
+  );
   const [poolMaxScore, setPoolMaxScore] = useState(competition.settings?.defaultPoolMaxScore ?? 21);
-  const [tableMaxScore, setTableMaxScore] = useState(competition.settings?.defaultTableMaxScore ?? 0);
-  const [thirdPlaceMatch, setThirdPlaceMatch] = useState(competition.settings?.thirdPlaceMatch ?? false);
+  const [tableMaxScore, setTableMaxScore] = useState(
+    competition.settings?.defaultTableMaxScore ?? 0
+  );
+  const [thirdPlaceMatch, setThirdPlaceMatch] = useState(
+    competition.settings?.thirdPlaceMatch ?? false
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const settings: CompetitionSettings = {
       ...(competition.settings || {}),
       poolRounds,
@@ -49,7 +55,7 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
       randomScore: competition.settings?.randomScore ?? false,
       minTeamSize: competition.settings?.minTeamSize ?? 3,
     };
-    
+
     onSave({
       title,
       date: new Date(date),
@@ -68,16 +74,26 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
       <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '550px' }}>
         <div className="modal-header">
           <h2>Propriétés de la compétition</h2>
-          <button className="btn-close" onClick={onClose}>&times;</button>
+          <button className="btn-close" onClick={onClose}>
+            &times;
+          </button>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="modal-body">
           {/* Informations générales */}
           <div style={{ marginBottom: '1.5rem' }}>
-            <h3 style={{ fontSize: '0.875rem', fontWeight: '600', color: '#6b7280', marginBottom: '0.75rem', textTransform: 'uppercase' }}>
+            <h3
+              style={{
+                fontSize: '0.875rem',
+                fontWeight: '600',
+                color: '#6b7280',
+                marginBottom: '0.75rem',
+                textTransform: 'uppercase',
+              }}
+            >
               Informations générales
             </h3>
-            
+
             <div className="form-group">
               <label htmlFor="title">Titre</label>
               <input
@@ -129,10 +145,18 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
 
           {/* Configuration */}
           <div style={{ marginBottom: '1.5rem' }}>
-            <h3 style={{ fontSize: '0.875rem', fontWeight: '600', color: '#6b7280', marginBottom: '0.75rem', textTransform: 'uppercase' }}>
+            <h3
+              style={{
+                fontSize: '0.875rem',
+                fontWeight: '600',
+                color: '#6b7280',
+                marginBottom: '0.75rem',
+                textTransform: 'uppercase',
+              }}
+            >
               Configuration
             </h3>
-            
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
               <div className="form-group">
                 <label htmlFor="weapon">Arme</label>
@@ -188,10 +212,18 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
 
           {/* Paramètres de formule */}
           <div style={{ marginBottom: '1rem' }}>
-            <h3 style={{ fontSize: '0.875rem', fontWeight: '600', color: '#6b7280', marginBottom: '0.75rem', textTransform: 'uppercase' }}>
+            <h3
+              style={{
+                fontSize: '0.875rem',
+                fontWeight: '600',
+                color: '#6b7280',
+                marginBottom: '0.75rem',
+                textTransform: 'uppercase',
+              }}
+            >
               Formule de compétition
             </h3>
-            
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div className="form-group">
                 <label htmlFor="poolRounds">Tours de poules</label>
@@ -222,12 +254,21 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
                   <option value="false">Désactivée</option>
                 </select>
                 <small style={{ color: '#6b7280', fontSize: '0.75rem' }}>
-                  {hasDirectElimination ? 'Tableau après les poules' : 'Classement final sur les poules'}
+                  {hasDirectElimination
+                    ? 'Tableau après les poules'
+                    : 'Classement final sur les poules'}
                 </small>
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '1rem',
+                marginTop: '1rem',
+              }}
+            >
               <div className="form-group">
                 <label htmlFor="poolMaxScore">Score max poules</label>
                 <input
@@ -258,10 +299,12 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
                       placeholder="0"
                     />
                     <small style={{ color: '#6b7280', fontSize: '0.75rem' }}>
-                      {tableMaxScore === 0 ? '0 = illimité (pas de limite)' : `${tableMaxScore} touches pour gagner`}
+                      {tableMaxScore === 0
+                        ? '0 = illimité (pas de limite)'
+                        : `${tableMaxScore} touches pour gagner`}
                     </small>
                   </div>
-                  
+
                   <div className="form-group">
                     <label>
                       <input

@@ -201,7 +201,9 @@ function sendToErrorService(entry: ErrorLogEntry): void {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(ERROR_REPORTING_CONFIG.apiKey && { 'Authorization': `Bearer ${ERROR_REPORTING_CONFIG.apiKey}` }),
+        ...(ERROR_REPORTING_CONFIG.apiKey && {
+          Authorization: `Bearer ${ERROR_REPORTING_CONFIG.apiKey}`,
+        }),
       },
       body: JSON.stringify({
         message: entry.message,
@@ -224,14 +226,14 @@ function sendToErrorService(entry: ErrorLogEntry): void {
       console.warn('Failed to send error to external service:', err);
     });
   }
-  
+
   // Support pour Sentry si disponible globalement
   if (typeof window !== 'undefined' && (window as any).Sentry) {
     const Sentry = (window as any).Sentry;
     const scope = new Sentry.Scope();
     scope.setTags({ component: entry.component || 'unknown' });
     scope.setExtras(entry.context || {});
-    
+
     if (entry.level === 'error') {
       Sentry.captureException(entry.message, scope);
     } else {

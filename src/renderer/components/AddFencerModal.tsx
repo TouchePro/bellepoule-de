@@ -25,7 +25,7 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!lastName.trim() || !firstName.trim()) {
       showToast('Le nom et le prénom sont obligatoires', 'warning');
       return;
@@ -46,12 +46,18 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h2 className="modal-title">Ajouter un tireur</h2>
-          <button className="btn btn-icon btn-secondary" onClick={onClose} style={{ padding: '0.25rem' }}>✕</button>
+          <button
+            className="btn btn-icon btn-secondary"
+            onClick={onClose}
+            style={{ padding: '0.25rem' }}
+          >
+            ✕
+          </button>
         </div>
-        
+
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -62,7 +68,7 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
                   className="form-input"
                   placeholder="DUPONT"
                   value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
+                  onChange={e => setLastName(e.target.value)}
                   required
                   autoFocus
                 />
@@ -74,7 +80,7 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
                   className="form-input"
                   placeholder="Jean"
                   value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
+                  onChange={e => setFirstName(e.target.value)}
                   required
                 />
               </div>
@@ -83,7 +89,11 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div className="form-group">
                 <label className="form-label">Sexe</label>
-                <select className="form-input form-select" value={gender} onChange={(e) => setGender(e.target.value as Gender)}>
+                <select
+                  className="form-input form-select"
+                  value={gender}
+                  onChange={e => setGender(e.target.value as Gender)}
+                >
                   <option value={Gender.MALE}>Masculin</option>
                   <option value={Gender.FEMALE}>Féminin</option>
                 </select>
@@ -95,7 +105,7 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
                   className="form-input"
                   placeholder="FRA"
                   value={nationality}
-                  onChange={(e) => setNationality(e.target.value.toUpperCase())}
+                  onChange={e => setNationality(e.target.value.toUpperCase())}
                   maxLength={3}
                 />
               </div>
@@ -108,7 +118,7 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
                 className="form-input"
                 placeholder="PARIS USM"
                 value={club}
-                onChange={(e) => setClub(e.target.value)}
+                onChange={e => setClub(e.target.value)}
               />
             </div>
 
@@ -120,7 +130,7 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
                   className="form-input"
                   placeholder="Île-de-France"
                   value={league}
-                  onChange={(e) => setLeague(e.target.value)}
+                  onChange={e => setLeague(e.target.value)}
                 />
               </div>
               <div className="form-group">
@@ -130,7 +140,7 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
                   className="form-input"
                   placeholder="123456789"
                   value={license}
-                  onChange={(e) => setLicense(e.target.value)}
+                  onChange={e => setLicense(e.target.value)}
                 />
               </div>
             </div>
@@ -142,15 +152,19 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
                 className="form-input"
                 placeholder="1000"
                 value={ranking}
-                onChange={(e) => setRanking(e.target.value)}
+                onChange={e => setRanking(e.target.value)}
                 min="1"
               />
             </div>
           </div>
 
           <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>Annuler</button>
-            <button type="submit" className="btn btn-primary">Ajouter le tireur</button>
+            <button type="button" className="btn btn-secondary" onClick={onClose}>
+              Annuler
+            </button>
+            <button type="submit" className="btn btn-primary">
+              Ajouter le tireur
+            </button>
           </div>
         </form>
       </div>

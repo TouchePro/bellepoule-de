@@ -6,7 +6,11 @@
 
 import { useMemo, useCallback, useState } from 'react';
 import { Pool, Fencer, Match, MatchStatus, Score, Weapon, PoolRanking } from '../../shared/types';
-import { calculatePoolRanking, formatRatio, formatIndex } from '../../shared/utils/poolCalculations';
+import {
+  calculatePoolRanking,
+  formatRatio,
+  formatIndex,
+} from '../../shared/utils/poolCalculations';
 
 // ============================================================================
 // Pool Calculation Hooks
@@ -17,13 +21,16 @@ export const usePoolCalculations = (pool: Pool, weapon?: Weapon) => {
 
   // Memoized fencer calculations
   const fencerStats = useMemo(() => {
-    const stats = new Map<string, {
-      victories: number;
-      defeats: number;
-      touchesScored: number;
-      touchesReceived: number;
-      matchesPlayed: number;
-    }>();
+    const stats = new Map<
+      string,
+      {
+        victories: number;
+        defeats: number;
+        touchesScored: number;
+        touchesReceived: number;
+        matchesPlayed: number;
+      }
+    >();
 
     // Initialize all fencers with zero stats
     pool.fencers.forEach(fencer => {
@@ -32,7 +39,7 @@ export const usePoolCalculations = (pool: Pool, weapon?: Weapon) => {
         defeats: 0,
         touchesScored: 0,
         touchesReceived: 0,
-        matchesPlayed: 0
+        matchesPlayed: 0,
       });
     });
 
@@ -44,29 +51,29 @@ export const usePoolCalculations = (pool: Pool, weapon?: Weapon) => {
 
       const fencerAId = match.fencerA.id;
       const fencerBId = match.fencerB.id;
-      
+
       const statA = stats.get(fencerAId);
       const statB = stats.get(fencerBId);
-      
+
       if (!statA || !statB) return;
 
       const scoreA = match.scoreA?.value ?? 0;
       const scoreB = match.scoreB?.value ?? 0;
-      
+
       // Update stats
       statA.matchesPlayed++;
       statB.matchesPlayed++;
-      
+
       statA.touchesScored += scoreA;
       statA.touchesReceived += scoreB;
-      
+
       statB.touchesScored += scoreB;
       statB.touchesReceived += scoreA;
-      
+
       // Determine winner (considering victory overrides for laser sabre)
       const winnerA = match.scoreA?.isVictory || (scoreA > scoreB && !isLaserSabre);
       const winnerB = match.scoreB?.isVictory || (scoreB > scoreA && !isLaserSabre);
-      
+
       if (winnerA) {
         statA.victories++;
         statB.defeats++;
@@ -89,7 +96,7 @@ export const usePoolCalculations = (pool: Pool, weapon?: Weapon) => {
     const pending = pool.matches
       .map((m, idx) => ({ match: m, index: idx }))
       .filter(({ match }) => match.status !== MatchStatus.FINISHED);
-    
+
     const finished = pool.matches
       .map((m, idx) => ({ match: m, index: idx }))
       .filter(({ match }) => match.status === MatchStatus.FINISHED);
@@ -101,7 +108,7 @@ export const usePoolCalculations = (pool: Pool, weapon?: Weapon) => {
     fencerStats,
     poolRanking,
     matchCategories,
-    isLaserSabre
+    isLaserSabre,
   };
 };
 
@@ -114,7 +121,7 @@ export const useOrderedMatches = (pool: Pool) => {
     const pending = pool.matches
       .map((m, idx) => ({ match: m, index: idx }))
       .filter(({ match }) => match.status !== MatchStatus.FINISHED);
-    
+
     const finished = pool.matches
       .map((m, idx) => ({ match: m, index: idx }))
       .filter(({ match }) => match.status === MatchStatus.FINISHED);
@@ -127,19 +134,19 @@ export const useOrderedMatches = (pool: Pool) => {
     let lastFencerIds: Set<string> = new Set();
 
     while (remaining.length > 0) {
-      let bestMatch: typeof pending[0] | null = null;
+      let bestMatch: (typeof pending)[0] | null = null;
       let bestScore = -1;
 
       for (const candidate of remaining) {
         const fencerAId = candidate.match.fencerA?.id;
         const fencerBId = candidate.match.fencerB?.id;
-        
+
         let score = 0;
-        
+
         // Prefer matches with fencers who haven't fought recently
         if (fencerAId && !lastFencerIds.has(fencerAId)) score += 2;
         if (fencerBId && !lastFencerIds.has(fencerBId)) score += 2;
-        
+
         // Prefer matches with higher-numbered fencers (to finish their matches earlier)
         if (fencerAId) {
           const fencerA = pool.fencers.find(f => f.id === fencerAId);
@@ -159,7 +166,7 @@ export const useOrderedMatches = (pool: Pool) => {
       if (bestMatch) {
         ordered.push(bestMatch);
         remaining.splice(remaining.indexOf(bestMatch), 1);
-        
+
         // Update last fencers set
         lastFencerIds.clear();
         if (bestMatch.match.fencerA) lastFencerIds.add(bestMatch.match.fencerA.id);
@@ -220,7 +227,7 @@ export const useScoreEditing = () => {
     setVictoryB,
     startEditing,
     cancelEditing,
-    clearEditing
+    clearEditing,
   };
 };
 
@@ -248,7 +255,7 @@ export const useFencerDisplay = (fencers: Fencer[]) => {
   return {
     fencerById,
     getFencerDisplay,
-    getFencerShortDisplay
+    getFencerShortDisplay,
   };
 };
 
@@ -260,13 +267,15 @@ export const usePoolGridData = (pool: Pool, poolRanking: PoolRanking[]) => {
   const gridData = useMemo(() => {
     // Create grid data structure for efficient rendering
     const gridSize = pool.fencers.length;
-    const grid: Array<Array<{
-      fencerA: Fencer;
-      fencerB: Fencer;
-      match: Match | null;
-      score: string;
-      winner: 'A' | 'B' | null;
-    }>> = [];
+    const grid: Array<
+      Array<{
+        fencerA: Fencer;
+        fencerB: Fencer;
+        match: Match | null;
+        score: string;
+        winner: 'A' | 'B' | null;
+      }>
+    > = [];
 
     // Initialize empty grid
     for (let i = 0; i < gridSize; i++) {
@@ -277,7 +286,7 @@ export const usePoolGridData = (pool: Pool, poolRanking: PoolRanking[]) => {
           fencerB: pool.fencers[j],
           match: null,
           score: '',
-          winner: null
+          winner: null,
         };
       }
     }
@@ -294,7 +303,7 @@ export const usePoolGridData = (pool: Pool, poolRanking: PoolRanking[]) => {
         const scoreB = match.scoreB?.value ?? 0;
         const victoryA = match.scoreA?.isVictory;
         const victoryB = match.scoreB?.isVictory;
-        
+
         let winner: 'A' | 'B' | null = null;
         if (victoryA) winner = 'A';
         else if (victoryB) winner = 'B';
@@ -306,7 +315,7 @@ export const usePoolGridData = (pool: Pool, poolRanking: PoolRanking[]) => {
           fencerB: pool.fencers[indexB],
           match,
           score: `${scoreA}-${scoreB}`,
-          winner
+          winner,
         };
       }
     });

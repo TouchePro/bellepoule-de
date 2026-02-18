@@ -28,7 +28,7 @@ export class OfflineSyncManager {
   private initializeNetworkDetection(): void {
     if (typeof window !== 'undefined') {
       this.isOnline = navigator.onLine;
-      
+
       window.addEventListener('online', () => {
         this.isOnline = true;
         console.log('[Sync] Network connection restored');
@@ -59,7 +59,7 @@ export class OfflineSyncManager {
         synced: 0,
         failed: 0,
         conflicts: 0,
-        errors: ['Device is offline']
+        errors: ['Device is offline'],
       };
     }
 
@@ -69,7 +69,7 @@ export class OfflineSyncManager {
         synced: 0,
         failed: 0,
         conflicts: 0,
-        errors: ['Sync already in progress']
+        errors: ['Sync already in progress'],
       };
     }
 
@@ -86,7 +86,7 @@ export class OfflineSyncManager {
         synced: 0,
         failed: 0,
         conflicts: 0,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
       };
       this.notifySyncCallbacks(result);
       return result;
@@ -111,7 +111,7 @@ export class OfflineSyncManager {
       synced: 0,
       failed: 0,
       conflicts: 0,
-      errors: []
+      errors: [],
     };
 
     console.log(`[Sync] Processing ${pendingActions.length} pending actions`);
@@ -124,14 +124,16 @@ export class OfflineSyncManager {
         console.log(`[Sync] Successfully processed action: ${action.type}`);
       } catch (error) {
         console.error(`[Sync] Failed to process action:`, action, error);
-        
+
         if (error instanceof ConflictError) {
           await this.handleConflict(action, error.conflictData);
           result.conflicts++;
         } else {
           await offlineStorage.incrementRetryCount(action.id);
           result.failed++;
-          result.errors.push(`Action ${action.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          result.errors.push(
+            `Action ${action.id}: ${error instanceof Error ? error.message : 'Unknown error'}`
+          );
         }
       }
     }
@@ -139,7 +141,9 @@ export class OfflineSyncManager {
     // Update last sync timestamp
     await offlineStorage.updateLastSync();
 
-    console.log(`[Sync] Sync completed: ${result.synced} synced, ${result.failed} failed, ${result.conflicts} conflicts`);
+    console.log(
+      `[Sync] Sync completed: ${result.synced} synced, ${result.failed} failed, ${result.conflicts} conflicts`
+    );
     return result;
   }
 
@@ -154,19 +158,19 @@ export class OfflineSyncManager {
       case 'UPDATE_MATCH':
         await this.updateMatch(action.data);
         break;
-        
+
       case 'UPDATE_FENCER':
         await this.updateFencer(action.data);
         break;
-        
+
       case 'CREATE_POOL':
         await this.createPool(action.data);
         break;
-        
+
       case 'DELETE_POOL':
         await this.deletePool(action.data);
         break;
-        
+
       default:
         throw new Error(`Unknown action type: ${action.type}`);
     }
@@ -179,7 +183,7 @@ export class OfflineSyncManager {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(data.updates)
+      body: JSON.stringify(data.updates),
     });
 
     if (!response.ok) {
@@ -198,7 +202,7 @@ export class OfflineSyncManager {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(data.updates)
+      body: JSON.stringify(data.updates),
     });
 
     if (!response.ok) {
@@ -216,7 +220,7 @@ export class OfflineSyncManager {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
     });
 
     if (!response.ok) {
@@ -226,7 +230,7 @@ export class OfflineSyncManager {
 
   private async deletePool(data: any): Promise<void> {
     const response = await fetch(`/api/pools/${data.poolId}`, {
-      method: 'DELETE'
+      method: 'DELETE',
     });
 
     if (!response.ok) {
@@ -242,7 +246,7 @@ export class OfflineSyncManager {
       entityId: this.getEntityIdFromAction(action.data),
       localVersion: action.data,
       remoteVersion: conflictData,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     await offlineStorage.addConflict(conflict);
@@ -269,13 +273,13 @@ export class OfflineSyncManager {
 
     try {
       console.log('[Sync] Refreshing cache for competition:', competitionId);
-      
+
       // Fetch latest data
       const [competition, fencers, pools, matches] = await Promise.all([
         this.fetchCompetition(competitionId),
         this.fetchFencers(competitionId),
         this.fetchPools(competitionId),
-        this.fetchMatches(competitionId)
+        this.fetchMatches(competitionId),
       ]);
 
       // Update local cache
@@ -283,7 +287,7 @@ export class OfflineSyncManager {
         offlineStorage.cacheCompetition(competition),
         offlineStorage.cacheFencers(fencers),
         offlineStorage.cachePools(pools),
-        offlineStorage.cacheMatches(matches)
+        offlineStorage.cacheMatches(matches),
       ]);
 
       console.log('[Sync] Cache refreshed successfully');
@@ -350,13 +354,10 @@ export class OfflineSyncManager {
   }
 
   // Conflict resolution
-  public async resolveConflict(
-    conflictId: string, 
-    resolution: 'local' | 'remote'
-  ): Promise<void> {
+  public async resolveConflict(conflictId: string, resolution: 'local' | 'remote'): Promise<void> {
     const conflicts = await offlineStorage.getConflicts();
     const conflict = conflicts.find(c => c.id === conflictId);
-    
+
     if (!conflict) {
       throw new Error(`Conflict not found: ${conflictId}`);
     }
@@ -381,7 +382,7 @@ export class OfflineSyncManager {
   private async forceUpdateToServer(conflict: SyncConflict): Promise<void> {
     // Implementation depends on entity type
     const { entityType, entityId, localVersion } = conflict;
-    
+
     let url = '';
     switch (entityType) {
       case 'match':
@@ -400,7 +401,7 @@ export class OfflineSyncManager {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(localVersion)
+      body: JSON.stringify(localVersion),
     });
 
     if (!response.ok) {

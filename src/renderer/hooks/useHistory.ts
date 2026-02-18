@@ -6,7 +6,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 
-export type ActionType = 
+export type ActionType =
   | 'UPDATE_SCORE'
   | 'CHANGE_FENCER_STATUS'
   | 'DELETE_FENCER'
@@ -46,36 +46,39 @@ export interface UseHistoryReturn {
 
 export function useHistory(options: UseHistoryOptions = {}): UseHistoryReturn {
   const { maxHistory = 50, onUndo, onRedo } = options;
-  
+
   const [history, setHistory] = useState<HistoryAction[]>([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const actionIdRef = useRef(0);
 
-  const addAction = useCallback(<T,>(action: Omit<HistoryAction<T>, 'id' | 'timestamp'>) => {
-    const newAction: HistoryAction<T> = {
-      ...action,
-      id: `action-${++actionIdRef.current}`,
-      timestamp: Date.now(),
-    };
+  const addAction = useCallback(
+    <T>(action: Omit<HistoryAction<T>, 'id' | 'timestamp'>) => {
+      const newAction: HistoryAction<T> = {
+        ...action,
+        id: `action-${++actionIdRef.current}`,
+        timestamp: Date.now(),
+      };
 
-    setHistory(prev => {
-      // Supprime les actions futures si on ajoute une nouvelle action au milieu
-      const newHistory = prev.slice(0, currentIndex + 1);
-      newHistory.push(newAction as HistoryAction);
-      
-      // Limite la taille de l'historique
-      if (newHistory.length > maxHistory) {
-        newHistory.shift();
-      }
-      
-      return newHistory;
-    });
+      setHistory(prev => {
+        // Supprime les actions futures si on ajoute une nouvelle action au milieu
+        const newHistory = prev.slice(0, currentIndex + 1);
+        newHistory.push(newAction as HistoryAction);
 
-    setCurrentIndex(prev => {
-      const newIndex = Math.min(prev + 1, maxHistory - 1);
-      return newIndex;
-    });
-  }, [currentIndex, maxHistory]);
+        // Limite la taille de l'historique
+        if (newHistory.length > maxHistory) {
+          newHistory.shift();
+        }
+
+        return newHistory;
+      });
+
+      setCurrentIndex(prev => {
+        const newIndex = Math.min(prev + 1, maxHistory - 1);
+        return newIndex;
+      });
+    },
+    [currentIndex, maxHistory]
+  );
 
   const undo = useCallback(() => {
     if (currentIndex < 0) return;
@@ -87,7 +90,7 @@ export function useHistory(options: UseHistoryOptions = {}): UseHistoryReturn {
         setCurrentIndex(prev => prev - 1);
         onUndo?.(action);
       } catch (error) {
-        console.error('Erreur lors de l\'annulation:', error);
+        console.error("Erreur lors de l'annulation:", error);
       }
     }
   }, [currentIndex, history, onUndo]);
@@ -114,10 +117,13 @@ export function useHistory(options: UseHistoryOptions = {}): UseHistoryReturn {
     actionIdRef.current = 0;
   }, []);
 
-  const getHistoryInfo = useCallback(() => ({
-    undoCount: currentIndex + 1,
-    redoCount: history.length - currentIndex - 1,
-  }), [currentIndex, history.length]);
+  const getHistoryInfo = useCallback(
+    () => ({
+      undoCount: currentIndex + 1,
+      redoCount: history.length - currentIndex - 1,
+    }),
+    [currentIndex, history.length]
+  );
 
   return {
     canUndo: currentIndex >= 0,

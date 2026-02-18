@@ -31,7 +31,7 @@ export const useOffline = (competitionId?: string): UseOfflineResult => {
   const [syncStatus, setSyncStatus] = useState({
     pendingActions: 0,
     conflicts: 0,
-    lastSync: null as number | null
+    lastSync: null as number | null,
   });
   const [cacheData, setCacheData] = useState<{
     competitions: Competition[];
@@ -42,7 +42,7 @@ export const useOffline = (competitionId?: string): UseOfflineResult => {
     competitions: [],
     fencers: [],
     pools: [],
-    matches: []
+    matches: [],
   });
 
   // Update status
@@ -60,14 +60,14 @@ export const useOffline = (competitionId?: string): UseOfflineResult => {
         competitionId ? offlineStorage.getCachedCompetition(competitionId) : null,
         offlineStorage.getCachedFencers(competitionId),
         offlineStorage.getCachedPools(competitionId),
-        offlineStorage.getCachedMatches(competitionId)
+        offlineStorage.getCachedMatches(competitionId),
       ]);
 
       setCacheData({
         competitions: data[0] ? [data[0]] : [],
         fencers: data[1],
         pools: data[2],
-        matches: data[3]
+        matches: data[3],
       });
     } catch (error) {
       console.error('[useOffline] Failed to load cache data:', error);
@@ -112,18 +112,21 @@ export const useOffline = (competitionId?: string): UseOfflineResult => {
   // Manual sync
   const sync = useCallback(async () => {
     if (!isOnline) return;
-    
+
     await offlineSync.triggerSync();
     await loadCacheData();
   }, [isOnline, loadCacheData]);
 
   // Refresh cache
-  const refreshCache = useCallback(async (compId: string) => {
-    if (!isOnline) return;
-    
-    await offlineSync.refreshCache(compId);
-    await loadCacheData();
-  }, [isOnline, loadCacheData]);
+  const refreshCache = useCallback(
+    async (compId: string) => {
+      if (!isOnline) return;
+
+      await offlineSync.refreshCache(compId);
+      await loadCacheData();
+    },
+    [isOnline, loadCacheData]
+  );
 
   return {
     isOnline,
@@ -133,6 +136,6 @@ export const useOffline = (competitionId?: string): UseOfflineResult => {
     lastSync: syncStatus.lastSync,
     sync,
     refreshCache,
-    cacheData
+    cacheData,
   };
 };

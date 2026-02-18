@@ -31,8 +31,28 @@ const createMockMatch = (
 ): Match => ({
   id,
   number: 1,
-  fencerA: { id: fencerAId, ref: 1, lastName: 'A', firstName: 'A', gender: 'M' as any, nationality: 'FRA', status: 'Q' as any, createdAt: new Date(), updatedAt: new Date() },
-  fencerB: { id: fencerBId, ref: 2, lastName: 'B', firstName: 'B', gender: 'M' as any, nationality: 'FRA', status: 'Q' as any, createdAt: new Date(), updatedAt: new Date() },
+  fencerA: {
+    id: fencerAId,
+    ref: 1,
+    lastName: 'A',
+    firstName: 'A',
+    gender: 'M' as any,
+    nationality: 'FRA',
+    status: 'Q' as any,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  fencerB: {
+    id: fencerBId,
+    ref: 2,
+    lastName: 'B',
+    firstName: 'B',
+    gender: 'M' as any,
+    nationality: 'FRA',
+    status: 'Q' as any,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
   scoreA: null,
   scoreB: null,
   maxScore: 5,
@@ -93,10 +113,7 @@ describe('validateMatchScore', () => {
 });
 
 describe('checkDuplicateMatches', () => {
-  const matches: Match[] = [
-    createMockMatch('m1', 'f1', 'f2'),
-    createMockMatch('m2', 'f3', 'f4'),
-  ];
+  const matches: Match[] = [createMockMatch('m1', 'f1', 'f2'), createMockMatch('m2', 'f3', 'f4')];
 
   it('should return null when no duplicate', () => {
     const error = checkDuplicateMatches(matches, 'm3', 'f5', 'f6');
@@ -116,9 +133,7 @@ describe('checkDuplicateMatches', () => {
   });
 
   it('should ignore cancelled matches', () => {
-    const cancelledMatches = [
-      createMockMatch('m1', 'f1', 'f2', MatchStatus.CANCELLED),
-    ];
+    const cancelledMatches = [createMockMatch('m1', 'f1', 'f2', MatchStatus.CANCELLED)];
     const error = checkDuplicateMatches(cancelledMatches, 'm2', 'f1', 'f2');
     expect(error).toBeNull();
   });
@@ -142,8 +157,12 @@ describe('formatValidationMessage', () => {
   it('should format error messages', () => {
     const result = {
       isValid: false,
-      errors: [{ type: 'INVALID_SCORE' as any, message: 'Score invalide', severity: 'error' as any }],
-      warnings: [{ type: 'INCONSISTENT_RESULT' as any, message: 'Attention', severity: 'warning' as any }],
+      errors: [
+        { type: 'INVALID_SCORE' as any, message: 'Score invalide', severity: 'error' as any },
+      ],
+      warnings: [
+        { type: 'INCONSISTENT_RESULT' as any, message: 'Attention', severity: 'warning' as any },
+      ],
     };
 
     const message = formatValidationMessage(result);

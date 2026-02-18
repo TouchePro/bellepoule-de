@@ -47,7 +47,7 @@ const createMockMatch = (
       isForfait: false,
     };
   };
-  
+
   // Détermine qui est le vainqueur
   const isAWinner = scoreA !== null && scoreB !== null && scoreA > scoreB;
 
@@ -74,7 +74,9 @@ describe('generatePoolMatchOrder', () => {
     const order = generatePoolMatchOrder(3);
     expect(order).toHaveLength(3);
     expect(order).toEqual([
-      [1, 2], [2, 3], [1, 3],
+      [1, 2],
+      [2, 3],
+      [1, 3],
     ]);
   });
 
@@ -196,9 +198,7 @@ describe('calculatePoolRanking', () => {
       number: 1,
       phaseId: 'ph1',
       fencers: [fencer1, fencer2],
-      matches: [
-        createMockMatch('m1', fencer1, fencer2, 5, 2),
-      ],
+      matches: [createMockMatch('m1', fencer1, fencer2, 5, 2)],
       referees: [],
       isComplete: true,
       hasError: false,

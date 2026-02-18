@@ -34,7 +34,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
     this.setState({
       error,
-      errorInfo
+      errorInfo,
     });
 
     // Log to centralized error logger
@@ -61,55 +61,62 @@ export class ErrorBoundary extends Component<Props, State> {
 
       // Default error UI
       return (
-        <div style={{
-          padding: '20px',
-          margin: '20px',
-          border: '2px solid #ff4444',
-          borderRadius: '8px',
-          backgroundColor: '#fff5f5',
-          fontFamily: 'Arial, sans-serif'
-        }}>
-          <h2 style={{ color: '#cc0000', marginTop: 0 }}>
-            🚫 Une erreur est survenue
-          </h2>
+        <div
+          style={{
+            padding: '20px',
+            margin: '20px',
+            border: '2px solid #ff4444',
+            borderRadius: '8px',
+            backgroundColor: '#fff5f5',
+            fontFamily: 'Arial, sans-serif',
+          }}
+        >
+          <h2 style={{ color: '#cc0000', marginTop: 0 }}>🚫 Une erreur est survenue</h2>
           <p style={{ color: '#666', marginBottom: '20px' }}>
-            BellePoule Modern a rencontré une erreur technique. Veuillez rafraîchir la page ou contacter le support.
+            BellePoule Modern a rencontré une erreur technique. Veuillez rafraîchir la page ou
+            contacter le support.
           </p>
-          
+
           {process.env.NODE_ENV === 'development' && this.state.error && (
-            <details style={{ 
-              backgroundColor: '#f8f8f8', 
-              padding: '10px', 
-              borderRadius: '4px',
-              marginBottom: '20px'
-            }}>
+            <details
+              style={{
+                backgroundColor: '#f8f8f8',
+                padding: '10px',
+                borderRadius: '4px',
+                marginBottom: '20px',
+              }}
+            >
               <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>
                 Détails techniques (développement)
               </summary>
               <div style={{ marginTop: '10px' }}>
                 <h4>Erreur:</h4>
-                <pre style={{ 
-                  backgroundColor: '#fff', 
-                  padding: '10px', 
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  overflow: 'auto',
-                  maxHeight: '200px'
-                }}>
+                <pre
+                  style={{
+                    backgroundColor: '#fff',
+                    padding: '10px',
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                    overflow: 'auto',
+                    maxHeight: '200px',
+                  }}
+                >
                   {this.state.error.stack}
                 </pre>
-                
+
                 {this.state.errorInfo && (
                   <>
                     <h4>Component Stack:</h4>
-                    <pre style={{ 
-                      backgroundColor: '#fff', 
-                      padding: '10px', 
-                      borderRadius: '4px',
-                      fontSize: '12px',
-                      overflow: 'auto',
-                      maxHeight: '200px'
-                    }}>
+                    <pre
+                      style={{
+                        backgroundColor: '#fff',
+                        padding: '10px',
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                        overflow: 'auto',
+                        maxHeight: '200px',
+                      }}
+                    >
                       {this.state.errorInfo.componentStack}
                     </pre>
                   </>
@@ -117,7 +124,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </div>
             </details>
           )}
-          
+
           <div>
             <button
               onClick={this.handleReset}
@@ -128,7 +135,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 padding: '10px 20px',
                 borderRadius: '4px',
                 cursor: 'pointer',
-                marginRight: '10px'
+                marginRight: '10px',
               }}
             >
               🔄 Réessayer
@@ -141,7 +148,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 border: 'none',
                 padding: '10px 20px',
                 borderRadius: '4px',
-                cursor: 'pointer'
+                cursor: 'pointer',
               }}
             >
               🔄 Rafraîchir la page
@@ -175,9 +182,7 @@ export class CompetitionErrorBoundary extends Component<Props> {
           <div style={{ padding: '20px', textAlign: 'center' }}>
             <h3>🤺 Erreur de compétition</h3>
             <p>Une erreur est survenue lors du chargement de la compétition.</p>
-            <button onClick={() => window.location.reload()}>
-              Recharger l'application
-            </button>
+            <button onClick={() => window.location.reload()}>Recharger l'application</button>
           </div>
         }
       >
@@ -196,9 +201,7 @@ export class PoolErrorBoundary extends Component<Props> {
           <div style={{ padding: '20px', textAlign: 'center' }}>
             <h3>🏊 Erreur de poule</h3>
             <p>Une erreur est survenue lors du calcul des poules.</p>
-            <button onClick={() => window.location.reload()}>
-              Recharger la page
-            </button>
+            <button onClick={() => window.location.reload()}>Recharger la page</button>
           </div>
         }
       >
@@ -231,9 +234,7 @@ export class DatabaseErrorBoundary extends Component<Props> {
             <h3>💾 Erreur de base de données</h3>
             <p>Une erreur est survenue lors de l'accès aux données.</p>
             <p>Les données peuvent être corrompues. Veuillez contacter le support.</p>
-            <button onClick={() => window.location.reload()}>
-              Redémarrer l'application
-            </button>
+            <button onClick={() => window.location.reload()}>Redémarrer l'application</button>
           </div>
         }
       >

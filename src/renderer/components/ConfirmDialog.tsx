@@ -36,11 +36,10 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [pending]);
 
   const confirm = useCallback((messageOrOptions: string | ConfirmOptions): Promise<boolean> => {
-    const options: ConfirmOptions = typeof messageOrOptions === 'string'
-      ? { message: messageOrOptions }
-      : messageOrOptions;
+    const options: ConfirmOptions =
+      typeof messageOrOptions === 'string' ? { message: messageOrOptions } : messageOrOptions;
 
-    return new Promise<boolean>((resolve) => {
+    return new Promise<boolean>(resolve => {
       setPending({
         message: options.message,
         confirmLabel: options.confirmLabel || 'OK',
@@ -81,11 +80,7 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
           onKeyDown={handleKeyDown}
           style={{ zIndex: 11000 }}
         >
-          <div
-            className="modal"
-            onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: '420px' }}
-          >
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '420px' }}>
             <div className="modal-header">
               <h2 className="modal-title">Confirmation</h2>
             </div>
@@ -93,11 +88,7 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
               <p style={{ whiteSpace: 'pre-line', margin: 0 }}>{pending.message}</p>
             </div>
             <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={handleCancel}
-              >
+              <button type="button" className="btn btn-secondary" onClick={handleCancel}>
                 {pending.cancelLabel}
               </button>
               <button
@@ -122,9 +113,10 @@ export const useConfirm = (): ConfirmContextType => {
     // Fallback si utilisé en dehors du provider
     return {
       confirm: async (messageOrOptions: string | ConfirmOptions) => {
-        const msg = typeof messageOrOptions === 'string' ? messageOrOptions : messageOrOptions.message;
+        const msg =
+          typeof messageOrOptions === 'string' ? messageOrOptions : messageOrOptions.message;
         return window.confirm(msg);
-      }
+      },
     };
   }
   return context;

@@ -44,42 +44,53 @@ export const useMenuEvents = ({
   isLaserSabre,
 }: UseMenuEventsProps) => {
   // Gestionnaire d'export selon la phase
-  const handleExport = useCallback((format: string) => {
-    // Export des tireurs disponible depuis toutes les phases
-    if (format === 'fencers-txt') {
-      onExportFencers('txt');
-      return;
-    }
-    if (format === 'fencers-fff') {
-      onExportFencers('fff');
-      return;
-    }
+  const handleExport = useCallback(
+    (format: string) => {
+      // Export des tireurs disponible depuis toutes les phases
+      if (format === 'fencers-txt') {
+        onExportFencers('txt');
+        return;
+      }
+      if (format === 'fencers-fff') {
+        onExportFencers('fff');
+        return;
+      }
 
-    switch (currentPhase) {
-      case 'ranking':
-        // Export du classement après poules
-        if (hasPools && overallRanking.length > 0) {
-          if (format === 'csv') {
-            onExportRanking('csv');
-          } else if (format === 'json') {
-            onExportRanking('json');
+      switch (currentPhase) {
+        case 'ranking':
+          // Export du classement après poules
+          if (hasPools && overallRanking.length > 0) {
+            if (format === 'csv') {
+              onExportRanking('csv');
+            } else if (format === 'json') {
+              onExportRanking('json');
+            }
           }
-        }
-        break;
-      case 'results':
-        // Export des résultats finaux
-        if (finalResults.length > 0) {
-          if (format === 'csv') {
-            onExportResults('csv');
-          } else if (format === 'json') {
-            onExportResults('json');
+          break;
+        case 'results':
+          // Export des résultats finaux
+          if (finalResults.length > 0) {
+            if (format === 'csv') {
+              onExportResults('csv');
+            } else if (format === 'json') {
+              onExportResults('json');
+            }
           }
-        }
-        break;
-      default:
-        console.warn(`Export ${format} non disponible en phase ${currentPhase}`);
-    }
-  }, [currentPhase, hasPools, overallRanking, finalResults, onExportFencers, onExportRanking, onExportResults]);
+          break;
+        default:
+          console.warn(`Export ${format} non disponible en phase ${currentPhase}`);
+      }
+    },
+    [
+      currentPhase,
+      hasPools,
+      overallRanking,
+      finalResults,
+      onExportFencers,
+      onExportRanking,
+      onExportResults,
+    ]
+  );
 
   useEffect(() => {
     if (!window.electronAPI) return;

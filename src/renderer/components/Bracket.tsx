@@ -67,25 +67,28 @@ const Bracket: React.FC<BracketProps> = ({
   const matchesPerRound = tableSize / 2;
   const svgHeight = Math.max(400, matchesPerRound * (MATCH_HEIGHT + VERTICAL_GAP) + 100);
 
-  const calculateMatchPosition = useCallback((round: number, position: number): MatchPosition => {
-    const matchesInRound = rounds.get(round)?.length || 0;
-    const baseY = svgHeight / 2;
-    const roundSpacing = (MATCH_HEIGHT + VERTICAL_GAP) * Math.pow(2, round - 1);
-    
-    let yOffset = 0;
-    if (matchesInRound > 1) {
-      const index = position - 1;
-      const totalHeight = (matchesInRound - 1) * roundSpacing;
-      yOffset = -totalHeight / 2 + index * roundSpacing;
-    }
+  const calculateMatchPosition = useCallback(
+    (round: number, position: number): MatchPosition => {
+      const matchesInRound = rounds.get(round)?.length || 0;
+      const baseY = svgHeight / 2;
+      const roundSpacing = (MATCH_HEIGHT + VERTICAL_GAP) * Math.pow(2, round - 1);
 
-    return {
-      x: 50 + (maxRound - round) * (MATCH_WIDTH + HORIZONTAL_GAP),
-      y: baseY + yOffset,
-      width: MATCH_WIDTH,
-      height: MATCH_HEIGHT,
-    };
-  }, [rounds, maxRound, svgHeight]);
+      let yOffset = 0;
+      if (matchesInRound > 1) {
+        const index = position - 1;
+        const totalHeight = (matchesInRound - 1) * roundSpacing;
+        yOffset = -totalHeight / 2 + index * roundSpacing;
+      }
+
+      return {
+        x: 50 + (maxRound - round) * (MATCH_WIDTH + HORIZONTAL_GAP),
+        y: baseY + yOffset,
+        width: MATCH_WIDTH,
+        height: MATCH_HEIGHT,
+      };
+    },
+    [rounds, maxRound, svgHeight]
+  );
 
   const renderFencerBox = (
     fencer: Fencer | null,
@@ -198,11 +201,7 @@ const Bracket: React.FC<BracketProps> = ({
         {/* Render connection lines first (behind matches) */}
         {matches.map(match => {
           const pos = calculateMatchPosition(match.round, match.position);
-          return (
-            <g key={`line-${match.id}`}>
-              {renderConnectionLines(match, pos)}
-            </g>
-          );
+          return <g key={`line-${match.id}`}>{renderConnectionLines(match, pos)}</g>;
         })}
 
         {/* Render matches */}
@@ -237,13 +236,7 @@ const Bracket: React.FC<BracketProps> = ({
 
               {/* Bye indicator */}
               {match.isBye && (
-                <text
-                  x={MATCH_WIDTH / 2}
-                  y={-10}
-                  textAnchor="middle"
-                  fill="#6c757d"
-                  fontSize={10}
-                >
+                <text x={MATCH_WIDTH / 2} y={-10} textAnchor="middle" fill="#6c757d" fontSize={10}>
                   EXEMPT
                 </text>
               )}

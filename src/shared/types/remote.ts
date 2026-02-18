@@ -50,7 +50,14 @@ export interface RemoteSession {
 }
 
 export interface WebSocketMessage {
-  type: 'score_update' | 'match_assigned' | 'match_finished' | 'referee_connected' | 'referee_disconnected' | 'strip_status_change' | 'score_update_broadcast';
+  type:
+    | 'score_update'
+    | 'match_assigned'
+    | 'match_finished'
+    | 'referee_connected'
+    | 'referee_disconnected'
+    | 'strip_status_change'
+    | 'score_update_broadcast';
   data: any;
   timestamp: Date;
   sender: string;
@@ -73,7 +80,13 @@ export interface ClientMessage {
 
 // Messages serveur vers client
 export interface ServerMessage {
-  type: 'login_success' | 'login_error' | 'match_assignment' | 'score_update_broadcast' | 'session_update' | 'error';
+  type:
+    | 'login_success'
+    | 'login_error'
+    | 'match_assignment'
+    | 'score_update_broadcast'
+    | 'session_update'
+    | 'error';
   data: any;
 }
 

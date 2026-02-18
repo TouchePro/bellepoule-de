@@ -111,14 +111,18 @@ export function exportResultsHTML(
         </tr>
       </thead>
       <tbody>
-        ${finalResults.map((result, index) => `
+        ${finalResults
+          .map(
+            (result, index) => `
           <tr class="rank-${result.rank}">
             <td>${result.rank}</td>
             <td><strong>${result.fencer.lastName} ${result.fencer.firstName}</strong></td>
             <td>${result.fencer.club || '-'}</td>
             <td>${result.fencer.nationality || '-'}</td>
           </tr>
-        `).join('')}
+        `
+          )
+          .join('')}
       </tbody>
     </table>
   </div>
@@ -139,7 +143,9 @@ export function exportResultsHTML(
         </tr>
       </thead>
       <tbody>
-        ${poolRanking.map((r, i) => `
+        ${poolRanking
+          .map(
+            (r, i) => `
           <tr>
             <td>${i + 1}</td>
             <td><strong>${r.fencer.lastName} ${r.fencer.firstName}</strong></td>
@@ -150,7 +156,9 @@ export function exportResultsHTML(
             <td>${r.touchesReceived || 0}</td>
             <td>${r.index || 0}</td>
           </tr>
-        `).join('')}
+        `
+          )
+          .join('')}
       </tbody>
     </table>
   </div>
@@ -172,9 +180,9 @@ export function exportRankingCSV(
   includeFormulas: boolean = false
 ): string {
   const headers = ['Rang', 'Nom', 'Prénom', 'Club', 'Nationalité', 'V', 'D', 'TD', 'TR', 'Indice'];
-  
+
   let csv = headers.join(';') + '\n';
-  
+
   poolRanking.forEach((ranking, index) => {
     const row = [
       index + 1,
@@ -186,11 +194,11 @@ export function exportRankingCSV(
       ranking.defeats || 0,
       ranking.touchesScored || 0,
       ranking.touchesReceived || 0,
-      includeFormulas ? `=H${index + 2}-I${index + 2}` : (ranking.index || 0),
+      includeFormulas ? `=H${index + 2}-I${index + 2}` : ranking.index || 0,
     ];
     csv += row.join(';') + '\n';
   });
-  
+
   return csv;
 }
 
@@ -213,21 +221,29 @@ export function exportResultsXMLFFE(
     <Categorie>${competition.category}</Categorie>
   </Informations>
   <Participants Nombre="${poolRanking.length}">
-    ${poolRanking.map((r, i) => `
+    ${poolRanking
+      .map(
+        (r, i) => `
     <Tireur Rang="${i + 1}">
       <Nom>${escapeXml(r.fencer.lastName)}</Nom>
       <Prenom>${escapeXml(r.fencer.firstName)}</Prenom>
       <Club>${escapeXml(r.fencer.club || '')}</Club>
       <Licence>${r.fencer.license || ''}</Licence>
       <Nation>${r.fencer.nationality || ''}</Nation>
-    </Tireur>`).join('')}
+    </Tireur>`
+      )
+      .join('')}
   </Participants>
   <Classement>
-    ${finalResults.map(r => `
+    ${finalResults
+      .map(
+        r => `
     <Classe Rang="${r.rank}">
       <Nom>${escapeXml(r.fencer.lastName)}</Nom>
       <Prenom>${escapeXml(r.fencer.firstName)}</Prenom>
-    </Classe>`).join('')}
+    </Classe>`
+      )
+      .join('')}
   </Classement>
 </Competition>`;
 
@@ -243,18 +259,28 @@ export function exportDetailedStatsCSV(
   poolRanking: PoolRanking[]
 ): string {
   const headers = [
-    'Rang', 'Nom', 'Prénom', 'Club', 
-    'V', 'D', 'TD', 'TR', 'Indice',
-    'VMoy', 'DMoy', 'TDMoy', 'TRMoy'
+    'Rang',
+    'Nom',
+    'Prénom',
+    'Club',
+    'V',
+    'D',
+    'TD',
+    'TR',
+    'Indice',
+    'VMoy',
+    'DMoy',
+    'TDMoy',
+    'TRMoy',
   ];
-  
+
   let csv = `Compétition: ${competition.title}\n`;
   csv += `Date: ${new Date(competition.date).toLocaleDateString('fr-FR')}\n\n`;
   csv += headers.join(';') + '\n';
-  
+
   poolRanking.forEach((ranking, index) => {
     const totalMatches = ranking.victories + ranking.defeats;
-    
+
     const row = [
       index + 1,
       `"${ranking.fencer.lastName}"`,
@@ -265,14 +291,14 @@ export function exportDetailedStatsCSV(
       ranking.touchesScored || 0,
       ranking.touchesReceived || 0,
       ranking.index || 0,
-      totalMatches > 0 ? (ranking.victories / totalMatches * 100).toFixed(1) : 0,
-      totalMatches > 0 ? (ranking.defeats / totalMatches * 100).toFixed(1) : 0,
+      totalMatches > 0 ? ((ranking.victories / totalMatches) * 100).toFixed(1) : 0,
+      totalMatches > 0 ? ((ranking.defeats / totalMatches) * 100).toFixed(1) : 0,
       totalMatches > 0 ? (ranking.touchesScored / totalMatches).toFixed(1) : 0,
       totalMatches > 0 ? (ranking.touchesReceived / totalMatches).toFixed(1) : 0,
     ];
     csv += row.join(';') + '\n';
   });
-  
+
   return csv;
 }
 

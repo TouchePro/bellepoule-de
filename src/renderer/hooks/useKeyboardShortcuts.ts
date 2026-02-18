@@ -32,46 +32,52 @@ export function useKeyboardShortcuts(options: UseKeyboardShortcutsOptions) {
     shortcutsRef.current = shortcuts;
   }, [shortcuts]);
 
-  const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    if (!enabled) return;
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
+      if (!enabled) return;
 
-    // Ignore les raccourcis si on est dans un input, textarea, ou select
-    const targetElement = event.target as HTMLElement;
-    if (
-      targetElement.tagName === 'INPUT' ||
-      targetElement.tagName === 'TEXTAREA' ||
-      targetElement.tagName === 'SELECT' ||
-      targetElement.isContentEditable
-    ) {
-      // Permet quand même certains raccourcis comme Escape
-      if (event.key !== 'Escape') {
-        return;
-      }
-    }
-
-    const { key, ctrlKey, shiftKey, altKey, metaKey } = event;
-
-    for (const shortcut of shortcutsRef.current) {
-      const matchesKey = key.toLowerCase() === shortcut.key.toLowerCase();
-      const matchesCtrl = !!shortcut.ctrl === ctrlKey;
-      const matchesShift = !!shortcut.shift === shiftKey;
-      const matchesAlt = !!shortcut.alt === altKey;
-      const matchesMeta = !!shortcut.meta === metaKey;
-
-      if (matchesKey && matchesCtrl && matchesShift && matchesAlt && matchesMeta) {
-        if (shortcut.preventDefault !== false) {
-          event.preventDefault();
+      // Ignore les raccourcis si on est dans un input, textarea, ou select
+      const targetElement = event.target as HTMLElement;
+      if (
+        targetElement.tagName === 'INPUT' ||
+        targetElement.tagName === 'TEXTAREA' ||
+        targetElement.tagName === 'SELECT' ||
+        targetElement.isContentEditable
+      ) {
+        // Permet quand même certains raccourcis comme Escape
+        if (event.key !== 'Escape') {
+          return;
         }
-        
-        try {
-          shortcut.action();
-        } catch (error) {
-          console.error(`Erreur lors de l'exécution du raccourci ${shortcut.description}:`, error);
-        }
-        break;
       }
-    }
-  }, [enabled]);
+
+      const { key, ctrlKey, shiftKey, altKey, metaKey } = event;
+
+      for (const shortcut of shortcutsRef.current) {
+        const matchesKey = key.toLowerCase() === shortcut.key.toLowerCase();
+        const matchesCtrl = !!shortcut.ctrl === ctrlKey;
+        const matchesShift = !!shortcut.shift === shiftKey;
+        const matchesAlt = !!shortcut.alt === altKey;
+        const matchesMeta = !!shortcut.meta === metaKey;
+
+        if (matchesKey && matchesCtrl && matchesShift && matchesAlt && matchesMeta) {
+          if (shortcut.preventDefault !== false) {
+            event.preventDefault();
+          }
+
+          try {
+            shortcut.action();
+          } catch (error) {
+            console.error(
+              `Erreur lors de l'exécution du raccourci ${shortcut.description}:`,
+              error
+            );
+          }
+          break;
+        }
+      }
+    },
+    [enabled]
+  );
 
   useEffect(() => {
     if (!target) return;

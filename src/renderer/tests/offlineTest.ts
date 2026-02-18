@@ -6,59 +6,77 @@
 
 import { offlineStorage } from '../services/offlineStorage';
 import { offlineSync } from '../services/offlineSync';
-import { Competition, Fencer, Match, Gender, MatchStatus, FencerStatus, Weapon, Category, Score } from '../../shared/types';
+import {
+  Competition,
+  Fencer,
+  Match,
+  Gender,
+  MatchStatus,
+  FencerStatus,
+  Weapon,
+  Category,
+  Score,
+} from '../../shared/types';
 
 export class OfflineTestSuite {
   private testResults: { test: string; status: 'pass' | 'fail'; error?: string }[] = [];
 
-  async runAllTests(): Promise<{ passed: number; failed: number; results: { test: string; status: 'pass' | 'fail'; error?: string }[] }> {
+  async runAllTests(): Promise<{
+    passed: number;
+    failed: number;
+    results: { test: string; status: 'pass' | 'fail'; error?: string }[];
+  }> {
     console.log('[OfflineTests] Starting offline architecture tests...');
-    
+
     this.testResults = [];
-    
+
     // Test 1: Database initialization
     await this.testDatabaseInit();
-    
+
     // Test 2: Data caching
     await this.testDataCaching();
-    
+
     // Test 3: Pending actions
     await this.testPendingActions();
-    
+
     // Test 4: Conflict handling
     await this.testConflictHandling();
-    
+
     // Test 5: Sync status
     await this.testSyncStatus();
-    
+
     // Test 6: Storage info
     await this.testStorageInfo();
-    
+
     // Test 7: Cache cleanup
     await this.testCacheCleanup();
-    
+
     const passed = this.testResults.filter(r => r.status === 'pass').length;
     const failed = this.testResults.filter(r => r.status === 'fail').length;
-    
+
     console.log(`[OfflineTests] Tests completed: ${passed} passed, ${failed} failed`);
-    
+
     return { passed, failed, results: this.testResults };
   }
 
   private async testDatabaseInit(): Promise<void> {
     try {
       await offlineStorage.init();
-      
+
       // Check if database is initialized
       const status = await offlineStorage.getSyncStatus();
-      
+
       if (status !== null) {
         this.addTestResult('Database Initialization', 'pass');
       } else {
         throw new Error('Database not properly initialized');
       }
     } catch (error) {
-      this.addTestResult('Database Initialization', 'fail', error instanceof Error ? error.message : 'Unknown error');
+      this.addTestResult(
+        'Database Initialization',
+        'fail',
+        error instanceof Error ? error.message : 'Unknown error'
+      );
     }
   }
 
@@ -84,7 +102,7 @@ export class OfflineTestSuite {
         nationality: 'FRA',
         status: FencerStatus.CHECKED_IN,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       // Cache test data
@@ -99,7 +117,11 @@ export class OfflineTestSuite {
         throw new Error('Cached data not retrieved correctly');
       }
     } catch (error) {
-      this.addTestResult('Data Caching', 'fail', error instanceof Error ? error.message : 'Unknown error');
+      this.addTestResult(
+        'Data Caching',
+        'fail',
+        error instanceof Error ? error.message : 'Unknown error'
+      );
     }
   }
 
@@ -107,7 +129,7 @@ export class OfflineTestSuite {
     try {
       const actionId = await offlineStorage.addPendingAction({
         type: 'UPDATE_MATCH',
-        data: { matchId: 'test-match-1', score: 5 }
+        data: { matchId: 'test-match-1', score: 5 },
       });
 
       const pendingActions = await offlineStorage.getPendingActions();
@@ -119,7 +141,11 @@ export class OfflineTestSuite {
         throw new Error('Pending action not stored or retrieved correctly');
       }
     } catch (error) {
-      this.addTestResult('Pending Actions', 'fail', error instanceof Error ? error.message : 'Unknown error');
+      this.addTestResult(
+        'Pending Actions',
+        'fail',
+        error instanceof Error ? error.message : 'Unknown error'
+      );
     }
   }
 
@@ -129,7 +155,7 @@ export class OfflineTestSuite {
         entityType: 'match',
         entityId: 'test-match-1',
         localVersion: { score: 5 },
-        remoteVersion: { score: 6 }
+        remoteVersion: { score: 6 },
       });
 
       const conflicts = await offlineStorage.getConflicts();
@@ -141,7 +167,11 @@ export class OfflineTestSuite {
         throw new Error('Conflict not stored or retrieved correctly');
       }
     } catch (error) {
-      this.addTestResult('Conflict Handling', 'fail', error instanceof Error ? error.message : 'Unknown error');
+      this.addTestResult(
+        'Conflict Handling',
+        'fail',
+        error instanceof Error ? error.message : 'Unknown error'
+      );
     }
   }
 
@@ -149,15 +179,21 @@ export class OfflineTestSuite {
     try {
       const status = await offlineStorage.getSyncStatus();
 
-      if (typeof status.pendingActions === 'number' &&
-          typeof status.conflicts === 'number' &&
-          (status.lastSync === null || typeof status.lastSync === 'number')) {
+      if (
+        typeof status.pendingActions === 'number' &&
+        typeof status.conflicts === 'number' &&
+        (status.lastSync === null || typeof status.lastSync === 'number')
+      ) {
         this.addTestResult('Sync Status', 'pass');
       } else {
         throw new Error('Sync status format is incorrect');
       }
     } catch (error) {
-      this.addTestResult('Sync Status', 'fail', error instanceof Error ? error.message : 'Unknown error');
+      this.addTestResult(
+        'Sync Status',
+        'fail',
+        error instanceof Error ? error.message : 'Unknown error'
+      );
     }
   }
 
@@ -165,32 +201,42 @@ export class OfflineTestSuite {
     try {
       const info = await offlineStorage.getStorageInfo();
 
-      if (typeof info.used === 'number' &&
-          typeof info.available === 'number' &&
-          typeof info.breakdown === 'object') {
+      if (
+        typeof info.used === 'number' &&
+        typeof info.available === 'number' &&
+        typeof info.breakdown === 'object'
+      ) {
         this.addTestResult('Storage Info', 'pass');
       } else {
         throw new Error('Storage info format is incorrect');
       }
     } catch (error) {
-      this.addTestResult('Storage Info', 'fail', error instanceof Error ? error.message : 'Unknown error');
+      this.addTestResult(
+        'Storage Info',
+        'fail',
+        error instanceof Error ? error.message : 'Unknown error'
+      );
     }
   }
 
   private async testCacheCleanup(): Promise<void> {
     try {
       await offlineStorage.clearCache(0); // Clear all cache
-      
+
       // Test that cache is cleared
       const cachedCompetition = await offlineStorage.getCachedCompetition('test-comp-1');
-      
+
       if (!cachedCompetition) {
         this.addTestResult('Cache Cleanup', 'pass');
       } else {
         throw new Error('Cache not properly cleared');
       }
     } catch (error) {
-      this.addTestResult('Cache Cleanup', 'fail', error instanceof Error ? error.message : 'Unknown error');
+      this.addTestResult(
+        'Cache Cleanup',
+        'fail',
+        error instanceof Error ? error.message : 'Unknown error'
+      );
     }
   }
 
@@ -203,28 +249,28 @@ export class OfflineTestSuite {
   // Network simulation tests
   async simulateOfflineScenario(): Promise<boolean> {
     console.log('[OfflineTests] Simulating offline scenario...');
-    
+
     try {
       // Simulate going offline
       const originalOnline = offlineSync.isCurrentlyOnline();
-      
+
       // Add some pending actions
       await offlineStorage.addPendingAction({
         type: 'UPDATE_MATCH',
-        data: { matchId: 'sim-match-1', scoreA: 5, scoreB: 3 }
+        data: { matchId: 'sim-match-1', scoreA: 5, scoreB: 3 },
       });
 
       await offlineStorage.addPendingAction({
         type: 'UPDATE_FENCER',
-        data: { fencerId: 'sim-fencer-1', status: 'CHECKED_IN' }
+        data: { fencerId: 'sim-fencer-1', status: 'CHECKED_IN' },
       });
 
       // Check sync status
       const statusBefore = await offlineStorage.getSyncStatus();
-      
+
       if (statusBefore.pendingActions > 0) {
         console.log('[OfflineTests] ✅ Pending actions stored while offline');
-        
+
         // In a real scenario, when coming back online, sync would be triggered
         console.log('[OfflineTests] ✅ Offline scenario simulation completed');
         return true;
@@ -240,7 +286,7 @@ export class OfflineTestSuite {
   // Performance test
   async performanceTest(): Promise<{ cacheTime: number; syncTime: number }> {
     console.log('[OfflineTests] Running performance tests...');
-    
+
     // Simplify performance test for now due to complex types
     const testFencers = Array.from({ length: 10 }, (_, i) => ({
       id: `perf-fencer-${i}`,
@@ -251,7 +297,7 @@ export class OfflineTestSuite {
       nationality: 'FRA',
       status: FencerStatus.CHECKED_IN,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     }));
 
     const testMatches: Match[] = []; // Skip matches for now due to complex type structure
@@ -268,11 +314,13 @@ export class OfflineTestSuite {
     // await offlineStorage.getCachedMatches(); // Skip for now
     const retrieveTime = performance.now() - retrieveStart;
 
-    console.log(`[OfflineTests] Performance: Cache ${cacheTime.toFixed(2)}ms, Retrieve ${retrieveTime.toFixed(2)}ms`);
-    
+    console.log(
+      `[OfflineTests] Performance: Cache ${cacheTime.toFixed(2)}ms, Retrieve ${retrieveTime.toFixed(2)}ms`
+    );
+
     return {
       cacheTime,
-      syncTime: retrieveTime
+      syncTime: retrieveTime,
     };
   }
 }

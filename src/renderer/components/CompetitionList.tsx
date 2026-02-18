@@ -15,13 +15,26 @@ interface CompetitionListProps {
   onNewCompetition: () => void;
 }
 
-const CompetitionListComponent: React.FC<CompetitionListProps> = ({ competitions, isLoading, onSelect, onDelete, onNewCompetition }) => {
+const CompetitionListComponent: React.FC<CompetitionListProps> = ({
+  competitions,
+  isLoading,
+  onSelect,
+  onDelete,
+  onNewCompetition,
+}) => {
   const { t } = useTranslation();
 
   if (isLoading) {
     return (
       <div className="content">
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: '50vh',
+          }}
+        >
           <div className="text-muted">{t('messages.loading')}</div>
         </div>
       </div>
@@ -37,13 +50,21 @@ const CompetitionListComponent: React.FC<CompetitionListProps> = ({ competitions
             + {t('menu.new_competition')}
           </button>
         </div>
-        
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: '50vh',
+          }}
+        >
           <div className="empty-state">
             <div className="empty-state-icon">🤺</div>
             <h2 className="empty-state-title">{t('messages.no_competitions')}</h2>
             <p className="empty-state-description">
-              {t('messages.no_competitions')} {t('messages.create_competition')} &quot;+ {t('menu.new_competition')}&quot;.
+              {t('messages.no_competitions')} {t('messages.create_competition')} &quot;+{' '}
+              {t('menu.new_competition')}&quot;.
             </p>
             <button className="btn btn-primary btn-lg" onClick={onNewCompetition}>
               + {t('menu.new_competition')}
@@ -59,7 +80,7 @@ const CompetitionListComponent: React.FC<CompetitionListProps> = ({ competitions
       weekday: 'long',
       day: 'numeric',
       month: 'long',
-      year: 'numeric'
+      year: 'numeric',
     });
   };
 
@@ -73,23 +94,23 @@ const CompetitionListComponent: React.FC<CompetitionListProps> = ({ competitions
       </div>
 
       <div className="competition-grid">
-        {competitions.map((competition) => (
+        {competitions.map(competition => (
           <div
             key={competition.id}
             className="card competition-card"
             onClick={() => onSelect(competition)}
-            style={{ 
+            style={{
               background: competition.color || '#3B82F6',
-              borderLeft: `4px solid ${competition.color || '#3B82F6'}`
+              borderLeft: `4px solid ${competition.color || '#3B82F6'}`,
             }}
           >
             <div className="card-body">
               <div className="card-header">
                 <h3 className="card-title">{competition.title}</h3>
                 <div className="card-actions">
-                  <button 
+                  <button
                     className="btn btn-icon btn-secondary"
-                    onClick={(e) => {
+                    onClick={e => {
                       e.stopPropagation();
                       onDelete(competition.id);
                     }}
@@ -99,7 +120,7 @@ const CompetitionListComponent: React.FC<CompetitionListProps> = ({ competitions
                   </button>
                 </div>
               </div>
-              
+
               <div className="card-content">
                 <div className="card-meta">
                   <div className="meta-item">
@@ -116,9 +137,7 @@ const CompetitionListComponent: React.FC<CompetitionListProps> = ({ competitions
                   </div>
                 </div>
                 <div className="card-footer">
-                  <span className="card-status">
-                    {t('actions.view')} →
-                  </span>
+                  <span className="card-status">{t('actions.view')} →</span>
                 </div>
               </div>
             </div>

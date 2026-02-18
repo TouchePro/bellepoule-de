@@ -21,27 +21,38 @@ export const useEventManager = () => {
   const listenersRef = useRef<EventListenerItem[]>([]);
   const timersRef = useRef<Array<{ id: number; type: 'timeout' | 'interval' }>>([]);
 
-  const addEventListener = useCallback((
-    element: EventTarget,
-    event: string,
-    handler: EventListenerOrEventListenerObject,
-    options?: boolean | AddEventListenerOptions
-  ) => {
-    element.addEventListener(event, handler, options);
-    listenersRef.current.push({ element, event, handler, options });
-  }, []);
+  const addEventListener = useCallback(
+    (
+      element: EventTarget,
+      event: string,
+      handler: EventListenerOrEventListenerObject,
+      options?: boolean | AddEventListenerOptions
+    ) => {
+      element.addEventListener(event, handler, options);
+      listenersRef.current.push({ element, event, handler, options });
+    },
+    []
+  );
 
-  const removeEventListener = useCallback((
-    element: EventTarget,
-    event: string,
-    handler: EventListenerOrEventListenerObject,
-    options?: boolean | EventListenerOptions
-  ) => {
-    element.removeEventListener(event, handler, options);
-    listenersRef.current = listenersRef.current.filter(
-      listener => !(listener.element === element && listener.event === event && listener.handler === handler)
-    );
-  }, []);
+  const removeEventListener = useCallback(
+    (
+      element: EventTarget,
+      event: string,
+      handler: EventListenerOrEventListenerObject,
+      options?: boolean | EventListenerOptions
+    ) => {
+      element.removeEventListener(event, handler, options);
+      listenersRef.current = listenersRef.current.filter(
+        listener =>
+          !(
+            listener.element === element &&
+            listener.event === event &&
+            listener.handler === handler
+          )
+      );
+    },
+    []
+  );
 
   const setTimeout = useCallback((callback: () => void, delay: number): number => {
     const id = window.setTimeout(callback, delay);
@@ -103,7 +114,7 @@ export const useEventManager = () => {
     setInterval,
     clearTimeout,
     clearInterval,
-    cleanup
+    cleanup,
   };
 };
 
@@ -111,10 +122,7 @@ export const useEventManager = () => {
 // Keyboard Event Hook
 // ============================================================================
 
-export const useKeyboardEvents = (
-  keyMap: Record<string, () => void>,
-  dependencies: any[] = []
-) => {
+export const useKeyboardEvents = (keyMap: Record<string, () => void>, dependencies: any[] = []) => {
   const { addEventListener, removeEventListener } = useEventManager();
 
   useEffect(() => {
@@ -122,7 +130,7 @@ export const useKeyboardEvents = (
       const keyboardEvent = event as KeyboardEvent;
       const key = keyboardEvent.key.toLowerCase();
       const handler = keyMap[key];
-      
+
       if (handler) {
         keyboardEvent.preventDefault();
         handler();
@@ -141,11 +149,13 @@ export const useKeyboardEvents = (
 // Window Resize Hook
 // ============================================================================
 
-export const useWindowResize = (
-  handler: () => void,
-  debounceMs: number = 100
-) => {
-  const { addEventListener, removeEventListener, setTimeout: customSetTimeout, clearTimeout: customClearTimeout } = useEventManager();
+export const useWindowResize = (handler: () => void, debounceMs: number = 100) => {
+  const {
+    addEventListener,
+    removeEventListener,
+    setTimeout: customSetTimeout,
+    clearTimeout: customClearTimeout,
+  } = useEventManager();
   const timeoutRef = useRef<number>(0);
 
   useEffect(() => {
@@ -153,7 +163,7 @@ export const useWindowResize = (
       if (timeoutRef.current) {
         customClearTimeout(timeoutRef.current);
       }
-      
+
       timeoutRef.current = customSetTimeout(handler, debounceMs);
     };
 
@@ -165,7 +175,14 @@ export const useWindowResize = (
         customClearTimeout(timeoutRef.current);
       }
     };
-  }, [handler, debounceMs, addEventListener, removeEventListener, customSetTimeout, customClearTimeout]);
+  }, [
+    handler,
+    debounceMs,
+    addEventListener,
+    removeEventListener,
+    customSetTimeout,
+    customClearTimeout,
+  ]);
 };
 
 // ============================================================================
@@ -207,7 +224,7 @@ export const useAutoSave = (
 
   return {
     startAutoSave,
-    stopAutoSave
+    stopAutoSave,
   };
 };
 
@@ -215,9 +232,7 @@ export const useAutoSave = (
 // IPC Event Hook for Electron
 // ============================================================================
 
-export const useIPCEvents = (
-  eventHandlers: Record<string, (...args: any[]) => void>
-) => {
+export const useIPCEvents = (eventHandlers: Record<string, (...args: any[]) => void>) => {
   const listenersRef = useRef<Array<{ channel: string; handler: Function }>>([]);
 
   useEffect(() => {
@@ -236,7 +251,8 @@ export const useIPCEvents = (
         listenersRef.current.push({ channel: event, handler: ipcHandler });
 
         // Register with electronAPI if method exists
-        const methodName = `on${event.charAt(0).toUpperCase() + event.slice(1)}` as keyof typeof window.electronAPI;
+        const methodName =
+          `on${event.charAt(0).toUpperCase() + event.slice(1)}` as keyof typeof window.electronAPI;
         const method = window.electronAPI[methodName];
         if (typeof method === 'function') {
           (method as Function)(ipcHandler);

@@ -13,17 +13,17 @@ interface LanguageSelectorProps {
   value?: 'fr' | 'en' | 'br';
 }
 
-const LanguageSelector: React.FC<LanguageSelectorProps> = ({ 
-  className = '', 
-  showLabel = true, 
+const LanguageSelector: React.FC<LanguageSelectorProps> = ({
+  className = '',
+  showLabel = true,
   onLanguageChange,
-  value 
+  value,
 }) => {
   const { language, changeLanguage, availableLanguages, isLoading } = useTranslation();
 
   const handleLanguageChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const newLanguage = event.target.value as 'fr' | 'en' | 'br';
-    
+
     if (onLanguageChange) {
       // Mode "sélection" - ne pas appliquer immédiatement
       onLanguageChange(newLanguage);
@@ -43,11 +43,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 
   return (
     <div className={`language-selector ${className}`}>
-      {showLabel && (
-        <label htmlFor="language-select">
-          Langue :
-        </label>
-      )}
+      {showLabel && <label htmlFor="language-select">Langue :</label>}
       <select
         id="language-select"
         value={value !== undefined ? value : language}
@@ -55,7 +51,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
         className="form-input form-select"
         style={{ minWidth: '120px' }}
       >
-        {availableLanguages.map((lang) => (
+        {availableLanguages.map(lang => (
           <option key={lang.code} value={lang.code}>
             {lang.flag} {lang.name}
           </option>

@@ -9,11 +9,11 @@ export type Theme = 'light' | 'dark' | 'default';
 
 const applyTheme = (theme: Theme) => {
   document.body.classList.remove('theme-dark', 'theme-light', 'theme-default');
-  
+
   if (theme !== 'default') {
     document.body.classList.add(`theme-${theme}`);
   }
-  
+
   console.log(`🎨 Applied theme: ${theme}`);
 };
 
@@ -40,7 +40,9 @@ export const useTheme = () => {
   }, [theme, setTheme]);
 
   const isDark = theme === 'dark';
-  const isLight = theme === 'light' || (theme === 'default' && !window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const isLight =
+    theme === 'light' ||
+    (theme === 'default' && !window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   return {
     theme,
@@ -51,7 +53,7 @@ export const useTheme = () => {
     availableThemes: [
       { code: 'default' as const, name: 'Système', icon: '💻' },
       { code: 'light' as const, name: 'Clair', icon: '☀️' },
-      { code: 'dark' as const, name: 'Sombre', icon: '🌙' }
-    ]
+      { code: 'dark' as const, name: 'Sombre', icon: '🌙' },
+    ],
   };
 };
