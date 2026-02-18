@@ -105,23 +105,9 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
 
   const checkSessionStatus = async () => {
     try {
-      // First check if server is responding
-      const debugResponse = await fetch('http://localhost:8066/api/debug');
-      if (!debugResponse.ok) {
-        console.error('Debug endpoint not responding');
-      } else {
-        const debugData = await debugResponse.json();
-        console.log('[RemoteScoreManager] Debug:', debugData);
-      }
-
-      const response = await fetch('http://localhost:8066/api/session');
-      if (response.ok) {
-        const sessionData = await response.json();
-        console.log('[RemoteScoreManager] Session:', sessionData);
-        setSession(sessionData);
-      } else {
-        const errorData = await response.json().catch(() => ({ error: 'Erreur inconnue' }));
-        console.error('Session check failed:', errorData);
+      const result = await window.electronAPI.remote.getSession();
+      if (result.success && result.session) {
+        setSession(result.session);
       }
     } catch (error) {
       console.error('Failed to check session status:', error);
@@ -209,24 +195,21 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     }
 
     try {
-      const response = await fetch('http://localhost:8066/api/referees', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: refereeName }),
-      });
+      const result = await window.electronAPI.remote.addReferee(refereeName);
 
-      if (response.ok) {
-        const referee = await response.json();
-        showToast(`Arbitre ${referee.name} ajouté avec le code ${referee.code}`, 'success');
+      if (result.success && result.referee) {
+        showToast(
+          `Arbitre ${result.referee.name} ajouté avec le code ${result.referee.code}`,
+          'success'
+        );
         setRefereeName('');
         checkSessionStatus();
       } else {
-        const errorData = await response.json().catch(() => ({ error: 'Erreur inconnue' }));
-        showToast(`Erreur: ${errorData.error || "Impossible d'ajouter l'arbitre"}`, 'error');
+        showToast(`Erreur: ${result.error || "Impossible d'ajouter l'arbitre"}`, 'error');
       }
     } catch (error) {
       console.error('Failed to add referee:', error);
-      showToast("Impossible d'ajouter l'arbitre - serveur peut-être non démarré", 'error');
+      showToast("Impossible d'ajouter l'arbitre", 'error');
     }
   };
 
