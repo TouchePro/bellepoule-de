@@ -230,8 +230,8 @@ D'après l'analyse du code et les demandes utilisateurs, les prochaines mises à
 
 ### 📡 **Arènes**
 
-- 📊 Affichage individuel par arène (http://IP:3001/arene1, etc.)
-- 🎯 Interface d'arbitrage (http://IP:3001/arene1/arbitre)
+- 📊 Affichage individuel par arène (http://IP:8066/arene1, etc.)
+- 🎯 Interface d'arbitrage (http://IP:8066/arene1/arbitre)
 - 🎯 Synchronisation automatique des scores et temps
 
 ### 📡 **Exports**

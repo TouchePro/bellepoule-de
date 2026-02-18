@@ -72,7 +72,7 @@ src/
 
 **Exemples à extraire:**
 
-- Port serveur: 3001 (5+ occurrences)
+- Port serveur: 8066 (5+ occurrences - référence à l'Ordre 66)
 - Scores: 5, 10, 15, 21 (répétés)
 - Intervalles: 120000ms (auto-save)
 

@@ -38,7 +38,7 @@ export class RemoteScoreServer {
   private arenaTimers: Map<string, NodeJS.Timeout> = new Map();
   private arenaCount: number = 4; // Nombre d'arènes par défaut
 
-  constructor(db: DatabaseManager, port: number = 3001) {
+  constructor(db: DatabaseManager, port: number = 8066) {
     console.log('[RemoteScoreServer] Initialisation du serveur de saisie distante...');
     this.db = db;
     this.port = port;

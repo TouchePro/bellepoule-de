@@ -102,40 +102,45 @@ When you first open BellePoule Modern, you'll see the main competition list scre
 
 ### Competition Types
 
-| Type | Description | Use Case |
-|------|-------------|----------|
-| **Standard FIE** | 1 pool round + Direct elimination | Official competitions |
-| **Pool Only** | 1-3 pool rounds, no elimination | Training, small events |
-| **2 Pools + Table** | 2 pool rounds + elimination | Large groups |
-| **Laser Sabre** | Special Quest Points system | Laser sabre events |
+| Type                | Description                       | Use Case               |
+| ------------------- | --------------------------------- | ---------------------- |
+| **Standard FIE**    | 1 pool round + Direct elimination | Official competitions  |
+| **Pool Only**       | 1-3 pool rounds, no elimination   | Training, small events |
+| **2 Pools + Table** | 2 pool rounds + elimination       | Large groups           |
+| **Laser Sabre**     | Special Quest Points system       | Laser sabre events     |
 
 ## 👥 Importing Fencers
 
 ### Supported File Formats
 
 #### 1. FFE Files (.fff, .csv)
+
 **Standard Format**: `NOM;PRENOM;SEXE;DATE_NAISSANCE;NATION;LIGUE;CLUB;LICENCE;CLASSEMENT`
 
 **Example**:
+
 ```
 DUPONT;Jean;M;15/03/1995;FRA;Île-de-France;Paris Escrime;12345678;12
 MARTIN;Marie;F;22/07/1998;FRA;Provence;Marseille Club;87654321;8
 ```
 
 #### 2. Mixed Format (commas in names)
+
 **Format**: `NOM,PRENOM,DATE,SEXE,NATION;[vide];LICENCE,RÉGION,CLUB`
 
 **Example**:
+
 ```
 DUPONT,JEAN,15/03/1995,M,FRA;;12345678,ÎLE-DE-FRANCE,PARIS ESCRIME
 MARTIN,MARIE,22/07/1998,F,FRA;;87654321,PROVENCE,MARSEILLE CLUB
 ```
 
 #### 3. XML BellePoule Format
+
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <Competition>
-  <Tireur Nom="DUPONT" Prenom="Jean" Sexe="M" Nation="FRA" 
+  <Tireur Nom="DUPONT" Prenom="Jean" Sexe="M" Nation="FRA"
           Club="Paris Escrime" Licence="12345678" Classement="12"/>
   <Tireur Nom="MARTIN" Prenom="Marie" Sexe="F" Nation="FRA"
           Club="Marseille Club" Licence="87654321" Classement="8"/>
@@ -239,6 +244,7 @@ MARTIN,MARIE,22/07/1998,F,FRA;;87654321,PROVENCE,MARSEILLE CLUB
 ```
 
 **Status Options**:
+
 - ✅ **Present**: Fencer checked in and ready to compete
 - ❌ **Absent**: Fencer not present, will be excluded
 - ⚠️ **Pending**: Waiting for check-in
@@ -437,8 +443,8 @@ MARTIN,MARIE,22/07/1998,F,FRA;;87654321,PROVENCE,MARSEILLE CLUB
 │ Remote Scoring Setup                                        │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
-│ Server Status: 🟢 Online on port 3001                      │
-│ Network URL: http://192.168.1.100:3001                     │
+│ Server Status: 🟢 Online on port 8066                      │
+│ Network URL: http://192.168.1.100:8066                     │
 │                                                             │
 │ ┌─────────────────────────────────────────────────────────┐ │
 │ │ Pistes Configuration                                     │ │
@@ -508,7 +514,7 @@ MARTIN,MARIE,22/07/1998,F,FRA;;87654321,PROVENCE,MARSEILLE CLUB
 │               │                             │               │
 │               └─────────────────────────────┘               │
 │                                                             │
-│                   Server: 192.168.1.100:3001                │
+│                   Server: 192.168.1.100:8066                │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -585,6 +591,7 @@ MARTIN,MARIE,22/07/1998,F,FRA;;87654321,PROVENCE,MARSEILLE CLUB
 ### Export Formats Examples
 
 #### BellePoule XML
+
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <Competition Nom="Regional Championship" Arme="Epee" Date="2024-03-15">
@@ -600,6 +607,7 @@ MARTIN,MARIE,22/07/1998,F,FRA;;87654321,PROVENCE,MARSEILLE CLUB
 ```
 
 #### CSV Export
+
 ```csv
 Rank;LastName;FirstName;Club;Victories;Touches Given;Touches Received;Indicator
 1;MOREAU;Luc;Paris Escrime;5;25;5;20.00
@@ -608,6 +616,7 @@ Rank;LastName;FirstName;Club;Victories;Touches Given;Touches Received;Indicator
 ```
 
 #### PDF Report
+
 - Automatically formatted for printing
 - Includes official competition stamp placeholders
 - Page numbers and competition details
@@ -639,13 +648,14 @@ Rank;LastName;FirstName;Club;Victories;Touches Given;Touches Received;Indicator
 #### Laser Sabre - Quest Points
 
 | Score Difference | Quest Points |
-|------------------|--------------|
+| ---------------- | ------------ |
 | ≤ 3 points       | 1 point      |
 | 4-7 points       | 2 points     |
 | 8-11 points      | 3 points     |
 | ≥ 12 points      | 4 points     |
 
 **Ranking Criteria:**
+
 1. Total Quest Points
 2. Touches Given (TD)
 3. Number of Victories
@@ -655,15 +665,15 @@ Rank;LastName;FirstName;Club;Victories;Touches Given;Touches Received;Indicator
 
 ### Keyboard Shortcuts
 
-| Shortcut | Function |
-|----------|----------|
-| **Ctrl+N** | New Competition |
-| **Ctrl+I** | Import Fencers |
-| **Ctrl+E** | Export Results |
-| **Ctrl+S** | Save Competition |
-| **Ctrl+Shift+I** | Report Bug |
-| **F5** | Refresh View |
-| **F11** | Toggle Fullscreen |
+| Shortcut         | Function          |
+| ---------------- | ----------------- |
+| **Ctrl+N**       | New Competition   |
+| **Ctrl+I**       | Import Fencers    |
+| **Ctrl+E**       | Export Results    |
+| **Ctrl+S**       | Save Competition  |
+| **Ctrl+Shift+I** | Report Bug        |
+| **F5**           | Refresh View      |
+| **F11**          | Toggle Fullscreen |
 
 ### Video Tutorials
 

@@ -9,7 +9,7 @@
 // ============================================================================
 
 export const SERVER = {
-  REMOTE_SCORE_PORT: 3001,
+  REMOTE_SCORE_PORT: 8066,
   DEFAULT_IP: 'localhost',
   SOCKET_TIMEOUT: 10000,
   API_RETRY_ATTEMPTS: 3,

@@ -323,7 +323,7 @@ function startRemoteScoreServer(): void {
   }
 
   try {
-    remoteScoreServer = new RemoteScoreServer(db, 3001);
+    remoteScoreServer = new RemoteScoreServer(db, 8066);
     remoteScoreServer.start();
 
     const serverUrl = remoteScoreServer.getServerUrl();
@@ -332,7 +332,7 @@ function startRemoteScoreServer(): void {
       title: 'Saisie distante démarrée',
       message: `Les arbitres peuvent maintenant se connecter sur ${serverUrl}`,
       detail:
-        'Partagez cette URL avec les arbitres munis de tablettes.\nAssurez-vous que le pare-feu Windows autorise les connexions sur le port 3001.',
+        'Partagez cette URL avec les arbitres munis de tablettes.\nAssurez-vous que le pare-feu Windows autorise les connexions sur le port 8066.',
       buttons: ['OK'],
     });
 
@@ -615,14 +615,14 @@ ipcMain.handle('remote:startServer', async () => {
       return { success: false, error: 'Le serveur est déjà démarré' };
     }
 
-    remoteScoreServer = new RemoteScoreServer(db, 3001);
+    remoteScoreServer = new RemoteScoreServer(db, 8066);
     remoteScoreServer.start();
 
     const serverUrl = remoteScoreServer.getServerUrl();
     const serverInfo = {
       url: serverUrl,
       ip: remoteScoreServer.getLocalIPAddress(),
-      port: 3001,
+      port: 8066,
     };
 
     // Stocker la référence globale pour le serveur distant
@@ -661,7 +661,7 @@ ipcMain.handle('remote:getServerInfo', async () => {
     serverInfo: {
       url: remoteScoreServer.getServerUrl(),
       ip: remoteScoreServer.getLocalIPAddress(),
-      port: 3001,
+      port: 8066,
     },
   };
 });

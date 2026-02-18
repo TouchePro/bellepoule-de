@@ -437,7 +437,7 @@ logger.error(LogCategory.UI, 'Failed to load component', error);
 **Description:** Extraire les magic numbers et strings dans un fichier config  
 **Exemples:**
 
-- Port serveur: 3001 (utilisé dans 5+ fichiers)
+- Port serveur: 8066 (utilisé dans 5+ fichiers - référence à l'Ordre 66)
 - Scores par défaut: 5, 10, 15, 21
 - Intervalles d'auto-save: 120000ms
 
@@ -789,7 +789,7 @@ logger.error(LogCategory.UI, 'Failed to load component', error);
 
 **10. Magic numbers non documentés**
 
-- **Exemples:** 3001 (port), 180 (secondes match), 5000 (ms délai)
+- **Exemples:** 8066 (port - référence à l'Ordre 66), 180 (secondes match), 5000 (ms délai)
 - **Solution:** Extraire dans constants.ts avec JSDoc
 
 **11. Commentaires DEBUG laissés**

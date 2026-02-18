@@ -52,7 +52,7 @@ Database (src/database/)
 
 2. **Database**: sql.js provides SQLite without native dependencies. All operations through `DatabaseManager`.
 
-3. **Remote Scoring**: Express server with Socket.IO on port 3001. Arena display at `/arene{N}`, referee interface at `/arene{N}/arbitre`.
+3. **Remote Scoring**: Express server with Socket.IO on port 8066. Arena display at `/arene{N}`, referee interface at `/arene{N}/arbitre`.
 
 4. **State**: React hooks with props drilling. No Redux/Zustand.
 
@@ -65,10 +65,33 @@ Database (src/database/)
 ## Key Domain Types (src/shared/types/index.ts)
 
 ```typescript
-enum Weapon { EPEE = 'E', FOIL = 'F', SABRE = 'S', LASER = 'L' }
-enum FencerStatus { QUALIFIED, ELIMINATED, ABANDONED, EXCLUDED, NOT_CHECKED_IN, CHECKED_IN, FORFAIT }
-enum MatchStatus { NOT_STARTED, IN_PROGRESS, FINISHED, CANCELLED }
-enum PhaseType { CHECKIN, POOL, DIRECT_ELIMINATION, CLASSIFICATION }
+enum Weapon {
+  EPEE = 'E',
+  FOIL = 'F',
+  SABRE = 'S',
+  LASER = 'L',
+}
+enum FencerStatus {
+  QUALIFIED,
+  ELIMINATED,
+  ABANDONED,
+  EXCLUDED,
+  NOT_CHECKED_IN,
+  CHECKED_IN,
+  FORFAIT,
+}
+enum MatchStatus {
+  NOT_STARTED,
+  IN_PROGRESS,
+  FINISHED,
+  CANCELLED,
+}
+enum PhaseType {
+  CHECKIN,
+  POOL,
+  DIRECT_ELIMINATION,
+  CLASSIFICATION,
+}
 ```
 
 Core interfaces: `Fencer`, `Competition`, `Pool`, `Match`, `PoolRanking` (all extend `BaseEntity` with id, createdAt, updatedAt).
@@ -76,7 +99,7 @@ Core interfaces: `Fencer`, `Competition`, `Pool`, `Match`, `PoolRanking` (all ex
 ## Development Notes
 
 - Main process changes require Electron restart; renderer hot-reloads
-- Remote score server and Webpack dev server both use port 3001 - potential conflict
+- Remote score server uses port 8066 (référence à l'Ordre 66), Webpack dev server uses port 3001
 - Pool calculations include special "Quest Points" system for Laser Sabre weapon
 - `@types/*` packages are in dependencies (not devDependencies) for Electron bundling
 

@@ -49,7 +49,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [refereeName, setRefereeName] = useState('');
   const [stripCount, setStripCount] = useState(4);
-  const [serverUrl, setServerUrl] = useState<string>('http://localhost:3001');
+  const [serverUrl, setServerUrl] = useState<string>('http://localhost:8066');
 
   // Charger les poules et définir le nombre de pistes par défaut
   useEffect(() => {
@@ -105,7 +105,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
 
   const checkSessionStatus = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/session');
+      const response = await fetch('http://localhost:8066/api/session');
       if (response.ok) {
         const sessionData = await response.json();
         setSession(sessionData);
@@ -118,7 +118,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const handleStartSession = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:3001/api/session/start', {
+      const response = await fetch('http://localhost:8066/api/session/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -146,7 +146,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     setIsLoading(true);
     try {
       // Arrêter la session via l'API
-      const response = await fetch('http://localhost:3001/api/session/stop', {
+      const response = await fetch('http://localhost:8066/api/session/stop', {
         method: 'POST',
       });
 
@@ -189,7 +189,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     }
 
     try {
-      const response = await fetch('http://localhost:3001/api/referees', {
+      const response = await fetch('http://localhost:8066/api/referees', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: refereeName }),

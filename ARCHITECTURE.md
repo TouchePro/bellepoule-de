@@ -37,7 +37,7 @@ Le système de saisie distante s'intègre dans l'architecture existante de Belle
 │  ┌─────────────────────────────────────────────────────────┐   │
 │  │                NETWORK LAYER                            │   │
 │  │                                                         │   │
-│  │        Port 3001        HTTP/WebSocket                 │   │
+│  │        Port 8066        HTTP/WebSocket                 │   │
 │  │                                                         │   │
 │  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐  │   │
 │  │  │   Tablet 1  │  │   Tablet 2  │  │   Tablet N      │  │   │
@@ -77,16 +77,17 @@ src/
 ## 🔄 Flux de communication
 
 ### 1. Initialisation
+
 ```mermaid
 sequenceDiagram
     participant O as Organisateur
     participant BM as BellePoule Main
     participant RS as RemoteServer
     participant A as Arbitre
-    
+
     O->>BM: Démarrer saisie distante
     BM->>RS: new RemoteScoreServer()
-    RS->>RS: server.listen(3001)
+    RS->>RS: server.listen(8066)
     BM->>O: Interface de gestion
     O->>BM: Ajouter arbitre "Jean"
     BM->>RS: POST /api/referees
@@ -96,14 +97,15 @@ sequenceDiagram
 ```
 
 ### 2. Connexion arbitre
+
 ```mermaid
 sequenceDiagram
     participant A as Arbitre
     participant B as Browser
     participant RS as RemoteServer
     participant DB as Database
-    
-    A->>B: Ouvrir http://IP:3001
+
+    A->>B: Ouvrir http://IP:8066
     B->>RS: GET / (index.html)
     RS->>B: Page de connexion
     A->>B: Entrer code "ABC123"
@@ -114,6 +116,7 @@ sequenceDiagram
 ```
 
 ### 3. Saisie de score
+
 ```mermaid
 sequenceDiagram
     participant A as Arbitre
@@ -121,7 +124,7 @@ sequenceDiagram
     participant RS as RemoteServer
     participant DB as Database
     participant UI as Main UI
-    
+
     A->>B: Saisir score 5-3
     A->>B: Cliquer "Enregistrer"
     B->>RS: Socket: score_update({matchId, scoreA: 5, scoreB: 3})
@@ -138,12 +141,14 @@ sequenceDiagram
 ### RemoteScoreServer - Backend Node.js
 
 **Technologies** :
+
 - **Express.js** : Serveur web HTTP
 - **Socket.IO** : Communication WebSocket temps réel
 - **TypeScript** : Typage strict
 - **Node.js** : Runtime JavaScript
 
 **Responsabilités** :
+
 1. **Gestion HTTP** : API REST + fichiers statiques
 2. **WebSocket** : Connexions arbitres temps réel
 3. **Authentification** : Codes d'accès simples
@@ -153,12 +158,14 @@ sequenceDiagram
 ### Interface Web Arbitre - Frontend Vanilla JS
 
 **Technologies** :
+
 - **HTML5** : Structure sémantique
 - **CSS3** : Styles modernes, responsive design
 - **JavaScript ES6+** : Logique client
 - **Socket.IO Client** : Communication WebSocket
 
 **Caractéristiques** :
+
 1. **Progressive Web App** : Utilisable hors ligne (futur)
 2. **Responsive Design** : Mobile-first approach
 3. **Temps réel** : Mises à jour instantanées
@@ -167,12 +174,14 @@ sequenceDiagram
 ### RemoteScoreManager - Interface React
 
 **Intégration** :
+
 - **React Hooks** : Gestion d'état locale
 - **TypeScript** : Typage strict
 - **Fetch API** : Communication avec serveur distant
 - **Electron IPC** : Contrôle serveur depuis UI
 
 **Fonctionnalités** :
+
 1. **Contrôle serveur** : Démarrage/arrêt
 2. **Configuration** : Pistes, arbitres
 3. **Monitoring** : État connexions
@@ -181,6 +190,7 @@ sequenceDiagram
 ## 🔌 Points d'extension
 
 ### 1. Authentification avancée
+
 ```typescript
 interface AdvancedAuth {
   username: string;
@@ -191,6 +201,7 @@ interface AdvancedAuth {
 ```
 
 ### 2. Mode hors ligne
+
 ```typescript
 interface OfflineMode {
   queue: ScoreUpdate[];
@@ -200,6 +211,7 @@ interface OfflineMode {
 ```
 
 ### 3. Multi-compétitions
+
 ```typescript
 interface MultiCompetition {
   competitions: Competition[];
@@ -211,10 +223,11 @@ interface MultiCompetition {
 ## 🧪 Tests et qualité
 
 ### Tests unitaires (à implémenter)
+
 ```typescript
 // Tests RemoteScoreServer
 describe('RemoteScoreServer', () => {
-  test('should start server on port 3001');
+  test('should start server on port 8066');
   test('should generate unique referee codes');
   test('should handle score updates correctly');
 });
@@ -228,6 +241,7 @@ describe('Referee Interface', () => {
 ```
 
 ### Tests d'intégration
+
 ```typescript
 // Tests E2E avec Playwright
 test('Complete remote scoring workflow', async () => {
@@ -241,11 +255,13 @@ test('Complete remote scoring workflow', async () => {
 ## 🔒 Sécurité
 
 ### Mesures actuelles
+
 1. **Codes d'accès** : 6 caractères aléatoires
 2. **Session limitée** : Durée compétition
 3. **Réseau local** : WiFi interne
 
 ### Améliorations futures
+
 1. **HTTPS/WSS** : Chiffrement communications
 2. **JWT Tokens** : Authentification robuste
 3. **Rate Limiting** : Protection anti-DoS
@@ -254,6 +270,7 @@ test('Complete remote scoring workflow', async () => {
 ## 📊 Monitoring et logs
 
 ### Logs serveur
+
 ```typescript
 // Structure de logs
 interface LogEntry {
@@ -266,6 +283,7 @@ interface LogEntry {
 ```
 
 ### Métriques à suivre
+
 1. **Performance** : Temps réponse API
 2. **Utilisation** : Nombre arbitres connectés
 3. **Erreurs** : Échecs connexions/synchronisations
@@ -274,6 +292,7 @@ interface LogEntry {
 ## 🚀 Déploiement
 
 ### Configuration production
+
 ```typescript
 interface ProductionConfig {
   port: number;
@@ -293,13 +312,14 @@ interface ProductionConfig {
 ```
 
 ### Dockerisation (futur)
+
 ```dockerfile
 FROM node:18-alpine
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production
 COPY dist/ ./dist/
-EXPOSE 3001
+EXPOSE 8066
 CMD ["node", "dist/main/remoteScoreServer.js"]
 ```
 
