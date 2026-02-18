@@ -5,7 +5,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Competition, Pool, Match, MatchStatus, PoolRanking } from '../../shared/types';
+import { Competition, Pool, Match, MatchStatus, PoolRanking, Weapon } from '../../shared/types';
+import { formatIndex } from '../../shared/utils/poolCalculations';
 
 interface LiveDashboardProps {
   competition: Competition;
@@ -13,6 +14,7 @@ interface LiveDashboardProps {
   currentPhase: 'pools' | 'tableau' | 'results';
   tableauMatches?: Match[];
   finalResults?: any[];
+  weapon?: Weapon;
 }
 
 export const LiveDashboard: React.FC<LiveDashboardProps> = ({
@@ -21,6 +23,7 @@ export const LiveDashboard: React.FC<LiveDashboardProps> = ({
   currentPhase,
   tableauMatches = [],
   finalResults = [],
+  weapon,
 }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [activeTab, setActiveTab] = useState<'pools' | 'tableau' | 'ranking'>('pools');
@@ -55,6 +58,8 @@ export const LiveDashboard: React.FC<LiveDashboardProps> = ({
       second: '2-digit',
     });
   };
+
+  const isLaserSabre = weapon === Weapon.LASER;
 
   return (
     <div
@@ -213,7 +218,7 @@ export const LiveDashboard: React.FC<LiveDashboardProps> = ({
                 }}
               >
                 {pools.map(pool => (
-                  <PoolResultsCard key={pool.id} pool={pool} />
+                  <PoolResultsCard key={pool.id} pool={pool} isLaserSabre={isLaserSabre} />
                 ))}
               </div>
             </div>
@@ -341,7 +346,10 @@ const LiveMatchCard: React.FC<{ match: Match; index: number }> = ({ match, index
 };
 
 // Pool Results Card Component
-const PoolResultsCard: React.FC<{ pool: Pool }> = ({ pool }) => {
+const PoolResultsCard: React.FC<{ pool: Pool; isLaserSabre?: boolean }> = ({
+  pool,
+  isLaserSabre = false,
+}) => {
   const completedCount = pool.matches.filter(m => m.status === MatchStatus.FINISHED).length;
   const progress = pool.matches.length > 0 ? (completedCount / pool.matches.length) * 100 : 0;
 
@@ -411,6 +419,18 @@ const PoolResultsCard: React.FC<{ pool: Pool }> = ({ pool }) => {
               >
                 V
               </th>
+              {isLaserSabre && (
+                <th
+                  style={{
+                    textAlign: 'center',
+                    padding: '0.5rem',
+                    color: '#7c3aed',
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  Quest
+                </th>
+              )}
               <th
                 style={{
                   textAlign: 'center',
@@ -419,7 +439,27 @@ const PoolResultsCard: React.FC<{ pool: Pool }> = ({ pool }) => {
                   fontSize: '0.875rem',
                 }}
               >
-                TD-TR
+                TD
+              </th>
+              <th
+                style={{
+                  textAlign: 'center',
+                  padding: '0.5rem',
+                  color: '#6b7280',
+                  fontSize: '0.875rem',
+                }}
+              >
+                TR
+              </th>
+              <th
+                style={{
+                  textAlign: 'center',
+                  padding: '0.5rem',
+                  color: '#6b7280',
+                  fontSize: '0.875rem',
+                }}
+              >
+                Ind
               </th>
             </tr>
           </thead>
@@ -443,8 +483,34 @@ const PoolResultsCard: React.FC<{ pool: Pool }> = ({ pool }) => {
                 <td style={{ padding: '0.5rem', textAlign: 'center', fontWeight: '600' }}>
                   {rank.victories}
                 </td>
+                {isLaserSabre && (
+                  <td
+                    style={{
+                      padding: '0.5rem',
+                      textAlign: 'center',
+                      fontWeight: '600',
+                      color: '#7c3aed',
+                    }}
+                  >
+                    {rank.questPoints || 0}
+                  </td>
+                )}
                 <td style={{ padding: '0.5rem', textAlign: 'center', fontFamily: 'monospace' }}>
-                  {rank.touchesScored}-{rank.touchesReceived}
+                  {rank.touchesScored}
+                </td>
+                <td style={{ padding: '0.5rem', textAlign: 'center', fontFamily: 'monospace' }}>
+                  {rank.touchesReceived}
+                </td>
+                <td
+                  style={{
+                    padding: '0.5rem',
+                    textAlign: 'center',
+                    fontFamily: 'monospace',
+                    fontWeight: '600',
+                    color: rank.touchesScored - rank.touchesReceived >= 0 ? '#059669' : '#DC2626',
+                  }}
+                >
+                  {formatIndex(rank.touchesScored - rank.touchesReceived)}
                 </td>
               </tr>
             ))}
