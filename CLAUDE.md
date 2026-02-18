@@ -13,7 +13,7 @@ Code is in English; comments and documentation are in French.
 ```bash
 npm run dev          # Development mode (concurrent TypeScript + Webpack watchers)
 npm run dev:main     # Watch main process only
-npm run dev:renderer # Watch renderer only (Webpack dev server on port 3001)
+npm run dev:renderer # Watch renderer only (Webpack dev server on port 8066)
 npm run build        # Full build (TypeScript + Webpack)
 npm start            # Build and run with Electron
 npm run package      # Create distributable packages for all platforms
@@ -99,7 +99,7 @@ Core interfaces: `Fencer`, `Competition`, `Pool`, `Match`, `PoolRanking` (all ex
 ## Development Notes
 
 - Main process changes require Electron restart; renderer hot-reloads
-- Remote score server uses port 8066 (référence à l'Ordre 66), Webpack dev server uses port 3001
+- Remote score server and Webpack dev server both use port 8066 (référence à l'Ordre 66)
 - Pool calculations include special "Quest Points" system for Laser Sabre weapon
 - `@types/*` packages are in dependencies (not devDependencies) for Electron bundling
 

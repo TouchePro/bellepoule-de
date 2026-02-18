@@ -26,7 +26,7 @@ module.exports = {
     filename: 'renderer.js',
   },
   devServer: {
-    port: 3001,
+    port: 8066,
     host: '0.0.0.0', // Accessible depuis l'extérieur
     hot: true,
     open: false,
