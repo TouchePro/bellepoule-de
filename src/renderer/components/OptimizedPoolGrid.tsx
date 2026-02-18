@@ -54,14 +54,13 @@ const GridCell = memo(
           style={{
             backgroundColor: '#e5e7eb',
             textAlign: 'center',
-            fontWeight: 'bold',
             border: '1px solid #d1d5db',
             color: '#9ca3af',
             cursor: 'not-allowed',
           }}
           title="Match non disputé (abandon/forfait)"
         >
-          X
+          -
         </td>
       );
     }

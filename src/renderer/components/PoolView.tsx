@@ -715,21 +715,20 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                 colFencer.status === FencerStatus.FORFAIT ||
                 colFencer.status === FencerStatus.EXCLUDED;
 
+              // Si un des deux tireurs a abandonné, le match n'est pas joué - cellule grise vide
               if (rowFencerAbandoned || colFencerAbandoned) {
-                // Afficher X pour les matchs impliquant un tireur abandonné
                 return (
                   <div
                     key={colIndex}
                     className="pool-cell pool-cell-forfeit"
                     style={{
                       cursor: 'not-allowed',
-                      backgroundColor: '#f3f4f6',
+                      backgroundColor: '#e5e7eb',
                       color: '#9ca3af',
-                      fontWeight: 'bold',
                     }}
                     title="Match non disputé (abandon/forfait)"
                   >
-                    <span>✕</span>
+                    <span>-</span>
                   </div>
                 );
               }
@@ -1080,11 +1079,11 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     padding: '0.75rem 1rem',
-                    background: isAbandonMatch ? '#f3f4f6' : '#f9fafb',
+                    background: isAbandonMatch ? '#e5e7eb' : '#f9fafb',
                     borderRadius: '6px',
                     cursor: isAbandonMatch ? 'not-allowed' : 'pointer',
-                    border: '1px solid #e5e7eb',
-                    opacity: isAbandonMatch ? 0.6 : 1,
+                    border: isAbandonMatch ? '1px dashed #9ca3af' : '1px solid #e5e7eb',
+                    opacity: isAbandonMatch ? 0.5 : 1,
                   }}
                 >
                   <span style={{ color: '#9ca3af', fontSize: '0.875rem', minWidth: '30px' }}>
@@ -1152,21 +1151,21 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               return (
                 <div
                   key={index}
-                  onClick={() => openScoreModal(index)}
+                  onClick={() => !isAbandonMatch && openScoreModal(index)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     padding: '0.75rem 1rem',
                     background: isAbandonMatch
-                      ? '#f3f4f6'
+                      ? '#e5e7eb'
                       : match.scoreA?.isVictory
                         ? '#f0fdf4'
                         : '#fef2f2',
                     borderRadius: '6px',
-                    cursor: 'pointer',
-                    border: '1px solid #e5e7eb',
-                    opacity: isAbandonMatch ? 0.7 : 1,
+                    cursor: isAbandonMatch ? 'not-allowed' : 'pointer',
+                    border: isAbandonMatch ? '1px dashed #9ca3af' : '1px solid #e5e7eb',
+                    opacity: isAbandonMatch ? 0.5 : 1,
                   }}
                 >
                   <span
