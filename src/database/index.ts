@@ -140,6 +140,20 @@ export class DatabaseManager {
     `);
 
     this.db.run(`
+      CREATE TABLE IF NOT EXISTS phases (
+        id TEXT PRIMARY KEY,
+        competition_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL,
+        order_index INTEGER NOT NULL,
+        status TEXT DEFAULT 'pending',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (competition_id) REFERENCES competitions(id) ON DELETE CASCADE
+      )
+    `);
+
+    this.db.run(`
       CREATE TABLE IF NOT EXISTS fencers (
         id TEXT PRIMARY KEY, competition_id TEXT NOT NULL,
         ref INTEGER NOT NULL, last_name TEXT NOT NULL, first_name TEXT NOT NULL,
@@ -199,6 +213,9 @@ export class DatabaseManager {
 
     // Index pour les recherches par statut
     this.db.run(`CREATE INDEX IF NOT EXISTS idx_competitions_status ON competitions(status)`);
+
+    // Index pour les phases par compétition
+    this.db.run(`CREATE INDEX IF NOT EXISTS idx_phases_competition ON phases(competition_id)`);
 
     // Index pour les tireurs par compétition (très fréquemment utilisé)
     this.db.run(`CREATE INDEX IF NOT EXISTS idx_fencers_competition ON fencers(competition_id)`);
