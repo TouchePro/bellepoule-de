@@ -3,6 +3,12 @@ name: Build and Release
 on:
   push:
     branches: [main]
+    paths:
+      - 'src/**'
+      - 'package.json'
+      - 'tsconfig.json'
+      - 'webpack.*.js'
+      - '!.github/**'
   workflow_dispatch:
 
 jobs:
@@ -216,7 +222,15 @@ jobs:
           retention-days: 5
 
   create-release:
-    needs: [increment-version, build-windows, build-macos-x64, build-macos-arm64, build-linux-x64, build-linux-arm64]
+    needs:
+      [
+        increment-version,
+        build-windows,
+        build-macos-x64,
+        build-macos-arm64,
+        build-linux-x64,
+        build-linux-arm64,
+      ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -249,7 +263,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: latest
-          name: "🚀 BellePoule Modern v${{ needs.increment-version.outputs.version }} Build #${{ needs.increment-version.outputs.build }}"
+          name: '🚀 BellePoule Modern v${{ needs.increment-version.outputs.version }} Build #${{ needs.increment-version.outputs.build }}'
           body: |
             ## BellePoule Modern
 
