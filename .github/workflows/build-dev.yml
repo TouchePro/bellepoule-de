@@ -3,6 +3,9 @@ name: Build Dev Branch
 on:
   push:
     branches: [dev]
+    paths-ignore:
+      - 'version.json'
+      - 'package.json'
   workflow_dispatch:
 
 jobs:
@@ -55,8 +58,12 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add version.json package.json
-          git diff --staged --quiet || git commit -m "🔖 Dev Build #${{ steps.version.outputs.build }}"
-          git push origin dev
+          if git diff --staged --quiet; then
+            echo "No version changes to commit"
+          else
+            git commit -m "🔖 Dev Build #${{ steps.version.outputs.build }}"
+            git push origin dev
+          fi
 
   build-windows:
     needs: increment-version
