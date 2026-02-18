@@ -390,7 +390,14 @@ export class RemoteScoreServer {
 
   private handleArenaControl(
     socket: any,
-    data: { arenaId: string; action: string; scoreA?: number; scoreB?: number }
+    data: {
+      arenaId: string;
+      action: string;
+      scoreA?: number;
+      scoreB?: number;
+      time?: number;
+      timerStatus?: string;
+    }
   ): void {
     const arena = this.getArena(data.arenaId);
     if (!arena) {
@@ -420,6 +427,18 @@ export class RemoteScoreServer {
         if (arena.currentMatch) {
           this.updateArenaScore(data.arenaId, 0, 0);
         }
+        break;
+      case 'update_timer':
+      case 'pause_timer':
+      case 'reset_timer':
+        // Relay timer updates to arena display
+        this.broadcastArenaUpdate(data.arenaId, {
+          arenaId: data.arenaId,
+          match: arena.currentMatch,
+          time: data.time,
+          timerStatus: data.timerStatus,
+          status: arena.status,
+        });
         break;
       default:
         socket.emit('error', { message: 'Action non reconnue' });

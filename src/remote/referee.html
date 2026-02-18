@@ -294,27 +294,95 @@
         margin-bottom: 2rem;
       }
 
+      .timer-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+      }
+
       .timer {
-        font-size: 4rem;
+        font-size: 5rem;
         font-weight: 700;
         color: #1f2937;
         font-variant-numeric: tabular-nums;
         background: #f3f4f6;
-        padding: 1rem 2rem;
+        padding: 1rem 3rem;
         border-radius: 1rem;
         display: inline-block;
-        min-width: 200px;
+        min-width: 280px;
+      }
+
+      .timer.running {
+        border: 3px solid #10b981;
+      }
+
+      .timer.paused {
+        border: 3px solid #f59e0b;
       }
 
       .timer.warning {
         color: #f59e0b;
         background: #fffbeb;
+        border-color: #f59e0b;
       }
 
       .timer.danger {
         color: #ef4444;
         background: #fef2f2;
+        border-color: #ef4444;
         animation: pulse 1s infinite;
+      }
+
+      .timer-controls {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: center;
+      }
+
+      .timer-btn {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+        font-weight: 600;
+        border: none;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .timer-btn-start {
+        background: #10b981;
+        color: white;
+      }
+
+      .timer-btn-start:hover {
+        background: #059669;
+      }
+
+      .timer-btn-pause {
+        background: #f59e0b;
+        color: white;
+      }
+
+      .timer-btn-pause:hover {
+        background: #d97706;
+      }
+
+      .timer-btn-reset {
+        background: #6b7280;
+        color: white;
+      }
+
+      .timer-btn-reset:hover {
+        background: #4b5563;
+      }
+
+      .timer-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
       }
 
       @keyframes pulse {
@@ -594,7 +662,33 @@
             </div>
 
             <div class="timer-section">
-              <div id="timer" class="timer">00:00</div>
+              <div class="timer-container">
+                <div id="timer" class="timer">03:00</div>
+                <div class="timer-controls">
+                  <button
+                    id="timer-start-btn"
+                    class="timer-btn timer-btn-start"
+                    onclick="startTimer()"
+                  >
+                    ▶️ Démarrer
+                  </button>
+                  <button
+                    id="timer-pause-btn"
+                    class="timer-btn timer-btn-pause"
+                    onclick="toggleTimer()"
+                    style="display: none"
+                  >
+                    ⏸️ Pause
+                  </button>
+                  <button
+                    id="timer-reset-btn"
+                    class="timer-btn timer-btn-reset"
+                    onclick="resetTimer()"
+                  >
+                    🔄 Reset
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -941,9 +1035,112 @@
         refereeInterface.resetScores();
       }
 
+      // Gestion du timer (3 minutes)
+      const MATCH_DURATION = 180; // 3 minutes en secondes
+      let timerSeconds = MATCH_DURATION;
+      let timerInterval = null;
+      let timerRunning = false;
+
+      function startTimer() {
+        if (timerRunning) return;
+
+        timerRunning = true;
+        updateTimerButtons();
+
+        timerInterval = setInterval(() => {
+          if (timerSeconds > 0) {
+            timerSeconds--;
+            updateTimerDisplay();
+
+            // Envoyer au serveur pour synchroniser l'affichage
+            refereeInterface.socket.emit('arena_control', {
+              arenaId: refereeInterface.arenaId,
+              action: 'update_timer',
+              time: timerSeconds,
+              timerStatus: 'running',
+            });
+          } else {
+            clearInterval(timerInterval);
+            timerRunning = false;
+            updateTimerButtons();
+          }
+        }, 1000);
+      }
+
+      function toggleTimer() {
+        if (timerRunning) {
+          // Pause
+          clearInterval(timerInterval);
+          timerRunning = false;
+          updateTimerButtons();
+
+          refereeInterface.socket.emit('arena_control', {
+            arenaId: refereeInterface.arenaId,
+            action: 'pause_timer',
+            time: timerSeconds,
+            timerStatus: 'paused',
+          });
+        } else {
+          // Reprendre
+          startTimer();
+        }
+      }
+
+      function resetTimer() {
+        clearInterval(timerInterval);
+        timerRunning = false;
+        timerSeconds = MATCH_DURATION;
+        updateTimerDisplay();
+        updateTimerButtons();
+
+        refereeInterface.socket.emit('arena_control', {
+          arenaId: refereeInterface.arenaId,
+          action: 'reset_timer',
+          time: MATCH_DURATION,
+          timerStatus: 'reset',
+        });
+      }
+
+      function updateTimerDisplay() {
+        const minutes = Math.floor(timerSeconds / 60);
+        const secs = timerSeconds % 60;
+        const timeStr = `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+        const timerEl = document.getElementById('timer');
+        timerEl.textContent = timeStr;
+
+        // Styles de couleur
+        timerEl.className = 'timer';
+        if (timerSeconds <= 30) {
+          timerEl.classList.add('danger');
+        } else if (timerSeconds <= 60) {
+          timerEl.classList.add('warning');
+        }
+        if (timerRunning) {
+          timerEl.classList.add('running');
+        } else if (timerSeconds < MATCH_DURATION) {
+          timerEl.classList.add('paused');
+        }
+      }
+
+      function updateTimerButtons() {
+        const startBtn = document.getElementById('timer-start-btn');
+        const pauseBtn = document.getElementById('timer-pause-btn');
+
+        if (timerRunning) {
+          startBtn.style.display = 'none';
+          pauseBtn.style.display = 'inline-flex';
+          pauseBtn.textContent = '⏸️ Pause';
+        } else {
+          startBtn.style.display = 'inline-flex';
+          pauseBtn.style.display = 'none';
+        }
+      }
+
       // Démarrer l'interface d'arbitrage
       document.addEventListener('DOMContentLoaded', () => {
         refereeInterface = new RefereeInterface();
+        updateTimerDisplay();
       });
     </script>
   </body>

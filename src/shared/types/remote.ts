@@ -130,6 +130,7 @@ export interface ArenaUpdate {
   status: Arena['status'];
   fencerA?: Fencer;
   fencerB?: Fencer;
+  timerStatus?: 'running' | 'paused' | 'reset';
 }
 
 export interface RefereeControl {

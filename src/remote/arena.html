@@ -201,7 +201,28 @@
         text-shadow: 0 0 20px rgba(251, 191, 36, 0.8);
       }
 
-        .timer.danger {
+      .timer.danger {
+        color: #ef4444;
+        text-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
+        animation: pulse 1s infinite;
+      }
+
+      .timer.running {
+        border: 3px solid #10b981;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+      }
+
+      .timer.paused {
+        border: 3px solid #f59e0b;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+      }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+      }
           color: #ef4444;
           text-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
           animation: pulse 1s infinite;
@@ -363,7 +384,37 @@
             this.updateTimer(data.time);
           }
 
+          // Gestion du timer via les actions de l'arbitre
+          if (data.timerStatus === 'running') {
+            this.updateTimerDisplayWithStatus(data.time, 'running');
+          } else if (data.timerStatus === 'paused') {
+            this.updateTimerDisplayWithStatus(data.time, 'paused');
+          } else if (data.timerStatus === 'reset') {
+            this.updateTimerDisplayWithStatus(180, 'reset');
+          }
+
           this.updateDisplay();
+        }
+
+        updateTimerDisplayWithStatus(seconds, status) {
+          const minutes = Math.floor(seconds / 60);
+          const secs = seconds % 60;
+          const timeStr = `${minutes}:${secs.toString().padStart(2, '0')}`;
+
+          const timerEl = document.getElementById('timer');
+          timerEl.textContent = timeStr;
+
+          timerEl.className = 'timer';
+          if (seconds <= 30) {
+            timerEl.classList.add('danger');
+          } else if (seconds <= 60) {
+            timerEl.classList.add('warning');
+          }
+          if (status === 'running') {
+            timerEl.classList.add('running');
+          } else if (status === 'paused') {
+            timerEl.classList.add('paused');
+          }
         }
 
         updateStatus(status) {
