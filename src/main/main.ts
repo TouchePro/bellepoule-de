@@ -749,7 +749,7 @@ app.whenReady().then(async () => {
       autoDownload: false, // Par défaut manuel, peut être activé via silent mode
       autoInstall: false,
       checkInterval: 12, // Vérifier toutes les 12 heures
-      betaChannel: false,
+      betaChannel: true, // Activer le canal beta pour détecter les dev builds
       silent: false,
       installOnQuit: false,
     });

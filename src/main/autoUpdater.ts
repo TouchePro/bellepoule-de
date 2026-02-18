@@ -88,14 +88,16 @@ export class AutoUpdater {
 
       // Extraire le numéro de build depuis plusieurs sources possibles
       let latestBuild = 0;
-      const buildPatterns = [/Build #(\d+)/i, /build\.(\d+)/i, /-(\d+)(?:-|$)/, /#(\d+)/];
+      const buildPatterns = [/Build #(\d+)/i, /build\.(\d+)/i, /#(\d+)/, /(\d+)(?:-|$)/];
 
       // Chercher dans le nom de la release
       for (const pattern of buildPatterns) {
         const match = release.name?.match(pattern);
         if (match) {
-          latestBuild = parseInt(match[1]);
-          break;
+          const parsed = parseInt(match[1]);
+          if (parsed > latestBuild) {
+            latestBuild = parsed;
+          }
         }
       }
 
@@ -104,8 +106,10 @@ export class AutoUpdater {
         for (const pattern of buildPatterns) {
           const match = release.tag_name.match(pattern);
           if (match) {
-            latestBuild = parseInt(match[1]);
-            break;
+            const parsed = parseInt(match[1]);
+            if (parsed > latestBuild) {
+              latestBuild = parsed;
+            }
           }
         }
       }
@@ -115,8 +119,10 @@ export class AutoUpdater {
         for (const pattern of buildPatterns) {
           const match = release.body.match(pattern);
           if (match) {
-            latestBuild = parseInt(match[1]);
-            break;
+            const parsed = parseInt(match[1]);
+            if (parsed > latestBuild) {
+              latestBuild = parsed;
+            }
           }
         }
       }
@@ -130,7 +136,9 @@ export class AutoUpdater {
         latestVersion = versionMatch[1];
       }
 
-      const hasUpdate = latestBuild > currentInfo.build;
+      // Comparer les builds - aussi considérer si c'est une prerelease
+      const isNewerBuild = latestBuild > currentInfo.build;
+      const hasUpdate = isNewerBuild || (release.prerelease && this.config.betaChannel);
 
       this.updateInfo = {
         hasUpdate,
@@ -154,14 +162,26 @@ export class AutoUpdater {
 
   private async fetchLatestRelease(): Promise<any> {
     try {
-      // Pour le canal beta, on doit chercher manuellement dans toutes les releases
-      if (this.config.betaChannel) {
-        const releases = await this.fetchReleases();
-        return releases && releases.length > 0 ? releases[0] : null;
+      // Toujours récupérer toutes les releases pour trouver la plus récente (y compris dev/beta)
+      const releases = await this.fetchReleases();
+
+      if (!releases || releases.length === 0) {
+        // Fallback sur /latest si aucune release trouvée
+        return await this.fetchLatestReleaseDirect();
       }
 
-      // Pour le canal stable, utiliser l'endpoint /latest qui ne retourne que la dernière release non-prerelease
-      return await this.fetchLatestReleaseDirect();
+      // Si betaChannel est false, filtrer pour ne garder que les releases non-prerelease
+      // Mais si on est sur une version dev/beta, on veut quand même voir les更新
+      const filteredReleases = this.config.betaChannel
+        ? releases
+        : releases.filter((r: any) => !r.prerelease);
+
+      if (filteredReleases.length > 0) {
+        return filteredReleases[0];
+      }
+
+      // Si aucune release stable, retourner la première release (dev)
+      return releases[0];
     } catch (error) {
       console.error('Failed to fetch release:', error);
       // En cas d'erreur, essayer avec les tags comme fallback
