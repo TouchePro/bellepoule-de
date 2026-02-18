@@ -757,16 +757,43 @@ export class DatabaseManager {
     const results: Match[] = [];
 
     // First get all pools for the competition
-    const poolsStmt = this.db.prepare(
-      'SELECT id FROM pools WHERE phase_id IN (SELECT id FROM phases WHERE competition_id = ?)'
-    );
-    poolsStmt.bind([competitionId]);
+    // Try to get pools through phases table first
+    let poolIds: string[] = [];
 
-    const poolIds: string[] = [];
-    while (poolsStmt.step()) {
-      poolIds.push(poolsStmt.getAsObject().id as string);
+    try {
+      const poolsStmt = this.db.prepare(
+        'SELECT id FROM pools WHERE phase_id IN (SELECT id FROM phases WHERE competition_id = ?)'
+      );
+      poolsStmt.bind([competitionId]);
+
+      while (poolsStmt.step()) {
+        poolIds.push(poolsStmt.getAsObject().id as string);
+      }
+      poolsStmt.free();
+    } catch (e) {
+      // If phases table doesn't exist or query fails, try alternative approach
+      console.warn('[Database] Falling back to pool_fencers approach for getPendingMatches');
     }
-    poolsStmt.free();
+
+    // If no pools found through phases, try through pool_fencers -> fencers
+    if (poolIds.length === 0) {
+      try {
+        const altStmt = this.db.prepare(`
+          SELECT DISTINCT p.id FROM pools p
+          INNER JOIN pool_fencers pf ON p.id = pf.pool_id
+          INNER JOIN fencers f ON pf.fencer_id = f.id
+          WHERE f.competition_id = ?
+        `);
+        altStmt.bind([competitionId]);
+
+        while (altStmt.step()) {
+          poolIds.push(altStmt.getAsObject().id as string);
+        }
+        altStmt.free();
+      } catch (e) {
+        console.warn('[Database] Alternative approach also failed:', e);
+      }
+    }
 
     // Then get pending matches from those pools
     if (poolIds.length > 0) {
