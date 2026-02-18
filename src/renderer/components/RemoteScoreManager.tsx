@@ -190,6 +190,11 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       return;
     }
 
+    if (!session) {
+      showToast("Veuillez d'abord démarrer une session", 'error');
+      return;
+    }
+
     try {
       const response = await fetch('http://localhost:8066/api/referees', {
         method: 'POST',
@@ -202,9 +207,13 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         showToast(`Arbitre ${referee.name} ajouté avec le code ${referee.code}`, 'success');
         setRefereeName('');
         checkSessionStatus();
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Erreur inconnue' }));
+        showToast(`Erreur: ${errorData.error || "Impossible d'ajouter l'arbitre"}`, 'error');
       }
     } catch (error) {
-      showToast("Impossible d'ajouter l'arbitre", 'error');
+      console.error('Failed to add referee:', error);
+      showToast("Impossible d'ajouter l'arbitre - serveur peut-être non démarré", 'error');
     }
   };
 
@@ -322,11 +331,17 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                 value={refereeName}
                 onChange={e => setRefereeName(e.target.value)}
                 onKeyPress={e => e.key === 'Enter' && handleAddReferee()}
+                disabled={!session}
               />
-              <button className="btn-primary" onClick={handleAddReferee}>
+              <button className="btn-primary" onClick={handleAddReferee} disabled={!session}>
                 Ajouter
               </button>
             </div>
+            {!session && (
+              <p className="text-sm text-muted" style={{ marginTop: '0.5rem' }}>
+                Démarrez d'abord une session pour ajouter des arbitres
+              </p>
+            )}
           </div>
 
           <div className="referees-list">
