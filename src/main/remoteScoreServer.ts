@@ -140,6 +140,10 @@ export class RemoteScoreServer {
     });
 
     this.app.get('/api/session', (req, res) => {
+      console.log(
+        '[RemoteScoreServer] GET /api/session - Session:',
+        this.session ? 'active' : 'inactive'
+      );
       if (!this.session) {
         return res.status(404).json({ error: 'Aucune session active' });
       }
@@ -270,15 +274,23 @@ export class RemoteScoreServer {
 
     this.app.post('/api/referees', (req, res) => {
       console.log("[RemoteScoreServer] POST /api/referees - Ajout d'un arbitre");
+      console.log('[RemoteScoreServer] Body:', req.body);
+      console.log('[RemoteScoreServer] Session:', this.session ? 'active' : 'inactive');
 
       if (!this.session) {
         console.warn('[RemoteScoreServer] ERREUR: Aucune session active');
         return res.status(404).json({ error: 'Aucune session active' });
       }
 
+      const name = req.body?.name;
+      if (!name) {
+        console.warn('[RemoteScoreServer] ERREUR: Nom manquant');
+        return res.status(400).json({ error: "Nom de l'arbitre requis" });
+      }
+
       const referee: RemoteReferee = {
         id: `ref_${Date.now()}`,
-        name: req.body.name,
+        name: name,
         code: req.body.code || this.generateRefereeCode(),
         isActive: true,
         lastActivity: new Date(),
