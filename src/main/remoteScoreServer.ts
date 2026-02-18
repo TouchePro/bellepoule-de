@@ -744,6 +744,7 @@ export class RemoteScoreServer {
     this.updateArena(arenaId, {
       status: 'ready',
       elapsedTime: 0,
+      currentMatch: match,
     });
   }
 
