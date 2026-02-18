@@ -61,7 +61,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "No version changes to commit"
           else
-            git commit -m "🔖 Dev Build #${{ steps.version.outputs.build }}"
+            git commit -m "Dev Build ${{ steps.version.outputs.build }}"
             git push origin dev
           fi
 
