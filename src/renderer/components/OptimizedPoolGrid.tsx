@@ -14,16 +14,24 @@ interface PoolGridProps {
   onMatchClick: (match: Match) => void;
 }
 
-// Individual cell component - memoized to prevent unnecessary re-renders
+const isFencerAbandoned = (fencer: Fencer | undefined | null): boolean => {
+  if (!fencer) return false;
+  return fencer.status === 'A' || fencer.status === 'F' || fencer.status === 'E';
+};
+
 const GridCell = memo(
   ({
     match,
     onClick,
     isDiagonal,
+    rowFencer,
+    colFencer,
   }: {
     match: Match | null;
     onClick: () => void;
     isDiagonal: boolean;
+    rowFencer?: Fencer;
+    colFencer?: Fencer;
   }) => {
     if (isDiagonal) {
       return (
@@ -36,6 +44,24 @@ const GridCell = memo(
           }}
         >
           -
+        </td>
+      );
+    }
+
+    if (isFencerAbandoned(rowFencer) || isFencerAbandoned(colFencer)) {
+      return (
+        <td
+          style={{
+            backgroundColor: '#e5e7eb',
+            textAlign: 'center',
+            fontWeight: 'bold',
+            border: '1px solid #d1d5db',
+            color: '#9ca3af',
+            cursor: 'not-allowed',
+          }}
+          title="Match non disputé (abandon/forfait)"
+        >
+          X
         </td>
       );
     }
@@ -68,32 +94,12 @@ const GridCell = memo(
     const victoryB = match.scoreB?.isVictory;
     const isFinished = match.status === 'finished';
 
-    // Vérifier si un des tireurs est en forfait ou abandon
-    const hasForfeitA =
-      match.scoreA?.isForfait || match.fencerA?.status === 'F' || match.fencerA?.status === 'A';
-    const hasForfeitB =
-      match.scoreB?.isForfait || match.fencerB?.status === 'F' || match.fencerB?.status === 'A';
-    const hasForfeitOrAbandon = hasForfeitA || hasForfeitB;
-
     let cellStyle: React.CSSProperties = {
       textAlign: 'center',
       cursor: 'pointer',
       border: '1px solid #d1d5db',
       fontWeight: 'bold',
     };
-
-    // Si forfait/abandon : cellule grisée, non cliquable
-    if (hasForfeitOrAbandon) {
-      cellStyle.backgroundColor = '#d1d5db';
-      cellStyle.color = '#6b7280';
-      cellStyle.cursor = 'not-allowed';
-
-      return (
-        <td style={cellStyle} title="Match non disputé (forfait/abandon)">
-          X
-        </td>
-      );
-    }
 
     if (victoryA) {
       cellStyle.backgroundColor = '#dcfce7';
@@ -117,7 +123,6 @@ const GridCell = memo(
 
 GridCell.displayName = 'GridCell';
 
-// Header row component
 const HeaderRow = memo(({ fencers }: { fencers: Fencer[] }) => (
   <tr>
     <th
@@ -146,7 +151,7 @@ const HeaderRow = memo(({ fencers }: { fencers: Fencer[] }) => (
       <th
         key={fencer.id}
         style={{
-          backgroundColor: '#1f2937',
+          backgroundColor: isFencerAbandoned(fencer) ? '#6b7280' : '#1f2937',
           color: 'white',
           padding: '4px',
           border: '1px solid #374151',
@@ -165,38 +170,40 @@ const HeaderRow = memo(({ fencers }: { fencers: Fencer[] }) => (
 
 HeaderRow.displayName = 'HeaderRow';
 
-// Fencer row component
 const FencerRow = memo(
   ({
     fencer,
+    fencers,
     rowIndex,
     fencerCount,
     matches,
     onMatchClick,
   }: {
     fencer: Fencer;
+    fencers: Fencer[];
     rowIndex: number;
     fencerCount: number;
     matches: Match[];
     onMatchClick: (match: Match) => void;
   }) => {
-    const getMatchForCell = (colIndex: number): Match | null => {
-      const opponentFencer = fencerCount > colIndex ? null : fencer; // This needs to be fixed
-      // Find match between fencer and column fencer
-      return (
+    const getMatchForCell = (
+      colIndex: number
+    ): { match: Match | null; colFencer: Fencer | undefined } => {
+      const colFencer = fencers[colIndex];
+      const match =
         matches.find(
           match =>
-            (match.fencerA?.id === fencer.id && match.fencerB?.id === fencer.id) ||
-            (match.fencerB?.id === fencer.id && match.fencerA?.id === fencer.id)
-        ) || null
-      );
+            (match.fencerA?.id === fencer.id && match.fencerB?.id === colFencer?.id) ||
+            (match.fencerB?.id === fencer.id && match.fencerA?.id === colFencer?.id)
+        ) || null;
+      return { match, colFencer };
     };
 
     return (
       <tr>
         <td
           style={{
-            backgroundColor: '#f9fafb',
+            backgroundColor: isFencerAbandoned(fencer) ? '#e5e7eb' : '#f9fafb',
             textAlign: 'center',
             fontWeight: 'bold',
             border: '1px solid #d1d5db',
@@ -207,7 +214,7 @@ const FencerRow = memo(
         </td>
         <td
           style={{
-            backgroundColor: '#f9fafb',
+            backgroundColor: isFencerAbandoned(fencer) ? '#e5e7eb' : '#f9fafb',
             padding: '8px',
             border: '1px solid #d1d5db',
             fontSize: '12px',
@@ -218,7 +225,7 @@ const FencerRow = memo(
           {fencer.firstName} {fencer.lastName}
         </td>
         {Array.from({ length: fencerCount }, (_, colIndex) => {
-          const match = getMatchForCell(colIndex);
+          const { match, colFencer } = getMatchForCell(colIndex);
           const isDiagonal = rowIndex === colIndex;
 
           return (
@@ -227,6 +234,8 @@ const FencerRow = memo(
               match={match}
               onClick={() => match && onMatchClick(match)}
               isDiagonal={isDiagonal}
+              rowFencer={fencer}
+              colFencer={colFencer}
             />
           );
         })}
@@ -237,11 +246,9 @@ const FencerRow = memo(
 
 FencerRow.displayName = 'FencerRow';
 
-// Main pool grid component
 export const PoolGrid: React.FC<PoolGridProps> = memo(
   ({ fencers, matches, maxScore, onMatchClick }) => {
     const createMatch = (fencerAId: string, fencerBId: string, index: number): Match => {
-      // This should be replaced with proper match creation logic
       const fencerA = fencers.find(f => f.id === fencerAId);
       const fencerB = fencers.find(f => f.id === fencerBId);
 
@@ -286,6 +293,7 @@ export const PoolGrid: React.FC<PoolGridProps> = memo(
               <FencerRow
                 key={fencer.id}
                 fencer={fencer}
+                fencers={fencers}
                 rowIndex={rowIndex}
                 fencerCount={fencers.length}
                 matches={matches}
