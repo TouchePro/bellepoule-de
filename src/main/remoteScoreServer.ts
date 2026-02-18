@@ -139,6 +139,15 @@ export class RemoteScoreServer {
       }
     });
 
+    this.app.get('/api/debug', (req, res) => {
+      res.json({
+        status: 'ok',
+        session: this.session ? 'active' : 'inactive',
+        serverTime: new Date().toISOString(),
+        refereesCount: this.session?.referees.length || 0,
+      });
+    });
+
     this.app.get('/api/session', (req, res) => {
       console.log(
         '[RemoteScoreServer] GET /api/session - Session:',

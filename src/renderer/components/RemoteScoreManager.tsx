@@ -105,10 +105,23 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
 
   const checkSessionStatus = async () => {
     try {
+      // First check if server is responding
+      const debugResponse = await fetch('http://localhost:8066/api/debug');
+      if (!debugResponse.ok) {
+        console.error('Debug endpoint not responding');
+      } else {
+        const debugData = await debugResponse.json();
+        console.log('[RemoteScoreManager] Debug:', debugData);
+      }
+
       const response = await fetch('http://localhost:8066/api/session');
       if (response.ok) {
         const sessionData = await response.json();
+        console.log('[RemoteScoreManager] Session:', sessionData);
         setSession(sessionData);
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Erreur inconnue' }));
+        console.error('Session check failed:', errorData);
       }
     } catch (error) {
       console.error('Failed to check session status:', error);
