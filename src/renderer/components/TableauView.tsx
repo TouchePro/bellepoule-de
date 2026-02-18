@@ -299,7 +299,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     if (!confirmed) return;
 
     // Copier les matchs actuels
-    let updatedMatches = [...matches];
+    const updatedMatches = [...matches];
     let filledCount = 0;
 
     // Traiter les matchs par ordre décroissant de round (du premier tour vers la finale)

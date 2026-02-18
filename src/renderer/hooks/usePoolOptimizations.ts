@@ -131,7 +131,7 @@ export const useOrderedMatches = (pool: Pool) => {
     // Smart ordering algorithm to prevent fencers from fighting twice in a row
     const ordered: typeof pending = [];
     const remaining = [...pending];
-    let lastFencerIds: Set<string> = new Set();
+    const lastFencerIds: Set<string> = new Set();
 
     while (remaining.length > 0) {
       let bestMatch: (typeof pending)[0] | null = null;

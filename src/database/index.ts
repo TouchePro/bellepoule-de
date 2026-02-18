@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-// @ts-ignore
+// @ts-expect-error - sql.js types are incomplete
 import initSqlJs from 'sql.js';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -21,17 +21,7 @@ import {
   Match,
   MatchStatus,
 } from '../shared/types';
-import {
-  validateId,
-  validateCompetitionData,
-  validateFencerData,
-  validateMatchData,
-  validatePoolData,
-  validateSessionState,
-  ValidationError,
-  sanitizeString,
-  sanitizeId,
-} from './validation';
+import { validateId, validateSessionState, sanitizeId } from './validation';
 
 let SQL: any = null;
 

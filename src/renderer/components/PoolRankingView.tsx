@@ -132,9 +132,11 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
   };
 
   const generateCSV = () => {
-    const headers = ['Rg', 'Nom', 'Prénom', 'Club', 'V', 'M', 'V/M', 'TD', 'TR', 'Indice'];
+    const headers = ['Rg', 'Nom', 'Prénom', 'Club', 'V', 'M', 'V/M', 'TD', 'TR'];
     if (isLaserSabre) {
-      headers.push('Quest');
+      headers.push('Quest', 'Indice');
+    } else {
+      headers.push('Indice');
     }
 
     const rows = editedRanking.map(r => [
@@ -147,8 +149,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
       formatRatio(r.ratio),
       r.touchesScored,
       r.touchesReceived,
-      formatIndex(r.index),
-      ...(isLaserSabre ? [r.questPoints || 0] : []),
+      ...(isLaserSabre ? [r.questPoints || 0, formatIndex(r.index)] : [formatIndex(r.index)]),
     ]);
 
     return [headers, ...rows].map(row => row.join(';')).join('\n');
@@ -213,8 +214,8 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
               <th style={{ width: '60px' }}>V/M</th>
               <th style={{ width: '50px' }}>TD</th>
               <th style={{ width: '50px' }}>TR</th>
-              <th style={{ width: '60px' }}>Indice</th>
               {isLaserSabre && <th style={{ width: '70px', color: '#7c3aed' }}>Quest</th>}
+              <th style={{ width: '60px' }}>Indice</th>
             </tr>
           </thead>
           <tbody>
@@ -259,6 +260,11 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
                 <td style={{ textAlign: 'center' }}>{formatRatio(ranking.ratio)}</td>
                 <td style={{ textAlign: 'center' }}>{ranking.touchesScored}</td>
                 <td style={{ textAlign: 'center' }}>{ranking.touchesReceived}</td>
+                {isLaserSabre && (
+                  <td style={{ textAlign: 'center', fontWeight: '600', color: '#7c3aed' }}>
+                    {ranking.questPoints || 0}
+                  </td>
+                )}
                 <td
                   style={{
                     textAlign: 'center',
@@ -268,11 +274,6 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
                 >
                   {formatIndex(ranking.index)}
                 </td>
-                {isLaserSabre && (
-                  <td style={{ textAlign: 'center', fontWeight: '600', color: '#7c3aed' }}>
-                    {ranking.questPoints || 0}
-                  </td>
-                )}
               </tr>
             ))}
           </tbody>
@@ -290,8 +291,9 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
       >
         <div className="text-sm text-muted">
           <strong>Légende :</strong> V = Victoires, M = Matchs, V/M = Ratio Victoires/Matchs, TD =
-          Touches Données, TR = Touches Reçues, Indice = TD - TR
+          Touches Données, TR = Touches Reçues
           {isLaserSabre && ', Quest = Points Quest (Sabre Laser)'}
+          {', Indice = TD - TR'}
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {hasDirectElimination ? (

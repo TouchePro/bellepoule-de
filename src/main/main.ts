@@ -666,6 +666,65 @@ ipcMain.handle('remote:getServerInfo', async () => {
   };
 });
 
+// Remote session handlers
+ipcMain.handle('remote:startSession', async (_, competitionId: string, strips: number) => {
+  try {
+    if (!remoteScoreServer) {
+      return { success: false, error: 'Le serveur distant n est pas démarré' };
+    }
+
+    const session = await remoteScoreServer.startSession(competitionId, strips);
+    return { success: true, session };
+  } catch (error) {
+    console.error('Error starting session:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
+ipcMain.handle('remote:stopSession', async () => {
+  try {
+    if (!remoteScoreServer) {
+      return { success: false, error: 'Le serveur distant n est pas démarré' };
+    }
+
+    remoteScoreServer.stopSession();
+    return { success: true };
+  } catch (error) {
+    console.error('Error stopping session:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
+ipcMain.handle('remote:getSession', async () => {
+  if (!remoteScoreServer) {
+    return { success: false, error: 'Le serveur distant n est pas démarré' };
+  }
+
+  return { success: true, session: remoteScoreServer.getSession() };
+});
+
+ipcMain.handle('remote:addReferee', async (_, name: string) => {
+  try {
+    if (!remoteScoreServer) {
+      return { success: false, error: 'Le serveur distant n est pas démarré' };
+    }
+
+    const referee = remoteScoreServer.addReferee(name);
+    return { success: true, referee };
+  } catch (error) {
+    console.error('Error adding referee:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
+ipcMain.handle('remote:getArenas', async () => {
+  if (!remoteScoreServer) {
+    return { success: false, error: 'Le serveur distant n est pas démarré' };
+  }
+
+  return { success: true, arenas: remoteScoreServer.getAllArenas() };
+});
+
 // App info handlers
 ipcMain.handle('app:getVersionInfo', async () => {
   return getVersionInfo();

@@ -221,6 +221,14 @@ export interface RemoteServerAPI {
   startServer: () => Promise<{ success: boolean; serverInfo?: RemoteServerInfo; error?: string }>;
   stopServer: () => Promise<{ success: boolean; error?: string }>;
   getServerInfo: () => Promise<{ success: boolean; serverInfo?: RemoteServerInfo; error?: string }>;
+  startSession: (
+    competitionId: string,
+    strips: number
+  ) => Promise<{ success: boolean; session?: any; error?: string }>;
+  stopSession: () => Promise<{ success: boolean; error?: string }>;
+  getSession: () => Promise<{ success: boolean; session?: any; error?: string }>;
+  addReferee: (name: string) => Promise<{ success: boolean; referee?: any; error?: string }>;
+  getArenas: () => Promise<{ success: boolean; arenas?: any[]; error?: string }>;
 }
 
 // ============================================================================

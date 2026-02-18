@@ -94,7 +94,7 @@ const GridCell = memo(
     const victoryB = match.scoreB?.isVictory;
     const isFinished = match.status === 'finished';
 
-    let cellStyle: React.CSSProperties = {
+    const cellStyle: React.CSSProperties = {
       textAlign: 'center',
       cursor: 'pointer',
       border: '1px solid #d1d5db',

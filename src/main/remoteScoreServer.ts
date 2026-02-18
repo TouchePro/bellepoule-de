@@ -966,6 +966,78 @@ export class RemoteScoreServer {
     }
   }
 
+  public async startSession(competitionId: string, strips: number): Promise<RemoteSession> {
+    if (this.session) {
+      throw new Error('Session déjà active');
+    }
+
+    const competition = this.db.getCompetition(competitionId);
+    if (!competition) {
+      throw new Error('Compétition non trouvée');
+    }
+
+    // Configurer le nombre d'arènes
+    this.setArenaCount(strips);
+
+    // Récupérer les matchs en attente
+    const pendingMatches = this.db.getPendingMatches(competitionId);
+
+    // Assigner les matchs aux arènes
+    pendingMatches.slice(0, strips).forEach((match, index) => {
+      const arenaId = `arena${index + 1}`;
+      const arenaMatch: ArenaMatch = {
+        id: match.id,
+        poolId: match.poolId || '',
+        fencerA: match.fencerA!,
+        fencerB: match.fencerB!,
+        scoreA: match.scoreA?.value ?? 0,
+        scoreB: match.scoreB?.value ?? 0,
+        status: match.status === 'in_progress' ? 'in_progress' : 'pending',
+        startTime: match.status === 'in_progress' ? new Date() : null,
+        endTime: null,
+      };
+      this.assignMatchToArena(arenaId, arenaMatch);
+    });
+
+    // Créer la session
+    this.session = {
+      competitionId,
+      strips: Array.from({ length: strips }, (_, i) => ({
+        number: i + 1,
+        status: pendingMatches[i] ? 'occupied' : 'available',
+      })),
+      referees: [],
+      activeMatches: [],
+      isRunning: true,
+      startTime: new Date(),
+    };
+
+    return this.session;
+  }
+
+  public stopSession(): void {
+    this.session = null;
+    this.connectedReferees.clear();
+  }
+
+  public addReferee(name: string): RemoteReferee {
+    if (!this.session) {
+      throw new Error('Aucune session active');
+    }
+
+    const code = `ARB${String(this.session.referees.length + 1).padStart(3, '0')}`;
+    const referee: RemoteReferee = {
+      id: `ref-${Date.now()}`,
+      name,
+      code,
+      isActive: false,
+      lastActivity: new Date(),
+    };
+
+    this.session.referees.push(referee);
+    return referee;
+  }
+
   public getSession(): RemoteSession | null {
     return this.session;
   }

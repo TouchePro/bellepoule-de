@@ -151,8 +151,8 @@ function parseTXTLine(line: string, lineNumber: number): Partial<Fencer> | null 
 
   // Extraire les autres informations si disponibles
   let gender = Gender.MIXED;
-  let nationality = '';
-  let club = '';
+  const nationality = '';
+  const club = '';
   let birthDate: Date | undefined;
   let ranking: number | undefined;
 
@@ -1099,7 +1099,7 @@ function parseRankingLineFFF(line: string, lineNumber: number): RankingInfo | nu
 
   // Format 1: FFF standard avec sections (NOM,Prénom,...;...;Licence,Ligue,Club,Classement,Nationalité?;Position,Statut)
   if (line.includes(';')) {
-    let mainParts = line.split(';').map(p => p.trim());
+    const mainParts = line.split(';').map(p => p.trim());
 
     // Supprimer les parties vides à la fin
     while (mainParts.length > 0 && mainParts[mainParts.length - 1] === '') {

@@ -118,24 +118,14 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const handleStartSession = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:8066/api/session/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          competitionId: competition.id,
-          strips: stripCount,
-        }),
-      });
+      const result = await window.electronAPI.remote.startSession(competition.id, stripCount);
 
-      if (response.ok) {
-        const sessionData = await response.json();
-        setSession(sessionData);
+      if (result.success) {
+        setSession(result.session);
         showToast('Session de saisie distante démarrée', 'success');
-        // Récupérer les infos des arènes après le démarrage
         fetchArenas();
       } else {
-        const error = await response.json();
-        showToast(`Erreur: ${error.error}`, 'error');
+        showToast(`Erreur: ${result.error}`, 'error');
       }
     } catch (error) {
       showToast('Impossible de démarrer la session distante', 'error');
@@ -146,10 +136,9 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
 
   const fetchArenas = async () => {
     try {
-      const response = await fetch('http://localhost:8066/api/arenas');
-      if (response.ok) {
-        const arenas = await response.json();
-        console.log('[RemoteScoreManager] Arènes:', arenas);
+      const result = await window.electronAPI.remote.getArenas();
+      if (result.success) {
+        console.log('[RemoteScoreManager] Arènes:', result.arenas);
       }
     } catch (error) {
       console.error('Failed to fetch arenas:', error);
@@ -159,14 +148,13 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const handleStopSession = async () => {
     setIsLoading(true);
     try {
-      // Arrêter la session via l'API
-      const response = await fetch('http://localhost:8066/api/session/stop', {
-        method: 'POST',
-      });
+      const result = await window.electronAPI.remote.stopSession();
 
-      if (response.ok) {
+      if (result.success) {
         setSession(null);
         showToast('Session de saisie distante arrêtée', 'success');
+      } else {
+        showToast(`Erreur: ${result.error}`, 'error');
       }
     } catch (error) {
       showToast("Impossible d'arrêter la session distante", 'error');

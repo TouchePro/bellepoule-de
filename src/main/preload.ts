@@ -293,6 +293,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     startServer: () => ipcRenderer.invoke('remote:startServer'),
     stopServer: () => ipcRenderer.invoke('remote:stopServer'),
     getServerInfo: () => ipcRenderer.invoke('remote:getServerInfo'),
+    startSession: (competitionId: string, strips: number) =>
+      ipcRenderer.invoke('remote:startSession', competitionId, strips),
+    stopSession: () => ipcRenderer.invoke('remote:stopSession'),
+    getSession: () => ipcRenderer.invoke('remote:getSession'),
+    addReferee: (name: string) => ipcRenderer.invoke('remote:addReferee', name),
+    getArenas: () => ipcRenderer.invoke('remote:getArenas'),
   },
 
   // Remove listeners

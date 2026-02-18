@@ -648,12 +648,12 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         <div className="pool-cell pool-cell-header">V/M</div>
         <div className="pool-cell pool-cell-header">TD</div>
         <div className="pool-cell pool-cell-header">TR</div>
-        <div className="pool-cell pool-cell-header">Ind</div>
         {isLaserSabre && (
           <div className="pool-cell pool-cell-header" style={{ color: '#7c3aed' }}>
             Quest
           </div>
         )}
+        <div className="pool-cell pool-cell-header">Ind</div>
         <div className="pool-cell pool-cell-header">Rg</div>
       </div>
 
@@ -766,14 +766,14 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
             <div className="pool-cell text-sm">{formatRatio(stats.ratio)}</div>
             <div className="pool-cell">{stats.td}</div>
             <div className="pool-cell">{stats.tr}</div>
-            <div className="pool-cell" style={{ color: stats.index >= 0 ? '#059669' : '#DC2626' }}>
-              {formatIndex(stats.index)}
-            </div>
             {isLaserSabre && (
               <div className="pool-cell" style={{ fontWeight: 600, color: '#7c3aed' }}>
                 {rankEntry?.questPoints ?? '-'}
               </div>
             )}
+            <div className="pool-cell" style={{ color: stats.index >= 0 ? '#059669' : '#DC2626' }}>
+              {formatIndex(stats.index)}
+            </div>
             <div className="pool-cell" style={{ fontWeight: 600 }}>
               {rankEntry?.rank || '-'}
             </div>
