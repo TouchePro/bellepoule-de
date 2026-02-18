@@ -68,12 +68,32 @@ const GridCell = memo(
     const victoryB = match.scoreB?.isVictory;
     const isFinished = match.status === 'finished';
 
+    // Vérifier si un des tireurs est en forfait ou abandon
+    const hasForfeitA =
+      match.scoreA?.isForfait || match.fencerA?.status === 'F' || match.fencerA?.status === 'A';
+    const hasForfeitB =
+      match.scoreB?.isForfait || match.fencerB?.status === 'F' || match.fencerB?.status === 'A';
+    const hasForfeitOrAbandon = hasForfeitA || hasForfeitB;
+
     let cellStyle: React.CSSProperties = {
       textAlign: 'center',
       cursor: 'pointer',
       border: '1px solid #d1d5db',
       fontWeight: 'bold',
     };
+
+    // Si forfait/abandon : cellule grisée, non cliquable
+    if (hasForfeitOrAbandon) {
+      cellStyle.backgroundColor = '#d1d5db';
+      cellStyle.color = '#6b7280';
+      cellStyle.cursor = 'not-allowed';
+
+      return (
+        <td style={cellStyle} title="Match non disputé (forfait/abandon)">
+          X
+        </td>
+      );
+    }
 
     if (victoryA) {
       cellStyle.backgroundColor = '#dcfce7';

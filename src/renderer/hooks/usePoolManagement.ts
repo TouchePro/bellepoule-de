@@ -245,6 +245,7 @@ export const usePoolManagement = ({
   }, [pools]);
 
   // Gérer le forfait/abandon d'un tireur sur tous ses matchs
+  // Les matchs sont marqués comme non disputés (grisés) sans modifier les scores des adversaires
   const handleFencerForfeit = useCallback(
     (fencerId: string) => {
       setPools(prevPools => {
@@ -259,11 +260,8 @@ export const usePoolManagement = ({
 
             if (!isFencerA && !isFencerB) return;
 
-            // Déterminer qui est le forfait et qui est l'adversaire
-            const forfeitScore = isFencerA ? match.scoreA : match.scoreB;
-            const opponentScore = isFencerA ? match.scoreB : match.scoreA;
-
-            // Mettre à jour les scores: 0 pour le forfait, maxScore pour l'adversaire
+            // Marquer le match comme "non disputé" à cause du forfait/abandon
+            // Les scores de l'adversaire restent null (non modifiés)
             if (isFencerA) {
               match.scoreA = {
                 value: 0,
@@ -271,13 +269,6 @@ export const usePoolManagement = ({
                 isAbstention: false,
                 isExclusion: false,
                 isForfait: true,
-              };
-              match.scoreB = {
-                value: poolMaxScore,
-                isVictory: true,
-                isAbstention: false,
-                isExclusion: false,
-                isForfait: false,
               };
             } else {
               match.scoreB = {
@@ -287,22 +278,15 @@ export const usePoolManagement = ({
                 isExclusion: false,
                 isForfait: true,
               };
-              match.scoreA = {
-                value: poolMaxScore,
-                isVictory: true,
-                isAbstention: false,
-                isExclusion: false,
-                isForfait: false,
-              };
             }
 
-            // Marquer le match comme terminé
+            // Marquer le match comme terminé mais avec forfait
             match.status = MatchStatus.FINISHED;
             match.updatedAt = new Date();
             modifiedCount++;
           });
 
-          // Recalculer le classement de la poule
+          // Recalculer le classement de la pou00le
           if (modifiedCount > 0) {
             pool.ranking = computePoolRanking(pool);
             pool.updatedAt = new Date();
@@ -313,13 +297,16 @@ export const usePoolManagement = ({
         if (modifiedCount > 0) {
           const newOverallRanking = computeOverallRanking(updatedPools);
           setOverallRanking(newOverallRanking);
-          showToast(`${modifiedCount} match(s) modifié(s) pour le forfait`, 'success');
+          showToast(
+            `${modifiedCount} match(s) marqué(s) comme non disputés (forfait/abandon)`,
+            'success'
+          );
         }
 
         return updatedPools;
       });
     },
-    [poolMaxScore, computePoolRanking, computeOverallRanking, showToast]
+    [computePoolRanking, computeOverallRanking, showToast]
   );
 
   return {
