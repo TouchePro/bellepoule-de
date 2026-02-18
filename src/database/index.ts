@@ -813,6 +813,48 @@ export class DatabaseManager {
     return results;
   }
 
+  public getAllPendingMatchesFromPools(competitionId: string): Match[] {
+    if (!this.db) throw new Error('Database not open');
+    const results: Match[] = [];
+
+    // Get all pools for the competition via pool_fencers -> fencers
+    const poolIds: string[] = [];
+    try {
+      const poolsStmt = this.db.prepare(`
+        SELECT DISTINCT p.id FROM pools p
+        INNER JOIN pool_fencers pf ON p.id = pf.pool_id
+        INNER JOIN fencers f ON pf.fencer_id = f.id
+        WHERE f.competition_id = ?
+      `);
+      poolsStmt.bind([competitionId]);
+
+      while (poolsStmt.step()) {
+        poolIds.push(poolsStmt.getAsObject().id as string);
+      }
+      poolsStmt.free();
+    } catch (e) {
+      console.warn('[Database] Error getting pools via pool_fencers:', e);
+      return results;
+    }
+
+    // Get pending matches from those pools
+    if (poolIds.length > 0) {
+      const placeholders = poolIds.map(() => '?').join(',');
+      const matchesStmt = this.db.prepare(
+        `SELECT id FROM matches WHERE pool_id IN (${placeholders}) AND status IN ('not_started', 'in_progress') ORDER BY pool_id, number`
+      );
+      matchesStmt.bind(poolIds);
+
+      while (matchesStmt.step()) {
+        const match = this.getMatch(matchesStmt.getAsObject().id as string);
+        if (match) results.push(match);
+      }
+      matchesStmt.free();
+    }
+
+    return results;
+  }
+
   public updateMatch(id: string, updates: Partial<Match>): void {
     if (!this.db) throw new Error('Database not open');
     const now = new Date().toISOString();

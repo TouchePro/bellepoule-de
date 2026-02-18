@@ -240,10 +240,23 @@ export class RemoteScoreServer {
         : path.join(__dirname, '../remote', filename);
     };
 
-    // Route dynamique pour toutes les arènes (sans vérification d'existence)
+    // Support both /arena1 and /arene1 formats
     this.app.get('/arena:arenaId', (req, res) => {
       const arenaId = req.params.arenaId;
       console.log(`[RemoteScoreServer] Accès à l'arène ${arenaId}`);
+
+      res.sendFile(getRemotePath('arena.html'), (err: any) => {
+        if (err) {
+          console.error('[RemoteScoreServer] ERREUR envoi arena.html:', err);
+          res.status(500).send('Erreur lors du chargement de la page arène');
+        }
+      });
+    });
+
+    // Alias /arene pour compatibilité française
+    this.app.get('/arene:arenaId', (req, res) => {
+      const arenaId = req.params.arenaId;
+      console.log(`[RemoteScoreServer] Accès à l'arène (arene) ${arenaId}`);
 
       res.sendFile(getRemotePath('arena.html'), (err: any) => {
         if (err) {
@@ -257,6 +270,21 @@ export class RemoteScoreServer {
     this.app.get('/arena:arenaId/referee', (req, res) => {
       const arenaId = req.params.arenaId;
       console.log(`[RemoteScoreServer] Accès à l'interface arbitre pour l'arène ${arenaId}`);
+
+      res.sendFile(getRemotePath('referee.html'), (err: any) => {
+        if (err) {
+          console.error('[RemoteScoreServer] ERREUR envoi referee.html:', err);
+          res.status(500).send("Erreur lors du chargement de l'interface arbitre");
+        }
+      });
+    });
+
+    // Alias /arene pour l'interface d'arbitrage (français)
+    this.app.get('/arene:arenaId/referee', (req, res) => {
+      const arenaId = req.params.arenaId;
+      console.log(
+        `[RemoteScoreServer] Accès à l'interface arbitre pour l'arène ${arenaId} (arene)`
+      );
 
       res.sendFile(getRemotePath('referee.html'), (err: any) => {
         if (err) {
@@ -1002,9 +1030,20 @@ export class RemoteScoreServer {
 
     // Récupérer les matchs en attente
     const pendingMatches = this.db.getPendingMatches(competitionId);
+    console.log(
+      `[RemoteScoreServer] ${pendingMatches.length} matchs en attente trouvés pour la compétition ${competitionId}`
+    );
+
+    // Si pas de matchs trouvés via getPendingMatches (phases), essayer de récupérer via pool_fencers
+    let allMatches = pendingMatches;
+    if (pendingMatches.length === 0) {
+      console.log('[RemoteScoreServer] Tentative de récupération des matchs via pool_fencers...');
+      allMatches = this.db.getAllPendingMatchesFromPools(competitionId);
+      console.log(`[RemoteScoreServer] ${allMatches.length} matchs trouvés via fallback`);
+    }
 
     // Assigner les matchs aux arènes
-    pendingMatches.slice(0, strips).forEach((match, index) => {
+    allMatches.slice(0, strips).forEach((match, index) => {
       const arenaId = `arena${index + 1}`;
       const arenaMatch: ArenaMatch = {
         id: match.id,
@@ -1018,6 +1057,9 @@ export class RemoteScoreServer {
         endTime: null,
       };
       this.assignMatchToArena(arenaId, arenaMatch);
+      console.log(
+        `[RemoteScoreServer] Match ${match.id} assigné à l'arène ${arenaId} (Poule ${match.poolId})`
+      );
     });
 
     // Créer la session
