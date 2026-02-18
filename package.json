@@ -8,6 +8,7 @@
     "increment-build": "node scripts/increment-build.js",
     "start": "npm run build && electron .",
     "build": "npm run increment-build && tsc && webpack --config webpack.renderer.config.js",
+    "build:ci": "tsc && webpack --config webpack.renderer.config.js",
     "build:main": "tsc",
     "build:renderer": "webpack --config webpack.renderer.config.js",
     "dev": "concurrently \"npm run dev:main\" \"npm run dev:renderer\"",

@@ -83,7 +83,7 @@ jobs:
         run: npm install
 
       - name: Build TypeScript and Webpack
-        run: npm run build
+        run: npm run build:ci
 
       - name: Update package.json for dev build
         shell: pwsh
@@ -125,7 +125,7 @@ jobs:
         run: npm install
 
       - name: Build TypeScript and Webpack
-        run: npm run build
+        run: npm run build:ci
 
       - name: Update package.json for dev build
         run: |
@@ -167,7 +167,7 @@ jobs:
         run: npm install
 
       - name: Build TypeScript and Webpack
-        run: npm run build
+        run: npm run build:ci
 
       - name: Update package.json for dev build
         run: |
@@ -209,7 +209,7 @@ jobs:
         run: npm install
 
       - name: Build TypeScript and Webpack
-        run: npm run build
+        run: npm run build:ci
 
       - name: Update package.json for dev build
         run: |
@@ -251,7 +251,7 @@ jobs:
         run: npm install
 
       - name: Build TypeScript and Webpack
-        run: npm run build
+        run: npm run build:ci
 
       - name: Update package.json for dev build
         run: |
