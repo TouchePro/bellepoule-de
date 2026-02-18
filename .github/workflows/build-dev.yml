@@ -6,7 +6,58 @@ on:
   workflow_dispatch:
 
 jobs:
+  increment-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      build: ${{ steps.version.outputs.build }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Increment Version
+        id: version
+        run: |
+          if [ -f version.json ]; then
+            VERSION=$(cat version.json | python3 -c "import sys,json; print(json.load(sys.stdin)['version'])")
+            BUILD=$(cat version.json | python3 -c "import sys,json; print(json.load(sys.stdin)['build'])")
+          else
+            VERSION="1.0.0"
+            BUILD=0
+          fi
+
+          NEW_BUILD=$((BUILD + 1))
+          DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          echo "{" > version.json
+          echo "  \"version\": \"$VERSION\"," >> version.json
+          echo "  \"build\": $NEW_BUILD," >> version.json
+          echo "  \"date\": \"$DATE\"" >> version.json
+          echo "}" >> version.json
+
+          FULL_VERSION="${VERSION}-build.${NEW_BUILD}"
+          sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$FULL_VERSION\"/" package.json
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "build=$NEW_BUILD" >> $GITHUB_OUTPUT
+
+          cat version.json
+
+      - name: Commit Version Update
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add version.json package.json
+          git diff --staged --quiet || git commit -m "🔖 Dev Build #${{ steps.version.outputs.build }}"
+          git push || echo "Nothing to push"
+
   build-windows:
+    needs: increment-version
     runs-on: windows-latest
 
     steps:
@@ -47,6 +98,7 @@ jobs:
           retention-days: 7
 
   build-macos-x64:
+    needs: increment-version
     runs-on: macos-latest
 
     steps:
@@ -87,6 +139,7 @@ jobs:
           retention-days: 7
 
   build-macos-arm64:
+    needs: increment-version
     runs-on: macos-latest
 
     steps:
@@ -127,6 +180,7 @@ jobs:
           retention-days: 7
 
   build-linux-x64:
+    needs: increment-version
     runs-on: ubuntu-latest
 
     steps:
@@ -167,6 +221,7 @@ jobs:
           retention-days: 7
 
   build-linux-arm64:
+    needs: increment-version
     runs-on: ubuntu-latest
 
     steps:
@@ -207,7 +262,15 @@ jobs:
           retention-days: 7
 
   create-dev-release:
-    needs: [build-windows, build-macos-x64, build-macos-arm64, build-linux-x64, build-linux-arm64]
+    needs:
+      [
+        increment-version,
+        build-windows,
+        build-macos-x64,
+        build-macos-arm64,
+        build-linux-x64,
+        build-linux-arm64,
+      ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -234,14 +297,17 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: dev
-          name: "🧪 BellePoule Modern - Version de Développement"
+          name: '🧪 BellePoule Modern Dev v${{ needs.increment-version.outputs.version }} Build #${{ needs.increment-version.outputs.build }}'
           body: |
             ## 🧪 Version de Développement
 
+            **Version**: `${{ needs.increment-version.outputs.version }}`
+            **Build**: `#${{ needs.increment-version.outputs.build }}`
+
             **Ceci est une version de test !** 
-            
+
             Cette release contient les dernières modifications de la branche `dev` et est destinée aux tests.
-            
+
             Pour la version stable, utilisez la release principale.
 
             ### 📥 Téléchargements
