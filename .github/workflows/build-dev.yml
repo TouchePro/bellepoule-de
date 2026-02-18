@@ -54,6 +54,7 @@ jobs:
           cat version.json
 
       - name: Commit and Push Version Update
+        continue-on-error: true
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
@@ -62,7 +63,7 @@ jobs:
             echo "No version changes to commit"
           else
             git commit -m "Dev Build ${{ steps.version.outputs.build }}"
-            git push origin dev
+            git push origin dev || echo "Push failed, continuing..."
           fi
 
   build-windows:
