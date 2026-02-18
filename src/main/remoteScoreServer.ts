@@ -227,17 +227,10 @@ export class RemoteScoreServer {
         : path.join(__dirname, '../remote', filename);
     };
 
-    // Route dynamique pour toutes les arènes
+    // Route dynamique pour toutes les arènes (sans vérification d'existence)
     this.app.get('/arena:arenaId', (req, res) => {
       const arenaId = req.params.arenaId;
       console.log(`[RemoteScoreServer] Accès à l'arène ${arenaId}`);
-
-      // Vérifier si l'arène existe
-      const arena = this.arenas.get(`arena${arenaId}`);
-      if (!arena) {
-        console.warn(`[RemoteScoreServer] Arène ${arenaId} non trouvée`);
-        return res.status(404).send(`Arène ${arenaId} non trouvée`);
-      }
 
       res.sendFile(getRemotePath('arena.html'), (err: any) => {
         if (err) {
@@ -247,17 +240,25 @@ export class RemoteScoreServer {
       });
     });
 
-    // Interface d'arbitrage - Dynamique
+    // Interface d'arbitrage - Dynamique (sans vérification d'existence)
     this.app.get('/arena:arenaId/referee', (req, res) => {
       const arenaId = req.params.arenaId;
       console.log(`[RemoteScoreServer] Accès à l'interface arbitre pour l'arène ${arenaId}`);
 
-      // Vérifier si l'arène existe
-      const arena = this.arenas.get(`arena${arenaId}`);
-      if (!arena) {
-        console.warn(`[RemoteScoreServer] Arène ${arenaId} non trouvée pour l'arbitre`);
-        return res.status(404).send(`Arène ${arenaId} non trouvée`);
-      }
+      res.sendFile(getRemotePath('referee.html'), (err: any) => {
+        if (err) {
+          console.error('[RemoteScoreServer] ERREUR envoi referee.html:', err);
+          res.status(500).send("Erreur lors du chargement de l'interface arbitre");
+        }
+      });
+    });
+
+    // Alias /arbitre pour l'interface d'arbitrage
+    this.app.get('/arbitre/:arenaId', (req, res) => {
+      const arenaId = req.params.arenaId;
+      console.log(
+        `[RemoteScoreServer] Accès à l'interface arbitre (alias /arbitre) pour l'arène ${arenaId}`
+      );
 
       res.sendFile(getRemotePath('referee.html'), (err: any) => {
         if (err) {
