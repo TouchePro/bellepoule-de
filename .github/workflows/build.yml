@@ -3,12 +3,6 @@ name: Build and Release
 on:
   push:
     branches: [main]
-    paths:
-      - 'src/**'
-      - 'package.json'
-      - 'tsconfig.json'
-      - 'webpack.*.js'
-      - '!.github/**'
   workflow_dispatch:
 
 jobs:
