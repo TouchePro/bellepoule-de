@@ -803,8 +803,14 @@ export class RemoteScoreServer {
   }
 
   public assignMatchToArena(arenaId: string, match: ArenaMatch): void {
+    console.log(
+      `[RemoteScoreServer] assignMatchToArena called: arenaId=${arenaId}, matchId=${match.id}`
+    );
     const arena = this.arenas.get(arenaId);
-    if (!arena) return;
+    if (!arena) {
+      console.error(`[RemoteScoreServer] ERREUR: Arène ${arenaId} n'existe pas!`);
+      return;
+    }
 
     arena.currentMatch = match;
     arena.status = 'ready';
@@ -815,6 +821,8 @@ export class RemoteScoreServer {
       elapsedTime: 0,
       currentMatch: match,
     });
+
+    console.log(`[RemoteScoreServer] Match assigné avec succès à l'arène ${arenaId}`);
   }
 
   public startArenaMatch(arenaId: string): void {
@@ -1043,8 +1051,17 @@ export class RemoteScoreServer {
     }
 
     // Assigner les matchs aux arènes
+    console.log(
+      `[RemoteScoreServer] Assignation de ${Math.min(allMatches.length, strips)} matchs à ${strips} arènes`
+    );
+
     allMatches.slice(0, strips).forEach((match, index) => {
       const arenaId = `arena${index + 1}`;
+      console.log(
+        `[RemoteScoreServer] Vérification arena ${arenaId}:`,
+        this.arenas.has(arenaId) ? 'existe' : 'N EXISTE PAS'
+      );
+
       const arenaMatch: ArenaMatch = {
         id: match.id,
         poolId: match.poolId || '',
@@ -1056,24 +1073,32 @@ export class RemoteScoreServer {
         startTime: match.status === 'in_progress' ? new Date() : null,
         endTime: null,
       };
+
+      console.log(
+        `[RemoteScoreServer] Match à assigner: ID=${match.id}, Pool=${match.poolId}, FencerA=${match.fencerA?.lastName}, FencerB=${match.fencerB?.lastName}`
+      );
+
       this.assignMatchToArena(arenaId, arenaMatch);
       console.log(
         `[RemoteScoreServer] Match ${match.id} assigné à l'arène ${arenaId} (Poule ${match.poolId})`
       );
     });
 
-    // Créer la session
+    // Créer la session - utiliser allMatches au lieu de pendingMatches
+    const assignedMatchCount = Math.min(allMatches.length, strips);
     this.session = {
       competitionId,
       strips: Array.from({ length: strips }, (_, i) => ({
         number: i + 1,
-        status: pendingMatches[i] ? 'occupied' : 'available',
+        status: i < assignedMatchCount ? 'occupied' : 'available',
       })),
       referees: [],
       activeMatches: [],
       isRunning: true,
       startTime: new Date(),
     };
+
+    console.log(`[RemoteScoreServer] Session créée avec ${assignedMatchCount} matchs assignés`);
 
     return this.session;
   }
