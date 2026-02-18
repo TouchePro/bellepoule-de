@@ -126,6 +126,19 @@ export class RemoteScoreServer {
       });
     });
 
+    // Get pending matches for a competition
+    this.app.get('/api/competitions/:competitionId/pending-matches', (req, res) => {
+      try {
+        const { competitionId } = req.params;
+
+        const pendingMatches = this.db.getPendingMatches(competitionId);
+        res.json(pendingMatches);
+      } catch (error) {
+        console.error('Error getting pending matches:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des matchs' });
+      }
+    });
+
     this.app.get('/api/session', (req, res) => {
       if (!this.session) {
         return res.status(404).json({ error: 'Aucune session active' });
@@ -565,11 +578,33 @@ export class RemoteScoreServer {
     console.log(`[RemoteScoreServer] Configuration du nombre d'arènes: ${strips}`);
     this.setArenaCount(strips);
 
+    // Récupérer les matchs en attente et les assigner aux arènes
+    const pendingMatches = this.db.getPendingMatches(competitionId);
+    console.log(`[RemoteScoreServer] ${pendingMatches.length} matchs en attente trouvés`);
+
+    // Assigner les matchs en attente aux arènes
+    pendingMatches.slice(0, strips).forEach((match, index) => {
+      const arenaId = `arena${index + 1}`;
+      const arenaMatch: ArenaMatch = {
+        id: match.id,
+        poolId: match.poolId || '',
+        fencerA: match.fencerA!,
+        fencerB: match.fencerB!,
+        scoreA: match.scoreA?.value ?? 0,
+        scoreB: match.scoreB?.value ?? 0,
+        status: match.status === 'in_progress' ? 'in_progress' : 'pending',
+        startTime: match.status === 'in_progress' ? new Date() : null,
+        endTime: null,
+      };
+      this.assignMatchToArena(arenaId, arenaMatch);
+      console.log(`[RemoteScoreServer] Match ${match.id} assigné à l'arène ${arenaId}`);
+    });
+
     const session: RemoteSession = {
       competitionId,
       strips: Array.from({ length: strips }, (_, i) => ({
         number: i + 1,
-        status: 'available',
+        status: pendingMatches[i] ? 'occupied' : 'available',
       })),
       referees: [],
       activeMatches: [],

@@ -131,6 +131,8 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         const sessionData = await response.json();
         setSession(sessionData);
         showToast('Session de saisie distante démarrée', 'success');
+        // Récupérer les infos des arènes après le démarrage
+        fetchArenas();
       } else {
         const error = await response.json();
         showToast(`Erreur: ${error.error}`, 'error');
@@ -139,6 +141,18 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       showToast('Impossible de démarrer la session distante', 'error');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchArenas = async () => {
+    try {
+      const response = await fetch('http://localhost:8066/api/arenas');
+      if (response.ok) {
+        const arenas = await response.json();
+        console.log('[RemoteScoreManager] Arènes:', arenas);
+      }
+    } catch (error) {
+      console.error('Failed to fetch arenas:', error);
     }
   };
 

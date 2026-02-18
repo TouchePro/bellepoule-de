@@ -745,6 +745,40 @@ export class DatabaseManager {
     return results;
   }
 
+  public getPendingMatches(competitionId: string): Match[] {
+    if (!this.db) throw new Error('Database not open');
+    const results: Match[] = [];
+
+    // First get all pools for the competition
+    const poolsStmt = this.db.prepare(
+      'SELECT id FROM pools WHERE phase_id IN (SELECT id FROM phases WHERE competition_id = ?)'
+    );
+    poolsStmt.bind([competitionId]);
+
+    const poolIds: string[] = [];
+    while (poolsStmt.step()) {
+      poolIds.push(poolsStmt.getAsObject().id as string);
+    }
+    poolsStmt.free();
+
+    // Then get pending matches from those pools
+    if (poolIds.length > 0) {
+      const placeholders = poolIds.map(() => '?').join(',');
+      const matchesStmt = this.db.prepare(
+        `SELECT id FROM matches WHERE pool_id IN (${placeholders}) AND status IN ('not_started', 'in_progress') ORDER BY pool_id, number`
+      );
+      matchesStmt.bind(poolIds);
+
+      while (matchesStmt.step()) {
+        const match = this.getMatch(matchesStmt.getAsObject().id as string);
+        if (match) results.push(match);
+      }
+      matchesStmt.free();
+    }
+
+    return results;
+  }
+
   public updateMatch(id: string, updates: Partial<Match>): void {
     if (!this.db) throw new Error('Database not open');
     const now = new Date().toISOString();
