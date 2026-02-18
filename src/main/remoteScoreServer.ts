@@ -1041,6 +1041,50 @@ export class RemoteScoreServer {
     this.connectedReferees.clear();
   }
 
+  public updateStripCount(newCount: number): RemoteSession | null {
+    if (!this.session) {
+      throw new Error('Aucune session active');
+    }
+
+    const currentCount = this.session.strips.length;
+
+    if (newCount > currentCount) {
+      // Add new strips
+      for (let i = currentCount; i < newCount; i++) {
+        this.session.strips.push({
+          number: i + 1,
+          status: 'available',
+        });
+      }
+    } else if (newCount < currentCount) {
+      // Remove strips (only available ones)
+      const availableStrips = this.session.strips.filter(s => s.status === 'available');
+      const toRemove = currentCount - newCount;
+
+      if (availableStrips.length < toRemove) {
+        throw new Error(
+          `Impossible de réduire à ${newCount} pistes: ${toRemove - availableStrips.length} pistes occupées`
+        );
+      }
+
+      // Remove from the end (available ones)
+      let removed = 0;
+      for (let i = this.session.strips.length - 1; i >= 0 && removed < toRemove; i--) {
+        if (this.session.strips[i].status === 'available') {
+          this.session.strips.splice(i, 1);
+          removed++;
+        }
+      }
+
+      // Renumber strips
+      this.session.strips.forEach((strip, idx) => {
+        strip.number = idx + 1;
+      });
+    }
+
+    return this.session;
+  }
+
   public addReferee(name: string): RemoteReferee {
     if (!this.session) {
       throw new Error('Aucune session active');

@@ -299,6 +299,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getSession: () => ipcRenderer.invoke('remote:getSession'),
     addReferee: (name: string) => ipcRenderer.invoke('remote:addReferee', name),
     getArenas: () => ipcRenderer.invoke('remote:getArenas'),
+    updateStripCount: (count: number) => ipcRenderer.invoke('remote:updateStripCount', count),
   },
 
   // Remove listeners

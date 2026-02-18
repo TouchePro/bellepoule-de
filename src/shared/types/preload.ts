@@ -229,6 +229,7 @@ export interface RemoteServerAPI {
   getSession: () => Promise<{ success: boolean; session?: any; error?: string }>;
   addReferee: (name: string) => Promise<{ success: boolean; referee?: any; error?: string }>;
   getArenas: () => Promise<{ success: boolean; arenas?: any[]; error?: string }>;
+  updateStripCount: (count: number) => Promise<{ success: boolean; session?: any; error?: string }>;
 }
 
 // ============================================================================

@@ -144,6 +144,26 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     }
   };
 
+  const handleUpdateStripCount = async (newCount: number) => {
+    if (newCount < 1 || newCount > 20) {
+      showToast('Le nombre de pistes doit être entre 1 et 20', 'error');
+      return;
+    }
+
+    try {
+      const result = await window.electronAPI.remote.updateStripCount(newCount);
+      if (result.success && result.session) {
+        setSession(result.session);
+        showToast(`Nombre de pistes mis à jour: ${newCount}`, 'success');
+      } else {
+        showToast(`Erreur: ${result.error}`, 'error');
+      }
+    } catch (error) {
+      console.error('Failed to update strip count:', error);
+      showToast('Erreur lors de la mise à jour du nombre de pistes', 'error');
+    }
+  };
+
   const handleStopSession = async () => {
     setIsLoading(true);
     try {
@@ -314,7 +334,41 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
               Démarrée:{' '}
               {session.startTime ? new Date(session.startTime).toLocaleString() : 'Inconnue'}
             </p>
-            <p>Pistes: {session.strips.length}</p>
+            <div className="form-group" style={{ marginTop: '0.5rem' }}>
+              <label style={{ fontWeight: 600 }}>Nombre de pistes:</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => handleUpdateStripCount(session.strips.length - 1)}
+                  disabled={session.strips.length <= 1}
+                  style={{ padding: '0.25rem 0.5rem' }}
+                >
+                  -
+                </button>
+                <span
+                  style={{
+                    fontWeight: 'bold',
+                    fontSize: '1.25rem',
+                    minWidth: '2rem',
+                    textAlign: 'center',
+                  }}
+                >
+                  {session.strips.length}
+                </span>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => handleUpdateStripCount(session.strips.length + 1)}
+                  disabled={session.strips.length >= 20}
+                  style={{ padding: '0.25rem 0.5rem' }}
+                >
+                  +
+                </button>
+              </div>
+              <small className="help-text" style={{ display: 'block', marginTop: '0.25rem' }}>
+                {session.strips.filter(s => s.status === 'available').length} disponibles,{' '}
+                {session.strips.filter(s => s.status === 'occupied').length} occupées
+              </small>
+            </div>
             <p>Arbitres: {session.referees.length}</p>
           </div>
 

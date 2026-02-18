@@ -725,6 +725,20 @@ ipcMain.handle('remote:getArenas', async () => {
   return { success: true, arenas: remoteScoreServer.getAllArenas() };
 });
 
+ipcMain.handle('remote:updateStripCount', async (_, newCount: number) => {
+  try {
+    if (!remoteScoreServer) {
+      return { success: false, error: 'Le serveur distant n est pas démarré' };
+    }
+
+    const session = remoteScoreServer.updateStripCount(newCount);
+    return { success: true, session };
+  } catch (error) {
+    console.error('Error updating strip count:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
 // App info handlers
 ipcMain.handle('app:getVersionInfo', async () => {
   return getVersionInfo();
