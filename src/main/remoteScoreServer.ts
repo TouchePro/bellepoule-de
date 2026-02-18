@@ -396,7 +396,7 @@ export class RemoteScoreServer {
       scoreA?: number;
       scoreB?: number;
       time?: number;
-      timerStatus?: string;
+      timerStatus?: 'running' | 'paused' | 'reset';
     }
   ): void {
     const arena = this.getArena(data.arenaId);
