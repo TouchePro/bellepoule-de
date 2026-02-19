@@ -732,10 +732,10 @@
 
         getArenaId() {
           const path = window.location.pathname;
-          if (path.includes('arena1')) return 'arena1';
-          if (path.includes('arena2')) return 'arena2';
-          if (path.includes('arena3')) return 'arena3';
-          if (path.includes('arena4')) return 'arena4';
+          if (path.includes('arena1') || path.includes('arene1')) return 'arena1';
+          if (path.includes('arena2') || path.includes('arene2')) return 'arena2';
+          if (path.includes('arena3') || path.includes('arene3')) return 'arena3';
+          if (path.includes('arena4') || path.includes('arene4')) return 'arena4';
           return 'arena1';
         }
 
