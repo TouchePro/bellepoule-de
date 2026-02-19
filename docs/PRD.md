@@ -1,7 +1,7 @@
 # 📋 Product Requirements Document (PRD)
 # BellePoule Modern
 
-**Version** : 1.0  
+**Version** : 1.1  
 **Date** : 19 février 2026  
 **Auteur** : Yann Kervella  
 **Statut** : Draft  
@@ -13,12 +13,13 @@
 1. [Vision & Objectifs](#1-vision--objectifs)
 2. [Utilisateurs Cibles](#2-utilisateurs-cibles)
 3. [Fonctionnalités](#3-fonctionnalités)
-4. [Exigences Techniques](#4-exigences-techniques)
-5. [Architecture](#5-architecture)
-6. [Roadmap](#6-roadmap)
-7. [Métriques de Succès](#7-métriques-de-succès)
-8. [Risques & Mitigations](#8-risques--mitigations)
-9. [Annexes](#9-annexes)
+4. [Contraintes Réglementaires Sabre Laser (FFE)](#4-contraintes-réglementaires-sabre-laser-ffe)
+5. [Exigences Techniques](#5-exigences-techniques)
+6. [Architecture](#6-architecture)
+7. [Roadmap](#7-roadmap)
+8. [Métriques de Succès](#8-métriques-de-succès)
+9. [Risques & Mitigations](#9-risques--mitigations)
+10. [Annexes](#10-annexes)
 
 ---
 
@@ -117,7 +118,7 @@
 | Gestion des byes | ✅ Fait | Attribution automatique |
 | Propagation vainqueurs | ✅ Fait | Avancement automatique |
 
-#### ✅ Système Quest (Sabre Laser) ⭐ PRIORITÉ
+#### ✅ Système Quest (Sabre Laser) ⭐ PRIORITÉ ABSOLUE
 | Fonctionnalité | Statut | Description |
 |----------------|--------|-------------|
 | Points Quest | ✅ Fait | 1-4 pts selon écart de score |
@@ -179,9 +180,249 @@
 
 ---
 
-## 4. Exigences Techniques
+## 4. Contraintes Réglementaires Sabre Laser (FFE)
 
-### 4.1 Performance
+> **Source** : Règlement National FFE - Livret 2 : Système pour le Combat Sportif (Saison 2025-2026)
+
+### 4.1 Conditions de Combat par Catégorie
+
+| Catégorie | Âge | Score Max | Durée | Arène | Distance Garde |
+|-----------|-----|-----------|-------|-------|----------------|
+| **SENIOR** | 17+ ans | 15 points | 3 min | Ø 8m | 6m |
+| **CADET (M17)** | 13-16 ans | 15 points | 3 min | Ø 8m | 4m |
+| **BENJAMIN (M13)** | 9-12 ans | 15 points | 3 min | Ø 6m | 4m |
+
+**Implémentation requise** :
+- [ ] Configuration automatique selon catégorie sélectionnée
+- [ ] Validation du score max (peut atteindre 19 pts avec touche finale 5 pts)
+- [ ] Chronomètre 3 minutes en temps réel SANS arrêt (sauf incident)
+
+### 4.2 Système de Cibles et Points
+
+| Cible | Zone | Points | Description |
+|-------|------|--------|-------------|
+| **Cible A** | Mains, poignets, doigts, arme | **1 pt** | Extrémités |
+| **Cible B** | Bras, jambes | **3 pts** | Membres |
+| **Cible C** | Tête, tronc | **5 pts** | Zones vitales |
+
+**Implémentation requise** :
+- [ ] Saisie rapide par zone (boutons 1/3/5 pts)
+- [ ] Score peut dépasser 15 (max 19 avec touche finale)
+- [ ] Affichage clair des zones sur l'interface tablette
+
+### 4.3 Système de Points Quest (Cotation des Duels)
+
+| Écart de Score | Points Quest | Exemple |
+|----------------|--------------|---------|
+| ≤ 3 points | **1 pt Quest** | 11-9, 15-12 |
+| 4-7 points | **2 pts Quest** | 15-8, 12-5 |
+| 8-11 points | **3 pts Quest** | 15-4, 14-4 |
+| ≥ 12 points | **4 pts Quest** | 15-2, 15-0 |
+
+**Classement Quest (ordre de priorité)** :
+1. Somme totale des points Quest
+2. Nombre total de victoires
+3. Nombre de victoires à cotation la plus élevée (V4 > V3 > V2 > V1)
+
+**Implémentation requise** :
+- [x] Calcul automatique des points Quest
+- [x] Classement selon les critères FFE
+- [ ] Affichage détaillé (V1/V2/V3/V4) dans le classement
+
+### 4.4 Gestion des Cartons (Sanctions)
+
+#### Groupes de Fautes
+
+| Groupe | 1ère fois | 2ème fois | 3ème fois | 4ème fois |
+|--------|-----------|-----------|-----------|-----------|
+| **Groupe 1** | Carton JAUNE | Carton ROUGE | Carton ROUGE | Exclusion |
+| **Groupe 2** | Carton ROUGE | Carton ROUGE | Exclusion | - |
+| **Groupe 3** | Carton ROUGE | Exclusion | - | - |
+| **Groupe 4** | Carton NOIR (exclusion immédiate) | - | - | - |
+
+#### Fautes du Groupe 1 (Carton Jaune → Rouge)
+
+| Faute | Description |
+|-------|-------------|
+| Commencer avant "Combattez!" | Départ anticipé |
+| Continuer après "Cessez!" | Arrêt tardif |
+| Corps à corps volontaire | Pour éviter une touche |
+| Contre-attaque | Attaquer pendant qu'on subit une attaque |
+| Substitution de cible | Remplacer une cible par une autre |
+| Lâcher de sabre volontaire | Lâcher délibéré |
+| Faire perdre du temps | Comportement dilatoire |
+| Matériel non conforme | Après avertissement |
+
+#### Fautes du Groupe 2 (Carton Rouge direct)
+
+| Faute | Description |
+|-------|-------------|
+| Touche d'estoc | Coup de pointe interdit |
+| Usage main/bras non armé | Action offensive/défensive avec main libre |
+| Sortie volontaire | Pour éviter une touche |
+| Frappe lourde | "Forcer" la parade adverse |
+
+#### Fautes du Groupe 3 (Carton Rouge → Exclusion)
+
+| Faute | Description |
+|-------|-------------|
+| Brutalité volontaire | Violence intentionnelle |
+| Comportement dangereux répété | Mise en danger de l'adversaire |
+
+#### Fautes du Groupe 4 (Carton Noir = Exclusion immédiate)
+
+| Faute | Description |
+|-------|-------------|
+| Refus de combattre | Refuser un défi |
+| Comportement anti-sportif grave | Insultes, violence |
+| Tricherie avérée | Fraude délibérée |
+
+**Points attribués par cartons** :
+- Carton JAUNE : Avertissement (0 pt)
+- Carton ROUGE : **+1 pt à l'adversaire** (touche de pénalité)
+- Carton NOIR : Exclusion de la compétition
+
+**Implémentation requise** :
+- [ ] Boutons Carton Jaune/Rouge/Noir dans l'interface arbitre
+- [ ] Historique des cartons par combattant
+- [ ] Attribution automatique du point sur carton rouge
+- [ ] Gestion de l'exclusion (carton noir)
+- [ ] Cumul des cartons avec escalade automatique
+
+### 4.5 Gestion des Sorties d'Arène
+
+| Situation | Conséquence | Points |
+|-----------|-------------|--------|
+| Sortie 2 pieds hors de l'arène | Touche contre le sortant | **+3 pts adversaire** |
+| Sortie volontaire (pour éviter touche) | Carton ROUGE + sortie | **+3 pts + 1 pt** |
+| Sortie involontaire (bousculade) | Pas de pénalité | 0 pt |
+
+**Implémentation requise** :
+- [ ] Bouton "Sortie d'arène" avec attribution 3 pts
+- [ ] Option "Sortie volontaire" pour ajouter carton rouge
+- [ ] Distinction sortie volontaire/involontaire
+
+### 4.6 Gestion de l'Abandon et du Forfait
+
+#### Abandon en cours de match
+
+| Situation | Conséquence |
+|-----------|-------------|
+| Abandon pendant le combat | Match terminé, score conservé |
+| Blessure | Temps médical possible (décision arbitre) |
+
+#### Forfait
+
+| Formule | Conséquence pour le forfait | Conséquence pour adversaires |
+|---------|----------------------------|------------------------------|
+| **QUEST** | Points acquis conservés, reste au classement | Points acquis conservés |
+| **ASL Compétition** | Points annulés en poule, classement acquis ensuite | Points annulés en poule |
+
+**Implémentation requise** :
+- [ ] Statut "Abandon" distinct de "Forfait"
+- [ ] Traitement différent selon formule (Quest vs ASL)
+- [ ] Conservation ou annulation des points selon règlement
+
+### 4.7 Gestion de l'Exclusion (Carton Noir)
+
+| Formule | Conséquence |
+|---------|-------------|
+| **QUEST** | Exclu du classement général, adversaires conservent leurs points |
+| **ASL Compétition** | Exclu du classement général |
+
+**Implémentation requise** :
+- [ ] Retrait immédiat du classement
+- [ ] Historique conservé pour les adversaires
+- [ ] Notification visuelle de l'exclusion
+
+### 4.8 Mort Subite
+
+#### Cas 1 : Le Challenger (pendant le match)
+- Déclenchée quand les deux combattants atteignent **10 points**
+- Continue jusqu'à fin du temps ou touche en **zone C uniquement** (5 pts)
+- Les autres zones ne comptent plus mais permettent de garder la priorité
+
+#### Cas 2 : Égalité à la fin du temps
+- 30 secondes supplémentaires
+- Seule touche en **zone C** ou pénalité met fin au match
+- Si toujours égalité : **tirage au sort**
+
+**Implémentation requise** :
+- [ ] Détection automatique du passage en mort subite (2x 10 pts)
+- [ ] Mode "Mort Subite" avec chrono 30s
+- [ ] Restriction saisie aux zones C (5 pts) ou pénalités
+- [ ] Bouton "Tirage au sort" si égalité finale
+
+### 4.9 Chronomètre
+
+| Règle | Description |
+|-------|-------------|
+| Durée | 3 minutes |
+| Mode | **Temps réel SANS arrêt** |
+| Arrêt autorisé | Uniquement sur décision arbitre (blessure, matériel) |
+| Fin du temps | e-Arbitre annonce "Temps!" |
+
+**Implémentation requise** :
+- [ ] Chronomètre temps réel (pas d'arrêt aux "Cessez!")
+- [ ] Bouton "Pause" pour incidents uniquement
+- [ ] Alerte sonore/visuelle à la fin du temps
+- [ ] Affichage grande taille pour visibilité piste
+
+### 4.10 Formules de Compétition
+
+#### Formule QUEST
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  PRÉ-TOURNOI (optionnel)     │  TOUR 1 - BRAVES            │
+│  "Temps des Challengers"      │  Tous font le même nombre   │
+│  Poules sans élimination      │  de combats, pas d'élim.    │
+├─────────────────────────────────────────────────────────────┤
+│  TOUR 2 - TÉMÉRAIRES         │  TOUR 3 - CONQUÉRANTS       │
+│  Top 8 du classement Quest   │  Top 4 → Tableau élim.      │
+│  Même principe que Tour 1    │  Demi + Petite finale       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Formule ASL Compétition
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  PRÉ-TOURNOI (optionnel)     │  QUALIFICATION              │
+│  64 tireurs max              │  Poules de 8 max            │
+│  Poules de 10 max            │  64 qualifiés               │
+├─────────────────────────────────────────────────────────────┤
+│  ÉLIMINATION                 │  PRESTIGE                   │
+│  Tableau jusqu'à Top 16      │  Top 16 → Tableau final     │
+│  Combats de classement       │  Petite finale pour 3ème    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Implémentation requise** :
+- [ ] Sélection formule Quest ou ASL à la création
+- [ ] Gestion des tours spécifiques Quest
+- [ ] Classement différent selon formule
+
+### 4.11 Récapitulatif des Implémentations Sabre Laser
+
+| Fonctionnalité | Priorité | Statut | Effort |
+|----------------|----------|--------|--------|
+| Cibles 1/3/5 pts | ⭐ Haute | 🔜 À faire | S |
+| Points Quest automatiques | ⭐ Haute | ✅ Fait | - |
+| Classement Quest complet | ⭐ Haute | ✅ Fait | - |
+| Cartons (Jaune/Rouge/Noir) | ⭐ Haute | 🔜 À faire | M |
+| Sortie d'arène (+3 pts) | ⭐ Haute | 🔜 À faire | S |
+| Mort Subite | ⭐ Haute | 🔜 À faire | M |
+| Chrono temps réel 3min | ⭐ Haute | 🔜 À faire | M |
+| Abandon vs Forfait | Moyenne | 🔜 À faire | S |
+| Exclusion (carton noir) | Moyenne | 🔜 À faire | S |
+| Formule ASL Compétition | Basse | 🔜 À faire | L |
+
+---
+
+## 5. Exigences Techniques
+
+### 5.1 Performance
 
 | Métrique | Exigence | Actuel |
 |----------|----------|--------|
@@ -191,7 +432,7 @@
 | Temps export PDF | < 2s | ✅ ~1s |
 | Synchronisation tablette | < 500ms | ⚠️ À tester |
 
-### 4.2 Compatibilité
+### 5.2 Compatibilité
 
 | Plateforme | Version Minimum | Statut |
 |------------|-----------------|--------|
@@ -200,7 +441,7 @@
 | Linux x64 | Ubuntu 20.04+ | ✅ Supporté |
 | Linux ARM64 | Raspberry Pi 4+ | ✅ Supporté |
 
-### 4.3 Formats de Fichiers
+### 5.3 Formats de Fichiers
 
 | Format | Import | Export | Description |
 |--------|--------|--------|-------------|
@@ -210,7 +451,7 @@
 | .pdf | ❌ | ✅ | Impression/archivage |
 | .json | ✅ | ✅ | Sauvegarde/échange |
 
-### 4.4 Mode Hors-Ligne
+### 5.4 Mode Hors-Ligne
 
 | Fonctionnalité | Exigence |
 |----------------|----------|
@@ -221,32 +462,32 @@
 
 ---
 
-## 5. Architecture
+## 6. Architecture
 
-### 5.1 Stack Technique
+### 6.1 Stack Technique
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    PRÉSENTATION                          │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐      │
-│  │   React 19  │  │  Tailwind   │  │  TypeScript │      │
-│  └─────────────┘  └─────────────┘  └─────────────┘      │
-├─────────────────────────────────────────────────────────┤
-│                      LOGIQUE                             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐      │
-│  │  Electron   │  │  WebSocket  │  │   Express   │      │
-│  │     40+     │  │  (Socket.io)│  │   (API)     │      │
-│  └─────────────┘  └─────────────┘  └─────────────┘      │
-├─────────────────────────────────────────────────────────┤
-│                      DONNÉES                             │
-│  ┌─────────────┐  ┌─────────────┐                       │
-│  │   SQLite    │  │  sql.js     │                       │
-│  │  (fichier)  │  │  (mémoire)  │                       │
-│  └─────────────┘  └─────────────┘                       │
-└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                    PRÉSENTATION                              │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐          │
+│  │   React 19  │  │  Tailwind   │  │  TypeScript │          │
+│  └─────────────┘  └─────────────┘  └─────────────┘          │
+├─────────────────────────────────────────────────────────────┤
+│                      LOGIQUE                                 │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐          │
+│  │  Electron   │  │  WebSocket  │  │   Express   │          │
+│  │     40+     │  │  (Socket.io)│  │   (API)     │          │
+│  └─────────────┘  └─────────────┘  └─────────────┘          │
+├─────────────────────────────────────────────────────────────┤
+│                      DONNÉES                                 │
+│  ┌─────────────┐  ┌─────────────┐                           │
+│  │   SQLite    │  │  sql.js     │                           │
+│  │  (fichier)  │  │  (mémoire)  │                           │
+│  └─────────────┘  └─────────────┘                           │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### 5.2 Composants Principaux
+### 6.2 Composants Principaux
 
 | Composant | Fichier | Responsabilité |
 |-----------|---------|----------------|
@@ -256,7 +497,7 @@
 | FencerList | FencerList.tsx | Liste des tireurs |
 | RemoteScoreManager | RemoteScoreManager.tsx | Saisie distante |
 
-### 5.3 Flux de Données
+### 6.3 Flux de Données
 
 ```
 ┌──────────┐     ┌──────────┐     ┌──────────┐
@@ -273,13 +514,13 @@
 
 ---
 
-## 6. Roadmap
+## 7. Roadmap
 
-### 6.1 Vue d'Ensemble
+### 7.1 Vue d'Ensemble
 
 ```
 2026
-──────────────────────────────────────────────────────────▶
+──────────────────────────────────────────────────────────────▶
 
 Q1 2026                    Q2 2026                    Q3 2026
 ├─────────────────────────┼─────────────────────────┼─────────
@@ -289,11 +530,12 @@ Q1 2026                    Q2 2026                    Q3 2026
 │  │ Interface tactile│    │  │ Tests auto 80%  │   │  │ Compét. équipes │
 │  │ Documentation    │    │  │ Bugs critiques  │   │  │ Export FFE      │
 │  │ Mode hors-ligne  │    │  │ Performance 10p │   │  │ Version web ?   │
+│  │ Cartons/Sorties  │    │  │ Mort Subite     │   │  │ Formule ASL     │
 │  └─────────────────┘    │  └─────────────────┘   │  └─────────────────┘
 │                         │                         │
 ```
 
-### 6.2 Détail par Version
+### 7.2 Détail par Version
 
 #### v1.1 - "Tablette First" (Mars 2026)
 
@@ -301,17 +543,19 @@ Q1 2026                    Q2 2026                    Q3 2026
 |----------|-------------|-------|
 | Interface tactile | Boutons 48px+, zones de touch | Dev |
 | Mode arbitre | Plein écran dédié | Dev |
+| Cartons | Jaune/Rouge/Noir avec cumul | Dev |
+| Sortie d'arène | +3 pts automatique | Dev |
 | Hors-ligne | Sync différée | Dev |
 | Guide utilisateur | PDF + web | Doc |
-| Tutoriels vidéo | 5 vidéos | Doc |
 
 #### v1.2 - "Stabilité" (Juin 2026)
 
 | Livrable | Description | Owner |
 |----------|-------------|-------|
 | Tests unitaires | Couverture 80% | Dev |
-| Tests E2E | Scénarios critiques | QA |
-| Bugs backlog | 0 bugs critiques | Dev |
+| Mort Subite | Détection auto + chrono 30s | Dev |
+| Chrono temps réel | Sans arrêt, 3 min | Dev |
+| Cibles 1/3/5 pts | Interface saisie rapide | Dev |
 | Performance | 10 pistes fluides | Dev |
 
 #### v2.0 - "Équipes" (Septembre 2026)
@@ -319,14 +563,15 @@ Q1 2026                    Q2 2026                    Q3 2026
 | Livrable | Description | Owner |
 |----------|-------------|-------|
 | Compétitions équipes | Matchs par équipe | Dev |
+| Formule ASL Compétition | Alternative à Quest | Dev |
 | Export FFE officiel | Intégration fédération | Dev |
 | Version web (option) | Serveur centralisé | Dev |
 
 ---
 
-## 7. Métriques de Succès
+## 8. Métriques de Succès
 
-### 7.1 KPIs Principaux
+### 8.1 KPIs Principaux
 
 | KPI | Cible Q2 2026 | Cible Q4 2026 |
 |-----|---------------|---------------|
@@ -336,7 +581,7 @@ Q1 2026                    Q2 2026                    Q3 2026
 | Note satisfaction | 4/5 | 4.5/5 |
 | Temps moyen saisie score | < 5s | < 3s |
 
-### 7.2 Métriques Techniques
+### 8.2 Métriques Techniques
 
 | Métrique | Cible |
 |----------|-------|
@@ -347,7 +592,7 @@ Q1 2026                    Q2 2026                    Q3 2026
 
 ---
 
-## 8. Risques & Mitigations
+## 9. Risques & Mitigations
 
 | Risque | Probabilité | Impact | Mitigation |
 |--------|-------------|--------|------------|
@@ -356,12 +601,13 @@ Q1 2026                    Q2 2026                    Q3 2026
 | Concurrence (Engarde) | Faible | Moyen | Différenciation open source + Quest |
 | Perte du mainteneur | Faible | Élevé | Documentation code, contributeurs |
 | Changements règles FFE | Faible | Moyen | Architecture modulaire |
+| Non-conformité règlement | Moyen | Élevé | Validation par arbitres FFE |
 
 ---
 
-## 9. Annexes
+## 10. Annexes
 
-### 9.1 Glossaire
+### 10.1 Glossaire
 
 | Terme | Définition |
 |-------|------------|
@@ -374,19 +620,28 @@ Q1 2026                    Q2 2026                    Q3 2026
 | **Bye** | Exemption quand nombre impair |
 | **TD/TR** | Touches Données / Touches Reçues |
 | **V/M** | Ratio Victoires / Matchs |
+| **Cible A** | Mains, poignets (1 pt) |
+| **Cible B** | Bras, jambes (3 pts) |
+| **Cible C** | Tête, tronc (5 pts) |
+| **Mort Subite** | Mode de départage, seule zone C compte |
+| **Carton Jaune** | Avertissement |
+| **Carton Rouge** | +1 pt adversaire |
+| **Carton Noir** | Exclusion immédiate |
 
-### 9.2 Références
+### 10.2 Références
 
 - [GitHub Repository](https://github.com/klinnex/bellepoule-modern)
 - [BellePoule Original](http://betton.escrime.free.fr/index.php/bellepoule)
+- [Règlement FFE Sabre Laser](https://www.ffescrime.fr/wp-content/uploads/2024/09/Livret2_CombatSportif_v.Sept25-FR.pdf)
 - [Règlement FFE](https://www.escrime-ffe.fr/)
 - [Règlement FIE](https://fie.org/)
 
-### 9.3 Historique des Versions
+### 10.3 Historique des Versions
 
 | Version PRD | Date | Auteur | Changements |
 |-------------|------|--------|-------------|
 | 1.0 | 19/02/2026 | Y. Kervella | Version initiale |
+| 1.1 | 19/02/2026 | Y. Kervella | Ajout contraintes Sabre Laser FFE |
 
 ---
 
@@ -396,6 +651,7 @@ Q1 2026                    Q2 2026                    Q3 2026
 |------|-----|------|-----------|
 | Product Owner | Yann Kervella | ___ | ___ |
 | Tech Lead | ___ | ___ | ___ |
+| Arbitre FFE | ___ | ___ | ___ |
 | Représentant Clubs | ___ | ___ | ___ |
 
 ---
