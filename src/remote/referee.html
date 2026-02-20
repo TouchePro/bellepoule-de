@@ -176,13 +176,64 @@
       }
 
       .score-btn-touch {
-        min-width: 50px;
+        min-width: 60px;
+        min-height: 80px;
         background: #3b82f6;
         color: white;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.25rem;
       }
 
       .score-btn-touch:hover {
         background: #2563eb;
+        transform: translateY(-2px);
+      }
+
+      .score-btn-touch:active {
+        transform: scale(0.95);
+      }
+
+      .score-btn-touch .zone-label {
+        font-size: 1.5rem;
+        font-weight: 700;
+      }
+
+      .score-btn-touch .zone-points {
+        font-size: 1.25rem;
+        font-weight: 600;
+      }
+
+      .score-btn-touch .zone-desc {
+        font-size: 0.625rem;
+        opacity: 0.8;
+        text-transform: uppercase;
+      }
+
+      .score-btn-touch.zone-a {
+        background: #60a5fa;
+      }
+
+      .score-btn-touch.zone-a:hover {
+        background: #3b82f6;
+      }
+
+      .score-btn-touch.zone-b {
+        background: #a78bfa;
+      }
+
+      .score-btn-touch.zone-b:hover {
+        background: #8b5cf6;
+      }
+
+      .score-btn-touch.zone-c {
+        background: #f472b6;
+      }
+
+      .score-btn-touch.zone-c:hover {
+        background: #ec4899;
       }
 
       .score-btn-touch-3 {
@@ -490,6 +541,103 @@
         border-color: #9ca3af;
       }
 
+      /* Exit Arena Modal */
+      .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      }
+
+      .modal-content {
+        background: white;
+        padding: 2rem;
+        border-radius: 1rem;
+        max-width: 500px;
+        width: 90%;
+        text-align: center;
+      }
+
+      .modal-content h2 {
+        margin-bottom: 1rem;
+        color: #1f2937;
+      }
+
+      .exit-options {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin: 1.5rem 0;
+      }
+
+      .exit-btn {
+        padding: 1.5rem;
+        border: 2px solid;
+        border-radius: 0.5rem;
+        background: white;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .exit-btn.normal {
+        border-color: #10b981;
+        background: #ecfdf5;
+      }
+
+      .exit-btn.normal:hover {
+        background: #d1fae5;
+        transform: translateY(-2px);
+      }
+
+      .exit-btn.voluntary {
+        border-color: #ef4444;
+        background: #fef2f2;
+      }
+
+      .exit-btn.voluntary:hover {
+        background: #fee2e2;
+        transform: translateY(-2px);
+      }
+
+      .exit-title {
+        font-weight: 600;
+        font-size: 1.125rem;
+      }
+
+      .exit-points {
+        color: #6b7280;
+        font-size: 0.875rem;
+      }
+
+      .exit-total {
+        font-weight: 700;
+        color: #dc2626;
+      }
+
+      .modal-cancel {
+        padding: 0.75rem 1.5rem;
+        background: #6b7280;
+        color: white;
+        border: none;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      .modal-cancel:hover {
+        background: #4b5563;
+      }
+
       @media (max-width: 768px) {
         .fencers-display {
           grid-template-columns: 1fr;
@@ -507,6 +655,23 @@
         .timer {
           font-size: 3rem;
           padding: 0.75rem 1rem;
+        }
+
+        .score-btn-touch {
+          min-width: 50px;
+          min-height: 70px;
+        }
+
+        .score-btn-touch .zone-label {
+          font-size: 1.25rem;
+        }
+
+        .score-btn-touch .zone-points {
+          font-size: 1rem;
+        }
+
+        .score-btn-touch .zone-desc {
+          display: none;
         }
       }
     </style>
@@ -543,28 +708,38 @@
 
                 <div id="fencer-a-score" class="score-display">0</div>
 
-                <!-- Boutons de score -->
+                <!-- Boutons de score par zone (Sabre Laser) -->
                 <div class="score-controls">
                   <div class="score-btn-group">
                     <div class="score-btn-row">
-                      <button class="score-btn score-btn-touch" onclick="addScore('A', 1)">
-                        +1
+                      <button
+                        class="score-btn score-btn-touch zone-a"
+                        onclick="addScore('A', 1, 'A')"
+                      >
+                        <span class="zone-label">A</span>
+                        <span class="zone-points">+1</span>
+                        <span class="zone-desc">Main</span>
                       </button>
                       <button
-                        class="score-btn score-btn-touch score-btn-touch-3"
-                        onclick="addScore('A', 3)"
+                        class="score-btn score-btn-touch zone-b"
+                        onclick="addScore('A', 3, 'B')"
                       >
-                        +3
+                        <span class="zone-label">B</span>
+                        <span class="zone-points">+3</span>
+                        <span class="zone-desc">Bras</span>
                       </button>
                       <button
-                        class="score-btn score-btn-touch score-btn-touch-5"
-                        onclick="addScore('A', 5)"
+                        class="score-btn score-btn-touch zone-c"
+                        onclick="addScore('A', 5, 'C')"
                       >
-                        +5
+                        <span class="zone-label">C</span>
+                        <span class="zone-points">+5</span>
+                        <span class="zone-desc">Tête</span>
                       </button>
                     </div>
                     <div class="score-btn-row">
                       <button class="quick-score-btn" onclick="addScore('A', -1)">-1</button>
+                      <button class="quick-score-btn" onclick="undoLastTouch('A')">↩️</button>
                       <button class="quick-score-btn" onclick="setScore('A', 0)">0</button>
                     </div>
                   </div>
@@ -607,28 +782,38 @@
 
                 <div id="fencer-b-score" class="score-display">0</div>
 
-                <!-- Boutons de score -->
+                <!-- Boutons de score par zone (Sabre Laser) -->
                 <div class="score-controls">
                   <div class="score-btn-group">
                     <div class="score-btn-row">
-                      <button class="score-btn score-btn-touch" onclick="addScore('B', 1)">
-                        +1
+                      <button
+                        class="score-btn score-btn-touch zone-a"
+                        onclick="addScore('B', 1, 'A')"
+                      >
+                        <span class="zone-label">A</span>
+                        <span class="zone-points">+1</span>
+                        <span class="zone-desc">Main</span>
                       </button>
                       <button
-                        class="score-btn score-btn-touch score-btn-touch-3"
-                        onclick="addScore('B', 3)"
+                        class="score-btn score-btn-touch zone-b"
+                        onclick="addScore('B', 3, 'B')"
                       >
-                        +3
+                        <span class="zone-label">B</span>
+                        <span class="zone-points">+3</span>
+                        <span class="zone-desc">Bras</span>
                       </button>
                       <button
-                        class="score-btn score-btn-touch score-btn-touch-5"
-                        onclick="addScore('B', 5)"
+                        class="score-btn score-btn-touch zone-c"
+                        onclick="addScore('B', 5, 'C')"
                       >
-                        +5
+                        <span class="zone-label">C</span>
+                        <span class="zone-points">+5</span>
+                        <span class="zone-desc">Tête</span>
                       </button>
                     </div>
                     <div class="score-btn-row">
                       <button class="quick-score-btn" onclick="addScore('B', -1)">-1</button>
+                      <button class="quick-score-btn" onclick="undoLastTouch('B')">↩️</button>
                       <button class="quick-score-btn" onclick="setScore('B', 0)">0</button>
                     </div>
                   </div>
@@ -704,12 +889,43 @@
             <button id="finish-btn" class="control-btn danger" onclick="finishMatch()" disabled>
               🔚 Terminer
             </button>
+            <button
+              id="exit-arena-btn"
+              class="control-btn warning"
+              onclick="showExitArenaModal()"
+              disabled
+            >
+              🚪 Sortie d'Arène
+            </button>
             <button id="next-btn" class="control-btn" onclick="nextMatch()" disabled>
               ⏭️ Match suivant
             </button>
             <button id="reset-btn" class="control-btn" onclick="resetScores()">
               🔄 Réinitialiser scores
             </button>
+          </div>
+        </div>
+
+        <!-- Exit Arena Modal -->
+        <div id="exit-modal" class="modal" style="display: none">
+          <div class="modal-content">
+            <h2>🚪 Sortie d'Arène</h2>
+            <p>Pour: <span id="exit-fencer-name"></span></p>
+
+            <div class="exit-options">
+              <button class="exit-btn normal" onclick="confirmExit(false)">
+                <span class="exit-title">🚪 Sortie normale</span>
+                <span class="exit-points">+3 pts adversaire</span>
+              </button>
+
+              <button class="exit-btn voluntary" onclick="confirmExit(true)">
+                <span class="exit-title">⚠️ Sortie volontaire</span>
+                <span class="exit-points">+3 pts + Carton Rouge (+1 pt)</span>
+                <span class="exit-total">= +4 pts adversaire</span>
+              </button>
+            </div>
+
+            <button class="modal-cancel" onclick="closeExitModal()">Annuler</button>
           </div>
         </div>
       </main>
@@ -868,12 +1084,14 @@
           const pauseBtn = document.getElementById('pause-btn');
           const finishBtn = document.getElementById('finish-btn');
           const nextBtn = document.getElementById('next-btn');
+          const exitBtn = document.getElementById('exit-arena-btn');
 
           // Activer/désactiver les boutons selon le statut
           startBtn.disabled = this.matchStatus !== 'ready' && this.matchStatus !== 'finished';
           pauseBtn.disabled = this.matchStatus !== 'in_progress';
           finishBtn.disabled = this.matchStatus !== 'in_progress';
           nextBtn.disabled = this.matchStatus !== 'finished' && this.matchStatus !== 'idle';
+          exitBtn.disabled = this.matchStatus !== 'in_progress';
         }
 
         updateTimer(seconds) {
@@ -977,7 +1195,7 @@
           .join('');
       }
 
-      function addScore(fencer, points) {
+      function addScore(fencer, points, zone = null) {
         if (fencer === 'A') {
           refereeInterface.scoreA = Math.max(0, refereeInterface.scoreA + points);
         } else {
@@ -988,6 +1206,43 @@
         refereeInterface.socket.emit('arena_control', {
           arenaId: refereeInterface.arenaId,
           action: 'update_score',
+          scoreA: refereeInterface.scoreA,
+          scoreB: refereeInterface.scoreB,
+          zone: zone,
+          fencer: fencer,
+          points: points,
+        });
+      }
+
+      // Touch history for undo functionality
+      let touchHistory = [];
+
+      function undoLastTouch(fencer) {
+        if (touchHistory.length === 0) return;
+
+        // Find last touch for this fencer
+        const lastTouchIndex = touchHistory.findLastIndex(t => t.fencer === fencer);
+        if (lastTouchIndex === -1) return;
+
+        const lastTouch = touchHistory[lastTouchIndex];
+
+        // Reverse the score
+        if (lastTouch.fencer === 'A') {
+          refereeInterface.scoreA = Math.max(0, refereeInterface.scoreA - lastTouch.points);
+        } else {
+          refereeInterface.scoreB = Math.max(0, refereeInterface.scoreB - lastTouch.points);
+        }
+
+        // Remove from history
+        touchHistory.splice(lastTouchIndex, 1);
+
+        refereeInterface.updateScores();
+
+        refereeInterface.socket.emit('arena_control', {
+          arenaId: refereeInterface.arenaId,
+          action: 'undo_touch',
+          fencer: fencer,
+          points: lastTouch.points,
           scoreA: refereeInterface.scoreA,
           scoreB: refereeInterface.scoreB,
         });
@@ -1023,6 +1278,7 @@
         // Reset scores and cards for next match
         cardsA = [];
         cardsB = [];
+        touchHistory = [];
         updateCardDisplay('A');
         updateCardDisplay('B');
         refereeInterface.nextMatch();
@@ -1030,9 +1286,53 @@
       function resetScores() {
         cardsA = [];
         cardsB = [];
+        touchHistory = [];
         updateCardDisplay('A');
         updateCardDisplay('B');
         refereeInterface.resetScores();
+      }
+
+      // Exit Arena Modal
+      let exitArenaFencer = 'A';
+
+      function showExitArenaModal() {
+        const fencerName =
+          refereeInterface.scoreA > refereeInterface.scoreB
+            ? document.getElementById('fencer-b-name').textContent
+            : document.getElementById('fencer-a-name').textContent;
+
+        exitArenaFencer = refereeInterface.scoreA > refereeInterface.scoreB ? 'B' : 'A';
+
+        document.getElementById('exit-fencer-name').textContent = fencerName;
+        document.getElementById('exit-modal').style.display = 'flex';
+      }
+
+      function closeExitModal() {
+        document.getElementById('exit-modal').style.display = 'none';
+      }
+
+      function confirmExit(isVoluntary) {
+        const opponentFencer = exitArenaFencer === 'A' ? 'B' : 'A';
+
+        // Add 3 points to opponent
+        addScore(opponentFencer, 3, 'EXIT');
+
+        // If voluntary, also add a red card (+1 point)
+        if (isVoluntary) {
+          addCard(exitArenaFencer, 'red');
+          addScore(opponentFencer, 1, 'CARD');
+        }
+
+        // Emit event to server
+        refereeInterface.socket.emit('arena_control', {
+          arenaId: refereeInterface.arenaId,
+          action: 'arena_exit',
+          fencer: exitArenaFencer,
+          isVoluntary: isVoluntary,
+          pointsAwarded: isVoluntary ? 4 : 3,
+        });
+
+        closeExitModal();
       }
 
       // Gestion du timer (3 minutes)

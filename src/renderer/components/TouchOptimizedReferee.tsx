@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Fencer, Match, MatchStatus } from '../../shared/types';
+import { Fencer, Match, MatchStatus, TargetZone } from '../../shared/types';
 
 interface TouchOptimizedRefereeProps {
   match: Match;
@@ -16,6 +16,12 @@ interface TouchOptimizedRefereeProps {
   onMatchEnd: () => void;
   onVoiceCommand?: (command: string) => void;
 }
+
+const ZONES = [
+  { zone: TargetZone.ZONE_A, points: 1, label: 'A', desc: 'Main', color: 'bg-blue-500' },
+  { zone: TargetZone.ZONE_B, points: 3, label: 'B', desc: 'Bras', color: 'bg-purple-500' },
+  { zone: TargetZone.ZONE_C, points: 5, label: 'C', desc: 'Tête', color: 'bg-pink-500' },
+];
 
 export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
   match,
@@ -146,9 +152,9 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
     }
   };
 
-  const handleScoreIncrement = (fencer: 'A' | 'B') => {
+  const handleScoreIncrement = (fencer: 'A' | 'B', points: number = 1) => {
     if (fencer === 'A') {
-      const newScore = Math.min(scoreA + 1, maxScore);
+      const newScore = Math.min(scoreA + points, maxScore);
       setScoreA(newScore);
       onScoreUpdate(newScore, scoreB);
 
@@ -156,7 +162,7 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
         handleMatchEnd();
       }
     } else {
-      const newScore = Math.min(scoreB + 1, maxScore);
+      const newScore = Math.min(scoreB + points, maxScore);
       setScoreB(newScore);
       onScoreUpdate(scoreA, newScore);
 
@@ -164,6 +170,10 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
         handleMatchEnd();
       }
     }
+  };
+
+  const handleZoneScore = (fencer: 'A' | 'B', zone: TargetZone, points: number) => {
+    handleScoreIncrement(fencer, points);
   };
 
   const handleScoreDecrement = (fencer: 'A' | 'B') => {
@@ -233,18 +243,35 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
               </div>
               <div className="bg-white rounded-lg shadow-lg p-8">
                 <div className="text-6xl font-bold text-gray-800 mb-4">{scoreA}</div>
+                {/* Zone buttons for Sabre Laser */}
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                  {ZONES.map(({ zone, points, label, desc, color }) => (
+                    <button
+                      key={zone}
+                      onClick={() => handleZoneScore('A', zone, points)}
+                      className={`${color} text-white rounded-lg p-3 flex flex-col items-center active:scale-95 transition-transform min-h-[80px]`}
+                    >
+                      <span className="text-2xl font-bold">{label}</span>
+                      <span className="text-lg font-medium">+{points}</span>
+                      <span className="text-xs opacity-80">{desc}</span>
+                    </button>
+                  ))}
+                </div>
                 <div className="flex justify-center space-x-2">
-                  <button
-                    onClick={() => handleScoreIncrement('A')}
-                    className="w-16 h-16 bg-red-500 text-white rounded-full text-2xl font-bold active:scale-95 transition-transform"
-                  >
-                    +1
-                  </button>
                   <button
                     onClick={() => handleScoreDecrement('A')}
                     className="w-16 h-16 bg-gray-300 text-gray-700 rounded-full text-2xl font-bold active:scale-95 transition-transform"
                   >
                     -1
+                  </button>
+                  <button
+                    onClick={() => {
+                      setScoreA(0);
+                      onScoreUpdate(0, scoreB);
+                    }}
+                    className="w-16 h-16 bg-red-500 text-white rounded-full text-xl font-bold active:scale-95 transition-transform"
+                  >
+                    0
                   </button>
                 </div>
               </div>
@@ -268,18 +295,35 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
               </div>
               <div className="bg-white rounded-lg shadow-lg p-8">
                 <div className="text-6xl font-bold text-gray-800 mb-4">{scoreB}</div>
+                {/* Zone buttons for Sabre Laser */}
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                  {ZONES.map(({ zone, points, label, desc, color }) => (
+                    <button
+                      key={zone}
+                      onClick={() => handleZoneScore('B', zone, points)}
+                      className={`${color} text-white rounded-lg p-3 flex flex-col items-center active:scale-95 transition-transform min-h-[80px]`}
+                    >
+                      <span className="text-2xl font-bold">{label}</span>
+                      <span className="text-lg font-medium">+{points}</span>
+                      <span className="text-xs opacity-80">{desc}</span>
+                    </button>
+                  ))}
+                </div>
                 <div className="flex justify-center space-x-2">
-                  <button
-                    onClick={() => handleScoreIncrement('B')}
-                    className="w-16 h-16 bg-green-500 text-white rounded-full text-2xl font-bold active:scale-95 transition-transform"
-                  >
-                    +1
-                  </button>
                   <button
                     onClick={() => handleScoreDecrement('B')}
                     className="w-16 h-16 bg-gray-300 text-gray-700 rounded-full text-2xl font-bold active:scale-95 transition-transform"
                   >
                     -1
+                  </button>
+                  <button
+                    onClick={() => {
+                      setScoreB(0);
+                      onScoreUpdate(scoreA, 0);
+                    }}
+                    className="w-16 h-16 bg-red-500 text-white rounded-full text-xl font-bold active:scale-95 transition-transform"
+                  >
+                    0
                   </button>
                 </div>
               </div>

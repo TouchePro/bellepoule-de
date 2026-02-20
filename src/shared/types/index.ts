@@ -94,6 +94,29 @@ export enum TargetZone {
   ZONE_C = 'C', // 5 points: Tête, tronc
 }
 
+export const ZONE_POINTS: Record<TargetZone, number> = {
+  [TargetZone.ZONE_A]: 1,
+  [TargetZone.ZONE_B]: 3,
+  [TargetZone.ZONE_C]: 5,
+};
+
+export const ZONE_LABELS: Record<TargetZone, string> = {
+  [TargetZone.ZONE_A]: 'Main/Arme',
+  [TargetZone.ZONE_B]: 'Bras/Jambes',
+  [TargetZone.ZONE_C]: 'Tête/Tronc',
+};
+
+export interface Touch {
+  id: string;
+  matchId: string;
+  fencerId: string;
+  zone: TargetZone;
+  points: number;
+  timestamp: Date;
+  isValidInSuddenDeath: boolean;
+  isReversed?: boolean; // For reversal in sudden death
+}
+
 // ============================================================================
 // Penalty Types (Arena Exit)
 // ============================================================================
@@ -244,6 +267,7 @@ export interface Match extends BaseEntity {
   cards?: Card[];
   penalties?: { type: PenaltyType; pointsAwarded: number; timestamp: Date }[];
   suddenDeathStartTime?: Date;
+  touches?: Touch[];
 }
 
 // ============================================================================
