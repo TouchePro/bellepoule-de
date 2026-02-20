@@ -31,6 +31,78 @@ export enum FencerStatus {
   FORFAIT = 'F', // Forfait
 }
 
+// ============================================================================
+// Card Types (FFE Sabre Laser)
+// ============================================================================
+
+export enum CardGroup {
+  GROUP_1 = 1, // J → R → R → Exclusion
+  GROUP_2 = 2, // R → R → Exclusion
+  GROUP_3 = 3, // R → Exclusion
+  GROUP_4 = 4, // Noir immédiat
+}
+
+export enum CardReason {
+  EARLY_START = 'early_start',
+  LATE_STOP = 'late_stop',
+  BODY_CONTACT = 'body_contact',
+  COUNTER_ATTACK = 'counter_attack',
+  TARGET_SUBSTITUTION = 'target_substitution',
+  VOLUNTARY_DROP = 'voluntary_drop',
+  TIME_WASTING = 'time_wasting',
+  NON_COMPLIANT_GEAR = 'non_compliant_gear',
+  ESTOC = 'estoc',
+  UNARMED_HAND = 'unarmed_hand',
+  VOLUNTARY_EXIT = 'voluntary_exit',
+  HEAVY_HIT = 'heavy_hit',
+  BRUTALITY = 'brutality',
+  DANGEROUS = 'dangerous',
+  REFUSAL = 'refusal',
+  UNSPORTSMANLIKE = 'unsportsmanlike',
+  CHEATING = 'cheating',
+}
+
+export interface Card {
+  id: string;
+  matchId: string;
+  fencerId: string;
+  type: string; // CardType from penalties feature
+  reason: CardReason;
+  group: CardGroup;
+  timestamp: Date;
+  pointsAwarded: number;
+  resultingExclusion: boolean;
+}
+
+// ============================================================================
+// Match Mode (Sudden Death)
+// ============================================================================
+
+export enum MatchMode {
+  NORMAL = 'normal',
+  SUDDEN_DEATH_CHALLENGER = 'sudden_death_challenger',
+  SUDDEN_DEATH_TIMEOUT = 'sudden_death_timeout',
+}
+
+// ============================================================================
+// Target Zone (Sabre Laser Scoring)
+// ============================================================================
+
+export enum TargetZone {
+  ZONE_A = 'A', // 1 point: Main, poignets, arme
+  ZONE_B = 'B', // 3 points: Bras, jambes
+  ZONE_C = 'C', // 5 points: Tête, tronc
+}
+
+// ============================================================================
+// Penalty Types (Arena Exit)
+// ============================================================================
+
+export enum PenaltyType {
+  ARENA_EXIT = 'arena_exit',
+  ARENA_EXIT_VOLUNTARY = 'arena_exit_voluntary',
+}
+
 export enum MatchStatus {
   NOT_STARTED = 'not_started',
   IN_PROGRESS = 'in_progress',
@@ -93,6 +165,10 @@ export interface Fencer extends BaseEntity {
 
   // Photo du tireur (base64)
   photo?: string;
+
+  // Sabre Laser specific
+  competitionCards?: Card[];
+  isExcluded?: boolean;
 }
 
 export interface PoolStats {
@@ -162,6 +238,12 @@ export interface Match extends BaseEntity {
   tableId?: string; // ID du tableau (si match de tableau)
   round?: number; // Tour du tableau (64, 32, 16, 8, 4, 2, 1)
   position?: number; // Position dans le tour
+
+  // Sabre Laser specific
+  mode?: MatchMode;
+  cards?: Card[];
+  penalties?: { type: PenaltyType; pointsAwarded: number; timestamp: Date }[];
+  suddenDeathStartTime?: Date;
 }
 
 // ============================================================================

@@ -270,6 +270,105 @@
         background: #ef4444;
         color: white;
       }
+
+      .cards-display {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+        justify-content: center;
+      }
+
+      .card-badge {
+        width: 30px;
+        height: 45px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 0.875rem;
+      }
+
+      .card-yellow {
+        background: #fbbf24;
+        color: black;
+      }
+
+      .card-red {
+        background: #ef4444;
+        color: white;
+      }
+
+      .card-black {
+        background: #000000;
+        color: white;
+      }
+
+      .sudden-death-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(220, 38, 38, 0.95);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        animation: pulse-bg 2s infinite;
+      }
+
+      .sudden-death-overlay.active {
+        display: flex;
+      }
+
+      @keyframes pulse-bg {
+        0%, 100% { background: rgba(220, 38, 38, 0.95); }
+        50% { background: rgba(185, 28, 28, 0.95); }
+      }
+
+      .sudden-death-content {
+        text-align: center;
+        color: white;
+        padding: 2rem;
+      }
+
+      .sudden-death-content h2 {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        animation: pulse-text 1s infinite;
+      }
+
+      @keyframes pulse-text {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+      }
+
+      .sudden-death-rules {
+        background: rgba(0, 0, 0, 0.3);
+        padding: 1.5rem;
+        border-radius: 1rem;
+        margin: 2rem 0;
+        font-size: 1.25rem;
+      }
+
+      .sudden-death-rules p {
+        margin: 0.5rem 0;
+      }
+
+      .sudden-death-timer {
+        font-size: 6rem;
+        font-weight: bold;
+        margin: 2rem 0;
+      }
+
+      .draw-result {
+        font-size: 3rem;
+        margin-top: 2rem;
+        padding: 2rem;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 1rem;
+      }
     </style>
   </head>
   <body>
@@ -295,6 +394,7 @@
               <div id="fencer-a-name" class="fencer-name">-</div>
               <div id="fencer-a-club" class="fencer-club">-</div>
               <div id="fencer-a-score" class="fencer-score red">0</div>
+              <div id="fencer-a-cards" class="cards-display"></div>
             </div>
             <div class="vs-separator">VS</div>
             <div class="fencer-info green-side">
@@ -302,12 +402,34 @@
               <div id="fencer-b-name" class="fencer-name">-</div>
               <div id="fencer-b-club" class="fencer-club">-</div>
               <div id="fencer-b-score" class="fencer-score green">0</div>
+              <div id="fencer-b-cards" class="cards-display"></div>
             </div>
           </div>
 
           <div class="timer-section">
             <div id="timer" class="timer">3:00</div>
             <div class="timer-label">Temps restant</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="sudden-death-overlay" class="sudden-death-overlay">
+        <div class="sudden-death-content">
+          <h2>⚔️ MORT SUBITE</h2>
+          <p id="sudden-death-reason">Les deux combattants ont atteint 10 points</p>
+
+          <div class="sudden-death-rules">
+            <p>✅ Seule la <strong>ZONE C</strong> (Tête/Tronc) compte</p>
+            <p>⚠️ Les autres zones maintiennent la priorité mais ne marquent pas</p>
+          </div>
+
+          <div id="sudden-death-timer" class="sudden-death-timer" style="display: none">
+            <span id="sd-timer">00:30</span>
+          </div>
+
+          <div id="draw-result" class="draw-result" style="display: none">
+            <p>🎲 Tirage au sort</p>
+            <p id="winner-name"></p>
           </div>
         </div>
       </div>
@@ -382,6 +504,29 @@
 
           if (data.time !== undefined) {
             this.updateTimer(data.time);
+          }
+
+          // Gestion des cartons
+          if (data.cardsA) {
+            this.updateCards('A', data.cardsA);
+          }
+          if (data.cardsB) {
+            this.updateCards('B', data.cardsB);
+          }
+
+          // Gestion mort subite
+          if (data.suddenDeath === true) {
+            this.showSuddenDeath(data.suddenDeathReason);
+          } else if (data.suddenDeath === false) {
+            this.hideSuddenDeath();
+          }
+
+          if (data.suddenDeathTime !== undefined) {
+            this.updateSuddenDeathTimer(data.suddenDeathTime);
+          }
+
+          if (data.drawResult) {
+            this.showDrawResult(data.drawResult);
           }
 
           // Gestion du timer via les actions de l'arbitre
@@ -491,6 +636,66 @@
         updateDisplay() {
           // Mettre à jour l'affichage global selon l'état
           this.updateStatus(this.currentStatus || 'idle');
+        }
+
+        updateCards(fencerId, cards) {
+          const containerId = fencerId === 'A' ? 'fencer-a-cards' : 'fencer-b-cards';
+          const container = document.getElementById(containerId);
+          container.innerHTML = '';
+
+          if (!cards || cards.length === 0) return;
+
+          cards.forEach(card => {
+            const badge = document.createElement('div');
+            badge.className = 'card-badge';
+
+            if (card.type === 'YELLOW') {
+              badge.className += ' card-yellow';
+              badge.textContent = 'J';
+            } else if (card.type === 'RED') {
+              badge.className += ' card-red';
+              badge.textContent = 'R';
+            } else if (card.type === 'BLACK') {
+              badge.className += ' card-black';
+              badge.textContent = 'N';
+            }
+
+            container.appendChild(badge);
+          });
+        }
+
+        showSuddenDeath(reason) {
+          const overlay = document.getElementById('sudden-death-overlay');
+          const reasonEl = document.getElementById('sudden-death-reason');
+          const timerEl = document.getElementById('sudden-death-timer');
+          const drawResultEl = document.getElementById('draw-result');
+
+          reasonEl.textContent = reason || 'Les deux combattants ont atteint 10 points';
+          overlay.classList.add('active');
+          timerEl.style.display = 'block';
+          drawResultEl.style.display = 'none';
+        }
+
+        hideSuddenDeath() {
+          const overlay = document.getElementById('sudden-death-overlay');
+          overlay.classList.remove('active');
+        }
+
+        showDrawResult(winnerName) {
+          const drawResultEl = document.getElementById('draw-result');
+          const winnerNameEl = document.getElementById('winner-name');
+          const timerEl = document.getElementById('sudden-death-timer');
+
+          timerEl.style.display = 'none';
+          winnerNameEl.textContent = winnerName;
+          drawResultEl.style.display = 'block';
+        }
+
+        updateSuddenDeathTimer(seconds) {
+          const timerEl = document.getElementById('sd-timer');
+          const mins = Math.floor(seconds / 60);
+          const secs = seconds % 60;
+          timerEl.textContent = `00:${secs.toString().padStart(2, '0')}`;
         }
       }
 
