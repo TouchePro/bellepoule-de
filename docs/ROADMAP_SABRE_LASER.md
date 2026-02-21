@@ -1,13 +1,16 @@
 # 🗺️ ROADMAP COMPLÈTE - Sabre Laser (ASL-FFE)
 # BellePoule Modern
 
-**Version** : 2.0  
-**Date** : 19 février 2026  
-**Basé sur** : Règlement FFE Saison 2025-2026 (Livret 2)
+**Version** : 2.1  
+**Date** : 21 février 2026  
+**Basé sur** : Règlement FFE Saison 2025-2026 (Livret 2)  
+**État du code** : Commit 135c25b (branche dev)
 
 ---
 
 ## 📊 ANALYSE DU CODE EXISTANT
+
+> **Dernière mise à jour** : 21 février 2026 (commit 135c25b)
 
 ### ✅ Fonctionnalités Implémentées
 
@@ -17,7 +20,7 @@
 | Serveur WebSocket | `remoteScoreServer.ts` | ✅ | Express + Socket.IO sur port 8066 |
 | Gestionnaire distant | `RemoteScoreManager.tsx` | ✅ | Interface de contrôle central |
 | Interface tablette | `TouchOptimizedReferee.tsx` | ✅ | Boutons +1/-1, swipe, voix |
-| Interface arbitre web | `referee.html` | ✅ | Page HTML avec boutons +1/+3/+5 |
+| Interface arbitre web | `referee.html` | ✅ | **Page HTML avec boutons zones A/B/C** |
 | Affichage public | `arena.html` | ✅ | Affichage score en direct |
 | Gestion arènes | `remoteScoreServer.ts` | ✅ | Multi-arènes (jusqu'à 20) |
 
@@ -28,18 +31,47 @@
 | Stats V1/V2/V3/V4 | `poolCalculations.ts` | ✅ |
 | Classement Quest | `poolCalculations.ts` | ✅ |
 
-### ❌ Fonctionnalités Manquantes
+#### Système de Cartons (NOUVEAU ✅)
+| Composant | Fichier | Statut |
+|-----------|---------|--------|
+| Types CardGroup, CardReason | `types/index.ts` | ✅ |
+| Escalade FFE (G1→G4) | `cardSystem.ts` | ✅ |
+| CardType (YELLOW/RED/BLACK) | `penalty.types.ts` | ✅ |
+| Labels français | `cardSystem.ts` | ✅ |
+| Exclusion carton noir | `cardSystem.ts` | ✅ |
+
+#### Système de Zones/Touches (NOUVEAU ✅)
+| Composant | Fichier | Statut |
+|-----------|---------|--------|
+| Types TargetZone, Touch | `types/index.ts` | ✅ |
+| ZONE_POINTS (1/3/5) | `types/index.ts` | ✅ |
+| touchSystem.ts | `utils/touchSystem.ts` | ✅ |
+| Interface zones A/B/C | `referee.html` | ✅ |
+
+#### Système Mort Subite (NOUVEAU ✅)
+| Composant | Fichier | Statut |
+|-----------|---------|--------|
+| Type MatchMode | `types/index.ts` | ✅ |
+| Détection challenger (10pts) | `suddenDeath.ts` | ✅ |
+| Détection timeout | `suddenDeath.ts` | ✅ |
+| Validation touche zone C | `suddenDeath.ts` | ✅ |
+| Tirage au sort | `suddenDeath.ts` | ✅ |
+
+#### Sortie d'Arène (NOUVEAU ✅)
+| Composant | Fichier | Statut |
+|-----------|---------|--------|
+| Modal sortie | `referee.html` | ✅ |
+| Sortie normale (+3 pts) | `referee.html` | ✅ |
+| Sortie volontaire (+3 + carton) | `referee.html` | ✅ |
+
+### 🔜 Fonctionnalités Restantes
 
 | Fonctionnalité | Priorité | Impact |
 |----------------|----------|--------|
-| **Système de cartons complet** (J/R/N avec règles FFE) | 🔴 Critique | Conformité règlement |
-| **Sortie d'arène** (+3 pts) | 🔴 Critique | Conformité règlement |
-| **Mort Subite** (détection + mode) | 🔴 Critique | Conformité règlement |
-| **Chronomètre temps réel** (sans arrêt) | 🔴 Critique | Conformité règlement |
-| **Carton Noir** (exclusion) | 🔴 Critique | Conformité règlement |
-| **Synchronisation tablette ↔ affichage** | 🟠 Haute | UX compétition |
-| **Mode hors-ligne tablette** | 🟠 Haute | Fiabilité |
-| **Affichage classement en direct** | 🟡 Moyenne | UX spectateurs |
+| **Mode hors-ligne tablette** | 🟠 Haute | Fiabilité réseau |
+| **Dashboard classement live** | 🟡 Moyenne | UX spectateurs |
+| **Formule ASL Compétition** | 🟡 Basse | Alternative à Quest |
+| **Tests unitaires complets** | 🟡 Moyenne | Qualité code |
 
 ---
 
@@ -1505,3 +1537,4 @@ Février 2026                                              Mars 2026
 
 *Document créé le 19 février 2026*  
 *BellePoule Modern - Open Source sous licence GPL-3.0*
+
