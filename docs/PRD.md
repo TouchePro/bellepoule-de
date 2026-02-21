@@ -1,8 +1,8 @@
 # 📋 Product Requirements Document (PRD)
 # BellePoule Modern
 
-**Version** : 1.1  
-**Date** : 19 février 2026  
+**Version** : 1.2  
+**Date** : 21 février 2026  
 **Auteur** : Yann Kervella  
 **Statut** : Draft  
 
@@ -405,18 +405,36 @@
 
 ### 4.11 Récapitulatif des Implémentations Sabre Laser
 
-| Fonctionnalité | Priorité | Statut | Effort |
-|----------------|----------|--------|--------|
-| Cibles 1/3/5 pts | ⭐ Haute | 🔜 À faire | S |
-| Points Quest automatiques | ⭐ Haute | ✅ Fait | - |
-| Classement Quest complet | ⭐ Haute | ✅ Fait | - |
-| Cartons (Jaune/Rouge/Noir) | ⭐ Haute | 🔜 À faire | M |
-| Sortie d'arène (+3 pts) | ⭐ Haute | 🔜 À faire | S |
-| Mort Subite | ⭐ Haute | 🔜 À faire | M |
-| Chrono temps réel 3min | ⭐ Haute | 🔜 À faire | M |
-| Abandon vs Forfait | Moyenne | 🔜 À faire | S |
-| Exclusion (carton noir) | Moyenne | 🔜 À faire | S |
-| Formule ASL Compétition | Basse | 🔜 À faire | L |
+| Fonctionnalité | Priorité | Statut | Fichier(s) |
+|----------------|----------|--------|------------|
+| Cibles 1/3/5 pts | ⭐ Haute | ✅ Fait | `touchSystem.ts`, `referee.html` |
+| Points Quest automatiques | ⭐ Haute | ✅ Fait | `poolCalculations.ts` |
+| Classement Quest complet | ⭐ Haute | ✅ Fait | `poolCalculations.ts` |
+| Cartons (Jaune/Rouge/Noir) | ⭐ Haute | ✅ Fait | `cardSystem.ts`, `penalty.types.ts` |
+| Escalade cartons FFE | ⭐ Haute | ✅ Fait | `cardSystem.ts` |
+| Sortie d'arène (+3 pts) | ⭐ Haute | ✅ Fait | `referee.html` (modal exit) |
+| Mort Subite (détection) | ⭐ Haute | ✅ Fait | `suddenDeath.ts` |
+| Mort Subite (challenger 10pts) | ⭐ Haute | ✅ Fait | `suddenDeath.ts` |
+| Mort Subite (timeout 30s) | ⭐ Haute | ✅ Fait | `suddenDeath.ts` |
+| Tirage au sort | ⭐ Haute | ✅ Fait | `suddenDeath.ts` |
+| Chrono temps réel 3min | ⭐ Haute | ✅ Fait | `referee.html`, `arena.html` |
+| Interface tablette zones | ⭐ Haute | ✅ Fait | `referee.html` (zone-a/b/c) |
+| Affichage public live | 🟠 Moyenne | ✅ Fait | `arena.html`, WebSocket |
+| Exclusion (carton noir) | 🟠 Moyenne | ✅ Fait | `cardSystem.ts` |
+| Mode hors-ligne tablette | 🟠 Moyenne | 🔜 À faire | Service Worker |
+| Dashboard classement live | 🟡 Basse | 🔜 À faire | `dashboard.html` |
+| Formule ASL Compétition | 🟡 Basse | 🔜 À faire | - |
+
+### 4.12 Fichiers Implémentés (Sprint Sabre Laser)
+
+| Fichier | Description | Lignes |
+|---------|-------------|--------|
+| `src/shared/types/index.ts` | Types CardGroup, CardReason, MatchMode, TargetZone, Touch | ~350 |
+| `src/shared/utils/cardSystem.ts` | Logique cartons FFE avec escalade | ~120 |
+| `src/shared/utils/suddenDeath.ts` | Mort subite challenger/timeout | ~100 |
+| `src/shared/utils/touchSystem.ts` | Système de touches par zone | ~90 |
+| `src/features/penalties/types/penalty.types.ts` | Types Penalty, CardType | ~80 |
+| `src/remote/referee.html` | Interface arbitre avec zones A/B/C | ~1000 |
 
 ---
 
@@ -658,3 +676,4 @@ Q1 2026                    Q2 2026                    Q3 2026
 
 *Document généré le 19 février 2026*  
 *BellePoule Modern - Open Source sous licence GPL-3.0*
+
