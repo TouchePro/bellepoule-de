@@ -124,6 +124,11 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     overallRanking,
     tableauMatches,
     finalResults,
+    poolPrepParams: {
+      poolCount: pools.length,
+      minFencersPerPool,
+      maxFencersPerPool,
+    },
   });
 
   // Restaurer l'état au chargement
@@ -146,6 +151,10 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       if (restoredState.overallRanking) setOverallRanking(restoredState.overallRanking);
       if (restoredState.tableauMatches) setTableauMatches(restoredState.tableauMatches);
       if (restoredState.finalResults) setFinalResults(restoredState.finalResults);
+      if (restoredState.poolPrepParams) {
+        setMinFencersPerPool(restoredState.poolPrepParams.minFencersPerPool);
+        setMaxFencersPerPool(restoredState.poolPrepParams.maxFencersPerPool);
+      }
     }
   }, [restoredState, isLoaded]);
 

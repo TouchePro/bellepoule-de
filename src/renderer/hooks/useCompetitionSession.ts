@@ -18,6 +18,11 @@ interface SessionState {
   tableauMatches: TableauMatch[];
   finalResults: FinalResult[];
   currentPoolRound: number;
+  poolPrepParams: {
+    poolCount: number;
+    minFencersPerPool: number;
+    maxFencersPerPool: number;
+  };
   uiState: {
     currentPhase: Phase;
     currentPoolRound: number;
@@ -34,6 +39,11 @@ interface UseCompetitionSessionProps {
   overallRanking: PoolRanking[];
   tableauMatches: TableauMatch[];
   finalResults: FinalResult[];
+  poolPrepParams: {
+    poolCount: number;
+    minFencersPerPool: number;
+    maxFencersPerPool: number;
+  };
 }
 
 export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
@@ -73,6 +83,11 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
       tableauMatches: props.tableauMatches,
       finalResults: props.finalResults,
       currentPoolRound: props.currentPoolRound,
+      poolPrepParams: {
+        poolCount: props.poolPrepParams?.poolCount || 0,
+        minFencersPerPool: props.poolPrepParams?.minFencersPerPool || 5,
+        maxFencersPerPool: props.poolPrepParams?.maxFencersPerPool || 7,
+      },
       uiState: {
         currentPhase: props.currentPhase,
         currentPoolRound: props.currentPoolRound,
@@ -108,6 +123,11 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
           tableauMatches: typedState.tableauMatches || [],
           finalResults: typedState.finalResults || [],
           currentPoolRound: typedState.uiState?.currentPoolRound || 1,
+          poolPrepParams: typedState.poolPrepParams || {
+            poolCount: 0,
+            minFencersPerPool: 5,
+            maxFencersPerPool: 7,
+          },
         });
 
         console.log('Session state restored');
