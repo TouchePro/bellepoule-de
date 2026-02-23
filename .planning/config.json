@@ -1,0 +1,35 @@
+{
+  "projectName": "BellePoule Modern",
+  "version": "1.0.0",
+  "runtime": "opencode",
+  "activeProfile": "balanced",
+  "parallelAgents": true,
+  "researchEnabled": true,
+  "verificationEnabled": true,
+  "profiles": {
+    "quality": {
+      "planning": "anthropic/claude-sonnet-4-5",
+      "execution": "anthropic/claude-sonnet-4-5",
+      "verification": "anthropic/claude-sonnet-4-5"
+    },
+    "balanced": {
+      "planning": "anthropic/claude-sonnet-4-5",
+      "execution": "anthropic/claude-haiku-4-5",
+      "verification": "anthropic/claude-haiku-4-5"
+    },
+    "budget": {
+      "planning": "anthropic/claude-haiku-4-5",
+      "execution": "anthropic/claude-haiku-4-5",
+      "verification": "anthropic/claude-haiku-4-5"
+    }
+  },
+  "git": {
+    "atomicCommits": true,
+    "commitPrefix": ""
+  },
+  "context": {
+    "stack": ["TypeScript", "Vite", "Vitest", "Electron"],
+    "domain": "Fencing competition management",
+    "regulations": "FFE Sabre Laser"
+  }
+}
