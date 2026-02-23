@@ -1,4 +1,4 @@
-# Phase Actuelle : Mode Hors-Ligne
+# Phase Actuelle : Interface de Saisie Distante + Mode Hors-Ligne
 
 **Phase** : 3  
 **Statut** : À DÉMARRER  
@@ -6,23 +6,258 @@
 
 ## Contexte
 
-Les arbitres utilisent des tablettes pendant les compétitions. La connexion WiFi est souvent instable dans les gymnases. L'application doit fonctionner sans interruption même sans réseau.
+Les arbitres utilisent des tablettes pour saisir les scores à distance pendant les compétitions. L'interface `referee.html` existe mais n'est pas 100% fonctionnelle. La connexion WiFi est souvent instable dans les gymnases, donc l'application doit aussi fonctionner hors-ligne.
 
-## Objectif
+## Objectifs
 
-Transformer BellePoule Modern en PWA complète avec :
-- Stockage local des données (IndexedDB)
-- Fonctionnement 100% offline
-- Synchronisation automatique au retour du réseau
+1. **Interface de saisie distante 100% fonctionnelle** sur tablette
+2. **Mode hors-ligne** avec synchronisation automatique
 
-## Plan d'exécution
+---
 
-### Sprint 1 : IndexedDB Storage (3 jours)
+## Partie A : Interface de Saisie Distante
+
+### Sprint A1 : Audit et correction de referee.html (2 jours)
+
+```xml
+<task type="audit">
+  <id>remote-1</id>
+  <n>Auditer l'interface referee.html existante</n>
+  <files>
+    src/pages/referee.html
+    src/features/remote-scoring/
+  </files>
+  <action>
+    Analyser l'état actuel :
+    - Lister toutes les fonctionnalités (zones A/B/C, cartons, chrono, etc.)
+    - Identifier ce qui fonctionne vs ce qui est cassé
+    - Vérifier la connexion WebSocket/HTTP avec l'app principale
+    - Tester sur tablette réelle (iPad, Android)
+  </action>
+  <verify>
+    Document markdown listant : ✅ OK / ❌ KO / ⚠️ Partiel pour chaque feature
+  </verify>
+  <done>
+    Rapport d'audit complet avec liste des bugs à fixer.
+  </done>
+</task>
+```
+
+```xml
+<task type="implementation">
+  <id>remote-2</id>
+  <n>Corriger les boutons de zones A/B/C</n>
+  <files>
+    src/pages/referee.html
+    src/features/remote-scoring/touchHandler.ts
+  </files>
+  <action>
+    S'assurer que :
+    - Clic sur Zone A → +1 point au tireur sélectionné
+    - Clic sur Zone B → +3 points au tireur sélectionné
+    - Clic sur Zone C → +5 points au tireur sélectionné
+    - Feedback visuel immédiat (animation, son)
+    - Sync avec l'app principale en temps réel
+  </action>
+  <verify>
+    Test manuel : cliquer chaque zone, vérifier score côté arbitre ET côté app principale.
+  </verify>
+  <done>
+    Zones A/B/C fonctionnelles avec sync temps réel.
+  </done>
+</task>
+```
+
+```xml
+<task type="implementation">
+  <id>remote-3</id>
+  <n>Corriger le système de cartons</n>
+  <files>
+    src/pages/referee.html
+    src/features/remote-scoring/cardHandler.ts
+    src/shared/utils/cardSystem.ts
+  </files>
+  <action>
+    S'assurer que :
+    - Sélection du groupe de faute (1-4)
+    - Affichage du carton approprié selon l'escalade
+    - Exclusion automatique sur carton noir
+    - Attribution des points de pénalité
+    - Historique des cartons visible
+  </action>
+  <verify>
+    Scénario : Groupe 1 → Jaune → Rouge → Rouge → Noir (exclusion)
+  </verify>
+  <done>
+    Système de cartons complet conforme FFE.
+  </done>
+</task>
+```
+
+```xml
+<task type="implementation">
+  <id>remote-4</id>
+  <n>Corriger la mort subite</n>
+  <files>
+    src/pages/referee.html
+    src/features/remote-scoring/suddenDeathHandler.ts
+    src/shared/utils/suddenDeath.ts
+  </files>
+  <action>
+    S'assurer que :
+    - Détection auto mode Challenger (10 pts d'écart)
+    - Détection auto mode Timeout (fin du temps + égalité)
+    - En mort subite : seule Zone C cliquable
+    - Zones A et B grisées/désactivées
+    - Tirage au sort si aucune touche
+  </action>
+  <verify>
+    Test : créer situation 10-0 → mort subite activée → seule Zone C active
+  </verify>
+  <done>
+    Mort subite fonctionnelle (2 modes).
+  </done>
+</task>
+```
+
+```xml
+<task type="implementation">
+  <id>remote-5</id>
+  <n>Corriger la sortie d'arène</n>
+  <files>
+    src/pages/referee.html
+    src/features/remote-scoring/arenaExitHandler.ts
+  </files>
+  <action>
+    S'assurer que :
+    - Bouton "Sortie d'arène" visible
+    - +3 points à l'adversaire
+    - Option "Sortie volontaire" → +3 pts + carton
+    - Confirmation avant validation
+  </action>
+  <verify>
+    Test : clic sortie → +3 pts adversaire affiché
+  </verify>
+  <done>
+    Sortie d'arène fonctionnelle.
+  </done>
+</task>
+```
+
+### Sprint A2 : Chronomètre et contrôles (2 jours)
+
+```xml
+<task type="implementation">
+  <id>remote-6</id>
+  <n>Implémenter le chronomètre</n>
+  <files>
+    src/pages/referee.html
+    src/features/remote-scoring/timerHandler.ts
+  </files>
+  <action>
+    Chronomètre avec :
+    - Start / Pause / Reset
+    - Compte à rebours configurable (3min par défaut)
+    - Alerte sonore à 30s, 10s, 0s
+    - Déclenchement auto mort subite timeout à 0
+    - Sync avec app principale
+  </action>
+  <verify>
+    Lancer chrono sur tablette → visible sur app principale en sync
+  </verify>
+  <done>
+    Chronomètre synchronisé fonctionnel.
+  </done>
+</task>
+```
+
+```xml
+<task type="implementation">
+  <id>remote-7</id>
+  <n>Boutons Annuler et Historique</n>
+  <files>
+    src/pages/referee.html
+    src/features/remote-scoring/historyHandler.ts
+  </files>
+  <action>
+    Implémenter :
+    - Bouton "Annuler dernière action" (undo)
+    - Historique des 10 dernières actions
+    - Possibilité d'annuler n'importe quelle action récente
+    - Confirmation avant annulation
+  </action>
+  <verify>
+    Ajouter touche → Annuler → Score revient à l'état précédent
+  </verify>
+  <done>
+    Undo et historique fonctionnels.
+  </done>
+</task>
+```
+
+### Sprint A3 : UX tablette (2 jours)
+
+```xml
+<task type="implementation">
+  <id>remote-8</id>
+  <n>Optimiser l'UI pour tablette</n>
+  <files>
+    src/pages/referee.html
+    src/styles/referee.css
+  </files>
+  <action>
+    Optimisations tactiles :
+    - Boutons minimum 48x48px (recommandation Google)
+    - Zones de touch larges et bien espacées
+    - Pas de hover states (inutile tactile)
+    - Feedback visuel fort (couleurs, animations)
+    - Mode paysage optimisé
+    - Pas de scroll nécessaire
+  </action>
+  <verify>
+    Test sur iPad et tablette Android. Utilisable sans erreur de clic.
+  </verify>
+  <done>
+    UI 100% optimisée tactile.
+  </done>
+</task>
+```
+
+```xml
+<task type="implementation">
+  <id>remote-9</id>
+  <n>Sélection du match et des tireurs</n>
+  <files>
+    src/pages/referee.html
+    src/features/remote-scoring/matchSelector.ts
+  </files>
+  <action>
+    Interface de sélection :
+    - Liste des matchs en attente
+    - Sélection du match à arbitrer
+    - Affichage clair des 2 tireurs (nom, club, photo si dispo)
+    - Changement de match facile
+    - Indicateur "Match en cours" visible
+  </action>
+  <verify>
+    Sélectionner un match → noms des tireurs affichés → prêt à saisir
+  </verify>
+  <done>
+    Sélection de match intuitive.
+  </done>
+</task>
+```
+
+---
+
+## Partie B : Mode Hors-Ligne
+
+### Sprint B1 : IndexedDB Storage (2 jours)
 
 ```xml
 <task type="implementation">
   <id>offline-1</id>
-  <name>Créer le service IndexedDB</name>
+  <n>Créer le service IndexedDB</n>
   <files>
     src/shared/services/offlineStorage.ts
     src/shared/services/offlineStorage.test.ts
@@ -50,159 +285,144 @@ Transformer BellePoule Modern en PWA complète avec :
 ```xml
 <task type="implementation">
   <id>offline-2</id>
-  <name>Intégrer IndexedDB dans les stores existants</name>
+  <n>Intégrer IndexedDB dans l'interface referee</n>
   <files>
-    src/stores/competitionStore.ts
-    src/stores/matchStore.ts
+    src/pages/referee.html
+    src/features/remote-scoring/offlineMode.ts
   </files>
   <action>
-    Modifier les stores Zustand pour :
-    - Sauvegarder automatiquement dans IndexedDB à chaque modification
-    - Charger depuis IndexedDB au démarrage
-    - Garder le state en mémoire pour la performance
+    Modifier referee.html pour :
+    - Sauvegarder chaque action localement AVANT d'envoyer au serveur
+    - Si offline : stocker dans la queue
+    - Si online : envoyer immédiatement
+    - Charger le dernier état du match au démarrage
   </action>
   <verify>
-    Créer une compétition, fermer l'onglet, rouvrir → données présentes.
+    Couper le WiFi → saisir des touches → reconnecter → sync auto
   </verify>
   <done>
-    Stores synchronisés avec IndexedDB.
-    Pas de perte de données.
+    Saisie fonctionne offline.
   </done>
 </task>
 ```
 
-### Sprint 2 : Service Worker PWA (2 jours)
+### Sprint B2 : Service Worker PWA (2 jours)
 
 ```xml
 <task type="implementation">
   <id>offline-3</id>
-  <name>Configurer vite-plugin-pwa</name>
+  <n>Configurer le Service Worker pour referee.html</n>
   <files>
-    vite.config.ts
-    src/sw.ts
-    public/manifest.json
+    src/sw-referee.ts
+    src/pages/referee.html
   </files>
   <action>
-    Installer et configurer vite-plugin-pwa :
-    - registerType: 'autoUpdate'
-    - workbox runtime caching pour assets
-    - Manifest avec icônes, nom, couleurs
-    - Cache-first pour assets, network-first pour API
+    Service Worker dédié à l'interface arbitre :
+    - Cache de referee.html et ses assets
+    - Fonctionne 100% offline
+    - Stratégie cache-first pour l'UI
+    - Network-first pour les données
   </action>
   <verify>
-    npm run build
-    Lighthouse PWA audit > 90
-    App installable sur mobile
+    Mode avion → ouvrir referee.html → interface s'affiche
   </verify>
   <done>
-    PWA installable.
-    Fonctionne offline (affichage).
-    Score Lighthouse > 90.
+    Page referee accessible offline.
   </done>
 </task>
 ```
 
-### Sprint 3 : Sync Queue (3 jours)
+### Sprint B3 : Sync Queue (2 jours)
 
 ```xml
 <task type="implementation">
   <id>offline-4</id>
-  <name>Créer la queue de synchronisation</name>
+  <n>Queue de synchronisation pour actions arbitre</n>
   <files>
     src/shared/services/syncQueue.ts
     src/shared/services/syncQueue.test.ts
   </files>
   <action>
-    Créer un système de queue pour les actions offline :
-    - addToQueue(action: SyncAction) : ajoute une action
-    - processQueue() : traite les actions en attente
-    - Retry avec backoff exponentiel (1s, 2s, 4s, 8s, max 30s)
-    - Persistance de la queue dans IndexedDB
-    - Event 'online' déclenche processQueue()
+    Queue spécifique pour les actions de saisie :
+    - addToQueue(action: ScoreAction | CardAction | etc.)
+    - processQueue() au retour online
+    - Retry avec backoff exponentiel
+    - Ordre chronologique préservé
+    - Gestion des conflits (même match modifié par 2 tablettes)
   </action>
   <verify>
     npm test -- syncQueue
-    Simuler offline → actions → online → sync automatique
+    Simuler offline → 10 actions → online → toutes sync dans l'ordre
   </verify>
   <done>
-    Queue fonctionne.
-    Retry automatique.
-    Sync au retour réseau.
+    Queue robuste avec retry.
   </done>
 </task>
 ```
+
+### Sprint B4 : UI Offline (1 jour)
 
 ```xml
 <task type="implementation">
   <id>offline-5</id>
-  <name>Résolution de conflits</name>
+  <n>Indicateurs offline dans referee.html</n>
   <files>
-    src/shared/utils/conflictResolution.ts
+    src/pages/referee.html
+    src/styles/referee.css
   </files>
   <action>
-    Utiliser le système existant (déjà implémenté et testé) :
-    - resolveConflict() : last-write-wins basé sur updatedAt
-    - mergeActionsById() : fusion des listes d'actions
-    - detectConflicts() : identification des conflits
+    Indicateurs visuels :
+    - Bandeau rouge "HORS LIGNE" quand déconnecté
+    - Badge avec nombre d'actions en attente de sync
+    - Icône de sync animée pendant synchronisation
+    - Toast "Synchronisé ✓" après sync réussie
+    - Les actions continuent de fonctionner (pas de blocage)
   </action>
   <verify>
-    Tests existants passent.
-    Scénario : 2 tablettes modifient le même match → pas de perte.
+    Couper WiFi → bandeau apparaît → actions toujours possibles
   </verify>
   <done>
-    Conflits résolus automatiquement.
-    Aucune perte de données.
+    UX claire en mode offline.
   </done>
 </task>
 ```
 
-### Sprint 4 : UI Offline (2 jours)
+---
 
-```xml
-<task type="implementation">
-  <id>offline-6</id>
-  <name>Indicateurs de statut offline</name>
-  <files>
-    src/components/OfflineIndicator.tsx
-    src/components/SyncStatus.tsx
-  </files>
-  <action>
-    Créer des composants UI :
-    - OfflineIndicator : bandeau "Hors ligne" quand navigator.onLine = false
-    - SyncStatus : badge avec nombre d'actions en attente
-    - Bouton "Synchroniser maintenant" pour forcer
-    - Toast de confirmation après sync réussie
-  </action>
-  <verify>
-    Couper le WiFi → bandeau apparaît.
-    Faire des actions → compteur augmente.
-    Rétablir WiFi → sync + toast.
-  </verify>
-  <done>
-    UI claire pour l'utilisateur.
-    Feedback visuel complet.
-  </done>
-</task>
-```
+## Critères de succès Phase 3
 
-## Critères de succès
+### Interface de saisie distante
+- [ ] Zones A/B/C fonctionnelles avec bon scoring
+- [ ] Système de cartons FFE complet
+- [ ] Mort subite (Challenger + Timeout) fonctionnelle
+- [ ] Sortie d'arène fonctionnelle
+- [ ] Chronomètre synchronisé
+- [ ] Undo / Historique fonctionnel
+- [ ] UI optimisée tablette (boutons larges, pas de scroll)
+- [ ] Sélection de match intuitive
 
-- [ ] Score Lighthouse PWA > 90
-- [ ] App fonctionne 100% offline (création compétition, saisie scores)
-- [ ] Sync automatique < 5 secondes au retour réseau
-- [ ] Aucune perte de données en cas de conflit
-- [ ] Tests unitaires pour tous les nouveaux services
+### Mode hors-ligne
+- [ ] Saisie fonctionne sans connexion
+- [ ] Sync automatique au retour réseau
+- [ ] Aucune perte de données
+- [ ] Indicateurs visuels clairs
+
+### Global
+- [ ] Testé sur iPad et tablette Android
+- [ ] Temps de réponse < 100ms
+- [ ] 0 bug bloquant pendant une compétition test
+
+---
 
 ## Dépendances
 
 - `idb` : Wrapper IndexedDB moderne
-- `vite-plugin-pwa` : Plugin PWA pour Vite
-- `workbox` : Service Worker utilities
+- Connexion WebSocket/HTTP existante avec l'app principale
 
 ## Risques
 
 | Risque | Probabilité | Impact | Mitigation |
 |--------|-------------|--------|------------|
-| Quota IndexedDB dépassé | Faible | Élevé | Nettoyage auto des vieilles données |
-| Conflits de sync complexes | Moyen | Moyen | Last-write-wins + logs |
-| Performance sur vieux devices | Moyen | Faible | Lazy loading, pagination |
+| Conflits si 2 arbitres sur même match | Moyen | Élevé | Lock du match + alerte |
+| Latence réseau en gymnase | Élevé | Moyen | Mode offline par défaut |
+| Batterie tablette | Faible | Moyen | Optimisation JS, pas d'animations lourdes |
