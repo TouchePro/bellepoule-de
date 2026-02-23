@@ -3,11 +3,11 @@
 ## Vue d'ensemble
 
 ```
-Phase 1: Core Sabre Laser     ████████████████████ 100% ✅
-Phase 2: Tests Unitaires      ████████████████████ 100% ✅
-Phase 3: Mode Hors-Ligne      ░░░░░░░░░░░░░░░░░░░░   0% 🔜 ← ACTUELLE
-Phase 4: Dashboard Live       ░░░░░░░░░░░░░░░░░░░░   0% 📋
-Phase 5: Formule ASL          ░░░░░░░░░░░░░░░░░░░░   0% 📋
+Phase 1: Core Sabre Laser        ████████████████████ 100% ✅
+Phase 2: Tests Unitaires         ████████████████████ 100% ✅
+Phase 3: Saisie Distante + PWA   ░░░░░░░░░░░░░░░░░░░░   0% 🔜 ← ACTUELLE
+Phase 4: Dashboard Live          ░░░░░░░░░░░░░░░░░░░░   0% 📋
+Phase 5: Formule ASL             ░░░░░░░░░░░░░░░░░░░░   0% 📋
 ```
 
 ---
@@ -18,17 +18,11 @@ Phase 5: Formule ASL          ░░░░░░░░░░░░░░░░�
 **Durée** : 4 semaines
 
 ### Livrables
-- Système de cartons FFE complet
-- Zones de touches A/B/C
-- Mort subite (2 modes)
+- Système de cartons FFE complet (Groupes 1-4)
+- Zones de touches A/B/C (1/3/5 pts)
+- Mort subite (Challenger + Timeout)
 - Points Quest V1-V4
 - Sortie d'arène
-
-### Fichiers clés
-- `src/shared/utils/cardSystem.ts`
-- `src/shared/utils/touchSystem.ts`
-- `src/shared/utils/suddenDeath.ts`
-- `src/shared/utils/poolCalculations.ts`
 
 ---
 
@@ -42,45 +36,45 @@ Phase 5: Formule ASL          ░░░░░░░░░░░░░░░░�
 - ~350 tests unitaires
 - Couverture 93%
 
-### Fichiers clés
-- `src/shared/utils/*.test.ts`
-- `docs/GUIDE_TESTS_UNITAIRES.md`
-
 ---
 
-## Phase 3 : Mode Hors-Ligne 🔜
+## Phase 3 : Interface de Saisie Distante + Mode Hors-Ligne 🔜
 
 **Statut** : À DÉMARRER  
-**Durée estimée** : 2 semaines
+**Durée estimée** : 2-3 semaines
 
 ### Objectif
-Permettre l'utilisation complète sur tablette sans connexion internet.
+Interface `referee.html` 100% fonctionnelle sur tablette avec mode hors-ligne.
 
-### Tâches
-1. **IndexedDB Storage** (3 jours)
-   - Service de stockage local
-   - CRUD compétitions/matchs
-   - Migration des données
+### Partie A : Interface de Saisie Distante
 
-2. **Service Worker PWA** (2 jours)
-   - Cache assets statiques
-   - Stratégie network-first
-   - Fallback offline
+| Tâche | Description | Durée |
+|-------|-------------|-------|
+| remote-1 | Audit referee.html existant | 1j |
+| remote-2 | Zones A/B/C fonctionnelles | 1j |
+| remote-3 | Système de cartons complet | 1j |
+| remote-4 | Mort subite (2 modes) | 1j |
+| remote-5 | Sortie d'arène | 0.5j |
+| remote-6 | Chronomètre synchronisé | 1j |
+| remote-7 | Undo et historique | 1j |
+| remote-8 | UI optimisée tablette | 1j |
+| remote-9 | Sélection du match | 1j |
 
-3. **Sync Queue** (3 jours)
-   - Queue FIFO pour actions
-   - Retry automatique
-   - Résolution de conflits
+### Partie B : Mode Hors-Ligne
 
-4. **UI Offline** (2 jours)
-   - Indicateur de connexion
-   - Badge "non synchronisé"
-   - Bouton sync manuelle
+| Tâche | Description | Durée |
+|-------|-------------|-------|
+| offline-1 | Service IndexedDB | 1j |
+| offline-2 | Intégration dans referee | 1j |
+| offline-3 | Service Worker PWA | 1j |
+| offline-4 | Queue de synchronisation | 1j |
+| offline-5 | Indicateurs UI offline | 0.5j |
 
 ### Critères de succès
-- [ ] Lighthouse PWA > 90
-- [ ] Fonctionne 100% offline
-- [ ] Sync < 5 secondes au retour
+- [ ] Saisie distante 100% fonctionnelle
+- [ ] Fonctionne offline sur tablette
+- [ ] Sync automatique au retour réseau
+- [ ] Testé sur iPad et Android
 
 ---
 
@@ -92,11 +86,11 @@ Permettre l'utilisation complète sur tablette sans connexion internet.
 ### Objectif
 Affichage temps réel pour spectateurs et organisateurs.
 
-### Tâches
-1. WebSocket server
-2. Vue classement live
-3. Vue pistes en cours
-4. Notifications push
+### Tâches prévues
+- WebSocket server temps réel
+- Vue classement live
+- Vue pistes en cours
+- Notifications push
 
 ---
 
@@ -108,8 +102,8 @@ Affichage temps réel pour spectateurs et organisateurs.
 ### Objectif
 Support complet du format de compétition ASL avec repêchages.
 
-### Tâches
-1. Configuration poules Quest
-2. Tableaux avec repêchages
-3. Export résultats FFE
-4. Multi-phases
+### Tâches prévues
+- Configuration poules Quest avancée
+- Tableaux avec repêchages
+- Export résultats FFE officiel
+- Multi-phases configurables
