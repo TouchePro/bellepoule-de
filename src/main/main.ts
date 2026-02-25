@@ -703,20 +703,6 @@ ipcMain.handle('remote:getSession', async () => {
   return { success: true, session: remoteScoreServer.getSession() };
 });
 
-ipcMain.handle('remote:addReferee', async (_, name: string) => {
-  try {
-    if (!remoteScoreServer) {
-      return { success: false, error: 'Le serveur distant n est pas démarré' };
-    }
-
-    const referee = remoteScoreServer.addReferee(name);
-    return { success: true, referee };
-  } catch (error) {
-    console.error('Error adding referee:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
-  }
-});
-
 ipcMain.handle('remote:getArenas', async () => {
   if (!remoteScoreServer) {
     return { success: false, error: 'Le serveur distant n est pas démarré' };

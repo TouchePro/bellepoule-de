@@ -11,12 +11,7 @@ import path from 'path';
 import os from 'os';
 import {
   RemoteSession,
-  RemoteReferee,
-  RemoteStrip,
-  RemoteMatch,
   RemoteScoreUpdate,
-  ClientMessage,
-  ServerMessage,
   WebSocketMessage,
   Arena,
   ArenaMatch,
@@ -33,7 +28,6 @@ export class RemoteScoreServer {
   private port: number;
   private db: DatabaseManager;
   private session: RemoteSession | null = null;
-  private connectedReferees: Map<string, RemoteReferee> = new Map();
   private arenas: Map<string, Arena> = new Map();
   private arenaTimers: Map<string, NodeJS.Timeout> = new Map();
   private arenaCount: number = 4; // Nombre d'arènes par défaut
@@ -178,15 +172,7 @@ export class RemoteScoreServer {
 
     this.app.post('/api/session/stop', (req, res) => {
       this.session = null;
-      this.connectedReferees.clear();
       res.json({ success: true });
-    });
-
-    this.app.get('/api/referees', (req, res) => {
-      if (!this.session) {
-        return res.status(404).json({ error: 'Aucune session active' });
-      }
-      res.json(this.session.referees);
     });
 
     // Arena routes
@@ -480,36 +466,6 @@ export class RemoteScoreServer {
       }
     });
 
-    this.app.post('/api/referees', (req, res) => {
-      console.log("[RemoteScoreServer] POST /api/referees - Ajout d'un arbitre");
-      console.log('[RemoteScoreServer] Body:', req.body);
-      console.log('[RemoteScoreServer] Session:', this.session ? 'active' : 'inactive');
-
-      if (!this.session) {
-        console.warn('[RemoteScoreServer] ERREUR: Aucune session active');
-        return res.status(404).json({ error: 'Aucune session active' });
-      }
-
-      const name = req.body?.name;
-      if (!name) {
-        console.warn('[RemoteScoreServer] ERREUR: Nom manquant');
-        return res.status(400).json({ error: "Nom de l'arbitre requis" });
-      }
-
-      const referee: RemoteReferee = {
-        id: `ref_${Date.now()}`,
-        name: name,
-        code: req.body.code || this.generateRefereeCode(),
-        isActive: true,
-        lastActivity: new Date(),
-      };
-
-      this.session.referees.push(referee);
-      console.log(`[RemoteScoreServer] Arbitre ajouté: ${referee.name} (code: ${referee.code})`);
-      console.log(`[RemoteScoreServer] Total arbitres: ${this.session.referees.length}`);
-      res.json(referee);
-    });
-
     this.app.get('/api/strips', (req, res) => {
       if (!this.session) {
         return res.status(404).json({ error: 'Aucune session active' });
@@ -544,10 +500,6 @@ export class RemoteScoreServer {
   private setupSocketHandlers(): void {
     this.io.on('connection', (socket: any) => {
       console.log('Client connected:', socket.id);
-
-      socket.on('message', (data: ClientMessage) => {
-        this.handleClientMessage(socket, data);
-      });
 
       // Gestion des arènes
       socket.on('join_arena', (data: { arenaId: string; role?: string }) => {
@@ -587,26 +539,7 @@ export class RemoteScoreServer {
   }
 
   private handleDisconnect(socket: any): void {
-    const referee = this.connectedReferees.get(socket.id);
-    if (referee) {
-      referee.isActive = false;
-      referee.lastActivity = new Date();
-
-      // Notifier les autres clients
-      this.broadcastMessage(
-        {
-          type: 'referee_disconnected',
-          data: { refereeId: referee.id, refereeName: referee.name },
-          timestamp: new Date(),
-          sender: 'server',
-        },
-        socket.id
-      );
-
-      console.log(`Referee ${referee.name} disconnected`);
-    }
-
-    this.connectedReferees.delete(socket.id);
+    console.log(`Client ${socket.id} disconnected`);
   }
 
   // Stockage des cartons par arène
@@ -731,141 +664,6 @@ export class RemoteScoreServer {
     }
   }
 
-  private async handleClientMessage(socket: any, message: ClientMessage): Promise<void> {
-    switch (message.type) {
-      case 'login':
-        await this.handleRefereeLogin(socket, message.data);
-        break;
-      case 'score_update':
-        await this.handleScoreUpdate(socket, message.data);
-        break;
-      case 'match_complete':
-        await this.handleMatchComplete(socket, message.data);
-        break;
-      case 'heartbeat':
-        await this.handleHeartbeat(socket);
-        break;
-      case 'logout':
-        this.handleRefereeDisconnection(socket);
-        break;
-    }
-  }
-
-  private async handleRefereeLogin(socket: any, data: { code: string }): Promise<void> {
-    if (!this.session) {
-      socket.emit('message', {
-        type: 'login_error',
-        data: { error: 'Aucune session active' },
-      } as ServerMessage);
-      return;
-    }
-
-    const referee = this.session.referees.find(r => r.code === data.code);
-    if (!referee) {
-      socket.emit('message', {
-        type: 'login_error',
-        data: { error: "Code d'arbitre invalide" },
-      } as ServerMessage);
-      return;
-    }
-
-    referee.isActive = true;
-    referee.lastActivity = new Date();
-    this.connectedReferees.set(socket.id, referee);
-
-    socket.emit('message', {
-      type: 'login_success',
-      data: { referee },
-    } as ServerMessage);
-
-    // Notifier les autres clients
-    this.broadcastMessage(
-      {
-        type: 'referee_connected',
-        data: { refereeId: referee.id, refereeName: referee.name },
-        timestamp: new Date(),
-        sender: 'server',
-      },
-      socket.id
-    );
-
-    console.log(`Referee ${referee.name} connected with code ${data.code}`);
-  }
-
-  private async handleScoreUpdate(socket: any, data: RemoteScoreUpdate): Promise<void> {
-    try {
-      const referee = this.connectedReferees.get(socket.id);
-      if (!referee) {
-        socket.emit('message', {
-          type: 'error',
-          data: { error: 'Non authentifié' },
-        } as ServerMessage);
-        return;
-      }
-
-      data.refereeId = referee.id;
-      await this.updateMatchScore(data.matchId, data);
-
-      // Diffuser la mise à jour
-      this.broadcastMessage({
-        type: 'score_update_broadcast',
-        data: { scoreUpdate: data },
-        timestamp: new Date(),
-        sender: referee.id,
-      });
-    } catch (error) {
-      console.error('Error handling score update:', error);
-      socket.emit('message', {
-        type: 'error',
-        data: { error: 'Erreur lors de la mise à jour du score' },
-      } as ServerMessage);
-    }
-  }
-
-  private async handleMatchComplete(socket: any, data: { matchId: string }): Promise<void> {
-    const referee = this.connectedReferees.get(socket.id);
-    if (!referee) return;
-
-    // Mettre à jour le statut du match
-    referee.currentMatch = undefined;
-    referee.lastActivity = new Date();
-
-    // Notifier le système principal
-    this.broadcastMessage({
-      type: 'match_finished',
-      data: { matchId: data.matchId, refereeId: referee.id },
-      timestamp: new Date(),
-      sender: referee.id,
-    });
-  }
-
-  private async handleHeartbeat(socket: any): Promise<void> {
-    const referee = this.connectedReferees.get(socket.id);
-    if (referee) {
-      referee.lastActivity = new Date();
-      socket.emit('message', {
-        type: 'session_update',
-        data: { timestamp: new Date() },
-      } as ServerMessage);
-    }
-  }
-
-  private handleRefereeDisconnection(socket: any): void {
-    const referee = this.connectedReferees.get(socket.id);
-    if (referee) {
-      referee.isActive = false;
-      referee.currentMatch = undefined;
-      this.connectedReferees.delete(socket.id);
-
-      this.broadcastMessage({
-        type: 'referee_disconnected',
-        data: { refereeId: referee.id, refereeName: referee.name },
-        timestamp: new Date(),
-        sender: 'server',
-      });
-    }
-  }
-
   private async createSession(competitionId: string, strips: number): Promise<RemoteSession> {
     console.log(
       `[RemoteScoreServer] Création d'une session pour la compétition ${competitionId} avec ${strips} pistes...`
@@ -954,24 +752,11 @@ export class RemoteScoreServer {
     });
   }
 
-  private broadcastMessage(message: WebSocketMessage, excludeSocketId?: string): void {
-    this.connectedReferees.forEach((referee, socketId) => {
-      if (socketId !== excludeSocketId) {
-        const socket = Array.from(this.io.sockets.sockets.values()).find(s => s.id === socketId);
-        if (socket) {
-          socket.emit('message', message);
-        }
-      }
-    });
-
-    // Envoyer aussi à la fenêtre principale
+  private broadcastMessage(message: WebSocketMessage): void {
+    // Envoyer à la fenêtre principale
     if ((global as any).mainWindow) {
       (global as any).mainWindow.webContents.send('remote:websocket_message', message);
     }
-  }
-
-  private generateRefereeCode(): string {
-    return Math.random().toString(36).substring(2, 8).toUpperCase();
   }
 
   private initializeArenas(arenaCount: number = 4): void {
@@ -1341,7 +1126,6 @@ export class RemoteScoreServer {
 
   public stopSession(): void {
     this.session = null;
-    this.connectedReferees.clear();
   }
 
   public updateStripCount(newCount: number): RemoteSession | null {
@@ -1388,29 +1172,7 @@ export class RemoteScoreServer {
     return this.session;
   }
 
-  public addReferee(name: string): RemoteReferee {
-    if (!this.session) {
-      throw new Error('Aucune session active');
-    }
-
-    const code = `ARB${String(this.session.referees.length + 1).padStart(3, '0')}`;
-    const referee: RemoteReferee = {
-      id: `ref-${Date.now()}`,
-      name,
-      code,
-      isActive: false,
-      lastActivity: new Date(),
-    };
-
-    this.session.referees.push(referee);
-    return referee;
-  }
-
   public getSession(): RemoteSession | null {
     return this.session;
-  }
-
-  public getConnectedReferees(): RemoteReferee[] {
-    return Array.from(this.connectedReferees.values());
   }
 }

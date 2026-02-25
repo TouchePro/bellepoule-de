@@ -4,8 +4,8 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useEffect } from 'react';
-import { Competition, Match, Fencer, Pool, MatchStatus } from '../../shared/types';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Competition } from '../../shared/types';
 import { useToast } from './Toast';
 import { usePoolStore } from '../../features/pools/hooks/usePoolStore';
 
@@ -24,15 +24,6 @@ interface RemoteSession {
     currentMatch?: any;
     assignedReferee?: string;
   }>;
-  referees: Array<{
-    id: string;
-    name: string;
-    code: string;
-    isActive: boolean;
-    currentMatch?: string;
-    lastActivity: Date;
-  }>;
-  activeMatches: any[];
   isRunning: boolean;
   startTime?: Date;
 }
@@ -47,17 +38,13 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const { pools, loadPools } = usePoolStore();
   const [session, setSession] = useState<RemoteSession | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [refereeName, setRefereeName] = useState('');
-  const [stripCount, setStripCount] = useState(4);
   const [serverUrl, setServerUrl] = useState<string>('http://localhost:8066');
+  const [stripCount, setStripCount] = useState(4);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   // Charger les poules et définir le nombre de pistes par défaut
   useEffect(() => {
     if (competition?.id) {
-      console.log(
-        '[RemoteScoreManager] Chargement des poules pour la compétition:',
-        competition.id
-      );
       loadPools(competition.id);
     }
   }, [competition?.id]);
@@ -65,16 +52,12 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   // Mettre à jour le nombre de pistes quand les poules sont chargées
   useEffect(() => {
     if (pools && pools.length > 0) {
-      console.log(
-        `[RemoteScoreManager] ${pools.length} poules trouvées, mise à jour du nombre de pistes`
-      );
       setStripCount(pools.length);
     }
   }, [pools]);
 
   useEffect(() => {
     if (isRemoteActive) {
-      // Démarrer le serveur via IPC quand on active la saisie distante
       startRemoteServer();
     }
   }, [isRemoteActive]);
@@ -86,12 +69,8 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
 
       if (result.success && result.serverInfo) {
         setServerUrl(result.serverInfo.url);
-        showToast('Serveur de saisie distante démarré', 'success');
-        // Vérifier le statut de la session après le démarrage
-        checkSessionStatus();
-        // Rafraîchir périodiquement
-        const interval = setInterval(checkSessionStatus, 5000);
-        return () => clearInterval(interval);
+        // Auto-démarrer la session
+        await startSession(result.serverInfo.url, stripCount);
       } else {
         showToast(`Erreur: ${result.error || 'Impossible de démarrer le serveur'}`, 'error');
       }
@@ -103,95 +82,45 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     }
   };
 
-  const checkSessionStatus = async () => {
+  const startSession = async (baseUrl: string, count: number) => {
     try {
-      const result = await window.electronAPI.remote.getSession();
+      const result = await window.electronAPI.remote.startSession(competition.id, count);
       if (result.success && result.session) {
         setSession(result.session);
-      }
-    } catch (error) {
-      console.error('Failed to check session status:', error);
-    }
-  };
-
-  const handleStartSession = async () => {
-    setIsLoading(true);
-    try {
-      const result = await window.electronAPI.remote.startSession(competition.id, stripCount);
-
-      if (result.success) {
-        setSession(result.session);
-        showToast('Session de saisie distante démarrée', 'success');
-        fetchArenas();
+        showToast('Saisie distante démarrée', 'success');
       } else {
-        showToast(`Erreur: ${result.error}`, 'error');
+        showToast(`Erreur session: ${result.error}`, 'error');
       }
     } catch (error) {
-      showToast('Impossible de démarrer la session distante', 'error');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchArenas = async () => {
-    try {
-      const result = await window.electronAPI.remote.getArenas();
-      if (result.success) {
-        console.log('[RemoteScoreManager] Arènes:', result.arenas);
-      }
-    } catch (error) {
-      console.error('Failed to fetch arenas:', error);
+      console.error('Failed to start session:', error);
     }
   };
 
   const handleUpdateStripCount = async (newCount: number) => {
-    if (newCount < 1 || newCount > 20) {
-      showToast('Le nombre de pistes doit être entre 1 et 20', 'error');
-      return;
-    }
+    if (newCount < 1 || newCount > 20) return;
 
     try {
       const result = await window.electronAPI.remote.updateStripCount(newCount);
       if (result.success && result.session) {
         setSession(result.session);
-        showToast(`Nombre de pistes mis à jour: ${newCount}`, 'success');
+        setStripCount(newCount);
       } else {
         showToast(`Erreur: ${result.error}`, 'error');
       }
     } catch (error) {
       console.error('Failed to update strip count:', error);
-      showToast('Erreur lors de la mise à jour du nombre de pistes', 'error');
-    }
-  };
-
-  const handleStopSession = async () => {
-    setIsLoading(true);
-    try {
-      const result = await window.electronAPI.remote.stopSession();
-
-      if (result.success) {
-        setSession(null);
-        showToast('Session de saisie distante arrêtée', 'success');
-      } else {
-        showToast(`Erreur: ${result.error}`, 'error');
-      }
-    } catch (error) {
-      showToast("Impossible d'arrêter la session distante", 'error');
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const handleStopRemote = async () => {
     setIsLoading(true);
     try {
-      // Arrêter le serveur via IPC
       const result = await window.electronAPI.remote.stopServer();
 
       if (result.success) {
         setSession(null);
-        showToast('Serveur de saisie distante arrêté', 'success');
-        onStopRemote(); // Notifier le parent
+        showToast('Saisie distante arrêtée', 'success');
+        onStopRemote();
       } else {
         showToast(`Erreur: ${result.error || "Impossible d'arrêter le serveur"}`, 'error');
       }
@@ -203,73 +132,30 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     }
   };
 
-  const handleAddReferee = async () => {
-    if (!refereeName.trim()) {
-      showToast("Veuillez entrer un nom d'arbitre", 'error');
-      return;
-    }
-
-    if (!session) {
-      showToast("Veuillez d'abord démarrer une session", 'error');
-      return;
-    }
-
+  const copyToClipboard = useCallback(async (text: string, index: number) => {
     try {
-      const result = await window.electronAPI.remote.addReferee(refereeName);
-
-      if (result.success && result.referee) {
-        showToast(
-          `Arbitre ${result.referee.name} ajouté avec le code ${result.referee.code}`,
-          'success'
-        );
-        setRefereeName('');
-        checkSessionStatus();
-      } else {
-        showToast(`Erreur: ${result.error || "Impossible d'ajouter l'arbitre"}`, 'error');
-      }
-    } catch (error) {
-      console.error('Failed to add referee:', error);
-      showToast("Impossible d'ajouter l'arbitre", 'error');
+      await navigator.clipboard.writeText(text);
+      setCopiedIndex(index);
+      setTimeout(() => setCopiedIndex(null), 2000);
+    } catch {
+      // Fallback
+      const el = document.createElement('textarea');
+      el.value = text;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      setCopiedIndex(index);
+      setTimeout(() => setCopiedIndex(null), 2000);
     }
-  };
+  }, []);
 
-  const generateMatchesForRemote = () => {
-    const matches: Match[] = [];
-
-    // Générer les matchs de poules
-    // Note: À adapter selon la structure réelle de la compétition
-    // competition.pools?.forEach(pool => {
-    //   pool.matches.forEach(match => {
-    //     if (match.status !== MatchStatus.FINISHED) {
-    //       matches.push(match);
-    //     }
-    //   });
-    // });
-
-    // Générer les matchs de tableau
-    // competition.tableau?.matches.forEach(match => {
-    //   if (match.status !== MatchStatus.FINISHED) {
-    //     matches.push(match);
-    //   }
-    // });
-
-    return matches;
-  };
-
-  const assignMatchesToStrips = () => {
-    if (!session) return;
-
-    const matches = generateMatchesForRemote();
-    const availableStrips = session.strips.filter(strip => strip.status === 'available');
-
-    // Logique simple d'assignation des matchs aux pistes
-    matches.slice(0, availableStrips.length).forEach((match, index) => {
-      if (index < availableStrips.length) {
-        // Assigner le match à la piste
-        console.log(`Assigning match ${match.id} to strip ${availableStrips[index].number}`);
-      }
-    });
-  };
+  const arenaCount = session ? session.strips.length : stripCount;
+  const arenaUrls = Array.from({ length: arenaCount }, (_, i) => ({
+    number: i + 1,
+    refereeUrl: `${serverUrl}/arene${i + 1}/arbitre`,
+    displayUrl: `${serverUrl}/arene${i + 1}`,
+  }));
 
   if (!isRemoteActive) {
     return (
@@ -294,7 +180,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         <div className="remote-status active">
           <h3>🟢 Saisie distante active</h3>
           <p>
-            Les arbitres peuvent se connecter sur: <strong>{serverUrl}</strong>
+            Serveur: <strong>{serverUrl}</strong>
           </p>
         </div>
         <button className="btn-secondary" onClick={handleStopRemote} disabled={isLoading}>
@@ -302,180 +188,67 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         </button>
       </div>
 
-      {!session ? (
-        <div className="session-setup">
-          <h4>Configuration de la session</h4>
-          <div className="setup-form">
-            <div className="form-group">
-              <label>Nombre de pistes (automatique = nombre de poules):</label>
-              <input
-                type="number"
-                min="1"
-                max="20"
-                value={stripCount}
-                onChange={e => setStripCount(parseInt(e.target.value) || 1)}
-              />
-              {pools && pools.length > 0 && (
-                <small className="help-text">
-                  {pools.length} poules générées → {pools.length} pistes configurées par défaut
-                </small>
-              )}
-            </div>
-            <button className="btn-primary" onClick={handleStartSession} disabled={isLoading}>
-              {isLoading ? 'Démarrage...' : 'Démarrer la session'}
+      <div className="arena-urls-section">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
+          <h4 style={{ margin: 0 }}>Pistes ({arenaCount})</h4>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <button
+              className="btn btn-secondary"
+              onClick={() => handleUpdateStripCount(arenaCount - 1)}
+              disabled={arenaCount <= 1 || isLoading}
+              style={{ padding: '0.2rem 0.5rem', fontSize: '1rem' }}
+            >
+              −
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => handleUpdateStripCount(arenaCount + 1)}
+              disabled={arenaCount >= 20 || isLoading}
+              style={{ padding: '0.2rem 0.5rem', fontSize: '1rem' }}
+            >
+              +
             </button>
           </div>
         </div>
-      ) : (
-        <div className="session-active">
-          <div className="session-info">
-            <h4>Session active</h4>
-            <p>
-              Démarrée:{' '}
-              {session.startTime ? new Date(session.startTime).toLocaleString() : 'Inconnue'}
-            </p>
-            <div className="form-group" style={{ marginTop: '0.5rem' }}>
-              <label style={{ fontWeight: 600 }}>Nombre de pistes:</label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+
+        <div className="arena-url-grid">
+          {arenaUrls.map(arena => (
+            <div key={arena.number} className="arena-url-card">
+              <div className="arena-url-header">
+                <strong>Piste {arena.number}</strong>
+              </div>
+              <div className="arena-url-row">
+                <span className="arena-url-label">Arbitre</span>
+                <code className="arena-url-value">{arena.refereeUrl}</code>
                 <button
-                  className="btn btn-secondary"
-                  onClick={() => handleUpdateStripCount(session.strips.length - 1)}
-                  disabled={session.strips.length <= 1}
-                  style={{ padding: '0.25rem 0.5rem' }}
+                  className="btn-copy"
+                  onClick={() => copyToClipboard(arena.refereeUrl, arena.number * 10)}
+                  title="Copier l'URL"
                 >
-                  -
-                </button>
-                <span
-                  style={{
-                    fontWeight: 'bold',
-                    fontSize: '1.25rem',
-                    minWidth: '2rem',
-                    textAlign: 'center',
-                  }}
-                >
-                  {session.strips.length}
-                </span>
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => handleUpdateStripCount(session.strips.length + 1)}
-                  disabled={session.strips.length >= 20}
-                  style={{ padding: '0.25rem 0.5rem' }}
-                >
-                  +
+                  {copiedIndex === arena.number * 10 ? '✓' : '📋'}
                 </button>
               </div>
-              <small className="help-text" style={{ display: 'block', marginTop: '0.25rem' }}>
-                {session.strips.filter(s => s.status === 'available').length} disponibles,{' '}
-                {session.strips.filter(s => s.status === 'occupied').length} occupées
-              </small>
-            </div>
-            <p>Arbitres: {session.referees.length}</p>
-          </div>
-
-          <div className="referee-management">
-            <h5>Ajouter un arbitre</h5>
-            <div className="add-referee">
-              <input
-                type="text"
-                placeholder="Nom de l'arbitre"
-                value={refereeName}
-                onChange={e => setRefereeName(e.target.value)}
-                onKeyPress={e => e.key === 'Enter' && handleAddReferee()}
-                disabled={!session}
-              />
-              <button className="btn-primary" onClick={handleAddReferee} disabled={!session}>
-                Ajouter
-              </button>
-            </div>
-            {!session && (
-              <p className="text-sm text-muted" style={{ marginTop: '0.5rem' }}>
-                Démarrez d'abord une session pour ajouter des arbitres
-              </p>
-            )}
-          </div>
-
-          <div className="referees-list">
-            <h5>Arbitres ({session.referees.length})</h5>
-            {session.referees.length === 0 ? (
-              <p className="no-referees">Aucun arbitre ajouté</p>
-            ) : (
-              <div className="referee-grid">
-                {session.referees.map(referee => (
-                  <div
-                    key={referee.id}
-                    className={`referee-card ${referee.isActive ? 'active' : 'inactive'}`}
-                  >
-                    <h6>{referee.name}</h6>
-                    <p>
-                      <strong>Code:</strong> {referee.code}
-                    </p>
-                    <p>
-                      <strong>Statut:</strong> {referee.isActive ? '🟢 Connecté' : '🔴 Déconnecté'}
-                    </p>
-                    {referee.currentMatch && (
-                      <p>
-                        <strong>Match actuel:</strong> {referee.currentMatch}
-                      </p>
-                    )}
-                    <p>
-                      <small>
-                        Dernière activité: {new Date(referee.lastActivity).toLocaleTimeString()}
-                      </small>
-                    </p>
-                  </div>
-                ))}
+              <div className="arena-url-row">
+                <span className="arena-url-label">Affichage</span>
+                <code className="arena-url-value">{arena.displayUrl}</code>
+                <button
+                  className="btn-copy"
+                  onClick={() => copyToClipboard(arena.displayUrl, arena.number * 10 + 1)}
+                  title="Copier l'URL"
+                >
+                  {copiedIndex === arena.number * 10 + 1 ? '✓' : '📋'}
+                </button>
               </div>
-            )}
-          </div>
-
-          <div className="strips-status">
-            <h5>État des pistes</h5>
-            <div className="strip-grid">
-              {session.strips.map(strip => (
-                <div key={strip.number} className={`strip-card ${strip.status}`}>
-                  <h6>Piste {strip.number}</h6>
-                  <p>
-                    <strong>Statut:</strong>{' '}
-                    {strip.status === 'available'
-                      ? '✅ Disponible'
-                      : strip.status === 'occupied'
-                        ? '🔄 Occupée'
-                        : '🔧 Maintenance'}
-                  </p>
-                  {strip.currentMatch && (
-                    <p>
-                      <strong>Match:</strong> {strip.currentMatch}
-                    </p>
-                  )}
-                  {strip.assignedReferee && (
-                    <p>
-                      <strong>Arbitre:</strong> {strip.assignedReferee}
-                    </p>
-                  )}
-                </div>
-              ))}
             </div>
-          </div>
-
-          <div className="session-actions">
-            <button className="btn-secondary" onClick={assignMatchesToStrips}>
-              📋 Assigner les matchs
-            </button>
-            <button className="btn-danger" onClick={handleStopSession} disabled={isLoading}>
-              🛑 Arrêter la session
-            </button>
-          </div>
+          ))}
         </div>
-      )}
+      </div>
 
       <div className="remote-instructions">
         <h5>Instructions pour les arbitres</h5>
         <ol>
           <li>Ouvrir un navigateur web sur la tablette</li>
-          <li>
-            Aller à l'adresse: <strong>{serverUrl}</strong>
-          </li>
-          <li>Entrer le code d'accès fourni par l'organisateur</li>
+          <li>Aller à l'URL <strong>Arbitre</strong> correspondant à sa piste</li>
           <li>Saisir les scores du match en cours</li>
           <li>Cliquer sur "Match suivant" pour passer au match suivant</li>
         </ol>

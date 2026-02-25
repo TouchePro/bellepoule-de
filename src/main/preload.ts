@@ -297,7 +297,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('remote:startSession', competitionId, strips),
     stopSession: () => ipcRenderer.invoke('remote:stopSession'),
     getSession: () => ipcRenderer.invoke('remote:getSession'),
-    addReferee: (name: string) => ipcRenderer.invoke('remote:addReferee', name),
     getArenas: () => ipcRenderer.invoke('remote:getArenas'),
     updateStripCount: (count: number) => ipcRenderer.invoke('remote:updateStripCount', count),
   },

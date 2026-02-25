@@ -1369,3 +1369,120 @@ body {
   opacity: 0;
   transition: opacity 0.2s ease;
 }
+
+/* Remote Score Manager */
+.remote-score-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1rem;
+}
+
+.remote-status.inactive,
+.remote-status.active {
+  padding: 0.75rem 1rem;
+  border-radius: var(--border-radius);
+}
+
+.remote-status.inactive {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.remote-status.active {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+}
+
+.remote-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Arena URL cards */
+.arena-url-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 0.75rem;
+}
+
+.arena-url-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.arena-url-header {
+  font-size: 0.95rem;
+  color: var(--color-text);
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 0.1rem;
+}
+
+.arena-url-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.arena-url-label {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  min-width: 4rem;
+  flex-shrink: 0;
+}
+
+.arena-url-value {
+  font-family: monospace;
+  font-size: 0.78rem;
+  color: var(--color-primary);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: var(--color-bg);
+  padding: 0.15rem 0.35rem;
+  border-radius: 4px;
+}
+
+.btn-copy {
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 0.15rem 0.35rem;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+  transition: background 0.15s;
+}
+
+.btn-copy:hover {
+  background: var(--color-bg);
+}
+
+.remote-instructions {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  padding: 1rem;
+}
+
+.remote-instructions h5 {
+  margin-bottom: 0.5rem;
+}
+
+.remote-instructions ol {
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+}
