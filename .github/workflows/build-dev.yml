@@ -90,7 +90,15 @@ jobs:
             ${{ runner.os }}-npm-
 
       - name: Install Dependencies
-        run: npm ci
+        run: |
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            npm ci && break
+            echo "npm ci failed, trying npm install..."
+            npm install && break
+            echo "Failed, waiting 10s before retry..."
+            sleep 10
+          done
 
       - name: Build TypeScript and Webpack
         run: npm run build:ci
@@ -190,7 +198,15 @@ jobs:
             ${{ runner.os }}-npm-
 
       - name: Install Dependencies
-        run: npm ci
+        run: |
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            npm ci && break
+            echo "npm ci failed, trying npm install..."
+            npm install && break
+            echo "Failed, waiting 10s before retry..."
+            sleep 10
+          done
 
       - name: Build TypeScript and Webpack
         run: npm run build:ci
@@ -240,7 +256,15 @@ jobs:
             ${{ runner.os }}-npm-
 
       - name: Install Dependencies
-        run: npm ci
+        run: |
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            npm ci && break
+            echo "npm ci failed, trying npm install..."
+            npm install && break
+            echo "Failed, waiting 10s before retry..."
+            sleep 10
+          done
 
       - name: Build TypeScript and Webpack
         run: npm run build:ci
@@ -290,7 +314,15 @@ jobs:
             ${{ runner.os }}-npm-
 
       - name: Install Dependencies
-        run: npm ci
+        run: |
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            npm ci && break
+            echo "npm ci failed, trying npm install..."
+            npm install && break
+            echo "Failed, waiting 10s before retry..."
+            sleep 10
+          done
 
       - name: Build TypeScript and Webpack
         run: npm run build:ci
