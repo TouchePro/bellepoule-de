@@ -555,9 +555,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             onCheckInAll={checkInAll}
             onUncheckAll={uncheckAll}
             onSetFencerStatus={(id, status) => {
-              // Si forfait ou abandon, mettre à jour tous les matchs du tireur
-              if (status === FencerStatus.FORFAIT || status === FencerStatus.ABANDONED) {
-                handleFencerForfeit(id);
+              // Si forfait, abandon ou exclusion, mettre à jour tous les matchs du tireur
+              if (status === FencerStatus.FORFAIT) {
+                handleFencerForfeit(id, 'forfait');
+              } else if (status === FencerStatus.ABANDONED) {
+                handleFencerForfeit(id, 'abandon');
+              } else if (status === FencerStatus.EXCLUDED) {
+                handleFencerForfeit(id, 'exclusion');
               }
               updateFencer(id, { status });
             }}
