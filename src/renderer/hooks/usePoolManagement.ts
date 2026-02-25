@@ -5,7 +5,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { Pool, Fencer, Match, MatchStatus, Weapon, PoolRanking } from '../../shared/types';
+import { Pool, Fencer, Match, MatchStatus, FencerStatus, Weapon, PoolRanking } from '../../shared/types';
 import { useToast } from '../components/Toast';
 import {
   distributeFencersToPoolsSerpentine,
@@ -244,15 +244,28 @@ export const usePoolManagement = ({
     };
   }, [pools]);
 
-  // Gérer le forfait/abandon d'un tireur sur tous ses matchs
-  // Les matchs sont marqués comme non disputés (grisés) sans modifier les scores des adversaires
+  // Gérer le forfait/abandon/exclusion d'un tireur sur tous ses matchs non encore disputés
+  // Met à jour le statut du tireur et grise ses matchs restants dans la grille
   const handleFencerForfeit = useCallback(
-    (fencerId: string) => {
+    (fencerId: string, status: 'abandon' | 'forfait' | 'exclusion') => {
+      const newFencerStatus =
+        status === 'abandon'
+          ? FencerStatus.ABANDONED
+          : status === 'forfait'
+            ? FencerStatus.FORFAIT
+            : FencerStatus.EXCLUDED;
+
       setPools(prevPools => {
         const updatedPools = [...prevPools];
         let modifiedCount = 0;
 
         updatedPools.forEach(pool => {
+          // Mettre à jour le statut du tireur dans la liste des tireurs de la poule
+          const poolFencer = pool.fencers.find(f => f.id === fencerId);
+          if (poolFencer) {
+            poolFencer.status = newFencerStatus;
+          }
+
           pool.matches.forEach(match => {
             // Vérifier si le tireur est dans ce match
             const isFencerA = match.fencerA?.id === fencerId;
@@ -260,33 +273,41 @@ export const usePoolManagement = ({
 
             if (!isFencerA && !isFencerB) return;
 
-            // Marquer le match comme "non disputé" à cause du forfait/abandon
-            // Les scores de l'adversaire restent null (non modifiés)
-            if (isFencerA) {
+            // Ne pas écraser les matchs déjà disputés avec de vrais scores
+            const isAlreadyPlayed =
+              match.status === MatchStatus.FINISHED &&
+              !match.scoreA?.isForfait &&
+              !match.scoreB?.isForfait;
+            if (isAlreadyPlayed) return;
+
+            // Mettre à jour le statut du tireur dans les références du match
+            if (isFencerA && match.fencerA) {
+              match.fencerA.status = newFencerStatus;
               match.scoreA = {
                 value: 0,
                 isVictory: false,
-                isAbstention: false,
-                isExclusion: false,
-                isForfait: true,
+                isAbstention: status === 'abandon',
+                isExclusion: status === 'exclusion',
+                isForfait: status === 'forfait',
               };
-            } else {
+            } else if (isFencerB && match.fencerB) {
+              match.fencerB.status = newFencerStatus;
               match.scoreB = {
                 value: 0,
                 isVictory: false,
-                isAbstention: false,
-                isExclusion: false,
-                isForfait: true,
+                isAbstention: status === 'abandon',
+                isExclusion: status === 'exclusion',
+                isForfait: status === 'forfait',
               };
             }
 
-            // Marquer le match comme terminé mais avec forfait
+            // Marquer le match comme terminé (non disputé)
             match.status = MatchStatus.FINISHED;
             match.updatedAt = new Date();
             modifiedCount++;
           });
 
-          // Recalculer le classement de la pou00le
+          // Recalculer le classement de la poule
           if (modifiedCount > 0) {
             pool.ranking = computePoolRanking(pool);
             pool.updatedAt = new Date();
@@ -298,7 +319,7 @@ export const usePoolManagement = ({
           const newOverallRanking = computeOverallRanking(updatedPools);
           setOverallRanking(newOverallRanking);
           showToast(
-            `${modifiedCount} match(s) marqué(s) comme non disputés (forfait/abandon)`,
+            `${modifiedCount} match(s) marqué(s) comme non disputés (${status})`,
             'success'
           );
         }
