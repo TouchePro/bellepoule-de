@@ -188,18 +188,6 @@ export class RemoteScoreServer {
       res.json(arena);
     });
 
-    this.app.get('/api/arenas/:arenaId/matches', (req, res) => {
-      const arena = this.getArena(req.params.arenaId);
-      if (!arena) {
-        return res.status(404).json({ error: 'Arène non trouvée' });
-      }
-      res.json({
-        currentMatch: arena.currentMatch,
-        status: arena.status,
-        elapsedTime: arena.elapsedTime,
-      });
-    });
-
     this.app.post('/api/arenas/:arenaId/assign', (req, res) => {
       const { match } = req.body;
       try {
