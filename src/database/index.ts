@@ -752,6 +752,43 @@ export class DatabaseManager {
     return results;
   }
 
+  public getCompetitionPools(competitionId: string): { id: string; name: string }[] {
+    if (!this.db) throw new Error('Database not open');
+    const pools: { id: string; name: string }[] = [];
+
+    try {
+      const poolsStmt = this.db.prepare(
+        'SELECT DISTINCT p.id, p.name FROM pools p INNER JOIN pool_fencers pf ON p.id = pf.pool_id INNER JOIN fencers f ON pf.fencer_id = f.id WHERE f.competition_id = ? ORDER BY p.name'
+      );
+      poolsStmt.bind([competitionId]);
+      while (poolsStmt.step()) {
+        const row = poolsStmt.getAsObject();
+        pools.push({ id: row.id as string, name: row.name as string });
+      }
+      poolsStmt.free();
+    } catch (e) {
+      console.warn('[Database] Error getting pools:', e);
+    }
+
+    if (pools.length === 0) {
+      try {
+        const poolsStmt = this.db.prepare(
+          'SELECT p.id, p.name FROM pools p INNER JOIN phases ph ON p.phase_id = ph.id WHERE ph.competition_id = ? ORDER BY p.name'
+        );
+        poolsStmt.bind([competitionId]);
+        while (poolsStmt.step()) {
+          const row = poolsStmt.getAsObject();
+          pools.push({ id: row.id as string, name: row.name as string });
+        }
+        poolsStmt.free();
+      } catch (e) {
+        console.warn('[Database] Error getting pools via phases:', e);
+      }
+    }
+
+    return pools;
+  }
+
   public getPendingMatches(competitionId: string): Match[] {
     if (!this.db) throw new Error('Database not open');
     const results: Match[] = [];

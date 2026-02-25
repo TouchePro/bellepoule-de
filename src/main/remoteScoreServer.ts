@@ -231,6 +231,47 @@ export class RemoteScoreServer {
       res.json({ success: true });
     });
 
+    // Get all pools for current competition
+    this.app.get('/api/pools', (req, res) => {
+      if (!this.session) {
+        return res.status(404).json({ error: 'Aucune session active' });
+      }
+      try {
+        const pools = this.db.getCompetitionPools(this.session.competitionId);
+        res.json(pools);
+      } catch (error) {
+        console.error('Error getting pools:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des poules' });
+      }
+    });
+
+    // Get matches for a specific pool
+    this.app.get('/api/pools/:poolId/matches', (req, res) => {
+      const { poolId } = req.params;
+      try {
+        const matches = this.db.getMatchesByPool(poolId);
+        res.json(matches);
+      } catch (error) {
+        console.error('Error getting pool matches:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des matchs' });
+      }
+    });
+
+    // Get pending matches for a specific pool
+    this.app.get('/api/pools/:poolId/pending-matches', (req, res) => {
+      const { poolId } = req.params;
+      try {
+        const matches = this.db.getMatchesByPool(poolId);
+        const pending = matches.filter(
+          m => m.status === 'not_started' || m.status === 'in_progress'
+        );
+        res.json(pending);
+      } catch (error) {
+        console.error('Error getting pending matches:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des matchs' });
+      }
+    });
+
     // Pages d'arène - Dynamiques
     const getRemotePath = (filename: string) => {
       return process.env.NODE_ENV === 'development'
@@ -343,59 +384,18 @@ export class RemoteScoreServer {
           return res.status(404).json({ error: 'Aucune session active' });
         }
 
-        // Récupérer l'arène
-        const arena = this.getArena(arenaId);
-        if (!arena) {
-          return res.status(404).json({ error: 'Arène non trouvée' });
-        }
-
-        // Déterminer la pool associée à cette arène
-        // Pour l'instant, on associe arena1 -> première pool, etc.
         const arenaNumber = parseInt(arenaId.replace('arena', ''));
         const competitionId = this.session.competitionId;
 
-        // Récupérer toutes les pools de la compétition via SQL
-        const pools: { id: string; name: string }[] = [];
-        try {
-          // Essayer d'abord via la table phases
-          const phaseStmt = this.db['db'].prepare(`
-            SELECT p.id, p.name FROM pools p
-            INNER JOIN phases ph ON p.phase_id = ph.id
-            WHERE ph.competition_id = ?
-            ORDER BY p.name
-          `);
-          phaseStmt.bind([competitionId]);
-          while (phaseStmt.step()) {
-            const row = phaseStmt.getAsObject();
-            pools.push({ id: row.id as string, name: row.name as string });
-          }
-          phaseStmt.free();
-        } catch (e) {
-          // Fallback: récupérer via pool_fencers
-          try {
-            const fallbackStmt = this.db['db'].prepare(`
-              SELECT DISTINCT p.id, p.name FROM pools p
-              INNER JOIN pool_fencers pf ON p.id = pf.pool_id
-              INNER JOIN fencers f ON pf.fencer_id = f.id
-              WHERE f.competition_id = ?
-              ORDER BY p.name
-            `);
-            fallbackStmt.bind([competitionId]);
-            while (fallbackStmt.step()) {
-              const row = fallbackStmt.getAsObject();
-              pools.push({ id: row.id as string, name: row.name as string });
-            }
-            fallbackStmt.free();
-          } catch (e2) {
-            console.warn('[RemoteScoreServer] Impossible de récupérer les pools:', e2);
-          }
-        }
+        // Get all pools for the competition using the new method
+        const pools = this.db.getCompetitionPools(competitionId);
+        console.log(`[RemoteScoreServer] ${pools.length} pools trouvées`);
 
-        if (!pools || pools.length === 0) {
+        if (pools.length === 0) {
           return res.json({ matches: [], poolId: null });
         }
 
-        // Associer l'arène à une pool (arena1 -> pool[0], arena2 -> pool[1], etc.)
+        // Associate arena to pool (arena1 -> pool[0], arena2 -> pool[1], etc.)
         const poolIndex = Math.min(arenaNumber - 1, pools.length - 1);
         const pool = pools[poolIndex];
 
@@ -403,11 +403,16 @@ export class RemoteScoreServer {
           return res.json({ matches: [], poolId: null });
         }
 
-        // Récupérer les matchs de cette pool
-        const matches = this.db.getMatchesByPool(pool.id);
-        console.log(`[RemoteScoreServer] ${matches.length} matchs trouvés pour la pool ${pool.id}`);
+        // Get all matches from this pool
+        const allMatches = this.db.getMatchesByPool(pool.id);
+        const pendingMatches = allMatches.filter(
+          m => m.status === 'not_started' || m.status === 'in_progress'
+        );
+        console.log(
+          `[RemoteScoreServer] ${pendingMatches.length} matches en attente pour la pool ${pool.name}`
+        );
 
-        res.json({ matches, poolId: pool.id });
+        res.json({ matches: pendingMatches, poolId: pool.id, poolName: pool.name });
       } catch (error) {
         console.error('[RemoteScoreServer] Erreur récupération matchs:', error);
         res.status(500).json({ error: 'Erreur lors de la récupération des matchs' });
