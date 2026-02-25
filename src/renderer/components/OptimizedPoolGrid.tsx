@@ -48,7 +48,15 @@ const GridCell = memo(
       );
     }
 
-    if (isFencerAbandoned(rowFencer) || isFencerAbandoned(colFencer)) {
+    const isMatchForfait =
+      match?.scoreA?.isForfait === true ||
+      match?.scoreB?.isForfait === true ||
+      match?.scoreA?.isAbstention === true ||
+      match?.scoreB?.isAbstention === true ||
+      match?.scoreA?.isExclusion === true ||
+      match?.scoreB?.isExclusion === true;
+
+    if (isFencerAbandoned(rowFencer) || isFencerAbandoned(colFencer) || isMatchForfait) {
       return (
         <td
           style={{

@@ -617,13 +617,17 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                       pool={pool}
                       weapon={competition.weapon}
                       maxScore={poolMaxScore}
-                      onScoreUpdate={(matchIndex, scoreA, scoreB) =>
-                        updateScore(poolIndex, matchIndex, scoreA, scoreB)
+                      onScoreUpdate={(matchIndex, scoreA, scoreB, winner, specialStatus) =>
+                        updateScore(poolIndex, matchIndex, scoreA, scoreB, winner, specialStatus)
                       }
                       onFencerStatusChange={(fencerId, status) => {
-                        // Si abandon ou forfait, mettre à jour tous les matchs du tireur
-                        if (status === 'abandon' || status === 'forfait') {
-                          handleFencerForfeit(fencerId);
+                        // Si abandon, forfait ou exclusion, mettre à jour tous les matchs du tireur
+                        if (
+                          status === 'abandon' ||
+                          status === 'forfait' ||
+                          status === 'exclusion'
+                        ) {
+                          handleFencerForfeit(fencerId, status);
                         }
                       }}
                     />
