@@ -90,6 +90,7 @@ jobs:
             ${{ runner.os }}-npm-
 
       - name: Install Dependencies
+        shell: bash
         run: |
           for i in 1 2 3; do
             echo "Attempt $i/3..."
