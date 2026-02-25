@@ -82,7 +82,14 @@ jobs:
           node-version: '20'
 
       - name: Install Dependencies
-        run: npm install
+        uses: amondnet/retries-action@v25
+        with:
+          type: github_action
+          max_attempts: 3
+          retry_on: error
+          exit_on_exhaustion: true
+          sleep_time: 10
+          run: npm install
 
       - name: Build TypeScript and Webpack
         run: npm run build:ci
@@ -124,7 +131,14 @@ jobs:
           node-version: '20'
 
       - name: Install Dependencies
-        run: npm install
+        uses: amondnet/retries-action@v25
+        with:
+          type: github_action
+          max_attempts: 3
+          retry_on: error
+          exit_on_exhaustion: true
+          sleep_time: 10
+          run: npm install
 
       - name: Build TypeScript and Webpack
         run: npm run build:ci
@@ -166,7 +180,14 @@ jobs:
           node-version: '20'
 
       - name: Install Dependencies
-        run: npm install
+        uses: amondnet/retries-action@v25
+        with:
+          type: github_action
+          max_attempts: 3
+          retry_on: error
+          exit_on_exhaustion: true
+          sleep_time: 10
+          run: npm install
 
       - name: Build TypeScript and Webpack
         run: npm run build:ci
@@ -208,7 +229,14 @@ jobs:
           node-version: '20'
 
       - name: Install Dependencies
-        run: npm install
+        uses: amondnet/retries-action@v25
+        with:
+          type: github_action
+          max_attempts: 3
+          retry_on: error
+          exit_on_exhaustion: true
+          sleep_time: 10
+          run: npm install
 
       - name: Build TypeScript and Webpack
         run: npm run build:ci
@@ -250,7 +278,14 @@ jobs:
           node-version: '20'
 
       - name: Install Dependencies
-        run: npm install
+        uses: amondnet/retries-action@v25
+        with:
+          type: github_action
+          max_attempts: 3
+          retry_on: error
+          exit_on_exhaustion: true
+          sleep_time: 10
+          run: npm install
 
       - name: Build TypeScript and Webpack
         run: npm run build:ci
