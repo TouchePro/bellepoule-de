@@ -855,6 +855,43 @@ export class DatabaseManager {
     return results;
   }
 
+  public getPoolCount(competitionId: string): number {
+    if (!this.db) throw new Error('Database not open');
+    let count = 0;
+    try {
+      const stmt = this.db.prepare(`
+        SELECT COUNT(DISTINCT p.id) as count FROM pools p
+        INNER JOIN pool_fencers pf ON p.id = pf.pool_id
+        INNER JOIN fencers f ON pf.fencer_id = f.id
+        WHERE f.competition_id = ?
+      `);
+      stmt.bind([competitionId]);
+      if (stmt.step()) {
+        count = stmt.getAsObject().count as number;
+      }
+      stmt.free();
+    } catch (e) {
+      console.warn('[Database] Error getting pool count:', e);
+    }
+    if (count === 0) {
+      try {
+        const stmt = this.db.prepare(`
+          SELECT COUNT(DISTINCT p.id) as count FROM pools p
+          INNER JOIN phases ph ON p.phase_id = ph.id
+          WHERE ph.competition_id = ?
+        `);
+        stmt.bind([competitionId]);
+        if (stmt.step()) {
+          count = stmt.getAsObject().count as number;
+        }
+        stmt.free();
+      } catch (e) {
+        console.warn('[Database] Error getting pool count via phases:', e);
+      }
+    }
+    return count;
+  }
+
   public updateMatch(id: string, updates: Partial<Match>): void {
     if (!this.db) throw new Error('Database not open');
     const now = new Date().toISOString();

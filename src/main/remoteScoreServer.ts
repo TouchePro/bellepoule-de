@@ -320,6 +320,19 @@ export class RemoteScoreServer {
       });
     });
 
+    // Route /areneX/arbitre (format français demandé)
+    this.app.get('/arene:arenaId/arbitre', (req, res) => {
+      const arenaId = req.params.arenaId;
+      console.log(`[RemoteScoreServer] Accès à l'interface arbitre /arene${arenaId}/arbitre`);
+
+      res.sendFile(getRemotePath('referee.html'), (err: any) => {
+        if (err) {
+          console.error('[RemoteScoreServer] ERREUR envoi referee.html:', err);
+          res.status(500).send("Erreur lors du chargement de l'interface arbitre");
+        }
+      });
+    });
+
     // API pour récupérer les matchs d'une arène/poule
     this.app.get('/api/arenas/:arenaId/matches', (req, res) => {
       try {
@@ -1052,6 +1065,16 @@ export class RemoteScoreServer {
     const competition = this.db.getCompetition(competitionId);
     if (!competition) {
       throw new Error('Compétition non trouvée');
+    }
+
+    // Auto-detect number of strips from pool count if not specified or too small
+    const poolCount = this.db.getPoolCount(competitionId);
+    if (strips <= 0 || strips < poolCount) {
+      const actualStrips = poolCount > 0 ? poolCount : 1;
+      console.log(
+        `[RemoteScoreServer] Nombre de pistes ajusté: ${strips} -> ${actualStrips} (basé sur ${poolCount} poules)`
+      );
+      strips = actualStrips;
     }
 
     // Configurer le nombre d'arènes
