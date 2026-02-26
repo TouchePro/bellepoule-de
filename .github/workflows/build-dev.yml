@@ -58,26 +58,14 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           
-          # Check current state
-          echo "=== Before commit ==="
-          git status
-          
-          # Stage all changes
+          # Force add all files (including already tracked ones with changes)
           git add -A
           
-          # Check what's staged
-          echo "=== Staged files ==="
-          git diff --staged --name-only
-          
-          # Try to commit
-          if git diff-index --quiet HEAD; then
-            echo "No changes to commit"
-          else
-            echo "Committing..."
-            git commit -m "Dev Build ${{ steps.version.outputs.build }}"
-            echo "Pushing..."
-            git push origin dev || echo "Push failed - continuing"
-          fi
+          # Try to make a commit (will fail if nothing changed)
+          git commit -m "Dev Build ${{ steps.version.outputs.build }}" && {
+            echo "Commit successful, pushing..."
+            git push origin dev
+          } || echo "Commit failed or nothing to commit - continuing"
 
   build-windows:
     needs: increment-version
