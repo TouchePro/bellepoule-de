@@ -481,21 +481,37 @@ export class RemoteScoreServer {
         console.log(`[RemoteScoreServer] GET /api/arenas/${arenaId}/matches`);
 
         if (!this.session) {
+          console.log('[RemoteScoreServer] Pas de session active');
           return res.status(404).json({ error: 'Aucune session active' });
         }
 
         const competitionId = this.session.competitionId;
+        console.log(`[RemoteScoreServer] CompetitionId: ${competitionId}`);
 
         // Get all pending matches from the competition (same logic as getPendingMatches)
         let allMatches = this.db.getPendingMatches(competitionId);
+        console.log(
+          `[RemoteScoreServer] Methode 1 (getPendingMatches): ${allMatches.length} matches`
+        );
 
-        // Fallback if no matches found
+        // Fallback if no matches found - via pool_fencers
         if (allMatches.length === 0) {
           allMatches = this.db.getAllPendingMatchesFromPools(competitionId);
+          console.log(
+            `[RemoteScoreServer] Methode 2 (getAllPendingMatchesFromPools): ${allMatches.length} matches`
+          );
+        }
+
+        // Fallback 2 - direct query via fencers table
+        if (allMatches.length === 0) {
+          allMatches = this.db.getPendingMatchesDirectly(competitionId);
+          console.log(
+            `[RemoteScoreServer] Methode 3 (getPendingMatchesDirectly): ${allMatches.length} matches`
+          );
         }
 
         console.log(
-          `[RemoteScoreServer] ${allMatches.length} matches en attente trouvés pour la compétition`
+          `[RemoteScoreServer] Total: ${allMatches.length} matches en attente pour la compétition ${competitionId}`
         );
 
         res.json({ matches: allMatches, poolId: null, poolName: null });

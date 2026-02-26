@@ -892,6 +892,94 @@ export class DatabaseManager {
     return results;
   }
 
+  // Nouvelle méthode: récupérer les matchs directement via la table fencers
+  // Sans passer par phases ou pool_fencers
+  public getPendingMatchesDirectly(competitionId: string): Match[] {
+    if (!this.db) throw new Error('Database not open');
+    const results: Match[] = [];
+
+    console.log('[Database] getPendingMatchesDirectly: Starting direct query');
+
+    try {
+      // Query matches directly via fencers table
+      const matchesStmt = this.db.prepare(`
+        SELECT DISTINCT m.id FROM matches m
+        INNER JOIN fencers fA ON m.fencer_a_id = fA.id
+        INNER JOIN fencers fB ON m.fencer_b_id = fB.id
+        WHERE (fA.competition_id = ? OR fB.competition_id = ?)
+        AND m.status IN ('not_started', 'in_progress')
+        ORDER BY m.pool_id, m.number
+      `);
+      matchesStmt.bind([competitionId, competitionId]);
+
+      console.log('[Database] getPendingMatchesDirectly: Executing query');
+
+      while (matchesStmt.step()) {
+        const matchId = matchesStmt.getAsObject().id as string;
+        console.log(`[Database] getPendingMatchesDirectly: Found match ${matchId}`);
+        const match = this.getMatch(matchId);
+        if (match) results.push(match);
+      }
+      matchesStmt.free();
+
+      console.log(`[Database] getPendingMatchesDirectly: Found ${results.length} matches`);
+    } catch (e) {
+      console.error('[Database] getPendingMatchesDirectly: Error:', e);
+    }
+
+    // Fallback: try getting all matches and filter manually
+    if (results.length === 0) {
+      console.log('[Database] getPendingMatchesDirectly: Trying fallback with all matches');
+      try {
+        const allMatchesStmt = this.db.prepare('SELECT id FROM matches WHERE status IN (?, ?)');
+        allMatchesStmt.bind(['not_started', 'in_progress']);
+
+        while (allMatchesStmt.step()) {
+          const matchId = allMatchesStmt.getAsObject().id as string;
+          const match = this.getMatch(matchId);
+          if (match && match.fencerA && match.fencerB) {
+            // Check if either fencer belongs to the competition
+            const fencerACompetition = this.getFencerCompetition(match.fencerA.id);
+            const fencerBCompetition = this.getFencerCompetition(match.fencerB.id);
+            if (fencerACompetition === competitionId || fencerBCompetition === competitionId) {
+              console.log(
+                `[Database] getPendingMatchesDirectly: Found match ${matchId} via fallback`
+              );
+              results.push(match);
+            }
+          }
+        }
+        allMatchesStmt.free();
+
+        console.log(
+          `[Database] getPendingMatchesDirectly: Fallback found ${results.length} matches`
+        );
+      } catch (e) {
+        console.error('[Database] getPendingMatchesDirectly: Fallback error:', e);
+      }
+    }
+
+    return results;
+  }
+
+  // Helper method to get competition ID for a fencer
+  private getFencerCompetition(fencerId: string): string | null {
+    if (!this.db) return null;
+    try {
+      const stmt = this.db.prepare('SELECT competition_id FROM fencers WHERE id = ?');
+      stmt.bind([fencerId]);
+      if (stmt.step()) {
+        const result = stmt.getAsObject().competition_id as string | null;
+        stmt.free();
+        return result;
+      }
+      stmt.free();
+    } catch (e) {
+      console.warn('[Database] Error getting fencer competition:', e);
+    }
+    return null;
+  }
+
   public getPoolCount(competitionId: string): number {
     if (!this.db) throw new Error('Database not open');
     let count = 0;
