@@ -58,10 +58,26 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           
-          # Always add and commit the version files
-          git add version.json package.json
-          git commit -m "Dev Build ${{ steps.version.outputs.build }}" || echo "Commit failed (may already exist)"
-          git push origin dev || echo "Push failed"
+          # Check current state
+          echo "=== Before commit ==="
+          git status
+          
+          # Stage all changes
+          git add -A
+          
+          # Check what's staged
+          echo "=== Staged files ==="
+          git diff --staged --name-only
+          
+          # Try to commit
+          if git diff-index --quiet HEAD; then
+            echo "No changes to commit"
+          else
+            echo "Committing..."
+            git commit -m "Dev Build ${{ steps.version.outputs.build }}"
+            echo "Pushing..."
+            git push origin dev || echo "Push failed - continuing"
+          fi
 
   build-windows:
     needs: increment-version
