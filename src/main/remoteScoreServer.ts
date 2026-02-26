@@ -32,6 +32,9 @@ export class RemoteScoreServer {
   private arenaTimers: Map<string, NodeJS.Timeout> = new Map();
   private arenaCount: number = 4; // Nombre d'arènes par défaut
 
+  // Stocker le contenu des fichiers HTML en mémoire pour éviter les problèmes de chemin
+  private htmlFiles: Map<string, string> = new Map();
+
   constructor(db: DatabaseManager, port: number = 8066) {
     console.log('[RemoteScoreServer] Initialisation du serveur de saisie distante...');
     this.db = db;
@@ -45,11 +48,84 @@ export class RemoteScoreServer {
       },
     });
 
+    // Charger les fichiers HTML en mémoire au démarrage
+    this.loadHtmlFiles();
+
     this.setupMiddleware();
     this.setupRoutes();
     this.setupSocketHandlers();
     this.initializeArenas();
     console.log(`[RemoteScoreServer] Serveur initialisé avec ${this.arenaCount} arènes`);
+  }
+
+  // Charger les fichiers HTML en mémoire pour éviter les problèmes de chemin
+  private loadHtmlFiles(): void {
+    const fs = require('fs');
+    const isDev = process.env.NODE_ENV === 'development';
+
+    // Liste des fichiers à charger
+    const filesToLoad = ['referee.html', 'arena.html', 'dashboard.html', 'index.html'];
+
+    // Essayer plusieurs chemins pour trouver les fichiers
+    const possiblePaths = isDev
+      ? [path.join(__dirname, '../../remote')]
+      : [
+          path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'remote'),
+          path.join(__dirname, '..', 'remote').replace('app.asar', 'app.asar.unpacked'),
+          path.join(__dirname, '..', 'remote'),
+        ];
+
+    console.log('[RemoteScoreServer] Chargement des fichiers HTML...');
+
+    for (const basePath of possiblePaths) {
+      console.log(`[RemoteScoreServer] Essai chemin: ${basePath}`);
+
+      try {
+        if (fs.existsSync(basePath)) {
+          console.log(`[RemoteScoreServer] Chemin trouvé: ${basePath}`);
+
+          for (const file of filesToLoad) {
+            const filePath = path.join(basePath, file);
+            if (fs.existsSync(filePath)) {
+              this.htmlFiles.set(file, fs.readFileSync(filePath, 'utf-8'));
+              console.log(`[RemoteScoreServer] Chargé: ${file}`);
+            } else {
+              console.log(`[RemoteScoreServer] Fichier non trouvé: ${filePath}`);
+            }
+          }
+
+          // Si on a chargé au moins un fichier, on utilise ce chemin
+          if (this.htmlFiles.size > 0) {
+            console.log(
+              `[RemoteScoreServer] ${this.htmlFiles.size} fichiers chargés depuis: ${basePath}`
+            );
+            break;
+          }
+        }
+      } catch (err) {
+        console.error(`[RemoteScoreServer] Erreur avec chemin ${basePath}:`, err);
+      }
+    }
+
+    if (this.htmlFiles.size === 0) {
+      console.error('[RemoteScoreServer] ERREUR: Aucun fichier HTML chargé!');
+    } else {
+      console.log(
+        `[RemoteScoreServer] Chargement terminé: ${Array.from(this.htmlFiles.keys()).join(', ')}`
+      );
+    }
+  }
+
+  // Servir un fichier HTML depuis la mémoire
+  private sendHtmlFromMemory(filename: string, res: express.Response): void {
+    const html = this.htmlFiles.get(filename);
+    if (html) {
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.send(html);
+    } else {
+      console.error(`[RemoteScoreServer] ERREUR: Fichier ${filename} non trouvé en mémoire`);
+      res.status(500).send(`Erreur: fichier ${filename} non trouvé`);
+    }
   }
 
   private setupMiddleware(): void {
@@ -160,12 +236,7 @@ export class RemoteScoreServer {
       }
 
       console.log('[RemoteScoreServer] Envoi du fichier:', remotePath);
-      res.sendFile(remotePath, (err: any) => {
-        if (err) {
-          console.error('[RemoteScoreServer] ERREUR envoi index.html:', err);
-          res.status(500).send('Erreur lors du chargement de la page: ' + err.message);
-        }
-      });
+      this.sendHtmlFromMemory('index.html', res);
     });
 
     // API endpoints
@@ -348,12 +419,7 @@ export class RemoteScoreServer {
       const arenaId = req.params.arenaId;
       console.log(`[RemoteScoreServer] Accès à l'arène ${arenaId}`);
 
-      res.sendFile(getRemotePath('arena.html'), (err: any) => {
-        if (err) {
-          console.error('[RemoteScoreServer] ERREUR envoi arena.html:', err);
-          res.status(500).send('Erreur lors du chargement de la page arène');
-        }
-      });
+      this.sendHtmlFromMemory('arena.html', res);
     });
 
     // Alias /arene pour compatibilité française
@@ -361,12 +427,7 @@ export class RemoteScoreServer {
       const arenaId = req.params.arenaId;
       console.log(`[RemoteScoreServer] Accès à l'arène (arene) ${arenaId}`);
 
-      res.sendFile(getRemotePath('arena.html'), (err: any) => {
-        if (err) {
-          console.error('[RemoteScoreServer] ERREUR envoi arena.html:', err);
-          res.status(500).send('Erreur lors du chargement de la page arène');
-        }
-      });
+      this.sendHtmlFromMemory('arena.html', res);
     });
 
     // Interface d'arbitrage - Dynamique (sans vérification d'existence)
@@ -374,12 +435,7 @@ export class RemoteScoreServer {
       const arenaId = req.params.arenaId;
       console.log(`[RemoteScoreServer] Accès à l'interface arbitre pour l'arène ${arenaId}`);
 
-      res.sendFile(getRemotePath('referee.html'), (err: any) => {
-        if (err) {
-          console.error('[RemoteScoreServer] ERREUR envoi referee.html:', err);
-          res.status(500).send("Erreur lors du chargement de l'interface arbitre");
-        }
-      });
+      this.sendHtmlFromMemory('referee.html', res);
     });
 
     // Alias /arene pour l'interface d'arbitrage (français)
@@ -389,12 +445,7 @@ export class RemoteScoreServer {
         `[RemoteScoreServer] Accès à l'interface arbitre pour l'arène ${arenaId} (arene)`
       );
 
-      res.sendFile(getRemotePath('referee.html'), (err: any) => {
-        if (err) {
-          console.error('[RemoteScoreServer] ERREUR envoi referee.html:', err);
-          res.status(500).send("Erreur lors du chargement de l'interface arbitre");
-        }
-      });
+      this.sendHtmlFromMemory('referee.html', res);
     });
 
     // Alias /arbitre pour l'interface d'arbitrage
@@ -404,12 +455,7 @@ export class RemoteScoreServer {
         `[RemoteScoreServer] Accès à l'interface arbitre (alias /arbitre) pour l'arène ${arenaId}`
       );
 
-      res.sendFile(getRemotePath('referee.html'), (err: any) => {
-        if (err) {
-          console.error('[RemoteScoreServer] ERREUR envoi referee.html:', err);
-          res.status(500).send("Erreur lors du chargement de l'interface arbitre");
-        }
-      });
+      this.sendHtmlFromMemory('referee.html', res);
     });
 
     // Nouveau: Route /arbitre/areneX (format demandé par l'utilisateur)
@@ -417,12 +463,7 @@ export class RemoteScoreServer {
       const arenaId = req.params.arenaId;
       console.log(`[RemoteScoreServer] Accès à l'interface arbitre /arbitre/arene${arenaId}`);
 
-      res.sendFile(getRemotePath('referee.html'), (err: any) => {
-        if (err) {
-          console.error('[RemoteScoreServer] ERREUR envoi referee.html:', err);
-          res.status(500).send("Erreur lors du chargement de l'interface arbitre");
-        }
-      });
+      this.sendHtmlFromMemory('referee.html', res);
     });
 
     // Route /areneX/arbitre (format français demandé)
@@ -430,12 +471,7 @@ export class RemoteScoreServer {
       const arenaId = req.params.arenaId;
       console.log(`[RemoteScoreServer] Accès à l'interface arbitre /arene${arenaId}/arbitre`);
 
-      res.sendFile(getRemotePath('referee.html'), (err: any) => {
-        if (err) {
-          console.error('[RemoteScoreServer] ERREUR envoi referee.html:', err);
-          res.status(500).send("Erreur lors du chargement de l'interface arbitre");
-        }
-      });
+      this.sendHtmlFromMemory('referee.html', res);
     });
 
     // API pour récupérer les matchs d'une arène/poule
