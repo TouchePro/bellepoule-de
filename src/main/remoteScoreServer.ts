@@ -57,10 +57,20 @@ export class RemoteScoreServer {
     this.app.use(express.json());
 
     // En développement, utiliser src/remote, en production utiliser dist/
-    const remotePath =
-      process.env.NODE_ENV === 'development'
-        ? path.join(__dirname, '../../remote')
-        : path.join(__dirname, '../remote');
+    // En production packée, les fichiers sont dans app.asar.unpacked
+    let remotePath: string;
+    if (process.env.NODE_ENV === 'development') {
+      remotePath = path.join(__dirname, '../../remote');
+    } else {
+      // En production, d'abord essayer le chemin unpacked (asarUnpack)
+      const unpackedPath = path.join(__dirname, '../remote');
+      // Vérifier si on est dans un contexte packé avec asarUnpack
+      if (unpackedPath.includes('app.asar')) {
+        remotePath = unpackedPath.replace('app.asar', 'app.asar.unpacked');
+      } else {
+        remotePath = unpackedPath;
+      }
+    }
 
     console.log('[RemoteScoreServer] Chemin des fichiers distants:', remotePath);
     console.log('[RemoteScoreServer] NODE_ENV:', process.env.NODE_ENV || 'production');
@@ -262,9 +272,16 @@ export class RemoteScoreServer {
 
     // Pages d'arène - Dynamiques
     const getRemotePath = (filename: string) => {
-      return process.env.NODE_ENV === 'development'
-        ? path.join(__dirname, '../../remote', filename)
-        : path.join(__dirname, '../remote', filename);
+      if (process.env.NODE_ENV === 'development') {
+        return path.join(__dirname, '../../remote', filename);
+      } else {
+        // En production packée, utiliser le chemin unpacked
+        let basePath = path.join(__dirname, '../remote', filename);
+        if (basePath.includes('app.asar')) {
+          basePath = basePath.replace('app.asar', 'app.asar.unpacked');
+        }
+        return basePath;
+      }
     };
 
     // Support both /arena1 and /arene1 formats
