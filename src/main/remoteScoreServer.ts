@@ -56,24 +56,51 @@ export class RemoteScoreServer {
     console.log('[RemoteScoreServer] Configuration du middleware...');
     this.app.use(express.json());
 
-    // En développement, utiliser src/remote, en production utiliser dist/
-    // En production packée, les fichiers sont dans app.asar.unpacked
+    // Déterminer le chemin des fichiers remote
     let remotePath: string;
-    if (process.env.NODE_ENV === 'development') {
+    const isDev = process.env.NODE_ENV === 'development';
+
+    if (isDev) {
+      // En développement
       remotePath = path.join(__dirname, '../../remote');
     } else {
-      // En production, d'abord essayer le chemin unpacked (asarUnpack)
-      const unpackedPath = path.join(__dirname, '../remote');
-      // Vérifier si on est dans un contexte packé avec asarUnpack
-      if (unpackedPath.includes('app.asar')) {
-        remotePath = unpackedPath.replace('app.asar', 'app.asar.unpacked');
-      } else {
-        remotePath = unpackedPath;
+      // En production - utiliser process.resourcesPath qui est plus fiable
+      // Les fichiers unpacked sont dans resourcesPath/app.asar.unpacked/dist/remote
+      // __dirname est dans resourcesPath/app.asar/dist/main/
+
+      // Essayer plusieurs chemins possibles
+      const possiblePaths = [
+        // Chemin standard avec asarUnpack
+        path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'remote'),
+        // Chemin relatif depuis __dirname
+        path.join(__dirname, '..', 'remote').replace('app.asar', 'app.asar.unpacked'),
+        // Dernier recours: chemin relatif standard
+        path.join(__dirname, '..', 'remote'),
+      ];
+
+      remotePath = '';
+      const fs = require('fs');
+      for (const p of possiblePaths) {
+        console.log(`[RemoteScoreServer] Vérification chemin: ${p}`);
+        if (fs.existsSync(p)) {
+          remotePath = p;
+          console.log(`[RemoteScoreServer] Chemin valide trouvé: ${p}`);
+          break;
+        }
+      }
+
+      if (!remotePath) {
+        console.error('[RemoteScoreServer] ERREUR: Aucun chemin valide trouvé!');
+        console.error('[RemoteScoreServer] Chemins testés:', possiblePaths);
+        // Utiliser le dernier chemin comme fallback
+        remotePath = possiblePaths[possiblePaths.length - 1];
       }
     }
 
     console.log('[RemoteScoreServer] Chemin des fichiers distants:', remotePath);
     console.log('[RemoteScoreServer] NODE_ENV:', process.env.NODE_ENV || 'production');
+    console.log('[RemoteScoreServer] __dirname:', __dirname);
+    console.log('[RemoteScoreServer] process.resourcesPath:', process.resourcesPath);
 
     // Vérifier que le dossier existe
     try {
@@ -107,10 +134,30 @@ export class RemoteScoreServer {
     // Route principale pour les arbitres
     this.app.get('/', (req, res) => {
       console.log('[RemoteScoreServer] Accès à la route principale /');
-      const remotePath =
-        process.env.NODE_ENV === 'development'
-          ? path.join(__dirname, '../../remote/index.html')
-          : path.join(__dirname, '../remote/index.html');
+      const isDev = process.env.NODE_ENV === 'development';
+
+      let remotePath = '';
+      if (isDev) {
+        remotePath = path.join(__dirname, '../../remote/index.html');
+      } else {
+        // Essayer plusieurs chemins possibles
+        const possiblePaths = [
+          path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'remote', 'index.html'),
+          path
+            .join(__dirname, '..', 'remote', 'index.html')
+            .replace('app.asar', 'app.asar.unpacked'),
+          path.join(__dirname, '..', 'remote', 'index.html'),
+        ];
+
+        const fs = require('fs');
+        for (const p of possiblePaths) {
+          if (fs.existsSync(p)) {
+            remotePath = p;
+            break;
+          }
+        }
+        if (!remotePath) remotePath = possiblePaths[possiblePaths.length - 1];
+      }
 
       console.log('[RemoteScoreServer] Envoi du fichier:', remotePath);
       res.sendFile(remotePath, (err: any) => {
@@ -272,15 +319,27 @@ export class RemoteScoreServer {
 
     // Pages d'arène - Dynamiques
     const getRemotePath = (filename: string) => {
-      if (process.env.NODE_ENV === 'development') {
+      const isDev = process.env.NODE_ENV === 'development';
+
+      if (isDev) {
         return path.join(__dirname, '../../remote', filename);
       } else {
-        // En production packée, utiliser le chemin unpacked
-        let basePath = path.join(__dirname, '../remote', filename);
-        if (basePath.includes('app.asar')) {
-          basePath = basePath.replace('app.asar', 'app.asar.unpacked');
+        // Essayer plusieurs chemins possibles (comme dans setupMiddleware)
+        const possiblePaths = [
+          path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'remote', filename),
+          path.join(__dirname, '..', 'remote', filename).replace('app.asar', 'app.asar.unpacked'),
+          path.join(__dirname, '..', 'remote', filename),
+        ];
+
+        const fs = require('fs');
+        for (const p of possiblePaths) {
+          if (fs.existsSync(p)) {
+            return p;
+          }
         }
-        return basePath;
+
+        // Retourner le dernier chemin comme fallback
+        return possiblePaths[possiblePaths.length - 1];
       }
     };
 
