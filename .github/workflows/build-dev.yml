@@ -27,6 +27,14 @@ jobs:
       - name: Increment Version
         id: version
         run: |
+          # Debug: show what we're starting with
+          echo "=== Starting version state ==="
+          if [ -f version.json ]; then
+            cat version.json
+          else
+            echo "version.json not found"
+          fi
+          
           # Get current version from version.json or use defaults
           if [ -f version.json ]; then
             VERSION=$(cat version.json | python3 -c "import sys,json; print(json.load(sys.stdin)['version'])")
@@ -36,8 +44,12 @@ jobs:
             BUILD=0
           fi
 
+          echo "Current version: $VERSION, build: $BUILD"
+
           NEW_BUILD=$((BUILD + 1))
           DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          echo "New build number: $NEW_BUILD"
 
           echo "{" > version.json
           echo "  \"version\": \"$VERSION\"," >> version.json
@@ -48,6 +60,9 @@ jobs:
           FULL_VERSION="${VERSION}-build.${NEW_BUILD}"
           sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$FULL_VERSION\"/" package.json
 
+          echo "=== Updated version.json ==="
+          cat version.json
+          
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "build=$NEW_BUILD" >> $GITHUB_OUTPUT
 
