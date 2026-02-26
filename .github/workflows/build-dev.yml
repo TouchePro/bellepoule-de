@@ -58,15 +58,26 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           
-          # Force add files (in case they're already tracked)
-          git add -f version.json package.json
+          # Show current state
+          echo "=== Current state ==="
+          cat version.json
+          echo ""
           
-          # Always try to commit (the commit will fail if nothing changed, which is fine)
-          git diff-index --quiet HEAD -- version.json package.json || {
-            echo "Changes detected, committing..."
+          # Stage files
+          git add version.json package.json
+          
+          # Check if there are changes to commit
+          CHANGES=$(git diff --staged --stat)
+          if [ -n "$CHANGES" ]; then
+            echo "Changes detected:"
+            echo "$CHANGES"
+            echo "Committing..."
             git commit -m "Dev Build ${{ steps.version.outputs.build }}"
-            git push origin dev
-          } || echo "No version changes to commit"
+            echo "Pushing..."
+            git push origin dev || echo "PUSH_FAILED"
+          else
+            echo "No changes to commit"
+          fi
 
   build-windows:
     needs: increment-version
