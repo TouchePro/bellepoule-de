@@ -793,27 +793,46 @@ export class DatabaseManager {
     if (!this.db) throw new Error('Database not open');
     const results: Match[] = [];
 
+    console.log('[Database] === DEBUG: getPendingMatches ===');
+    console.log(`[Database] CompetitionId: ${competitionId}`);
+
     // First get all pools for the competition
     // Try to get pools through phases table first
     let poolIds: string[] = [];
 
     try {
+      // Debug: Check phases table
+      const phasesCountStmt = this.db.prepare(
+        'SELECT COUNT(*) as count FROM phases WHERE competition_id = ?'
+      );
+      phasesCountStmt.bind([competitionId]);
+      if (phasesCountStmt.step()) {
+        console.log(
+          `[Database] Phases count for competition: ${phasesCountStmt.getAsObject().count}`
+        );
+      }
+      phasesCountStmt.free();
+
       const poolsStmt = this.db.prepare(
-        'SELECT id FROM pools WHERE phase_id IN (SELECT id FROM phases WHERE competition_id = ?)'
+        'SELECT id, phase_id FROM pools WHERE phase_id IN (SELECT id FROM phases WHERE competition_id = ?)'
       );
       poolsStmt.bind([competitionId]);
 
       while (poolsStmt.step()) {
-        poolIds.push(poolsStmt.getAsObject().id as string);
+        const row = poolsStmt.getAsObject();
+        poolIds.push(row.id as string);
+        console.log(`[Database] Pool via phases: ${row.id} (phase_id: ${row.phase_id})`);
       }
       poolsStmt.free();
+      console.log(`[Database] Found ${poolIds.length} pools via phases`);
     } catch (e) {
       // If phases table doesn't exist or query fails, try alternative approach
-      console.warn('[Database] Falling back to pool_fencers approach for getPendingMatches');
+      console.warn('[Database] Falling back to pool_fencers approach for getPendingMatches:', e);
     }
 
     // If no pools found through phases, try through pool_fencers -> fencers
     if (poolIds.length === 0) {
+      console.log('[Database] No pools via phases, trying pool_fencers approach');
       try {
         const altStmt = this.db.prepare(`
           SELECT DISTINCT p.id FROM pools p
@@ -827,10 +846,13 @@ export class DatabaseManager {
           poolIds.push(altStmt.getAsObject().id as string);
         }
         altStmt.free();
+        console.log(`[Database] Found ${poolIds.length} pools via pool_fencers`);
       } catch (e) {
         console.warn('[Database] Alternative approach also failed:', e);
       }
     }
+
+    console.log(`[Database] Total pools found: ${poolIds.length}`);
 
     // Then get pending matches from those pools
     if (poolIds.length > 0) {
@@ -854,6 +876,9 @@ export class DatabaseManager {
     if (!this.db) throw new Error('Database not open');
     const results: Match[] = [];
 
+    console.log('[Database] === DEBUG: getAllPendingMatchesFromPools ===');
+    console.log(`[Database] CompetitionId: ${competitionId}`);
+
     // Get all pools for the competition via pool_fencers -> fencers
     const poolIds: string[] = [];
     try {
@@ -866,17 +891,23 @@ export class DatabaseManager {
       poolsStmt.bind([competitionId]);
 
       while (poolsStmt.step()) {
-        poolIds.push(poolsStmt.getAsObject().id as string);
+        const poolId = poolsStmt.getAsObject().id as string;
+        poolIds.push(poolId);
+        console.log(`[Database] Pool found: ${poolId}`);
       }
       poolsStmt.free();
+      console.log(`[Database] Found ${poolIds.length} pools via pool_fencers`);
     } catch (e) {
       console.warn('[Database] Error getting pools via pool_fencers:', e);
       return results;
     }
 
+    console.log(`[Database] Total pools: ${poolIds.length}`);
+
     // Get pending matches from those pools
     if (poolIds.length > 0) {
       const placeholders = poolIds.map(() => '?').join(',');
+      console.log(`[Database] Querying matches for pools: ${poolIds.join(', ')}`);
       const matchesStmt = this.db.prepare(
         `SELECT id FROM matches WHERE pool_id IN (${placeholders}) AND status IN ('not_started', 'in_progress') ORDER BY pool_id, number`
       );
@@ -897,6 +928,83 @@ export class DatabaseManager {
   public getPendingMatchesDirectly(competitionId: string): Match[] {
     if (!this.db) throw new Error('Database not open');
     const results: Match[] = [];
+
+    console.log('[Database] === DEBUG: getPendingMatchesDirectly ===');
+    console.log(`[Database] CompetitionId: ${competitionId}`);
+
+    // Debug: Compter tous les matchs dans la base
+    try {
+      const countStmt = this.db.prepare('SELECT COUNT(*) as count FROM matches');
+      if (countStmt.step()) {
+        console.log(`[Database] Total matches in DB: ${countStmt.getAsObject().count}`);
+      }
+      countStmt.free();
+    } catch (e) {
+      console.log('[Database] Error counting matches:', e);
+    }
+
+    // Debug: Afficher le breakdown par statut
+    try {
+      const statusStmt = this.db.prepare(
+        'SELECT status, COUNT(*) as count FROM matches GROUP BY status'
+      );
+      console.log('[Database] Match status breakdown:');
+      while (statusStmt.step()) {
+        const row = statusStmt.getAsObject();
+        console.log(`[Database]   Status '${row.status}': ${row.count} matches`);
+      }
+      statusStmt.free();
+    } catch (e) {
+      console.log('[Database] Error getting status breakdown:', e);
+    }
+
+    // Debug: Compter les fencers pour cette compétition
+    try {
+      const fencerStmt = this.db.prepare(
+        'SELECT COUNT(*) as count FROM fencers WHERE competition_id = ?'
+      );
+      fencerStmt.bind([competitionId]);
+      if (fencerStmt.step()) {
+        console.log(
+          `[Database] Fencers for competition ${competitionId}: ${fencerStmt.getAsObject().count}`
+        );
+      }
+      fencerStmt.free();
+    } catch (e) {
+      console.log('[Database] Error counting fencers:', e);
+    }
+
+    // Debug: Compter les pools via pool_fencers
+    try {
+      const poolStmt = this.db.prepare(`
+        SELECT COUNT(DISTINCT p.id) as count 
+        FROM pools p
+        INNER JOIN pool_fencers pf ON p.id = pf.pool_id
+        INNER JOIN fencers f ON pf.fencer_id = f.id
+        WHERE f.competition_id = ?
+      `);
+      poolStmt.bind([competitionId]);
+      if (poolStmt.step()) {
+        console.log(`[Database] Pools via pool_fencers: ${poolStmt.getAsObject().count}`);
+      }
+      poolStmt.free();
+    } catch (e) {
+      console.log('[Database] Error counting pools:', e);
+    }
+
+    // Debug: Afficher quelques IDs de fencers
+    try {
+      const sampleStmt = this.db.prepare('SELECT id FROM fencers WHERE competition_id = ? LIMIT 3');
+      sampleStmt.bind([competitionId]);
+      const fencerIds: string[] = [];
+      while (sampleStmt.step()) {
+        fencerIds.push(sampleStmt.getAsObject().id as string);
+      }
+      sampleStmt.free();
+      console.log(`[Database] Sample fencer IDs: ${fencerIds.join(', ')}`);
+    } catch (e) {
+      console.log('[Database] Error getting sample fencers:', e);
+    }
 
     console.log('[Database] getPendingMatchesDirectly: Starting direct query');
 
