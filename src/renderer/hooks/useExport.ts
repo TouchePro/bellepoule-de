@@ -5,7 +5,7 @@
  */
 
 import { useCallback } from 'react';
-import { Competition, Fencer, Pool, PoolRanking } from '../../shared/types';
+import { Competition, Fencer, Pool, PoolRanking, FencerStatus } from '../../shared/types';
 import { FinalResult } from '../components/TableauView';
 import { exportFencersToTXT, exportFencersToFFF } from '../../shared/utils/fencerExport';
 import { exportMultiplePoolsToPDF } from '../../shared/utils/pdfExport';
@@ -78,8 +78,33 @@ export const useExport = ({ competition, showToast }: UseExportProps) => {
 
         switch (format) {
           case 'csv': {
-            const headers = ['Rg', 'Nom', 'Prénom', 'Club', 'V', 'M', 'V/M', 'TD', 'TR', 'Indice'];
+            const headers = [
+              'Rg',
+              'Nom',
+              'Prénom',
+              'Club',
+              'V',
+              'M',
+              'V/M',
+              'TD',
+              'TR',
+              'Statut',
+              'Indice',
+            ];
             if (isLaserSabre) headers.push('Quest');
+
+            const getStatusLabel = (status: FencerStatus) => {
+              switch (status) {
+                case FencerStatus.ABANDONED:
+                  return 'A';
+                case FencerStatus.FORFAIT:
+                  return 'F';
+                case FencerStatus.EXCLUDED:
+                  return 'X';
+                default:
+                  return '';
+              }
+            };
 
             const rows = ranking.map(r => [
               r.rank,
@@ -91,6 +116,7 @@ export const useExport = ({ competition, showToast }: UseExportProps) => {
               ((r.victories / (r.victories + r.defeats)) * 100).toFixed(1) + '%',
               r.touchesScored,
               r.touchesReceived,
+              getStatusLabel(r.fencer.status),
               r.index,
               isLaserSabre ? r.questPoints || '' : '',
             ]);

@@ -5,7 +5,7 @@
  */
 
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
-import { PoolRanking, Pool, Weapon } from '../../shared/types';
+import { PoolRanking, Pool, Weapon, FencerStatus } from '../../shared/types';
 import {
   formatRatio,
   formatIndex,
@@ -132,12 +132,25 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
   };
 
   const generateCSV = () => {
-    const headers = ['Rg', 'Nom', 'Prénom', 'Club', 'V', 'M', 'V/M', 'TD', 'TR'];
+    const headers = ['Rg', 'Nom', 'Prénom', 'Club', 'V', 'M', 'V/M', 'TD', 'TR', 'Statut'];
     if (isLaserSabre) {
       headers.push('Quest', 'Indice');
     } else {
       headers.push('Indice');
     }
+
+    const getStatusLabel = (status: FencerStatus) => {
+      switch (status) {
+        case FencerStatus.ABANDONED:
+          return 'A';
+        case FencerStatus.FORFAIT:
+          return 'F';
+        case FencerStatus.EXCLUDED:
+          return 'X';
+        default:
+          return '';
+      }
+    };
 
     const rows = editedRanking.map(r => [
       r.rank,
@@ -149,6 +162,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
       formatRatio(r.ratio),
       r.touchesScored,
       r.touchesReceived,
+      getStatusLabel(r.fencer.status),
       ...(isLaserSabre ? [r.questPoints || 0, formatIndex(r.index)] : [formatIndex(r.index)]),
     ]);
 
@@ -252,7 +266,12 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
                     </div>
                   )}
                 </td>
-                <td className="font-medium">{ranking.fencer.lastName}</td>
+                <td className="font-medium">
+                  {ranking.fencer.lastName}
+                  {ranking.fencer.status === FencerStatus.ABANDONED && ' (A)'}
+                  {ranking.fencer.status === FencerStatus.FORFAIT && ' (F)'}
+                  {ranking.fencer.status === FencerStatus.EXCLUDED && ' (X)'}
+                </td>
                 <td>{ranking.fencer.firstName}</td>
                 <td className="text-sm text-muted">{ranking.fencer.club || '-'}</td>
                 <td style={{ textAlign: 'center', fontWeight: '600' }}>{ranking.victories}</td>
@@ -294,6 +313,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
           Touches Données, TR = Touches Reçues
           {isLaserSabre && ', Quest = Points Quest (Sabre Laser)'}
           {', Indice = TD - TR'}
+          {' • (A) = Abandon • (F) = Forfait • (X) = Exclu'}
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {hasDirectElimination ? (
@@ -313,7 +333,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
         dangerouslySetInnerHTML={{
           __html: `
           @media print {
-            .btn, .text-muted, .text-sm {
+            .btn {
               display: none !important;
             }
             .card {

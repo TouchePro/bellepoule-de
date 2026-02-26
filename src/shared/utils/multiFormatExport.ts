@@ -3,7 +3,7 @@
  * Licensed under GPL-3.0
  */
 
-import { Competition, Fencer, Pool, PoolRanking } from '../types';
+import { Competition, Fencer, Pool, PoolRanking, FencerStatus } from '../types';
 
 /**
  * Export results as HTML web page
@@ -179,7 +179,32 @@ export function exportRankingCSV(
   poolRanking: PoolRanking[],
   includeFormulas: boolean = false
 ): string {
-  const headers = ['Rang', 'Nom', 'Prénom', 'Club', 'Nationalité', 'V', 'D', 'TD', 'TR', 'Indice'];
+  const headers = [
+    'Rang',
+    'Nom',
+    'Prénom',
+    'Club',
+    'Nationalité',
+    'V',
+    'D',
+    'TD',
+    'TR',
+    'Statut',
+    'Indice',
+  ];
+
+  const getStatusLabel = (status: FencerStatus) => {
+    switch (status) {
+      case FencerStatus.ABANDONED:
+        return 'A';
+      case FencerStatus.FORFAIT:
+        return 'F';
+      case FencerStatus.EXCLUDED:
+        return 'X';
+      default:
+        return '';
+    }
+  };
 
   let csv = headers.join(';') + '\n';
 
@@ -194,6 +219,7 @@ export function exportRankingCSV(
       ranking.defeats || 0,
       ranking.touchesScored || 0,
       ranking.touchesReceived || 0,
+      getStatusLabel(ranking.fencer.status),
       includeFormulas ? `=H${index + 2}-I${index + 2}` : ranking.index || 0,
     ];
     csv += row.join(';') + '\n';

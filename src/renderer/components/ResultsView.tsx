@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Fencer, PoolRanking, Competition, Weapon } from '../../shared/types';
+import { Fencer, PoolRanking, Competition, Weapon, FencerStatus } from '../../shared/types';
 import { useToast } from './Toast';
 import { exportResultsXMLFFE } from '../../shared/utils/multiFormatExport';
 
@@ -59,8 +59,21 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
 
   // Export CSV
   const exportCSV = () => {
-    const headers = ['Rang', 'Nom', 'Prénom', 'Club', 'Éliminé à'];
+    const headers = ['Rang', 'Nom', 'Prénom', 'Club', 'Statut', 'Éliminé à'];
     if (isLaserSabre) headers.push('Points Quest');
+
+    const getStatusLabel = (status: FencerStatus) => {
+      switch (status) {
+        case FencerStatus.ABANDONED:
+          return 'A';
+        case FencerStatus.FORFAIT:
+          return 'F';
+        case FencerStatus.EXCLUDED:
+          return 'X';
+        default:
+          return '';
+      }
+    };
 
     const rows = resultsToDisplay.map(r => {
       const row = [
@@ -68,6 +81,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
         r.fencer.lastName,
         r.fencer.firstName,
         r.fencer.club || '',
+        getStatusLabel(r.fencer.status),
         r.eliminatedAt || '',
       ];
       if (isLaserSabre) {
@@ -264,6 +278,9 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
                   </td>
                   <td style={{ padding: '0.75rem' }}>
                     {result.fencer.firstName} {result.fencer.lastName}
+                    {result.fencer.status === FencerStatus.ABANDONED && ' (A)'}
+                    {result.fencer.status === FencerStatus.FORFAIT && ' (F)'}
+                    {result.fencer.status === FencerStatus.EXCLUDED && ' (X)'}
                   </td>
                   <td style={{ padding: '0.75rem', color: '#6b7280' }}>
                     {result.fencer.club || '-'}
@@ -377,6 +394,18 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
         >
           📝 XML
         </button>
+      </div>
+
+      {/* Légende */}
+      <div
+        style={{
+          textAlign: 'center',
+          marginTop: '1.5rem',
+          fontSize: '0.875rem',
+          color: '#6b7280',
+        }}
+      >
+        (A) = Abandon • (F) = Forfait • (X) = Exclu
       </div>
     </div>
   );
