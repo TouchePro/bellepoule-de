@@ -54,42 +54,19 @@ jobs:
           cat version.json
 
       - name: Commit and Push Version Update
-        continue-on-error: true
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           
-          # Debug: show current state
-          echo "=== Debug Info ==="
-          echo "Current version.json:"
-          cat version.json
-          echo ""
-          echo "Current package.json version:"
-          grep '"version"' package.json
-          echo ""
+          # Force add files (in case they're already tracked)
+          git add -f version.json package.json
           
-          # Add files to staging
-          git add version.json package.json
-          
-          # Debug: show staged changes
-          echo "=== Staged Changes ==="
-          git diff --staged --stat
-          
-          # Check if there are changes
-          if git diff --staged --quiet; then
-            echo "WARNING: No version changes to commit!"
-            # Force check - maybe there's an issue with the quiet flag
-            echo "Checking with git status:"
-            git status
-            # Check if files are different from HEAD
-            echo "Diff from HEAD:"
-            git diff HEAD version.json package.json
-          else
+          # Always try to commit (the commit will fail if nothing changed, which is fine)
+          git diff-index --quiet HEAD -- version.json package.json || {
             echo "Changes detected, committing..."
             git commit -m "Dev Build ${{ steps.version.outputs.build }}"
-            echo "Commit done, pushing..."
-            git push origin dev || echo "Push failed, continuing..."
-          fi
+            git push origin dev
+          } || echo "No version changes to commit"
 
   build-windows:
     needs: increment-version
