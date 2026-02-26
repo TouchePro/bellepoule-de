@@ -5,7 +5,15 @@
  */
 
 import { useState, useCallback } from 'react';
-import { Pool, Fencer, Match, MatchStatus, FencerStatus, Weapon, PoolRanking } from '../../shared/types';
+import {
+  Pool,
+  Fencer,
+  Match,
+  MatchStatus,
+  FencerStatus,
+  Weapon,
+  PoolRanking,
+} from '../../shared/types';
 import { useToast } from '../components/Toast';
 import {
   distributeFencersToPoolsSerpentine,

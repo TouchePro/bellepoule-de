@@ -189,7 +189,9 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       </div>
 
       <div className="arena-urls-section">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
+        <div
+          style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}
+        >
           <h4 style={{ margin: 0 }}>Pistes ({arenaCount})</h4>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <button
@@ -248,7 +250,9 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         <h5>Instructions pour les arbitres</h5>
         <ol>
           <li>Ouvrir un navigateur web sur la tablette</li>
-          <li>Aller à l'URL <strong>Arbitre</strong> correspondant à sa piste</li>
+          <li>
+            Aller à l'URL <strong>Arbitre</strong> correspondant à sa piste
+          </li>
           <li>Saisir les scores du match en cours</li>
           <li>Cliquer sur "Match suivant" pour passer au match suivant</li>
         </ol>

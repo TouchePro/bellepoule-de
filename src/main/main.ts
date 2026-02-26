@@ -331,8 +331,7 @@ function startRemoteScoreServer(): void {
       type: 'info',
       title: 'Saisie distante démarrée',
       message: `Les arbitres peuvent maintenant se connecter`,
-      detail:
-        `Arène 1: ${serverUrl}/arene1/arbitre\nArène 2: ${serverUrl}/arene2/arbitre\nArène 3: ${serverUrl}/arene3/arbitre\nArène 4: ${serverUrl}/arene4/arbitre\n\nPartagez ces URLs avec les arbitres munis de tablettes.\nAssurez-vous que le pare-feu Windows autorise les connexions sur le port 8066.`,
+      detail: `Arène 1: ${serverUrl}/arene1/arbitre\nArène 2: ${serverUrl}/arene2/arbitre\nArène 3: ${serverUrl}/arene3/arbitre\nArène 4: ${serverUrl}/arene4/arbitre\n\nPartagez ces URLs avec les arbitres munis de tablettes.\nAssurez-vous que le pare-feu Windows autorise les connexions sur le port 8066.`,
       buttons: ['OK'],
     });
 
