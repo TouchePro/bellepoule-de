@@ -1050,6 +1050,14 @@ export class RemoteScoreServer {
     const arena = this.arenas.get(arenaId);
     if (!arena || !arena.currentMatch) return;
 
+    // Ignorer si le match est terminé
+    if (arena.status === 'finished' || arena.currentMatch.status === 'finished') {
+      console.log(
+        `[RemoteScoreServer] Match terminé, mise à jour du score ignorée pour arène ${arenaId}`
+      );
+      return;
+    }
+
     const previousScoreA = arena.currentMatch.scoreA;
     const previousScoreB = arena.currentMatch.scoreB;
 
@@ -1137,11 +1145,6 @@ export class RemoteScoreServer {
         `[RemoteScoreServer] Émission match:finished pour ${finishedMatch.id}: ${finishedMatch.scoreA}-${finishedMatch.scoreB}`
       );
     }
-
-    // Charger automatiquement le match suivant après un délai
-    setTimeout(() => {
-      this.loadNextMatch(arenaId);
-    }, 1000);
   }
 
   private loadNextMatch(arenaId: string): void {
