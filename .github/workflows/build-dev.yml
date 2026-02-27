@@ -106,20 +106,7 @@ jobs:
 
       - name: Update version files
         run: |
-          cat > version.json << EOF
-          {
-            "version": "${{ needs.increment-version.outputs.version }}",
-            "build": ${{ needs.increment-version.outputs.build }},
-            "date": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-          }
-          EOF
-
-          node -e "
-            const fs = require('fs');
-            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            pkg.version = '${{ needs.increment-version.outputs.full_version }}';
-            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
-          "
+          node -e "const fs=require('fs');const v='${{ needs.increment-version.outputs.version }}';const b=${{ needs.increment-version.outputs.build }};const f='${{ needs.increment-version.outputs.full_version }}';fs.writeFileSync('version.json',JSON.stringify({version:v,build:b,date:new Date().toISOString()},null,2));const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.version=f;fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
 
       - name: Build TypeScript and Webpack
         run: npm run build:ci
@@ -178,20 +165,7 @@ jobs:
 
       - name: Update version files
         run: |
-          cat > version.json << EOF
-          {
-            "version": "${{ needs.increment-version.outputs.version }}",
-            "build": ${{ needs.increment-version.outputs.build }},
-            "date": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-          }
-          EOF
-
-          node -e "
-            const fs = require('fs');
-            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            pkg.version = '${{ needs.increment-version.outputs.full_version }}';
-            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
-          "
+          node -e "const fs=require('fs');const v='${{ needs.increment-version.outputs.version }}';const b=${{ needs.increment-version.outputs.build }};const f='${{ needs.increment-version.outputs.full_version }}';fs.writeFileSync('version.json',JSON.stringify({version:v,build:b,date:new Date().toISOString()},null,2));const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.version=f;fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
 
       - name: Build TypeScript and Webpack
         run: npm run build:ci
@@ -258,20 +232,7 @@ jobs:
 
       - name: Update version files
         run: |
-          cat > version.json << EOF
-          {
-            "version": "${{ needs.increment-version.outputs.version }}",
-            "build": ${{ needs.increment-version.outputs.build }},
-            "date": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-          }
-          EOF
-
-          node -e "
-            const fs = require('fs');
-            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            pkg.version = '${{ needs.increment-version.outputs.full_version }}';
-            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
-          "
+          node -e "const fs=require('fs');const v='${{ needs.increment-version.outputs.version }}';const b=${{ needs.increment-version.outputs.build }};const f='${{ needs.increment-version.outputs.full_version }}';fs.writeFileSync('version.json',JSON.stringify({version:v,build:b,date:new Date().toISOString()},null,2));const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.version=f;fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
 
       - name: Build TypeScript and Webpack
         run: npm run build:ci
@@ -338,20 +299,7 @@ jobs:
 
       - name: Update version files
         run: |
-          cat > version.json << EOF
-          {
-            "version": "${{ needs.increment-version.outputs.version }}",
-            "build": ${{ needs.increment-version.outputs.build }},
-            "date": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-          }
-          EOF
-
-          node -e "
-            const fs = require('fs');
-            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            pkg.version = '${{ needs.increment-version.outputs.full_version }}';
-            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
-          "
+          node -e "const fs=require('fs');const v='${{ needs.increment-version.outputs.version }}';const b=${{ needs.increment-version.outputs.build }};const f='${{ needs.increment-version.outputs.full_version }}';fs.writeFileSync('version.json',JSON.stringify({version:v,build:b,date:new Date().toISOString()},null,2));const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.version=f;fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
 
       - name: Build TypeScript and Webpack
         run: npm run build:ci
@@ -418,20 +366,7 @@ jobs:
 
       - name: Update version files
         run: |
-          cat > version.json << EOF
-          {
-            "version": "${{ needs.increment-version.outputs.version }}",
-            "build": ${{ needs.increment-version.outputs.build }},
-            "date": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-          }
-          EOF
-
-          node -e "
-            const fs = require('fs');
-            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            pkg.version = '${{ needs.increment-version.outputs.full_version }}';
-            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
-          "
+          node -e "const fs=require('fs');const v='${{ needs.increment-version.outputs.version }}';const b=${{ needs.increment-version.outputs.build }};const f='${{ needs.increment-version.outputs.full_version }}';fs.writeFileSync('version.json',JSON.stringify({version:v,build:b,date:new Date().toISOString()},null,2));const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.version=f;fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
 
       - name: Build TypeScript and Webpack
         run: npm run build:ci
