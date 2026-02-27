@@ -212,6 +212,30 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     setImportData(null);
   };
 
+  const handleOpenImportDialog = async () => {
+    const result = await window.electronAPI.dialog.openFile({
+      title: 'Importer des tireurs',
+      filters: [
+        { name: 'Fichiers FFE', extensions: ['ffe', 'csv', 'txt'] },
+        { name: 'Tous les fichiers', extensions: ['*'] },
+      ],
+      properties: ['openFile'],
+    });
+
+    if (result && result.filePath && result.content) {
+      const filepath = result.filePath;
+      const content = result.content;
+      const extension = filepath.split('.').pop()?.toLowerCase();
+
+      let format = 'ffe';
+      if (extension === 'csv' || extension === 'txt') {
+        format = 'txt';
+      }
+
+      setImportData({ format, filepath, content });
+    }
+  };
+
   const handleImportRanking = async (result: RankingImportResult) => {
     try {
       // Mettre à jour chaque tireur individuellement
@@ -554,6 +578,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             onDeleteAllFencers={deleteAllFencers}
             onCheckInAll={checkInAll}
             onUncheckAll={uncheckAll}
+            onImport={handleOpenImportDialog}
             onSetFencerStatus={(id, status) => {
               // Si forfait, abandon ou exclusion, mettre à jour tous les matchs du tireur
               if (status === FencerStatus.FORFAIT) {

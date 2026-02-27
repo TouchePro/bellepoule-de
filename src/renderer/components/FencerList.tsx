@@ -20,6 +20,7 @@ interface FencerListProps {
   onCheckInAll?: () => void;
   onUncheckAll?: () => void;
   onSetFencerStatus?: (id: string, status: FencerStatus) => void;
+  onImport?: () => void;
 }
 
 const FencerListComponent: React.FC<FencerListProps> = ({
@@ -32,6 +33,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
   onCheckInAll,
   onUncheckAll,
   onSetFencerStatus,
+  onImport,
 }) => {
   const { t } = useTranslation();
   const { confirm } = useConfirm();
@@ -99,6 +101,23 @@ const FencerListComponent: React.FC<FencerListProps> = ({
     if (result && !result.canceled && result.filePath) {
       const content = format === 'fff' ? exportFencersToFFF(fencers) : exportFencersToTXT(fencers);
       await window.electronAPI.file.writeContent(result.filePath, content);
+    }
+  };
+
+  const handleImportFencers = async () => {
+    if (!onImport) return;
+
+    const result = await window.electronAPI.dialog.openFile({
+      title: 'Importer des tireurs',
+      filters: [
+        { name: 'Fichiers FFE', extensions: ['ffe', 'csv', 'txt'] },
+        { name: 'Tous les fichiers', extensions: ['*'] },
+      ],
+      properties: ['openFile'],
+    });
+
+    if (result && result.filePath) {
+      onImport();
     }
   };
 
@@ -170,6 +189,15 @@ const FencerListComponent: React.FC<FencerListProps> = ({
               title={`Supprimer les ${fencers.length} tireurs`}
             >
               🗑️ {t('actions.delete')}
+            </button>
+          )}
+          {onImport && (
+            <button
+              className="btn btn-secondary"
+              onClick={handleImportFencers}
+              title="Importer depuis un fichier (.ffe, .csv, .txt)"
+            >
+              📥 Importer
             </button>
           )}
           <button
