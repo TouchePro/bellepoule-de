@@ -334,10 +334,27 @@
         color: white;
       }
 
-      .btn-minus-1 {
-        background: #6b7280;
-        color: white;
-        font-size: 0.9rem;
+      /* Feedback long press */
+      .score-btn.long-press-active {
+        animation: pulse-long-press 0.8s ease-in-out infinite;
+        box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
+      }
+
+      @keyframes pulse-long-press {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(0.95);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      .card-btn.long-press-active {
+        animation: pulse-long-press 0.8s ease-in-out infinite;
+        box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
       }
 
       /* Boutons cartons */
@@ -654,15 +671,31 @@
             <div class="cards-display" id="fencer-a-cards"></div>
             <div class="score-display red-score" id="score-a">0</div>
             <div class="score-buttons">
-              <button class="score-btn btn-plus-1" onclick="refereeApp.addScore('A', 1)">+1</button>
-              <button class="score-btn btn-plus-3" onclick="refereeApp.addScore('A', 3)">+3</button>
-              <button class="score-btn btn-plus-5" onclick="refereeApp.addScore('A', 5)">+5</button>
-              <button class="score-btn btn-minus-1" onclick="refereeApp.addScore('A', -1)">
-                -1
+              <button
+                id="btn-plus-1-a"
+                class="score-btn btn-plus-1"
+                onclick="refereeApp.addScore('A', 1)"
+              >
+                +1
+              </button>
+              <button
+                id="btn-plus-3-a"
+                class="score-btn btn-plus-3"
+                onclick="refereeApp.addScore('A', 3)"
+              >
+                +3
+              </button>
+              <button
+                id="btn-plus-5-a"
+                class="score-btn btn-plus-5"
+                onclick="refereeApp.addScore('A', 5)"
+              >
+                +5
               </button>
             </div>
             <div class="card-buttons">
               <button
+                id="btn-card-white-a"
                 class="card-btn card-btn-white"
                 onclick="refereeApp.addCard('A', 'white')"
                 title="Carton blanc"
@@ -670,6 +703,7 @@
                 B
               </button>
               <button
+                id="btn-card-yellow-a"
                 class="card-btn card-btn-yellow"
                 onclick="refereeApp.addCard('A', 'yellow')"
                 title="Carton jaune (+3 adv)"
@@ -677,6 +711,7 @@
                 J
               </button>
               <button
+                id="btn-card-red-a"
                 class="card-btn card-btn-red"
                 onclick="refereeApp.addCard('A', 'red')"
                 title="Carton rouge (+5 adv)"
@@ -697,15 +732,31 @@
             <div class="cards-display" id="fencer-b-cards"></div>
             <div class="score-display green-score" id="score-b">0</div>
             <div class="score-buttons">
-              <button class="score-btn btn-plus-1" onclick="refereeApp.addScore('B', 1)">+1</button>
-              <button class="score-btn btn-plus-3" onclick="refereeApp.addScore('B', 3)">+3</button>
-              <button class="score-btn btn-plus-5" onclick="refereeApp.addScore('B', 5)">+5</button>
-              <button class="score-btn btn-minus-1" onclick="refereeApp.addScore('B', -1)">
-                -1
+              <button
+                id="btn-plus-1-b"
+                class="score-btn btn-plus-1"
+                onclick="refereeApp.addScore('B', 1)"
+              >
+                +1
+              </button>
+              <button
+                id="btn-plus-3-b"
+                class="score-btn btn-plus-3"
+                onclick="refereeApp.addScore('B', 3)"
+              >
+                +3
+              </button>
+              <button
+                id="btn-plus-5-b"
+                class="score-btn btn-plus-5"
+                onclick="refereeApp.addScore('B', 5)"
+              >
+                +5
               </button>
             </div>
             <div class="card-buttons">
               <button
+                id="btn-card-white-b"
                 class="card-btn card-btn-white"
                 onclick="refereeApp.addCard('B', 'white')"
                 title="Carton blanc"
@@ -713,6 +764,7 @@
                 B
               </button>
               <button
+                id="btn-card-yellow-b"
                 class="card-btn card-btn-yellow"
                 onclick="refereeApp.addCard('B', 'yellow')"
                 title="Carton jaune (+3 adv)"
@@ -720,6 +772,7 @@
                 J
               </button>
               <button
+                id="btn-card-red-b"
                 class="card-btn card-btn-red"
                 onclick="refereeApp.addCard('B', 'red')"
                 title="Carton rouge (+5 adv)"
@@ -814,7 +867,152 @@
           document.getElementById('arena-number').textContent = this.arenaNumber;
           this.setupSocketListeners();
           this.setupTimerInteractions();
+          this.setupLongPressInteractions();
           this.loadMatches();
+        }
+
+        setupLongPressInteractions() {
+          const LONG_PRESS_DURATION = 800;
+
+          // Configuration des boutons de score avec long press
+          const scoreButtonConfigs = [
+            { id: 'btn-plus-1-a', fencer: 'A', points: 1 },
+            { id: 'btn-plus-3-a', fencer: 'A', points: 3 },
+            { id: 'btn-plus-5-a', fencer: 'A', points: 5 },
+            { id: 'btn-plus-1-b', fencer: 'B', points: 1 },
+            { id: 'btn-plus-3-b', fencer: 'B', points: 3 },
+            { id: 'btn-plus-5-b', fencer: 'B', points: 5 },
+          ];
+
+          scoreButtonConfigs.forEach(config => {
+            const btn = document.getElementById(config.id);
+            if (!btn) return;
+
+            let longPressTimer = null;
+
+            // Mouse events
+            btn.addEventListener('mousedown', e => {
+              btn.classList.add('long-press-active');
+              longPressTimer = setTimeout(() => {
+                btn.classList.remove('long-press-active');
+                this.removeScore(config.fencer, config.points);
+                longPressTimer = null;
+              }, LONG_PRESS_DURATION);
+            });
+
+            btn.addEventListener('mouseup', () => {
+              if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+              }
+              btn.classList.remove('long-press-active');
+            });
+
+            btn.addEventListener('mouseleave', () => {
+              if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+              }
+              btn.classList.remove('long-press-active');
+            });
+
+            // Touch events pour mobile
+            btn.addEventListener('touchstart', e => {
+              e.preventDefault();
+              btn.classList.add('long-press-active');
+              longPressTimer = setTimeout(() => {
+                btn.classList.remove('long-press-active');
+                this.removeScore(config.fencer, config.points);
+                longPressTimer = null;
+              }, LONG_PRESS_DURATION);
+            });
+
+            btn.addEventListener('touchend', () => {
+              if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+              }
+              btn.classList.remove('long-press-active');
+            });
+
+            btn.addEventListener('touchcancel', () => {
+              if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+              }
+              btn.classList.remove('long-press-active');
+            });
+          });
+
+          // Configuration des boutons de cartons avec long press
+          const cardButtonConfigs = [
+            { id: 'btn-card-white-a', fencer: 'A', cardType: 'white' },
+            { id: 'btn-card-yellow-a', fencer: 'A', cardType: 'yellow' },
+            { id: 'btn-card-red-a', fencer: 'A', cardType: 'red' },
+            { id: 'btn-card-white-b', fencer: 'B', cardType: 'white' },
+            { id: 'btn-card-yellow-b', fencer: 'B', cardType: 'yellow' },
+            { id: 'btn-card-red-b', fencer: 'B', cardType: 'red' },
+          ];
+
+          cardButtonConfigs.forEach(config => {
+            const btn = document.getElementById(config.id);
+            if (!btn) return;
+
+            let longPressTimer = null;
+
+            // Mouse events
+            btn.addEventListener('mousedown', e => {
+              btn.classList.add('long-press-active');
+              longPressTimer = setTimeout(() => {
+                btn.classList.remove('long-press-active');
+                this.removeCard(config.fencer, config.cardType);
+                longPressTimer = null;
+              }, LONG_PRESS_DURATION);
+            });
+
+            btn.addEventListener('mouseup', () => {
+              if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+              }
+              btn.classList.remove('long-press-active');
+            });
+
+            btn.addEventListener('mouseleave', () => {
+              if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+              }
+              btn.classList.remove('long-press-active');
+            });
+
+            // Touch events pour mobile
+            btn.addEventListener('touchstart', e => {
+              e.preventDefault();
+              btn.classList.add('long-press-active');
+              longPressTimer = setTimeout(() => {
+                btn.classList.remove('long-press-active');
+                this.removeCard(config.fencer, config.cardType);
+                longPressTimer = null;
+              }, LONG_PRESS_DURATION);
+            });
+
+            btn.addEventListener('touchend', () => {
+              if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+              }
+              btn.classList.remove('long-press-active');
+            });
+
+            btn.addEventListener('touchcancel', () => {
+              if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+              }
+              btn.classList.remove('long-press-active');
+            });
+          });
         }
 
         setupSocketListeners() {
@@ -1063,6 +1261,60 @@
           this.updateCardsDisplay();
           this.broadcastUpdate();
           this.saveScore();
+        }
+
+        // Retirer des points (appui long)
+        removeScore(fencer, points) {
+          if (!this.currentMatch) return;
+          if (this.matchStatus === 'finished') return;
+
+          // Ne pas permettre de retirer plus que le score actuel
+          if (fencer === 'A') {
+            this.scoreA = Math.max(0, this.scoreA - points);
+          } else {
+            this.scoreB = Math.max(0, this.scoreB - points);
+          }
+
+          this.updateScores();
+          this.broadcastUpdate();
+          this.saveScore();
+          this.showNotification(`-${points} point${points > 1 ? 's' : ''}`);
+        }
+
+        // Retirer un carton (appui long)
+        removeCard(fencer, cardType) {
+          if (!this.currentMatch) return;
+          if (this.matchStatus === 'finished') return;
+
+          const cards = fencer === 'A' ? this.cardsA : this.cardsB;
+
+          // Trouver l'index du dernier carton du type spécifié
+          const lastIndex = cards.lastIndexOf(cardType);
+
+          if (lastIndex === -1) {
+            this.showNotification(`Aucun carton ${cardType} à retirer`);
+            return;
+          }
+
+          // Retirer le dernier carton de ce type
+          cards.splice(lastIndex, 1);
+
+          // Ajuster le score si nécessaire (retirer les points de pénalité)
+          if (cardType === 'yellow' && fencer === 'A') {
+            this.scoreB = Math.max(0, this.scoreB - 3);
+          } else if (cardType === 'yellow' && fencer === 'B') {
+            this.scoreA = Math.max(0, this.scoreA - 3);
+          } else if (cardType === 'red' && fencer === 'A') {
+            this.scoreB = Math.max(0, this.scoreB - 5);
+          } else if (cardType === 'red' && fencer === 'B') {
+            this.scoreA = Math.max(0, this.scoreA - 5);
+          }
+
+          this.updateScores();
+          this.updateCardsDisplay();
+          this.broadcastUpdate();
+          this.saveScore();
+          this.showNotification(`Carton ${cardType} retiré`);
         }
 
         updateScores() {
