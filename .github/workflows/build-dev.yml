@@ -13,8 +13,15 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       build: ${{ steps.version.outputs.build }}
+      full_version: ${{ steps.version.outputs.full_version }}
 
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Get Version from package.json
         id: version
         run: |
@@ -34,6 +41,33 @@ jobs:
           echo "Current version: $VERSION"
           echo "Build number: $NEW_BUILD"
           echo "Full version: $FULL_VERSION"
+
+      - name: Write version files
+        run: |
+          cat > version.json << EOF
+          {
+            "version": "${{ steps.version.outputs.version }}",
+            "build": ${{ steps.version.outputs.build }},
+            "date": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          }
+          EOF
+
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = '${{ steps.version.outputs.full_version }}';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
+
+          cat version.json
+
+      - name: Commit and push
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add version.json package.json
+          git diff --staged --quiet || git commit -m "🔖 Dev Build #${{ steps.version.outputs.build }}"
+          git push || echo "Nothing to push"
 
   build-windows:
     needs: increment-version
@@ -69,6 +103,23 @@ jobs:
             echo "Failed, waiting 10s before retry..."
             sleep 10
           done
+
+      - name: Update version files
+        run: |
+          cat > version.json << EOF
+          {
+            "version": "${{ needs.increment-version.outputs.version }}",
+            "build": ${{ needs.increment-version.outputs.build }},
+            "date": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          }
+          EOF
+
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = '${{ needs.increment-version.outputs.full_version }}';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
 
       - name: Build TypeScript and Webpack
         run: npm run build:ci
@@ -124,6 +175,23 @@ jobs:
 
       - name: Install Dependencies
         run: npm ci
+
+      - name: Update version files
+        run: |
+          cat > version.json << EOF
+          {
+            "version": "${{ needs.increment-version.outputs.version }}",
+            "build": ${{ needs.increment-version.outputs.build }},
+            "date": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          }
+          EOF
+
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = '${{ needs.increment-version.outputs.full_version }}';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
 
       - name: Build TypeScript and Webpack
         run: npm run build:ci
@@ -188,6 +256,23 @@ jobs:
             sleep 10
           done
 
+      - name: Update version files
+        run: |
+          cat > version.json << EOF
+          {
+            "version": "${{ needs.increment-version.outputs.version }}",
+            "build": ${{ needs.increment-version.outputs.build }},
+            "date": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          }
+          EOF
+
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = '${{ needs.increment-version.outputs.full_version }}';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
+
       - name: Build TypeScript and Webpack
         run: npm run build:ci
 
@@ -251,6 +336,23 @@ jobs:
             sleep 10
           done
 
+      - name: Update version files
+        run: |
+          cat > version.json << EOF
+          {
+            "version": "${{ needs.increment-version.outputs.version }}",
+            "build": ${{ needs.increment-version.outputs.build }},
+            "date": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          }
+          EOF
+
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = '${{ needs.increment-version.outputs.full_version }}';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
+
       - name: Build TypeScript and Webpack
         run: npm run build:ci
 
@@ -313,6 +415,23 @@ jobs:
             echo "Failed, waiting 10s before retry..."
             sleep 10
           done
+
+      - name: Update version files
+        run: |
+          cat > version.json << EOF
+          {
+            "version": "${{ needs.increment-version.outputs.version }}",
+            "build": ${{ needs.increment-version.outputs.build }},
+            "date": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          }
+          EOF
+
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = '${{ needs.increment-version.outputs.full_version }}';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
 
       - name: Build TypeScript and Webpack
         run: npm run build:ci

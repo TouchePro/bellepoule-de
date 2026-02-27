@@ -56,6 +56,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   const [editScoreB, setEditScoreB] = useState<string>('');
   const [victoryA, setVictoryA] = useState(false);
   const [victoryB, setVictoryB] = useState(false);
+  const [alignment, setAlignment] = useState<'center' | 'top'>('center');
   const isUnlimitedScore = maxScore === 999;
 
   const { modalRef, dimensions } = useModalResize({
@@ -825,8 +826,10 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         style={{
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'space-around',
+          justifyContent: alignment === 'top' ? 'flex-start' : 'space-around',
           minWidth: '200px',
+          paddingTop: alignment === 'top' ? '0' : '0',
+          gap: alignment === 'top' ? '1rem' : '0',
         }}
       >
         <div
@@ -909,6 +912,25 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
             }}
           >
             🎲 Remplir auto
+          </button>
+          <button
+            onClick={() => setAlignment(alignment === 'center' ? 'top' : 'center')}
+            style={{
+              background: alignment === 'top' ? '#3b82f6' : '#e5e7eb',
+              color: alignment === 'top' ? 'white' : '#374151',
+              border: 'none',
+              padding: '0.5rem 0.75rem',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+            }}
+            title={alignment === 'center' ? 'Aligner vers le haut' : 'Centrer les matches'}
+          >
+            {alignment === 'center' ? '⬇ Haut' : '⬆ Centre'}
           </button>
           {champion && (
             <div
