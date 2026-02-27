@@ -32,6 +32,8 @@ export class RemoteScoreServer {
   private arenaTimers: Map<string, NodeJS.Timeout> = new Map();
   private arenaCount: number = 4; // Nombre d'arènes par défaut
   private sessionWeapon: string | null = null; // Type d'arme de la compétition (L = Laser)
+  private sessionMatches: any[] = []; // Matches passés depuis le renderer
+  private arenaNextMatchIndex: Map<string, number> = new Map(); // Index du prochain match par arène
 
   // Stocker le contenu des fichiers HTML en mémoire pour éviter les problèmes de chemin
   private htmlFiles: Map<string, string> = new Map();
@@ -1151,80 +1153,108 @@ export class RemoteScoreServer {
       return;
     }
 
-    const competitionId = this.session.competitionId;
+    const currentMatchId = arena.currentMatch?.id;
+    const currentPoolId = arena.currentMatch?.poolId;
+    const nextIndex = this.arenaNextMatchIndex.get(arenaId) || 0;
 
-    // Chercher les matches en attente
-    let pendingMatches = this.db.getPendingMatches(competitionId);
-    if (pendingMatches.length === 0) {
-      pendingMatches = this.db.getAllPendingMatchesFromPools(competitionId);
+    console.log(
+      `[RemoteScoreServer] loadNextMatch: arena=${arenaId}, pool=${currentPoolId}, index=${nextIndex}, total=${this.sessionMatches.length}`
+    );
+
+    // Si pas de matches en mémoire, essayer la DB
+    if (this.sessionMatches.length === 0) {
+      console.log('[RemoteScoreServer] Pas de matches en mémoire, recherche dans la DB...');
+      const pendingMatches = this.db.getPendingMatches(this.session.competitionId);
+      if (pendingMatches.length === 0) {
+        console.log('[RemoteScoreServer] Pas de matches non plus en DB');
+        arena.currentMatch = null;
+        arena.status = 'idle';
+        this.updateArena(arenaId, { currentMatch: null, status: 'idle' });
+        return;
+      }
+      // Ajouter les matches de la DB à sessionMatches
+      this.sessionMatches = pendingMatches;
     }
 
-    if (pendingMatches.length === 0) {
-      console.log(`[RemoteScoreServer] Plus de matches en attente pour ${competitionId}`);
-
-      arena.currentMatch = null;
-      arena.status = 'idle';
-      arena.elapsedTime = 0;
-      arena.startTime = null;
-
-      this.updateArena(arenaId, {
-        currentMatch: null,
-        status: 'idle',
-        elapsedTime: 0,
-        startTime: null,
+    // Chercher le prochain match dans le même pool
+    if (currentPoolId) {
+      const poolMatches = this.sessionMatches.filter(m => {
+        const matchPoolId = m.poolId || m.pool?.id || `pool-${m.poolNumber || m.number}`;
+        return matchPoolId === currentPoolId;
       });
-      return;
-    }
 
-    // Trouver le prochain match non assigné
-    const assignedMatchIds = new Set<string>();
-    for (const [, a] of this.arenas) {
-      if (a.currentMatch && a.currentMatch.id !== arena.currentMatch?.id) {
-        assignedMatchIds.add(a.currentMatch.id);
-      }
-    }
-
-    let nextMatch: any = null;
-    for (const match of pendingMatches) {
-      if (!assignedMatchIds.has(match.id)) {
-        nextMatch = match;
-        break;
-      }
-    }
-
-    if (nextMatch) {
       console.log(
-        `[RemoteScoreServer] Chargement du match suivant ${nextMatch.id} sur arène ${arenaId}`
+        `[RemoteScoreServer] ${poolMatches.length} matches dans le pool ${currentPoolId}, prochain index: ${nextIndex}`
       );
 
-      const arenaMatch: ArenaMatch = {
-        id: nextMatch.id,
-        poolId: nextMatch.poolId || '',
-        fencerA: nextMatch.fencerA!,
-        fencerB: nextMatch.fencerB!,
-        scoreA: 0,
-        scoreB: 0,
-        status: 'not_started',
-        startTime: null,
-        endTime: null,
-      };
+      if (nextIndex < poolMatches.length) {
+        const nextMatch = poolMatches[nextIndex];
 
-      this.assignMatchToArena(arenaId, arenaMatch);
-    } else {
-      console.log(`[RemoteScoreServer] Aucun match disponible pour arène ${arenaId}`);
+        // Ignorer le match actuel
+        if (nextMatch.id === currentMatchId && nextIndex + 1 < poolMatches.length) {
+          const actualNextMatch = poolMatches[nextIndex + 1];
+          this.arenaNextMatchIndex.set(arenaId, nextIndex + 2);
 
-      arena.currentMatch = null;
-      arena.status = 'idle';
-      arena.elapsedTime = 0;
-      arena.startTime = null;
+          console.log(
+            `[RemoteScoreServer] Chargement du match suivant ${actualNextMatch.id} (pool ${currentPoolId}) sur arène ${arenaId}`
+          );
 
-      this.updateArena(arenaId, {
-        currentMatch: null,
-        status: 'idle',
-        elapsedTime: 0,
-        startTime: null,
-      });
+          const arenaMatch: ArenaMatch = {
+            id: actualNextMatch.id,
+            poolId: currentPoolId,
+            fencerA: actualNextMatch.fencerA!,
+            fencerB: actualNextMatch.fencerB!,
+            scoreA: 0,
+            scoreB: 0,
+            status: 'not_started',
+            startTime: null,
+            endTime: null,
+          };
+
+          this.assignMatchToArena(arenaId, arenaMatch);
+          return;
+        } else if (nextMatch.id !== currentMatchId) {
+          this.arenaNextMatchIndex.set(arenaId, nextIndex + 1);
+
+          console.log(
+            `[RemoteScoreServer] Chargement du match ${nextMatch.id} (pool ${currentPoolId}) sur arène ${arenaId}`
+          );
+
+          const arenaMatch: ArenaMatch = {
+            id: nextMatch.id,
+            poolId: currentPoolId,
+            fencerA: nextMatch.fencerA!,
+            fencerB: nextMatch.fencerB!,
+            scoreA: 0,
+            scoreB: 0,
+            status: 'not_started',
+            startTime: null,
+            endTime: null,
+          };
+
+          this.assignMatchToArena(arenaId, arenaMatch);
+          return;
+        }
+      }
+
+      console.log(
+        `[RemoteScoreServer] Plus de matches dans le pool ${currentPoolId} pour l'arène ${arenaId}`
+      );
     }
+
+    // Pas de match suivant dans le même pool - marquer l'arène comme vide
+    arena.currentMatch = null;
+    arena.status = 'idle';
+    arena.elapsedTime = 0;
+    arena.startTime = null;
+
+    this.updateArena(arenaId, {
+      currentMatch: null,
+      status: 'idle',
+      elapsedTime: 0,
+      startTime: null,
+    });
+    console.log(`[RemoteScoreServer] Arène ${arenaId} marquée comme vide`);
   }
 
   private startArenaTimer(arenaId: string): void {
@@ -1390,39 +1420,63 @@ export class RemoteScoreServer {
       }
     }
 
-    // Assigner les matchs aux arènes
+    // Stocker les matches pour pouvoir les utiliser pour charger le match suivant
+    this.sessionMatches = allMatches;
+    console.log(`[RemoteScoreServer] ${this.sessionMatches.length} matches stockés en mémoire`);
+
+    // Grouper les matches par pool
+    const matchesByPool = new Map<string, any[]>();
+    for (const match of allMatches) {
+      const poolId = match.poolId || match.pool?.id || `pool-${match.poolNumber || match.number}`;
+      if (!matchesByPool.has(poolId)) {
+        matchesByPool.set(poolId, []);
+      }
+      matchesByPool.get(poolId)!.push(match);
+    }
     console.log(
-      `[RemoteScoreServer] Assignation de ${Math.min(allMatches.length, strips)} matchs à ${strips} arènes`
+      `[RemoteScoreServer] ${matchesByPool.size} pools trouvées:`,
+      Array.from(matchesByPool.keys())
     );
 
-    allMatches.slice(0, strips).forEach((match, index) => {
-      const arenaId = `arena${index + 1}`;
+    // Assigner les matchs aux arènes par pool (Pool 1 -> Arena 1, Pool 2 -> Arena 2, etc.)
+    console.log(`[RemoteScoreServer] Assignation des matches par pool aux ${strips} arènes`);
+
+    let poolIndex = 0;
+    for (const [poolId, poolMatches] of matchesByPool) {
+      if (poolIndex >= strips) break;
+
+      const arenaId = `arena${poolIndex + 1}`;
+      const firstMatch = poolMatches[0];
+
+      if (!firstMatch) continue;
+
       console.log(
-        `[RemoteScoreServer] Vérification arena ${arenaId}:`,
-        this.arenas.has(arenaId) ? 'existe' : 'N EXISTE PAS'
+        `[RemoteScoreServer] Pool ${poolId} -> Arène ${arenaId}, ${poolMatches.length} matches`
       );
 
       const arenaMatch: ArenaMatch = {
-        id: match.id,
-        poolId: match.poolId || '',
-        fencerA: match.fencerA!,
-        fencerB: match.fencerB!,
-        scoreA: match.scoreA?.value ?? 0,
-        scoreB: match.scoreB?.value ?? 0,
-        status: match.status === 'in_progress' ? 'in_progress' : 'not_started',
-        startTime: match.status === 'in_progress' ? new Date() : null,
+        id: firstMatch.id,
+        poolId: poolId,
+        fencerA: firstMatch.fencerA!,
+        fencerB: firstMatch.fencerB!,
+        scoreA: firstMatch.scoreA?.value ?? 0,
+        scoreB: firstMatch.scoreB?.value ?? 0,
+        status: firstMatch.status === 'in_progress' ? 'in_progress' : 'not_started',
+        startTime: firstMatch.status === 'in_progress' ? new Date() : null,
         endTime: null,
       };
 
+      this.assignMatchToArena(arenaId, arenaMatch);
+
+      // Stocker l'index du prochain match pour cette arène (commence à 1 car le 0 est déjà assigné)
+      this.arenaNextMatchIndex.set(arenaId, 1);
+
       console.log(
-        `[RemoteScoreServer] Match à assigner: ID=${match.id}, Pool=${match.poolId}, FencerA=${match.fencerA?.lastName}, FencerB=${match.fencerB?.lastName}`
+        `[RemoteScoreServer] Match ${firstMatch.id} (Pool ${poolId}) assigné à l'arène ${arenaId}`
       );
 
-      this.assignMatchToArena(arenaId, arenaMatch);
-      console.log(
-        `[RemoteScoreServer] Match ${match.id} assigné à l'arène ${arenaId} (Poule ${match.poolId})`
-      );
-    });
+      poolIndex++;
+    }
 
     // Créer la session - utiliser allMatches au lieu de pendingMatches
     const assignedMatchCount = Math.min(allMatches.length, strips);
