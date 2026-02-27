@@ -1164,7 +1164,11 @@ export class RemoteScoreServer {
     }
   }
 
-  public async startSession(competitionId: string, strips: number): Promise<RemoteSession> {
+  public async startSession(
+    competitionId: string,
+    strips: number,
+    matchesFromRenderer?: any[]
+  ): Promise<RemoteSession> {
     if (this.session) {
       throw new Error('Session déjà active');
     }
@@ -1187,18 +1191,29 @@ export class RemoteScoreServer {
     // Configurer le nombre d'arènes
     this.setArenaCount(strips);
 
-    // Récupérer les matchs en attente
-    const pendingMatches = this.db.getPendingMatches(competitionId);
-    console.log(
-      `[RemoteScoreServer] ${pendingMatches.length} matchs en attente trouvés pour la compétition ${competitionId}`
-    );
+    // Utiliser les matches passés depuis le renderer si disponibles, sinon chercher dans la DB
+    let allMatches: any[] = [];
+    if (matchesFromRenderer && matchesFromRenderer.length > 0) {
+      console.log(`[RemoteScoreServer] ${matchesFromRenderer.length} matchs reçus du renderer`);
+      allMatches = matchesFromRenderer.filter(
+        m => m.status === 'not_started' || m.status === 'in_progress'
+      );
+      console.log(`[RemoteScoreServer] ${allMatches.length} matchs en attente après filtrage`);
+    } else {
+      // Récupérer les matchs en attente depuis la DB
+      console.log('[RemoteScoreServer] Pas de matches reçus, recherche dans la DB...');
+      const pendingMatches = this.db.getPendingMatches(competitionId);
+      console.log(
+        `[RemoteScoreServer] ${pendingMatches.length} matchs en attente trouvés pour la compétition ${competitionId}`
+      );
 
-    // Si pas de matchs trouvés via getPendingMatches (phases), essayer de récupérer via pool_fencers
-    let allMatches = pendingMatches;
-    if (pendingMatches.length === 0) {
-      console.log('[RemoteScoreServer] Tentative de récupération des matchs via pool_fencers...');
-      allMatches = this.db.getAllPendingMatchesFromPools(competitionId);
-      console.log(`[RemoteScoreServer] ${allMatches.length} matchs trouvés via fallback`);
+      // Si pas de matchs trouvés via getPendingMatches (phases), essayer de récupérer via pool_fencers
+      allMatches = pendingMatches;
+      if (pendingMatches.length === 0) {
+        console.log('[RemoteScoreServer] Tentative de récupération des matchs via pool_fencers...');
+        allMatches = this.db.getAllPendingMatchesFromPools(competitionId);
+        console.log(`[RemoteScoreServer] ${allMatches.length} matchs trouvés via fallback`);
+      }
     }
 
     // Assigner les matchs aux arènes

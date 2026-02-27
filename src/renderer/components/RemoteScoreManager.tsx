@@ -5,12 +5,12 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Competition } from '../../shared/types';
+import { Competition, Pool } from '../../shared/types';
 import { useToast } from './Toast';
-import { usePoolStore } from '../../features/pools/hooks/usePoolStore';
 
 interface RemoteScoreManagerProps {
   competition: Competition;
+  pools: Pool[];
   onStartRemote: () => void;
   onStopRemote: () => void;
   isRemoteActive?: boolean;
@@ -30,34 +30,34 @@ interface RemoteSession {
 
 const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   competition,
+  pools,
   onStartRemote,
   onStopRemote,
   isRemoteActive = false,
 }) => {
   const { showToast } = useToast();
-  const { pools, loadPools } = usePoolStore();
   const [session, setSession] = useState<RemoteSession | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [serverUrl, setServerUrl] = useState<string>('http://localhost:8066');
   const [stripCount, setStripCount] = useState<number | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
-  // Charger les poules
-  useEffect(() => {
-    if (competition?.id) {
-      loadPools(competition.id);
-    }
-  }, [competition?.id]);
-
   // Définir le nombre de pistes par défaut = nombre de poules
   useEffect(() => {
     if (pools && pools.length > 0 && stripCount === null) {
       setStripCount(pools.length);
+      console.log('[RemoteScoreManager] Nombre de pistes défini depuis les props:', pools.length);
     }
   }, [pools, stripCount]);
 
-  // Utiliser stripCount, sinon valeur par défaut (nombre de poules ou 1)
-  const effectiveStripCount = stripCount ?? (pools && pools.length > 0 ? pools.length : 1);
+  // Valeur par défaut si pas de poules
+  useEffect(() => {
+    if (stripCount === null) {
+      setStripCount(1);
+    }
+  }, [stripCount]);
+
+  const effectiveStripCount = stripCount ?? 1;
 
   useEffect(() => {
     if (isRemoteActive) {
@@ -87,7 +87,13 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
 
   const startSession = async (baseUrl: string, count: number) => {
     try {
-      const result = await window.electronAPI.remote.startSession(competition.id, count);
+      const allMatches = pools.flatMap(pool => pool.matches || []);
+      console.log('[RemoteScoreManager] Passing matches to server:', allMatches.length);
+      const result = await window.electronAPI.remote.startSession(
+        competition.id,
+        count,
+        allMatches
+      );
       if (result.success && result.session) {
         setSession(result.session);
         showToast('Saisie distante démarrée', 'success');

@@ -708,6 +708,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         {currentPhase === 'remote' && (
           <RemoteScoreManager
             competition={competition}
+            pools={pools}
             onStartRemote={() => setIsRemoteActive(true)}
             onStopRemote={() => setIsRemoteActive(false)}
             isRemoteActive={isRemoteActive}

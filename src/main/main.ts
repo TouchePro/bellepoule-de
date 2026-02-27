@@ -679,19 +679,22 @@ ipcMain.handle('remote:getServerInfo', async () => {
 });
 
 // Remote session handlers
-ipcMain.handle('remote:startSession', async (_, competitionId: string, strips: number) => {
-  try {
-    if (!remoteScoreServer) {
-      return { success: false, error: 'Le serveur distant n est pas démarré' };
-    }
+ipcMain.handle(
+  'remote:startSession',
+  async (_, competitionId: string, strips: number, matches?: any[]) => {
+    try {
+      if (!remoteScoreServer) {
+        return { success: false, error: 'Le serveur distant n est pas démarré' };
+      }
 
-    const session = await remoteScoreServer.startSession(competitionId, strips);
-    return { success: true, session };
-  } catch (error) {
-    console.error('Error starting session:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+      const session = await remoteScoreServer.startSession(competitionId, strips, matches);
+      return { success: true, session };
+    } catch (error) {
+      console.error('Error starting session:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+    }
   }
-});
+);
 
 ipcMain.handle('remote:stopSession', async () => {
   try {

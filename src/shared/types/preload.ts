@@ -223,7 +223,8 @@ export interface RemoteServerAPI {
   getServerInfo: () => Promise<{ success: boolean; serverInfo?: RemoteServerInfo; error?: string }>;
   startSession: (
     competitionId: string,
-    strips: number
+    strips: number,
+    matches?: any[]
   ) => Promise<{ success: boolean; session?: any; error?: string }>;
   stopSession: () => Promise<{ success: boolean; error?: string }>;
   getSession: () => Promise<{ success: boolean; session?: any; error?: string }>;
