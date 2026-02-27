@@ -3,6 +3,9 @@ name: Build Dev Branch
 on:
   push:
     branches: [dev]
+    paths-ignore:
+      - 'version.json'
+      - 'package.json'
   workflow_dispatch:
 
 jobs:
