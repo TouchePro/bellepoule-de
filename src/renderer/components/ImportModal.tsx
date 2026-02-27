@@ -342,7 +342,10 @@ const ImportModal: React.FC<ImportModalProps> = ({
                           <input
                             type="checkbox"
                             checked={selectedFencers.has(index)}
-                            onChange={() => toggleFencer(index)}
+                            onChange={e => {
+                              e.stopPropagation();
+                              toggleFencer(index);
+                            }}
                           />
                         </td>
                         <td style={{ padding: '0.5rem' }}>{fencer.lastName}</td>

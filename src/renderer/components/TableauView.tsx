@@ -822,11 +822,12 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   const ROUND_SPACING_FACTOR = 2;
 
   const calculateMatchOffset = (round: number, position: number, maxRound: number): number => {
-    if (round === 1) return 0;
-    const roundsFromEnd = maxRound - round;
-    const spacing = MATCH_BASE_HEIGHT * Math.pow(ROUND_SPACING_FACTOR, roundsFromEnd);
+    if (round <= 4) return 0;
+
+    const roundHalvings = Math.log2(maxRound) - Math.log2(round) - 1;
+    const spacing = MATCH_BASE_HEIGHT * Math.pow(ROUND_SPACING_FACTOR, Math.max(0, roundHalvings));
     const positionIndex = position - 1;
-    const matchesInRound = tableauSize / Math.pow(2, round - 1);
+    const matchesInRound = maxRound / round;
     const totalHeight = (matchesInRound - 1) * spacing;
     return positionIndex * spacing - totalHeight / 2;
   };
