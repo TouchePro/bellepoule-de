@@ -54,10 +54,10 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          
+
           # Force add all files (including already tracked ones with changes)
           git add -A
-          
+
           # Try to make a commit (will fail if nothing changed)
           git commit -m "Dev Build ${{ steps.version.outputs.build }}" && {
             echo "Commit successful, pushing..."
@@ -112,7 +112,12 @@ jobs:
           Set-Content package.json $content -NoNewline
 
       - name: Package with Electron Builder
-        run: npx electron-builder --win portable --x64
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 15
+          max_attempts: 3
+          retry_on: error
+          command: npx electron-builder --win portable --x64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -162,7 +167,12 @@ jobs:
           "
 
       - name: Package with Electron Builder
-        run: npx electron-builder --mac --x64
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 15
+          max_attempts: 3
+          retry_on: error
+          command: npx electron-builder --mac --x64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -220,7 +230,12 @@ jobs:
           "
 
       - name: Package with Electron Builder
-        run: npx electron-builder --mac --arm64
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 15
+          max_attempts: 3
+          retry_on: error
+          command: npx electron-builder --mac --arm64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -278,7 +293,12 @@ jobs:
           "
 
       - name: Package with Electron Builder
-        run: npx electron-builder --linux AppImage --x64
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 15
+          max_attempts: 3
+          retry_on: error
+          command: npx electron-builder --linux AppImage --x64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -336,7 +356,12 @@ jobs:
           "
 
       - name: Package with Electron Builder
-        run: npx electron-builder --linux AppImage --arm64
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 15
+          max_attempts: 3
+          retry_on: error
+          command: npx electron-builder --linux AppImage --arm64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
