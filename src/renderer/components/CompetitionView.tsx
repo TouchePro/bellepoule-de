@@ -726,7 +726,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       {showPropertiesModal && (
         <CompetitionPropertiesModal
           competition={competition}
-          onSave={updates => onUpdate({ ...competition, ...updates })}
+          onSave={async updates => {
+            const updatedCompetition = { ...competition, ...updates };
+            if (window.electronAPI) {
+              await window.electronAPI.db.updateCompetition(competition.id, updatedCompetition);
+            }
+            onUpdate(updatedCompetition);
+          }}
           onClose={() => setShowPropertiesModal(false)}
         />
       )}
