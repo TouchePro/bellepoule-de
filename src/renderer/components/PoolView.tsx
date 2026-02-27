@@ -4,13 +4,14 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useModalResize } from '../hooks/useModalResize';
 import { Pool, Fencer, Match, MatchStatus, Score, Weapon, FencerStatus } from '../../shared/types';
 import { formatRatio, formatIndex } from '../../shared/utils/poolCalculations';
 import { useToast } from './Toast';
 import { useConfirm } from './ConfirmDialog';
 import { exportPoolToPDF } from '../../shared/utils/pdfExport';
+import { useColumnVisibility, POOL_COLUMNS, ColumnId } from '../hooks/useColumnVisibility';
 
 interface PoolViewProps {
   pool: Pool;
@@ -39,8 +40,10 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
 }) => {
   const { showToast } = useToast();
   const { confirm } = useConfirm();
+  const { isColumnVisible, toggleColumn, getVisibleColumns } = useColumnVisibility();
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [editingMatch, setEditingMatch] = useState<number | null>(null);
+  const [showColumnMenu, setShowColumnMenu] = useState(false);
   const [editingFromRowA, setEditingFromRowA] = useState<boolean>(true);
   const [editScoreA, setEditScoreA] = useState('');
   const [editScoreB, setEditScoreB] = useState('');
@@ -50,6 +53,30 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
 
   const isLaserSabre = weapon === Weapon.LASER;
   const fencers = pool.fencers;
+
+  const isVisible = useCallback(
+    (columnId: ColumnId): boolean => {
+      if (columnId === 'quest' && !isLaserSabre) return false;
+      return isColumnVisible('pool', columnId);
+    },
+    [isLaserSabre, isColumnVisible]
+  );
+
+  const columnMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (columnMenuRef.current && !columnMenuRef.current.contains(event.target as Node)) {
+        setShowColumnMenu(false);
+      }
+    };
+    if (showColumnMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showColumnMenu]);
 
   // Calculer l'ordre optimal des matches restants
   const orderedMatches = useMemo(() => {
@@ -644,17 +671,91 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
             {i + 1}
           </div>
         ))}
-        <div className="pool-cell pool-cell-header">V</div>
-        <div className="pool-cell pool-cell-header">V/M</div>
-        <div className="pool-cell pool-cell-header">TD</div>
-        <div className="pool-cell pool-cell-header">TR</div>
-        {isLaserSabre && (
-          <div className="pool-cell pool-cell-header" style={{ color: '#7c3aed' }}>
+        {isVisible('victories') && (
+          <div
+            className="pool-cell pool-cell-header"
+            onContextMenu={e => {
+              e.preventDefault();
+              toggleColumn('pool', 'victories');
+            }}
+            title="Clic droit pour masquer"
+          >
+            V
+          </div>
+        )}
+        {isVisible('ratio') && (
+          <div
+            className="pool-cell pool-cell-header"
+            onContextMenu={e => {
+              e.preventDefault();
+              toggleColumn('pool', 'ratio');
+            }}
+            title="Clic droit pour masquer"
+          >
+            V/M
+          </div>
+        )}
+        {isVisible('td') && (
+          <div
+            className="pool-cell pool-cell-header"
+            onContextMenu={e => {
+              e.preventDefault();
+              toggleColumn('pool', 'td');
+            }}
+            title="Clic droit pour masquer"
+          >
+            TD
+          </div>
+        )}
+        {isVisible('tr') && (
+          <div
+            className="pool-cell pool-cell-header"
+            onContextMenu={e => {
+              e.preventDefault();
+              toggleColumn('pool', 'tr');
+            }}
+            title="Clic droit pour masquer"
+          >
+            TR
+          </div>
+        )}
+        {isVisible('quest') && isLaserSabre && (
+          <div
+            className="pool-cell pool-cell-header"
+            style={{ color: '#7c3aed' }}
+            onContextMenu={e => {
+              e.preventDefault();
+              toggleColumn('pool', 'quest');
+            }}
+            title="Clic droit pour masquer"
+          >
             Quest
           </div>
         )}
-        <div className="pool-cell pool-cell-header">Ind</div>
-        <div className="pool-cell pool-cell-header">Rg</div>
+        {isVisible('index') && (
+          <div
+            className="pool-cell pool-cell-header"
+            onContextMenu={e => {
+              e.preventDefault();
+              toggleColumn('pool', 'index');
+            }}
+            title="Clic droit pour masquer"
+          >
+            Ind
+          </div>
+        )}
+        {isVisible('rank') && (
+          <div
+            className="pool-cell pool-cell-header"
+            onContextMenu={e => {
+              e.preventDefault();
+              toggleColumn('pool', 'rank');
+            }}
+            title="Clic droit pour masquer"
+          >
+            Rg
+          </div>
+        )}
       </div>
 
       {fencers.map((rowFencer, rowIndex) => {
@@ -759,23 +860,34 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               );
             })}
 
-            <div className="pool-cell" style={{ fontWeight: 600 }}>
-              {stats.v}
-            </div>
-            <div className="pool-cell text-sm">{formatRatio(stats.ratio)}</div>
-            <div className="pool-cell">{stats.td}</div>
-            <div className="pool-cell">{stats.tr}</div>
-            {isLaserSabre && (
+            {isVisible('victories') && (
+              <div className="pool-cell" style={{ fontWeight: 600 }}>
+                {stats.v}
+              </div>
+            )}
+            {isVisible('ratio') && (
+              <div className="pool-cell text-sm">{formatRatio(stats.ratio)}</div>
+            )}
+            {isVisible('td') && <div className="pool-cell">{stats.td}</div>}
+            {isVisible('tr') && <div className="pool-cell">{stats.tr}</div>}
+            {isVisible('quest') && isLaserSabre && (
               <div className="pool-cell" style={{ fontWeight: 600, color: '#7c3aed' }}>
                 {rankEntry?.questPoints ?? '-'}
               </div>
             )}
-            <div className="pool-cell" style={{ color: stats.index >= 0 ? '#059669' : '#DC2626' }}>
-              {formatIndex(stats.index)}
-            </div>
-            <div className="pool-cell" style={{ fontWeight: 600 }}>
-              {rankEntry?.rank || '-'}
-            </div>
+            {isVisible('index') && (
+              <div
+                className="pool-cell"
+                style={{ color: stats.index >= 0 ? '#059669' : '#DC2626' }}
+              >
+                {formatIndex(stats.index)}
+              </div>
+            )}
+            {isVisible('rank') && (
+              <div className="pool-cell" style={{ fontWeight: 600 }}>
+                {rankEntry?.rank || '-'}
+              </div>
+            )}
           </div>
         );
       })}
@@ -1278,10 +1390,80 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               borderRadius: '4px',
               cursor: 'pointer',
             }}
-            title="Exporter la poule en PDF"
+            title="Exporter la pôle en PDF"
           >
             📄 PDF
           </button>
+          <div style={{ position: 'relative' }} ref={columnMenuRef}>
+            <button
+              onClick={() => setShowColumnMenu(!showColumnMenu)}
+              style={{
+                padding: '0.375rem 0.75rem',
+                fontSize: '0.75rem',
+                background: showColumnMenu ? '#6b7280' : '#e5e7eb',
+                color: showColumnMenu ? 'white' : '#374151',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+              }}
+              title="Afficher/masquer les colonnes"
+            >
+              ⚙️
+            </button>
+            {showColumnMenu && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  marginTop: '0.25rem',
+                  background: 'white',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '6px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                  zIndex: 100,
+                  minWidth: '180px',
+                  padding: '0.5rem',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    padding: '0.25rem 0.5rem',
+                    borderBottom: '1px solid #e5e7eb',
+                    marginBottom: '0.25rem',
+                  }}
+                >
+                  Colonnes à afficher
+                </div>
+                {POOL_COLUMNS.filter(col => col.id !== 'quest' || isLaserSabre).map(col => (
+                  <label
+                    key={col.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      padding: '0.375rem 0.5rem',
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      fontSize: '0.8rem',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = '#f3f4f6')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isVisible(col.id)}
+                      onChange={() => toggleColumn('pool', col.id)}
+                      style={{ cursor: 'pointer' }}
+                    />
+                    {col.label}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
           <div style={{ display: 'flex', gap: '0.25rem' }}>
             <button
               onClick={() => setViewMode('grid')}

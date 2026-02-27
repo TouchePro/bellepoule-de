@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useMemo, useState, useCallback, useEffect } from 'react';
+import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { PoolRanking, Pool, Weapon, FencerStatus } from '../../shared/types';
 import {
   formatRatio,
@@ -15,6 +15,7 @@ import {
   calculatePoolRankingQuest,
 } from '../../shared/utils/poolCalculations';
 import { useToast } from './Toast';
+import { useColumnVisibility, RANKING_COLUMNS, ColumnId } from '../hooks/useColumnVisibility';
 
 interface PoolRankingViewProps {
   pools: Pool[];
@@ -36,10 +37,13 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
   onPoolsChange,
 }) => {
   const { showToast } = useToast();
+  const { isColumnVisible, toggleColumn } = useColumnVisibility();
   const isLaserSabre = weapon === 'L';
   const [recalcKey, setRecalcKey] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const [editedRanking, setEditedRanking] = useState<PoolRanking[]>([]);
+  const [showColumnMenu, setShowColumnMenu] = useState(false);
+  const columnMenuRef = useRef<HTMLDivElement>(null);
 
   // Calculer le classement général selon le type d'arme
   const overallRanking = useMemo(() => {
@@ -91,6 +95,28 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
       setEditedRanking(overallRanking);
     }
   }, [overallRanking, isEditing]);
+
+  const isVisible = useCallback(
+    (columnId: ColumnId): boolean => {
+      if (columnId === 'quest' && !isLaserSabre) return false;
+      return isColumnVisible('ranking', columnId);
+    },
+    [isLaserSabre, isColumnVisible]
+  );
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (columnMenuRef.current && !columnMenuRef.current.contains(event.target as Node)) {
+        setShowColumnMenu(false);
+      }
+    };
+    if (showColumnMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showColumnMenu]);
 
   const handleExport = (format: 'csv' | 'xml' | 'pdf') => {
     if (onExport) {
@@ -212,6 +238,76 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
           >
             {isEditing ? '✓ Terminer' : '✏️ Modifier'}
           </button>
+          <div style={{ position: 'relative' }} ref={columnMenuRef}>
+            <button
+              onClick={() => setShowColumnMenu(!showColumnMenu)}
+              style={{
+                padding: '0.375rem 0.75rem',
+                fontSize: '0.75rem',
+                background: showColumnMenu ? '#6b7280' : '#e5e7eb',
+                color: showColumnMenu ? 'white' : '#374151',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+              }}
+              title="Afficher/masquer les colonnes"
+            >
+              ⚙️
+            </button>
+            {showColumnMenu && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  marginTop: '0.25rem',
+                  background: 'white',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '6px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                  zIndex: 100,
+                  minWidth: '200px',
+                  padding: '0.5rem',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    padding: '0.25rem 0.5rem',
+                    borderBottom: '1px solid #e5e7eb',
+                    marginBottom: '0.25rem',
+                  }}
+                >
+                  Colonnes à afficher
+                </div>
+                {RANKING_COLUMNS.filter(col => col.id !== 'quest' || isLaserSabre).map(col => (
+                  <label
+                    key={col.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      padding: '0.375rem 0.5rem',
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      fontSize: '0.8rem',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = '#f3f4f6')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isVisible(col.id)}
+                      onChange={() => toggleColumn('ranking', col.id)}
+                      style={{ cursor: 'pointer' }}
+                    />
+                    {col.label}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -219,80 +315,100 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
         <table className="table">
           <thead>
             <tr>
-              <th style={{ width: '50px' }}>Rg</th>
-              <th>Nom</th>
-              <th>Prénom</th>
-              <th>Club</th>
-              <th style={{ width: '40px' }}>V</th>
-              <th style={{ width: '40px' }}>M</th>
-              <th style={{ width: '60px' }}>V/M</th>
-              <th style={{ width: '50px' }}>TD</th>
-              <th style={{ width: '50px' }}>TR</th>
-              {isLaserSabre && <th style={{ width: '70px', color: '#7c3aed' }}>Quest</th>}
-              <th style={{ width: '60px' }}>Indice</th>
+              {isVisible('rank') && <th style={{ width: '50px' }}>Rg</th>}
+              {isVisible('lastName') && <th>Nom</th>}
+              {isVisible('firstName') && <th>Prénom</th>}
+              {isVisible('club') && <th>Club</th>}
+              {isVisible('victories') && <th style={{ width: '40px' }}>V</th>}
+              {isVisible('matches') && <th style={{ width: '40px' }}>M</th>}
+              {isVisible('ratio') && <th style={{ width: '60px' }}>V/M</th>}
+              {isVisible('td') && <th style={{ width: '50px' }}>TD</th>}
+              {isVisible('tr') && <th style={{ width: '50px' }}>TR</th>}
+              {isVisible('quest') && isLaserSabre && (
+                <th style={{ width: '70px', color: '#7c3aed' }}>Quest</th>
+              )}
+              {isVisible('index') && <th style={{ width: '60px' }}>Indice</th>}
             </tr>
           </thead>
           <tbody>
             {editedRanking.map((ranking, index) => (
               <tr key={ranking.fencer.id}>
-                <td style={{ fontWeight: '600' }}>
-                  {ranking.rank}
-                  {isEditing && (
-                    <div style={{ display: 'flex', flexDirection: 'column', marginLeft: '4px' }}>
-                      <button
-                        onClick={() => moveUp(index)}
-                        disabled={index === 0}
-                        style={{
-                          padding: '0 2px',
-                          fontSize: '10px',
-                          cursor: index === 0 ? 'not-allowed' : 'pointer',
-                          opacity: index === 0 ? 0.3 : 1,
-                        }}
-                      >
-                        ▲
-                      </button>
-                      <button
-                        onClick={() => moveDown(index)}
-                        disabled={index === editedRanking.length - 1}
-                        style={{
-                          padding: '0 2px',
-                          fontSize: '10px',
-                          cursor: index === editedRanking.length - 1 ? 'not-allowed' : 'pointer',
-                          opacity: index === editedRanking.length - 1 ? 0.3 : 1,
-                        }}
-                      >
-                        ▼
-                      </button>
-                    </div>
-                  )}
-                </td>
-                <td className="font-medium">
-                  {ranking.fencer.lastName}
-                  {ranking.fencer.status === FencerStatus.ABANDONED && ' (A)'}
-                  {ranking.fencer.status === FencerStatus.FORFAIT && ' (F)'}
-                  {ranking.fencer.status === FencerStatus.EXCLUDED && ' (X)'}
-                </td>
-                <td>{ranking.fencer.firstName}</td>
-                <td className="text-sm text-muted">{ranking.fencer.club || '-'}</td>
-                <td style={{ textAlign: 'center', fontWeight: '600' }}>{ranking.victories}</td>
-                <td style={{ textAlign: 'center' }}>{ranking.victories + ranking.defeats}</td>
-                <td style={{ textAlign: 'center' }}>{formatRatio(ranking.ratio)}</td>
-                <td style={{ textAlign: 'center' }}>{ranking.touchesScored}</td>
-                <td style={{ textAlign: 'center' }}>{ranking.touchesReceived}</td>
-                {isLaserSabre && (
+                {isVisible('rank') && (
+                  <td style={{ fontWeight: '600' }}>
+                    {ranking.rank}
+                    {isEditing && (
+                      <div style={{ display: 'flex', flexDirection: 'column', marginLeft: '4px' }}>
+                        <button
+                          onClick={() => moveUp(index)}
+                          disabled={index === 0}
+                          style={{
+                            padding: '0 2px',
+                            fontSize: '10px',
+                            cursor: index === 0 ? 'not-allowed' : 'pointer',
+                            opacity: index === 0 ? 0.3 : 1,
+                          }}
+                        >
+                          ▲
+                        </button>
+                        <button
+                          onClick={() => moveDown(index)}
+                          disabled={index === editedRanking.length - 1}
+                          style={{
+                            padding: '0 2px',
+                            fontSize: '10px',
+                            cursor: index === editedRanking.length - 1 ? 'not-allowed' : 'pointer',
+                            opacity: index === editedRanking.length - 1 ? 0.3 : 1,
+                          }}
+                        >
+                          ▼
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                )}
+                {isVisible('lastName') && (
+                  <td className="font-medium">
+                    {ranking.fencer.lastName}
+                    {ranking.fencer.status === FencerStatus.ABANDONED && ' (A)'}
+                    {ranking.fencer.status === FencerStatus.FORFAIT && ' (F)'}
+                    {ranking.fencer.status === FencerStatus.EXCLUDED && ' (X)'}
+                  </td>
+                )}
+                {isVisible('firstName') && <td>{ranking.fencer.firstName}</td>}
+                {isVisible('club') && (
+                  <td className="text-sm text-muted">{ranking.fencer.club || '-'}</td>
+                )}
+                {isVisible('victories') && (
+                  <td style={{ textAlign: 'center', fontWeight: '600' }}>{ranking.victories}</td>
+                )}
+                {isVisible('matches') && (
+                  <td style={{ textAlign: 'center' }}>{ranking.victories + ranking.defeats}</td>
+                )}
+                {isVisible('ratio') && (
+                  <td style={{ textAlign: 'center' }}>{formatRatio(ranking.ratio)}</td>
+                )}
+                {isVisible('td') && (
+                  <td style={{ textAlign: 'center' }}>{ranking.touchesScored}</td>
+                )}
+                {isVisible('tr') && (
+                  <td style={{ textAlign: 'center' }}>{ranking.touchesReceived}</td>
+                )}
+                {isVisible('quest') && isLaserSabre && (
                   <td style={{ textAlign: 'center', fontWeight: '600', color: '#7c3aed' }}>
                     {ranking.questPoints || 0}
                   </td>
                 )}
-                <td
-                  style={{
-                    textAlign: 'center',
-                    color: ranking.index >= 0 ? '#059669' : '#DC2626',
-                    fontWeight: '600',
-                  }}
-                >
-                  {formatIndex(ranking.index)}
-                </td>
+                {isVisible('index') && (
+                  <td
+                    style={{
+                      textAlign: 'center',
+                      color: ranking.index >= 0 ? '#059669' : '#DC2626',
+                      fontWeight: '600',
+                    }}
+                  >
+                    {formatIndex(ranking.index)}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
