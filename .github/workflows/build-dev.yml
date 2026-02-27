@@ -3,9 +3,6 @@ name: Build Dev Branch
 on:
   push:
     branches: [dev]
-    paths-ignore:
-      - 'version.json'
-      - 'package.json'
   workflow_dispatch:
 
 jobs:
@@ -18,54 +15,25 @@ jobs:
       build: ${{ steps.version.outputs.build }}
 
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: dev
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
-
-      - name: Increment Version
+      - name: Get Version from package.json
         id: version
         run: |
-          # Get current version from version.json or use defaults
-          if [ -f version.json ]; then
-            VERSION=$(cat version.json | python3 -c "import sys,json; print(json.load(sys.stdin)['version'])")
-            BUILD=$(cat version.json | python3 -c "import sys,json; print(json.load(sys.stdin)['build'])")
-          else
-            VERSION="1.0.0"
-            BUILD=0
-          fi
+          # Get current version from package.json
+          VERSION=$(node -p "require('./package.json').version" | sed 's/-build\..*//')
+          CURRENT_BUILD=$(node -p "require('./package.json').version" | sed 's/.*-build\.//')
 
-          NEW_BUILD=$((BUILD + 1))
-          DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-          echo "{" > version.json
-          echo "  \"version\": \"$VERSION\"," >> version.json
-          echo "  \"build\": $NEW_BUILD," >> version.json
-          echo "  \"date\": \"$DATE\"" >> version.json
-          echo "}" >> version.json
+          # Use GitHub run number as build number
+          NEW_BUILD=$GITHUB_RUN_NUMBER
 
           FULL_VERSION="${VERSION}-build.${NEW_BUILD}"
-          sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$FULL_VERSION\"/" package.json
 
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "build=$NEW_BUILD" >> $GITHUB_OUTPUT
+          echo "full_version=$FULL_VERSION" >> $GITHUB_OUTPUT
 
-          cat version.json
-
-      - name: Commit and Push Version Update
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-
-          # Force add all files (including already tracked ones with changes)
-          git add -A
-
-          # Try to make a commit (will fail if nothing changed)
-          git commit -m "Dev Build ${{ steps.version.outputs.build }}" && {
-            echo "Commit successful, pushing..."
-            git push origin dev
-          } || echo "Commit failed or nothing to commit - continuing"
+          echo "Current version: $VERSION"
+          echo "Build number: $NEW_BUILD"
+          echo "Full version: $FULL_VERSION"
 
   build-windows:
     needs: increment-version
