@@ -39,22 +39,25 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const [session, setSession] = useState<RemoteSession | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [serverUrl, setServerUrl] = useState<string>('http://localhost:8066');
-  const [stripCount, setStripCount] = useState(4);
+  const [stripCount, setStripCount] = useState<number | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
-  // Charger les poules et définir le nombre de pistes par défaut
+  // Charger les poules
   useEffect(() => {
     if (competition?.id) {
       loadPools(competition.id);
     }
   }, [competition?.id]);
 
-  // Mettre à jour le nombre de pistes quand les poules sont chargées
+  // Définir le nombre de pistes par défaut = nombre de poules
   useEffect(() => {
-    if (pools && pools.length > 0) {
+    if (pools && pools.length > 0 && stripCount === null) {
       setStripCount(pools.length);
     }
-  }, [pools]);
+  }, [pools, stripCount]);
+
+  // Utiliser stripCount, sinon valeur par défaut (nombre de poules ou 1)
+  const effectiveStripCount = stripCount ?? (pools && pools.length > 0 ? pools.length : 1);
 
   useEffect(() => {
     if (isRemoteActive) {
@@ -70,7 +73,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       if (result.success && result.serverInfo) {
         setServerUrl(result.serverInfo.url);
         // Auto-démarrer la session
-        await startSession(result.serverInfo.url, stripCount);
+        await startSession(result.serverInfo.url, effectiveStripCount);
       } else {
         showToast(`Erreur: ${result.error || 'Impossible de démarrer le serveur'}`, 'error');
       }
@@ -150,7 +153,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     }
   }, []);
 
-  const arenaCount = session ? session.strips.length : stripCount;
+  const arenaCount = session ? session.strips.length : effectiveStripCount;
   const arenaUrls = Array.from({ length: arenaCount }, (_, i) => ({
     number: i + 1,
     refereeUrl: `${serverUrl}/arene${i + 1}/arbitre`,

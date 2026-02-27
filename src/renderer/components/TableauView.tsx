@@ -818,17 +818,32 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     );
   };
 
+  const MATCH_BASE_HEIGHT = 80;
+  const ROUND_SPACING_FACTOR = 2;
+
+  const calculateMatchOffset = (round: number, position: number, maxRound: number): number => {
+    if (round === 1) return 0;
+    const roundsFromEnd = maxRound - round;
+    const spacing = MATCH_BASE_HEIGHT * Math.pow(ROUND_SPACING_FACTOR, roundsFromEnd);
+    const positionIndex = position - 1;
+    const matchesInRound = tableauSize / Math.pow(2, round - 1);
+    const totalHeight = (matchesInRound - 1) * spacing;
+    return positionIndex * spacing - totalHeight / 2;
+  };
+
   const renderRound = (round: number) => {
     const roundMatches = matches.filter(m => m.round === round);
+    const maxRound = Math.max(...matches.map(m => m.round), 1);
+    const sortedMatches = [...roundMatches].sort((a, b) => a.position - b.position);
     return (
       <div
         key={round}
         style={{
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: alignment === 'top' ? 'flex-start' : 'space-around',
+          justifyContent: alignment === 'top' ? 'flex-start' : 'flex-start',
           minWidth: '200px',
-          paddingTop: alignment === 'top' ? '0' : '0',
+          paddingTop: alignment === 'top' ? '0' : '2rem',
           gap: alignment === 'top' ? '1rem' : '0',
         }}
       >
@@ -842,7 +857,19 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         >
           {getRoundName(round)}
         </div>
-        {roundMatches.map(match => renderMatch(match))}
+        {sortedMatches.map((match, index) => {
+          const offset =
+            alignment === 'center' ? calculateMatchOffset(round, match.position, maxRound) : 0;
+          const baseMargin = alignment === 'center' ? index * 10 : undefined;
+          return (
+            <div
+              key={match.id}
+              style={{ marginTop: alignment === 'center' ? `${offset}px` : baseMargin }}
+            >
+              {renderMatch(match)}
+            </div>
+          );
+        })}
       </div>
     );
   };
