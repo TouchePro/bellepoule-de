@@ -103,6 +103,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     setOverallRanking,
     generatePools: generatePoolsHook,
     updateScore,
+    updateMatchFromRemote,
     computePoolRanking,
     computeOverallRanking,
     areAllPoolsComplete,
@@ -162,6 +163,30 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   useEffect(() => {
     loadFencers();
   }, [loadFencers]);
+
+  // Écouter les mises à jour des matches distants
+  useEffect(() => {
+    if (!window.electronAPI?.onRemoteMatchFinished || currentPhase !== 'pools') return;
+
+    const handleMatchFinished = (data: { matchId: string; scoreA: number; scoreB: number }) => {
+      const { matchId, scoreA, scoreB } = data;
+      console.log(`[CompetitionView] Match terminé reçu: ${matchId} - Score: ${scoreA}-${scoreB}`);
+
+      // Trouver le match dans les pools et le mettre à jour
+      for (let poolIdx = 0; poolIdx < pools.length; poolIdx++) {
+        const matchIdx = pools[poolIdx].matches.findIndex(m => m.id === matchId);
+        if (matchIdx !== -1) {
+          updateMatchFromRemote(matchId, scoreA, scoreB, MatchStatus.FINISHED);
+          console.log(`[CompetitionView] Match ${matchId} mis à jour dans pool ${poolIdx}`);
+          break;
+        }
+      }
+    };
+
+    window.electronAPI.onRemoteMatchFinished(handleMatchFinished);
+
+    return () => {};
+  }, [currentPhase, pools, updateMatchFromRemote]);
 
   // Menu events
   useMenuEvents({

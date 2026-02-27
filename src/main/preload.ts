@@ -301,6 +301,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     updateStripCount: (count: number) => ipcRenderer.invoke('remote:updateStripCount', count),
   },
 
+  // Remote event listeners (for real-time updates)
+  onRemoteArenaUpdate: (callback: (data: any) => void) => {
+    ipcRenderer.on('arena:update', (_, data) => callback(data));
+  },
+  onRemoteMatchFinished: (callback: (data: any) => void) => {
+    ipcRenderer.on('match:finished', (_, data) => callback(data));
+  },
+
   // Remove listeners
   removeAllListeners: (channel: string) => ipcRenderer.removeAllListeners(channel),
 });

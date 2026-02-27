@@ -338,6 +338,69 @@ export const usePoolManagement = ({
     [computePoolRanking, computeOverallRanking, showToast]
   );
 
+  // Mettre à jour un match depuis une source externe (serveur distant)
+  const updateMatchFromRemote = useCallback(
+    (matchId: string, scoreA: number, scoreB: number, status: MatchStatus) => {
+      setPools(prevPools => {
+        const updatedPools = [...prevPools];
+        let matchFound = false;
+
+        for (let poolIdx = 0; poolIdx < updatedPools.length; poolIdx++) {
+          const pool = updatedPools[poolIdx];
+          for (let matchIdx = 0; matchIdx < pool.matches.length; matchIdx++) {
+            if (pool.matches[matchIdx].id === matchId) {
+              matchFound = true;
+              const match = pool.matches[matchIdx];
+              const winner = scoreA > scoreB ? 'A' : scoreB > scoreA ? 'B' : null;
+
+              pool.matches[matchIdx] = {
+                ...match,
+                scoreA: {
+                  value: scoreA,
+                  isVictory: winner === 'A',
+                  isAbstention: false,
+                  isExclusion: false,
+                  isForfait: false,
+                },
+                scoreB: {
+                  value: scoreB,
+                  isVictory: winner === 'B',
+                  isAbstention: false,
+                  isExclusion: false,
+                  isForfait: false,
+                },
+                status,
+                updatedAt: new Date(),
+              };
+
+              // Recalculer le classement de la pool
+              pool.updatedAt = new Date();
+              pool.ranking = computePoolRanking(pool);
+              updatedPools[poolIdx] = pool;
+              break;
+            }
+          }
+          if (matchFound) break;
+        }
+
+        if (!matchFound) {
+          console.warn('[usePoolManagement] Match non trouvé:', matchId);
+          return prevPools;
+        }
+
+        // Recalculer le classement général
+        const newOverallRanking = computeOverallRanking(updatedPools);
+        setOverallRanking(newOverallRanking);
+
+        console.log(
+          `[usePoolManagement] Match ${matchId} mis à jour depuis remote: ${scoreA}-${scoreB}`
+        );
+        return updatedPools;
+      });
+    },
+    [computePoolRanking, computeOverallRanking]
+  );
+
   return {
     pools,
     setPools,
@@ -349,6 +412,7 @@ export const usePoolManagement = ({
     setOverallRanking,
     generatePools,
     updateScore,
+    updateMatchFromRemote,
     nextPoolRound,
     areAllPoolsComplete,
     getPoolStats,

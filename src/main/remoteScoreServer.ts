@@ -1102,6 +1102,8 @@ export class RemoteScoreServer {
     const arena = this.arenas.get(arenaId);
     if (!arena || !arena.currentMatch) return;
 
+    const finishedMatch = { ...arena.currentMatch };
+
     arena.status = 'finished';
     arena.currentMatch.status = 'finished';
     arena.currentMatch.endTime = new Date();
@@ -1119,6 +1121,110 @@ export class RemoteScoreServer {
       status: 'finished',
       currentMatch: arena.currentMatch,
     });
+
+    // Émettre l'event pour le renderer (pour sauvegarder le score dans les pools)
+    const mainWindow = (global as any).mainWindow;
+    if (mainWindow) {
+      mainWindow.webContents.send('match:finished', {
+        matchId: finishedMatch.id,
+        scoreA: finishedMatch.scoreA,
+        scoreB: finishedMatch.scoreB,
+        poolId: finishedMatch.poolId,
+      });
+      console.log(
+        `[RemoteScoreServer] Émission match:finished pour ${finishedMatch.id}: ${finishedMatch.scoreA}-${finishedMatch.scoreB}`
+      );
+    }
+
+    // Charger automatiquement le match suivant après un délai
+    setTimeout(() => {
+      this.loadNextMatch(arenaId);
+    }, 1000);
+  }
+
+  private loadNextMatch(arenaId: string): void {
+    const arena = this.arenas.get(arenaId);
+    if (!arena || !this.session) {
+      console.log(
+        `[RemoteScoreServer] Impossible de charger le match suivant: arène ou session invalide`
+      );
+      return;
+    }
+
+    const competitionId = this.session.competitionId;
+
+    // Chercher les matches en attente
+    let pendingMatches = this.db.getPendingMatches(competitionId);
+    if (pendingMatches.length === 0) {
+      pendingMatches = this.db.getAllPendingMatchesFromPools(competitionId);
+    }
+
+    if (pendingMatches.length === 0) {
+      console.log(`[RemoteScoreServer] Plus de matches en attente pour ${competitionId}`);
+
+      arena.currentMatch = null;
+      arena.status = 'idle';
+      arena.elapsedTime = 0;
+      arena.startTime = null;
+
+      this.updateArena(arenaId, {
+        currentMatch: null,
+        status: 'idle',
+        elapsedTime: 0,
+        startTime: null,
+      });
+      return;
+    }
+
+    // Trouver le prochain match non assigné
+    const assignedMatchIds = new Set<string>();
+    for (const [, a] of this.arenas) {
+      if (a.currentMatch && a.currentMatch.id !== arena.currentMatch?.id) {
+        assignedMatchIds.add(a.currentMatch.id);
+      }
+    }
+
+    let nextMatch: any = null;
+    for (const match of pendingMatches) {
+      if (!assignedMatchIds.has(match.id)) {
+        nextMatch = match;
+        break;
+      }
+    }
+
+    if (nextMatch) {
+      console.log(
+        `[RemoteScoreServer] Chargement du match suivant ${nextMatch.id} sur arène ${arenaId}`
+      );
+
+      const arenaMatch: ArenaMatch = {
+        id: nextMatch.id,
+        poolId: nextMatch.poolId || '',
+        fencerA: nextMatch.fencerA!,
+        fencerB: nextMatch.fencerB!,
+        scoreA: 0,
+        scoreB: 0,
+        status: 'not_started',
+        startTime: null,
+        endTime: null,
+      };
+
+      this.assignMatchToArena(arenaId, arenaMatch);
+    } else {
+      console.log(`[RemoteScoreServer] Aucun match disponible pour arène ${arenaId}`);
+
+      arena.currentMatch = null;
+      arena.status = 'idle';
+      arena.elapsedTime = 0;
+      arena.startTime = null;
+
+      this.updateArena(arenaId, {
+        currentMatch: null,
+        status: 'idle',
+        elapsedTime: 0,
+        startTime: null,
+      });
+    }
   }
 
   private startArenaTimer(arenaId: string): void {
@@ -1173,26 +1279,6 @@ export class RemoteScoreServer {
     if ((global as any).mainWindow) {
       (global as any).mainWindow.webContents.send('arena:update', { arenaId, update });
     }
-  }
-
-  private async loadNextMatch(arenaId: string): Promise<void> {
-    // Logique pour charger le match suivant depuis les poules
-    // À implémenter selon la logique de compétition
-    const arena = this.arenas.get(arenaId);
-    if (!arena) return;
-
-    // Pour l'instant, réinitialiser l'arène
-    arena.currentMatch = null;
-    arena.status = 'idle';
-    arena.elapsedTime = 0;
-    arena.startTime = null;
-
-    this.updateArena(arenaId, {
-      currentMatch: null,
-      status: 'idle',
-      elapsedTime: 0,
-      startTime: null,
-    });
   }
 
   public getLocalIPAddress(): string {
