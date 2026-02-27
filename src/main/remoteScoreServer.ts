@@ -31,6 +31,7 @@ export class RemoteScoreServer {
   private arenas: Map<string, Arena> = new Map();
   private arenaTimers: Map<string, NodeJS.Timeout> = new Map();
   private arenaCount: number = 4; // Nombre d'arènes par défaut
+  private sessionWeapon: string | null = null; // Type d'arme de la compétition (L = Laser)
 
   // Stocker le contenu des fichiers HTML en mémoire pour éviter les problèmes de chemin
   private htmlFiles: Map<string, string> = new Map();
@@ -1047,6 +1048,9 @@ export class RemoteScoreServer {
     const arena = this.arenas.get(arenaId);
     if (!arena || !arena.currentMatch) return;
 
+    const previousScoreA = arena.currentMatch.scoreA;
+    const previousScoreB = arena.currentMatch.scoreB;
+
     arena.currentMatch.scoreA = scoreA;
     arena.currentMatch.scoreB = scoreB;
 
@@ -1058,6 +1062,40 @@ export class RemoteScoreServer {
       scoreB,
       status: arena.status,
     });
+
+    // Vérifier si le match doit s'arrêter automatiquement en Laser Sabre
+    this.checkAndAutoFinishMatch(arenaId, scoreA, scoreB, previousScoreA, previousScoreB);
+  }
+
+  private checkAndAutoFinishMatch(
+    arenaId: string,
+    scoreA: number,
+    scoreB: number,
+    previousScoreA: number,
+    previousScoreB: number
+  ): void {
+    const arena = this.arenas.get(arenaId);
+    if (!arena || arena.status === 'finished' || !arena.currentMatch) return;
+
+    // Vérifier si c'est le mode Laser Sabre
+    if (this.sessionWeapon !== 'L') return;
+
+    // Vérifier si un tireur vient d'atteindre 15 points
+    const SCORE_LIMIT_LASER = 15;
+    const scoreReached15A = scoreA >= SCORE_LIMIT_LASER && previousScoreA < SCORE_LIMIT_LASER;
+    const scoreReached15B = scoreB >= SCORE_LIMIT_LASER && previousScoreB < SCORE_LIMIT_LASER;
+
+    if (scoreReached15A || scoreReached15B) {
+      console.log(
+        `[RemoteScoreServer] Score de ${SCORE_LIMIT_LASER} atteint en Laser Sabre - Arrêt automatique du match`
+      );
+
+      // Arrêter le timer
+      this.stopArenaTimer(arenaId);
+
+      // Terminer le match
+      this.finishArenaMatch(arenaId);
+    }
   }
 
   public finishArenaMatch(arenaId: string): void {
@@ -1223,6 +1261,10 @@ export class RemoteScoreServer {
     if (!competition) {
       throw new Error('Compétition non trouvée');
     }
+
+    // Stocker le type d'arme pour l'arrêt automatique à 15 points en Laser Sabre
+    this.sessionWeapon = competition.weapon || null;
+    console.log(`[RemoteScoreServer] Type d'arme de la compétition: ${this.sessionWeapon}`);
 
     // Auto-detect number of strips from pool count if not specified or too small
     const poolCount = this.db.getPoolCount(competitionId);
