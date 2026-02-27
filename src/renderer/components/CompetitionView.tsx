@@ -216,7 +216,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     const result = await window.electronAPI.dialog.openFile({
       title: 'Importer des tireurs',
       filters: [
-        { name: 'Fichiers FFE', extensions: ['ffe', 'csv', 'txt'] },
+        { name: 'Fichiers FFE', extensions: ['fff', 'csv', 'txt'] },
         { name: 'Tous les fichiers', extensions: ['*'] },
       ],
       properties: ['openFile'],
