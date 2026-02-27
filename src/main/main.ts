@@ -595,7 +595,20 @@ ipcMain.handle('file:writeContent', async (_, filepath: string, content: string)
 
 // Dialog handlers
 ipcMain.handle('dialog:openFile', async (_, options) => {
-  return dialog.showOpenDialog(mainWindow!, options);
+  const result = await dialog.showOpenDialog(mainWindow!, options);
+
+  if (!result.canceled && result.filePaths.length > 0) {
+    const filePath = result.filePaths[0];
+    try {
+      const content = fs.readFileSync(filePath, 'utf-8');
+      return { filePath, content };
+    } catch (error) {
+      console.error('Error reading file:', error);
+      return { filePath, content: '' };
+    }
+  }
+
+  return null;
 });
 
 ipcMain.handle('dialog:saveFile', async (_, options) => {
