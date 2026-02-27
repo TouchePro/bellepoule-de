@@ -115,7 +115,7 @@ export interface ArenaMatch {
   fencerB: Fencer;
   scoreA: number;
   scoreB: number;
-  status: 'pending' | 'in_progress' | 'finished';
+  status: 'pending' | 'in_progress' | 'finished' | 'not_started';
   startTime: Date | null;
   endTime: Date | null;
   duration?: number; // in seconds

@@ -488,7 +488,53 @@ export class RemoteScoreServer {
         const competitionId = this.session.competitionId;
         console.log(`[RemoteScoreServer] CompetitionId: ${competitionId}`);
 
-        // Get all pending matches from the competition (same logic as getPendingMatches)
+        // D'abord, essayer de récupérer les matches depuis la mémoire (arènes)
+        const arena = this.arenas.get(arenaId);
+        const allArenaMatches: any[] = [];
+
+        if (arena && arena.currentMatch) {
+          console.log(
+            `[RemoteScoreServer] Match trouvé en mémoire pour arène ${arenaId}:`,
+            arena.currentMatch.id
+          );
+          allArenaMatches.push({
+            id: arena.currentMatch.id,
+            poolId: arena.currentMatch.poolId,
+            fencerA: arena.currentMatch.fencerA,
+            fencerB: arena.currentMatch.fencerB,
+            scoreA: arena.currentMatch.scoreA,
+            scoreB: arena.currentMatch.scoreB,
+            status: arena.currentMatch.status,
+          });
+        } else {
+          console.log(`[RemoteScoreServer] Pas de match en mémoire pour arène ${arenaId}`);
+        }
+
+        // Récupérer tous les matches de toutes les arènes
+        for (const [id, a] of this.arenas) {
+          if (a.currentMatch && id !== arenaId) {
+            allArenaMatches.push({
+              id: a.currentMatch.id,
+              poolId: a.currentMatch.poolId,
+              fencerA: a.currentMatch.fencerA,
+              fencerB: a.currentMatch.fencerB,
+              scoreA: a.currentMatch.scoreA,
+              scoreB: a.currentMatch.scoreB,
+              status: a.currentMatch.status,
+            });
+          }
+        }
+
+        console.log(`[RemoteScoreServer] Total matches en mémoire: ${allArenaMatches.length}`);
+
+        // Si on a des matches en mémoire, les utiliser
+        if (allArenaMatches.length > 0) {
+          console.log(`[RemoteScoreServer] Utilisation des matches en mémoire`);
+          return res.json({ matches: allArenaMatches, poolId: null, poolName: null });
+        }
+
+        // Fallback: chercher dans la DB si pas de matches en mémoire
+        console.log('[RemoteScoreServer] Pas de matches en mémoire, recherche dans la DB...');
         let allMatches = this.db.getPendingMatches(competitionId);
         console.log(
           `[RemoteScoreServer] Methode 1 (getPendingMatches): ${allMatches.length} matches`
@@ -1235,7 +1281,7 @@ export class RemoteScoreServer {
         fencerB: match.fencerB!,
         scoreA: match.scoreA?.value ?? 0,
         scoreB: match.scoreB?.value ?? 0,
-        status: match.status === 'in_progress' ? 'in_progress' : 'pending',
+        status: match.status === 'in_progress' ? 'in_progress' : 'not_started',
         startTime: match.status === 'in_progress' ? new Date() : null,
         endTime: null,
       };
