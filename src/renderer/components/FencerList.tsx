@@ -104,19 +104,8 @@ const FencerListComponent: React.FC<FencerListProps> = ({
     }
   };
 
-  const handleImportFencers = async () => {
-    if (!onImport) return;
-
-    const result = await window.electronAPI.dialog.openFile({
-      title: 'Importer des tireurs',
-      filters: [
-        { name: 'Fichiers FFE', extensions: ['fff', 'csv', 'txt'] },
-        { name: 'Tous les fichiers', extensions: ['*'] },
-      ],
-      properties: ['openFile'],
-    });
-
-    if (result && result.filePath) {
+  const handleImportFencers = () => {
+    if (onImport) {
       onImport();
     }
   };

@@ -222,12 +222,12 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       properties: ['openFile'],
     });
 
-    if (result && result.filePath && result.content) {
+    if (result && result.filePath) {
       const filepath = result.filePath;
-      const content = result.content;
+      const content = result.content || '';
       const extension = filepath.split('.').pop()?.toLowerCase();
 
-      let format = 'ffe';
+      let format = 'fff';
       if (extension === 'csv' || extension === 'txt') {
         format = 'txt';
       }
