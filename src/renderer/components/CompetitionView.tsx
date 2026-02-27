@@ -49,7 +49,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const hasDirectElimination = competition.settings?.hasDirectElimination ?? true;
   const thirdPlaceMatch = competition.settings?.thirdPlaceMatch ?? false;
   const poolMaxScore = competition.settings?.defaultPoolMaxScore ?? 21;
-  const tableMaxScore = competition.settings?.defaultTableMaxScore ?? 15;
+  const tableMaxScore = competition.settings?.defaultTableMaxScore ?? 0;
   const isLaserSabre = competition.weapon === Weapon.LASER;
 
   // États locaux
