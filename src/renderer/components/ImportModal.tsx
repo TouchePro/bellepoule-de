@@ -40,11 +40,13 @@ const ImportModal: React.FC<ImportModalProps> = ({
 
   React.useEffect(() => {
     if (isRankingImport) {
-      // Import de classement - met à jour les tireurs existants uniquement
       const rankingImportResult = importRankingFromFFF(content, fencers);
       setRankingResult(rankingImportResult);
-    } else {
-      // Import de tireurs - ajoute de nouveaux tireurs
+    }
+  }, [content, fencers, isRankingImport]);
+
+  React.useEffect(() => {
+    if (!isRankingImport) {
       let parseResult: ImportResult;
 
       if (format === 'xml') {
@@ -56,10 +58,9 @@ const ImportModal: React.FC<ImportModalProps> = ({
       }
 
       setResult(parseResult);
-      // Sélectionner tous les tireurs par défaut
       setSelectedFencers(new Set(parseResult.fencers.map((_, i) => i)));
     }
-  }, [format, content, fencers, isRankingImport]);
+  }, [format, content, isRankingImport]);
 
   const toggleFencer = (index: number) => {
     const newSelected = new Set(selectedFencers);
