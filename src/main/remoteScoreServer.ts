@@ -29,7 +29,6 @@ export class RemoteScoreServer {
   private db: DatabaseManager;
   private session: RemoteSession | null = null;
   private arenas: Map<string, Arena> = new Map();
-  private arenaTimers: Map<string, NodeJS.Timeout> = new Map();
   private arenaCount: number = 4; // Nombre d'arènes par défaut
   private sessionWeapon: string | null = null; // Type d'arme de la compétition (L = Laser)
   private sessionMatches: any[] = []; // Matches passés depuis le renderer
@@ -685,7 +684,6 @@ export class RemoteScoreServer {
             match: arena.currentMatch,
             scoreA: arena.currentMatch?.scoreA,
             scoreB: arena.currentMatch?.scoreB,
-            time: arena.elapsedTime,
             status: arena.status,
             fencerA: arena.currentMatch?.fencerA,
             fencerB: arena.currentMatch?.fencerB,
@@ -941,7 +939,6 @@ export class RemoteScoreServer {
         currentMatch: null,
         status: 'idle',
         startTime: null,
-        elapsedTime: 0,
         settings: {
           matchDuration: 180, // 3 minutes par défaut
           breakDuration: 30, // 30 secondes entre les matchs
@@ -985,7 +982,6 @@ export class RemoteScoreServer {
       match: arena.currentMatch,
       scoreA: arena.currentMatch?.scoreA,
       scoreB: arena.currentMatch?.scoreB,
-      time: arena.elapsedTime,
       status: arena.status,
       fencerA: arena.currentMatch?.fencerA,
       fencerB: arena.currentMatch?.fencerB,
@@ -1004,11 +1000,9 @@ export class RemoteScoreServer {
 
     arena.currentMatch = match;
     arena.status = 'ready';
-    arena.elapsedTime = 0;
 
     this.updateArena(arenaId, {
       status: 'ready',
-      elapsedTime: 0,
       currentMatch: match,
     });
 
@@ -1024,9 +1018,6 @@ export class RemoteScoreServer {
     arena.currentMatch.status = 'in_progress';
     arena.currentMatch.startTime = new Date();
 
-    // Démarrer le chronomètre
-    this.startArenaTimer(arenaId);
-
     this.updateArena(arenaId, {
       status: 'in_progress',
       startTime: arena.startTime,
@@ -1039,9 +1030,6 @@ export class RemoteScoreServer {
     if (!arena) return;
 
     arena.status = 'ready';
-
-    // Arrêter le chronomètre
-    this.stopArenaTimer(arenaId);
 
     this.updateArena(arenaId, { status: 'ready' });
   }
@@ -1100,9 +1088,6 @@ export class RemoteScoreServer {
         `[RemoteScoreServer] Score de ${SCORE_LIMIT_LASER} atteint en Laser Sabre - Arrêt automatique du match`
       );
 
-      // Arrêter le timer
-      this.stopArenaTimer(arenaId);
-
       // Terminer le match
       this.finishArenaMatch(arenaId);
     }
@@ -1123,9 +1108,6 @@ export class RemoteScoreServer {
         (new Date().getTime() - arena.startTime.getTime()) / 1000
       );
     }
-
-    // Arrêter le chronomètre
-    this.stopArenaTimer(arenaId);
 
     this.updateArena(arenaId, {
       status: 'finished',
@@ -1248,60 +1230,14 @@ export class RemoteScoreServer {
     // Pas de match suivant dans le même pool - marquer l'arène comme vide
     arena.currentMatch = null;
     arena.status = 'idle';
-    arena.elapsedTime = 0;
     arena.startTime = null;
 
     this.updateArena(arenaId, {
       currentMatch: null,
       status: 'idle',
-      elapsedTime: 0,
       startTime: null,
     });
     console.log(`[RemoteScoreServer] Arène ${arenaId} marquée comme vide`);
-  }
-
-  private startArenaTimer(arenaId: string): void {
-    this.stopArenaTimer(arenaId); // Arrêter le timer existant
-
-    const timer = setInterval(() => {
-      const arena = this.arenas.get(arenaId);
-      if (!arena || arena.status !== 'in_progress') {
-        this.stopArenaTimer(arenaId);
-        return;
-      }
-
-      arena.elapsedTime++;
-
-      // Envoyer la mise à jour du temps
-      this.broadcastArenaUpdate(arenaId, {
-        arenaId,
-        match: arena.currentMatch,
-        time: arena.elapsedTime,
-        status: arena.status,
-      });
-
-      // Vérifier si le temps est écoulé
-      if (arena.elapsedTime >= arena.settings.matchDuration) {
-        this.finishArenaMatch(arenaId);
-
-        // Charger le match suivant automatiquement si activé
-        if (arena.settings.autoAdvance) {
-          setTimeout(() => {
-            this.loadNextMatch(arenaId);
-          }, arena.settings.breakDuration * 1000);
-        }
-      }
-    }, 1000);
-
-    this.arenaTimers.set(arenaId, timer);
-  }
-
-  private stopArenaTimer(arenaId: string): void {
-    const timer = this.arenaTimers.get(arenaId);
-    if (timer) {
-      clearInterval(timer);
-      this.arenaTimers.delete(arenaId);
-    }
   }
 
   private broadcastArenaUpdate(arenaId: string, update: ArenaUpdate): void {

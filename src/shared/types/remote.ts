@@ -98,7 +98,6 @@ export interface Arena {
   currentMatch: ArenaMatch | null;
   status: 'idle' | 'ready' | 'in_progress' | 'finished';
   startTime: Date | null;
-  elapsedTime: number; // in seconds
   settings: ArenaSettings;
 }
 
