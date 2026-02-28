@@ -13,7 +13,7 @@ import UpdateNotification from './components/UpdateNotification';
 import SettingsModal from './components/SettingsModal';
 import { ToastProvider, useToast } from './components/Toast';
 import { ConfirmProvider } from './components/ConfirmDialog';
-import { useTranslation } from './hooks/useTranslation';
+import { TranslationProvider, useTranslation } from './contexts/TranslationContext';
 import { ErrorBoundary, CompetitionErrorBoundary } from './components/ErrorBoundary';
 
 type View = 'home' | 'competition';
@@ -23,7 +23,7 @@ interface OpenCompetition {
   isDirty: boolean;
 }
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
   const { t, isLoading: translationLoading } = useTranslation();
   const { showToast } = useToast();
   const [view, setView] = useState<View>('home');
@@ -503,6 +503,14 @@ const App: React.FC = () => {
         </div>
       </ConfirmProvider>
     </ToastProvider>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <TranslationProvider>
+      <AppContent />
+    </TranslationProvider>
   );
 };
 
