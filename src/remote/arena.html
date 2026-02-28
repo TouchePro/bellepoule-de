@@ -50,6 +50,34 @@
         gap: 1.5rem;
       }
 
+      .dick-rivers-toggle {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        padding: 0.5rem 1rem;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 0.5rem;
+        transition: background 0.2s;
+      }
+
+      .dick-rivers-toggle:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      .dick-rivers-toggle input {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+      }
+
+      .dick-rivers-toggle label {
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        user-select: none;
+      }
+
       .match-status-badge {
         padding: 0.75rem 1.5rem;
         border-radius: 2rem;
@@ -142,6 +170,15 @@
         grid-template-columns: 1fr auto 1fr;
         gap: 2rem;
         align-items: center;
+      }
+
+      .fencers-row.reversed {
+        grid-template-columns: 1fr auto 1fr;
+        direction: rtl;
+      }
+
+      .fencers-row.reversed > * {
+        direction: ltr;
       }
 
       .fencer-display {
@@ -406,6 +443,10 @@
         <span>Arène <span id="arena-number">1</span></span>
       </div>
       <div class="status-section">
+        <div class="dick-rivers-toggle">
+          <input type="checkbox" id="dick-rivers-checkbox" />
+          <label for="dick-rivers-checkbox">Dick Rivers</label>
+        </div>
         <div class="match-status-badge status-waiting" id="match-status">En attente</div>
         <div class="connection-indicator">
           <div id="connection-dot" class="connection-dot"></div>
@@ -466,6 +507,7 @@
           this.matchStatus = 'idle';
           this.cardsA = [];
           this.cardsB = [];
+          this.dickRiversEnabled = localStorage.getItem('dickRiversEnabled') === 'true';
 
           this.init();
         }
@@ -482,7 +524,28 @@
 
         init() {
           document.getElementById('arena-number').textContent = this.arenaNumber;
+          this.setupDickRiversToggle();
+          this.applyDickRiversState();
           this.setupSocketListeners();
+        }
+
+        setupDickRiversToggle() {
+          const checkbox = document.getElementById('dick-rivers-checkbox');
+          checkbox.checked = this.dickRiversEnabled;
+          checkbox.addEventListener('change', () => {
+            this.dickRiversEnabled = checkbox.checked;
+            localStorage.setItem('dickRiversEnabled', this.dickRiversEnabled);
+            this.applyDickRiversState();
+          });
+        }
+
+        applyDickRiversState() {
+          const fencersRow = document.getElementById('match-display');
+          if (this.dickRiversEnabled) {
+            fencersRow.classList.add('reversed');
+          } else {
+            fencersRow.classList.remove('reversed');
+          }
         }
 
         setupSocketListeners() {
