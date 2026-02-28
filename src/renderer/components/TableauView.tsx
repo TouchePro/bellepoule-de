@@ -56,7 +56,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   const [editScoreB, setEditScoreB] = useState<string>('');
   const [victoryA, setVictoryA] = useState(false);
   const [victoryB, setVictoryB] = useState(false);
-  const [alignment, setAlignment] = useState<'center' | 'top'>('center');
+  const [alignment, setAlignment] = useState<'standard' | 'top'>('standard');
   const isUnlimitedScore = maxScore === 999;
 
   const { modalRef, dimensions } = useModalResize({
@@ -842,10 +842,8 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         style={{
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: alignment === 'top' ? 'flex-start' : 'flex-start',
+          justifyContent: 'space-around',
           minWidth: '200px',
-          paddingTop: alignment === 'top' ? '0' : '2rem',
-          gap: alignment === 'top' ? '1rem' : '0',
         }}
       >
         <div
@@ -858,18 +856,8 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         >
           {getRoundName(round)}
         </div>
-        {sortedMatches.map((match, index) => {
-          const offset =
-            alignment === 'center' ? calculateMatchOffset(round, match.position, maxRound) : 0;
-          const baseMargin = alignment === 'center' ? index * 10 : undefined;
-          return (
-            <div
-              key={match.id}
-              style={{ marginTop: alignment === 'center' ? `${offset}px` : baseMargin }}
-            >
-              {renderMatch(match)}
-            </div>
-          );
+        {sortedMatches.map(match => {
+          return <div key={match.id}>{renderMatch(match)}</div>;
         })}
       </div>
     );
@@ -942,10 +930,10 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
             🎲 Remplir auto
           </button>
           <button
-            onClick={() => setAlignment(alignment === 'center' ? 'top' : 'center')}
+            onClick={() => setAlignment(alignment === 'standard' ? 'top' : 'standard')}
             style={{
-              background: alignment === 'top' ? '#3b82f6' : '#e5e7eb',
-              color: alignment === 'top' ? 'white' : '#374151',
+              background: alignment === 'standard' ? '#3b82f6' : '#e5e7eb',
+              color: alignment === 'standard' ? 'white' : '#374151',
               border: 'none',
               padding: '0.5rem 0.75rem',
               borderRadius: '6px',
@@ -956,9 +944,9 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
               alignItems: 'center',
               gap: '0.25rem',
             }}
-            title={alignment === 'center' ? 'Aligner vers le haut' : 'Centrer les matches'}
+            title={alignment === 'standard' ? 'Aligner vers le haut' : 'Affichage standard v1.0.1'}
           >
-            {alignment === 'center' ? '⬇ Haut' : '⬆ Centre'}
+            {alignment === 'standard' ? '⬇ Haut' : '⬆ Standard'}
           </button>
           {champion && (
             <div
