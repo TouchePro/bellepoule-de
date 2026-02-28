@@ -903,23 +903,30 @@
             if (!btn) return;
 
             let longPressTimer = null;
+            let longPressExecuted = false;
 
             // Mouse events
             btn.addEventListener('mousedown', e => {
+              longPressExecuted = false;
               btn.classList.add('long-press-active');
               longPressTimer = setTimeout(() => {
                 btn.classList.remove('long-press-active');
                 this.removeScore(config.fencer, config.points);
+                longPressExecuted = true;
                 longPressTimer = null;
               }, LONG_PRESS_DURATION);
             });
 
-            btn.addEventListener('mouseup', () => {
+            btn.addEventListener('mouseup', e => {
               if (longPressTimer) {
                 clearTimeout(longPressTimer);
                 longPressTimer = null;
               }
               btn.classList.remove('long-press-active');
+              if (longPressExecuted) {
+                e.preventDefault();
+                e.stopPropagation();
+              }
             });
 
             btn.addEventListener('mouseleave', () => {
@@ -933,20 +940,26 @@
             // Touch events pour mobile
             btn.addEventListener('touchstart', e => {
               e.preventDefault();
+              longPressExecuted = false;
               btn.classList.add('long-press-active');
               longPressTimer = setTimeout(() => {
                 btn.classList.remove('long-press-active');
                 this.removeScore(config.fencer, config.points);
+                longPressExecuted = true;
                 longPressTimer = null;
               }, LONG_PRESS_DURATION);
             });
 
-            btn.addEventListener('touchend', () => {
+            btn.addEventListener('touchend', e => {
               if (longPressTimer) {
                 clearTimeout(longPressTimer);
                 longPressTimer = null;
               }
               btn.classList.remove('long-press-active');
+              if (longPressExecuted) {
+                e.preventDefault();
+                e.stopPropagation();
+              }
             });
 
             btn.addEventListener('touchcancel', () => {
@@ -973,23 +986,30 @@
             if (!btn) return;
 
             let longPressTimer = null;
+            let longPressExecuted = false;
 
             // Mouse events
             btn.addEventListener('mousedown', e => {
+              longPressExecuted = false;
               btn.classList.add('long-press-active');
               longPressTimer = setTimeout(() => {
                 btn.classList.remove('long-press-active');
                 this.removeCard(config.fencer, config.cardType);
+                longPressExecuted = true;
                 longPressTimer = null;
               }, LONG_PRESS_DURATION);
             });
 
-            btn.addEventListener('mouseup', () => {
+            btn.addEventListener('mouseup', e => {
               if (longPressTimer) {
                 clearTimeout(longPressTimer);
                 longPressTimer = null;
               }
               btn.classList.remove('long-press-active');
+              if (longPressExecuted) {
+                e.preventDefault();
+                e.stopPropagation();
+              }
             });
 
             btn.addEventListener('mouseleave', () => {
@@ -1003,20 +1023,26 @@
             // Touch events pour mobile
             btn.addEventListener('touchstart', e => {
               e.preventDefault();
+              longPressExecuted = false;
               btn.classList.add('long-press-active');
               longPressTimer = setTimeout(() => {
                 btn.classList.remove('long-press-active');
                 this.removeCard(config.fencer, config.cardType);
+                longPressExecuted = true;
                 longPressTimer = null;
               }, LONG_PRESS_DURATION);
             });
 
-            btn.addEventListener('touchend', () => {
+            btn.addEventListener('touchend', e => {
               if (longPressTimer) {
                 clearTimeout(longPressTimer);
                 longPressTimer = null;
               }
               btn.classList.remove('long-press-active');
+              if (longPressExecuted) {
+                e.preventDefault();
+                e.stopPropagation();
+              }
             });
 
             btn.addEventListener('touchcancel', () => {
