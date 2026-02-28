@@ -57,6 +57,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   const [victoryA, setVictoryA] = useState(false);
   const [victoryB, setVictoryB] = useState(false);
   const [viewMode, setViewMode] = useState<'full' | 'pending'>('full');
+  const [expandedRounds, setExpandedRounds] = useState<Set<number>>(new Set());
   const isUnlimitedScore = maxScore === 999;
 
   const { modalRef, dimensions } = useModalResize({
@@ -881,9 +882,70 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
   const pendingMatches = matches.filter(m => m.scoreA === null || m.scoreB === null);
   const pendingViewRounds: number[] =
-    viewMode === 'pending'
-      ? [...new Set(pendingMatches.map(m => m.round))].sort((a, b) => a - b)
-      : [];
+    viewMode === 'pending' ? [...new Set(matches.map(m => m.round))].sort((a, b) => a - b) : [];
+
+  const toggleRoundExpansion = (round: number) => {
+    setExpandedRounds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(round)) {
+        newSet.delete(round);
+      } else {
+        newSet.add(round);
+      }
+      return newSet;
+    });
+  };
+
+  const renderPendingSection = (round: number) => {
+    const roundMatches = matches
+      .filter(m => m.round === round)
+      .sort((a, b) => a.position - b.position);
+    const isExpanded = expandedRounds.has(round);
+    const roundName = round === 3 ? 'Petite Finale' : `Tableau de ${round}`;
+
+    return (
+      <div
+        key={round}
+        style={{
+          background: 'white',
+          borderRadius: '8px',
+          marginBottom: '0.5rem',
+          overflow: 'hidden',
+          border: '1px solid #e5e7eb',
+        }}
+      >
+        <div
+          onClick={() => toggleRoundExpansion(round)}
+          style={{
+            padding: '0.75rem 1rem',
+            background: '#f3f4f6',
+            cursor: 'pointer',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            userSelect: 'none',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '1rem' }}>{isExpanded ? '▼' : '▶'}</span>
+            <span style={{ fontWeight: '600', color: '#374151' }}>{roundName}</span>
+          </div>
+          <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+            {roundMatches.length} match{roundMatches.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+        {isExpanded && (
+          <div style={{ padding: '0.5rem' }}>
+            {roundMatches.map(match => (
+              <div key={match.id} style={{ marginBottom: '0.5rem' }}>
+                {renderMatch(match)}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div style={{ padding: '1rem' }}>
@@ -962,24 +1024,25 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
       <div
         style={{
-          display: 'flex',
-          gap: '1rem',
-          overflowX: 'auto',
           padding: '1rem',
           background: '#f9fafb',
           borderRadius: '8px',
+          maxHeight: '70vh',
+          overflowY: 'auto',
         }}
       >
         {viewMode === 'pending' ? (
           pendingViewRounds.length > 0 ? (
-            pendingViewRounds.map(round => renderRound(round))
+            pendingViewRounds.map(round => renderPendingSection(round))
           ) : (
             <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
               ✓ Tous les matches sont terminés
             </div>
           )
         ) : (
-          rounds.map(round => renderRound(round))
+          <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto' }}>
+            {rounds.map(round => renderRound(round))}
+          </div>
         )}
       </div>
 
