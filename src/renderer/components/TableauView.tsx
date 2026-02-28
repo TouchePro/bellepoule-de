@@ -823,13 +823,18 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         : matches.filter(m => m.round === round);
     const maxRound = Math.max(...matches.map(m => m.round), 1);
     const sortedMatches = [...roundMatches].sort((a, b) => a.position - b.position);
+
+    // Calculate spacing for pyramid structure (only in full view)
+    const spacing = viewMode === 'full' ? rounds.indexOf(round) * 60 : 0;
+
     return (
       <div
         key={round}
         style={{
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'space-around',
+          justifyContent: 'flex-start',
+          marginTop: `${spacing}px`,
           minWidth: '200px',
         }}
       >
