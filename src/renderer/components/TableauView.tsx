@@ -56,6 +56,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   const [editScoreB, setEditScoreB] = useState<string>('');
   const [victoryA, setVictoryA] = useState(false);
   const [victoryB, setVictoryB] = useState(false);
+  const [viewMode, setViewMode] = useState<'full' | 'pending'>('full');
   const isUnlimitedScore = maxScore === 999;
 
   const { modalRef, dimensions } = useModalResize({
@@ -815,7 +816,10 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   };
 
   const renderRound = (round: number) => {
-    const roundMatches = matches.filter(m => m.round === round);
+    const roundMatches =
+      viewMode === 'pending'
+        ? pendingMatches.filter(m => m.round === round)
+        : matches.filter(m => m.round === round);
     const maxRound = Math.max(...matches.map(m => m.round), 1);
     const sortedMatches = [...roundMatches].sort((a, b) => a.position - b.position);
     return (
@@ -866,11 +870,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     rounds.push(r);
     r = r / 2;
   }
-  // Ajouter la petite finale AVANT la finale (entre le tour précédent et la finale)
-  // Le round 3 doit être affiché AVANT le round 2 dans l'ordre du tableau
-  // car on affiche de gauche (premier tour) à droite (finale)
   if (thirdPlaceMatch && tableauSize >= 4) {
-    // Insérer le round 3 juste avant le round 2 (la finale)
     const finalIndex = rounds.indexOf(2);
     if (finalIndex !== -1) {
       rounds.splice(finalIndex, 0, 3);
@@ -878,6 +878,12 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
       rounds.push(3);
     }
   }
+
+  const pendingMatches = matches.filter(m => m.scoreA === null || m.scoreB === null);
+  const pendingViewRounds: number[] =
+    viewMode === 'pending'
+      ? [...new Set(pendingMatches.map(m => m.round))].sort((a, b) => a - b)
+      : [];
 
   return (
     <div style={{ padding: '1rem' }}>
@@ -911,6 +917,29 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           >
             🎲 Remplir auto
           </button>
+          <button
+            onClick={() => setViewMode(viewMode === 'full' ? 'pending' : 'full')}
+            style={{
+              background: viewMode === 'pending' ? '#3b82f6' : '#e5e7eb',
+              color: viewMode === 'pending' ? 'white' : '#374151',
+              border: 'none',
+              padding: '0.5rem 0.75rem',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+            }}
+            title={
+              viewMode === 'full'
+                ? 'Afficher les matches en attente'
+                : 'Afficher le tableau complet'
+            }
+          >
+            {viewMode === 'full' ? '📋 Matchs en attente' : '📊 Tableau complet'}
+          </button>
           {champion && (
             <div
               style={{
@@ -941,7 +970,17 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           borderRadius: '8px',
         }}
       >
-        {rounds.map(round => renderRound(round))}
+        {viewMode === 'pending' ? (
+          pendingViewRounds.length > 0 ? (
+            pendingViewRounds.map(round => renderRound(round))
+          ) : (
+            <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
+              ✓ Tous les matches sont terminés
+            </div>
+          )
+        ) : (
+          rounds.map(round => renderRound(round))
+        )}
       </div>
 
       <div style={{ marginTop: '2rem' }}>
