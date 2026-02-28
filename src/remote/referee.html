@@ -498,6 +498,16 @@
         color: white;
       }
 
+      .btn-pause {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+      }
+
+      .btn-resume {
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        color: white;
+      }
+
       .btn-finish {
         background: linear-gradient(135deg, #ef4444, #dc2626);
         color: white;
@@ -791,7 +801,11 @@
 
         <!-- Boutons de contrôle -->
         <div class="control-buttons">
-          <button class="control-btn btn-start" id="btn-start" onclick="refereeApp.startMatch()">
+          <button
+            class="control-btn btn-start"
+            id="btn-start"
+            onclick="refereeApp.handleStartPauseClick()"
+          >
             ▶️ Démarrer
           </button>
           <button
@@ -1451,6 +1465,7 @@
           if (!this.currentMatch) return;
 
           this.matchStatus = 'in_progress';
+          this.startTimer();
           this.updateMatchStatus();
           this.updateControlButtons();
           this.saveScore();
@@ -1561,8 +1576,50 @@
           const startBtn = document.getElementById('btn-start');
           const finishBtn = document.getElementById('btn-finish');
 
-          startBtn.disabled = this.matchStatus !== 'not_started';
+          // Réinitialiser les classes
+          startBtn.className = 'control-btn btn-start';
+
+          if (this.matchStatus === 'not_started') {
+            startBtn.disabled = !this.currentMatch;
+            startBtn.textContent = '▶️ Démarrer';
+            startBtn.className = 'control-btn btn-start';
+          } else if (this.matchStatus === 'in_progress') {
+            startBtn.disabled = false;
+            if (this.timerRunning) {
+              startBtn.textContent = '⏸ Pause';
+              startBtn.className = 'control-btn btn-pause';
+            } else {
+              startBtn.textContent = '▶️ Reprendre';
+              startBtn.className = 'control-btn btn-resume';
+            }
+          } else {
+            startBtn.disabled = true;
+            startBtn.textContent = '▶️ Démarrer';
+          }
+
           finishBtn.disabled = this.matchStatus !== 'in_progress';
+        }
+
+        handleStartPauseClick() {
+          if (this.matchStatus === 'not_started') {
+            this.startMatch();
+          } else if (this.matchStatus === 'in_progress') {
+            this.toggleMatchPause();
+          }
+        }
+
+        toggleMatchPause() {
+          if (!this.currentMatch || this.matchStatus !== 'in_progress') return;
+
+          if (this.timerRunning) {
+            this.pauseTimer();
+            this.updateControlButtons();
+            this.showNotification('⏸ Combat en pause');
+          } else {
+            this.startTimer();
+            this.updateControlButtons();
+            this.showNotification('▶️ Combat repris');
+          }
         }
 
         handleArenaUpdate(data) {
