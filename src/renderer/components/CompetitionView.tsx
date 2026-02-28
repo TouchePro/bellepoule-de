@@ -185,7 +185,9 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
     window.electronAPI.onRemoteMatchFinished(handleMatchFinished);
 
-    return () => {};
+    return () => {
+      window.electronAPI.removeAllListeners?.('match:finished');
+    };
   }, [currentPhase, pools, updateMatchFromRemote]);
 
   // Menu events

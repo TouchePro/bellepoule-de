@@ -83,7 +83,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         setTableauSize(currentSize);
       }
     }
-  }, [ranking.length, thirdPlaceMatch, maxScore]); // Dépend du nombre de tireurs, match pour la 3ème place et score max
+  }, [ranking.length, thirdPlaceMatch, maxScore, matches.length]); // Dépend du nombre de tireurs, match pour la 3ème place et score max
 
   const getTableauSize = (fencerCount: number): number => {
     const sizes = [4, 8, 16, 32, 64, 128, 256];
