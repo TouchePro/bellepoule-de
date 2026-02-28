@@ -56,7 +56,6 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   const [editScoreB, setEditScoreB] = useState<string>('');
   const [victoryA, setVictoryA] = useState(false);
   const [victoryB, setVictoryB] = useState(false);
-  const [alignment, setAlignment] = useState<'standard' | 'top'>('standard');
   const isUnlimitedScore = maxScore === 999;
 
   const { modalRef, dimensions } = useModalResize({
@@ -68,15 +67,12 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
   useEffect(() => {
     if (ranking.length > 0) {
-      // Vérifier si le tableau existant correspond au classement actuel
       const expectedSize = getTableauSize(ranking.length);
       const currentSize = matches.length > 0 ? Math.max(...matches.map(m => m.round)) : 0;
 
-      // Vérifier si le match de 3ème place est cohérent avec le paramètre
       const hasThirdPlace = matches.some(m => m.round === 3);
       const thirdPlaceMismatch = thirdPlaceMatch !== hasThirdPlace;
 
-      // Régénérer si pas de matches, taille incorrecte, ou changement de petite finale
       if (matches.length === 0 || currentSize !== expectedSize || thirdPlaceMismatch) {
         generateTableau();
       } else {
@@ -818,20 +814,6 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     );
   };
 
-  const MATCH_BASE_HEIGHT = 80;
-  const ROUND_SPACING_FACTOR = 2;
-
-  const calculateMatchOffset = (round: number, position: number, maxRound: number): number => {
-    if (round <= 4) return 0;
-
-    const roundHalvings = Math.log2(maxRound) - Math.log2(round) - 1;
-    const spacing = MATCH_BASE_HEIGHT * Math.pow(ROUND_SPACING_FACTOR, Math.max(0, roundHalvings));
-    const positionIndex = position - 1;
-    const matchesInRound = maxRound / round;
-    const totalHeight = (matchesInRound - 1) * spacing;
-    return positionIndex * spacing - totalHeight / 2;
-  };
-
   const renderRound = (round: number) => {
     const roundMatches = matches.filter(m => m.round === round);
     const maxRound = Math.max(...matches.map(m => m.round), 1);
@@ -928,25 +910,6 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
             }}
           >
             🎲 Remplir auto
-          </button>
-          <button
-            onClick={() => setAlignment(alignment === 'standard' ? 'top' : 'standard')}
-            style={{
-              background: alignment === 'standard' ? '#3b82f6' : '#e5e7eb',
-              color: alignment === 'standard' ? 'white' : '#374151',
-              border: 'none',
-              padding: '0.5rem 0.75rem',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: '500',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.25rem',
-            }}
-            title={alignment === 'standard' ? 'Aligner vers le haut' : 'Affichage standard v1.0.1'}
-          >
-            {alignment === 'standard' ? '⬇ Haut' : '⬆ Standard'}
           </button>
           {champion && (
             <div
