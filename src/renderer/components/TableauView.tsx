@@ -57,6 +57,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   const [victoryA, setVictoryA] = useState(false);
   const [victoryB, setVictoryB] = useState(false);
   const [viewMode, setViewMode] = useState<'full' | 'pending'>('full');
+  const [pendingOrder, setPendingOrder] = useState<'asc' | 'desc'>('desc');
   const [expandedRounds, setExpandedRounds] = useState<Set<number>>(new Set());
   const isUnlimitedScore = maxScore === 999;
 
@@ -688,9 +689,12 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     return results.sort((a, b) => a.rank - b.rank);
   };
 
-  const renderMatch = (match: TableauMatch) => {
+  const renderMatch = (match: TableauMatch, verticalPosition?: number) => {
     const canEdit = !!(match.fencerA && match.fencerB && !match.isBye);
     const hasScore = match.scoreA !== null && match.scoreB !== null;
+
+    const matchMarginTop =
+      verticalPosition !== undefined && viewMode === 'full' ? verticalPosition * 60 : '0.25rem';
 
     return (
       <div
@@ -699,7 +703,8 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           border: '1px solid #e5e7eb',
           borderRadius: '4px',
           padding: '0.5rem',
-          margin: '0.25rem 0',
+          marginTop: typeof matchMarginTop === 'number' ? `${matchMarginTop}px` : matchMarginTop,
+          marginBottom: '0.25rem',
           background: match.winner ? '#f0fdf4' : 'white',
           minWidth: '180px',
           cursor: canEdit ? 'pointer' : 'default',
@@ -816,6 +821,35 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     );
   };
 
+  const calculateMatchVerticalPosition = (
+    matchRound: number,
+    matchPosition: number,
+    baseRound: number
+  ): number => {
+    if (matchRound === baseRound) {
+      return matchPosition;
+    }
+
+    let currentRound = matchRound;
+    let currentPosition = matchPosition;
+
+    while (currentRound < baseRound) {
+      const parentRound = currentRound * 2;
+      const parentPositionA = currentPosition * 2;
+      const parentPositionB = currentPosition * 2 + 1;
+      currentPosition = (parentPositionA + parentPositionB) / 2;
+      currentRound = parentRound;
+    }
+
+    return currentPosition;
+  };
+
+  const getMatchPosition = (match: TableauMatch): number => {
+    if (viewMode === 'pending') return match.position;
+
+    return calculateMatchVerticalPosition(match.round, match.position, tableauSize);
+  };
+
   const renderRound = (round: number) => {
     const roundMatches =
       viewMode === 'pending'
@@ -824,9 +858,6 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     const maxRound = Math.max(...matches.map(m => m.round), 1);
     const sortedMatches = [...roundMatches].sort((a, b) => a.position - b.position);
 
-    // Calculate spacing for pyramid structure (only in full view)
-    const spacing = viewMode === 'full' ? rounds.indexOf(round) * 60 : 0;
-
     return (
       <div
         key={round}
@@ -834,7 +865,6 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'flex-start',
-          marginTop: `${spacing}px`,
           minWidth: '200px',
         }}
       >
@@ -849,7 +879,8 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           {getRoundName(round)}
         </div>
         {sortedMatches.map(match => {
-          return <div key={match.id}>{renderMatch(match)}</div>;
+          const verticalPosition = viewMode === 'full' ? getMatchPosition(match) : undefined;
+          return <div key={match.id}>{renderMatch(match, verticalPosition)}</div>;
         })}
       </div>
     );
@@ -887,7 +918,11 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
   const pendingMatches = matches.filter(m => m.scoreA === null || m.scoreB === null);
   const pendingViewRounds: number[] =
-    viewMode === 'pending' ? [...new Set(matches.map(m => m.round))].sort((a, b) => a - b) : [];
+    viewMode === 'pending'
+      ? [...new Set(matches.map(m => m.round))].sort((a, b) =>
+          pendingOrder === 'asc' ? a - b : b - a
+        )
+      : [];
 
   const toggleRoundExpansion = (round: number) => {
     setExpandedRounds(prev => {
@@ -1038,7 +1073,30 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
       >
         {viewMode === 'pending' ? (
           pendingViewRounds.length > 0 ? (
-            pendingViewRounds.map(round => renderPendingSection(round))
+            <>
+              <div style={{ marginBottom: '0.75rem', display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => setPendingOrder(prev => (prev === 'asc' ? 'desc' : 'asc'))}
+                  style={{
+                    background: '#e5e7eb',
+                    border: 'none',
+                    padding: '0.375rem 0.75rem',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    fontWeight: '500',
+                    color: '#374151',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.25rem',
+                  }}
+                  title={pendingOrder === 'asc' ? 'Affichage croissant' : 'Affichage décroissant'}
+                >
+                  {pendingOrder === 'asc' ? '🔼 Croissant' : '🔽 Décroissant'}
+                </button>
+              </div>
+              {pendingViewRounds.map(round => renderPendingSection(round))}
+            </>
           ) : (
             <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
               ✓ Tous les matches sont terminés
