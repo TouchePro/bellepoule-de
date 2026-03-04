@@ -50,6 +50,7 @@ const Bracket: React.FC<BracketProps> = ({
 }) => {
   const [hoveredMatch, setHoveredMatch] = useState<string | null>(null);
   const [editingMatch, setEditingMatch] = useState<string | null>(null);
+  const [layoutMode, setLayoutMode] = useState<'horizontal' | 'pyramid'>('horizontal');
 
   const rounds = useMemo(() => {
     const roundMap = new Map<number, BracketMatch[]>();
@@ -182,113 +183,281 @@ const Bracket: React.FC<BracketProps> = ({
     }
   };
 
+  // Render a bracket in pyramid layout
+  const renderPyramidLayout = () => {
+    // Sort rounds in descending order for pyramid (top to bottom)
+    const sortedRounds = Array.from(rounds.keys()).sort((a, b) => b - a);
+
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '2rem',
+          padding: '1rem',
+        }}
+      >
+        {sortedRounds.map(round => {
+          const roundMatches = rounds.get(round) || [];
+
+          return (
+            <div
+              key={round}
+              style={{
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                padding: '1rem',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '8px',
+              }}
+            >
+              <div
+                style={{
+                  textAlign: 'center',
+                  fontWeight: '600',
+                  marginBottom: '1rem',
+                  color: '#374151',
+                  fontSize: '1.1rem',
+                }}
+              >
+                {round === 1
+                  ? 'Finale'
+                  : round === 2
+                    ? 'Demi-finales'
+                    : round === 4
+                      ? 'Quarts'
+                      : round === 8
+                        ? '8èmes'
+                        : round === 16
+                          ? '16èmes'
+                          : round === 32
+                            ? '32èmes'
+                            : `Tour ${round}`}
+              </div>
+              <div
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem',
+                  alignItems: 'center',
+                }}
+              >
+                {roundMatches.map(match => {
+                  const isHovered = hoveredMatch === match.id;
+                  const isEditing = editingMatch === match.id;
+                  const winner = match.winnerId;
+                  const isA = winner === match.fencerA?.id;
+                  const isB = winner === match.fencerB?.id;
+
+                  return (
+                    <g
+                      key={match.id}
+                      style={{ cursor: match.isBye ? 'default' : 'pointer', width: '100%' }}
+                      onMouseEnter={() => setHoveredMatch(match.id)}
+                      onMouseLeave={() => setHoveredMatch(null)}
+                      onClick={() => handleMatchClick(match)}
+                    >
+                      <rect
+                        x={-5}
+                        y={-5}
+                        width={MATCH_WIDTH + 10}
+                        height={MATCH_HEIGHT + 10}
+                        fill={isHovered ? '#e3f2fd' : 'transparent'}
+                        stroke={isEditing ? '#2196f3' : 'transparent'}
+                        strokeWidth={2}
+                        rx={4}
+                      />
+
+                      {/* Bye indicator */}
+                      {match.isBye && (
+                        <text
+                          x={MATCH_WIDTH / 2}
+                          y={-10}
+                          textAnchor="middle"
+                          fill="#6c757d"
+                          fontSize={10}
+                        >
+                          EXEMPT
+                        </text>
+                      )}
+
+                      {/* Fencer boxes */}
+                      {renderFencerBox(match.fencerA, match.scoreA, isA, true)}
+                      {renderFencerBox(match.fencerB, match.scoreB, isB, false)}
+                    </g>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <div className={`bracket-container ${className}`} style={{ overflow: 'auto' }}>
-      <svg width={svgWidth} height={svgHeight} style={{ minWidth: svgWidth }}>
-        <defs>
-          <marker
-            id="arrowhead"
-            markerWidth="10"
-            markerHeight="7"
-            refX="9"
-            refY="3.5"
-            orient="auto"
-          >
-            <polygon points="0 0, 10 3.5, 0 7" fill="#adb5bd" />
-          </marker>
-        </defs>
+      {/* Layout toggle buttons */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+        <button
+          onClick={() => setLayoutMode('horizontal')}
+          style={{
+            background: layoutMode === 'horizontal' ? '#3b82f6' : '#e5e7eb',
+            color: layoutMode === 'horizontal' ? 'white' : '#374151',
+            border: 'none',
+            padding: '0.5rem 1rem',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '0.875rem',
+            fontWeight: '500',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.25rem',
+          }}
+          title="Vue horizontale"
+        >
+          🔲 Vue horizontale
+        </button>
+        <button
+          onClick={() => setLayoutMode('pyramid')}
+          style={{
+            background: layoutMode === 'pyramid' ? '#8b5cf6' : '#e5e7eb',
+            color: layoutMode === 'pyramid' ? 'white' : '#374151',
+            border: 'none',
+            padding: '0.5rem 1rem',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '0.875rem',
+            fontWeight: '500',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.25rem',
+          }}
+          title="Vue pyramidale"
+        >
+          🔺 Vue pyramidale
+        </button>
+      </div>
 
-        {/* Render connection lines first (behind matches) */}
-        {matches.map(match => {
-          const pos = calculateMatchPosition(match.round, match.position);
-          return <g key={`line-${match.id}`}>{renderConnectionLines(match, pos)}</g>;
-        })}
-
-        {/* Render matches */}
-        {matches.map(match => {
-          const pos = calculateMatchPosition(match.round, match.position);
-          const isHovered = hoveredMatch === match.id;
-          const isEditing = editingMatch === match.id;
-          const winner = match.winnerId;
-          const isA = winner === match.fencerA?.id;
-          const isB = winner === match.fencerB?.id;
-
-          return (
-            <g
-              key={match.id}
-              transform={`translate(${pos.x}, ${pos.y})`}
-              style={{ cursor: match.isBye ? 'default' : 'pointer' }}
-              onMouseEnter={() => setHoveredMatch(match.id)}
-              onMouseLeave={() => setHoveredMatch(null)}
-              onClick={() => handleMatchClick(match)}
+      {layoutMode === 'horizontal' ? (
+        <svg width={svgWidth} height={svgHeight} style={{ minWidth: svgWidth }}>
+          <defs>
+            <marker
+              id="arrowhead"
+              markerWidth="10"
+              markerHeight="7"
+              refX="9"
+              refY="3.5"
+              orient="auto"
             >
-              {/* Match background */}
-              <rect
-                x={-5}
-                y={-5}
-                width={MATCH_WIDTH + 10}
-                height={MATCH_HEIGHT + 10}
-                fill={isHovered ? '#e3f2fd' : 'transparent'}
-                stroke={isEditing ? '#2196f3' : 'transparent'}
-                strokeWidth={2}
-                rx={4}
-              />
+              <polygon points="0 0, 10 3.5, 0 7" fill="#adb5bd" />
+            </marker>
+          </defs>
 
-              {/* Bye indicator */}
-              {match.isBye && (
-                <text x={MATCH_WIDTH / 2} y={-10} textAnchor="middle" fill="#6c757d" fontSize={10}>
-                  EXEMPT
-                </text>
-              )}
+          {/* Render connection lines first (behind matches) */}
+          {matches.map(match => {
+            const pos = calculateMatchPosition(match.round, match.position);
+            return <g key={`line-${match.id}`}>{renderConnectionLines(match, pos)}</g>;
+          })}
 
-              {/* Fencer boxes */}
-              {renderFencerBox(match.fencerA, match.scoreA, isA, true)}
-              {renderFencerBox(match.fencerB, match.scoreB, isB, false)}
+          {/* Render matches */}
+          {matches.map(match => {
+            const pos = calculateMatchPosition(match.round, match.position);
+            const isHovered = hoveredMatch === match.id;
+            const isEditing = editingMatch === match.id;
+            const winner = match.winnerId;
+            const isA = winner === match.fencerA?.id;
+            const isB = winner === match.fencerB?.id;
 
-              {/* Round label for first round */}
-              {match.round === 1 && (
-                <text
-                  x={MATCH_WIDTH / 2}
-                  y={MATCH_HEIGHT + 20}
-                  textAnchor="middle"
-                  fill="#6c757d"
-                  fontSize={10}
-                >
-                  {match.position <= tableSize / 4 ? `1/${tableSize / 2}` : 'Finale'}
-                </text>
-              )}
-            </g>
-          );
-        })}
+            return (
+              <g
+                key={match.id}
+                transform={`translate(${pos.x}, ${pos.y})`}
+                style={{ cursor: match.isBye ? 'default' : 'pointer' }}
+                onMouseEnter={() => setHoveredMatch(match.id)}
+                onMouseLeave={() => setHoveredMatch(null)}
+                onClick={() => handleMatchClick(match)}
+              >
+                {/* Match background */}
+                <rect
+                  x={-5}
+                  y={-5}
+                  width={MATCH_WIDTH + 10}
+                  height={MATCH_HEIGHT + 10}
+                  fill={isHovered ? '#e3f2fd' : 'transparent'}
+                  stroke={isEditing ? '#2196f3' : 'transparent'}
+                  strokeWidth={2}
+                  rx={4}
+                />
 
-        {/* Round labels */}
-        {Array.from(rounds.keys()).map(round => {
-          const pos = calculateMatchPosition(round, 1);
-          const roundNames: Record<number, string> = {
-            1: 'Finale',
-            2: 'Demi-finales',
-            4: 'Quarts',
-            8: '8èmes',
-            16: '16èmes',
-            32: '32èmes',
-            64: '64èmes',
-          };
+                {/* Bye indicator */}
+                {match.isBye && (
+                  <text
+                    x={MATCH_WIDTH / 2}
+                    y={-10}
+                    textAnchor="middle"
+                    fill="#6c757d"
+                    fontSize={10}
+                  >
+                    EXEMPT
+                  </text>
+                )}
 
-          return (
-            <text
-              key={`label-${round}`}
-              x={pos.x + MATCH_WIDTH / 2}
-              y={30}
-              textAnchor="middle"
-              fill="#495057"
-              fontSize={12}
-              fontWeight="bold"
-            >
-              {roundNames[round] || `Tour ${round}`}
-            </text>
-          );
-        })}
-      </svg>
+                {/* Fencer boxes */}
+                {renderFencerBox(match.fencerA, match.scoreA, isA, true)}
+                {renderFencerBox(match.fencerB, match.scoreB, isB, false)}
+
+                {/* Round label for first round */}
+                {match.round === 1 && (
+                  <text
+                    x={MATCH_WIDTH / 2}
+                    y={MATCH_HEIGHT + 20}
+                    textAnchor="middle"
+                    fill="#6c757d"
+                    fontSize={10}
+                  >
+                    {match.position <= tableSize / 4 ? `1/${tableSize / 2}` : 'Finale'}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+
+          {/* Round labels */}
+          {Array.from(rounds.keys()).map(round => {
+            const pos = calculateMatchPosition(round, 1);
+            const roundNames: Record<number, string> = {
+              1: 'Finale',
+              2: 'Demi-finales',
+              4: 'Quarts',
+              8: '8èmes',
+              16: '16èmes',
+              32: '32èmes',
+              64: '64èmes',
+            };
+
+            return (
+              <text
+                key={`label-${round}`}
+                x={pos.x + MATCH_WIDTH / 2}
+                y={30}
+                textAnchor="middle"
+                fill="#495057"
+                fontSize={12}
+                fontWeight="bold"
+              >
+                {roundNames[round] || `Tour ${round}`}
+              </text>
+            );
+          })}
+        </svg>
+      ) : (
+        <div style={{ overflow: 'auto' }}>{renderPyramidLayout()}</div>
+      )}
     </div>
   );
 };
