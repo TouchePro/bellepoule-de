@@ -372,6 +372,14 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  align-items: stretch;
+}
+
+.tableau-match {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 80px; /* Ensures consistent height */
 }
 
 .tableau-round-header {
