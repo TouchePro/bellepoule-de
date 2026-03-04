@@ -72,7 +72,9 @@ const Bracket: React.FC<BracketProps> = ({
     (round: number, position: number): MatchPosition => {
       const matchesInRound = rounds.get(round)?.length || 0;
       const baseY = svgHeight / 2;
-      const roundSpacing = (MATCH_HEIGHT + VERTICAL_GAP) * Math.pow(2, round - 1);
+
+      // Use linear spacing instead of exponential for more consistent alignment
+      const roundSpacing = MATCH_HEIGHT + VERTICAL_GAP;
 
       let yOffset = 0;
       if (matchesInRound > 1) {
