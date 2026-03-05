@@ -695,17 +695,8 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     const hasScore = match.scoreA !== null && match.scoreB !== null;
 
     const baseHeight = 80;
-    const matchHeight =
-      verticalPosition !== undefined && viewMode === 'full'
-        ? match.round === tableauSize
-          ? baseHeight
-          : baseHeight * (tableauSize / match.round)
-        : null;
-
     const matchMarginTop =
-      verticalPosition !== undefined && viewMode === 'full' && matchHeight
-        ? verticalPosition * matchHeight
-        : '0.25rem';
+      verticalPosition !== undefined && viewMode === 'full' ? verticalPosition - baseHeight / 2 : 0;
 
     return (
       <div
@@ -837,8 +828,8 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     matchPosition: number,
     baseRound: number
   ): number => {
-    const ratio = baseRound / matchRound;
-    return matchPosition * ratio + (ratio / 2 - 0.5);
+    const baseHeight = 80;
+    return matchPosition * baseHeight + baseHeight / 2;
   };
 
   const getMatchPosition = (match: TableauMatch): number => {
