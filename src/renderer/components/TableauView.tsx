@@ -830,18 +830,8 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
       return matchPosition;
     }
 
-    let currentRound = matchRound;
-    let currentPosition = matchPosition;
-
-    while (currentRound < baseRound) {
-      const parentRound = currentRound * 2;
-      const parentPositionA = currentPosition * 2;
-      const parentPositionB = currentPosition * 2 + 1;
-      currentPosition = (parentPositionA + parentPositionB) / 2;
-      currentRound = parentRound;
-    }
-
-    return currentPosition;
+    const levels = Math.log2(baseRound / matchRound);
+    return matchPosition + levels / 2;
   };
 
   const getMatchPosition = (match: TableauMatch): number => {
