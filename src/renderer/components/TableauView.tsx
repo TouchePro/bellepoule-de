@@ -837,12 +837,8 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     matchPosition: number,
     baseRound: number
   ): number => {
-    if (matchRound === baseRound) {
-      return matchPosition;
-    }
-
-    const levelsUp = Math.log2(baseRound / matchRound);
-    return matchPosition + Math.pow(2, levelsUp - 1);
+    const ratio = baseRound / matchRound;
+    return matchPosition * ratio + (ratio / 2 - 0.5);
   };
 
   const getMatchPosition = (match: TableauMatch): number => {
