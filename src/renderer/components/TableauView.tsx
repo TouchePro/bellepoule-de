@@ -40,6 +40,8 @@ interface TableauViewProps {
   thirdPlaceMatch?: boolean;
 }
 
+const BASE_MATCH_HEIGHT = 80;
+
 const TableauViewComponent: React.FC<TableauViewProps> = ({
   ranking,
   matches,
@@ -61,7 +63,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   const [expandedRounds, setExpandedRounds] = useState<Set<number>>(new Set());
   const isUnlimitedScore = maxScore === 999;
 
-  const { modalRef, dimensions } = useModalResize({
+  const { modalRef } = useModalResize({
     defaultWidth: 600,
     defaultHeight: 400,
     minWidth: 400,
@@ -98,12 +100,6 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     const size = getTableauSize(qualifiedFencers.length);
     setTableauSize(size);
 
-    // Debug pour comprendre les exemptions
-    // DEBUG: console.log('=== DEBUG TABLEAU ===');
-    // DEBUG: console.log('Participants qualifiés:', qualifiedFencers.length);
-    // DEBUG: console.log('Taille du tableau:', size);
-    // DEBUG: console.log('Liste des qualifiés:', qualifiedFencers.map(r => r.fencer.lastName));
-
     const seeding = generateFIESeeding(size);
     const newMatches: TableauMatch[] = [];
 
@@ -117,11 +113,6 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
       const isBye = !fencerA || !fencerB;
       const winner = isBye ? fencerA || fencerB : null;
-
-      // Debug pour chaque match
-      if (isBye) {
-        // DEBUG: console.log(`Match ${i}: BYE - seedA=${seedA}, seedB=${seedB}, fencerA=${fencerA?.lastName || 'null'}, fencerB=${fencerB?.lastName || 'null'}`);
-      }
 
       newMatches.push({
         id: `${size}-${i}`,
@@ -694,9 +685,10 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     const canEdit = !!(match.fencerA && match.fencerB && !match.isBye);
     const hasScore = match.scoreA !== null && match.scoreB !== null;
 
-    const baseHeight = 80;
     const matchMarginTop =
-      verticalPosition !== undefined && viewMode === 'full' ? verticalPosition - baseHeight / 2 : 0;
+      verticalPosition !== undefined && viewMode === 'full'
+        ? verticalPosition - BASE_MATCH_HEIGHT / 2
+        : 0;
 
     return (
       <div
@@ -823,19 +815,14 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     );
   };
 
-  const calculateMatchVerticalPosition = (
-    matchRound: number,
-    matchPosition: number,
-    baseRound: number
-  ): number => {
-    const baseHeight = 80;
-    return matchPosition * baseHeight + baseHeight / 2;
+  const calculateMatchVerticalPosition = (matchRound: number, matchPosition: number): number => {
+    return matchPosition * BASE_MATCH_HEIGHT + BASE_MATCH_HEIGHT / 2;
   };
 
   const getMatchPosition = (match: TableauMatch): number => {
     if (viewMode === 'pending') return match.position;
 
-    return calculateMatchVerticalPosition(match.round, match.position, tableauSize);
+    return calculateMatchVerticalPosition(match.round, match.position);
   };
 
   const renderRound = (round: number) => {
@@ -843,7 +830,6 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
       viewMode === 'pending'
         ? pendingMatches.filter(m => m.round === round)
         : matches.filter(m => m.round === round);
-    const maxRound = Math.max(...matches.map(m => m.round), 1);
     const sortedMatches = [...roundMatches].sort((a, b) => a.position - b.position);
 
     return (
