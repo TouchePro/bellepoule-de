@@ -85,9 +85,10 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   }, [ranking.length, thirdPlaceMatch, maxScore, matches.length]); // Dépend du nombre de tireurs, match pour la 3ème place et score max
 
   const getTableauSize = (fencerCount: number): number => {
+    const effectiveCount = Math.ceil(fencerCount / 2);
     const sizes = [4, 8, 16, 32, 64, 128, 256];
     for (const size of sizes) {
-      if (fencerCount <= size) return size;
+      if (effectiveCount <= size) return size;
     }
     return 256;
   };
@@ -693,8 +694,18 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     const canEdit = !!(match.fencerA && match.fencerB && !match.isBye);
     const hasScore = match.scoreA !== null && match.scoreB !== null;
 
+    const baseHeight = 80;
+    const matchHeight =
+      verticalPosition !== undefined && viewMode === 'full'
+        ? match.round === tableauSize
+          ? baseHeight
+          : baseHeight * (tableauSize / match.round)
+        : null;
+
     const matchMarginTop =
-      verticalPosition !== undefined && viewMode === 'full' ? verticalPosition * 60 : '0.25rem';
+      verticalPosition !== undefined && viewMode === 'full' && matchHeight
+        ? verticalPosition * matchHeight
+        : '0.25rem';
 
     return (
       <div
@@ -830,8 +841,8 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
       return matchPosition;
     }
 
-    const levels = Math.log2(baseRound / matchRound);
-    return matchPosition + levels / 2;
+    const levelsUp = Math.log2(baseRound / matchRound);
+    return matchPosition + Math.pow(2, levelsUp - 1);
   };
 
   const getMatchPosition = (match: TableauMatch): number => {
