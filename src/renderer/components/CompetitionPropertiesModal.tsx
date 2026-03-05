@@ -34,7 +34,7 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
   );
   const [poolMaxScore, setPoolMaxScore] = useState(competition.settings?.defaultPoolMaxScore ?? 21);
   const [tableMaxScore, setTableMaxScore] = useState(
-    competition.settings?.defaultTableMaxScore ?? 0
+    competition.settings?.defaultTableMaxScore ?? 21
   );
   const [thirdPlaceMatch, setThirdPlaceMatch] = useState(
     competition.settings?.thirdPlaceMatch ?? false
@@ -288,7 +288,7 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
               {hasDirectElimination && (
                 <>
                   <div className="form-group">
-                    <label htmlFor="tableMaxScore">Score max tableau</label>
+                    <label htmlFor="tableMaxScore">Score max tableau élimination</label>
                     <input
                       type="number"
                       id="tableMaxScore"
@@ -296,7 +296,7 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
                       value={tableMaxScore}
                       onChange={e => setTableMaxScore(parseInt(e.target.value) || 0)}
                       min="0"
-                      placeholder="0"
+                      placeholder="21"
                     />
                     <small style={{ color: '#6b7280', fontSize: '0.75rem' }}>
                       {tableMaxScore === 0
