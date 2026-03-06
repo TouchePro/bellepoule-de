@@ -854,8 +854,8 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     matchPosition: number,
     baseRound: number
   ): number => {
-    const spacing = BASE_MATCH_HEIGHT * (baseRound / matchRound);
-    return matchPosition * spacing + spacing / 2;
+    const spacing = BASE_MATCH_HEIGHT;
+    return matchPosition * spacing;
   };
 
   const getMatchPosition = (match: TableauMatch): number => {
@@ -871,6 +871,8 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         : matches.filter(m => m.round === round);
     const sortedMatches = [...roundMatches].sort((a, b) => a.position - b.position);
 
+    const isExpanded = expandedRounds.size === 0 || expandedRounds.has(round);
+
     return (
       <div
         key={round}
@@ -882,19 +884,31 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         }}
       >
         <div
+          onClick={() => toggleRoundExpansion(round)}
           style={{
             textAlign: 'center',
             fontWeight: '600',
             marginBottom: '0.5rem',
             color: '#374151',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.5rem',
+            userSelect: 'none',
           }}
         >
+          <span style={{ fontSize: '0.8rem' }}>{isExpanded ? '▼' : '▶'}</span>
           {getRoundName(round)}
         </div>
-        {sortedMatches.map(match => {
-          const verticalPosition = viewMode === 'full' ? getMatchPosition(match) : undefined;
-          return <div key={match.id}>{renderMatch(match, verticalPosition)}</div>;
-        })}
+        {isExpanded && (
+          <>
+            {sortedMatches.map(match => {
+              const verticalPosition = viewMode === 'full' ? getMatchPosition(match) : undefined;
+              return <div key={match.id}>{renderMatch(match, verticalPosition)}</div>;
+            })}
+          </>
+        )}
       </div>
     );
   };

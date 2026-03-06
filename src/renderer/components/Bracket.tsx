@@ -51,6 +51,22 @@ const Bracket: React.FC<BracketProps> = ({
   const [hoveredMatch, setHoveredMatch] = useState<string | null>(null);
   const [editingMatch, setEditingMatch] = useState<string | null>(null);
   const [layoutMode, setLayoutMode] = useState<'horizontal' | 'pyramid'>('horizontal');
+  const [expandedRounds, setExpandedRounds] = useState<Set<number>>(new Set());
+
+  const toggleRoundExpansion = (round: number) => {
+    setExpandedRounds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(round)) {
+        newSet.delete(round);
+      } else {
+        newSet.add(round);
+      }
+      return newSet;
+    });
+  };
+
+  const expandAll = () => setExpandedRounds(new Set(Array.from(rounds.keys())));
+  const collapseAll = () => setExpandedRounds(new Set());
 
   const rounds = useMemo(() => {
     const roundMap = new Map<number, BracketMatch[]>();
@@ -189,7 +205,6 @@ const Bracket: React.FC<BracketProps> = ({
 
   // Render a bracket in pyramid layout
   const renderPyramidLayout = () => {
-    // Sort rounds in descending order for pyramid (top to bottom)
     const sortedRounds = Array.from(rounds.keys()).sort((a, b) => b - a);
 
     return (
@@ -202,8 +217,54 @@ const Bracket: React.FC<BracketProps> = ({
           padding: '1rem',
         }}
       >
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+          <button
+            onClick={expandAll}
+            style={{
+              background: '#10b981',
+              color: 'white',
+              border: 'none',
+              padding: '0.25rem 0.75rem',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '0.75rem',
+            }}
+          >
+            Tout déplier
+          </button>
+          <button
+            onClick={collapseAll}
+            style={{
+              background: '#6b7280',
+              color: 'white',
+              border: 'none',
+              padding: '0.25rem 0.75rem',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '0.75rem',
+            }}
+          >
+            Tout replier
+          </button>
+        </div>
         {sortedRounds.map(round => {
           const roundMatches = rounds.get(round) || [];
+          const isExpanded = expandedRounds.size === 0 || expandedRounds.has(round);
+
+          const roundName =
+            round === 1
+              ? 'Finale'
+              : round === 2
+                ? 'Demi-finales'
+                : round === 4
+                  ? 'Quarts'
+                  : round === 8
+                    ? '8èmes'
+                    : round === 16
+                      ? '16èmes'
+                      : round === 32
+                        ? '32èmes'
+                        : `Tour ${round}`;
 
           return (
             <div
@@ -219,83 +280,78 @@ const Bracket: React.FC<BracketProps> = ({
               }}
             >
               <div
+                onClick={() => toggleRoundExpansion(round)}
                 style={{
                   textAlign: 'center',
                   fontWeight: '600',
                   marginBottom: '1rem',
                   color: '#374151',
                   fontSize: '1.1rem',
-                }}
-              >
-                {round === 1
-                  ? 'Finale'
-                  : round === 2
-                    ? 'Demi-finales'
-                    : round === 4
-                      ? 'Quarts'
-                      : round === 8
-                        ? '8èmes'
-                        : round === 16
-                          ? '16èmes'
-                          : round === 32
-                            ? '32èmes'
-                            : `Tour ${round}`}
-              </div>
-              <div
-                style={{
-                  width: '100%',
+                  cursor: 'pointer',
                   display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.5rem',
                   alignItems: 'center',
+                  gap: '0.5rem',
+                  userSelect: 'none',
                 }}
               >
-                {roundMatches.map(match => {
-                  const isHovered = hoveredMatch === match.id;
-                  const isEditing = editingMatch === match.id;
-                  const winner = match.winnerId;
-                  const isA = winner === match.fencerA?.id;
-                  const isB = winner === match.fencerB?.id;
-
-                  return (
-                    <g
-                      key={match.id}
-                      style={{ cursor: match.isBye ? 'default' : 'pointer', width: '100%' }}
-                      onMouseEnter={() => setHoveredMatch(match.id)}
-                      onMouseLeave={() => setHoveredMatch(null)}
-                      onClick={() => handleMatchClick(match)}
-                    >
-                      <rect
-                        x={-5}
-                        y={-5}
-                        width={MATCH_WIDTH + 10}
-                        height={MATCH_HEIGHT + 10}
-                        fill={isHovered ? '#e3f2fd' : 'transparent'}
-                        stroke={isEditing ? '#2196f3' : 'transparent'}
-                        strokeWidth={2}
-                        rx={4}
-                      />
-
-                      {/* Bye indicator */}
-                      {match.isBye && (
-                        <text
-                          x={MATCH_WIDTH / 2}
-                          y={-10}
-                          textAnchor="middle"
-                          fill="#6c757d"
-                          fontSize={10}
-                        >
-                          EXEMPT
-                        </text>
-                      )}
-
-                      {/* Fencer boxes */}
-                      {renderFencerBox(match.fencerA, match.scoreA, isA, true)}
-                      {renderFencerBox(match.fencerB, match.scoreB, isB, false)}
-                    </g>
-                  );
-                })}
+                <span style={{ fontSize: '0.8rem' }}>{isExpanded ? '▼' : '▶'}</span>
+                {roundName}
               </div>
+              {isExpanded && (
+                <div
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.5rem',
+                    alignItems: 'center',
+                  }}
+                >
+                  {roundMatches.map(match => {
+                    const isHovered = hoveredMatch === match.id;
+                    const isEditing = editingMatch === match.id;
+                    const winner = match.winnerId;
+                    const isA = winner === match.fencerA?.id;
+                    const isB = winner === match.fencerB?.id;
+
+                    return (
+                      <g
+                        key={match.id}
+                        style={{ cursor: match.isBye ? 'default' : 'pointer', width: '100%' }}
+                        onMouseEnter={() => setHoveredMatch(match.id)}
+                        onMouseLeave={() => setHoveredMatch(null)}
+                        onClick={() => handleMatchClick(match)}
+                      >
+                        <rect
+                          x={-5}
+                          y={-5}
+                          width={MATCH_WIDTH + 10}
+                          height={MATCH_HEIGHT + 10}
+                          fill={isHovered ? '#e3f2fd' : 'transparent'}
+                          stroke={isEditing ? '#2196f3' : 'transparent'}
+                          strokeWidth={2}
+                          rx={4}
+                        />
+
+                        {match.isBye && (
+                          <text
+                            x={MATCH_WIDTH / 2}
+                            y={-10}
+                            textAnchor="middle"
+                            fill="#6c757d"
+                            fontSize={10}
+                          >
+                            EXEMPT
+                          </text>
+                        )}
+
+                        {renderFencerBox(match.fencerA, match.scoreA, isA, true)}
+                        {renderFencerBox(match.fencerB, match.scoreB, isB, false)}
+                      </g>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           );
         })}
