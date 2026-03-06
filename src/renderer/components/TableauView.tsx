@@ -19,6 +19,7 @@ export interface TableauMatch {
   scoreB: number | null;
   winner: Fencer | null;
   isBye: boolean;
+  arena?: number | null;
 }
 
 export interface FinalResult {
@@ -38,6 +39,7 @@ interface TableauViewProps {
   maxScore?: number;
   onComplete?: (results: FinalResult[]) => void;
   thirdPlaceMatch?: boolean;
+  arenaCount?: number;
 }
 
 const BASE_MATCH_HEIGHT = 80;
@@ -49,6 +51,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   maxScore = 15,
   onComplete,
   thirdPlaceMatch = false,
+  arenaCount = 4,
 }) => {
   const { showToast } = useToast();
   const [tableauSize, setTableauSize] = useState<number>(0);
@@ -61,6 +64,8 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   const [viewMode, setViewMode] = useState<'full' | 'pending'>('full');
   const [pendingOrder, setPendingOrder] = useState<'asc' | 'desc'>('desc');
   const [expandedRounds, setExpandedRounds] = useState<Set<number>>(new Set());
+  const [showArenaModal, setShowArenaModal] = useState(false);
+  const [selectedMatchForArena, setSelectedMatchForArena] = useState<string | null>(null);
   const isUnlimitedScore = maxScore === 999;
 
   const { modalRef } = useModalResize({
@@ -684,9 +689,16 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   const renderMatch = (match: TableauMatch, verticalPosition?: number) => {
     const canEdit = !!(match.fencerA && match.fencerB && !match.isBye);
     const hasScore = match.scoreA !== null && match.scoreB !== null;
+    const isMatchComplete = match.winner !== null;
 
     const matchMarginTop =
       verticalPosition !== undefined && viewMode === 'full' ? verticalPosition : 0;
+
+    const handleArenaClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setSelectedMatchForArena(match.id);
+      setShowArenaModal(true);
+    };
 
     return (
       <div
@@ -700,11 +712,33 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           background: match.winner ? '#f0fdf4' : 'white',
           minWidth: '180px',
           cursor: canEdit ? 'pointer' : 'default',
+          position: 'relative',
         }}
         onClick={() => {
           if (canEdit) openScoreModal(match);
         }}
       >
+        {canEdit && !isMatchComplete && (
+          <button
+            onClick={handleArenaClick}
+            style={{
+              position: 'absolute',
+              top: '4px',
+              right: '4px',
+              background: match.arena ? '#10b981' : '#e5e7eb',
+              color: match.arena ? 'white' : '#6b7280',
+              border: 'none',
+              borderRadius: '4px',
+              padding: '2px 6px',
+              fontSize: '0.625rem',
+              cursor: 'pointer',
+              fontWeight: '500',
+            }}
+            title={match.arena ? `Piste ${match.arena}` : 'Assigner à une piste'}
+          >
+            {match.arena ? `P${match.arena}` : '+P'}
+          </button>
+        )}
         <div
           style={{
             display: 'flex',
@@ -888,7 +922,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     }
   }
 
-  const pendingMatches = matches.filter(m => m.scoreA === null || m.scoreB === null);
+  const pendingMatches = matches.filter(m => m.fencerA && m.fencerB && !m.isBye && !m.winner);
   const pendingViewRounds: number[] =
     viewMode === 'pending'
       ? [...new Set(matches.map(m => m.round))].sort((a, b) =>
@@ -1068,6 +1102,52 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                 </button>
               </div>
               {pendingViewRounds.map(round => renderPendingSection(round))}
+
+              <div
+                style={{
+                  marginTop: '1rem',
+                  padding: '0.75rem',
+                  background: '#f3f4f6',
+                  borderRadius: '8px',
+                }}
+              >
+                <h4 style={{ fontSize: '0.875rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+                  Résumé des pistes
+                </h4>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  {Array.from({ length: arenaCount }, (_, i) => i + 1).map(arenaNum => {
+                    const arenaMatches = pendingMatches.filter(m => m.arena === arenaNum);
+                    return (
+                      <div
+                        key={arenaNum}
+                        style={{
+                          padding: '0.5rem 0.75rem',
+                          background: arenaMatches.length > 0 ? '#d1fae5' : 'white',
+                          borderRadius: '4px',
+                          fontSize: '0.75rem',
+                          border: '1px solid #e5e7eb',
+                        }}
+                      >
+                        <strong>Piste {arenaNum}</strong>: {arenaMatches.length} match
+                        {arenaMatches.length !== 1 ? 's' : ''}
+                      </div>
+                    );
+                  })}
+                  <div
+                    style={{
+                      padding: '0.5rem 0.75rem',
+                      background:
+                        pendingMatches.filter(m => !m.arena).length > 0 ? '#fef3c7' : 'white',
+                      borderRadius: '4px',
+                      fontSize: '0.75rem',
+                      border: '1px solid #e5e7eb',
+                    }}
+                  >
+                    <strong>Non assignés</strong>: {pendingMatches.filter(m => !m.arena).length}{' '}
+                    match{pendingMatches.filter(m => !m.arena).length !== 1 ? 's' : ''}
+                  </div>
+                </div>
+              </div>
             </>
           ) : (
             <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
@@ -1341,6 +1421,68 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
         return scoreModal;
       })()}
+
+      {showArenaModal && selectedMatchForArena && (
+        <div className="modal-overlay" onClick={() => setShowArenaModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+            <div className="modal-header">
+              <h3 className="modal-title">Assigner à une piste</h3>
+              <button className="btn-close" onClick={() => setShowArenaModal(false)}>
+                &times;
+              </button>
+            </div>
+            <div className="modal-body" style={{ padding: '1.5rem' }}>
+              <p style={{ marginBottom: '1rem', color: '#6b7280' }}>
+                Sélectionnez la piste pour ce match :
+              </p>
+              <div
+                style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}
+              >
+                <button
+                  className={`btn ${!matches.find(m => m.id === selectedMatchForArena)?.arena ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => {
+                    const updatedMatches = matches.map(m =>
+                      m.id === selectedMatchForArena ? { ...m, arena: null } : m
+                    );
+                    onMatchesChange(updatedMatches);
+                    setShowArenaModal(false);
+                    setSelectedMatchForArena(null);
+                  }}
+                  style={{ padding: '0.75rem' }}
+                >
+                  -
+                </button>
+                {Array.from({ length: arenaCount }, (_, i) => i + 1).map(arenaNum => {
+                  const isAssigned = matches.some(
+                    m => m.arena === arenaNum && m.id !== selectedMatchForArena
+                  );
+                  return (
+                    <button
+                      key={arenaNum}
+                      className={`btn ${matches.find(m => m.id === selectedMatchForArena)?.arena === arenaNum ? 'btn-primary' : 'btn-secondary'}`}
+                      onClick={() => {
+                        const updatedMatches = matches.map(m =>
+                          m.id === selectedMatchForArena ? { ...m, arena: arenaNum } : m
+                        );
+                        onMatchesChange(updatedMatches);
+                        setShowArenaModal(false);
+                        setSelectedMatchForArena(null);
+                      }}
+                      disabled={isAssigned}
+                      style={{
+                        padding: '0.75rem',
+                        opacity: isAssigned ? 0.5 : 1,
+                      }}
+                    >
+                      Piste {arenaNum}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
