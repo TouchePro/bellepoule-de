@@ -36,9 +36,9 @@ interface MatchPosition {
 }
 
 const MATCH_WIDTH = 200;
-const MATCH_HEIGHT = 60;
+const MATCH_HEIGHT = 50;
 const HORIZONTAL_GAP = 80;
-const VERTICAL_GAP = 40;
+const VERTICAL_GAP = 10;
 
 const Bracket: React.FC<BracketProps> = ({
   matches,
@@ -73,13 +73,15 @@ const Bracket: React.FC<BracketProps> = ({
       const matchesInRound = rounds.get(round)?.length || 0;
       const baseY = svgHeight / 2;
 
-      // Use linear spacing instead of exponential for more consistent alignment
       const roundSpacing = MATCH_HEIGHT + VERTICAL_GAP;
 
       let yOffset = 0;
-      if (matchesInRound > 1) {
+      const totalMatchesForRound = tableSize / Math.pow(2, round - 1);
+      const matchesCount = Math.max(matchesInRound, totalMatchesForRound);
+
+      if (matchesCount > 1) {
         const index = position - 1;
-        const totalHeight = (matchesInRound - 1) * roundSpacing;
+        const totalHeight = (matchesCount - 1) * roundSpacing;
         yOffset = -totalHeight / 2 + index * roundSpacing;
       }
 
@@ -90,7 +92,7 @@ const Bracket: React.FC<BracketProps> = ({
         height: MATCH_HEIGHT,
       };
     },
-    [rounds, maxRound, svgHeight]
+    [rounds, maxRound, svgHeight, tableSize]
   );
 
   const renderFencerBox = (
@@ -244,7 +246,7 @@ const Bracket: React.FC<BracketProps> = ({
                   width: '100%',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '1rem',
+                  gap: '0.5rem',
                   alignItems: 'center',
                 }}
               >
