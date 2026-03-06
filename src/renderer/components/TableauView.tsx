@@ -898,7 +898,9 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
             userSelect: 'none',
           }}
         >
-          <span style={{ fontSize: '0.8rem' }}>{isExpanded ? '▼' : '▶'}</span>
+          <span style={{ fontSize: '1rem', fontWeight: 'bold', marginRight: '0.25rem' }}>
+            {isExpanded ? '▼' : '▶'}
+          </span>
           {getRoundName(round)}
         </div>
         {isExpanded && (
