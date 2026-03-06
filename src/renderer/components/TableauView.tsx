@@ -692,7 +692,9 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     const isMatchComplete = match.winner !== null;
 
     const matchMarginTop =
-      verticalPosition !== undefined && viewMode === 'full' ? verticalPosition : 0;
+      verticalPosition !== undefined && viewMode === 'full'
+        ? verticalPosition - BASE_MATCH_HEIGHT / 2
+        : 0;
 
     const handleArenaClick = (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -847,14 +849,19 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     );
   };
 
-  const calculateMatchVerticalPosition = (matchRound: number, matchPosition: number): number => {
-    return matchPosition * BASE_MATCH_HEIGHT;
+  const calculateMatchVerticalPosition = (
+    matchRound: number,
+    matchPosition: number,
+    baseRound: number
+  ): number => {
+    const spacing = BASE_MATCH_HEIGHT * (baseRound / matchRound);
+    return matchPosition * spacing + spacing / 2;
   };
 
   const getMatchPosition = (match: TableauMatch): number => {
     if (viewMode === 'pending') return match.position;
 
-    return calculateMatchVerticalPosition(match.round, match.position);
+    return calculateMatchVerticalPosition(match.round, match.position, tableauSize);
   };
 
   const renderRound = (round: number) => {
