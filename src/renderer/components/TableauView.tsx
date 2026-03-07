@@ -56,6 +56,7 @@ interface TableauViewProps {
 }
 
 const BASE_MATCH_HEIGHT = 80;
+const SLOT_HEIGHT = BASE_MATCH_HEIGHT + 8; // hauteur d'un créneau dans la première colonne
 
 const TableauViewComponent: React.FC<TableauViewProps> = ({
   ranking,
@@ -705,9 +706,6 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     const hasScore = match.scoreA !== null && match.scoreB !== null;
     const isMatchComplete = match.winner !== null;
 
-    const matchMarginTop =
-      verticalPosition !== undefined && viewMode === 'full' ? verticalPosition : 0;
-
     const handleArenaClick = (e: React.MouseEvent) => {
       e.stopPropagation();
       setSelectedMatchForArena(match.id);
@@ -721,12 +719,12 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           border: '1px solid #e5e7eb',
           borderRadius: '4px',
           padding: '0.5rem',
-          marginTop: typeof matchMarginTop === 'number' ? `${matchMarginTop}px` : matchMarginTop,
-          marginBottom: '0.25rem',
           background: match.winner ? '#f0fdf4' : 'white',
           minWidth: '180px',
           cursor: canEdit ? 'pointer' : 'default',
-          position: 'relative',
+          ...(verticalPosition !== undefined
+            ? { position: 'absolute' as const, top: `${verticalPosition}px`, left: 0, right: 0 }
+            : { position: 'relative' as const, marginBottom: '0.25rem' }),
         }}
         onClick={() => {
           if (canEdit) openScoreModal(match);
@@ -866,7 +864,10 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     matchPosition: number,
     baseRound: number
   ): number => {
-    return matchPosition * BASE_MATCH_HEIGHT;
+    // k = nombre de créneaux de la première colonne couverts par ce match
+    const k = baseRound / matchRound;
+    // Centre ce match verticalement dans ses k créneaux
+    return Math.max(0, (matchPosition - 0.5) * k * SLOT_HEIGHT - BASE_MATCH_HEIGHT / 2);
   };
 
   const getMatchPosition = (match: TableauMatch): number => {
@@ -915,12 +916,18 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           {getRoundName(round)}
         </div>
         {isExpanded && (
-          <>
+          <div
+            style={
+              viewMode === 'full'
+                ? { position: 'relative', height: `${(tableauSize / 2) * SLOT_HEIGHT}px` }
+                : {}
+            }
+          >
             {sortedMatches.map(match => {
               const verticalPosition = viewMode === 'full' ? getMatchPosition(match) : undefined;
               return <div key={match.id}>{renderMatch(match, verticalPosition)}</div>;
             })}
-          </>
+          </div>
         )}
       </div>
     );
