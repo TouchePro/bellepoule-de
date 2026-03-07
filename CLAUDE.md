@@ -29,15 +29,25 @@ Code is in English; comments and documentation are in French.
 ## Commands
 
 ```bash
-npm run dev          # Development mode (concurrent TypeScript + Webpack watchers)
-npm run dev:main     # Watch main process only
-npm run dev:renderer # Watch renderer only (Webpack dev server on port 8066)
-npm run build        # Full build (TypeScript + Webpack)
-npm start            # Build and run with Electron
-npm run package      # Create distributable packages for all platforms
+npm run dev             # Development mode (concurrent TypeScript + Webpack watchers)
+npm run dev:main        # Watch main process only
+npm run dev:renderer    # Watch renderer only (Webpack dev server on port 8066)
+npm run build           # Full build (increment-build + TypeScript + Webpack)
+npm run build:ci        # CI build (no build number increment)
+npm run build:main      # TypeScript compilation only
+npm run build:renderer  # Webpack only
+npm start               # Build and run with Electron
+npm run package         # Create distributable packages for all platforms
+npm run package:win     # Windows (NSIS installer)
+npm run package:mac     # macOS (DMG, x64)
+npm run package:mac-arm # macOS (DMG, arm64)
+npm run package:linux   # Linux (AppImage)
+npm test                # Run Vitest unit tests
+npm run lint            # ESLint check
+npm run lint:fix        # ESLint auto-fix
+npm run format          # Prettier format
+npm run format:check    # Prettier validation
 ```
-
-No testing framework is currently configured. No linting/formatting tools configured.
 
 ## Architecture
 
@@ -45,84 +55,130 @@ No testing framework is currently configured. No linting/formatting tools config
 
 ```
 Main Process (src/main/)
-├── main.ts              # Window management, IPC handlers
+├── main.ts              # Window management, menu (French), IPC handlers, DB lifecycle
 ├── preload.ts           # Secure IPC bridge (contextIsolation: true)
-├── remoteScoreServer.ts # Express + Socket.IO for referee tablets
+├── remoteScoreServer.ts # Express + Socket.IO for referee tablets (port 8066)
 └── autoUpdater.ts       # Auto-update functionality
 
 Renderer Process (src/renderer/)
-├── App.tsx              # Root React component
-├── components/          # 22+ React components
-├── hooks/               # Custom hooks (useTranslation, useEventManager, etc.)
-└── locales/             # i18n files (fr, en, br)
+├── App.tsx              # Root React component (~1900 lines)
+├── components/          # 47+ React components
+├── hooks/               # 14+ custom hooks
+├── contexts/            # TranslationContext (i18n)
+├── services/            # offlineStorage.ts, offlineSync.ts
+├── locales/             # i18n: fr, en, br (Breton)
+├── styles/              # CSS files
+└── sw.js                # Service worker (offline support)
+
+Feature Modules (src/features/)
+├── analytics/           # AnalyticsService + useAnalyticsStore (Zustand)
+├── bracket/             # BracketGenerator + useBracketStore
+├── competition/         # CompetitionService + useCompetitionStore
+├── doubleelimination/   # useDEBracketStore
+├── latefencers/         # useLateFencerStore
+├── penalties/           # PenaltyUtils + usePenaltyStore
+├── pools/               # PoolCalculator + PoolService + usePoolStore
+└── teams/               # TeamCalculations + useTeamStore
 
 Shared (src/shared/)
-├── types/index.ts       # All TypeScript definitions
-└── utils/               # poolCalculations.ts, pdfExport.ts, tableCalculations.ts
+├── types/
+│   ├── index.ts         # All TypeScript definitions (enums, interfaces)
+│   ├── preload.ts       # IPC API types
+│   └── remote.ts        # Remote server types
+├── services/
+│   ├── cloudSyncService.ts    # Dropbox/Google Drive/OneDrive (AES-GCM encrypted)
+│   ├── logger.ts              # Logging service
+│   ├── notificationService.ts # Browser + Discord/Slack webhooks
+│   ├── performanceService.ts  # Monitoring, caching, virtual lists
+│   ├── refereeManager.ts      # Auto referee assignment + conflict detection
+│   └── tournamentFlow.ts      # Tournament state machine
+└── utils/
+    ├── poolCalculations.ts    # Pool ranking + "Quest Points" (Laser Sabre)
+    ├── pdfExport.ts / pdfTemplates.ts  # jsPDF generation
+    ├── tableCalculations.ts   # Direct elimination bracket logic
+    ├── cardSystem.ts          # Yellow/red/black card rules
+    ├── scoreValidation.ts     # Score validation rules
+    ├── suddenDeath.ts         # Overtime / sudden death logic
+    ├── touchSystem.ts         # Sabre Laser touch zones (A=1pt, B=3pt, C=5pt)
+    ├── fencerStatsCalculator.ts
+    ├── bulkImport.ts          # Bulk fencer import
+    └── fileParser.ts          # XML / FFE / CSV parsing
 
 Database (src/database/)
-└── index.ts             # DatabaseManager class (sql.js - pure JS SQLite)
+├── index.ts             # DatabaseManager class (sql.js - pure JS SQLite)
+└── validation.ts        # Input validation
 ```
 
 ### Key Patterns
 
-1. **IPC via Preload**: All renderer-to-main communication uses `window.electronAPI` exposed by `preload.ts`. Never use `remote` or direct IPC.
+1. **IPC via Preload**: All renderer-to-main communication uses `window.electronAPI` exposed by `preload.ts`. Never use `remote` or direct IPC in the renderer.
 
-2. **Database**: sql.js provides SQLite without native dependencies. All operations through `DatabaseManager`.
+2. **Database**: sql.js provides SQLite without native dependencies. All operations go through `DatabaseManager`. Atomic writes (temp file + rename). Autosave every 2 minutes; save on quit.
 
-3. **Remote Scoring**: Express server with Socket.IO on port 8066. Arena display at `/arene{N}`, referee interface at `/arene{N}/arbitre`.
+3. **Remote Scoring**: Express server with Socket.IO on port 8066. Arena display at `/arene{N}`, referee interface at `/arene{N}/arbitre`. HTML served in-memory for bundling.
 
-4. **State**: React hooks with props drilling. No Redux/Zustand.
+4. **State**: Zustand stores per feature module (`src/features/*/hooks/use*Store.ts`). App-level state in `App.tsx` via `useState`/`useReducer`.
+
+5. **IPC API Groups** (`window.electronAPI`):
+   - `db.*` – Competition, Fencer, Match, Pool, Session operations
+   - `file.*` – Export, import, write file content
+   - `dialog.*` – Open/save file dialogs
+   - `remote.*` – Start/stop server, manage arenas/sessions
+   - `updater.*` – Auto-update control
 
 ## TypeScript Configuration
 
 - Strict mode enabled (no implicit any, strict null checks)
 - Path aliases: `@shared/*`, `@main/*`, `@renderer/*`, `@database/*`
-- Target: ES2020
+- Target: ES2020, Module: commonjs, JSX: react-jsx
+- Output: `./dist/`
+
+## Testing
+
+- **Unit tests**: Vitest (`npm test`) – test files in `src/shared/utils/*.test.ts`
+- **E2E tests**: Playwright (`playwright.config.ts`) – test files in `e2e/`
+- Coverage: `@vitest/coverage-v8`
 
 ## Key Domain Types (src/shared/types/index.ts)
 
 ```typescript
-enum Weapon {
-  EPEE = 'E',
-  FOIL = 'F',
-  SABRE = 'S',
-  LASER = 'L',
-}
+enum Weapon { EPEE = 'E', FOIL = 'F', SABRE = 'S', LASER = 'L' }
+
+enum Gender { MALE, FEMALE, MIXED }
+
+enum Category { U11, U13, U15, U17, U20, SENIOR, V1, V2, V3, V4 }
+
 enum FencerStatus {
-  QUALIFIED,
-  ELIMINATED,
-  ABANDONED,
-  EXCLUDED,
-  NOT_CHECKED_IN,
-  CHECKED_IN,
-  FORFAIT,
+  QUALIFIED, ELIMINATED, ABANDONED, EXCLUDED,
+  NOT_CHECKED_IN, CHECKED_IN, FORFAIT,
 }
-enum MatchStatus {
-  NOT_STARTED,
-  IN_PROGRESS,
-  FINISHED,
-  CANCELLED,
-}
-enum PhaseType {
-  CHECKIN,
-  POOL,
-  DIRECT_ELIMINATION,
-  CLASSIFICATION,
-}
+
+enum MatchStatus { NOT_STARTED, IN_PROGRESS, FINISHED, CANCELLED }
+
+enum MatchMode { NORMAL, SUDDEN_DEATH_CHALLENGER, SUDDEN_DEATH_TIMEOUT }
+
+enum PhaseType { CHECKIN, POOL, DIRECT_ELIMINATION, CLASSIFICATION }
+
+enum TargetZone { ZONE_A, ZONE_B, ZONE_C }  // Laser Sabre: 1pt, 3pt, 5pt
+
+enum CardGroup { GROUP_1, GROUP_2, GROUP_3, GROUP_4 }  // Laser Sabre penalty groups
 ```
 
-Core interfaces: `Fencer`, `Competition`, `Pool`, `Match`, `PoolRanking` (all extend `BaseEntity` with id, createdAt, updatedAt).
+Core interfaces: `Fencer`, `Referee`, `Competition`, `Pool`, `Match`, `PoolRanking`
+(all extend `BaseEntity` with `id`, `createdAt`, `updatedAt`).
 
 ## Development Notes
 
-- Main process changes require Electron restart; renderer hot-reloads
+- Main process changes require Electron restart; renderer hot-reloads via Webpack
 - Remote score server and Webpack dev server both use port 8066 (référence à l'Ordre 66)
 - Pool calculations include special "Quest Points" system for Laser Sabre weapon
-- `@types/*` packages are in dependencies (not devDependencies) for Electron bundling
+- `@types/*` packages are in `dependencies` (not `devDependencies`) for Electron bundling
+- Window: 1400×900, min 1024×768; CSP enforced (no inline scripts)
+- Electron version: 40.x; React 19; Socket.IO 4.x; sql.js 1.13
 
 ## Git Conventions
 
 - Build commits: `🔖 Build #XXX`
 - Feature commits in French or English
 - CI/CD auto-increments build number in `version.json` on push to `main`
+- Branch prefix for AI: `claude/`
