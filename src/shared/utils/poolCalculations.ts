@@ -264,6 +264,16 @@ export function calculatePoolRanking(pool: Pool): PoolRanking[] {
     });
   }
 
+  // Pré-construire une Map de matchs directs pour éviter O(n) dans le comparateur
+  // Clé: `${idA}:${idB}` (les deux ordres sont stockés)
+  const directMatchMap = new Map<string, Match>();
+  for (const m of pool.matches) {
+    if (m.fencerA && m.fencerB && m.status === MatchStatus.FINISHED) {
+      directMatchMap.set(`${m.fencerA.id}:${m.fencerB.id}`, m);
+      directMatchMap.set(`${m.fencerB.id}:${m.fencerA.id}`, m);
+    }
+  }
+
   // Trier selon les critères demandés
   rankings.sort((a, b) => {
     // 1. Nombre de victoires (décroissant)
@@ -283,22 +293,12 @@ export function calculatePoolRanking(pool: Pool): PoolRanking[] {
       return b.index - a.index;
     }
 
-    // 4. Confrontation directe (si 2 tireurs à égalité)
-    const directMatch = pool.matches.find(
-      m =>
-        (m.fencerA?.id === a.fencer.id && m.fencerB?.id === b.fencer.id) ||
-        (m.fencerA?.id === b.fencer.id && m.fencerB?.id === a.fencer.id)
-    );
-
-    if (directMatch && directMatch.status === MatchStatus.FINISHED) {
+    // 4. Confrontation directe — O(1) grâce à la Map
+    const directMatch = directMatchMap.get(`${a.fencer.id}:${b.fencer.id}`);
+    if (directMatch) {
       const aIsFirst = directMatch.fencerA?.id === a.fencer.id;
       const aScore = aIsFirst ? directMatch.scoreA : directMatch.scoreB;
-
-      if (aScore?.isVictory) {
-        return -1;
-      } else {
-        return 1;
-      }
+      return aScore?.isVictory ? -1 : 1;
     }
 
     // En cas d'égalité parfaite, trier par classement initial
