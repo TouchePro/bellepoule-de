@@ -1,4 +1,22 @@
-# CLAUDE.md
+# CLAUDE.md ─ Instructions permanentes du projet
+
+## Règles générales (toujours actives)
+- Sois ultra-concis : pas d'intro, pas de résumé, pas de "j'ai analysé", pas de "voici"
+- Réponds majoritairement en **diff unifié** quand on parle de modification de fichier
+- Si aucun changement nécessaire → réponds **uniquement** "OK – à jour" ou "Aucun changement"
+- Jamais plus de 450 lignes de diff par réponse
+- Préfère Haiku 4.5 ou Sonnet 4.6 pour les tâches de doc (beaucoup moins cher)
+
+## Mise à jour documentation – mode activé par défaut
+Quand on te demande (ou implique) de mettre à jour la doc :
+1. Lis en priorité : README.md, docs/*.md, src/, .env.example
+2. Identifie uniquement les écarts réels code ↔ doc
+3. Supprime ce qui est promis mais non implémenté
+4. Corrige signatures, exemples, endpoints, variables d'environnement
+5. Ajoute **uniquement** ce qui manque et est critique pour comprendre le projet
+6. Réponds **exclusivement** avec des blocs `--- chemin/vers/fichier.md` suivis de diff
+
+---
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
