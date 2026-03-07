@@ -1127,6 +1127,11 @@ export class RemoteScoreServer {
         `[RemoteScoreServer] Émission match:finished pour ${finishedMatch.id}: ${finishedMatch.scoreA}-${finishedMatch.scoreB}`
       );
     }
+
+    // Charger automatiquement le match suivant après un délai (pour laisser le renderer traiter la fin)
+    setTimeout(() => {
+      this.loadNextMatch(arenaId);
+    }, 3000);
   }
 
   private loadNextMatch(arenaId: string): void {

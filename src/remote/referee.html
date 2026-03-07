@@ -1649,9 +1649,61 @@
         }
 
         handleArenaUpdate(data) {
-          // Mise à jour reçue du serveur (si besoin)
-          if (data.match && (!this.currentMatch || data.match.id !== this.currentMatch.id)) {
-            // Un autre match a été sélectionné
+          // Nouveau match prêt côté serveur (chargement automatique après fin de match)
+          if (data.status === 'ready' && data.match && data.match.id) {
+            // Ignorer si c'est déjà notre match actuel
+            if (this.currentMatch && this.currentMatch.id === data.match.id) return;
+            // Ne pas écraser un match en cours
+            if (this.matchStatus === 'in_progress') return;
+
+            const fencerA = data.fencerA || data.match.fencerA;
+            const fencerB = data.fencerB || data.match.fencerB;
+
+            const newMatch = {
+              id: data.match.id,
+              poolId: data.match.poolId,
+              fencerA,
+              fencerB,
+              scoreA: { value: 0 },
+              scoreB: { value: 0 },
+              status: 'not_started',
+            };
+
+            // Mettre à jour ou ajouter dans la liste locale
+            const existingIndex = this.matches.findIndex(m => m.id === newMatch.id);
+            if (existingIndex >= 0) {
+              this.matches[existingIndex] = { ...this.matches[existingIndex], status: 'not_started' };
+            } else {
+              this.matches.push(newMatch);
+            }
+
+            // Afficher automatiquement le prochain match
+            this.currentMatch = newMatch;
+            this.scoreA = 0;
+            this.scoreB = 0;
+            this.cardsA = [];
+            this.cardsB = [];
+            this.matchStatus = 'not_started';
+            this.timerSeconds = 180;
+            this.stopTimer();
+
+            document.getElementById('fencer-a-name').textContent =
+              `${fencerA?.lastName || ''} ${fencerA?.firstName || ''}`.trim();
+            document.getElementById('fencer-a-club').textContent = fencerA?.club || '';
+
+            document.getElementById('fencer-b-name').textContent =
+              `${fencerB?.lastName || ''} ${fencerB?.firstName || ''}`.trim();
+            document.getElementById('fencer-b-club').textContent = fencerB?.club || '';
+
+            this.updateScores();
+            this.updateCardsDisplay();
+            this.updateTimerDisplay();
+            this.updateMatchStatus();
+            this.updateControlButtons();
+            this.renderMatchesList();
+
+            document.getElementById('active-match').classList.add('visible');
+            this.showNotification('⏭️ Match suivant prêt !');
           }
         }
 
