@@ -8,6 +8,19 @@ import React, { useState, useEffect } from 'react';
 import { Fencer, PoolRanking } from '../../shared/types';
 import { useToast } from './Toast';
 import { useModalResize } from '../hooks/useModalResize';
+import Bracket from './Bracket';
+
+interface BracketMatch {
+  id: string;
+  round: number;
+  position: number;
+  fencerA: Fencer | null;
+  fencerB: Fencer | null;
+  scoreA: number | null;
+  scoreB: number | null;
+  winnerId?: string;
+  isBye?: boolean;
+}
 
 export interface TableauMatch {
   id: string;
@@ -66,6 +79,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   const [expandedRounds, setExpandedRounds] = useState<Set<number>>(new Set());
   const [showArenaModal, setShowArenaModal] = useState(false);
   const [selectedMatchForArena, setSelectedMatchForArena] = useState<string | null>(null);
+  const [pyramidViewMode, setPyramidViewMode] = useState<boolean>(false);
   const isUnlimitedScore = maxScore === 999;
 
   const { modalRef } = useModalResize({
@@ -915,6 +929,20 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     );
   };
 
+  const convertToBracketMatches = (): BracketMatch[] => {
+    return matches.map(match => ({
+      id: match.id,
+      round: Math.log2(tableauSize / match.round) + 1,
+      position: match.position,
+      fencerA: match.fencerA,
+      fencerB: match.fencerB,
+      scoreA: match.scoreA,
+      scoreB: match.scoreB,
+      winnerId: match.winner?.id,
+      isBye: match.isBye,
+    }));
+  };
+
   if (ranking.length === 0) {
     return (
       <div className="empty-state">
@@ -1071,6 +1099,25 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           >
             {viewMode === 'full' ? '📋 Matchs en attente' : '📊 Tableau complet'}
           </button>
+          <button
+            onClick={() => setPyramidViewMode(!pyramidViewMode)}
+            style={{
+              background: pyramidViewMode ? '#8b5cf6' : '#e5e7eb',
+              color: pyramidViewMode ? 'white' : '#374151',
+              border: 'none',
+              padding: '0.5rem 0.75rem',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+            }}
+            title={pyramidViewMode ? 'Vue tableau' : 'Vue pyramidale'}
+          >
+            {pyramidViewMode ? '🔲 Tableau' : '🔺 Pyramide'}
+          </button>
           {champion && (
             <div
               style={{
@@ -1177,6 +1224,8 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
               ✓ Tous les matches sont terminés
             </div>
           )
+        ) : pyramidViewMode ? (
+          <Bracket matches={convertToBracketMatches()} tableSize={tableauSize} />
         ) : (
           <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto' }}>
             {rounds.map(round => renderRound(round))}
