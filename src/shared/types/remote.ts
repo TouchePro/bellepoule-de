@@ -109,7 +109,7 @@ export interface ArenaSettings {
 
 export interface ArenaMatch {
   id: string;
-  poolId: string;
+  poolId?: string; // absent pour les matchs d'élimination directe
   fencerA: Fencer;
   fencerB: Fencer;
   scoreA: number;

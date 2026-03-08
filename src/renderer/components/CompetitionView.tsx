@@ -62,6 +62,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     content: string;
   } | null>(null);
   const [isRemoteActive, setIsRemoteActive] = useState(false);
+  const [remoteArenaCount, setRemoteArenaCount] = useState<number>(1);
   const [showThirdPlaceDialog, setShowThirdPlaceDialog] = useState(false);
   const [tableauMatches, setTableauMatches] = useState<TableauMatch[]>([]);
   const [finalResults, setFinalResults] = useState<FinalResult[]>([]);
@@ -114,6 +115,11 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     competition,
     showToast,
   });
+
+  // Synchroniser le nombre d'arènes avec le nombre de poules
+  useEffect(() => {
+    if (pools.length > 0) setRemoteArenaCount(pools.length);
+  }, [pools.length]);
 
   // Session state persistence
   const { isLoaded, restoredState } = useCompetitionSession({
@@ -710,6 +716,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             onMatchesChange={setTableauMatches}
             maxScore={tableMaxScore === 0 ? 999 : tableMaxScore}
             thirdPlaceMatch={thirdPlaceMatch}
+            arenaCount={remoteArenaCount}
             onComplete={results => {
               setFinalResults(results);
               setCurrentPhase('results');
@@ -729,6 +736,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
           <RemoteScoreManager
             competition={competition}
             pools={pools}
+            tableauMatches={tableauMatches}
+            onArenaCountChange={setRemoteArenaCount}
             onStartRemote={() => setIsRemoteActive(true)}
             onStopRemote={() => setIsRemoteActive(false)}
             isRemoteActive={isRemoteActive}

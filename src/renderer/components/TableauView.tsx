@@ -1538,9 +1538,9 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                   -
                 </button>
                 {Array.from({ length: arenaCount }, (_, i) => i + 1).map(arenaNum => {
-                  const isAssigned = matches.some(
-                    m => m.arena === arenaNum && m.id !== selectedMatchForArena
-                  );
+                  const queueCount = matches.filter(
+                    m => m.arena === arenaNum && m.id !== selectedMatchForArena && m.status !== 'finished'
+                  ).length;
                   return (
                     <button
                       key={arenaNum}
@@ -1553,13 +1553,14 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                         setShowArenaModal(false);
                         setSelectedMatchForArena(null);
                       }}
-                      disabled={isAssigned}
-                      style={{
-                        padding: '0.75rem',
-                        opacity: isAssigned ? 0.5 : 1,
-                      }}
+                      style={{ padding: '0.75rem', position: 'relative' }}
                     >
                       Piste {arenaNum}
+                      {queueCount > 0 && (
+                        <span style={{ fontSize: '0.7rem', marginLeft: '0.3rem', color: '#6b7280' }}>
+                          (+{queueCount})
+                        </span>
+                      )}
                     </button>
                   );
                 })}

@@ -6,11 +6,14 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Competition, Pool } from '../../shared/types';
+import { TableauMatch } from './TableauView';
 import { useToast } from './Toast';
 
 interface RemoteScoreManagerProps {
   competition: Competition;
   pools: Pool[];
+  tableauMatches?: TableauMatch[];
+  onArenaCountChange?: (count: number) => void;
   onStartRemote: () => void;
   onStopRemote: () => void;
   isRemoteActive?: boolean;
@@ -31,6 +34,8 @@ interface RemoteSession {
 const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   competition,
   pools,
+  tableauMatches,
+  onArenaCountChange,
   onStartRemote,
   onStopRemote,
   isRemoteActive = false,
@@ -87,8 +92,18 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
 
   const startSession = async (baseUrl: string, count: number) => {
     try {
-      const allMatches = pools.flatMap(pool => pool.matches || []);
-      console.log('[RemoteScoreManager] Passing matches to server:', allMatches.length);
+      const poolMatches = pools.flatMap(pool => pool.matches || []);
+      const deMatches = (tableauMatches || [])
+        .filter(m => m.status !== 'finished' && m.fencerA && m.fencerB)
+        .map(m => ({ ...m, isTableau: true }));
+      const allMatches = [...poolMatches, ...deMatches];
+      console.log(
+        '[RemoteScoreManager] Passing matches to server:',
+        poolMatches.length,
+        'pool +',
+        deMatches.length,
+        'DE'
+      );
       const result = await window.electronAPI.remote.startSession(
         competition.id,
         count,
@@ -96,6 +111,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       );
       if (result.success && result.session) {
         setSession(result.session);
+        onArenaCountChange?.(count);
         showToast('Saisie distante démarrée', 'success');
       } else {
         showToast(`Erreur session: ${result.error}`, 'error');
@@ -113,6 +129,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       if (result.success && result.session) {
         setSession(result.session);
         setStripCount(newCount);
+        onArenaCountChange?.(newCount);
       } else {
         showToast(`Erreur: ${result.error}`, 'error');
       }
