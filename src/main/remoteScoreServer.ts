@@ -33,6 +33,7 @@ export class RemoteScoreServer {
   private sessionWeapon: string | null = null; // Type d'arme de la compétition (L = Laser)
   private sessionMatches: any[] = []; // Matches passés depuis le renderer
   private arenaNextMatchIndex: Map<string, number> = new Map(); // Index du prochain match par arène
+  private arenaMatchQueue: Map<string, ArenaMatch[]> = new Map(); // File d'attente DE par arène
 
   // Stocker le contenu des fichiers HTML en mémoire pour éviter les problèmes de chemin
   private htmlFiles: Map<string, string> = new Map();
@@ -946,6 +947,7 @@ export class RemoteScoreServer {
         },
       };
       this.arenas.set(arena.id, arena);
+      this.arenaMatchQueue.set(arena.id, []);
       console.log(`[RemoteScoreServer] Arène ${i} créée ✓`);
     }
     console.log(`[RemoteScoreServer] ${arenaCount} arènes initialisées avec succès ✓`);
@@ -1232,7 +1234,17 @@ export class RemoteScoreServer {
       );
     }
 
-    // Pas de match suivant dans le même pool - marquer l'arène comme vide
+    // Vérifier la file d'attente DE avant de marquer l'arène comme vide
+    const deQueue = this.arenaMatchQueue.get(arenaId) || [];
+    if (deQueue.length > 0) {
+      const nextDeMatch = deQueue[0];
+      this.arenaMatchQueue.set(arenaId, deQueue.slice(1));
+      console.log(`[RemoteScoreServer] Match DE suivant ${nextDeMatch.id} chargé depuis la file sur arène ${arenaId}`);
+      this.assignMatchToArena(arenaId, nextDeMatch);
+      return;
+    }
+
+    // Plus aucun match - marquer l'arène comme vide
     arena.currentMatch = null;
     arena.status = 'idle';
     arena.startTime = null;
@@ -1420,6 +1432,48 @@ export class RemoteScoreServer {
       );
 
       poolIndex++;
+    }
+
+    // Distribuer les matchs d'élimination directe (sans poolId) dans les files par arène
+    const deMatches = allMatches
+      .filter(m => !m.poolId && (m.round !== undefined || m.isTableau))
+      .sort((a: any, b: any) => (a.round || 0) - (b.round || 0));
+
+    if (deMatches.length > 0) {
+      console.log(`[RemoteScoreServer] ${deMatches.length} matchs DE à distribuer sur ${strips} arènes`);
+      let rrIndex = 0;
+      const queuesByArena = new Map<string, ArenaMatch[]>();
+      for (let i = 1; i <= strips; i++) queuesByArena.set(`arena${i}`, []);
+
+      for (const match of deMatches) {
+        const targetArenaId = match.arena
+          ? `arena${match.arena}`
+          : `arena${(rrIndex % strips) + 1}`;
+        if (!queuesByArena.has(targetArenaId)) {
+          // arène hors plage → round-robin sur arènes disponibles
+          const fallbackId = `arena${(rrIndex % strips) + 1}`;
+          queuesByArena.get(fallbackId)!.push({ id: match.id, fencerA: match.fencerA, fencerB: match.fencerB, scoreA: 0, scoreB: 0, status: 'not_started', startTime: null, endTime: null });
+        } else {
+          queuesByArena.get(targetArenaId)!.push({ id: match.id, fencerA: match.fencerA, fencerB: match.fencerB, scoreA: 0, scoreB: 0, status: 'not_started', startTime: null, endTime: null });
+        }
+        rrIndex++;
+      }
+
+      for (const [arenaId, queue] of queuesByArena) {
+        const arena = this.arenas.get(arenaId);
+        if (!arena) continue;
+        if (!arena.currentMatch && queue.length > 0) {
+          // Arène libre → charger le premier match directement
+          this.assignMatchToArena(arenaId, queue[0]);
+          this.arenaMatchQueue.set(arenaId, queue.slice(1));
+          console.log(`[RemoteScoreServer] Match DE ${queue[0].id} chargé sur arène ${arenaId}, ${queue.length - 1} en file`);
+        } else {
+          // Arène occupée (match de poule en cours) → tout en file
+          const existing = this.arenaMatchQueue.get(arenaId) || [];
+          this.arenaMatchQueue.set(arenaId, [...existing, ...queue]);
+          console.log(`[RemoteScoreServer] ${queue.length} matchs DE mis en file sur arène ${arenaId}`);
+        }
+      }
     }
 
     // Créer la session - utiliser allMatches au lieu de pendingMatches
