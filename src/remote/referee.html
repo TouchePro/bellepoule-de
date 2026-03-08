@@ -297,6 +297,13 @@
         color: #16a34a;
       }
 
+      .score-display.not-started {
+        color: #16a34a !important;
+        background-color: rgba(22, 163, 74, 0.12);
+        border-radius: 10px;
+        padding: 0.15rem 0.6rem;
+      }
+
       /* Boutons de score */
       .score-buttons {
         display: grid;
@@ -1436,8 +1443,19 @@
         }
 
         updateScores() {
-          document.getElementById('score-a').textContent = this.scoreA;
-          document.getElementById('score-b').textContent = this.scoreB;
+          const scoreAEl = document.getElementById('score-a');
+          const scoreBEl = document.getElementById('score-b');
+          if (this.matchStatus === 'not_started') {
+            scoreAEl.textContent = '–';
+            scoreBEl.textContent = '–';
+            scoreAEl.classList.add('not-started');
+            scoreBEl.classList.add('not-started');
+          } else {
+            scoreAEl.textContent = this.scoreA;
+            scoreBEl.textContent = this.scoreB;
+            scoreAEl.classList.remove('not-started');
+            scoreBEl.classList.remove('not-started');
+          }
         }
 
         updateCardsDisplay() {
@@ -1570,6 +1588,7 @@
 
           this.matchStatus = 'in_progress';
           this.startTimer();
+          this.updateScores();
           this.updateMatchStatus();
           this.updateControlButtons();
           this.saveScore();
