@@ -876,7 +876,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     // k = nombre de créneaux de la première colonne couverts par ce match
     const k = baseRound / matchRound;
     // Centre ce match verticalement dans ses k créneaux
-    return Math.max(0, (matchPosition - 0.5) * k * SLOT_HEIGHT - BASE_MATCH_HEIGHT / 2);
+    return (matchPosition + 0.5) * k * SLOT_HEIGHT - BASE_MATCH_HEIGHT / 2;
   };
 
   const getMatchPosition = (match: TableauMatch): number => {
