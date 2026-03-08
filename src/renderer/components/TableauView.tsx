@@ -56,7 +56,7 @@ interface TableauViewProps {
 }
 
 const BASE_MATCH_HEIGHT = 80;
-const SLOT_HEIGHT = BASE_MATCH_HEIGHT + 8; // hauteur d'un créneau dans la première colonne
+const SLOT_HEIGHT = BASE_MATCH_HEIGHT + 16; // hauteur d'un créneau dans la première colonne
 
 const TableauViewComponent: React.FC<TableauViewProps> = ({
   ranking,
