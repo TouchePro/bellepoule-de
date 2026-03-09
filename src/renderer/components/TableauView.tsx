@@ -9,6 +9,10 @@ import { Fencer, PoolRanking } from '../../shared/types';
 import { useToast } from './Toast';
 import { useModalResize } from '../hooks/useModalResize';
 import Bracket from './Bracket';
+import {
+  exportTableauToPDF,
+  MAX_MATCHES_PER_PAGE_TABLEAU,
+} from '../../shared/utils/pdfExport';
 
 interface BracketMatch {
   id: string;
@@ -81,6 +85,8 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   const [showArenaModal, setShowArenaModal] = useState(false);
   const [selectedMatchForArena, setSelectedMatchForArena] = useState<string | null>(null);
   const [pyramidViewMode, setPyramidViewMode] = useState<boolean>(false);
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  const [pdfMatchesPerPage, setPdfMatchesPerPage] = useState<number>(MAX_MATCHES_PER_PAGE_TABLEAU);
   const isUnlimitedScore = maxScore === 999;
 
   const { modalRef } = useModalResize({
@@ -483,6 +489,17 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     setVictoryA(false);
     setVictoryB(false);
     setShowScoreModal(true);
+  };
+
+  const handleExportPDF = async () => {
+    const perPage = Math.max(1, Math.min(pdfMatchesPerPage, MAX_MATCHES_PER_PAGE_TABLEAU));
+    const title = `Tableau de ${tableauSize}`;
+    try {
+      await exportTableauToPDF(matches, perPage, title);
+      setShowPdfModal(false);
+    } catch (e) {
+      showToast((e as Error).message, 'error');
+    }
   };
 
   const handleSpecialStatus = (status: 'abandon' | 'forfait' | 'exclusion') => {
@@ -1131,6 +1148,25 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           >
             {pyramidViewMode ? '🔲 Tableau' : '🔺 Pyramide'}
           </button>
+          <button
+            onClick={() => setShowPdfModal(true)}
+            style={{
+              background: '#10b981',
+              color: 'white',
+              border: 'none',
+              padding: '0.5rem 0.75rem',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+            }}
+            title="Exporter les feuilles de match en PDF"
+          >
+            📄 Export PDF
+          </button>
           {champion && (
             <div
               style={{
@@ -1506,6 +1542,75 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
         return scoreModal;
       })()}
+
+      {showPdfModal && (
+        <div className="modal-overlay" onClick={() => setShowPdfModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+            <div className="modal-header">
+              <h3 className="modal-title">Export PDF – Feuilles de match</h3>
+              <button className="btn-close" onClick={() => setShowPdfModal(false)}>
+                &times;
+              </button>
+            </div>
+            <div className="modal-body" style={{ padding: '1.5rem' }}>
+              <p style={{ marginBottom: '1rem', color: '#6b7280', fontSize: '0.875rem' }}>
+                Chaque fiche contient le nom complet des combattants, une case score et une case
+                signature.
+              </p>
+              <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem' }}>
+                Matchs par feuille A4{' '}
+                <span style={{ fontWeight: '400', color: '#6b7280' }}>
+                  (max {MAX_MATCHES_PER_PAGE_TABLEAU})
+                </span>
+              </label>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                {Array.from({ length: MAX_MATCHES_PER_PAGE_TABLEAU }, (_, i) => i + 1).map(n => (
+                  <button
+                    key={n}
+                    onClick={() => setPdfMatchesPerPage(n)}
+                    style={{
+                      flex: 1,
+                      padding: '0.6rem',
+                      background: pdfMatchesPerPage === n ? '#10b981' : '#e5e7eb',
+                      color: pdfMatchesPerPage === n ? 'white' : '#374151',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      fontSize: '1rem',
+                    }}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+              <p style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: '#9ca3af' }}>
+                {matches.filter(m => !m.isBye && m.fencerA && m.fencerB).length} matchs →{' '}
+                {Math.ceil(
+                  matches.filter(m => !m.isBye && m.fencerA && m.fencerB).length / pdfMatchesPerPage
+                )}{' '}
+                feuille
+                {Math.ceil(
+                  matches.filter(m => !m.isBye && m.fencerA && m.fencerB).length / pdfMatchesPerPage
+                ) > 1
+                  ? 's'
+                  : ''}
+              </p>
+            </div>
+            <div
+              className="modal-footer"
+              style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}
+            >
+              <button className="btn btn-secondary" onClick={() => setShowPdfModal(false)}>
+                Annuler
+              </button>
+              <button className="btn btn-primary" onClick={handleExportPDF}>
+                Générer PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showArenaModal && selectedMatchForArena && (
         <div className="modal-overlay" onClick={() => setShowArenaModal(false)}>
