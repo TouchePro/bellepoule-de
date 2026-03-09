@@ -1101,6 +1101,10 @@
           this.socket.on(`arena:${this.arenaId}:update`, data => {
             this.handleArenaUpdate(data);
           });
+
+          this.socket.on(`arena:${this.arenaId}:score_limit_reached`, () => {
+            this.showFinishModal();
+          });
         }
 
         setupTimerInteractions() {

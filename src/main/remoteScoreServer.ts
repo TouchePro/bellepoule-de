@@ -1087,11 +1087,11 @@ export class RemoteScoreServer {
 
     if (scoreReached15A || scoreReached15B) {
       console.log(
-        `[RemoteScoreServer] Score de ${SCORE_LIMIT_LASER} atteint en Laser Sabre - Arrêt automatique du match`
+        `[RemoteScoreServer] Score de ${SCORE_LIMIT_LASER} atteint en Laser Sabre - Signal score_limit_reached envoyé à l'arbitre`
       );
 
-      // Terminer le match
-      this.finishArenaMatch(arenaId);
+      // Signaler la tablette arbitre pour afficher la fenêtre de confirmation
+      this.io.emit(`arena:${arenaId}:score_limit_reached`, { scoreA, scoreB });
     }
   }
 
