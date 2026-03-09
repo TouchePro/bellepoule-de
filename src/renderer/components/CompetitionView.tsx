@@ -379,18 +379,20 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   };
 
   // Phases dynamiques
+  const isResultsLocked = hasDirectElimination && finalResults.length === 0;
   const phases = [
-    { id: 'checkin', label: 'Appel', icon: '📋' },
-    { id: 'poolprep', label: 'Préparation', icon: '⚙️' },
+    { id: 'checkin', label: 'Appel', icon: '📋', disabled: false },
+    { id: 'poolprep', label: 'Préparation', icon: '⚙️', disabled: false },
     {
       id: 'pools',
       label: poolRounds > 1 ? `Poules (${currentPoolRound}/${poolRounds})` : 'Poules',
       icon: '🎯',
+      disabled: false,
     },
-    { id: 'ranking', label: 'Classement', icon: '📊' },
-    ...(hasDirectElimination ? [{ id: 'tableau', label: 'Tableau', icon: '🏆' }] : []),
-    { id: 'results', label: 'Résultats', icon: '🏁' },
-    { id: 'remote', label: '📡 Saisie distante', icon: '📡' },
+    { id: 'ranking', label: 'Classement', icon: '📊', disabled: false },
+    ...(hasDirectElimination ? [{ id: 'tableau', label: 'Tableau', icon: '🏆', disabled: false }] : []),
+    { id: 'results', label: 'Résultats', icon: '🏁', disabled: isResultsLocked },
+    { id: 'remote', label: '📡 Saisie distante', icon: '📡', disabled: false },
   ];
 
   const canAdvanceFromPools = pools.length > 0 && areAllPoolsComplete();
@@ -558,8 +560,9 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         {phases.map((phase, index) => (
           <React.Fragment key={phase.id}>
             <div
-              className={`phase-step ${currentPhase === phase.id ? 'phase-step-active' : ''}`}
-              onClick={() => setCurrentPhase(phase.id as Phase)}
+              className={`phase-step ${currentPhase === phase.id ? 'phase-step-active' : ''} ${phase.disabled ? 'phase-step-disabled' : ''}`}
+              onClick={() => !phase.disabled && setCurrentPhase(phase.id as Phase)}
+              title={phase.disabled ? 'Terminez le tableau d\'élimination pour accéder aux résultats' : undefined}
             >
               <span className="phase-step-number">{phase.icon}</span>
               <span>{phase.label}</span>
