@@ -76,74 +76,6 @@
         max-width: 100%;
       }
 
-      /* Sélection de match */
-      .match-selector {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 1rem;
-        padding: 1rem;
-        margin-bottom: 1rem;
-      }
-
-      .match-selector h2 {
-        font-size: 1rem;
-        margin-bottom: 0.75rem;
-        opacity: 0.9;
-      }
-
-      .matches-list {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-        max-height: 200px;
-        overflow-y: auto;
-      }
-
-      .match-item {
-        background: rgba(255, 255, 255, 0.15);
-        padding: 0.75rem;
-        border-radius: 0.5rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        cursor: pointer;
-        transition: all 0.2s;
-        border: 2px solid transparent;
-      }
-
-      .match-item:hover {
-        background: rgba(255, 255, 255, 0.25);
-      }
-
-      .match-item.active {
-        background: rgba(34, 197, 94, 0.3);
-        border-color: #22c55e;
-      }
-
-      .match-item.finished {
-        background: rgba(107, 114, 128, 0.3);
-        opacity: 0.6;
-      }
-
-      .match-info {
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-      }
-
-      .match-fencers {
-        font-weight: 600;
-        font-size: 0.9rem;
-      }
-
-      .match-status {
-        font-size: 0.75rem;
-        opacity: 0.8;
-      }
-
-      .match-score {
-        font-size: 1.25rem;
-        font-weight: 700;
-      }
 
       /* Panneau de match actif */
       .active-match {
@@ -686,14 +618,6 @@
     </div>
 
     <div class="main-container">
-      <!-- Sélecteur de match -->
-      <div class="match-selector" id="match-selector">
-        <h2>📋 Matchs de la poule</h2>
-        <div class="matches-list" id="matches-list">
-          <div class="match-item">Chargement...</div>
-        </div>
-      </div>
-
       <!-- Match actif -->
       <div class="active-match" id="active-match">
         <div class="fencers-container">
@@ -841,9 +765,9 @@
         </div>
       </div>
 
-      <!-- Écran prochains matchs -->
+      <!-- Écran de sélection de match -->
       <div class="next-matches-screen" id="next-matches-screen">
-        <h2>⏭️ Prochains matchs — Arène <span id="next-arena-number">1</span></h2>
+        <h2>📋 Matchs — Arène <span id="next-arena-number">1</span></h2>
         <div id="next-matches-list">
           <div class="next-matches-empty">Chargement...</div>
         </div>
@@ -913,7 +837,7 @@
           this.setupSocketListeners();
           this.setupTimerInteractions();
           this.setupLongPressInteractions();
-          this.loadMatches();
+          this.showNextMatchesScreen();
         }
 
         setupLongPressInteractions() {
@@ -1170,81 +1094,11 @@
           }
         }
 
-        async loadMatches() {
-          const container = document.getElementById('matches-list');
-          try {
-            const response = await fetch(`/api/arenas/${this.arenaId}/matches`);
-
-            if (response.status === 404) {
-              // Pas de session active — réessayer dans 3s
-              container.innerHTML = '<div class="match-item">En attente de la session...</div>';
-              setTimeout(() => this.loadMatches(), 3000);
-              return;
-            }
-
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-            const data = await response.json();
-            this.matches = data.matches || [];
-            this.poolId = data.poolId;
-            this.renderMatchesList();
-          } catch (error) {
-            console.error('Erreur chargement matchs:', error);
-            container.innerHTML = '<div class="match-item">Erreur de connexion — réessai...</div>';
-            setTimeout(() => this.loadMatches(), 5000);
-          }
-        }
-
-        renderMatchesList() {
-          const container = document.getElementById('matches-list');
-
-          if (this.matches.length === 0) {
-            container.innerHTML = '<div class="match-item">Aucun match</div>';
-            return;
-          }
-
-          container.innerHTML = this.matches
-            .map(match => {
-              const isActive = this.currentMatch && this.currentMatch.id === match.id;
-              const isFinished = match.status === 'finished';
-              const scoreA = match.scoreA?.value ?? 0;
-              const scoreB = match.scoreB?.value ?? 0;
-
-              return `
-                        <div class="match-item ${isActive ? 'active' : ''} ${isFinished ? 'finished' : ''}" 
-                             onclick="refereeApp.selectMatch('${match.id}')">
-                            <div class="match-info">
-                                <div class="match-fencers">
-                                    ${match.fencerA?.lastName || '?'} vs ${match.fencerB?.lastName || '?'}
-                                </div>
-                                <div class="match-status">
-                                    ${this.getStatusLabel(match.status)}
-                                </div>
-                            </div>
-                            <div class="match-score">
-                                ${isFinished || isActive ? `${scoreA}-${scoreB}` : '•'}
-                            </div>
-                        </div>
-                    `;
-            })
-            .join('');
-        }
-
-        getStatusLabel(status) {
-          const labels = {
-            not_started: '⏳ En attente',
-            in_progress: '🏃 En cours',
-            finished: '✅ Terminé',
-          };
-          return labels[status] || status;
-        }
 
         selectMatch(matchId) {
           const match = this.matches.find(m => m.id === matchId);
           if (!match || match.status === 'finished') return;
 
-          // Masquer le sélecteur et l'écran des prochains matchs
-          document.getElementById('match-selector').style.display = 'none';
           this.hideNextMatchesScreen();
 
           this.currentMatch = match;
@@ -1270,7 +1124,6 @@
           this.updateTimerDisplay();
           this.updateMatchStatus();
           this.updateControlButtons();
-          this.renderMatchesList();
 
           // Afficher le panneau de match
           document.getElementById('active-match').classList.add('visible');
@@ -1547,11 +1400,6 @@
           this.updateControlButtons();
           this.saveScore();
 
-          // Mettre à jour le match dans la liste
-          const match = this.matches.find(m => m.id === this.currentMatch.id);
-          if (match) match.status = 'in_progress';
-          this.renderMatchesList();
-
           this.socket.emit('arena_control', {
             arenaId: this.arenaId,
             action: 'start',
@@ -1591,15 +1439,6 @@
               }),
             });
 
-            // Mettre à jour le match dans la liste
-            const match = this.matches.find(m => m.id === this.currentMatch.id);
-            if (match) {
-              match.status = 'finished';
-              match.scoreA = { value: this.scoreA };
-              match.scoreB = { value: this.scoreB };
-            }
-
-            this.renderMatchesList();
             this.updateMatchStatus();
             this.updateControlButtons();
 
@@ -1712,46 +1551,13 @@
               this.matches.push(newMatch);
             }
 
-            // Si l'écran des prochains matchs est visible, rafraîchir la liste sans auto-sélectionner
-            const nextScreen = document.getElementById('next-matches-screen');
-            if (nextScreen && nextScreen.classList.contains('visible')) {
-              this.loadNextMatches();
-              this.showNotification('⏭️ Match suivant disponible !');
-              return;
-            }
-
-            // Afficher automatiquement le prochain match (comportement hors écran next-matches)
-            this.currentMatch = newMatch;
-            this.scoreA = 0;
-            this.scoreB = 0;
-            this.cardsA = [];
-            this.cardsB = [];
-            this.matchStatus = 'not_started';
-            this.timerSeconds = 180;
-            this.stopTimer();
-
-            document.getElementById('fencer-a-name').textContent =
-              `${fencerA?.lastName || ''} ${fencerA?.firstName || ''}`.trim();
-            document.getElementById('fencer-a-club').textContent = fencerA?.club || '';
-
-            document.getElementById('fencer-b-name').textContent =
-              `${fencerB?.lastName || ''} ${fencerB?.firstName || ''}`.trim();
-            document.getElementById('fencer-b-club').textContent = fencerB?.club || '';
-
-            this.updateScores();
-            this.updateCardsDisplay();
-            this.updateTimerDisplay();
-            this.updateMatchStatus();
-            this.updateControlButtons();
-            this.renderMatchesList();
-
-            document.getElementById('active-match').classList.add('visible');
-            this.showNotification('⏭️ Match suivant prêt !');
+            // Toujours rafraîchir l'écran de sélection sans auto-sélectionner
+            this.loadNextMatches();
+            this.showNotification('⏭️ Match suivant disponible !');
           }
         }
 
         showNextMatchesScreen() {
-          document.getElementById('match-selector').style.display = 'none';
           document.getElementById('next-matches-screen').classList.add('visible');
           this.loadNextMatches();
         }
