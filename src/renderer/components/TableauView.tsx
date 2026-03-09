@@ -1539,7 +1539,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                 </button>
                 {Array.from({ length: arenaCount }, (_, i) => i + 1).map(arenaNum => {
                   const queueCount = matches.filter(
-                    m => m.arena === arenaNum && m.id !== selectedMatchForArena && m.status !== 'finished'
+                    m => m.arena === arenaNum && m.id !== selectedMatchForArena && m.winner === null
                   ).length;
                   return (
                     <button

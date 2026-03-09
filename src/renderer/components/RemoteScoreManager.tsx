@@ -94,7 +94,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     try {
       const poolMatches = pools.flatMap(pool => pool.matches || []);
       const deMatches = (tableauMatches || [])
-        .filter(m => m.status !== 'finished' && m.fencerA && m.fencerB)
+        .filter(m => m.winner === null && m.fencerA && m.fencerB)
         .map(m => ({ ...m, isTableau: true }));
       const allMatches = [...poolMatches, ...deMatches];
       console.log(
