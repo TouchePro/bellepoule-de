@@ -610,6 +610,16 @@ body {
   color: #065f46;
 }
 
+.phase-step-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: auto;
+}
+
+.phase-step-disabled:hover {
+  background: transparent;
+}
+
 .phase-step-number {
   width: 24px;
   height: 24px;
