@@ -80,6 +80,9 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   // Flag pour indiquer si le classement a changé (nécessite régénération du tableau)
   const [rankingChanged, setRankingChanged] = useState(false);
 
+  // Flag pour indiquer si le classement a été validé (débloque l'onglet Tableau)
+  const [rankingValidated, setRankingValidated] = useState(false);
+
   // Hooks personnalisés
   const {
     fencers,
@@ -290,6 +293,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   };
 
   const handleGoToTableau = () => {
+    setRankingValidated(true);
     const ranking = computeOverallRanking(pools);
     setOverallRanking(ranking);
 
@@ -379,24 +383,43 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   };
 
   // Phases dynamiques
+  const canAdvanceFromPools = pools.length > 0 && areAllPoolsComplete();
+  const isLastPoolRound = currentPoolRound >= poolRounds;
   const isResultsLocked = hasDirectElimination && finalResults.length === 0;
+  const isTableauUnlocked = canAdvanceFromPools && rankingValidated;
+
+  // Réinitialiser la validation du classement si les poules ne sont plus toutes terminées
+  useEffect(() => {
+    if (!canAdvanceFromPools) {
+      setRankingValidated(false);
+    }
+  }, [canAdvanceFromPools]);
+
   const phases = [
-    { id: 'checkin', label: 'Appel', icon: '📋', disabled: false },
-    { id: 'poolprep', label: 'Préparation', icon: '⚙️', disabled: false },
+    { id: 'checkin', label: 'Appel', icon: '📋', disabled: false, title: undefined as string | undefined },
+    { id: 'poolprep', label: 'Préparation', icon: '⚙️', disabled: false, title: undefined as string | undefined },
     {
       id: 'pools',
       label: poolRounds > 1 ? `Poules (${currentPoolRound}/${poolRounds})` : 'Poules',
       icon: '🎯',
       disabled: false,
+      title: undefined as string | undefined,
     },
-    { id: 'ranking', label: 'Classement', icon: '📊', disabled: false },
-    ...(hasDirectElimination ? [{ id: 'tableau', label: 'Tableau', icon: '🏆', disabled: false }] : []),
-    { id: 'results', label: 'Résultats', icon: '🏁', disabled: isResultsLocked },
-    { id: 'remote', label: '📡 Saisie distante', icon: '📡', disabled: false },
+    { id: 'ranking', label: 'Classement', icon: '📊', disabled: false, title: undefined as string | undefined },
+    ...(hasDirectElimination
+      ? [{
+          id: 'tableau',
+          label: 'Tableau',
+          icon: '🏆',
+          disabled: !isTableauUnlocked,
+          title: !isTableauUnlocked
+            ? 'Terminez toutes les poules et validez le classement pour accéder au tableau'
+            : undefined as string | undefined,
+        }]
+      : []),
+    { id: 'results', label: 'Résultats', icon: '🏁', disabled: isResultsLocked, title: undefined as string | undefined },
+    { id: 'remote', label: '📡 Saisie distante', icon: '📡', disabled: false, title: undefined as string | undefined },
   ];
-
-  const canAdvanceFromPools = pools.length > 0 && areAllPoolsComplete();
-  const isLastPoolRound = currentPoolRound >= poolRounds;
 
   const getPoolsNextAction = () => {
     if (!canAdvanceFromPools) return null;
@@ -562,7 +585,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             <div
               className={`phase-step ${currentPhase === phase.id ? 'phase-step-active' : ''} ${phase.disabled ? 'phase-step-disabled' : ''}`}
               onClick={() => !phase.disabled && setCurrentPhase(phase.id as Phase)}
-              title={phase.disabled ? 'Terminez le tableau d\'élimination pour accéder aux résultats' : undefined}
+              title={phase.title ?? (phase.disabled ? 'Section non disponible' : undefined)}
             >
               <span className="phase-step-number">{phase.icon}</span>
               <span>{phase.label}</span>
