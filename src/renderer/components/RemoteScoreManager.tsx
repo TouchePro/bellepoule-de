@@ -17,6 +17,7 @@ interface RemoteScoreManagerProps {
   onStartRemote: () => void;
   onStopRemote: () => void;
   isRemoteActive?: boolean;
+  initialStripCount?: number;
 }
 
 interface RemoteSession {
@@ -39,35 +40,45 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   onStartRemote,
   onStopRemote,
   isRemoteActive = false,
+  initialStripCount,
 }) => {
   const { showToast } = useToast();
   const [session, setSession] = useState<RemoteSession | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [serverUrl, setServerUrl] = useState<string>('http://localhost:8066');
-  const [stripCount, setStripCount] = useState<number | null>(null);
+  // pendingCount : valeur affichée (modifiée par +/−, non encore appliquée)
+  const [pendingCount, setPendingCount] = useState<number | null>(null);
+  // committedCount : valeur appliquée au serveur ou confirmée par l'utilisateur
+  const [committedCount, setCommittedCount] = useState<number | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
-  // Définir le nombre de pistes par défaut = nombre de poules
+  // Initialisation : priorité à initialStripCount (persisté depuis parent), puis nombre de poules
   useEffect(() => {
-    if (pools && pools.length > 0 && stripCount === null) {
-      setStripCount(pools.length);
-      console.log('[RemoteScoreManager] Nombre de pistes défini depuis les props:', pools.length);
-    }
-  }, [pools, stripCount]);
+    if (pendingCount !== null) return;
+    const initial = initialStripCount ?? (pools.length > 0 ? pools.length : 1);
+    setPendingCount(initial);
+    setCommittedCount(initial);
+  }, [initialStripCount, pools.length]);
 
-  // Valeur par défaut si pas de poules
+  const effectivePending = pendingCount ?? pools.length ?? 1;
+  const effectiveCommitted = committedCount ?? pools.length ?? 1;
+  const hasPendingChanges = effectivePending !== effectiveCommitted;
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (stripCount === null) {
-      setStripCount(1);
-    }
-  }, [stripCount]);
-
-  const effectiveStripCount = stripCount ?? 1;
-
-  useEffect(() => {
-    if (isRemoteActive) {
-      startRemoteServer();
-    }
+    if (!isRemoteActive) return;
+    // Si une session est déjà active (retour sur l'onglet après navigation), on reconnecte
+    // sans redémarrer le serveur pour ne pas perdre l'état des pistes configurées.
+    window.electronAPI.remote.getSession().then((result: any) => {
+      if (result.success && result.session) {
+        setSession(result.session);
+        const existingCount = result.session.strips.length;
+        setPendingCount(existingCount);
+        setCommittedCount(existingCount);
+      } else {
+        startRemoteServer();
+      }
+    });
   }, [isRemoteActive]);
 
   const startRemoteServer = async () => {
@@ -77,8 +88,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
 
       if (result.success && result.serverInfo) {
         setServerUrl(result.serverInfo.url);
-        // Auto-démarrer la session
-        await startSession(result.serverInfo.url, effectiveStripCount);
+        await startSession(result.serverInfo.url, effectivePending);
       } else {
         showToast(`Erreur: ${result.error || 'Impossible de démarrer le serveur'}`, 'error');
       }
@@ -111,6 +121,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       );
       if (result.success && result.session) {
         setSession(result.session);
+        setCommittedCount(count);
         onArenaCountChange?.(count);
         showToast('Saisie distante démarrée', 'success');
       } else {
@@ -121,20 +132,30 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     }
   };
 
-  const handleUpdateStripCount = async (newCount: number) => {
+  const handleSaveStripCount = async () => {
+    const newCount = effectivePending;
     if (newCount < 1 || newCount > 20) return;
 
-    try {
-      const result = await window.electronAPI.remote.updateStripCount(newCount);
-      if (result.success && result.session) {
-        setSession(result.session);
-        setStripCount(newCount);
-        onArenaCountChange?.(newCount);
-      } else {
-        showToast(`Erreur: ${result.error}`, 'error');
+    if (session) {
+      // Serveur actif : appliquer via IPC
+      try {
+        const result = await window.electronAPI.remote.updateStripCount(newCount);
+        if (result.success && result.session) {
+          setSession(result.session);
+          setCommittedCount(newCount);
+          onArenaCountChange?.(newCount);
+          showToast('Nombre de pistes mis à jour', 'success');
+        } else {
+          showToast(`Erreur: ${result.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Failed to update strip count:', error);
       }
-    } catch (error) {
-      console.error('Failed to update strip count:', error);
+    } else {
+      // Serveur non démarré : persister la préférence
+      setCommittedCount(newCount);
+      onArenaCountChange?.(newCount);
+      showToast('Préférence sauvegardée', 'success');
     }
   };
 
@@ -176,12 +197,52 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     }
   }, []);
 
-  const arenaCount = session ? session.strips.length : effectiveStripCount;
+  // La grille d'URLs reflète l'état réel du serveur (committedCount) ou la session active
+  const arenaCount = session ? session.strips.length : effectiveCommitted;
   const arenaUrls = Array.from({ length: arenaCount }, (_, i) => ({
     number: i + 1,
     refereeUrl: `${serverUrl}/arene${i + 1}/arbitre`,
     displayUrl: `${serverUrl}/arene${i + 1}`,
   }));
+
+  // Contrôles +/− communs aux deux vues (pending uniquement, sans appel IPC direct)
+  const stripCountControls = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      <button
+        className="btn btn-secondary"
+        onClick={() => setPendingCount(Math.max(1, effectivePending - 1))}
+        disabled={effectivePending <= 1 || isLoading}
+        style={{ padding: '0.2rem 0.5rem', fontSize: '1rem' }}
+      >
+        −
+      </button>
+      <strong style={{ minWidth: '1.5rem', textAlign: 'center' }}>{effectivePending}</strong>
+      <button
+        className="btn btn-secondary"
+        onClick={() => setPendingCount(Math.min(20, effectivePending + 1))}
+        disabled={effectivePending >= 20 || isLoading}
+        style={{ padding: '0.2rem 0.5rem', fontSize: '1rem' }}
+      >
+        +
+      </button>
+      {hasPendingChanges && (
+        <span
+          style={{ color: 'var(--warning-color, orange)', fontSize: '0.85rem' }}
+          title="Modifications non sauvegardées"
+        >
+          ●
+        </span>
+      )}
+      <button
+        className="btn btn-primary"
+        onClick={handleSaveStripCount}
+        disabled={!hasPendingChanges || isLoading}
+        style={{ padding: '0.2rem 0.6rem' }}
+      >
+        Sauvegarder
+      </button>
+    </div>
+  );
 
   if (!isRemoteActive) {
     return (
@@ -192,6 +253,10 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             La saisie distante permet aux arbitres de saisir les scores depuis une tablette. Les
             arbitres se connectent via un navigateur web sur le réseau local.
           </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', margin: '0.75rem 0' }}>
+            <span>Pistes :</span>
+            {stripCountControls}
+          </div>
           <button className="btn-primary" onClick={onStartRemote}>
             ⚡ Démarrer la saisie distante
           </button>
@@ -219,24 +284,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}
         >
           <h4 style={{ margin: 0 }}>Pistes ({arenaCount})</h4>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <button
-              className="btn btn-secondary"
-              onClick={() => handleUpdateStripCount(arenaCount - 1)}
-              disabled={arenaCount <= 1 || isLoading}
-              style={{ padding: '0.2rem 0.5rem', fontSize: '1rem' }}
-            >
-              −
-            </button>
-            <button
-              className="btn btn-secondary"
-              onClick={() => handleUpdateStripCount(arenaCount + 1)}
-              disabled={arenaCount >= 20 || isLoading}
-              style={{ padding: '0.2rem 0.5rem', fontSize: '1rem' }}
-            >
-              +
-            </button>
-          </div>
+          {stripCountControls}
         </div>
 
         <div className="arena-url-grid">

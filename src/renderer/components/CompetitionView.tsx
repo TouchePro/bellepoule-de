@@ -119,9 +119,9 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     showToast,
   });
 
-  // Synchroniser le nombre d'arènes avec le nombre de poules
+  // Synchroniser le nombre d'arènes avec le nombre de poules (seed initial uniquement)
   useEffect(() => {
-    if (pools.length > 0) setRemoteArenaCount(pools.length);
+    if (pools.length > 0 && remoteArenaCount === 1) setRemoteArenaCount(pools.length);
   }, [pools.length]);
 
   // Session state persistence
@@ -763,6 +763,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             competition={competition}
             pools={pools}
             tableauMatches={tableauMatches}
+            initialStripCount={remoteArenaCount}
             onArenaCountChange={setRemoteArenaCount}
             onStartRemote={() => setIsRemoteActive(true)}
             onStopRemote={() => setIsRemoteActive(false)}
