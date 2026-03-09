@@ -579,6 +579,23 @@ ipcMain.handle('db:updatePool', async (_, pool) => {
 //   return db.getPoolFencers(poolId);
 // });
 
+// Statistiques combattants
+ipcMain.handle('db:saveTouch', async (_, touch) => {
+  return db.saveTouch(touch);
+});
+
+ipcMain.handle('db:saveCard', async (_, card) => {
+  return db.saveCard(card);
+});
+
+ipcMain.handle('db:updateMatchTiming', async (_, timing) => {
+  return db.updateMatchTiming(timing.matchId, timing.startTime, timing.endTime, timing.duration);
+});
+
+ipcMain.handle('db:getFencerHistory', async (_, fencerId) => {
+  return db.getFencerHistory(fencerId);
+});
+
 // File handlers
 ipcMain.handle('file:export', async (_, filepath) => {
   db.exportToFile(filepath);

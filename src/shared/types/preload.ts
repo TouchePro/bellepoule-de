@@ -101,6 +101,79 @@ export interface MatchUpdateData {
   duration?: number;
 }
 
+// ============================================================================
+// Fighter Statistics Types
+// ============================================================================
+
+export interface MatchTouchData {
+  id: string;
+  matchId: string;
+  fencerId: string;
+  zone: string; // TargetZone: A | B | C
+  points: number;
+  timestamp: string; // ISO 8601
+  isValidInSuddenDeath?: boolean;
+  isReversed?: boolean;
+}
+
+export interface MatchCardData {
+  id: string;
+  matchId: string;
+  fencerId: string;
+  cardType: string; // 'yellow' | 'red' | 'black'
+  reason: string; // CardReason
+  cardGroup: number; // 1–4
+  timestamp: string; // ISO 8601
+  pointsAwarded: number;
+  resultingExclusion?: boolean;
+}
+
+export interface MatchTimingData {
+  matchId: string;
+  startTime: string | null; // ISO 8601
+  endTime: string | null;   // ISO 8601
+  duration: number | null;  // secondes
+}
+
+export interface FencerMatchRecord {
+  matchId: string;
+  number: number;
+  opponentId: string | null;
+  opponentLastName: string | null;
+  opponentFirstName: string | null;
+  scoreA: string | null; // JSON Score
+  scoreB: string | null; // JSON Score
+  side: 'A' | 'B';
+  status: string;
+  startTime: string | null;
+  endTime: string | null;
+  duration: number | null;
+  poolId: string | null;
+  tableId: string | null;
+  round: number | null;
+  touches: Array<{
+    id: string;
+    zone: string;
+    points: number;
+    timestamp: string;
+    isValidInSuddenDeath: boolean;
+    isReversed: boolean;
+  }>;
+  cards: Array<{
+    id: string;
+    cardType: string;
+    reason: string;
+    cardGroup: number;
+    timestamp: string;
+    pointsAwarded: number;
+    resultingExclusion: boolean;
+  }>;
+}
+
+export interface FencerHistory {
+  matches: FencerMatchRecord[];
+}
+
 export interface SessionState {
   currentPhase?: number;
   selectedPool?: string;
@@ -268,6 +341,12 @@ export interface DatabaseAPI {
   saveSessionState: (competitionId: string, state: SessionState) => Promise<void>;
   getSessionState: (competitionId: string) => Promise<SessionState | null>;
   clearSessionState: (competitionId: string) => Promise<void>;
+
+  // Statistiques combattants
+  saveTouch: (touch: MatchTouchData) => Promise<void>;
+  saveCard: (card: MatchCardData) => Promise<void>;
+  updateMatchTiming: (timing: MatchTimingData) => Promise<void>;
+  getFencerHistory: (fencerId: string) => Promise<FencerHistory>;
 }
 
 export interface FileAPI {

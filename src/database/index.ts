@@ -201,6 +201,48 @@ export class DatabaseManager {
       )
     `);
 
+    // Table pour les touches (points marqués avec horodatage)
+    this.db.run(`
+      CREATE TABLE IF NOT EXISTS match_touches (
+        id TEXT PRIMARY KEY,
+        match_id TEXT NOT NULL,
+        fencer_id TEXT NOT NULL,
+        zone TEXT NOT NULL,
+        points INTEGER NOT NULL,
+        timestamp TEXT NOT NULL,
+        is_valid_in_sudden_death INTEGER DEFAULT 0,
+        is_reversed INTEGER DEFAULT 0,
+        FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE
+      )
+    `);
+
+    // Table pour les cartons (avec horodatage)
+    this.db.run(`
+      CREATE TABLE IF NOT EXISTS match_cards (
+        id TEXT PRIMARY KEY,
+        match_id TEXT NOT NULL,
+        fencer_id TEXT NOT NULL,
+        card_type TEXT NOT NULL,
+        reason TEXT NOT NULL,
+        card_group INTEGER NOT NULL DEFAULT 1,
+        timestamp TEXT NOT NULL,
+        points_awarded INTEGER NOT NULL DEFAULT 0,
+        resulting_exclusion INTEGER DEFAULT 0,
+        FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE
+      )
+    `);
+
+    // Colonnes de timing sur les matchs (migration idempotente)
+    try {
+      this.db.run(`ALTER TABLE matches ADD COLUMN start_time TEXT`);
+    } catch { /* colonne déjà présente */ }
+    try {
+      this.db.run(`ALTER TABLE matches ADD COLUMN end_time TEXT`);
+    } catch { /* colonne déjà présente */ }
+    try {
+      this.db.run(`ALTER TABLE matches ADD COLUMN duration INTEGER`);
+    } catch { /* colonne déjà présente */ }
+
     // Création des index pour optimiser les performances
     this.createIndexes();
   }
@@ -241,6 +283,12 @@ export class DatabaseManager {
     // Index pour les associations pool/tireur
     this.db.run(`CREATE INDEX IF NOT EXISTS idx_pool_fencers_pool ON pool_fencers(pool_id)`);
     this.db.run(`CREATE INDEX IF NOT EXISTS idx_pool_fencers_fencer ON pool_fencers(fencer_id)`);
+
+    // Index pour les statistiques par combattant
+    this.db.run(`CREATE INDEX IF NOT EXISTS idx_touches_match ON match_touches(match_id)`);
+    this.db.run(`CREATE INDEX IF NOT EXISTS idx_touches_fencer ON match_touches(fencer_id)`);
+    this.db.run(`CREATE INDEX IF NOT EXISTS idx_cards_match ON match_cards(match_id)`);
+    this.db.run(`CREATE INDEX IF NOT EXISTS idx_cards_fencer ON match_cards(fencer_id)`);
   }
 
   // Session State Management
@@ -1172,6 +1220,219 @@ export class DatabaseManager {
     }
 
     this.save();
+  }
+
+  // ─── Statistiques combattants ───────────────────────────────────────────────
+
+  public saveTouch(touch: {
+    id: string;
+    matchId: string;
+    fencerId: string;
+    zone: string;
+    points: number;
+    timestamp: string;
+    isValidInSuddenDeath?: boolean;
+    isReversed?: boolean;
+  }): void {
+    if (!this.db) throw new Error('Database not open');
+    this.db.run(
+      `INSERT OR REPLACE INTO match_touches
+        (id, match_id, fencer_id, zone, points, timestamp, is_valid_in_sudden_death, is_reversed)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        touch.id,
+        touch.matchId,
+        touch.fencerId,
+        touch.zone,
+        touch.points,
+        touch.timestamp,
+        touch.isValidInSuddenDeath ? 1 : 0,
+        touch.isReversed ? 1 : 0,
+      ]
+    );
+    this.save();
+  }
+
+  public saveCard(card: {
+    id: string;
+    matchId: string;
+    fencerId: string;
+    cardType: string;
+    reason: string;
+    cardGroup: number;
+    timestamp: string;
+    pointsAwarded: number;
+    resultingExclusion?: boolean;
+  }): void {
+    if (!this.db) throw new Error('Database not open');
+    this.db.run(
+      `INSERT OR REPLACE INTO match_cards
+        (id, match_id, fencer_id, card_type, reason, card_group, timestamp, points_awarded, resulting_exclusion)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        card.id,
+        card.matchId,
+        card.fencerId,
+        card.cardType,
+        card.reason,
+        card.cardGroup,
+        card.timestamp,
+        card.pointsAwarded,
+        card.resultingExclusion ? 1 : 0,
+      ]
+    );
+    this.save();
+  }
+
+  public updateMatchTiming(
+    matchId: string,
+    startTime: string | null,
+    endTime: string | null,
+    duration: number | null
+  ): void {
+    if (!this.db) throw new Error('Database not open');
+    const now = new Date().toISOString();
+    this.db.run(
+      `UPDATE matches SET start_time = ?, end_time = ?, duration = ?, updated_at = ? WHERE id = ?`,
+      [startTime, endTime, duration, now, matchId]
+    );
+    this.save();
+  }
+
+  public getFencerHistory(fencerId: string): {
+    matches: Array<{
+      matchId: string;
+      number: number;
+      opponentId: string | null;
+      opponentLastName: string | null;
+      opponentFirstName: string | null;
+      scoreA: string | null;
+      scoreB: string | null;
+      side: 'A' | 'B';
+      status: string;
+      startTime: string | null;
+      endTime: string | null;
+      duration: number | null;
+      poolId: string | null;
+      tableId: string | null;
+      round: number | null;
+      touches: Array<{
+        id: string;
+        zone: string;
+        points: number;
+        timestamp: string;
+        isValidInSuddenDeath: boolean;
+        isReversed: boolean;
+      }>;
+      cards: Array<{
+        id: string;
+        cardType: string;
+        reason: string;
+        cardGroup: number;
+        timestamp: string;
+        pointsAwarded: number;
+        resultingExclusion: boolean;
+      }>;
+    }>;
+  } {
+    if (!this.db) throw new Error('Database not open');
+
+    // Récupérer les matchs joués par ce combattant (comme A ou B)
+    const matchRows: any[] = [];
+    const matchStmt = this.db.prepare(`
+      SELECT
+        m.id, m.number, m.fencer_a_id, m.fencer_b_id,
+        m.score_a, m.score_b, m.status,
+        m.start_time, m.end_time, m.duration,
+        m.pool_id, m.table_id, m.round,
+        fa.last_name AS opp_a_last, fa.first_name AS opp_a_first,
+        fb.last_name AS opp_b_last, fb.first_name AS opp_b_first
+      FROM matches m
+      LEFT JOIN fencers fa ON m.fencer_a_id = fa.id
+      LEFT JOIN fencers fb ON m.fencer_b_id = fb.id
+      WHERE (m.fencer_a_id = ? OR m.fencer_b_id = ?)
+        AND m.status = 'finished'
+      ORDER BY m.updated_at ASC
+    `);
+    matchStmt.bind([fencerId, fencerId]);
+    while (matchStmt.step()) {
+      matchRows.push(matchStmt.getAsObject());
+    }
+    matchStmt.free();
+
+    const matches = matchRows.map((row) => {
+      const side: 'A' | 'B' = row.fencer_a_id === fencerId ? 'A' : 'B';
+      const opponentId = side === 'A' ? (row.fencer_b_id as string | null) : (row.fencer_a_id as string | null);
+      const opponentLastName = side === 'A' ? (row.opp_b_last as string | null) : (row.opp_a_last as string | null);
+      const opponentFirstName = side === 'A' ? (row.opp_b_first as string | null) : (row.opp_a_first as string | null);
+
+      // Touches de ce combattant dans ce match
+      const touches: any[] = [];
+      const touchStmt = this.db.prepare(`
+        SELECT id, zone, points, timestamp, is_valid_in_sudden_death, is_reversed
+        FROM match_touches
+        WHERE match_id = ? AND fencer_id = ?
+        ORDER BY timestamp ASC
+      `);
+      touchStmt.bind([row.id as string, fencerId]);
+      while (touchStmt.step()) {
+        const t = touchStmt.getAsObject();
+        touches.push({
+          id: t.id as string,
+          zone: t.zone as string,
+          points: t.points as number,
+          timestamp: t.timestamp as string,
+          isValidInSuddenDeath: t.is_valid_in_sudden_death === 1,
+          isReversed: t.is_reversed === 1,
+        });
+      }
+      touchStmt.free();
+
+      // Cartons de ce combattant dans ce match
+      const cards: any[] = [];
+      const cardStmt = this.db.prepare(`
+        SELECT id, card_type, reason, card_group, timestamp, points_awarded, resulting_exclusion
+        FROM match_cards
+        WHERE match_id = ? AND fencer_id = ?
+        ORDER BY timestamp ASC
+      `);
+      cardStmt.bind([row.id as string, fencerId]);
+      while (cardStmt.step()) {
+        const c = cardStmt.getAsObject();
+        cards.push({
+          id: c.id as string,
+          cardType: c.card_type as string,
+          reason: c.reason as string,
+          cardGroup: c.card_group as number,
+          timestamp: c.timestamp as string,
+          pointsAwarded: c.points_awarded as number,
+          resultingExclusion: c.resulting_exclusion === 1,
+        });
+      }
+      cardStmt.free();
+
+      return {
+        matchId: row.id as string,
+        number: row.number as number,
+        opponentId,
+        opponentLastName,
+        opponentFirstName,
+        scoreA: row.score_a as string | null,
+        scoreB: row.score_b as string | null,
+        side,
+        status: row.status as string,
+        startTime: row.start_time as string | null,
+        endTime: row.end_time as string | null,
+        duration: row.duration as number | null,
+        poolId: row.pool_id as string | null,
+        tableId: row.table_id as string | null,
+        round: row.round as number | null,
+        touches,
+        cards,
+      };
+    });
+
+    return { matches };
   }
 
   // Export/Import
