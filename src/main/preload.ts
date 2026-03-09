@@ -20,6 +20,9 @@ import type {
   FileSaveResult,
   VersionInfo,
   Pool,
+  MatchTouchData,
+  MatchCardData,
+  MatchTimingData,
 } from '../shared/types/preload';
 
 // Input validation functions
@@ -203,6 +206,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
         throw new Error('Competition ID is required and must be a string');
       }
       return ipcRenderer.invoke('db:clearSessionState', competitionId);
+    },
+
+    // Statistiques combattants
+    saveTouch: (touch: MatchTouchData) => ipcRenderer.invoke('db:saveTouch', touch),
+    saveCard: (card: MatchCardData) => ipcRenderer.invoke('db:saveCard', card),
+    updateMatchTiming: (timing: MatchTimingData) =>
+      ipcRenderer.invoke('db:updateMatchTiming', timing),
+    getFencerHistory: (fencerId: string) => {
+      if (!fencerId || typeof fencerId !== 'string') {
+        throw new Error('Fencer ID is required and must be a string');
+      }
+      return ipcRenderer.invoke('db:getFencerHistory', fencerId);
     },
   },
 
