@@ -59,8 +59,8 @@ interface TableauViewProps {
   arenaCount?: number;
 }
 
-const BASE_MATCH_HEIGHT = 80;
-const SLOT_HEIGHT = BASE_MATCH_HEIGHT + 32; // hauteur d'un créneau dans la première colonne
+const BASE_MATCH_HEIGHT = 100;
+const SLOT_HEIGHT = BASE_MATCH_HEIGHT + 50; // hauteur d'un créneau dans la première colonne
 
 const TableauViewComponent: React.FC<TableauViewProps> = ({
   ranking,
@@ -749,7 +749,14 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           minWidth: '180px',
           cursor: canEdit ? 'pointer' : 'default',
           ...(verticalPosition !== undefined
-            ? { position: 'absolute' as const, top: `${verticalPosition}px`, left: 0, right: 0 }
+            ? {
+                position: 'absolute' as const,
+                top: `${verticalPosition}px`,
+                left: 0,
+                right: 0,
+                height: `${BASE_MATCH_HEIGHT}px`,
+                overflow: 'hidden',
+              }
             : { position: 'relative' as const, marginBottom: '0.25rem' }),
         }}
         onClick={() => {
@@ -847,7 +854,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
             Exempt
           </div>
         )}
-        {canEdit && !hasScore && (
+        {canEdit && !hasScore && viewMode !== 'full' && (
           <div
             style={{
               width: '100%',
@@ -864,7 +871,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
             Saisir score
           </div>
         )}
-        {canEdit && hasScore && (
+        {canEdit && hasScore && viewMode !== 'full' && (
           <div
             style={{
               width: '100%',
