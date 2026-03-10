@@ -742,8 +742,8 @@ export class RemoteScoreServer {
           const m = data.match;
           this.assignMatchToArena(data.arenaId, {
             ...m,
-            scoreA: typeof m.scoreA === 'object' ? (m.scoreA?.value ?? 0) : (m.scoreA ?? 0),
-            scoreB: typeof m.scoreB === 'object' ? (m.scoreB?.value ?? 0) : (m.scoreB ?? 0),
+            scoreA: typeof (m.scoreA as unknown) === 'object' ? ((m.scoreA as unknown as { value?: number })?.value ?? 0) : (m.scoreA ?? 0),
+            scoreB: typeof (m.scoreB as unknown) === 'object' ? ((m.scoreB as unknown as { value?: number })?.value ?? 0) : (m.scoreB ?? 0),
           });
           // Réinitialiser les cartons
           this.arenaCards.set(data.arenaId, { cardsA: [], cardsB: [] });
