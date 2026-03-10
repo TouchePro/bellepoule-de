@@ -28,9 +28,11 @@ interface PendingConfirm {
 export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [pending, setPending] = useState<PendingConfirm | null>(null);
   const confirmBtnRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (pending && confirmBtnRef.current) {
+      previousFocusRef.current = document.activeElement as HTMLElement;
       confirmBtnRef.current.focus();
     }
   }, [pending]);
@@ -53,6 +55,7 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (pending) {
       pending.resolve(true);
       setPending(null);
+      previousFocusRef.current?.focus();
     }
   };
 
@@ -60,6 +63,7 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (pending) {
       pending.resolve(false);
       setPending(null);
+      previousFocusRef.current?.focus();
     }
   };
 

@@ -12,7 +12,7 @@ import ReportIssueModal from './components/ReportIssueModal';
 import UpdateNotification from './components/UpdateNotification';
 import SettingsModal from './components/SettingsModal';
 import { ToastProvider, useToast } from './components/Toast';
-import { ConfirmProvider } from './components/ConfirmDialog';
+import { ConfirmProvider, useConfirm } from './components/ConfirmDialog';
 import { TranslationProvider, useTranslation } from './contexts/TranslationContext';
 import { ErrorBoundary, CompetitionErrorBoundary } from './components/ErrorBoundary';
 
@@ -26,6 +26,7 @@ interface OpenCompetition {
 const AppContent: React.FC = () => {
   const { t, isLoading: translationLoading } = useTranslation();
   const { showToast } = useToast();
+  const { confirm } = useConfirm();
   const [view, setView] = useState<View>('home');
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [currentCompetition, setCurrentCompetition] = useState<Competition | null>(null);
@@ -194,11 +195,10 @@ const AppContent: React.FC = () => {
 
     const openComp = openCompetitions.find(open => open.competition.id === competitionId);
     if (openComp && openComp.isDirty) {
-      if (
-        !window.confirm(
-          'Des modifications ne sont pas sauvegardées. Voulez-vous vraiment fermer cette compétition ?'
-        )
-      ) {
+      const ok = await confirm(
+        'Des modifications ne sont pas sauvegardées. Voulez-vous vraiment fermer cette compétition ?'
+      );
+      if (!ok) {
         return;
       }
     }
@@ -225,11 +225,28 @@ const AppContent: React.FC = () => {
     try {
       if (window.electronAPI) {
         await window.electronAPI.db.deleteCompetition(id);
-        setCompetitions(competitions.filter(c => c.id !== id));
-        if (currentCompetition?.id === id) {
-          setCurrentCompetition(null);
-          setView('home');
-        }
+        setCompetitions(prev => prev.filter(c => c.id !== id));
+
+        // Supprimer l'onglet ouvert pour cette compétition (évite le tab fantôme)
+        setOpenCompetitions(prev => {
+          const next = prev.filter(open => open.competition.id !== id);
+          if (activeTabId === id) {
+            if (next.length > 0) {
+              const lastComp = next[next.length - 1].competition;
+              setActiveTabId(lastComp.id);
+              setCurrentCompetition(lastComp);
+              setView('competition');
+            } else {
+              setActiveTabId(null);
+              setCurrentCompetition(null);
+              setView('home');
+            }
+          } else if (currentCompetition?.id === id) {
+            setCurrentCompetition(null);
+            setView('home');
+          }
+          return next;
+        });
       }
     } catch (error) {
       console.error('Failed to delete competition:', error);
@@ -259,8 +276,7 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <ToastProvider>
-      <ConfirmProvider>
+    <>
         <UpdateNotification />
         <div className="app">
           <header className="header">
@@ -501,15 +517,18 @@ const AppContent: React.FC = () => {
             />
           )}
         </div>
-      </ConfirmProvider>
-    </ToastProvider>
+    </>
   );
 };
 
 const App: React.FC = () => {
   return (
     <TranslationProvider>
-      <AppContent />
+      <ToastProvider>
+        <ConfirmProvider>
+          <AppContent />
+        </ConfirmProvider>
+      </ToastProvider>
     </TranslationProvider>
   );
 };
