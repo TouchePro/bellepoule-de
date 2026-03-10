@@ -1132,7 +1132,11 @@
           this.socket.emit('arena_control', {
             arenaId: this.arenaId,
             action: 'select_match',
-            match: match,
+            match: {
+              ...match,
+              scoreA: this.scoreA,
+              scoreB: this.scoreB,
+            },
           });
         }
 

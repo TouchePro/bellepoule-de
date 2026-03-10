@@ -653,8 +653,12 @@
             `${fencerB.lastName || ''} ${fencerB.firstName || ''}`.trim() || '-';
           document.getElementById('fencer-b-club').textContent = fencerB.club || '';
 
-          document.getElementById('score-a').textContent = this.currentMatch.scoreA || 0;
-          document.getElementById('score-b').textContent = this.currentMatch.scoreB || 0;
+          const sA = this.currentMatch.scoreA;
+          const sB = this.currentMatch.scoreB;
+          document.getElementById('score-a').textContent =
+            (typeof sA === 'object' ? (sA?.value ?? 0) : sA) ?? 0;
+          document.getElementById('score-b').textContent =
+            (typeof sB === 'object' ? (sB?.value ?? 0) : sB) ?? 0;
         }
 
         updateCardsDisplay() {

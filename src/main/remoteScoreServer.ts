@@ -739,7 +739,12 @@ export class RemoteScoreServer {
       case 'select_match':
         // Sélection d'un match par l'arbitre
         if (data.match) {
-          this.assignMatchToArena(data.arenaId, data.match);
+          const m = data.match;
+          this.assignMatchToArena(data.arenaId, {
+            ...m,
+            scoreA: typeof m.scoreA === 'object' ? (m.scoreA?.value ?? 0) : (m.scoreA ?? 0),
+            scoreB: typeof m.scoreB === 'object' ? (m.scoreB?.value ?? 0) : (m.scoreB ?? 0),
+          });
           // Réinitialiser les cartons
           this.arenaCards.set(data.arenaId, { cardsA: [], cardsB: [] });
         }
