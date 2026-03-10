@@ -382,31 +382,21 @@
         display: none;
       }
 
-      .waiting-icon {
-        font-size: 6rem;
-        opacity: 0.8;
-        animation: float 3s ease-in-out infinite;
+      .arena-idle-number {
+        font-size: 20vw;
+        font-weight: 900;
+        line-height: 1;
+        color: rgba(255, 255, 255, 0.9);
+        text-shadow: 0 4px 40px rgba(0, 0, 0, 0.5);
       }
 
-      @keyframes float {
-        0%,
-        100% {
-          transform: translateY(0);
-        }
-        50% {
-          transform: translateY(-20px);
-        }
-      }
-
-      .waiting-text {
-        font-size: 2rem;
-        font-weight: 600;
-        opacity: 0.9;
-      }
-
-      .waiting-subtext {
-        font-size: 1.1rem;
-        opacity: 0.6;
+      .arena-idle-label {
+        font-size: 4vw;
+        font-weight: 300;
+        letter-spacing: 0.5em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.5);
+        margin-top: 0.5rem;
       }
 
       /* Responsive */
@@ -458,9 +448,8 @@
     <div class="main-content">
       <!-- Écran d'attente -->
       <div class="waiting-screen" id="waiting-screen">
-        <div class="waiting-icon">🤺</div>
-        <div class="waiting-text">En attente du prochain match</div>
-        <div class="waiting-subtext">L'arbitre va bientôt démarrer un match</div>
+        <div class="arena-idle-number" id="arena-idle-number">1</div>
+        <div class="arena-idle-label">Arène</div>
       </div>
 
       <!-- Affichage du match -->
@@ -524,6 +513,7 @@
 
         init() {
           document.getElementById('arena-number').textContent = this.arenaNumber;
+          document.getElementById('arena-idle-number').textContent = this.arenaNumber;
           this.setupDickRiversToggle();
           this.applyDickRiversState();
           this.setupSocketListeners();
