@@ -1076,19 +1076,22 @@ export class RemoteScoreServer {
     arenaId: string,
     scoreA: number,
     scoreB: number,
-    _previousScoreA: number,
-    _previousScoreB: number
+    previousScoreA: number,
+    previousScoreB: number
   ): void {
     const arena = this.arenas.get(arenaId);
     if (!arena || arena.status === 'finished' || !arena.currentMatch) return;
 
-    // Notifier la tablette arbitre quand un tireur atteint ou dépasse 15 points
+    // Notifier la tablette arbitre uniquement quand un tireur franchit le seuil de 15 points
     const SCORE_LIMIT = 15;
-    if (scoreA >= SCORE_LIMIT || scoreB >= SCORE_LIMIT) {
+    const justCrossed =
+      (scoreA >= SCORE_LIMIT && previousScoreA < SCORE_LIMIT) ||
+      (scoreB >= SCORE_LIMIT && previousScoreB < SCORE_LIMIT);
+    if (justCrossed) {
       console.log(
         `[RemoteScoreServer] Score limite (${SCORE_LIMIT}) atteint - notification arbitre pour l'arène ${arenaId}`
       );
-      this.io.emit(`arena:${arenaId}:score_limit_reached`);
+      this.io.to(`arena:${arenaId}`).emit(`arena:${arenaId}:score_limit_reached`);
     }
   }
 
