@@ -1336,7 +1336,7 @@ export class RemoteScoreServer {
     if (matchesFromRenderer && matchesFromRenderer.length > 0) {
       console.log(`[RemoteScoreServer] ${matchesFromRenderer.length} matchs reçus du renderer`);
       allMatches = matchesFromRenderer.filter(
-        m => m.status === 'not_started' || m.status === 'in_progress'
+        m => m.isTableau || m.status === 'not_started' || m.status === 'in_progress'
       );
       console.log(`[RemoteScoreServer] ${allMatches.length} matchs en attente après filtrage`);
     } else {
@@ -1363,6 +1363,7 @@ export class RemoteScoreServer {
     // Grouper les matches par pool
     const matchesByPool = new Map<string, any[]>();
     for (const match of allMatches) {
+      if (match.isTableau) continue; // Les matchs DE sont traités séparément plus bas
       const poolId = match.poolId || match.pool?.id || `pool-${match.poolNumber || match.number}`;
       if (!matchesByPool.has(poolId)) {
         matchesByPool.set(poolId, []);
