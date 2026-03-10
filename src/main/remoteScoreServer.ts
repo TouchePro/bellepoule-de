@@ -1130,9 +1130,15 @@ export class RemoteScoreServer {
       );
     }
 
-    // Charger automatiquement le match suivant après un délai (pour laisser le renderer traiter la fin)
+    // Remettre l'arène en état idle après un délai (l'arbitre choisit le prochain match manuellement)
     setTimeout(() => {
-      this.loadNextMatch(arenaId);
+      const a = this.arenas.get(arenaId);
+      if (a && a.status === 'finished') {
+        a.currentMatch = null;
+        a.status = 'idle';
+        a.startTime = null;
+        this.updateArena(arenaId, { currentMatch: null, status: 'idle', startTime: null });
+      }
     }, 3000);
   }
 
