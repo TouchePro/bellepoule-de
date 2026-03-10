@@ -1076,27 +1076,19 @@ export class RemoteScoreServer {
     arenaId: string,
     scoreA: number,
     scoreB: number,
-    previousScoreA: number,
-    previousScoreB: number
+    _previousScoreA: number,
+    _previousScoreB: number
   ): void {
     const arena = this.arenas.get(arenaId);
     if (!arena || arena.status === 'finished' || !arena.currentMatch) return;
 
-    // Vérifier si c'est le mode Laser Sabre
-    if (this.sessionWeapon !== 'L') return;
-
-    // Vérifier si un tireur vient d'atteindre 15 points
-    const SCORE_LIMIT_LASER = 15;
-    const scoreReached15A = scoreA >= SCORE_LIMIT_LASER && previousScoreA < SCORE_LIMIT_LASER;
-    const scoreReached15B = scoreB >= SCORE_LIMIT_LASER && previousScoreB < SCORE_LIMIT_LASER;
-
-    if (scoreReached15A || scoreReached15B) {
+    // Terminer automatiquement le match si un tireur atteint ou dépasse 15 points
+    const SCORE_LIMIT = 15;
+    if (scoreA >= SCORE_LIMIT || scoreB >= SCORE_LIMIT) {
       console.log(
-        `[RemoteScoreServer] Score de ${SCORE_LIMIT_LASER} atteint en Laser Sabre - Signal score_limit_reached envoyé à l'arbitre`
+        `[RemoteScoreServer] Score limite (${SCORE_LIMIT}) atteint - fin automatique du match pour l'arène ${arenaId}`
       );
-
-      // Signaler la tablette arbitre pour afficher la fenêtre de confirmation
-      this.io.emit(`arena:${arenaId}:score_limit_reached`, { scoreA, scoreB });
+      this.finishArenaMatch(arenaId);
     }
   }
 
