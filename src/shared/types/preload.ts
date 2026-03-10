@@ -303,6 +303,11 @@ export interface RemoteServerAPI {
   getSession: () => Promise<{ success: boolean; session?: any; error?: string }>;
   getArenas: () => Promise<{ success: boolean; arenas?: any[]; error?: string }>;
   updateStripCount: (count: number) => Promise<{ success: boolean; session?: any; error?: string }>;
+  updateMatchArena: (
+    matchId: string,
+    fromArena: number | null,
+    toArena: number | null
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 // ============================================================================

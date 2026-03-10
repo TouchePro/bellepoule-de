@@ -1000,6 +1000,74 @@ export class RemoteScoreServer {
     console.log(`[RemoteScoreServer] Match assigné avec succès à l'arène ${arenaId}`);
   }
 
+  public updateMatchArena(
+    matchId: string,
+    fromArena: number | null,
+    toArena: number | null
+  ): void {
+    let matchToMove: ArenaMatch | undefined;
+
+    // 1. Retirer le match de l'ancienne arène
+    if (fromArena) {
+      const fromArenaId = `arena${fromArena}`;
+      const fromQueue = this.arenaMatchQueue.get(fromArenaId) || [];
+      const idx = fromQueue.findIndex(m => m.id === matchId);
+      if (idx !== -1) {
+        matchToMove = fromQueue[idx];
+        this.arenaMatchQueue.set(fromArenaId, [
+          ...fromQueue.slice(0, idx),
+          ...fromQueue.slice(idx + 1),
+        ]);
+        const fromArenaObj = this.arenas.get(fromArenaId);
+        this.updateArena(fromArenaId, { status: fromArenaObj?.status ?? 'idle' });
+      }
+      // Si c'est le currentMatch pas encore démarré, on l'enlève aussi
+      const fromArenaObj = this.arenas.get(fromArenaId);
+      if (!matchToMove && fromArenaObj?.currentMatch?.id === matchId &&
+          fromArenaObj.currentMatch.status === 'not_started') {
+        matchToMove = fromArenaObj.currentMatch;
+        (fromArenaObj as any).currentMatch = undefined;
+        fromArenaObj.status = 'idle';
+        this.updateArena(fromArenaId, { status: 'idle', currentMatch: undefined as any });
+      }
+    }
+
+    // Si le match n'est dans aucune arène, le construire depuis sessionMatches
+    if (!matchToMove) {
+      const sm = this.sessionMatches.find((m: any) => m.id === matchId);
+      if (sm) {
+        matchToMove = {
+          id: sm.id,
+          fencerA: sm.fencerA,
+          fencerB: sm.fencerB,
+          scoreA: 0,
+          scoreB: 0,
+          status: 'not_started',
+          startTime: null,
+          endTime: null,
+          isTableau: true,
+        };
+      }
+    }
+
+    if (!matchToMove || !toArena) return;
+
+    // 2. Ajouter à la nouvelle arène
+    const toArenaId = `arena${toArena}`;
+    const toArenaObj = this.arenas.get(toArenaId);
+    if (!toArenaObj) return;
+
+    if (!toArenaObj.currentMatch) {
+      this.assignMatchToArena(toArenaId, matchToMove);
+    } else {
+      const toQueue = this.arenaMatchQueue.get(toArenaId) || [];
+      this.arenaMatchQueue.set(toArenaId, [...toQueue, matchToMove]);
+      this.updateArena(toArenaId, { status: toArenaObj.status });
+    }
+
+    console.log(`[RemoteScoreServer] Match ${matchId} déplacé de arena${fromArena} vers arena${toArena}`);
+  }
+
   public startArenaMatch(arenaId: string): void {
     const arena = this.arenas.get(arenaId);
     if (!arena || !arena.currentMatch) return;
