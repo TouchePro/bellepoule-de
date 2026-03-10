@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import QRCode from 'qrcode';
 import { Competition, Pool } from '../../shared/types';
 import { TableauMatch } from './TableauView';
 import { useToast } from './Toast';
@@ -52,6 +53,14 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const [committedCount, setCommittedCount] = useState<number | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [activeQR, setActiveQR] = useState<{ url: string; label: string } | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!activeQR) { setQrDataUrl(null); return; }
+    QRCode.toDataURL(activeQR.url, { width: 220, margin: 1 })
+      .then(setQrDataUrl)
+      .catch(() => setQrDataUrl(null));
+  }, [activeQR]);
 
   // Initialisation : priorité à initialStripCount (persisté depuis parent), puis nombre de poules
   useEffect(() => {
@@ -361,12 +370,13 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         <div className="qr-popup-overlay" onClick={() => setActiveQR(null)}>
           <div className="qr-popup" onClick={e => e.stopPropagation()}>
             <strong>{activeQR.label}</strong>
-            <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(activeQR.url)}`}
-              alt="QR code"
-              width={220}
-              height={220}
-            />
+            {qrDataUrl ? (
+              <img src={qrDataUrl} alt="QR code" width={220} height={220} />
+            ) : (
+              <div style={{ width: 220, height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                Génération…
+              </div>
+            )}
             <code style={{ fontSize: '0.75rem', wordBreak: 'break-all', textAlign: 'center' }}>
               {activeQR.url}
             </code>
