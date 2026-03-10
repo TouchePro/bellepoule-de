@@ -3,7 +3,7 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Competition, Fencer, FencerStatus, Pool, Match, PhaseType } from '../shared/types';
 import CompetitionList from './components/CompetitionList';
 import CompetitionView from './components/CompetitionView';
@@ -83,7 +83,7 @@ const AppContent: React.FC = () => {
     };
   }, []);
 
-  const loadCompetitions = async () => {
+  const loadCompetitions = useCallback(async () => {
     setIsLoading(true);
     try {
       if (window.electronAPI) {
@@ -94,9 +94,9 @@ const AppContent: React.FC = () => {
       console.error('Failed to load competitions:', error);
     }
     setIsLoading(false);
-  };
+  }, []);
 
-  const handleCreateCompetition = async (data: Partial<Competition>) => {
+  const handleCreateCompetition = useCallback(async (data: Partial<Competition>) => {
     try {
       if (window.electronAPI) {
         // Assurer que le titre est défini
@@ -109,7 +109,7 @@ const AppContent: React.FC = () => {
           ...data,
         };
         const newComp = await window.electronAPI.db.createCompetition(competitionData as any);
-        setCompetitions([newComp, ...competitions]);
+        setCompetitions(prev => [newComp, ...prev]);
 
         // Ouvrir la compétition dans un nouvel onglet
         const fencers = await window.electronAPI.db.getFencersByCompetition(newComp.id);
@@ -124,7 +124,7 @@ const AppContent: React.FC = () => {
       console.error('Failed to create competition:', error);
     }
     setShowNewCompetitionModal(false);
-  };
+  }, []);
 
   const handleSelectCompetition = async (competition: Competition) => {
     console.log('=== handleSelectCompetition ===');
