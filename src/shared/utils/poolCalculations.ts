@@ -411,6 +411,17 @@ function resolveClubConflicts(
   let maxIterations = 100; // Éviter les boucles infinies
   let improved = true;
 
+  // Construire un compteur de clubs par poule pour éviter les some() O(n) en boucle
+  const buildClubMap = (pool: Fencer[]) => {
+    const m = new Map<string, number>();
+    for (const f of pool) {
+      const key = f.club ?? '';
+      m.set(key, (m.get(key) ?? 0) + 1);
+    }
+    return m;
+  };
+  const clubMaps = pools.map(buildClubMap);
+
   while (improved && maxIterations > 0) {
     improved = false;
     maxIterations--;
@@ -423,10 +434,8 @@ function resolveClubConflicts(
       for (let fencerIdx = 0; fencerIdx < pool.length; fencerIdx++) {
         const fencer = pool[fencerIdx];
 
-        // Vérifier si ce tireur a un conflit de club dans cette poule
-        const hasClubConflict = pool.some(
-          (other, idx) => idx !== fencerIdx && other.club === fencer.club
-        );
+        // Vérifier si ce tireur a un conflit de club dans cette poule (O(1) au lieu de O(n))
+        const hasClubConflict = (clubMaps[poolIdx].get(fencer.club ?? '') ?? 0) > 1;
 
         if (!hasClubConflict) continue;
 
@@ -436,9 +445,15 @@ function resolveClubConflicts(
         if (swapPartner) {
           // Effectuer l'échange
           const { poolIdx: otherPoolIdx, fencerIdx: otherFencerIdx } = swapPartner;
-          const temp = pools[poolIdx][fencerIdx];
-          pools[poolIdx][fencerIdx] = pools[otherPoolIdx][otherFencerIdx];
-          pools[otherPoolIdx][otherFencerIdx] = temp;
+          const fencerA = pools[poolIdx][fencerIdx];
+          const fencerB = pools[otherPoolIdx][otherFencerIdx];
+          pools[poolIdx][fencerIdx] = fencerB;
+          pools[otherPoolIdx][otherFencerIdx] = fencerA;
+
+          // Mettre à jour les Maps de clubs pour les deux poules concernées
+          clubMaps[poolIdx] = buildClubMap(pools[poolIdx]);
+          clubMaps[otherPoolIdx] = buildClubMap(pools[otherPoolIdx]);
+
           improved = true;
           break;
         }
@@ -523,18 +538,15 @@ function canSwapResolveConflict(
   const conflicts2Before = pool2.filter(f => f !== fencer2 && f.club === fencer2.club).length;
 
   // Simuler l'échange et compter les conflits après
+  // conflicts1After > 0 équivaut à « fencer2 créerait un conflit dans pool1 »
+  // conflicts2After > 0 équivaut à « fencer1 créerait un conflit dans pool2 »
   const conflicts1After = pool1.filter(f => f !== fencer1 && f.club === fencer2.club).length;
   const conflicts2After = pool2.filter(f => f !== fencer2 && f.club === fencer1.club).length;
-
-  // Vérifier si le tireur 1 créerait un conflit dans la poule 2
-  const newConflict1InPool2 = pool2.some(f => f !== fencer2 && f.club === fencer1.club);
-  // Vérifier si le tireur 2 créerait un conflit dans la poule 1
-  const newConflict2InPool1 = pool1.some(f => f !== fencer1 && f.club === fencer2.club);
 
   // L'échange est valide si:
   // 1. Il ne crée pas de nouveaux conflits
   // 2. Il réduit ou maintient le nombre total de conflits
-  if (newConflict1InPool2 || newConflict2InPool1) {
+  if (conflicts1After > 0 || conflicts2After > 0) {
     return false;
   }
 

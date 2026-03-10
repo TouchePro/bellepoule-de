@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Competition, Pool, Match, MatchStatus, PoolRanking, Weapon } from '../../shared/types';
 import { formatIndex } from '../../shared/utils/poolCalculations';
 
@@ -36,18 +36,23 @@ export const LiveDashboard: React.FC<LiveDashboardProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  // Get matches in progress
-  const matchesInProgress = pools.flatMap(pool =>
-    pool.matches.filter(m => m.status === MatchStatus.IN_PROGRESS)
+  // Get matches in progress — mémorisé pour ne pas recalculer à chaque tick d'horloge (1 Hz)
+  const matchesInProgress = useMemo(
+    () => pools.flatMap(pool => pool.matches.filter(m => m.status === MatchStatus.IN_PROGRESS)),
+    [pools]
   );
 
   // Get completed matches
-  const completedMatches = pools.flatMap(pool =>
-    pool.matches.filter(m => m.status === MatchStatus.FINISHED)
+  const completedMatches = useMemo(
+    () => pools.flatMap(pool => pool.matches.filter(m => m.status === MatchStatus.FINISHED)),
+    [pools]
   );
 
   // Calculate completion percentage
-  const totalMatches = pools.reduce((sum, pool) => sum + pool.matches.length, 0);
+  const totalMatches = useMemo(
+    () => pools.reduce((sum, pool) => sum + pool.matches.length, 0),
+    [pools]
+  );
   const completionRate =
     totalMatches > 0 ? Math.round((completedMatches.length / totalMatches) * 100) : 0;
 
