@@ -57,6 +57,7 @@ interface TableauViewProps {
   onComplete?: (results: FinalResult[]) => void;
   thirdPlaceMatch?: boolean;
   arenaCount?: number;
+  onMatchArenaChange?: (matchId: string, oldArena: number | null, newArena: number | null) => void;
 }
 
 const BASE_MATCH_HEIGHT = 100;
@@ -153,6 +154,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   onComplete,
   thirdPlaceMatch = false,
   arenaCount = 4,
+  onMatchArenaChange,
 }) => {
   const { showToast } = useToast();
   const [tableauSize, setTableauSize] = useState<number>(0);
@@ -1635,10 +1637,12 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                 <button
                   className={`btn ${!matches.find(m => m.id === selectedMatchForArena)?.arena ? 'btn-primary' : 'btn-secondary'}`}
                   onClick={() => {
+                    const oldArena = matches.find(m => m.id === selectedMatchForArena)?.arena ?? null;
                     const updatedMatches = matches.map(m =>
                       m.id === selectedMatchForArena ? { ...m, arena: null } : m
                     );
                     onMatchesChange(updatedMatches);
+                    onMatchArenaChange?.(selectedMatchForArena!, oldArena, null);
                     setShowArenaModal(false);
                     setSelectedMatchForArena(null);
                   }}
@@ -1655,10 +1659,12 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                       key={arenaNum}
                       className={`btn ${matches.find(m => m.id === selectedMatchForArena)?.arena === arenaNum ? 'btn-primary' : 'btn-secondary'}`}
                       onClick={() => {
+                        const oldArena = matches.find(m => m.id === selectedMatchForArena)?.arena ?? null;
                         const updatedMatches = matches.map(m =>
                           m.id === selectedMatchForArena ? { ...m, arena: arenaNum } : m
                         );
                         onMatchesChange(updatedMatches);
+                        onMatchArenaChange?.(selectedMatchForArena!, oldArena, arenaNum);
                         setShowArenaModal(false);
                         setSelectedMatchForArena(null);
                       }}

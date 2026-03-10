@@ -761,6 +761,11 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               setFinalResults(results);
               setCurrentPhase('results');
             }}
+            onMatchArenaChange={(matchId, oldArena, newArena) => {
+              if (isRemoteActive) {
+                window.electronAPI.remote.updateMatchArena(matchId, oldArena, newArena);
+              }
+            }}
           />
         )}
 
