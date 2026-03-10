@@ -359,6 +359,25 @@
         }
       }
 
+      .sudden-death-banner {
+        margin-top: 1rem;
+        padding: 0.75rem 2rem;
+        background: linear-gradient(135deg, #dc2626, #ef4444);
+        color: #fff;
+        font-size: 3rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        border-radius: 0.75rem;
+        text-align: center;
+        animation: timer-pulse 0.8s infinite;
+        display: none;
+      }
+
+      .sudden-death-banner.active {
+        display: block;
+      }
+
       .timer-label {
         font-size: 1.1rem;
         color: #6b7280;
@@ -480,6 +499,7 @@
         <!-- Chronomètre -->
         <div class="timer-section">
           <div class="timer-display" id="timer-display">03:00</div>
+          <div class="sudden-death-banner" id="sudden-death-banner">⚡ MORT SUBITE</div>
           <div class="timer-label">Temps restant</div>
         </div>
       </div>
@@ -496,6 +516,7 @@
           this.matchStatus = 'idle';
           this.cardsA = [];
           this.cardsB = [];
+          this.isSuddenDeath = false;
           this.inversionEnabled = localStorage.getItem('inversionEnabled') === 'true';
 
           this.init();
@@ -603,6 +624,12 @@
             this.updateTimerDisplay(data.timerStatus);
           }
 
+          // Mise à jour mort subite
+          if (data.suddenDeath !== undefined) {
+            this.isSuddenDeath = data.suddenDeath;
+            this.updateSuddenDeathBanner();
+          }
+
           // Afficher/masquer selon le statut
           this.updateVisibility();
         }
@@ -690,6 +717,16 @@
           }
         }
 
+        updateSuddenDeathBanner() {
+          const banner = document.getElementById('sudden-death-banner');
+          if (!banner) return;
+          if (this.isSuddenDeath) {
+            banner.classList.add('active');
+          } else {
+            banner.classList.remove('active');
+          }
+        }
+
         updateVisibility() {
           const waitingScreen = document.getElementById('waiting-screen');
           const matchDisplay = document.getElementById('match-display');
@@ -697,6 +734,8 @@
           if (this.matchStatus === 'idle' || this.matchStatus === 'not_started') {
             waitingScreen.classList.remove('hidden');
             matchDisplay.classList.remove('active');
+            this.isSuddenDeath = false;
+            this.updateSuddenDeathBanner();
           } else {
             waitingScreen.classList.add('hidden');
             matchDisplay.classList.add('active');

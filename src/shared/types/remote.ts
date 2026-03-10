@@ -47,6 +47,7 @@ export interface RemoteSession {
   activeMatches: RemoteMatch[];
   isRunning: boolean;
   startTime?: Date;
+  weapon?: string;
 }
 
 export interface WebSocketMessage {
@@ -132,6 +133,7 @@ export interface ArenaUpdate {
   timerStatus?: 'running' | 'paused' | 'reset';
   cardsA?: string[];
   cardsB?: string[];
+  suddenDeath?: boolean;
 }
 
 export interface RefereeControl {
