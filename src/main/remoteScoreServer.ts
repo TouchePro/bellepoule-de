@@ -1082,13 +1082,13 @@ export class RemoteScoreServer {
     const arena = this.arenas.get(arenaId);
     if (!arena || arena.status === 'finished' || !arena.currentMatch) return;
 
-    // Terminer automatiquement le match si un tireur atteint ou dépasse 15 points
+    // Notifier la tablette arbitre quand un tireur atteint ou dépasse 15 points
     const SCORE_LIMIT = 15;
     if (scoreA >= SCORE_LIMIT || scoreB >= SCORE_LIMIT) {
       console.log(
-        `[RemoteScoreServer] Score limite (${SCORE_LIMIT}) atteint - fin automatique du match pour l'arène ${arenaId}`
+        `[RemoteScoreServer] Score limite (${SCORE_LIMIT}) atteint - notification arbitre pour l'arène ${arenaId}`
       );
-      this.finishArenaMatch(arenaId);
+      this.io.emit(`arena:${arenaId}:score_limit_reached`);
     }
   }
 
