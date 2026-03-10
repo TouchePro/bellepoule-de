@@ -701,6 +701,7 @@ export class RemoteScoreServer {
       cardType?: 'white' | 'yellow' | 'red';
       cardsA?: string[];
       cardsB?: string[];
+      suddenDeath?: boolean;
     }
   ): void {
     const arena = this.getArena(data.arenaId);
