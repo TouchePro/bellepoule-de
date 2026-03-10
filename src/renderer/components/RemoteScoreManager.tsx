@@ -51,6 +51,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   // committedCount : valeur appliquée au serveur ou confirmée par l'utilisateur
   const [committedCount, setCommittedCount] = useState<number | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [activeQR, setActiveQR] = useState<{ url: string; label: string } | null>(null);
 
   // Initialisation : priorité à initialStripCount (persisté depuis parent), puis nombre de poules
   useEffect(() => {
@@ -69,8 +70,11 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     if (!isRemoteActive) return;
     // Si une session est déjà active (retour sur l'onglet après navigation), on reconnecte
     // sans redémarrer le serveur pour ne pas perdre l'état des pistes configurées.
-    window.electronAPI.remote.getSession().then((result: any) => {
+    window.electronAPI.remote.getSession().then(async (result: any) => {
       if (result.success && result.session) {
+        // Récupérer l'IP réseau réelle (éviter localhost)
+        const info = await window.electronAPI.remote.getServerInfo();
+        if (info.success && info.serverInfo) setServerUrl(info.serverInfo.url);
         setSession(result.session);
         const existingCount = result.session.strips.length;
         setPendingCount(existingCount);
@@ -303,6 +307,15 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                 >
                   {copiedIndex === arena.number * 10 ? '✓' : '📋'}
                 </button>
+                <button
+                  className="btn-qr"
+                  onClick={() =>
+                    setActiveQR({ url: arena.refereeUrl, label: `Piste ${arena.number} – Arbitre` })
+                  }
+                  title="QR code"
+                >
+                  📱
+                </button>
               </div>
               <div className="arena-url-row">
                 <span className="arena-url-label">Affichage</span>
@@ -313,6 +326,18 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                   title="Copier l'URL"
                 >
                   {copiedIndex === arena.number * 10 + 1 ? '✓' : '📋'}
+                </button>
+                <button
+                  className="btn-qr"
+                  onClick={() =>
+                    setActiveQR({
+                      url: arena.displayUrl,
+                      label: `Piste ${arena.number} – Affichage`,
+                    })
+                  }
+                  title="QR code"
+                >
+                  📱
                 </button>
               </div>
             </div>
@@ -331,6 +356,26 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           <li>Cliquer sur "Match suivant" pour passer au match suivant</li>
         </ol>
       </div>
+
+      {activeQR && (
+        <div className="qr-popup-overlay" onClick={() => setActiveQR(null)}>
+          <div className="qr-popup" onClick={e => e.stopPropagation()}>
+            <strong>{activeQR.label}</strong>
+            <img
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(activeQR.url)}`}
+              alt="QR code"
+              width={220}
+              height={220}
+            />
+            <code style={{ fontSize: '0.75rem', wordBreak: 'break-all', textAlign: 'center' }}>
+              {activeQR.url}
+            </code>
+            <button className="btn btn-secondary" onClick={() => setActiveQR(null)}>
+              Fermer
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
