@@ -8,7 +8,7 @@ import { Competition, Fencer, FencerStatus, MatchStatus, Weapon } from '../../sh
 import { RankingImportResult } from '../../shared/utils/fileParser';
 import FencerList from './FencerList';
 import PoolView from './PoolView';
-import TableauView, { TableauMatch, FinalResult } from './TableauView';
+import TableauView, { TableauMatch, FinalResult, propagateWinners } from './TableauView';
 import PoolRankingView from './PoolRankingView';
 import ResultsView from './ResultsView';
 import AddFencerModal from './AddFencerModal';
@@ -179,10 +179,24 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   useEffect(() => {
     if (!window.electronAPI?.onRemoteMatchFinished) return;
 
-    const handleMatchFinished = (data: { matchId: string; scoreA: number; scoreB: number }) => {
+    const handleMatchFinished = (data: { matchId: string; scoreA: number; scoreB: number; isTableau?: boolean }) => {
       const { matchId, scoreA, scoreB } = data;
       console.log(`[CompetitionView] Match terminé reçu: ${matchId} - Score: ${scoreA}-${scoreB}`);
       updateMatchFromRemote(matchId, scoreA, scoreB, MatchStatus.FINISHED);
+
+      // Mise à jour du tableau d'élimination directe si c'est un match DE
+      setTableauMatches(prev => {
+        const idx = prev.findIndex(m => m.id === matchId);
+        if (idx === -1) return prev;
+        const match = prev[idx];
+        const winner = scoreA > scoreB ? match.fencerA : scoreB > scoreA ? match.fencerB : null;
+        const updated = prev.map((m, i) =>
+          i === idx ? { ...m, scoreA, scoreB, winner } : m
+        );
+        const size = prev.length > 0 ? Math.max(...prev.map(m => m.round)) : 0;
+        propagateWinners(updated, size);
+        return [...updated];
+      });
     };
 
     window.electronAPI.onRemoteMatchFinished(handleMatchFinished);
