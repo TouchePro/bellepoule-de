@@ -742,6 +742,7 @@
         <!-- Chronomètre -->
         <div class="timer-section">
           <div class="timer-display" id="timer-display">03:00</div>
+          <div id="sudden-death-label" style="display:none; color:#ef4444; font-weight:900; font-size:1.5rem; text-align:center; margin-top:0.5rem; letter-spacing:0.1em; animation: pulse-timer 0.8s infinite;">⚡ MORT SUBITE</div>
           <div class="timer-hint">Tapez pour démarrer/pause - Appui long pour reset</div>
         </div>
 
@@ -817,6 +818,8 @@
           this.timerInterval = null;
           this.timerRunning = false;
           this.longPressTimer = null;
+          this.isLaserSabre = false;
+          this.isSuddenDeath = false;
 
           this.init();
         }
@@ -838,6 +841,11 @@
           this.setupTimerInteractions();
           this.setupLongPressInteractions();
           this.showNextMatchesScreen();
+          // Détecter l'arme de la compétition pour la mort subite Laser Sabre
+          fetch('/api/session')
+            .then(r => (r.ok ? r.json() : null))
+            .then(s => { if (s) this.isLaserSabre = s.weapon === 'L'; })
+            .catch(() => {});
         }
 
         setupLongPressInteractions() {
@@ -1108,6 +1116,7 @@
           this.cardsB = [];
           this.matchStatus = match.status;
           this.timerSeconds = 180;
+          this.isSuddenDeath = false;
           this.stopTimer();
 
           // Charger les infos du match
@@ -1305,7 +1314,11 @@
 
               if (this.timerSeconds === 0) {
                 this.stopTimer();
-                this.showNotification('⏰ Temps écoulé !');
+                if (this.isLaserSabre && this.scoreA === this.scoreB && !this.isSuddenDeath) {
+                  this.triggerSuddenDeath();
+                } else {
+                  this.showNotification('⏰ Temps écoulé !');
+                }
               }
             }
           }, 1000);
@@ -1327,10 +1340,20 @@
 
         resetTimer() {
           this.stopTimer();
+          this.isSuddenDeath = false;
           this.timerSeconds = 180;
           this.updateTimerDisplay();
           this.broadcastTimerUpdate();
           this.showNotification('🔄 Chronomètre réinitialisé');
+        }
+
+        triggerSuddenDeath() {
+          this.isSuddenDeath = true;
+          this.timerSeconds = 30;
+          this.updateTimerDisplay();
+          this.broadcastTimerUpdate();
+          this.showNotification('⚡ MORT SUBITE – 30 secondes !');
+          this.startTimer();
         }
 
         updateTimerDisplay() {
@@ -1354,6 +1377,10 @@
           } else if (this.timerSeconds <= 30) {
             timerEl.classList.add('warning');
           }
+
+          // Affichage mort subite
+          const sdLabel = document.getElementById('sudden-death-label');
+          if (sdLabel) sdLabel.style.display = this.isSuddenDeath ? 'block' : 'none';
         }
 
         broadcastTimerUpdate() {
@@ -1362,6 +1389,7 @@
             action: this.timerRunning ? 'update_timer' : 'pause_timer',
             time: this.timerSeconds,
             timerStatus: this.timerRunning ? 'running' : 'paused',
+            suddenDeath: this.isSuddenDeath,
           });
         }
 
@@ -1462,6 +1490,7 @@
               this.cardsB = [];
               this.matchStatus = 'not_started';
               this.timerSeconds = 180;
+              this.isSuddenDeath = false;
               this.updateTimerDisplay();
               document.getElementById('active-match').classList.remove('visible');
               this.showNextMatchesScreen();

@@ -281,7 +281,7 @@ export class RemoteScoreServer {
       if (!this.session) {
         return res.status(404).json({ error: 'Aucune session active' });
       }
-      res.json(this.session);
+      res.json({ ...this.session, weapon: this.sessionWeapon });
     });
 
     this.app.post('/api/session/start', async (req, res) => {
@@ -803,6 +803,7 @@ export class RemoteScoreServer {
           match: arena.currentMatch,
           time: data.time,
           timerStatus: data.timerStatus,
+          suddenDeath: data.suddenDeath ?? false,
           status: arena.status,
         });
         break;
