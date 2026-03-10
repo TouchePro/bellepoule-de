@@ -686,6 +686,8 @@ export class RemoteScoreServer {
 
   // Stockage des cartons par arène
   private arenaCards: Map<string, { cardsA: string[]; cardsB: string[] }> = new Map();
+  // Stockage de l'état mort subite par arène
+  private arenaSuddenDeath: Map<string, boolean> = new Map();
 
   private handleArenaControl(
     socket: any,
@@ -742,6 +744,9 @@ export class RemoteScoreServer {
         break;
       case 'update_score':
         if (data.scoreA !== undefined && data.scoreB !== undefined) {
+          if (data.suddenDeath !== undefined) {
+            this.arenaSuddenDeath.set(data.arenaId, data.suddenDeath);
+          }
           this.updateArenaScore(data.arenaId, data.scoreA, data.scoreB);
         }
         // Mettre à jour aussi les cartons si fournis
@@ -757,6 +762,7 @@ export class RemoteScoreServer {
             scoreB: data.scoreB ?? arena.currentMatch?.scoreB,
             cardsA: currentCards.cardsA,
             cardsB: currentCards.cardsB,
+            suddenDeath: this.arenaSuddenDeath.get(data.arenaId) ?? false,
             status: arena.status,
           });
         }
@@ -781,6 +787,7 @@ export class RemoteScoreServer {
         break;
       case 'reset_scores':
         if (arena.currentMatch) {
+          this.arenaSuddenDeath.set(data.arenaId, false);
           this.updateArenaScore(data.arenaId, 0, 0);
           // Réinitialiser les cartons
           this.arenaCards.set(data.arenaId, { cardsA: [], cardsB: [] });
@@ -791,6 +798,7 @@ export class RemoteScoreServer {
             scoreB: 0,
             cardsA: [],
             cardsB: [],
+            suddenDeath: false,
             status: arena.status,
           });
         }
@@ -1041,6 +1049,7 @@ export class RemoteScoreServer {
       match: arena.currentMatch,
       scoreA,
       scoreB,
+      suddenDeath: this.arenaSuddenDeath.get(arenaId) ?? false,
       status: arena.status,
     });
 
