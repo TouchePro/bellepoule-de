@@ -121,6 +121,18 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
   const handleExport = (format: 'csv' | 'xml' | 'pdf') => {
     if (onExport) {
       onExport(format);
+    } else if (format === 'csv') {
+      const content = generateCSV();
+      const blob = new Blob(['\uFEFF' + content], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'classement.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Export CSV réussi', 'success');
     } else {
       showToast(`Export ${format.toUpperCase()} non implémenté`, 'warning');
     }
