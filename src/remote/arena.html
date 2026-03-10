@@ -50,7 +50,7 @@
         gap: 1.5rem;
       }
 
-      .dick-rivers-toggle {
+      .inversion-toggle {
         display: flex;
         align-items: center;
         gap: 0.5rem;
@@ -61,17 +61,17 @@
         transition: background 0.2s;
       }
 
-      .dick-rivers-toggle:hover {
+      .inversion-toggle:hover {
         background: rgba(255, 255, 255, 0.2);
       }
 
-      .dick-rivers-toggle input {
+      .inversion-toggle input {
         width: 20px;
         height: 20px;
         cursor: pointer;
       }
 
-      .dick-rivers-toggle label {
+      .inversion-toggle label {
         font-size: 0.95rem;
         font-weight: 600;
         cursor: pointer;
@@ -433,9 +433,9 @@
         <span>Arène <span id="arena-number">1</span></span>
       </div>
       <div class="status-section">
-        <div class="dick-rivers-toggle">
-          <input type="checkbox" id="dick-rivers-checkbox" />
-          <label for="dick-rivers-checkbox">Dick Rivers</label>
+        <div class="inversion-toggle">
+          <input type="checkbox" id="inversion-checkbox" />
+          <label for="inversion-checkbox">⇄ Inverser</label>
         </div>
         <div class="match-status-badge status-waiting" id="match-status">En attente</div>
         <div class="connection-indicator">
@@ -496,7 +496,7 @@
           this.matchStatus = 'idle';
           this.cardsA = [];
           this.cardsB = [];
-          this.dickRiversEnabled = localStorage.getItem('dickRiversEnabled') === 'true';
+          this.inversionEnabled = localStorage.getItem('inversionEnabled') === 'true';
 
           this.init();
         }
@@ -514,24 +514,24 @@
         init() {
           document.getElementById('arena-number').textContent = this.arenaNumber;
           document.getElementById('arena-idle-number').textContent = this.arenaNumber;
-          this.setupDickRiversToggle();
-          this.applyDickRiversState();
+          this.setupInversionToggle();
+          this.applyInversionState();
           this.setupSocketListeners();
         }
 
-        setupDickRiversToggle() {
-          const checkbox = document.getElementById('dick-rivers-checkbox');
-          checkbox.checked = this.dickRiversEnabled;
+        setupInversionToggle() {
+          const checkbox = document.getElementById('inversion-checkbox');
+          checkbox.checked = this.inversionEnabled;
           checkbox.addEventListener('change', () => {
-            this.dickRiversEnabled = checkbox.checked;
-            localStorage.setItem('dickRiversEnabled', this.dickRiversEnabled);
-            this.applyDickRiversState();
+            this.inversionEnabled = checkbox.checked;
+            localStorage.setItem('inversionEnabled', this.inversionEnabled);
+            this.applyInversionState();
           });
         }
 
-        applyDickRiversState() {
+        applyInversionState() {
           const fencersRow = document.querySelector('.fencers-row');
-          if (this.dickRiversEnabled) {
+          if (this.inversionEnabled) {
             fencersRow.classList.add('reversed');
           } else {
             fencersRow.classList.remove('reversed');
