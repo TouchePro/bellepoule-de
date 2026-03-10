@@ -495,6 +495,7 @@ export class RemoteScoreServer {
         const arena = this.arenas.get(arenaId);
         const allArenaMatches: any[] = [];
 
+        // Match courant de CETTE arène uniquement
         if (arena && arena.currentMatch) {
           console.log(
             `[RemoteScoreServer] Match trouvé en mémoire pour arène ${arenaId}:`,
@@ -513,57 +514,30 @@ export class RemoteScoreServer {
           console.log(`[RemoteScoreServer] Pas de match en mémoire pour arène ${arenaId}`);
         }
 
-        // Récupérer tous les matches de toutes les arènes
-        for (const [id, a] of this.arenas) {
-          if (a.currentMatch && id !== arenaId) {
-            allArenaMatches.push({
-              id: a.currentMatch.id,
-              poolId: a.currentMatch.poolId,
-              fencerA: a.currentMatch.fencerA,
-              fencerB: a.currentMatch.fencerB,
-              scoreA: a.currentMatch.scoreA,
-              scoreB: a.currentMatch.scoreB,
-              status: a.currentMatch.status,
-            });
-          }
-        }
+        console.log(`[RemoteScoreServer] Matches pour arène ${arenaId}: ${allArenaMatches.length}`);
 
-        console.log(`[RemoteScoreServer] Total matches en mémoire: ${allArenaMatches.length}`);
-
-        // Si on a des matches en mémoire, les utiliser
         if (allArenaMatches.length > 0) {
-          console.log(`[RemoteScoreServer] Utilisation des matches en mémoire`);
           return res.json({ matches: allArenaMatches, poolId: null, poolName: null });
         }
 
-        // Fallback: chercher dans la DB si pas de matches en mémoire
-        console.log('[RemoteScoreServer] Pas de matches en mémoire, recherche dans la DB...');
-        let allMatches = this.db.getPendingMatches(competitionId);
-        console.log(
-          `[RemoteScoreServer] Methode 1 (getPendingMatches): ${allMatches.length} matches`
-        );
-
-        // Fallback if no matches found - via pool_fencers
-        if (allMatches.length === 0) {
-          allMatches = this.db.getAllPendingMatchesFromPools(competitionId);
-          console.log(
-            `[RemoteScoreServer] Methode 2 (getAllPendingMatchesFromPools): ${allMatches.length} matches`
-          );
+        // Fallback: file d'attente DE de CETTE arène uniquement
+        const arenaQueue = this.arenaMatchQueue.get(arenaId) || [];
+        if (arenaQueue.length > 0) {
+          console.log(`[RemoteScoreServer] ${arenaQueue.length} matchs en file DE pour arène ${arenaId}`);
+          const queueMatches = arenaQueue.map(m => ({
+            id: m.id,
+            poolId: m.poolId,
+            fencerA: m.fencerA,
+            fencerB: m.fencerB,
+            scoreA: m.scoreA ?? 0,
+            scoreB: m.scoreB ?? 0,
+            status: m.status,
+          }));
+          return res.json({ matches: queueMatches, poolId: null, poolName: null });
         }
 
-        // Fallback 2 - direct query via fencers table
-        if (allMatches.length === 0) {
-          allMatches = this.db.getPendingMatchesDirectly(competitionId);
-          console.log(
-            `[RemoteScoreServer] Methode 3 (getPendingMatchesDirectly): ${allMatches.length} matches`
-          );
-        }
-
-        console.log(
-          `[RemoteScoreServer] Total: ${allMatches.length} matches en attente pour la compétition ${competitionId}`
-        );
-
-        res.json({ matches: allMatches, poolId: null, poolName: null });
+        console.log(`[RemoteScoreServer] Aucun match disponible pour arène ${arenaId}`);
+        res.json({ matches: [], poolId: null, poolName: null });
       } catch (error) {
         console.error('[RemoteScoreServer] Erreur récupération matchs:', error);
         res.status(500).json({ error: 'Erreur lors de la récupération des matchs' });
