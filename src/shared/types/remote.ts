@@ -111,6 +111,7 @@ export interface ArenaSettings {
 export interface ArenaMatch {
   id: string;
   poolId?: string; // absent pour les matchs d'élimination directe
+  isTableau?: boolean; // true pour les matchs DE (élimination directe)
   fencerA: Fencer;
   fencerB: Fencer;
   scoreA: number;

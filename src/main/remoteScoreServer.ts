@@ -1100,6 +1100,7 @@ export class RemoteScoreServer {
         scoreA: finishedMatch.scoreA,
         scoreB: finishedMatch.scoreB,
         poolId: finishedMatch.poolId,
+        isTableau: finishedMatch.isTableau ?? false,
       });
       console.log(
         `[RemoteScoreServer] Émission match:finished pour ${finishedMatch.id}: ${finishedMatch.scoreA}-${finishedMatch.scoreB}`
@@ -1435,9 +1436,9 @@ export class RemoteScoreServer {
         if (!queuesByArena.has(targetArenaId)) {
           // arène hors plage → round-robin sur arènes disponibles
           const fallbackId = `arena${(rrIndex % strips) + 1}`;
-          queuesByArena.get(fallbackId)!.push({ id: match.id, fencerA: match.fencerA, fencerB: match.fencerB, scoreA: 0, scoreB: 0, status: 'not_started', startTime: null, endTime: null });
+          queuesByArena.get(fallbackId)!.push({ id: match.id, fencerA: match.fencerA, fencerB: match.fencerB, scoreA: 0, scoreB: 0, status: 'not_started', startTime: null, endTime: null, isTableau: true });
         } else {
-          queuesByArena.get(targetArenaId)!.push({ id: match.id, fencerA: match.fencerA, fencerB: match.fencerB, scoreA: 0, scoreB: 0, status: 'not_started', startTime: null, endTime: null });
+          queuesByArena.get(targetArenaId)!.push({ id: match.id, fencerA: match.fencerA, fencerB: match.fencerB, scoreA: 0, scoreB: 0, status: 'not_started', startTime: null, endTime: null, isTableau: true });
         }
         rrIndex++;
       }
@@ -1480,6 +1481,9 @@ export class RemoteScoreServer {
 
   public stopSession(): void {
     this.session = null;
+    this.sessionMatches = [];
+    this.arenaMatchQueue.clear();
+    this.arenaNextMatchIndex.clear();
   }
 
   public updateStripCount(newCount: number): RemoteSession | null {

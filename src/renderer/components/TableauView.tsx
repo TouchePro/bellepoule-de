@@ -62,6 +62,89 @@ interface TableauViewProps {
 const BASE_MATCH_HEIGHT = 100;
 const SLOT_HEIGHT = BASE_MATCH_HEIGHT + 50; // hauteur d'un créneau dans la première colonne
 
+export function propagateWinners(matchList: TableauMatch[], size: number): void {
+  let currentRound = size;
+
+  while (currentRound > 2) {
+    const nextRound = currentRound / 2;
+    const currentMatches = matchList.filter(m => m.round === currentRound);
+    const nextMatches = matchList.filter(m => m.round === nextRound);
+
+    // Première passe : propager tous les gagnants (y compris les exempts)
+    currentMatches.forEach((match, idx) => {
+      if (match.winner) {
+        const nextMatchIdx = Math.floor(idx / 2);
+        const nextMatch = nextMatches[nextMatchIdx];
+        if (nextMatch) {
+          if (idx % 2 === 0) {
+            nextMatch.fencerA = match.winner;
+          } else {
+            nextMatch.fencerB = match.winner;
+          }
+        }
+      }
+    });
+
+    // Deuxième passe : vérifier les exempts au tour suivant
+    nextMatches.forEach((nextMatch, nextIdx) => {
+      // Ne pas modifier les matchs déjà joués
+      if (nextMatch.scoreA !== null && nextMatch.scoreB !== null) return;
+
+      const feederA = currentMatches[nextIdx * 2];
+      const feederB = currentMatches[nextIdx * 2 + 1];
+
+      // Vérifier si les deux matchs sources sont résolus
+      const feederAResolved =
+        !feederA ||
+        feederA.winner !== null ||
+        (feederA.isBye && !feederA.fencerA && !feederA.fencerB);
+      const feederBResolved =
+        !feederB ||
+        feederB.winner !== null ||
+        (feederB.isBye && !feederB.fencerA && !feederB.fencerB);
+
+      if (feederAResolved && feederBResolved) {
+        if (nextMatch.fencerA && !nextMatch.fencerB) {
+          nextMatch.winner = nextMatch.fencerA;
+          nextMatch.isBye = true;
+        } else if (!nextMatch.fencerA && nextMatch.fencerB) {
+          nextMatch.winner = nextMatch.fencerB;
+          nextMatch.isBye = true;
+        } else if (nextMatch.fencerA && nextMatch.fencerB) {
+          nextMatch.isBye = false;
+          nextMatch.winner = null;
+        }
+      }
+    });
+
+    currentRound = nextRound;
+  }
+
+  // Gérer le match de 3ème place si présent dans matchList
+  const thirdPlaceMatchEntry = matchList.find(m => m.round === 3);
+  if (thirdPlaceMatchEntry && size >= 4) {
+    const semiFinalMatches = matchList.filter(m => m.round === 4);
+
+    if (semiFinalMatches.length === 2) {
+      // Assigner les perdants des demi-finales au match de 3ème place
+      const losers: Fencer[] = [];
+
+      semiFinalMatches.forEach(semiFinal => {
+        if (semiFinal.winner) {
+          const loser =
+            semiFinal.fencerA?.id === semiFinal.winner.id ? semiFinal.fencerB : semiFinal.fencerA;
+          if (loser) losers.push(loser);
+        }
+      });
+
+      if (losers.length === 2) {
+        thirdPlaceMatchEntry.fencerA = losers[0];
+        thirdPlaceMatchEntry.fencerB = losers[1];
+      }
+    }
+  }
+}
+
 const TableauViewComponent: React.FC<TableauViewProps> = ({
   ranking,
   matches,
@@ -219,92 +302,6 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
       ];
     }
     return Array.from({ length: size }, (_, i) => i + 1);
-  };
-
-  const propagateWinners = (matchList: TableauMatch[], size: number) => {
-    let currentRound = size;
-
-    while (currentRound > 2) {
-      const nextRound = currentRound / 2;
-      const currentMatches = matchList.filter(m => m.round === currentRound);
-      const nextMatches = matchList.filter(m => m.round === nextRound);
-
-      // Première passe : propager tous les gagnants (y compris les exempts)
-      currentMatches.forEach((match, idx) => {
-        if (match.winner) {
-          const nextMatchIdx = Math.floor(idx / 2);
-          const nextMatch = nextMatches[nextMatchIdx];
-          if (nextMatch) {
-            if (idx % 2 === 0) {
-              nextMatch.fencerA = match.winner;
-            } else {
-              nextMatch.fencerB = match.winner;
-            }
-          }
-        }
-      });
-
-      // Deuxième passe : vérifier les exempts au tour suivant
-      nextMatches.forEach((nextMatch, nextIdx) => {
-        // Ne pas modifier les matchs déjà joués
-        if (nextMatch.scoreA !== null && nextMatch.scoreB !== null) return;
-
-        const feederA = currentMatches[nextIdx * 2];
-        const feederB = currentMatches[nextIdx * 2 + 1];
-
-        // Vérifier si les deux matchs sources sont résolus
-        const feederAResolved =
-          !feederA ||
-          feederA.winner !== null ||
-          (feederA.isBye && !feederA.fencerA && !feederA.fencerB);
-        const feederBResolved =
-          !feederB ||
-          feederB.winner !== null ||
-          (feederB.isBye && !feederB.fencerA && !feederB.fencerB);
-
-        if (feederAResolved && feederBResolved) {
-          if (nextMatch.fencerA && !nextMatch.fencerB) {
-            nextMatch.winner = nextMatch.fencerA;
-            nextMatch.isBye = true;
-          } else if (!nextMatch.fencerA && nextMatch.fencerB) {
-            nextMatch.winner = nextMatch.fencerB;
-            nextMatch.isBye = true;
-          } else if (nextMatch.fencerA && nextMatch.fencerB) {
-            nextMatch.isBye = false;
-            nextMatch.winner = null;
-          }
-        }
-      });
-
-      currentRound = nextRound;
-    }
-
-    // Gérer le match de 3ème place si présent dans matchList
-    const thirdPlaceMatchEntry = matchList.find(m => m.round === 3);
-    if (thirdPlaceMatchEntry && size >= 4) {
-      const semiFinalMatches = matchList.filter(m => m.round === 4);
-
-      if (semiFinalMatches.length === 2) {
-        // Assigner les perdants des demi-finales au match de 3ème place
-        const losers: Fencer[] = [];
-
-        semiFinalMatches.forEach(semiFinal => {
-          if (semiFinal.winner) {
-            const loser =
-              semiFinal.fencerA?.id === semiFinal.winner.id ? semiFinal.fencerB : semiFinal.fencerA;
-            if (loser) losers.push(loser);
-          }
-        });
-
-        // DEBUG: console.log('Propagation 3ème place:', losers.map(l => l?.lastName));
-
-        if (losers.length === 2) {
-          thirdPlaceMatchEntry.fencerA = losers[0];
-          thirdPlaceMatchEntry.fencerB = losers[1];
-          // DEBUG: console.log('Assigné à la petite finale:', losers[0]?.lastName, 'vs', losers[1]?.lastName);
-        }
-      }
-    }
   };
 
   const getRoundName = (round: number): string => {
