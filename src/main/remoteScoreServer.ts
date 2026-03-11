@@ -67,7 +67,7 @@ export class RemoteScoreServer {
     const isDev = process.env.NODE_ENV === 'development';
 
     // Liste des fichiers à charger
-    const filesToLoad = ['referee.html', 'arena.html', 'dashboard.html', 'index.html'];
+    const filesToLoad = ['referee.html', 'arena.html', 'dashboard.html', 'index.html', 'pool.html'];
 
     // Essayer plusieurs chemins pour trouver les fichiers
     const possiblePaths = isDev
@@ -477,6 +477,93 @@ export class RemoteScoreServer {
       this.sendHtmlFromMemory('referee.html', res);
     });
 
+    // Vue de saisie de poule par arène
+    this.app.get('/arene:arenaId/poule', (req, res) => {
+      const arenaId = req.params.arenaId;
+      console.log(`[RemoteScoreServer] Accès à la vue poule /arene${arenaId}/poule`);
+      this.sendHtmlFromMemory('pool.html', res);
+    });
+
+    // API: données complètes de la poule pour une arène
+    this.app.get('/api/arenas/:arenaId/pool-data', (req, res) => {
+      const rawId = req.params.arenaId;
+      // Accepte "1" ou "arena1" comme arenaId
+      const arenaId = rawId.startsWith('arena') ? rawId : `arena${rawId}`;
+      try {
+        const arena = this.arenas.get(arenaId);
+        const poolId = arena?.currentMatch?.poolId;
+        if (!poolId) {
+          return res.status(404).json({ error: 'Aucune poule assignée à cette arène' });
+        }
+
+        const fencers = this.db.getPoolFencers(poolId);
+        const matches = this.db.getMatchesByPool(poolId);
+        const isComplete =
+          matches.length > 0 && matches.every(m => m.status === MatchStatus.FINISHED);
+
+        const poolName = (() => {
+          if (!this.session) return 'Poule';
+          const allPools = this.db.getCompetitionPools(this.session.competitionId);
+          return allPools.find(p => p.id === poolId)?.name ?? 'Poule';
+        })();
+
+        res.json({ poolId, poolName, arenaId, fencers, matches, isComplete });
+      } catch (err) {
+        console.error('[RemoteScoreServer] Erreur pool-data:', err);
+        res.status(500).json({ error: 'Erreur interne' });
+      }
+    });
+
+    // API: saisir le score d'un match de poule
+    this.app.post('/api/pools/:poolId/matches/:matchId/score', (req, res) => {
+      const { poolId, matchId } = req.params;
+      const { scoreA, scoreB, specialStatus } = req.body as {
+        scoreA: number;
+        scoreB: number;
+        specialStatus?: string;
+      };
+      try {
+        const winner = scoreA > scoreB ? 'A' : scoreB > scoreA ? 'B' : null;
+        const scoreAObj: Score = {
+          value: scoreA,
+          isVictory: winner === 'A',
+          isAbstention: specialStatus === 'abandon_A',
+          isExclusion: specialStatus === 'exclusion_A',
+          isForfait: specialStatus === 'forfait_A',
+        };
+        const scoreBObj: Score = {
+          value: scoreB,
+          isVictory: winner === 'B',
+          isAbstention: specialStatus === 'abandon_B',
+          isExclusion: specialStatus === 'exclusion_B',
+          isForfait: specialStatus === 'forfait_B',
+        };
+        this.db.updateMatch(matchId, {
+          scoreA: scoreAObj,
+          scoreB: scoreBObj,
+          status: MatchStatus.FINISHED,
+        });
+
+        // Broadcaster la mise à jour vers toutes les vues /poule connectées
+        const matches = this.db.getMatchesByPool(poolId);
+        const fencers = this.db.getPoolFencers(poolId);
+        const isComplete = matches.every(m => m.status === MatchStatus.FINISHED);
+        for (const [aId, arena] of this.arenas) {
+          if (arena.currentMatch?.poolId === poolId) {
+            this.io
+              .to(`pool:${aId}`)
+              .emit(`pool:${aId}:update`, { poolId, fencers, matches, isComplete });
+            break;
+          }
+        }
+
+        res.json({ success: true, isComplete });
+      } catch (err) {
+        console.error('[RemoteScoreServer] Erreur score poule:', err);
+        res.status(500).json({ error: 'Erreur enregistrement score' });
+      }
+    });
+
     // API pour récupérer les matchs d'une arène/poule
     this.app.get('/api/arenas/:arenaId/matches', (req, res) => {
       try {
@@ -664,6 +751,10 @@ export class RemoteScoreServer {
             fencerB: arena.currentMatch?.fencerB,
           });
         }
+      });
+
+      socket.on('join_pool', (data: { arenaId: string }) => {
+        socket.join(`pool:${data.arenaId}`);
       });
 
       socket.on(
