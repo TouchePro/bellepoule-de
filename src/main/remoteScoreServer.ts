@@ -1811,16 +1811,22 @@ export class RemoteScoreServer {
       Array.from(matchesByPool.keys())
     );
 
-    // Construire le cache des tireurs par pool depuis les matchs reçus
+    // Construire le cache des tireurs par pool depuis la DB (ordre par position)
     this.poolFencersCache.clear();
     this.sessionMatchScores.clear();
     for (const [poolId, poolMatches] of matchesByPool) {
-      const fencerMap = new Map<string, any>();
-      for (const match of poolMatches) {
-        if (match.fencerA?.id) fencerMap.set(match.fencerA.id, match.fencerA);
-        if (match.fencerB?.id) fencerMap.set(match.fencerB.id, match.fencerB);
+      const dbFencers = this.db.getPoolFencers(poolId);
+      if (dbFencers.length > 0) {
+        this.poolFencersCache.set(poolId, dbFencers);
+      } else {
+        // Fallback si poolId synthétique (pool-N) sans correspondance DB
+        const fencerMap = new Map<string, any>();
+        for (const match of poolMatches) {
+          if (match.fencerA?.id) fencerMap.set(match.fencerA.id, match.fencerA);
+          if (match.fencerB?.id) fencerMap.set(match.fencerB.id, match.fencerB);
+        }
+        this.poolFencersCache.set(poolId, Array.from(fencerMap.values()));
       }
-      this.poolFencersCache.set(poolId, Array.from(fencerMap.values()));
     }
 
     // Assigner les matchs aux arènes par pool (Pool 1 -> Arena 1, Pool 2 -> Arena 2, etc.)
