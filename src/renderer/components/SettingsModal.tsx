@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from '../hooks/useTranslation';
+import type { Language } from '../contexts/TranslationContext';
 import LanguageSelector from './LanguageSelector';
 
 interface SettingsModalProps {
@@ -28,7 +29,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
     setSettings(prev => ({ ...prev, language, theme }));
   }, [language, theme]);
 
-  const handleLanguageChange = (newLanguage: 'fr' | 'en' | 'br') => {
+  const handleLanguageChange = (newLanguage: Language) => {
     console.log(
       `🔄 SettingsModal: Language selected: ${newLanguage} (current: ${settings.language})`
     );
