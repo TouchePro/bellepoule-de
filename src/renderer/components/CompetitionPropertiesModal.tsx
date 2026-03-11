@@ -276,7 +276,7 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
                   id="poolMaxScore"
                   className="form-input"
                   value={poolMaxScore}
-                  onChange={e => setPoolMaxScore(parseInt(e.target.value) || 0)}
+                  onChange={e => setPoolMaxScore(Math.max(1, parseInt(e.target.value) || 1))}
                   min="1"
                   placeholder="21"
                 />

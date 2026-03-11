@@ -200,13 +200,15 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     const scoreB = parseInt(editScoreB, 10) || 0;
 
     // Valider que les scores ne dépassent pas le maximum
-    if (maxScore > 0) {
-      if (scoreA > maxScore) {
-        showToast(`Le score du tireur A ne peut pas dépasser ${maxScore}`, 'error');
+    // Utiliser le maxScore stocké sur le match comme référence, avec fallback sur la prop
+    const effectiveMax = pool.matches[editingMatch]?.maxScore || maxScore || 0;
+    if (effectiveMax > 0) {
+      if (scoreA > effectiveMax) {
+        showToast(`Le score du tireur A ne peut pas dépasser ${effectiveMax}`, 'error');
         return;
       }
-      if (scoreB > maxScore) {
-        showToast(`Le score du tireur B ne peut pas dépasser ${maxScore}`, 'error');
+      if (scoreB > effectiveMax) {
+        showToast(`Le score du tireur B ne peut pas dépasser ${effectiveMax}`, 'error');
         return;
       }
     }
@@ -477,18 +479,18 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                   fontSize: '3rem',
                   padding: '0.75rem',
                   borderColor:
-                    (parseInt(editScoreA, 10) || 0) > (maxScore > 0 ? maxScore : 999)
+                    (parseInt(editScoreA, 10) || 0) > ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) || maxScore || 999)
                       ? '#ef4444'
                       : undefined,
                   borderWidth:
-                    (parseInt(editScoreA, 10) || 0) > (maxScore > 0 ? maxScore : 999)
+                    (parseInt(editScoreA, 10) || 0) > ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) || maxScore || 999)
                       ? '2px'
                       : undefined,
                 }}
                 value={editScoreA}
                 onChange={e => setEditScoreA(e.target.value)}
                 min="0"
-                max={maxScore > 0 ? maxScore : undefined}
+                max={(editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) || maxScore || undefined}
                 autoFocus
                 onKeyDown={e => {
                   if (e.key === 'Enter') {
@@ -522,18 +524,18 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                   fontSize: '3rem',
                   padding: '0.75rem',
                   borderColor:
-                    (parseInt(editScoreB, 10) || 0) > (maxScore > 0 ? maxScore : 999)
+                    (parseInt(editScoreB, 10) || 0) > ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) || maxScore || 999)
                       ? '#ef4444'
                       : undefined,
                   borderWidth:
-                    (parseInt(editScoreB, 10) || 0) > (maxScore > 0 ? maxScore : 999)
+                    (parseInt(editScoreB, 10) || 0) > ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) || maxScore || 999)
                       ? '2px'
                       : undefined,
                 }}
                 value={editScoreB}
                 onChange={e => setEditScoreB(e.target.value)}
                 min="0"
-                max={maxScore > 0 ? maxScore : undefined}
+                max={(editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) || maxScore || undefined}
                 onKeyDown={e => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
