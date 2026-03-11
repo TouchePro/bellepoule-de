@@ -930,6 +930,9 @@
 
         document.getElementById('input-score-a').value = saVal;
         document.getElementById('input-score-b').value = sbVal;
+        const maxScore = match.maxScore || 5;
+        document.getElementById('input-score-a').max = maxScore;
+        document.getElementById('input-score-b').max = maxScore;
         document.getElementById('modal-error').textContent = '';
 
         document.getElementById('modal-overlay').classList.add('visible');
@@ -966,6 +969,13 @@
 
         if (isNaN(rawA) || isNaN(rawB) || rawA < 0 || rawB < 0) {
           document.getElementById('modal-error').textContent = 'Scores invalides.';
+          return;
+        }
+
+        const maxScore = pendingMatch.match.maxScore || 5;
+        if (rawA > maxScore || rawB > maxScore) {
+          document.getElementById('modal-error').textContent =
+            `Score maximum dépassé (max : ${maxScore}).`;
           return;
         }
 
