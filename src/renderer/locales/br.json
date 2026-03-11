@@ -181,7 +181,8 @@
     "previous": "A-raok",
     "check_in_all": "Boukañ pep tra",
     "uncheck_all": "Digoumanañ pep tra",
-    "view": "Gwelet"
+    "view": "Gwelet",
+    "default": "N'eus ket"
   },
   "messages": {
     "confirm_delete_fencer": "Ha sur oc'h evid ? Fell eo an dilemelañ ar c'hoarzh ? An den dra zo diwezheg. VEOUS anv raoud bezañ.",

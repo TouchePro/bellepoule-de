@@ -6,7 +6,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
-export type Language = 'fr' | 'en' | 'br';
+export type Language = 'fr' | 'en' | 'br' | 'ca' | 'de' | 'es' | 'zh-HK';
 export type TranslationKey = string;
 export type Theme = 'light' | 'dark' | 'default';
 
@@ -57,6 +57,42 @@ const getFallbackTranslations = (language: Language): Translations => {
       messages: {
         no_competitions: 'Hini kenstrrenn',
         loading: 'O kargañ...',
+      },
+    },
+    ca: {
+      app: { title: 'BellePoule Modern' },
+      menu: { new_competition: 'Nova Competició' },
+      settings: { title: 'Configuració' },
+      messages: {
+        no_competitions: 'Sense competicions',
+        loading: 'Carregant...',
+      },
+    },
+    de: {
+      app: { title: 'BellePoule Modern' },
+      menu: { new_competition: 'Neuer Wettbewerb' },
+      settings: { title: 'Einstellungen' },
+      messages: {
+        no_competitions: 'Keine Wettbewerbe',
+        loading: 'Laden...',
+      },
+    },
+    es: {
+      app: { title: 'BellePoule Modern' },
+      menu: { new_competition: 'Nueva Competición' },
+      settings: { title: 'Ajustes' },
+      messages: {
+        no_competitions: 'Sin competiciones',
+        loading: 'Cargando...',
+      },
+    },
+    'zh-HK': {
+      app: { title: 'BellePoule Modern' },
+      menu: { new_competition: '新增比賽' },
+      settings: { title: '設定' },
+      messages: {
+        no_competitions: '沒有比賽',
+        loading: '載入中...',
       },
     },
   };
@@ -168,7 +204,11 @@ export const TranslationProvider: React.FC<TranslationProviderProps> = ({ childr
     availableLanguages: [
       { code: 'fr', name: 'Français', flag: '🇫🇷' },
       { code: 'en', name: 'English', flag: '🇺🇸' },
-      { code: 'br', name: 'Breton', flag: '🇫🇷' },
+      { code: 'br', name: 'Brezhoneg', flag: '🇫🇷' },
+      { code: 'ca', name: 'Català', flag: '🇪🇸' },
+      { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
+      { code: 'es', name: 'Español', flag: '🇪🇸' },
+      { code: 'zh-HK', name: '繁體中文', flag: '🇭🇰' },
     ],
     availableThemes: [
       { code: 'default', name: 'Default' },
