@@ -34,6 +34,8 @@ export class RemoteScoreServer {
   private sessionMatches: any[] = []; // Matches passés depuis le renderer
   private arenaNextMatchIndex: Map<string, number> = new Map(); // Index du prochain match par arène
   private arenaMatchQueue: Map<string, ArenaMatch[]> = new Map(); // File d'attente DE par arène
+  private poolFencersCache: Map<string, any[]> = new Map(); // Tireurs par poolId (depuis le renderer)
+  private sessionMatchScores: Map<string, { scoreA: any; scoreB: any; status: string }> = new Map(); // Scores en mémoire
 
   // Stocker le contenu des fichiers HTML en mémoire pour éviter les problèmes de chemin
   private htmlFiles: Map<string, string> = new Map();
@@ -496,10 +498,26 @@ export class RemoteScoreServer {
           return res.status(404).json({ error: 'Aucune poule assignée à cette arène' });
         }
 
-        const fencers = this.db.getPoolFencers(poolId);
-        const matches = this.db.getMatchesByPool(poolId);
+        // Priorité : cache en mémoire (matchs du renderer), fallback DB
+        const fencers =
+          this.poolFencersCache.get(poolId) ?? this.db.getPoolFencers(poolId);
+        const matches = (() => {
+          const inMemory = this.sessionMatches.filter(
+            m =>
+              (m.poolId ||
+                m.pool?.id ||
+                `pool-${m.poolNumber || m.number}`) === poolId
+          );
+          if (inMemory.length > 0) {
+            return inMemory.map(m => {
+              const update = this.sessionMatchScores.get(m.id);
+              return update ? { ...m, ...update } : m;
+            });
+          }
+          return this.db.getMatchesByPool(poolId);
+        })();
         const isComplete =
-          matches.length > 0 && matches.every(m => m.status === MatchStatus.FINISHED);
+          matches.length > 0 && matches.every((m: any) => m.status === MatchStatus.FINISHED);
 
         const poolName = (() => {
           if (!this.session) return 'Poule';
@@ -544,10 +562,32 @@ export class RemoteScoreServer {
           status: MatchStatus.FINISHED,
         });
 
+        // Mettre à jour le score en mémoire (pour les matchs du renderer non persistés en DB)
+        this.sessionMatchScores.set(matchId, {
+          scoreA: scoreAObj,
+          scoreB: scoreBObj,
+          status: MatchStatus.FINISHED,
+        });
+
         // Broadcaster la mise à jour vers toutes les vues /poule connectées
-        const matches = this.db.getMatchesByPool(poolId);
-        const fencers = this.db.getPoolFencers(poolId);
-        const isComplete = matches.every(m => m.status === MatchStatus.FINISHED);
+        const fencers =
+          this.poolFencersCache.get(poolId) ?? this.db.getPoolFencers(poolId);
+        const matches = (() => {
+          const inMemory = this.sessionMatches.filter(
+            m =>
+              (m.poolId ||
+                m.pool?.id ||
+                `pool-${m.poolNumber || m.number}`) === poolId
+          );
+          if (inMemory.length > 0) {
+            return inMemory.map(m => {
+              const update = this.sessionMatchScores.get(m.id);
+              return update ? { ...m, ...update } : m;
+            });
+          }
+          return this.db.getMatchesByPool(poolId);
+        })();
+        const isComplete = matches.every((m: any) => m.status === MatchStatus.FINISHED);
         for (const [aId, arena] of this.arenas) {
           if (arena.currentMatch?.poolId === poolId) {
             this.io
@@ -1720,6 +1760,18 @@ export class RemoteScoreServer {
       Array.from(matchesByPool.keys())
     );
 
+    // Construire le cache des tireurs par pool depuis les matchs reçus
+    this.poolFencersCache.clear();
+    this.sessionMatchScores.clear();
+    for (const [poolId, poolMatches] of matchesByPool) {
+      const fencerMap = new Map<string, any>();
+      for (const match of poolMatches) {
+        if (match.fencerA?.id) fencerMap.set(match.fencerA.id, match.fencerA);
+        if (match.fencerB?.id) fencerMap.set(match.fencerB.id, match.fencerB);
+      }
+      this.poolFencersCache.set(poolId, Array.from(fencerMap.values()));
+    }
+
     // Assigner les matchs aux arènes par pool (Pool 1 -> Arena 1, Pool 2 -> Arena 2, etc.)
     console.log(`[RemoteScoreServer] Assignation des matches par pool aux ${strips} arènes`);
 
@@ -1826,6 +1878,8 @@ export class RemoteScoreServer {
     this.sessionMatches = [];
     this.arenaMatchQueue.clear();
     this.arenaNextMatchIndex.clear();
+    this.poolFencersCache.clear();
+    this.sessionMatchScores.clear();
   }
 
   public updateStripCount(newCount: number): RemoteSession | null {
