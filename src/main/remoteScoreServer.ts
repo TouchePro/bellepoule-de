@@ -680,9 +680,10 @@ export class RemoteScoreServer {
         console.log(`[RemoteScoreServer] POST /api/matches/${matchId}/finish`);
         console.log(`[RemoteScoreServer] Score final: ${scoreA}-${scoreB}`);
 
-        // Mettre à jour le match dans la base de données
-        const match = this.db.getMatch(matchId);
-        if (!match) {
+        // Vérifier que le match existe (en DB ou en mémoire)
+        const dbMatch = this.db.getMatch(matchId);
+        const inMemoryMatch = !dbMatch && this.sessionMatches.find((m: any) => m.id === matchId);
+        if (!dbMatch && !inMemoryMatch) {
           return res.status(404).json({ error: 'Match non trouvé' });
         }
 
@@ -706,12 +707,31 @@ export class RemoteScoreServer {
           isForfait: false,
         };
 
-        // Mettre à jour le match
-        this.db.updateMatch(matchId, {
-          scoreA: scoreAObj,
-          scoreB: scoreBObj,
-          status: MatchStatus.FINISHED,
-        });
+        if (dbMatch) {
+          // Match persisté en DB : mise à jour directe
+          this.db.updateMatch(matchId, {
+            scoreA: scoreAObj,
+            scoreB: scoreBObj,
+            status: MatchStatus.FINISHED,
+          });
+        } else {
+          // Match en mémoire uniquement (poule non persistée)
+          // Synchroniser les scores dans l'arène et déclencher l'IPC vers le renderer
+          this.sessionMatchScores.set(matchId, {
+            scoreA: scoreAObj,
+            scoreB: scoreBObj,
+            status: MatchStatus.FINISHED,
+          });
+          // Mettre à jour les scores de l'arène puis terminer le match via l'IPC
+          for (const [arenaId, arena] of this.arenas) {
+            if (arena.currentMatch?.id === matchId) {
+              arena.currentMatch.scoreA = scoreA;
+              arena.currentMatch.scoreB = scoreB;
+              this.finishArenaMatch(arenaId);
+              break;
+            }
+          }
+        }
 
         // Notifier tous les clients
         this.broadcastMessage({
@@ -1167,12 +1187,6 @@ export class RemoteScoreServer {
   }
 
   private async updateMatchScore(matchId: string, update: RemoteScoreUpdate): Promise<void> {
-    // Mettre à jour le match dans la base de données
-    const match = this.db.getMatch(matchId);
-    if (!match) {
-      throw new Error('Match non trouvé');
-    }
-
     const scoreA: Score = {
       value: update.scoreA,
       isVictory: update.winner === 'A',
@@ -1189,11 +1203,34 @@ export class RemoteScoreServer {
       isForfait: update.specialStatus === 'forfait' && update.winner !== 'B',
     };
 
-    this.db.updateMatch(matchId, {
-      scoreA,
-      scoreB,
-      status: update.status === 'finished' ? MatchStatus.FINISHED : MatchStatus.IN_PROGRESS,
-    });
+    const dbMatch = this.db.getMatch(matchId);
+    if (dbMatch) {
+      // Match en base de données : mise à jour directe
+      this.db.updateMatch(matchId, {
+        scoreA,
+        scoreB,
+        status: update.status === 'finished' ? MatchStatus.FINISHED : MatchStatus.IN_PROGRESS,
+      });
+    } else {
+      // Match en mémoire uniquement (poule non persistée) : mettre à jour via Socket.IO
+      const inMemory = this.sessionMatches.find((m: any) => m.id === matchId);
+      if (!inMemory) {
+        throw new Error('Match non trouvé');
+      }
+      // Synchroniser les scores dans l'arène en mémoire
+      for (const [arenaId, arena] of this.arenas) {
+        if (arena.currentMatch?.id === matchId) {
+          this.updateArenaScore(arenaId, update.scoreA, update.scoreB);
+          break;
+        }
+      }
+      // Stocker dans sessionMatchScores pour cohérence
+      this.sessionMatchScores.set(matchId, {
+        scoreA,
+        scoreB,
+        status: update.status === 'finished' ? MatchStatus.FINISHED : MatchStatus.IN_PROGRESS,
+      });
+    }
   }
 
   private broadcastMessage(message: WebSocketMessage): void {
@@ -1456,6 +1493,8 @@ export class RemoteScoreServer {
   public finishArenaMatch(arenaId: string): void {
     const arena = this.arenas.get(arenaId);
     if (!arena || !arena.currentMatch) return;
+    // Éviter le double-déclenchement (REST + Socket.IO)
+    if (arena.status === 'finished') return;
 
     const finishedMatch = { ...arena.currentMatch };
 
