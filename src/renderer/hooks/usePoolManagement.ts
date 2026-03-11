@@ -74,9 +74,11 @@ export const usePoolManagement = ({
       });
 
       const generatedPools: Pool[] = distribution.map((poolFencers, index) => {
+        const poolId = `pool-${index}`;
         const matchOrder = generatePoolMatchOrder(poolFencers.length);
         const matches: Match[] = matchOrder.map(([a, b], matchIndex) => ({
           id: `match-${index}-${matchIndex}`,
+          poolId,
           number: matchIndex + 1,
           fencerA: poolFencers[a - 1],
           fencerB: poolFencers[b - 1],
@@ -89,7 +91,7 @@ export const usePoolManagement = ({
         }));
 
         return {
-          id: `pool-${index}`,
+          id: poolId,
           number: index + 1,
           phaseId: 'phase-pools',
           fencers: poolFencers,
@@ -191,9 +193,11 @@ export const usePoolManagement = ({
       });
 
       const newPools: Pool[] = distribution.map((poolFencers, index) => {
+        const poolId = `pool-round${currentPoolRound + 1}-${index}`;
         const matchOrder = generatePoolMatchOrder(poolFencers.length);
         const matches: Match[] = matchOrder.map(([a, b], matchIndex) => ({
           id: `match-round${currentPoolRound + 1}-${index}-${matchIndex}`,
+          poolId,
           number: matchIndex + 1,
           fencerA: poolFencers[a - 1],
           fencerB: poolFencers[b - 1],
@@ -206,7 +210,7 @@ export const usePoolManagement = ({
         }));
 
         return {
-          id: `pool-round${currentPoolRound + 1}-${index}`,
+          id: poolId,
           number: index + 1,
           phaseId: 'phase-pools',
           fencers: poolFencers,
