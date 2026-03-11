@@ -787,6 +787,21 @@ export class DatabaseManager {
     };
   }
 
+  public getPoolFencers(poolId: string): Fencer[] {
+    if (!this.db) throw new Error('Database not open');
+    const results: Fencer[] = [];
+    const stmt = this.db.prepare(
+      'SELECT fencer_id FROM pool_fencers WHERE pool_id = ? ORDER BY position'
+    );
+    stmt.bind([poolId]);
+    while (stmt.step()) {
+      const fencer = this.getFencer(stmt.getAsObject().fencer_id as string);
+      if (fencer) results.push(fencer);
+    }
+    stmt.free();
+    return results;
+  }
+
   public getMatchesByPool(poolId: string): Match[] {
     if (!this.db) throw new Error('Database not open');
     const results: Match[] = [];
