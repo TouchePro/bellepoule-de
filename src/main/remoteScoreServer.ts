@@ -597,6 +597,18 @@ export class RemoteScoreServer {
           }
         }
 
+        // Notifier le renderer de la mise à jour du score (pour affichage dans le tableau poule)
+        const mainWindow = (global as any).mainWindow;
+        if (mainWindow) {
+          mainWindow.webContents.send('match:finished', {
+            matchId,
+            scoreA: scoreAObj.value,
+            scoreB: scoreBObj.value,
+            poolId,
+            isTableau: false,
+          });
+        }
+
         res.json({ success: true, isComplete });
       } catch (err) {
         console.error('[RemoteScoreServer] Erreur score poule:', err);
