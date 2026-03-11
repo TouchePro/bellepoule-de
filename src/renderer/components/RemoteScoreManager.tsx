@@ -115,7 +115,13 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
 
   const startSession = async (baseUrl: string, count: number) => {
     try {
-      const poolMatches = pools.flatMap(pool => pool.matches || []);
+      // Prepend fencer-order markers so the server can rebuild poolFencersCache correctly.
+      // The FIE match order for 4-fencer pools starts with [1,4] not [1,2], so naively
+      // extracting fencers from match pairs produces the wrong order.
+      const poolMatches = pools.flatMap(pool => [
+        { __poolFencers: true, poolId: pool.id, fencers: pool.fencers || [] },
+        ...(pool.matches || []),
+      ]);
       const deMatches = (tableauMatches || [])
         .filter(m => m.winner === null && m.fencerA && m.fencerB)
         .map(m => ({ ...m, isTableau: true }));

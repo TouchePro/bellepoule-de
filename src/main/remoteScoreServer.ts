@@ -630,36 +630,46 @@ export class RemoteScoreServer {
         const competitionId = this.session.competitionId;
         console.log(`[RemoteScoreServer] CompetitionId: ${competitionId}`);
 
-        // D'abord, essayer de récupérer les matches depuis la mémoire (arènes)
         const arena = this.arenas.get(arenaId);
-        const allArenaMatches: any[] = [];
 
-        // Match courant de CETTE arène uniquement
-        if (arena && arena.currentMatch) {
-          console.log(
-            `[RemoteScoreServer] Match trouvé en mémoire pour arène ${arenaId}:`,
-            arena.currentMatch.id
-          );
-          allArenaMatches.push({
-            id: arena.currentMatch.id,
-            poolId: arena.currentMatch.poolId,
-            fencerA: arena.currentMatch.fencerA,
-            fencerB: arena.currentMatch.fencerB,
-            scoreA: arena.currentMatch.scoreA,
-            scoreB: arena.currentMatch.scoreB,
-            status: arena.currentMatch.status,
+        // Si l'arène a un pool associé, retourner TOUS les matchs en attente du pool
+        // (pas seulement le match courant) pour que l'arbitre voie les prochains matchs.
+        const currentPoolId = arena?.currentMatch?.poolId;
+        if (currentPoolId && this.sessionMatches.length > 0) {
+          const poolMatches = this.sessionMatches
+            .filter((m: any) => {
+              const matchPoolId = m.poolId || m.pool?.id || `pool-${m.poolNumber || m.number}`;
+              return matchPoolId === currentPoolId;
+            })
+            .map((m: any) => {
+              const scoreUpdate = this.sessionMatchScores.get(m.id);
+              return scoreUpdate ? { ...m, ...scoreUpdate } : m;
+            });
+          console.log(`[RemoteScoreServer] ${poolMatches.length} matchs de pool pour arène ${arenaId} (pool ${currentPoolId})`);
+          if (poolMatches.length > 0) {
+            return res.json({ matches: poolMatches, poolId: currentPoolId, poolName: null });
+          }
+        }
+
+        // Fallback: match courant seul
+        if (arena?.currentMatch) {
+          console.log(`[RemoteScoreServer] Fallback match courant pour arène ${arenaId}: ${arena.currentMatch.id}`);
+          return res.json({
+            matches: [{
+              id: arena.currentMatch.id,
+              poolId: arena.currentMatch.poolId,
+              fencerA: arena.currentMatch.fencerA,
+              fencerB: arena.currentMatch.fencerB,
+              scoreA: arena.currentMatch.scoreA,
+              scoreB: arena.currentMatch.scoreB,
+              status: arena.currentMatch.status,
+            }],
+            poolId: null,
+            poolName: null,
           });
-        } else {
-          console.log(`[RemoteScoreServer] Pas de match en mémoire pour arène ${arenaId}`);
         }
 
-        console.log(`[RemoteScoreServer] Matches pour arène ${arenaId}: ${allArenaMatches.length}`);
-
-        if (allArenaMatches.length > 0) {
-          return res.json({ matches: allArenaMatches, poolId: null, poolName: null });
-        }
-
-        // Fallback: file d'attente DE de CETTE arène uniquement
+        // File d'attente DE
         const arenaQueue = this.arenaMatchQueue.get(arenaId) || [];
         if (arenaQueue.length > 0) {
           console.log(`[RemoteScoreServer] ${arenaQueue.length} matchs en file DE pour arène ${arenaId}`);
@@ -1540,14 +1550,12 @@ export class RemoteScoreServer {
       );
     }
 
-    // Remettre l'arène en état idle après un délai (l'arbitre choisit le prochain match manuellement)
+    // Charger automatiquement le prochain match après un délai
+    // (loadNextMatch gère aussi le cas "plus de matchs" → arène idle)
     setTimeout(() => {
       const a = this.arenas.get(arenaId);
       if (a && a.status === 'finished') {
-        a.currentMatch = null;
-        a.status = 'idle';
-        a.startTime = null;
-        this.updateArena(arenaId, { currentMatch: null, status: 'idle', startTime: null });
+        this.loadNextMatch(arenaId);
       }
     }, 3000);
   }
@@ -1771,7 +1779,26 @@ export class RemoteScoreServer {
     let allMatches: any[] = [];
     if (matchesFromRenderer && matchesFromRenderer.length > 0) {
       console.log(`[RemoteScoreServer] ${matchesFromRenderer.length} matchs reçus du renderer`);
-      allMatches = matchesFromRenderer.filter(
+
+      // Extraire les marqueurs d'ordre des tireurs injectés par le renderer (__poolFencers)
+      // Nécessaire car l'ordre FIE (ex: 4 tireurs: [1,4],[2,3],...) ne permet pas de reconstruire
+      // l'ordre correct par simple extraction des paires de matchs.
+      const fencerOrderMap = new Map<string, any[]>();
+      const realMatches: any[] = [];
+      for (const m of matchesFromRenderer) {
+        if ((m as any).__poolFencers) {
+          fencerOrderMap.set(m.poolId, m.fencers);
+        } else {
+          realMatches.push(m);
+        }
+      }
+      // Pré-remplir le cache avec l'ordre correct fourni par le renderer
+      for (const [poolId, fencers] of fencerOrderMap) {
+        this.poolFencersCache.set(poolId, fencers);
+        console.log(`[RemoteScoreServer] Cache tireurs pre-rempli pour pool ${poolId}: ${fencers.length} tireurs`);
+      }
+
+      allMatches = realMatches.filter(
         m => m.isTableau || m.status === 'not_started' || m.status === 'in_progress'
       );
       console.log(`[RemoteScoreServer] ${allMatches.length} matchs en attente après filtrage`);
@@ -1812,9 +1839,11 @@ export class RemoteScoreServer {
     );
 
     // Construire le cache des tireurs par pool depuis la DB (ordre par position)
-    this.poolFencersCache.clear();
+    // Note: les pools déjà remplis via les marqueurs __poolFencers du renderer sont conservés.
     this.sessionMatchScores.clear();
     for (const [poolId, poolMatches] of matchesByPool) {
+      // Déjà rempli par les marqueurs du renderer → ordre correct garanti
+      if (this.poolFencersCache.has(poolId)) continue;
       const dbFencers = this.db.getPoolFencers(poolId);
       if (dbFencers.length > 0) {
         this.poolFencersCache.set(poolId, dbFencers);
