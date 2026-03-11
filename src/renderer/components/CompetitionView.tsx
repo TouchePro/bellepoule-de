@@ -33,6 +33,7 @@ import { AnalyticsDashboard } from './AnalyticsDashboard';
 import { QRCodeShare } from './QRCodeShare';
 import { TouchOptimizedReferee } from './TouchOptimizedReferee';
 import { PresentationMode } from './PresentationMode';
+import KioskDisplay from './KioskDisplay';
 import { FencerPhoto } from './FencerPhoto';
 
 interface CompetitionViewProps {
@@ -71,6 +72,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [showQRCode, setShowQRCode] = useState(false);
   const [showKiosk, setShowKiosk] = useState(false);
   const [showPresentation, setShowPresentation] = useState(false);
+  const [showKioskDisplay, setShowKioskDisplay] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<any>(null);
 
   // Paramètres de préparation des poules (persistés entre les phases)
@@ -575,6 +577,22 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               </button>
             </>
           )}
+          {(pools.length > 0 || tableauMatches.length > 0) && (
+            <button
+              onClick={() => setShowKioskDisplay(true)}
+              style={{
+                background: 'rgba(255,255,255,0.2)',
+                border: 'none',
+                color: 'white',
+                padding: '0.5rem 1rem',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+              }}
+            >
+              🖥️ Kiosk Public
+            </button>
+          )}
           <button
             onClick={() => setShowPropertiesModal(true)}
             style={{
@@ -901,6 +919,17 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
           competition={competition}
           pools={pools}
           onClose={() => setShowPresentation(false)}
+        />
+      )}
+
+      {/* Mode Kiosk Public - Affichage grand écran */}
+      {showKioskDisplay && (
+        <KioskDisplay
+          competition={competition}
+          pools={pools}
+          weapon={competition.weapon}
+          tableauMatches={tableauMatches}
+          onClose={() => setShowKioskDisplay(false)}
         />
       )}
 
