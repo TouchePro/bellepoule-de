@@ -157,6 +157,9 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       ] as const;
       const restoredPhase = phaseMap[restoredState.currentPhase || 0];
       if (restoredPhase) setCurrentPhase(restoredPhase);
+      if (['tableau', 'results', 'remote'].includes(restoredPhase)) {
+        setRankingValidated(true);
+      }
       if (restoredState.currentPoolRound) setCurrentPoolRound(restoredState.currentPoolRound);
       if (restoredState.pools) setPools(restoredState.pools);
       if (restoredState.poolHistory) setPoolHistory(restoredState.poolHistory || []);
