@@ -3,7 +3,8 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
+import QRCode from 'qrcode';
 import { Competition } from '../../shared/types';
 
 interface QRCodeShareProps {
@@ -12,7 +13,6 @@ interface QRCodeShareProps {
 }
 
 export const QRCodeShare: React.FC<QRCodeShareProps> = ({ competition, onClose }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(true);
   const [error, setError] = useState<string>('');
@@ -27,99 +27,26 @@ export const QRCodeShare: React.FC<QRCodeShareProps> = ({ competition, onClose }
     setError('');
 
     try {
-      // Créer une URL unique pour la compétition
-      const baseUrl = window.location.origin;
-      const url = `${baseUrl}/competition/${competition.id}/results`;
+      const info = await window.electronAPI.remote.getServerInfo();
+      if (!info.success || !info.serverInfo) {
+        setError(
+          'Le serveur distant doit être démarré pour partager les résultats.\nActivez la saisie distante depuis l\'onglet correspondant.'
+        );
+        setIsGenerating(false);
+        return;
+      }
+
+      const url = `${info.serverInfo.url}/competition/${competition.id}/results`;
       setShareUrl(url);
 
-      // Essayer d'utiliser l'API QR Code si disponible
-      if (typeof window !== 'undefined') {
-        // Générer un QR code simple avec une API externe (pas besoin de librairie)
-        const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
-
-        // Créer une image
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-
-        img.onload = () => {
-          if (canvasRef.current) {
-            const canvas = canvasRef.current;
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-              // Dessiner le QR code
-              ctx.drawImage(img, 0, 0, 300, 300);
-
-              // Ajouter un logo au centre (optionnel)
-              drawLogo(ctx, 300, 300);
-
-              setQrCodeUrl(canvas.toDataURL('image/png'));
-              setIsGenerating(false);
-            }
-          }
-        };
-
-        img.onerror = () => {
-          // Fallback : générer un QR code manuellement simple
-          generateManualQRCode(url);
-        };
-
-        img.src = qrApiUrl;
-      }
+      const dataUrl = await QRCode.toDataURL(url, { width: 300, margin: 1 });
+      setQrCodeUrl(dataUrl);
     } catch (err) {
       console.error('Erreur génération QR:', err);
       setError('Erreur lors de la génération du QR code');
+    } finally {
       setIsGenerating(false);
     }
-  };
-
-  const drawLogo = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    // Dessiner un cercle blanc au centre pour le logo
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const radius = 35;
-
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-    ctx.fillStyle = 'white';
-    ctx.fill();
-    ctx.strokeStyle = '#3B82F6';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    // Ajouter le texte BP
-    ctx.font = 'bold 24px Arial';
-    ctx.fillStyle = '#3B82F6';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('BP', centerX, centerY);
-  };
-
-  const generateManualQRCode = (url: string) => {
-    // Fallback simple si l'API échoue
-    if (canvasRef.current) {
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        // Fond blanc
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, 300, 300);
-
-        // Bordure
-        ctx.strokeStyle = '#3B82F6';
-        ctx.lineWidth = 4;
-        ctx.strokeRect(0, 0, 300, 300);
-
-        // Texte
-        ctx.font = '16px Arial';
-        ctx.fillStyle = '#1F2937';
-        ctx.textAlign = 'center';
-        ctx.fillText('QR Code non disponible', 150, 130);
-        ctx.fillText("Utilisez l'URL ci-dessous", 150, 160);
-
-        setQrCodeUrl(canvas.toDataURL('image/png'));
-      }
-    }
-    setIsGenerating(false);
   };
 
   const downloadQRCode = () => {
@@ -152,7 +79,7 @@ export const QRCodeShare: React.FC<QRCodeShareProps> = ({ competition, onClose }
         <div className="modal__body">
           <div className="qrcode__container">
             <p className="qrcode__description">
-              Scannez ce QR code pour accéder aux résultats de la compétition
+              Scannez ce QR code pour accéder aux résultats de la compétition{' '}
               <strong>"{competition.title}"</strong>
             </p>
 
@@ -163,21 +90,25 @@ export const QRCodeShare: React.FC<QRCodeShareProps> = ({ competition, onClose }
                   <p>Génération du QR code...</p>
                 </div>
               ) : error ? (
-                <div className="alert alert--error">{error}</div>
+                <div className="alert alert--error" style={{ whiteSpace: 'pre-line' }}>
+                  {error}
+                </div>
               ) : (
-                <canvas ref={canvasRef} width={300} height={300} className="qrcode__canvas" />
+                <img src={qrCodeUrl} alt="QR Code" className="qrcode__canvas" width={300} height={300} />
               )}
             </div>
 
-            <div className="qrcode__url">
-              <label className="form-label">URL de partage :</label>
-              <div className="qrcode__url-input">
-                <input type="text" value={shareUrl} readOnly className="form-control" />
-                <button className="btn btn-secondary" onClick={copyToClipboard}>
-                  📋 Copier
-                </button>
+            {!error && shareUrl && (
+              <div className="qrcode__url">
+                <label className="form-label">URL de partage :</label>
+                <div className="qrcode__url-input">
+                  <input type="text" value={shareUrl} readOnly className="form-control" />
+                  <button className="btn btn-secondary" onClick={copyToClipboard}>
+                    📋 Copier
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="qrcode__info">
               <div className="alert alert--info">

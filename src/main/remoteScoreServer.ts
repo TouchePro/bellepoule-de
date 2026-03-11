@@ -725,6 +725,162 @@ export class RemoteScoreServer {
         res.status(500).json({ error: 'Erreur lors de la mise à jour du score' });
       }
     });
+
+    // API : données de résultats d'une compétition (classements de poules)
+    this.app.get('/api/competitions/:competitionId/results-data', (req, res) => {
+      try {
+        const { competitionId } = req.params;
+        const competition = this.db.getCompetition(competitionId);
+        if (!competition) {
+          return res.status(404).json({ error: 'Compétition introuvable' });
+        }
+
+        const pools = this.db.getCompetitionPools(competitionId);
+        const poolResults = pools.map(pool => {
+          const fencers = this.db.getPoolFencers(pool.id);
+          const matches = this.db.getMatchesByPool(pool.id);
+
+          // Calcul des statistiques par tireur
+          const stats: Record<string, { victories: number; touchesFor: number; touchesAgainst: number }> = {};
+          for (const f of fencers) {
+            stats[f.id] = { victories: 0, touchesFor: 0, touchesAgainst: 0 };
+          }
+
+          for (const match of matches) {
+            if (match.status !== MatchStatus.FINISHED) continue;
+            const sA = match.scoreA;
+            const sB = match.scoreB;
+            if (!sA || !sB || !match.fencerA || !match.fencerB) continue;
+            const idA = match.fencerA.id;
+            const idB = match.fencerB.id;
+            if (stats[idA]) {
+              stats[idA].touchesFor += sA.value ?? 0;
+              stats[idA].touchesAgainst += sB.value ?? 0;
+              if (sA.isVictory) stats[idA].victories += 1;
+            }
+            if (stats[idB]) {
+              stats[idB].touchesFor += sB.value ?? 0;
+              stats[idB].touchesAgainst += sA.value ?? 0;
+              if (sB.isVictory) stats[idB].victories += 1;
+            }
+          }
+
+          const rankings = fencers
+            .map(f => ({
+              id: f.id,
+              lastName: f.lastName,
+              firstName: f.firstName,
+              club: f.club ?? '',
+              victories: stats[f.id]?.victories ?? 0,
+              touchesFor: stats[f.id]?.touchesFor ?? 0,
+              touchesAgainst: stats[f.id]?.touchesAgainst ?? 0,
+              index: (stats[f.id]?.touchesFor ?? 0) - (stats[f.id]?.touchesAgainst ?? 0),
+            }))
+            .sort((a, b) => b.victories - a.victories || b.index - a.index || b.touchesFor - a.touchesFor);
+
+          return { id: pool.id, name: pool.name, rankings };
+        });
+
+        res.json({
+          competition: { id: competition.id, title: competition.title, date: competition.date, weapon: competition.weapon },
+          pools: poolResults,
+        });
+      } catch (error) {
+        console.error('[RemoteScoreServer] Erreur résultats:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des résultats' });
+      }
+    });
+
+    // Page HTML : résultats d'une compétition (pour les spectateurs)
+    this.app.get('/competition/:competitionId/results', (req, res) => {
+      const { competitionId } = req.params;
+      const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Résultats – BellePoule</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; padding: 1rem; }
+    header { text-align: center; padding: 1.5rem 0 1rem; }
+    header h1 { font-size: 1.5rem; color: #f8fafc; }
+    header p { color: #94a3b8; font-size: 0.875rem; margin-top: 0.25rem; }
+    .pool { background: #1e293b; border-radius: 10px; margin: 1rem 0; overflow: hidden; }
+    .pool-title { background: #3b82f6; color: white; padding: 0.6rem 1rem; font-weight: 600; font-size: 0.95rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th { background: #0f172a; color: #94a3b8; padding: 0.5rem 0.75rem; text-align: left; font-weight: 500; }
+    td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #334155; }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: rgba(255,255,255,0.03); }
+    .rank { color: #94a3b8; width: 2rem; }
+    .name { font-weight: 600; }
+    .club { color: #94a3b8; font-size: 0.8rem; }
+    .num { text-align: center; }
+    .pos { color: #4ade80; }
+    .neg { color: #f87171; }
+    .loading { text-align: center; padding: 3rem; color: #94a3b8; }
+    .error { background: #450a0a; color: #fca5a5; padding: 1rem; border-radius: 8px; margin: 1rem 0; }
+    .refresh { position: fixed; bottom: 1rem; right: 1rem; background: #3b82f6; color: white;
+      border: none; border-radius: 50%; width: 3rem; height: 3rem; font-size: 1.2rem;
+      cursor: pointer; box-shadow: 0 4px 12px rgba(59,130,246,0.4); }
+  </style>
+</head>
+<body>
+  <div id="app"><div class="loading">Chargement des résultats…</div></div>
+  <button class="refresh" onclick="load()" title="Actualiser">↻</button>
+  <script>
+    const competitionId = ${JSON.stringify(competitionId)};
+    async function load() {
+      try {
+        const r = await fetch('/api/competitions/' + competitionId + '/results-data');
+        if (!r.ok) throw new Error('Compétition introuvable');
+        const data = await r.json();
+        render(data);
+      } catch(e) {
+        document.getElementById('app').innerHTML = '<div class="error">Erreur : ' + e.message + '</div>';
+      }
+    }
+    function render(data) {
+      const dateStr = data.competition.date
+        ? new Date(data.competition.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+        : '';
+      let html = '<header><h1>' + escHtml(data.competition.title) + '</h1>' +
+        (dateStr ? '<p>' + dateStr + '</p>' : '') + '</header>';
+      if (!data.pools || data.pools.length === 0) {
+        html += '<p style="text-align:center;color:#94a3b8;padding:2rem">Aucune poule disponible</p>';
+      } else {
+        for (const pool of data.pools) {
+          html += '<div class="pool"><div class="pool-title">' + escHtml(pool.name) + '</div><table>' +
+            '<thead><tr><th class="rank">#</th><th>Tireur</th>' +
+            '<th class="num">V</th><th class="num">TD</th><th class="num">TR</th><th class="num">Ind.</th></tr></thead><tbody>';
+          pool.rankings.forEach((f, i) => {
+            const ind = f.index >= 0 ? '+' + f.index : '' + f.index;
+            const cls = f.index > 0 ? 'pos' : f.index < 0 ? 'neg' : '';
+            html += '<tr><td class="rank">' + (i+1) + '</td>' +
+              '<td><span class="name">' + escHtml(f.lastName.toUpperCase()) + ' ' + escHtml(f.firstName) + '</span>' +
+              (f.club ? ' <span class="club">(' + escHtml(f.club) + ')</span>' : '') + '</td>' +
+              '<td class="num">' + f.victories + '</td>' +
+              '<td class="num">' + f.touchesFor + '</td>' +
+              '<td class="num">' + f.touchesAgainst + '</td>' +
+              '<td class="num ' + cls + '">' + ind + '</td></tr>';
+          });
+          html += '</tbody></table></div>';
+        }
+      }
+      document.getElementById('app').innerHTML = html;
+    }
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    load();
+    setInterval(load, 30000);
+  </script>
+</body>
+</html>`;
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.send(html);
+    });
   }
 
   private setupSocketHandlers(): void {
