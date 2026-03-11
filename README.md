@@ -7,7 +7,6 @@
 - 📖 **[Guide PDF Export Utilisateur](docs/USER_GUIDE_PDF_EXPORT.md)** - Guide complet d'utilisation
 - 📋 **[Documentation Technique](docs/PDF_EXPORT_OPTIMIZATION.md)** - Architecture et optimisations
 - 🏗️ **[Architecture Système](docs/PDF_EXPORT_ARCHITECTURE.md)** - Architecture détaillée
-- 📖 **[API Reference](docs/API_REFERENCE.md)** - Référence de l'API (à créer)
 
 ### 🔧 **Installation**
 
@@ -35,7 +34,7 @@ Cette version majeure apporte de nombreuses fonctionnalités demandées par la c
 - ☁️ **Sauvegarde Cloud** - Sync Dropbox, Google Drive, OneDrive avec chiffrement
 - 🎨 **Gestion des Photos** - Import photos des tireurs avec drag & drop
 - 🎮 **Mode Kiosk** - Interface ultra-simplifiée pour tablettes arbitres
-- 🇪🇸🇩🇪 **Nouvelles Langues** - Support complet de l'espagnol et de l'allemand
+- 🇪🇸🇩🇪🇭🇰 **Nouvelles Langues** - Support complet de l'espagnol, de l'allemand, du catalan et du chinois traditionnel (Hong Kong)
 
 #### 🔧 **Améliorations Techniques**
 
@@ -82,16 +81,18 @@ D'après l'analyse du code et les demandes utilisateurs, les prochaines mises à
 
 - 🇫🇷 **Français** (par défaut)
 - 🇺🇸 **Anglais**
-- 🇫🇷 **Breton**
-- 🇪🇸 **Espagnol** _(Nouveau !)_
-- 🇩🇪 **Allemand** _(Nouveau !)_
+- 🇫🇷 **Brezhoneg (Breton)**
+- 🇪🇸 **Català (Catalan)** _(Nouveau !)_
+- 🇩🇪 **Deutsch (Allemand)**
+- 🇪🇸 **Español (Espagnol)**
+- 🇭🇰 **繁體中文 (Chinois traditionnel – Hong Kong)** _(Nouveau !)_
 
 ## 🎯 Caractéristiques principales
 
 - **🗂️ Base de données SQLite** pour stocker toutes les données de compétition
 - **🌐 Interface moderne** avec design épuré et responsive
 - **📱 Gestion en temps réel** des scores et arènes
-- **🏊 Support multilingue** (français, anglais, breton, espagnol, allemand)
+- **🏊 Support multilingue** (français, anglais, breton, catalan, allemand, espagnol, chinois traditionnel HK)
 - **👨‍⚖️ Gestion des arbitres** avec assignation automatique et rotation
 - **☁️ Sauvegarde Cloud** multi-providers avec chiffrement AES-GCM
 - **🔔 Système de notifications** navigateur, webhooks et emails
@@ -335,15 +336,6 @@ D'après l'analyse du code et les demandes utilisateurs, les prochaines mises à
 #### **Linux**
 
 1. Télécharger le fichier `.AppImage` (x64 ou ARM64)
-2. Rendre le fichier exécutable : `chmod +x BellePoule.Modern.AppImage`
-3. Lancer avec : `./BellePoule.Modern.AppImage`
-4. Ouvrir le fichier d'image disque
-5. Glisser l'application dans le dossier Applications
-6. Lancer depuis le dossier Applications
-
-#### **Linux (AppImage)**
-
-1. Télécharger le fichier `.AppImage`
 2. Rendre le fichier exécutable : `chmod +x BellePoule.Modern-*.AppImage`
 3. Lancer avec : `./BellePoule.Modern-*.AppImage`
 
@@ -470,5 +462,5 @@ Les contributions sont bienvenues ! Voir [CONTRIBUTING.md](./CONTRIBUTING.md) po
 
 📄 **Développé par** : Yann Kervella & communauté  
 📄 **Licence** : GPL-3.0  
-📄 **Dernière mise à jour** : 13 février 2026  
+📄 **Dernière mise à jour** : 11 mars 2026  
 📄 **Version actuelle** : v1.0.1 Build #204+
