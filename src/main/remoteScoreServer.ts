@@ -1007,28 +1007,38 @@ export class RemoteScoreServer {
   ): void {
     let matchToMove: ArenaMatch | undefined;
 
-    // 1. Retirer le match de l'ancienne arène
-    if (fromArena) {
-      const fromArenaId = `arena${fromArena}`;
-      const fromQueue = this.arenaMatchQueue.get(fromArenaId) || [];
-      const idx = fromQueue.findIndex(m => m.id === matchId);
-      if (idx !== -1) {
-        matchToMove = fromQueue[idx];
-        this.arenaMatchQueue.set(fromArenaId, [
-          ...fromQueue.slice(0, idx),
-          ...fromQueue.slice(idx + 1),
-        ]);
-        const fromArenaObj = this.arenas.get(fromArenaId);
-        this.updateArena(fromArenaId, { status: fromArenaObj?.status ?? 'idle' });
+    // 1. Retirer le match de TOUTES les arènes (files et currentMatch non démarré).
+    //    startSession distribue les matchs DE en round-robin, donc le match peut se
+    //    trouver dans n'importe quelle arène même si fromArena est null.
+    for (const [arenaId, arena] of this.arenas) {
+      // Chercher et supprimer tous les doublons dans les files d'attente
+      const queue = this.arenaMatchQueue.get(arenaId) || [];
+      const filtered = queue.filter(m => m.id !== matchId);
+      if (filtered.length < queue.length) {
+        // Au moins une occurrence trouvée dans cette file
+        if (!matchToMove) matchToMove = queue.find(m => m.id === matchId);
+        this.arenaMatchQueue.set(arenaId, filtered);
       }
-      // Si c'est le currentMatch pas encore démarré, on l'enlève aussi
-      const fromArenaObj = this.arenas.get(fromArenaId);
-      if (!matchToMove && fromArenaObj?.currentMatch?.id === matchId &&
-          fromArenaObj.currentMatch.status === 'not_started') {
-        matchToMove = fromArenaObj.currentMatch;
-        (fromArenaObj as any).currentMatch = undefined;
-        fromArenaObj.status = 'idle';
-        this.updateArena(fromArenaId, { status: 'idle', currentMatch: undefined as any });
+
+      // Chercher dans le currentMatch (seulement si non démarré, on ne peut pas
+      // retirer un match en cours)
+      if (
+        arena.currentMatch?.id === matchId &&
+        arena.currentMatch.status !== 'in_progress'
+      ) {
+        if (!matchToMove) matchToMove = arena.currentMatch;
+        // Promouvoir le premier match en file comme nouveau currentMatch
+        const nextInQueue = this.arenaMatchQueue.get(arenaId) || [];
+        if (nextInQueue.length > 0) {
+          arena.currentMatch = nextInQueue[0];
+          arena.status = 'ready';
+          this.arenaMatchQueue.set(arenaId, nextInQueue.slice(1));
+          this.updateArena(arenaId, { status: 'ready', currentMatch: arena.currentMatch });
+        } else {
+          arena.currentMatch = null;
+          arena.status = 'idle';
+          this.updateArena(arenaId, { status: 'idle', currentMatch: null });
+        }
       }
     }
 
@@ -1058,14 +1068,22 @@ export class RemoteScoreServer {
     if (!toArenaObj) return;
 
     if (!toArenaObj.currentMatch) {
+      // Arène libre → le match devient le currentMatch visible immédiatement
+      this.assignMatchToArena(toArenaId, matchToMove);
+    } else if (toArenaObj.currentMatch.status !== 'in_progress') {
+      // currentMatch non démarré → le déplacer en tête de file, afficher le nouveau
+      const displaced = toArenaObj.currentMatch;
+      const toQueue = this.arenaMatchQueue.get(toArenaId) || [];
+      this.arenaMatchQueue.set(toArenaId, [displaced, ...toQueue]);
       this.assignMatchToArena(toArenaId, matchToMove);
     } else {
+      // Match en cours → ajouter en fin de file
       const toQueue = this.arenaMatchQueue.get(toArenaId) || [];
       this.arenaMatchQueue.set(toArenaId, [...toQueue, matchToMove]);
       this.updateArena(toArenaId, { status: toArenaObj.status });
     }
 
-    console.log(`[RemoteScoreServer] Match ${matchId} déplacé de arena${fromArena} vers arena${toArena}`);
+    console.log(`[RemoteScoreServer] Match ${matchId} assigné à arena${toArena}`);
   }
 
   public startArenaMatch(arenaId: string): void {
