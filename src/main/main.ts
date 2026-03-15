@@ -772,6 +772,19 @@ ipcMain.handle('remote:updateStripCount', async (_, newCount: number) => {
   }
 });
 
+ipcMain.handle('remote:setArenaPassword', async (_, arenaId: string, password: string) => {
+  try {
+    if (!remoteScoreServer) {
+      return { success: false, error: 'Le serveur distant n est pas démarré' };
+    }
+    remoteScoreServer.setArenaPassword(arenaId, password);
+    return { success: true };
+  } catch (error) {
+    console.error('Error setting arena password:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
 // App info handlers
 ipcMain.handle('app:getVersionInfo', async () => {
   return getVersionInfo();

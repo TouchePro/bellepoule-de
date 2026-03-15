@@ -308,6 +308,7 @@ export interface RemoteServerAPI {
     fromArena: number | null,
     toArena: number | null
   ) => Promise<{ success: boolean; error?: string }>;
+  setArenaPassword: (arenaId: string, password: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 // ============================================================================

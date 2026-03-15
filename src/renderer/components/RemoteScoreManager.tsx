@@ -53,6 +53,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const [committedCount, setCommittedCount] = useState<number | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [activeQR, setActiveQR] = useState<{ url: string; label: string } | null>(null);
+  const [arenaPasswords, setArenaPasswords] = useState<Record<string, string>>({});
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -378,6 +379,63 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                   title="QR code"
                 >
                   📱
+                </button>
+              </div>
+              <div className="arena-url-row">
+                <span className="arena-url-label">🔒 MDP</span>
+                <input
+                  type="password"
+                  className="arena-password-input"
+                  placeholder="Aucun (accès libre)"
+                  value={arenaPasswords[`arena${arena.number}`] ?? ''}
+                  onChange={e =>
+                    setArenaPasswords(p => ({
+                      ...p,
+                      [`arena${arena.number}`]: e.target.value,
+                    }))
+                  }
+                  onKeyDown={async e => {
+                    if (e.key === 'Enter') {
+                      const pwd = arenaPasswords[`arena${arena.number}`] ?? '';
+                      const result = await window.electronAPI.remote.setArenaPassword(
+                        `arena${arena.number}`,
+                        pwd
+                      );
+                      if (result.success) {
+                        showToast(
+                          pwd
+                            ? `Mot de passe défini pour la piste ${arena.number}`
+                            : `Mot de passe supprimé pour la piste ${arena.number}`,
+                          'success'
+                        );
+                      } else {
+                        showToast(result.error ?? 'Erreur', 'error');
+                      }
+                    }
+                  }}
+                />
+                <button
+                  className="btn-copy"
+                  title="Définir le mot de passe"
+                  onClick={async () => {
+                    const pwd = arenaPasswords[`arena${arena.number}`] ?? '';
+                    const result = await window.electronAPI.remote.setArenaPassword(
+                      `arena${arena.number}`,
+                      pwd
+                    );
+                    if (result.success) {
+                      showToast(
+                        pwd
+                          ? `Mot de passe défini pour la piste ${arena.number}`
+                          : `Mot de passe supprimé pour la piste ${arena.number}`,
+                        'success'
+                      );
+                    } else {
+                      showToast(result.error ?? 'Erreur', 'error');
+                    }
+                  }}
+                >
+                  ✓
                 </button>
               </div>
             </div>
