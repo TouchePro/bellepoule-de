@@ -218,6 +218,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
 
   // La grille d'URLs reflète l'état réel du serveur (committedCount) ou la session active
   const arenaCount = session ? session.strips.length : effectiveCommitted;
+  const kioskUrl = `${serverUrl}/kiosk`;
   const arenaUrls = Array.from({ length: arenaCount }, (_, i) => ({
     number: i + 1,
     refereeUrl: `${serverUrl}/arene${i + 1}/arbitre`,
@@ -381,6 +382,30 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
               </div>
             </div>
           ))}
+        </div>
+
+        <div className="arena-url-card" style={{ marginTop: '1rem' }}>
+          <div className="arena-url-header">
+            <strong>🖥️ Kiosk (affichage public)</strong>
+          </div>
+          <div className="arena-url-row">
+            <span className="arena-url-label">URL</span>
+            <code className="arena-url-value">{kioskUrl}</code>
+            <button
+              className="btn-copy"
+              onClick={() => copyToClipboard(kioskUrl, 999)}
+              title="Copier l'URL"
+            >
+              {copiedIndex === 999 ? '✓' : '📋'}
+            </button>
+            <button
+              className="btn-qr"
+              onClick={() => setActiveQR({ url: kioskUrl, label: 'Kiosk – Affichage public' })}
+              title="QR code"
+            >
+              📱
+            </button>
+          </div>
         </div>
       </div>
 
