@@ -1470,6 +1470,22 @@ body {
   border-radius: 4px;
 }
 
+.arena-password-input {
+  flex: 1;
+  font-size: 0.78rem;
+  background: var(--color-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 0.15rem 0.35rem;
+  outline: none;
+  min-width: 0;
+}
+
+.arena-password-input:focus {
+  border-color: var(--color-primary);
+}
+
 .btn-copy {
   background: none;
   border: 1px solid var(--color-border);

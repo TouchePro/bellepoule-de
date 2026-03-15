@@ -9,6 +9,7 @@ import { Server as SocketIOServer } from 'socket.io';
 import { createServer } from 'http';
 import path from 'path';
 import os from 'os';
+import { randomBytes } from 'crypto';
 import {
   RemoteSession,
   RemoteScoreUpdate,
@@ -40,6 +41,9 @@ export class RemoteScoreServer {
   // Stocker le contenu des fichiers HTML en mémoire pour éviter les problèmes de chemin
   private htmlFiles: Map<string, string> = new Map();
 
+  // Tokens d'authentification par arène (password protection)
+  private arenaTokens: Map<string, Set<string>> = new Map();
+
   constructor(db: DatabaseManager, port: number = 8066) {
     console.log('[RemoteScoreServer] Initialisation du serveur de saisie distante...');
     this.db = db;
@@ -69,7 +73,7 @@ export class RemoteScoreServer {
     const isDev = process.env.NODE_ENV === 'development';
 
     // Liste des fichiers à charger
-    const filesToLoad = ['referee.html', 'arena.html', 'dashboard.html', 'index.html', 'pool.html', 'kiosk.html'];
+    const filesToLoad = ['referee.html', 'arena.html', 'dashboard.html', 'index.html', 'pool.html', 'kiosk.html', 'login.html'];
 
     // Essayer plusieurs chemins pour trouver les fichiers
     const possiblePaths = isDev
@@ -131,6 +135,27 @@ export class RemoteScoreServer {
       console.error(`[RemoteScoreServer] ERREUR: Fichier ${filename} non trouvé en mémoire`);
       res.status(500).send(`Erreur: fichier ${filename} non trouvé`);
     }
+  }
+
+  private parseCookies(header: string | undefined): Record<string, string> {
+    if (!header) return {};
+    const result: Record<string, string> = {};
+    for (const part of header.split(';')) {
+      const idx = part.indexOf('=');
+      if (idx < 0) continue;
+      const key = decodeURIComponent(part.slice(0, idx).trim());
+      const val = decodeURIComponent(part.slice(idx + 1).trim());
+      if (key) result[key] = val;
+    }
+    return result;
+  }
+
+  private checkArenaAuth(arenaId: string, cookieHeader: string | undefined): boolean {
+    const fullId = arenaId.startsWith('arena') ? arenaId : `arena${arenaId}`;
+    const arena = this.arenas.get(fullId);
+    if (!arena?.password) return true;
+    const token = this.parseCookies(cookieHeader)[`bp_token_${fullId}`];
+    return !!token && (this.arenaTokens.get(fullId)?.has(token) ?? false);
   }
 
   private setupMiddleware(): void {
@@ -439,7 +464,9 @@ export class RemoteScoreServer {
     this.app.get('/arena:arenaId/referee', (req, res) => {
       const arenaId = req.params.arenaId;
       console.log(`[RemoteScoreServer] Accès à l'interface arbitre pour l'arène ${arenaId}`);
-
+      if (!this.checkArenaAuth(arenaId, req.headers.cookie)) {
+        return res.redirect(302, `/login?arena=arena${arenaId}&return=${encodeURIComponent(req.path)}`);
+      }
       this.sendHtmlFromMemory('referee.html', res);
     });
 
@@ -449,7 +476,9 @@ export class RemoteScoreServer {
       console.log(
         `[RemoteScoreServer] Accès à l'interface arbitre pour l'arène ${arenaId} (arene)`
       );
-
+      if (!this.checkArenaAuth(arenaId, req.headers.cookie)) {
+        return res.redirect(302, `/login?arena=arena${arenaId}&return=${encodeURIComponent(req.path)}`);
+      }
       this.sendHtmlFromMemory('referee.html', res);
     });
 
@@ -459,7 +488,9 @@ export class RemoteScoreServer {
       console.log(
         `[RemoteScoreServer] Accès à l'interface arbitre (alias /arbitre) pour l'arène ${arenaId}`
       );
-
+      if (!this.checkArenaAuth(arenaId, req.headers.cookie)) {
+        return res.redirect(302, `/login?arena=arena${arenaId}&return=${encodeURIComponent(req.path)}`);
+      }
       this.sendHtmlFromMemory('referee.html', res);
     });
 
@@ -467,7 +498,9 @@ export class RemoteScoreServer {
     this.app.get('/arbitre/arene:arenaId', (req, res) => {
       const arenaId = req.params.arenaId;
       console.log(`[RemoteScoreServer] Accès à l'interface arbitre /arbitre/arene${arenaId}`);
-
+      if (!this.checkArenaAuth(arenaId, req.headers.cookie)) {
+        return res.redirect(302, `/login?arena=arena${arenaId}&return=${encodeURIComponent(req.path)}`);
+      }
       this.sendHtmlFromMemory('referee.html', res);
     });
 
@@ -475,7 +508,9 @@ export class RemoteScoreServer {
     this.app.get('/arene:arenaId/arbitre', (req, res) => {
       const arenaId = req.params.arenaId;
       console.log(`[RemoteScoreServer] Accès à l'interface arbitre /arene${arenaId}/arbitre`);
-
+      if (!this.checkArenaAuth(arenaId, req.headers.cookie)) {
+        return res.redirect(302, `/login?arena=arena${arenaId}&return=${encodeURIComponent(req.path)}`);
+      }
       this.sendHtmlFromMemory('referee.html', res);
     });
 
@@ -483,6 +518,9 @@ export class RemoteScoreServer {
     this.app.get('/arene:arenaId/poule', (req, res) => {
       const arenaId = req.params.arenaId;
       console.log(`[RemoteScoreServer] Accès à la vue poule /arene${arenaId}/poule`);
+      if (!this.checkArenaAuth(arenaId, req.headers.cookie)) {
+        return res.redirect(302, `/login?arena=arena${arenaId}&return=${encodeURIComponent(req.path)}`);
+      }
       this.sendHtmlFromMemory('pool.html', res);
     });
 
@@ -490,6 +528,33 @@ export class RemoteScoreServer {
     this.app.get('/kiosk', (req, res) => {
       console.log('[RemoteScoreServer] Accès au mode kiosk');
       this.sendHtmlFromMemory('kiosk.html', res);
+    });
+
+    // Page de connexion pour les pages protégées par mot de passe
+    this.app.get('/login', (_req, res) => {
+      this.sendHtmlFromMemory('login.html', res);
+    });
+
+    // API: authentification par mot de passe pour une arène
+    this.app.post('/api/auth/login/:arenaId', (req, res) => {
+      const rawId = req.params.arenaId;
+      const fullId = rawId.startsWith('arena') ? rawId : `arena${rawId}`;
+      const arena = this.arenas.get(fullId);
+      if (!arena?.password) {
+        return res.json({ success: true });
+      }
+      const { password } = req.body as { password: string };
+      if (!password || password !== arena.password) {
+        return res.status(401).json({ success: false, error: 'Mot de passe incorrect' });
+      }
+      const token = randomBytes(32).toString('hex');
+      if (!this.arenaTokens.has(fullId)) this.arenaTokens.set(fullId, new Set());
+      this.arenaTokens.get(fullId)!.add(token);
+      res.setHeader(
+        'Set-Cookie',
+        `bp_token_${fullId}=${token}; HttpOnly; SameSite=Strict; Max-Age=${8 * 3600}; Path=/`
+      );
+      res.json({ success: true });
     });
 
     // API: données complètes de la poule pour une arène
@@ -1013,6 +1078,13 @@ export class RemoteScoreServer {
         console.log(
           `Client ${socket.id} joining arena ${data.arenaId} as ${data.role || 'spectator'}`
         );
+        if (data.role === 'referee') {
+          if (!this.checkArenaAuth(data.arenaId, socket.handshake.headers.cookie as string)) {
+            socket.emit('auth_error', { message: 'Authentification requise' });
+            socket.disconnect(true);
+            return;
+          }
+        }
         socket.join(`arena:${data.arenaId}`);
 
         // Envoyer l'état actuel de l'arène
@@ -1304,6 +1376,11 @@ export class RemoteScoreServer {
   private initializeArenas(arenaCount: number = 4): void {
     this.arenaCount = arenaCount;
     console.log(`[RemoteScoreServer] Initialisation de ${arenaCount} arènes...`);
+    // Sauvegarder les mots de passe avant de vider la map
+    const savedPasswords = new Map<string, string>();
+    this.arenas.forEach((arena, id) => {
+      if (arena.password) savedPasswords.set(id, arena.password);
+    });
     this.arenas.clear();
 
     for (let i = 1; i <= arenaCount; i++) {
@@ -1324,6 +1401,11 @@ export class RemoteScoreServer {
       this.arenaMatchQueue.set(arena.id, []);
       console.log(`[RemoteScoreServer] Arène ${i} créée ✓`);
     }
+    // Restaurer les mots de passe sauvegardés
+    savedPasswords.forEach((pwd, id) => {
+      const arena = this.arenas.get(id);
+      if (arena) arena.password = pwd;
+    });
     console.log(`[RemoteScoreServer] ${arenaCount} arènes initialisées avec succès ✓`);
   }
 
@@ -2005,6 +2087,7 @@ export class RemoteScoreServer {
     this.arenaNextMatchIndex.clear();
     this.poolFencersCache.clear();
     this.sessionMatchScores.clear();
+    this.arenaTokens.clear();
   }
 
   public updateStripCount(newCount: number): RemoteSession | null {
@@ -2053,5 +2136,15 @@ export class RemoteScoreServer {
 
   public getSession(): RemoteSession | null {
     return this.session;
+  }
+
+  public setArenaPassword(arenaId: string, password: string): void {
+    const fullId = arenaId.startsWith('arena') ? arenaId : `arena${arenaId}`;
+    const arena = this.arenas.get(fullId);
+    if (!arena) throw new Error(`Arène ${arenaId} introuvable`);
+    arena.password = password || undefined;
+    // Invalider tous les tokens existants pour cette arène
+    this.arenaTokens.delete(fullId);
+    console.log(`[RemoteScoreServer] Mot de passe ${password ? 'défini' : 'supprimé'} pour ${fullId}`);
   }
 }

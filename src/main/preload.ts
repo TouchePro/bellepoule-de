@@ -316,6 +316,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     updateStripCount: (count: number) => ipcRenderer.invoke('remote:updateStripCount', count),
     updateMatchArena: (matchId: string, fromArena: number | null, toArena: number | null) =>
       ipcRenderer.invoke('remote:updateMatchArena', matchId, fromArena, toArena),
+    setArenaPassword: (arenaId: string, password: string) =>
+      ipcRenderer.invoke('remote:setArenaPassword', arenaId, password),
   },
 
   // Remote event listeners (for real-time updates)

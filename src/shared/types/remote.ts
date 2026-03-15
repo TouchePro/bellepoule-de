@@ -100,6 +100,7 @@ export interface Arena {
   status: 'idle' | 'ready' | 'in_progress' | 'finished';
   startTime: Date | null;
   settings: ArenaSettings;
+  password?: string;
 }
 
 export interface ArenaSettings {
