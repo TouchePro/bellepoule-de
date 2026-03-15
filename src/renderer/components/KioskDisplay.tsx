@@ -340,6 +340,9 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
                       <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#3b82f6' }}>
                         {rank.victories}V – {rank.defeats}D
                       </div>
+                      <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
+                        {rank.matchesPlayed} match{rank.matchesPlayed !== 1 ? 's' : ''}
+                      </div>
                       <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
                         TD {rank.touchesScored} / TR {rank.touchesReceived}
                       </div>

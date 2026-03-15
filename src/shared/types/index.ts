@@ -292,6 +292,7 @@ export interface PoolRanking {
   rank: number;
   victories: number;
   defeats: number;
+  matchesPlayed: number;
   touchesScored: number;
   touchesReceived: number;
   index: number;

@@ -833,6 +833,7 @@ export class RemoteScoreServer {
               lastName: r.fencer?.lastName ?? '',
               firstName: r.fencer?.firstName ?? '',
               club: r.fencer?.club ?? '',
+              matchesPlayed: r.matchesPlayed ?? 0,
               victories: r.victories ?? 0,
               touchesFor: r.touchesScored ?? 0,
               touchesAgainst: r.touchesReceived ?? 0,
@@ -858,9 +859,9 @@ export class RemoteScoreServer {
           const matches = this.db.getMatchesByPool(pool.id);
 
           // Calcul des statistiques par tireur
-          const stats: Record<string, { victories: number; touchesFor: number; touchesAgainst: number }> = {};
+          const stats: Record<string, { matchesPlayed: number; victories: number; touchesFor: number; touchesAgainst: number }> = {};
           for (const f of fencers) {
-            stats[f.id] = { victories: 0, touchesFor: 0, touchesAgainst: 0 };
+            stats[f.id] = { matchesPlayed: 0, victories: 0, touchesFor: 0, touchesAgainst: 0 };
           }
 
           for (const match of matches) {
@@ -871,11 +872,13 @@ export class RemoteScoreServer {
             const idA = match.fencerA.id;
             const idB = match.fencerB.id;
             if (stats[idA]) {
+              stats[idA].matchesPlayed += 1;
               stats[idA].touchesFor += sA.value ?? 0;
               stats[idA].touchesAgainst += sB.value ?? 0;
               if (sA.isVictory) stats[idA].victories += 1;
             }
             if (stats[idB]) {
+              stats[idB].matchesPlayed += 1;
               stats[idB].touchesFor += sB.value ?? 0;
               stats[idB].touchesAgainst += sA.value ?? 0;
               if (sB.isVictory) stats[idB].victories += 1;
@@ -888,6 +891,7 @@ export class RemoteScoreServer {
               lastName: f.lastName,
               firstName: f.firstName,
               club: f.club ?? '',
+              matchesPlayed: stats[f.id]?.matchesPlayed ?? 0,
               victories: stats[f.id]?.victories ?? 0,
               touchesFor: stats[f.id]?.touchesFor ?? 0,
               touchesAgainst: stats[f.id]?.touchesAgainst ?? 0,
