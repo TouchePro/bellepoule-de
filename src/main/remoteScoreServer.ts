@@ -823,6 +823,35 @@ export class RemoteScoreServer {
           return res.status(404).json({ error: 'Compétition introuvable' });
         }
 
+        // Priorité : lire les poules depuis le session_state (elles ne sont pas dans les tables SQL)
+        const sessionState = this.db.getSessionState(competitionId);
+        const sessionPools: any[] = sessionState?.pools || [];
+        if (sessionPools.length > 0) {
+          const poolResults = sessionPools.map((pool: any) => {
+            const rankings = (pool.ranking || []).map((r: any) => ({
+              id: r.fencer?.id ?? '',
+              lastName: r.fencer?.lastName ?? '',
+              firstName: r.fencer?.firstName ?? '',
+              club: r.fencer?.club ?? '',
+              victories: r.victories ?? 0,
+              touchesFor: r.touchesScored ?? 0,
+              touchesAgainst: r.touchesReceived ?? 0,
+              index: r.index ?? 0,
+            }));
+            return {
+              id: pool.id,
+              number: pool.number,
+              name: 'Poule ' + pool.number,
+              rankings,
+            };
+          });
+          return res.json({
+            competition: { id: competition.id, title: competition.title, date: competition.date, weapon: competition.weapon },
+            pools: poolResults,
+          });
+        }
+
+        // Fallback : tables SQL (cas import/legacy)
         const pools = this.db.getCompetitionPools(competitionId);
         const poolResults = pools.map(pool => {
           const fencers = this.db.getPoolFencers(pool.id);
