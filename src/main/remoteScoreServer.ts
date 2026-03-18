@@ -591,12 +591,14 @@ export class RemoteScoreServer {
         const fencers =
           this.poolFencersCache.get(poolId) ?? this.db.getPoolFencers(poolId);
         const matches = (() => {
-          const inMemory = this.sessionMatches.filter(
-            m =>
-              (m.poolId ||
-                m.pool?.id ||
-                `pool-${m.poolNumber || m.number}`) === poolId
-          );
+          const inMemory = this.sessionMatches
+            .filter(
+              m =>
+                (m.poolId ||
+                  m.pool?.id ||
+                  `pool-${m.poolNumber || m.number}`) === poolId
+            )
+            .sort((a: any, b: any) => (a.number || 0) - (b.number || 0));
           if (inMemory.length > 0) {
             return inMemory.map(m => {
               const update = this.sessionMatchScores.get(m.id);
@@ -662,12 +664,14 @@ export class RemoteScoreServer {
         const fencers =
           this.poolFencersCache.get(poolId) ?? this.db.getPoolFencers(poolId);
         const matches = (() => {
-          const inMemory = this.sessionMatches.filter(
-            m =>
-              (m.poolId ||
-                m.pool?.id ||
-                `pool-${m.poolNumber || m.number}`) === poolId
-          );
+          const inMemory = this.sessionMatches
+            .filter(
+              m =>
+                (m.poolId ||
+                  m.pool?.id ||
+                  `pool-${m.poolNumber || m.number}`) === poolId
+            )
+            .sort((a: any, b: any) => (a.number || 0) - (b.number || 0));
           if (inMemory.length > 0) {
             return inMemory.map(m => {
               const update = this.sessionMatchScores.get(m.id);
@@ -730,6 +734,7 @@ export class RemoteScoreServer {
               const matchPoolId = m.poolId || m.pool?.id || `pool-${m.poolNumber || m.number}`;
               return matchPoolId === currentPoolId;
             })
+            .sort((a: any, b: any) => (a.number || 0) - (b.number || 0))
             .map((m: any) => {
               const scoreUpdate = this.sessionMatchScores.get(m.id);
               return scoreUpdate ? { ...m, ...scoreUpdate } : m;
@@ -1733,10 +1738,12 @@ export class RemoteScoreServer {
 
     // Chercher le prochain match dans le même pool
     if (currentPoolId) {
-      const poolMatches = this.sessionMatches.filter(m => {
-        const matchPoolId = m.poolId || m.pool?.id || `pool-${m.poolNumber || m.number}`;
-        return matchPoolId === currentPoolId;
-      });
+      const poolMatches = this.sessionMatches
+        .filter(m => {
+          const matchPoolId = m.poolId || m.pool?.id || `pool-${m.poolNumber || m.number}`;
+          return matchPoolId === currentPoolId;
+        })
+        .sort((a: any, b: any) => (a.number || 0) - (b.number || 0));
 
       console.log(
         `[RemoteScoreServer] ${poolMatches.length} matches dans le pool ${currentPoolId}, prochain index: ${nextIndex}`
@@ -1914,6 +1921,9 @@ export class RemoteScoreServer {
     // Configurer le nombre d'arènes
     this.setArenaCount(strips);
 
+    // Réinitialiser le cache tireurs pour éviter toute pollution d'une session précédente
+    this.poolFencersCache.clear();
+
     // Utiliser les matches passés depuis le renderer si disponibles, sinon chercher dans la DB
     let allMatches: any[] = [];
     if (matchesFromRenderer && matchesFromRenderer.length > 0) {
@@ -1931,10 +1941,14 @@ export class RemoteScoreServer {
           realMatches.push(m);
         }
       }
-      // Pré-remplir le cache avec l'ordre correct fourni par le renderer
+      // Pré-remplir le cache uniquement si la liste de tireurs est non vide
       for (const [poolId, fencers] of fencerOrderMap) {
-        this.poolFencersCache.set(poolId, fencers);
-        console.log(`[RemoteScoreServer] Cache tireurs pre-rempli pour pool ${poolId}: ${fencers.length} tireurs`);
+        if (fencers && fencers.length > 0) {
+          this.poolFencersCache.set(poolId, fencers);
+          console.log(`[RemoteScoreServer] Cache tireurs pre-rempli pour pool ${poolId}: ${fencers.length} tireurs`);
+        } else {
+          console.warn(`[RemoteScoreServer] Marqueur __poolFencers vide pour pool ${poolId}, fallback DB`);
+        }
       }
 
       allMatches = realMatches.filter(
@@ -1987,9 +2001,13 @@ export class RemoteScoreServer {
       if (dbFencers.length > 0) {
         this.poolFencersCache.set(poolId, dbFencers);
       } else {
-        // Fallback si poolId synthétique (pool-N) sans correspondance DB
+        // Fallback si poolId synthétique (pool-N) sans correspondance DB.
+        // Trier par number avant d'extraire pour reconstruire l'ordre naturel du pool :
+        // la première apparition de chaque tireur dans l'ordre des matchs FIE correspond
+        // à sa position dans la poule (match 1 : pos1 vs pos4, match 2 : pos2 vs pos3…).
+        const sortedMatches = [...poolMatches].sort((a: any, b: any) => (a.number || 0) - (b.number || 0));
         const fencerMap = new Map<string, any>();
-        for (const match of poolMatches) {
+        for (const match of sortedMatches) {
           if (match.fencerA?.id) fencerMap.set(match.fencerA.id, match.fencerA);
           if (match.fencerB?.id) fencerMap.set(match.fencerB.id, match.fencerB);
         }
