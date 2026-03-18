@@ -54,24 +54,24 @@ export const useEventManager = () => {
     []
   );
 
-  const setTimeout = useCallback((callback: () => void, delay: number): number => {
+  const managedSetTimeout = useCallback((callback: () => void, delay: number): number => {
     const id = window.setTimeout(callback, delay);
     timersRef.current.push({ id, type: 'timeout' });
     return id;
   }, []);
 
-  const setInterval = useCallback((callback: () => void, delay: number): number => {
+  const managedSetInterval = useCallback((callback: () => void, delay: number): number => {
     const id = window.setInterval(callback, delay);
     timersRef.current.push({ id, type: 'interval' });
     return id;
   }, []);
 
-  const clearTimeout = useCallback((id: number) => {
+  const managedClearTimeout = useCallback((id: number) => {
     window.clearTimeout(id);
     timersRef.current = timersRef.current.filter(timer => timer.id !== id);
   }, []);
 
-  const clearInterval = useCallback((id: number) => {
+  const managedClearInterval = useCallback((id: number) => {
     window.clearInterval(id);
     timersRef.current = timersRef.current.filter(timer => timer.id !== id);
   }, []);
@@ -110,10 +110,10 @@ export const useEventManager = () => {
   return {
     addEventListener,
     removeEventListener,
-    setTimeout,
-    setInterval,
-    clearTimeout,
-    clearInterval,
+    managedSetTimeout,
+    managedSetInterval,
+    managedClearTimeout,
+    managedClearInterval,
     cleanup,
   };
 };
@@ -153,18 +153,18 @@ export const useWindowResize = (handler: () => void, debounceMs: number = 100) =
   const {
     addEventListener,
     removeEventListener,
-    setTimeout: customSetTimeout,
-    clearTimeout: customClearTimeout,
+    managedSetTimeout,
+    managedClearTimeout,
   } = useEventManager();
   const timeoutRef = useRef<number>(0);
 
   useEffect(() => {
     const handleResize = () => {
       if (timeoutRef.current) {
-        customClearTimeout(timeoutRef.current);
+        managedClearTimeout(timeoutRef.current);
       }
 
-      timeoutRef.current = customSetTimeout(handler, debounceMs);
+      timeoutRef.current = managedSetTimeout(handler, debounceMs);
     };
 
     addEventListener(window, 'resize', handleResize);
@@ -172,7 +172,7 @@ export const useWindowResize = (handler: () => void, debounceMs: number = 100) =
     return () => {
       removeEventListener(window, 'resize', handleResize);
       if (timeoutRef.current) {
-        customClearTimeout(timeoutRef.current);
+        managedClearTimeout(timeoutRef.current);
       }
     };
   }, [
@@ -180,8 +180,8 @@ export const useWindowResize = (handler: () => void, debounceMs: number = 100) =
     debounceMs,
     addEventListener,
     removeEventListener,
-    customSetTimeout,
-    customClearTimeout,
+    managedSetTimeout,
+    managedClearTimeout,
   ]);
 };
 
@@ -193,29 +193,29 @@ export const useAutoSave = (
   saveFunction: () => Promise<void>,
   intervalMs: number = 120000 // 2 minutes default
 ) => {
-  const { setInterval: customSetInterval, clearInterval: customClearInterval } = useEventManager();
+  const { managedSetInterval, managedClearInterval } = useEventManager();
   const intervalRef = useRef<number>(0);
 
   const startAutoSave = useCallback(() => {
     if (intervalRef.current) {
-      customClearInterval(intervalRef.current);
+      managedClearInterval(intervalRef.current);
     }
 
-    intervalRef.current = customSetInterval(async () => {
+    intervalRef.current = managedSetInterval(async () => {
       try {
         await saveFunction();
       } catch (error) {
         console.error('Auto-save failed:', error);
       }
     }, intervalMs);
-  }, [saveFunction, intervalMs, customSetInterval, customClearInterval]);
+  }, [saveFunction, intervalMs, managedSetInterval, managedClearInterval]);
 
   const stopAutoSave = useCallback(() => {
     if (intervalRef.current) {
-      customClearInterval(intervalRef.current);
-      intervalRef.current = 0; // Use 0 instead of undefined
+      managedClearInterval(intervalRef.current);
+      intervalRef.current = 0;
     }
-  }, [customClearInterval]);
+  }, [managedClearInterval]);
 
   useEffect(() => {
     startAutoSave();

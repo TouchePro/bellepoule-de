@@ -50,9 +50,27 @@ export class RemoteScoreServer {
     this.port = port;
     this.app = express();
     this.server = createServer(this.app);
+    // Limiter CORS au réseau local (localhost + LAN) pour la sécurité
     this.io = new SocketIOServer(this.server, {
       cors: {
-        origin: '*',
+        origin: (origin, callback) => {
+          // Autoriser les requêtes sans origin (ex. Electron, curl) et le réseau local
+          if (!origin) return callback(null, true);
+          try {
+            const url = new URL(origin);
+            const hostname = url.hostname;
+            const isLocal =
+              hostname === 'localhost' ||
+              hostname === '127.0.0.1' ||
+              hostname === '::1' ||
+              /^10\./.test(hostname) ||
+              /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||
+              /^192\.168\./.test(hostname);
+            callback(null, isLocal);
+          } catch {
+            callback(null, false);
+          }
+        },
         methods: ['GET', 'POST'],
       },
     });

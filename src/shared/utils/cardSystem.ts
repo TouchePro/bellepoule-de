@@ -133,15 +133,3 @@ export function isFencerExcluded(fencerId: string, matchCards: Card[]): boolean 
   return fencerCards.some(card => card.resultingExclusion);
 }
 
-export function getCardColor(cardType: CardType): string {
-  switch (cardType) {
-    case CardType.YELLOW:
-      return '#fbbf24';
-    case CardType.RED:
-      return '#ef4444';
-    case CardType.BLACK:
-      return '#000000';
-    default:
-      return '#9ca3af';
-  }
-}
