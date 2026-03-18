@@ -212,6 +212,44 @@ export function calculateFencerPoolStats(fencer: Fencer, matches: Match[]): Pool
   };
 }
 
+// ============================================================================
+// Ranking Helpers (shared between standard and Quest ranking)
+// ============================================================================
+
+/** Assigne les rangs en gérant les ex aequo (victoires + questPoints + indice identiques) */
+function assignRanks(rankings: PoolRanking[]): void {
+  let currentRank = 1;
+  for (let i = 0; i < rankings.length; i++) {
+    if (i > 0) {
+      const prev = rankings[i - 1];
+      const curr = rankings[i];
+      const sameVictories = prev.victories === curr.victories;
+      const sameQuest = (prev.questPoints ?? 0) === (curr.questPoints ?? 0);
+      const sameIndex = prev.index === curr.index;
+
+      if (sameVictories && sameQuest && sameIndex) {
+        rankings[i].rank = rankings[i - 1].rank;
+      } else {
+        rankings[i].rank = currentRank;
+      }
+    } else {
+      rankings[i].rank = currentRank;
+    }
+    currentRank++;
+  }
+}
+
+/** Ajoute les tireurs forfait/abandon/exclu à la fin du classement */
+function appendForfeitFencers(rankings: PoolRanking[], forfeitFencers: PoolRanking[]): void {
+  if (forfeitFencers.length > 0) {
+    const lastRank = rankings.length > 0 ? rankings[rankings.length - 1].rank + 1 : 1;
+    forfeitFencers.forEach((ff, idx) => {
+      ff.rank = lastRank + idx;
+      rankings.push(ff);
+    });
+  }
+}
+
 /**
  * Calcule le classement d'une poule selon les règles demandées
  * Ordre de priorité:
@@ -307,38 +345,8 @@ export function calculatePoolRanking(pool: Pool): PoolRanking[] {
     return (a.fencer.ranking ?? 9999) - (b.fencer.ranking ?? 9999);
   });
 
-  // Assigner les rangs
-  let currentRank = 1;
-  for (let i = 0; i < rankings.length; i++) {
-    if (i > 0) {
-      const prev = rankings[i - 1];
-      const curr = rankings[i];
-
-      // Vérifier si vraiment à égalité (même victoires, même points Quest, même indice)
-      const sameVictories = prev.victories === curr.victories;
-      const sameQuest = (prev.questPoints ?? 0) === (curr.questPoints ?? 0);
-      const sameIndex = prev.index === curr.index;
-
-      if (sameVictories && sameQuest && sameIndex) {
-        // Même rang (ex aequo)
-        rankings[i].rank = rankings[i - 1].rank;
-      } else {
-        rankings[i].rank = currentRank;
-      }
-    } else {
-      rankings[i].rank = currentRank;
-    }
-    currentRank++;
-  }
-
-  // Ajouter les tireurs forfait à la fin avec le dernier rang
-  if (forfeitFencers.length > 0) {
-    const lastRank = rankings.length > 0 ? rankings[rankings.length - 1].rank + 1 : 1;
-    forfeitFencers.forEach((ff, idx) => {
-      ff.rank = lastRank + idx;
-      rankings.push(ff);
-    });
-  }
+  assignRanks(rankings);
+  appendForfeitFencers(rankings, forfeitFencers);
 
   return rankings;
 }
@@ -881,37 +889,8 @@ export function calculatePoolRankingQuest(pool: Pool): PoolRanking[] {
     return (a.fencer.ranking ?? 9999) - (b.fencer.ranking ?? 9999);
   });
 
-  // Assigner les rangs avec gestion des ex-aequo
-  let currentRank = 1;
-  for (let i = 0; i < rankings.length; i++) {
-    if (i > 0) {
-      const prev = rankings[i - 1];
-      const curr = rankings[i];
-
-      // Vérifier si vraiment à égalité (même victoires, même points Quest, même indice)
-      const sameVictories = prev.victories === curr.victories;
-      const sameQuest = (prev.questPoints ?? 0) === (curr.questPoints ?? 0);
-      const sameIndex = prev.index === curr.index;
-
-      if (sameVictories && sameQuest && sameIndex) {
-        rankings[i].rank = rankings[i - 1].rank;
-      } else {
-        rankings[i].rank = currentRank;
-      }
-    } else {
-      rankings[i].rank = currentRank;
-    }
-    currentRank++;
-  }
-
-  // Ajouter les tireurs forfait à la fin avec le dernier rang
-  if (forfeitFencers.length > 0) {
-    const lastRank = rankings.length > 0 ? rankings[rankings.length - 1].rank + 1 : 1;
-    forfeitFencers.forEach((ff, idx) => {
-      ff.rank = lastRank + idx;
-      rankings.push(ff);
-    });
-  }
+  assignRanks(rankings);
+  appendForfeitFencers(rankings, forfeitFencers);
 
   return rankings;
 }
@@ -951,29 +930,7 @@ export function calculateOverallRankingQuest(pools: Pool[]): PoolRanking[] {
     return 0;
   });
 
-  // Assigner les rangs avec gestion des ex-aequo
-  let currentRank = 1;
-  for (let i = 0; i < allRankings.length; i++) {
-    if (i > 0) {
-      const prev = allRankings[i - 1];
-      const curr = allRankings[i];
-
-      // Vérifier si vraiment à égalité (même victoires, même points Quest, même indice)
-      const sameVictories = prev.victories === curr.victories;
-      const sameQuest = (prev.questPoints ?? 0) === (curr.questPoints ?? 0);
-      const sameIndex = prev.index === curr.index;
-
-      if (sameVictories && sameQuest && sameIndex) {
-        // Même rang (ex aequo)
-        allRankings[i].rank = allRankings[i - 1].rank;
-      } else {
-        allRankings[i].rank = currentRank;
-      }
-    } else {
-      allRankings[i].rank = currentRank;
-    }
-    currentRank++;
-  }
+  assignRanks(allRankings);
 
   return allRankings;
 }
@@ -1019,29 +976,7 @@ export function calculateOverallRanking(pools: Pool[]): PoolRanking[] {
     return 0;
   });
 
-  // Assigner les rangs avec gestion des ex-aequo
-  let currentRank = 1;
-  for (let i = 0; i < allRankings.length; i++) {
-    if (i > 0) {
-      const prev = allRankings[i - 1];
-      const curr = allRankings[i];
-
-      // Vérifier si vraiment à égalité (même victoires, même points Quest, même indice)
-      const sameVictories = prev.victories === curr.victories;
-      const sameQuest = (prev.questPoints ?? 0) === (curr.questPoints ?? 0);
-      const sameIndex = prev.index === curr.index;
-
-      if (sameVictories && sameQuest && sameIndex) {
-        // Même rang (ex aequo)
-        allRankings[i].rank = allRankings[i - 1].rank;
-      } else {
-        allRankings[i].rank = currentRank;
-      }
-    } else {
-      allRankings[i].rank = currentRank;
-    }
-    currentRank++;
-  }
+  assignRanks(allRankings);
 
   return allRankings;
 }
