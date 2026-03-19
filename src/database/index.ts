@@ -243,6 +243,11 @@ export class DatabaseManager {
       this.db.run(`ALTER TABLE matches ADD COLUMN duration INTEGER`);
     } catch { /* colonne déjà présente */ }
 
+    // Photo des tireurs (migration idempotente)
+    try {
+      this.db.run(`ALTER TABLE fencers ADD COLUMN photo TEXT`);
+    } catch { /* colonne déjà présente */ }
+
     // Création des index pour optimiser les performances
     this.createIndexes();
   }
@@ -548,8 +553,8 @@ export class DatabaseManager {
     try {
       this.db.run(
         `
-        INSERT INTO fencers (id, competition_id, ref, last_name, first_name, birth_date, gender, nationality, club, league, license, ranking, status, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO fencers (id, competition_id, ref, last_name, first_name, birth_date, gender, nationality, club, league, license, ranking, status, photo, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
         [
           id,
@@ -565,6 +570,7 @@ export class DatabaseManager {
           fencer.license || null,
           fencer.ranking || null,
           fencer.status || 'N',
+          fencer.photo || null,
           now,
           now,
         ]
@@ -620,6 +626,7 @@ export class DatabaseManager {
         seedNumber: row.seed_number as number,
         finalRanking: row.final_ranking as number,
         poolStats: poolStats,
+        photo: (row.photo as string) || undefined,
         createdAt: row.created_at ? new Date(row.created_at as string) : new Date(),
         updatedAt: row.updated_at ? new Date(row.updated_at as string) : new Date(),
       };
@@ -646,18 +653,44 @@ export class DatabaseManager {
   public updateFencer(id: string, updates: Partial<Fencer>): void {
     if (!this.db) throw new Error('Database not open');
     const now = new Date().toISOString();
-    if (updates.status !== undefined)
-      this.db.run('UPDATE fencers SET status = ?, updated_at = ? WHERE id = ?', [
-        updates.status,
-        now,
-        id,
-      ]);
-    if (updates.ranking !== undefined)
-      this.db.run('UPDATE fencers SET ranking = ?, updated_at = ? WHERE id = ?', [
-        updates.ranking,
-        now,
-        id,
-      ]);
+
+    const fieldMap: Record<string, string> = {
+      lastName: 'last_name',
+      firstName: 'first_name',
+      gender: 'gender',
+      nationality: 'nationality',
+      club: 'club',
+      league: 'league',
+      license: 'license',
+      ranking: 'ranking',
+      status: 'status',
+      photo: 'photo',
+      seedNumber: 'seed_number',
+      finalRanking: 'final_ranking',
+    };
+
+    const setClauses: string[] = [];
+    const values: unknown[] = [];
+
+    for (const [key, col] of Object.entries(fieldMap)) {
+      if (key in updates) {
+        setClauses.push(`${col} = ?`);
+        values.push((updates as Record<string, unknown>)[key] ?? null);
+      }
+    }
+
+    if (updates.poolStats !== undefined) {
+      setClauses.push('pool_stats = ?');
+      values.push(updates.poolStats ? JSON.stringify(updates.poolStats) : null);
+    }
+
+    if (setClauses.length > 0) {
+      setClauses.push('updated_at = ?');
+      values.push(now);
+      values.push(id);
+      this.db.run(`UPDATE fencers SET ${setClauses.join(', ')} WHERE id = ?`, values);
+    }
+
     this.save();
   }
 

@@ -53,6 +53,7 @@ export interface FencerCreateData {
   license?: string;
   ranking?: number;
   status?: string;
+  photo?: string;
 }
 
 export interface FencerUpdateData {
@@ -66,6 +67,7 @@ export interface FencerUpdateData {
   license?: string;
   ranking?: number;
   status?: string;
+  photo?: string;
 }
 
 export interface MatchCreateData {
