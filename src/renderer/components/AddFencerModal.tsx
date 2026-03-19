@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { Fencer, Gender, FencerStatus } from '../../shared/types';
 import { useToast } from './Toast';
+import FencerPhoto from './FencerPhoto';
 
 interface AddFencerModalProps {
   onClose: () => void;
@@ -22,6 +23,7 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
   const [ranking, setRanking] = useState('');
   const [gender, setGender] = useState<Gender>(Gender.MALE);
   const [nationality, setNationality] = useState('FRA');
+  const [photo, setPhoto] = useState<string | undefined>();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,6 +43,7 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
       gender,
       nationality,
       status: FencerStatus.NOT_CHECKED_IN,
+      photo,
     });
   };
 
@@ -60,6 +63,17 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
 
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+              <FencerPhoto
+                photo={photo}
+                firstName={firstName}
+                lastName={lastName}
+                onPhotoChange={setPhoto}
+                editable
+                size="medium"
+              />
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div className="form-group">
                 <label className="form-label">Nom *</label>
