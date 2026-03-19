@@ -473,6 +473,15 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     const matchesCopy = updatedMatches.map(m => ({ ...m }));
     onMatchesChange(matchesCopy);
 
+    // Vérifier si le tableau est complet (finale + petite finale si elle existe)
+    const champion = updatedMatches.find(m => m.round === 2)?.winner;
+    const thirdPlaceMatch = updatedMatches.find(m => m.round === 3);
+    const thirdPlaceDone = !thirdPlaceMatch || !!thirdPlaceMatch.winner;
+    if (champion && thirdPlaceDone && onComplete) {
+      const finalResults = calculateFinalResults(updatedMatches);
+      onComplete(finalResults);
+    }
+
     setShowScoreModal(false);
     setEditingMatch(null);
     setEditScoreA('');
