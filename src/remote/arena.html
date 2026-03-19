@@ -418,6 +418,88 @@
         margin-top: 0.5rem;
       }
 
+      /* Écran d'intro photo */
+      .photo-intro {
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        width: 100%;
+        max-width: 1200px;
+        padding: 2rem;
+        animation: fadeInScale 0.5s ease-out;
+      }
+
+      .photo-intro.hidden {
+        display: none;
+      }
+
+      @keyframes fadeInScale {
+        from { opacity: 0; transform: scale(0.95); }
+        to   { opacity: 1; transform: scale(1); }
+      }
+
+      .photo-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.25rem;
+        flex: 1;
+      }
+
+      .photo-card-a { color: #ef4444; }
+      .photo-card-b { color: #22c55e; }
+
+      .photo-circle {
+        width: 260px;
+        height: 260px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 6px solid currentColor;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.3);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+      }
+
+      .photo-circle img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: none;
+      }
+
+      .photo-circle .default-icon {
+        width: 65%;
+        height: 65%;
+        fill: currentColor;
+        opacity: 0.7;
+        display: block;
+      }
+
+      .intro-fencer-name {
+        font-size: 2.5rem;
+        font-weight: 800;
+        text-align: center;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+      }
+
+      .intro-fencer-club {
+        font-size: 1.25rem;
+        opacity: 0.75;
+        text-align: center;
+        font-weight: 500;
+      }
+
+      .vs-center {
+        font-size: 5rem;
+        font-weight: 900;
+        color: #f59e0b;
+        text-shadow: 0 0 30px rgba(245, 158, 11, 0.7);
+        padding: 0 2rem;
+        flex-shrink: 0;
+      }
+
       /* Responsive */
       @media (max-width: 768px) {
         .fencers-row {
@@ -441,6 +523,25 @@
         .timer-display {
           font-size: 4rem;
           padding: 1rem 2rem;
+        }
+
+        .photo-intro {
+          flex-direction: column;
+          gap: 1.5rem;
+        }
+
+        .photo-circle {
+          width: 160px;
+          height: 160px;
+        }
+
+        .vs-center {
+          font-size: 3rem;
+          padding: 0;
+        }
+
+        .intro-fencer-name {
+          font-size: 1.5rem;
         }
       }
     </style>
@@ -469,6 +570,48 @@
       <div class="waiting-screen" id="waiting-screen">
         <div class="arena-idle-number" id="arena-idle-number">1</div>
         <div class="arena-idle-label">Arène</div>
+      </div>
+
+      <!-- Écran d'intro photo (affiché quand showPhotos=true et statut ready) -->
+      <div class="photo-intro hidden" id="photo-intro">
+        <!-- Tireur A (Rouge) -->
+        <div class="photo-card photo-card-a">
+          <div class="photo-circle">
+            <img id="photo-a" src="" alt="" />
+            <svg id="default-icon-a" class="default-icon" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="50" cy="18" r="15"/>
+              <rect x="37" y="10" width="26" height="13" rx="3" opacity="0.35" fill="#000"/>
+              <path d="M33 38 Q50 34 67 38 L70 82 Q50 78 30 82 Z"/>
+              <line x1="67" y1="47" x2="92" y2="31" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
+              <line x1="92" y1="31" x2="100" y2="9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="86" y1="35" x2="97" y2="27" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M36 82 L28 118 M64 82 L72 118" stroke="currentColor" stroke-width="9" stroke-linecap="round" fill="none"/>
+            </svg>
+          </div>
+          <div class="intro-fencer-name" id="intro-name-a">-</div>
+          <div class="intro-fencer-club" id="intro-club-a"></div>
+        </div>
+
+        <!-- VS -->
+        <div class="vs-center">VS</div>
+
+        <!-- Tireur B (Vert) -->
+        <div class="photo-card photo-card-b">
+          <div class="photo-circle">
+            <img id="photo-b" src="" alt="" />
+            <svg id="default-icon-b" class="default-icon" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="50" cy="18" r="15"/>
+              <rect x="37" y="10" width="26" height="13" rx="3" opacity="0.35" fill="#000"/>
+              <path d="M33 38 Q50 34 67 38 L70 82 Q50 78 30 82 Z"/>
+              <line x1="67" y1="47" x2="92" y2="31" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
+              <line x1="92" y1="31" x2="100" y2="9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="86" y1="35" x2="97" y2="27" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M36 82 L28 118 M64 82 L72 118" stroke="currentColor" stroke-width="9" stroke-linecap="round" fill="none"/>
+            </svg>
+          </div>
+          <div class="intro-fencer-name" id="intro-name-b">-</div>
+          <div class="intro-fencer-club" id="intro-club-b"></div>
+        </div>
       </div>
 
       <!-- Affichage du match -->
@@ -518,6 +661,7 @@
           this.cardsB = [];
           this.isSuddenDeath = false;
           this.inversionEnabled = localStorage.getItem('inversionEnabled') === 'true';
+          this.showPhotos = false;
 
           this.init();
         }
@@ -588,6 +732,11 @@
         }
 
         handleArenaUpdate(data) {
+          // Mise à jour du réglage photos
+          if (data.showPhotos !== undefined) {
+            this.showPhotos = data.showPhotos;
+          }
+
           // Mise à jour du statut
           if (data.status) {
             this.matchStatus = data.status;
@@ -598,6 +747,9 @@
           if (data.match) {
             this.currentMatch = data.match;
             this.updateMatchDisplay();
+            if (this.matchStatus === 'ready' && this.showPhotos) {
+              this.updatePhotoIntro();
+            }
           }
 
           // Mise à jour des scores
@@ -730,15 +882,53 @@
         updateVisibility() {
           const waitingScreen = document.getElementById('waiting-screen');
           const matchDisplay = document.getElementById('match-display');
+          const photoIntro = document.getElementById('photo-intro');
 
           if (this.matchStatus === 'idle' || this.matchStatus === 'not_started') {
             waitingScreen.classList.remove('hidden');
             matchDisplay.classList.remove('active');
+            photoIntro.classList.add('hidden');
             this.isSuddenDeath = false;
             this.updateSuddenDeathBanner();
+          } else if (this.matchStatus === 'ready' && this.showPhotos && this.currentMatch) {
+            waitingScreen.classList.add('hidden');
+            matchDisplay.classList.remove('active');
+            photoIntro.classList.remove('hidden');
+            this.updatePhotoIntro();
           } else {
             waitingScreen.classList.add('hidden');
+            photoIntro.classList.add('hidden');
             matchDisplay.classList.add('active');
+          }
+        }
+
+        updatePhotoIntro() {
+          if (!this.currentMatch) return;
+          const fA = this.currentMatch.fencerA || {};
+          const fB = this.currentMatch.fencerB || {};
+
+          document.getElementById('intro-name-a').textContent =
+            `${fA.lastName || ''} ${fA.firstName || ''}`.trim() || '-';
+          document.getElementById('intro-club-a').textContent = fA.club || '';
+
+          document.getElementById('intro-name-b').textContent =
+            `${fB.lastName || ''} ${fB.firstName || ''}`.trim() || '-';
+          document.getElementById('intro-club-b').textContent = fB.club || '';
+
+          this.setFencerPhoto('a', fA.photo);
+          this.setFencerPhoto('b', fB.photo);
+        }
+
+        setFencerPhoto(side, photoBase64) {
+          const img = document.getElementById(`photo-${side}`);
+          const icon = document.getElementById(`default-icon-${side}`);
+          if (photoBase64) {
+            img.src = photoBase64.startsWith('data:') ? photoBase64 : `data:image/jpeg;base64,${photoBase64}`;
+            img.style.display = 'block';
+            icon.style.display = 'none';
+          } else {
+            img.style.display = 'none';
+            icon.style.display = 'block';
           }
         }
       }
