@@ -96,11 +96,15 @@ export class RemoteScoreServer {
 
     // Essayer plusieurs chemins pour trouver les fichiers
     const possiblePaths = isDev
-      ? [path.join(__dirname, '../../remote')]
+      ? [
+          path.join(__dirname, '../remote'),         // dist/remote/ (après webpack)
+          path.join(__dirname, '../../src/remote'),  // src/remote/ (sans webpack)
+        ]
       : [
           path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'remote'),
           path.join(__dirname, '..', 'remote').replace('app.asar', 'app.asar.unpacked'),
           path.join(__dirname, '..', 'remote'),
+          path.join(__dirname, '../../src/remote'),  // fallback source sans webpack
         ];
 
     console.log('[RemoteScoreServer] Chargement des fichiers HTML...');
@@ -187,7 +191,10 @@ export class RemoteScoreServer {
 
     if (isDev) {
       // En développement
-      remotePath = path.join(__dirname, '../../remote');
+      remotePath = path.join(__dirname, '../remote'); // dist/remote/ (après webpack)
+      if (!require('fs').existsSync(remotePath)) {
+        remotePath = path.join(__dirname, '../../src/remote'); // src/remote/ (sans webpack)
+      }
     } else {
       // En production - utiliser process.resourcesPath qui est plus fiable
       // Les fichiers unpacked sont dans resourcesPath/app.asar.unpacked/dist/remote
@@ -201,6 +208,8 @@ export class RemoteScoreServer {
         path.join(__dirname, '..', 'remote').replace('app.asar', 'app.asar.unpacked'),
         // Dernier recours: chemin relatif standard
         path.join(__dirname, '..', 'remote'),
+        // Fallback source sans webpack
+        path.join(__dirname, '../../src/remote'),
       ];
 
       remotePath = '';
@@ -440,27 +449,24 @@ export class RemoteScoreServer {
     // Pages d'arène - Dynamiques
     const getRemotePath = (filename: string) => {
       const isDev = process.env.NODE_ENV === 'development';
+      const fs = require('fs');
 
-      if (isDev) {
-        return path.join(__dirname, '../../remote', filename);
-      } else {
-        // Essayer plusieurs chemins possibles (comme dans setupMiddleware)
-        const possiblePaths = [
-          path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'remote', filename),
-          path.join(__dirname, '..', 'remote', filename).replace('app.asar', 'app.asar.unpacked'),
-          path.join(__dirname, '..', 'remote', filename),
-        ];
+      const possiblePaths = isDev
+        ? [
+            path.join(__dirname, '../remote', filename),
+            path.join(__dirname, '../../src/remote', filename),
+          ]
+        : [
+            path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'remote', filename),
+            path.join(__dirname, '..', 'remote', filename).replace('app.asar', 'app.asar.unpacked'),
+            path.join(__dirname, '..', 'remote', filename),
+            path.join(__dirname, '../../src/remote', filename),
+          ];
 
-        const fs = require('fs');
-        for (const p of possiblePaths) {
-          if (fs.existsSync(p)) {
-            return p;
-          }
-        }
-
-        // Retourner le dernier chemin comme fallback
-        return possiblePaths[possiblePaths.length - 1];
+      for (const p of possiblePaths) {
+        if (fs.existsSync(p)) return p;
       }
+      return possiblePaths[possiblePaths.length - 1];
     };
 
     // Support both /arena1 and /arene1 formats
