@@ -308,8 +308,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     startServer: () => ipcRenderer.invoke('remote:startServer'),
     stopServer: () => ipcRenderer.invoke('remote:stopServer'),
     getServerInfo: () => ipcRenderer.invoke('remote:getServerInfo'),
-    startSession: (competitionId: string, strips: number, matches?: any[]) =>
-      ipcRenderer.invoke('remote:startSession', competitionId, strips, matches),
+    startSession: (competitionId: string, strips: number, matches?: any[], showPhotos?: boolean) =>
+      ipcRenderer.invoke('remote:startSession', competitionId, strips, matches, showPhotos),
     stopSession: () => ipcRenderer.invoke('remote:stopSession'),
     getSession: () => ipcRenderer.invoke('remote:getSession'),
     getArenas: () => ipcRenderer.invoke('remote:getArenas'),

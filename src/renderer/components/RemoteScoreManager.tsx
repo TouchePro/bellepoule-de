@@ -55,6 +55,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const [activeQR, setActiveQR] = useState<{ url: string; label: string } | null>(null);
   const [arenaPasswords, setArenaPasswords] = useState<Record<string, string>>({});
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [showPhotos, setShowPhotos] = useState(false);
 
   useEffect(() => {
     if (!activeQR) { setQrDataUrl(null); return; }
@@ -137,7 +138,8 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       const result = await window.electronAPI.remote.startSession(
         competition.id,
         count,
-        allMatches
+        allMatches,
+        showPhotos
       );
       if (result.success && result.session) {
         setSession(result.session);
@@ -279,6 +281,14 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             <span>Pistes :</span>
             {stripCountControls}
           </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.5rem 0', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={showPhotos}
+              onChange={e => setShowPhotos(e.target.checked)}
+            />
+            Afficher les photos des combattants avant le combat
+          </label>
           <button className="btn-primary" onClick={onStartRemote}>
             ⚡ Démarrer la saisie distante
           </button>

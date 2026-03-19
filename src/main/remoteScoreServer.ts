@@ -37,6 +37,7 @@ export class RemoteScoreServer {
   private arenaMatchQueue: Map<string, ArenaMatch[]> = new Map(); // File d'attente DE par arène
   private poolFencersCache: Map<string, any[]> = new Map(); // Tireurs par poolId (depuis le renderer)
   private sessionMatchScores: Map<string, { scoreA: any; scoreB: any; status: string }> = new Map(); // Scores en mémoire
+  private sessionShowPhotos: boolean = false; // Afficher les photos des combattants avant le combat
 
   // Stocker le contenu des fichiers HTML en mémoire pour éviter les problèmes de chemin
   private htmlFiles: Map<string, string> = new Map();
@@ -1828,12 +1829,14 @@ export class RemoteScoreServer {
   }
 
   private broadcastArenaUpdate(arenaId: string, update: ArenaUpdate): void {
+    // Injecter le réglage showPhotos dans chaque mise à jour
+    const updateWithPhotos: ArenaUpdate = { ...update, showPhotos: this.sessionShowPhotos };
     // Envoyer via Socket.IO aux clients connectés aux arènes
-    this.io.emit(`arena:${arenaId}:update`, update);
+    this.io.emit(`arena:${arenaId}:update`, updateWithPhotos);
 
     // Envoyer aussi à la fenêtre principale
     if ((global as any).mainWindow) {
-      (global as any).mainWindow.webContents.send('arena:update', { arenaId, update });
+      (global as any).mainWindow.webContents.send('arena:update', { arenaId, update: updateWithPhotos });
     }
   }
 
@@ -1893,7 +1896,8 @@ export class RemoteScoreServer {
   public async startSession(
     competitionId: string,
     strips: number,
-    matchesFromRenderer?: any[]
+    matchesFromRenderer?: any[],
+    showPhotos?: boolean
   ): Promise<RemoteSession> {
     if (this.session) {
       throw new Error('Session déjà active');
@@ -1903,6 +1907,9 @@ export class RemoteScoreServer {
     if (!competition) {
       throw new Error('Compétition non trouvée');
     }
+
+    // Stocker le réglage d'affichage des photos
+    this.sessionShowPhotos = showPhotos ?? false;
 
     // Stocker le type d'arme pour l'arrêt automatique à 15 points en Laser Sabre
     this.sessionWeapon = competition.weapon || null;

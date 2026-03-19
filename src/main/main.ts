@@ -698,13 +698,13 @@ ipcMain.handle('remote:getServerInfo', async () => {
 // Remote session handlers
 ipcMain.handle(
   'remote:startSession',
-  async (_, competitionId: string, strips: number, matches?: any[]) => {
+  async (_, competitionId: string, strips: number, matches?: any[], showPhotos?: boolean) => {
     try {
       if (!remoteScoreServer) {
         return { success: false, error: 'Le serveur distant n est pas démarré' };
       }
 
-      const session = await remoteScoreServer.startSession(competitionId, strips, matches);
+      const session = await remoteScoreServer.startSession(competitionId, strips, matches, showPhotos);
       return { success: true, session };
     } catch (error) {
       console.error('Error starting session:', error);

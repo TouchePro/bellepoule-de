@@ -107,6 +107,7 @@ export interface ArenaSettings {
   matchDuration: number; // in seconds
   breakDuration: number; // between matches
   autoAdvance: boolean; // automatically load next match
+  showPhotos?: boolean; // afficher les photos avant le combat
 }
 
 export interface ArenaMatch {
@@ -136,6 +137,7 @@ export interface ArenaUpdate {
   cardsA?: string[];
   cardsB?: string[];
   suddenDeath?: boolean;
+  showPhotos?: boolean; // afficher les photos avant le combat
 }
 
 export interface RefereeControl {
