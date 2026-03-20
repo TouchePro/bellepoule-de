@@ -2183,6 +2183,23 @@ export class RemoteScoreServer {
     return this.session;
   }
 
+  public updateShowPhotos(value: boolean): void {
+    if (!this.session) throw new Error('Aucune session active');
+    this.sessionShowPhotos = value;
+    // Re-broadcast à toutes les pistes pour propager le nouveau réglage
+    for (const [arenaId, arena] of this.arenas.entries()) {
+      this.broadcastArenaUpdate(arenaId, {
+        arenaId,
+        match: arena.currentMatch,
+        scoreA: arena.currentMatch?.scoreA,
+        scoreB: arena.currentMatch?.scoreB,
+        status: arena.status,
+        fencerA: arena.currentMatch?.fencerA,
+        fencerB: arena.currentMatch?.fencerB,
+      });
+    }
+  }
+
   public getSession(): RemoteSession | null {
     return this.session;
   }

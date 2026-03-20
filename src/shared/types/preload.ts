@@ -305,6 +305,7 @@ export interface RemoteServerAPI {
   getSession: () => Promise<{ success: boolean; session?: any; error?: string }>;
   getArenas: () => Promise<{ success: boolean; arenas?: any[]; error?: string }>;
   updateStripCount: (count: number) => Promise<{ success: boolean; session?: any; error?: string }>;
+  updateShowPhotos: (value: boolean) => Promise<{ success: boolean; error?: string }>;
   updateMatchArena: (
     matchId: string,
     fromArena: number | null,

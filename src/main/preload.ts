@@ -314,6 +314,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getSession: () => ipcRenderer.invoke('remote:getSession'),
     getArenas: () => ipcRenderer.invoke('remote:getArenas'),
     updateStripCount: (count: number) => ipcRenderer.invoke('remote:updateStripCount', count),
+    updateShowPhotos: (value: boolean) => ipcRenderer.invoke('remote:updateShowPhotos', value),
     updateMatchArena: (matchId: string, fromArena: number | null, toArena: number | null) =>
       ipcRenderer.invoke('remote:updateMatchArena', matchId, fromArena, toArena),
     setArenaPassword: (arenaId: string, password: string) =>

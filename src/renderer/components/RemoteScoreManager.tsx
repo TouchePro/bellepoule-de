@@ -318,6 +318,17 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           <h4 style={{ margin: 0 }}>Pistes ({arenaCount})</h4>
           {stripCountControls}
         </div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.5rem 0', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={showPhotos}
+            onChange={async e => {
+              setShowPhotos(e.target.checked);
+              await window.electronAPI.remote.updateShowPhotos(e.target.checked);
+            }}
+          />
+          Afficher les photos des combattants avant le combat
+        </label>
 
         <div className="arena-url-grid">
           {arenaUrls.map(arena => (
