@@ -772,6 +772,19 @@ ipcMain.handle('remote:updateStripCount', async (_, newCount: number) => {
   }
 });
 
+ipcMain.handle('remote:updateShowPhotos', async (_, value: boolean) => {
+  try {
+    if (!remoteScoreServer) {
+      return { success: false, error: 'Le serveur distant n est pas démarré' };
+    }
+    remoteScoreServer.updateShowPhotos(value);
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating showPhotos:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
 ipcMain.handle('remote:setArenaPassword', async (_, arenaId: string, password: string) => {
   try {
     if (!remoteScoreServer) {
