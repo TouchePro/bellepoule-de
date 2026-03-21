@@ -35,7 +35,5 @@ coverage/
 *.tmp
 *.temp
 
-# Build output
+# Build output (compilé depuis src/ via npm run build)
 dist/
-release/
-out/

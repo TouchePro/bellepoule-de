@@ -76,9 +76,7 @@ const UpdateNotification: React.FC<UpdateNotificationProps> = ({ visible: propVi
   return (
     <div className="update-notification">
       <div className="update-notification-content">
-        <div className="update-notification-icon">
-          🚀
-        </div>
+        <div className="update-notification-icon">🚀</div>
         <div className="update-notification-text">
           <h4>Mise à jour disponible !</h4>
           <p>
@@ -91,22 +89,13 @@ const UpdateNotification: React.FC<UpdateNotificationProps> = ({ visible: propVi
           )}
         </div>
         <div className="update-notification-actions">
-          <button 
-            className="btn btn-primary btn-sm"
-            onClick={handleDownload}
-          >
+          <button className="btn btn-primary btn-sm" onClick={handleDownload}>
             📥 Télécharger
           </button>
-          <button 
-            className="btn btn-secondary btn-sm"
-            onClick={handleViewRelease}
-          >
+          <button className="btn btn-secondary btn-sm" onClick={handleViewRelease}>
             📋 Voir les notes
           </button>
-          <button 
-            className="btn btn-ghost btn-sm"
-            onClick={handleDismiss}
-          >
+          <button className="btn btn-ghost btn-sm" onClick={handleDismiss}>
             ✖️
           </button>
         </div>

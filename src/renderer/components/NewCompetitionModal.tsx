@@ -23,7 +23,7 @@ const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCr
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     onCreate({
       title: title || `Compétition du ${new Date(date).toLocaleDateString('fr-FR')}`,
       date: new Date(date),
@@ -37,26 +37,34 @@ const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCr
 
   const getRandomColor = () => {
     const colors = [
-      '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
-      '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1',
+      '#3B82F6',
+      '#10B981',
+      '#F59E0B',
+      '#EF4444',
+      '#8B5CF6',
+      '#EC4899',
+      '#06B6D4',
+      '#84CC16',
+      '#F97316',
+      '#6366F1',
     ];
     return colors[Math.floor(Math.random() * colors.length)];
   };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h2 className="modal-title">{t('competition.new')}</h2>
-          <button 
-            className="btn btn-icon btn-secondary" 
+          <button
+            className="btn btn-icon btn-secondary"
             onClick={onClose}
             style={{ padding: '0.25rem' }}
           >
             ✕
           </button>
         </div>
-        
+
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
             <div className="form-group">
@@ -66,7 +74,7 @@ const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCr
                 className="form-input"
                 placeholder="Ex: Championnat Régional"
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={e => setTitle(e.target.value)}
               />
             </div>
 
@@ -76,7 +84,7 @@ const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCr
                 type="date"
                 className="form-input"
                 value={date}
-                onChange={(e) => setDate(e.target.value)}
+                onChange={e => setDate(e.target.value)}
                 required
               />
             </div>
@@ -87,7 +95,7 @@ const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCr
                 <select
                   className="form-input form-select"
                   value={weapon}
-                  onChange={(e) => setWeapon(e.target.value as Weapon)}
+                  onChange={e => setWeapon(e.target.value as Weapon)}
                 >
                   <option value={Weapon.EPEE}>{t('weapons.epee')}</option>
                   <option value={Weapon.FOIL}>{t('weapons.foil')}</option>
@@ -101,7 +109,7 @@ const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCr
                 <select
                   className="form-input form-select"
                   value={gender}
-                  onChange={(e) => setGender(e.target.value as Gender)}
+                  onChange={e => setGender(e.target.value as Gender)}
                 >
                   <option value={Gender.MALE}>{t('genders.male')}</option>
                   <option value={Gender.FEMALE}>{t('genders.female')}</option>
@@ -114,13 +122,23 @@ const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCr
                 <select
                   className="form-input form-select"
                   value={category}
-                  onChange={(e) => setCategory(e.target.value as Category)}
+                  onChange={e => setCategory(e.target.value as Category)}
                 >
-                  <option value={Category.U11}>{t('categories.U11')} ({t('categories.U11')})</option>
-                  <option value={Category.U13}>{t('categories.U13')} ({t('categories.U13')})</option>
-                  <option value={Category.U15}>{t('categories.U15')} ({t('categories.U15')})</option>
-                  <option value={Category.U17}>{t('categories.U17')} ({t('categories.U17')})</option>
-                  <option value={Category.U20}>{t('categories.U20')} ({t('categories.U20')})</option>
+                  <option value={Category.U11}>
+                    {t('categories.U11')} ({t('categories.U11')})
+                  </option>
+                  <option value={Category.U13}>
+                    {t('categories.U13')} ({t('categories.U13')})
+                  </option>
+                  <option value={Category.U15}>
+                    {t('categories.U15')} ({t('categories.U15')})
+                  </option>
+                  <option value={Category.U17}>
+                    {t('categories.U17')} ({t('categories.U17')})
+                  </option>
+                  <option value={Category.U20}>
+                    {t('categories.U20')} ({t('categories.U20')})
+                  </option>
                   <option value={Category.SENIOR}>{t('categories.senior')}</option>
                   <option value={Category.V1}>{t('categories.V1')} (40-49)</option>
                   <option value={Category.V2}>{t('categories.V2')} (50-59)</option>
@@ -131,13 +149,15 @@ const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCr
             </div>
 
             <div className="form-group">
-              <label className="form-label">{t('competition.location')} ({t('actions.default')})</label>
+              <label className="form-label">
+                {t('competition.location')} ({t('actions.default')})
+              </label>
               <input
                 type="text"
                 className="form-input"
                 placeholder={`Ex: Gymnase Jean Moulin, Paris`}
                 value={location}
-                onChange={(e) => setLocation(e.target.value)}
+                onChange={e => setLocation(e.target.value)}
               />
             </div>
           </div>

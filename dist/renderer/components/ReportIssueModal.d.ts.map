@@ -1,1 +1,0 @@
-{"version":3,"file":"ReportIssueModal.d.ts","sourceRoot":"","sources":["../../../src/renderer/components/ReportIssueModal.tsx"],"names":[],"mappings":"AAAA;;;;GAIG;AAEH,OAAO,KAA8B,MAAM,OAAO,CAAC;AAGnD,UAAU,qBAAqB;IAC7B,OAAO,EAAE,MAAM,IAAI,CAAC;CACrB;AAQD,QAAA,MAAM,gBAAgB,EAAE,KAAK,CAAC,EAAE,CAAC,qBAAqB,CAyOrD,CAAC;AAEF,eAAe,gBAAgB,CAAC"}

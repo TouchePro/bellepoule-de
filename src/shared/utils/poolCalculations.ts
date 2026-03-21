@@ -26,32 +26,99 @@ import {
 export function generatePoolMatchOrder(fencerCount: number): [number, number][] {
   const orders: { [key: number]: [number, number][] } = {
     3: [
-      [1, 2], [2, 3], [1, 3],
+      [1, 2],
+      [2, 3],
+      [1, 3],
     ],
     4: [
-      [1, 4], [2, 3], [1, 3], [2, 4], [3, 4], [1, 2],
+      [1, 4],
+      [2, 3],
+      [1, 3],
+      [2, 4],
+      [3, 4],
+      [1, 2],
     ],
     5: [
-      [1, 2], [3, 4], [5, 1], [2, 3], [5, 4],
-      [1, 3], [2, 5], [4, 1], [3, 5], [4, 2],
+      [1, 2],
+      [3, 4],
+      [5, 1],
+      [2, 3],
+      [5, 4],
+      [1, 3],
+      [2, 5],
+      [4, 1],
+      [3, 5],
+      [4, 2],
     ],
     6: [
-      [1, 2], [4, 5], [2, 3], [5, 6], [3, 1], [6, 4],
-      [2, 5], [1, 4], [5, 3], [2, 6], [4, 3], [1, 5],
-      [3, 6], [4, 2], [6, 1],
+      [1, 2],
+      [4, 5],
+      [2, 3],
+      [5, 6],
+      [3, 1],
+      [6, 4],
+      [2, 5],
+      [1, 4],
+      [5, 3],
+      [2, 6],
+      [4, 3],
+      [1, 5],
+      [3, 6],
+      [4, 2],
+      [6, 1],
     ],
     7: [
-      [1, 4], [2, 5], [3, 6], [7, 1], [5, 4], [6, 2],
-      [3, 7], [6, 1], [4, 2], [5, 3], [7, 6], [1, 2],
-      [4, 3], [5, 7], [6, 4], [2, 3], [1, 5], [7, 4],
-      [3, 1], [2, 7], [6, 5],
+      [1, 4],
+      [2, 5],
+      [3, 6],
+      [7, 1],
+      [5, 4],
+      [6, 2],
+      [3, 7],
+      [6, 1],
+      [4, 2],
+      [5, 3],
+      [7, 6],
+      [1, 2],
+      [4, 3],
+      [5, 7],
+      [6, 4],
+      [2, 3],
+      [1, 5],
+      [7, 4],
+      [3, 1],
+      [2, 7],
+      [6, 5],
     ],
     8: [
-      [1, 2], [5, 6], [3, 4], [7, 8], [1, 5], [2, 6],
-      [4, 8], [3, 7], [1, 3], [2, 4], [5, 7], [6, 8],
-      [1, 4], [2, 3], [5, 8], [6, 7], [1, 6], [2, 5],
-      [3, 8], [4, 7], [1, 7], [2, 8], [3, 5], [4, 6],
-      [1, 8], [2, 7], [3, 6], [4, 5],
+      [1, 2],
+      [5, 6],
+      [3, 4],
+      [7, 8],
+      [1, 5],
+      [2, 6],
+      [4, 8],
+      [3, 7],
+      [1, 3],
+      [2, 4],
+      [5, 7],
+      [6, 8],
+      [1, 4],
+      [2, 3],
+      [5, 8],
+      [6, 7],
+      [1, 6],
+      [2, 5],
+      [3, 8],
+      [4, 7],
+      [1, 7],
+      [2, 8],
+      [3, 5],
+      [4, 6],
+      [1, 8],
+      [2, 7],
+      [3, 6],
+      [4, 5],
     ],
   };
 
@@ -77,11 +144,9 @@ function generateGenericMatchOrder(fencerCount: number): [number, number][] {
 
 /**
  * Calcule les statistiques d'un tireur dans une poule
+ * Règle forfait : Si l'adversaire est en forfait/abandon, le match ne compte pas
  */
-export function calculateFencerPoolStats(
-  fencer: Fencer,
-  matches: Match[],
-): PoolStats {
+export function calculateFencerPoolStats(fencer: Fencer, matches: Match[]): PoolStats {
   let victories = 0;
   let defeats = 0;
   let touchesScored = 0;
@@ -98,8 +163,18 @@ export function calculateFencerPoolStats(
 
     const myScore = isA ? match.scoreA : match.scoreB;
     const oppScore = isA ? match.scoreB : match.scoreA;
+    const opponent = isA ? match.fencerB : match.fencerA;
 
     if (!myScore || !oppScore) continue;
+
+    // Si l'adversaire est en forfait/abandon/exclusion, le match ne compte pas
+    if (
+      opponent?.status === FencerStatus.FORFAIT ||
+      opponent?.status === FencerStatus.ABANDONED ||
+      opponent?.status === FencerStatus.EXCLUDED
+    ) {
+      continue;
+    }
 
     matchesPlayed++;
 
@@ -137,92 +212,22 @@ export function calculateFencerPoolStats(
   };
 }
 
-/**
- * Calcule le classement d'une poule selon les règles FIE
- * Ordre de priorité:
- * 1. Ratio V/M (victoires / matchs)
- * 2. Indice (TD - TR)
- * 3. Touches données (TD)
- * 4. Confrontation directe (si 2 tireurs à égalité)
- */
-export function calculatePoolRanking(pool: Pool): PoolRanking[] {
-  const rankings: PoolRanking[] = [];
+// ============================================================================
+// Ranking Helpers (shared between standard and Quest ranking)
+// ============================================================================
 
-  // Calculer les stats pour chaque tireur
-  for (const fencer of pool.fencers) {
-    if (fencer.status === FencerStatus.EXCLUDED || 
-        fencer.status === FencerStatus.FORFAIT ||
-        fencer.status === FencerStatus.ABANDONED) {
-      continue;
-    }
-
-    const stats = calculateFencerPoolStats(fencer, pool.matches);
-
-    rankings.push({
-      fencer,
-      rank: 0,
-      victories: stats.victories,
-      defeats: stats.defeats,
-      touchesScored: stats.touchesScored,
-      touchesReceived: stats.touchesReceived,
-      index: stats.index,
-      ratio: stats.victoryRatio,
-    });
-  }
-
-  // Trier selon les règles FIE
-  rankings.sort((a, b) => {
-    // 1. Ratio V/M (décroissant)
-    if (Math.abs(a.ratio - b.ratio) > 0.0001) {
-      return b.ratio - a.ratio;
-    }
-
-    // 2. Indice (décroissant)
-    if (a.index !== b.index) {
-      return b.index - a.index;
-    }
-
-    // 3. Touches données (décroissant)
-    if (a.touchesScored !== b.touchesScored) {
-      return b.touchesScored - a.touchesScored;
-    }
-
-    // 4. Confrontation directe
-    const directMatch = pool.matches.find(
-      m =>
-        (m.fencerA?.id === a.fencer.id && m.fencerB?.id === b.fencer.id) ||
-        (m.fencerA?.id === b.fencer.id && m.fencerB?.id === a.fencer.id)
-    );
-
-    if (directMatch && directMatch.status === MatchStatus.FINISHED) {
-      const aIsFirst = directMatch.fencerA?.id === a.fencer.id;
-      const aScore = aIsFirst ? directMatch.scoreA : directMatch.scoreB;
-      
-      if (aScore?.isVictory) {
-        return -1;
-      } else {
-        return 1;
-      }
-    }
-
-    // En cas d'égalité parfaite, trier par classement initial
-    return (a.fencer.ranking ?? 9999) - (b.fencer.ranking ?? 9999);
-  });
-
-  // Assigner les rangs
+/** Assigne les rangs en gérant les ex aequo (victoires + questPoints + indice identiques) */
+function assignRanks(rankings: PoolRanking[]): void {
   let currentRank = 1;
   for (let i = 0; i < rankings.length; i++) {
     if (i > 0) {
       const prev = rankings[i - 1];
       const curr = rankings[i];
-
-      // Vérifier si vraiment à égalité
-      const sameRatio = Math.abs(prev.ratio - curr.ratio) < 0.0001;
+      const sameVictories = prev.victories === curr.victories;
+      const sameQuest = (prev.questPoints ?? 0) === (curr.questPoints ?? 0);
       const sameIndex = prev.index === curr.index;
-      const sameTD = prev.touchesScored === curr.touchesScored;
 
-      if (sameRatio && sameIndex && sameTD) {
-        // Même rang (ex aequo)
+      if (sameVictories && sameQuest && sameIndex) {
         rankings[i].rank = rankings[i - 1].rank;
       } else {
         rankings[i].rank = currentRank;
@@ -232,6 +237,116 @@ export function calculatePoolRanking(pool: Pool): PoolRanking[] {
     }
     currentRank++;
   }
+}
+
+/** Ajoute les tireurs forfait/abandon/exclu à la fin du classement */
+function appendForfeitFencers(rankings: PoolRanking[], forfeitFencers: PoolRanking[]): void {
+  if (forfeitFencers.length > 0) {
+    const lastRank = rankings.length > 0 ? rankings[rankings.length - 1].rank + 1 : 1;
+    forfeitFencers.forEach((ff, idx) => {
+      ff.rank = lastRank + idx;
+      rankings.push(ff);
+    });
+  }
+}
+
+/**
+ * Calcule le classement d'une poule selon les règles demandées
+ * Ordre de priorité:
+ * 1. Nombre de victoires (décroissant)
+ * 2. Points Quest (décroissant)
+ * 3. Indice (TD - TR) (décroissant)
+ * 4. Confrontation directe (si 2 tireurs à égalité)
+ */
+export function calculatePoolRanking(pool: Pool): PoolRanking[] {
+  const rankings: PoolRanking[] = [];
+  const forfeitFencers: PoolRanking[] = [];
+
+  // Calculer les stats pour chaque tireur
+  for (const fencer of pool.fencers) {
+    // Si tireur forfait/abandon/exclu, l'ajouter à la liste séparée
+    if (
+      fencer.status === FencerStatus.EXCLUDED ||
+      fencer.status === FencerStatus.FORFAIT ||
+      fencer.status === FencerStatus.ABANDONED
+    ) {
+      forfeitFencers.push({
+        fencer,
+        rank: 0,
+        victories: 0,
+        defeats: 0,
+        matchesPlayed: 0,
+        touchesScored: 0,
+        touchesReceived: 0,
+        index: 0,
+        ratio: 0,
+        questPoints: 0,
+      });
+      continue;
+    }
+
+    const stats = calculateFencerPoolStats(fencer, pool.matches);
+
+    // Calculer les points Quest
+    const questStats = calculateFencerQuestStats(fencer, pool.matches);
+
+    rankings.push({
+      fencer,
+      rank: 0,
+      victories: stats.victories,
+      defeats: stats.defeats,
+      matchesPlayed: stats.matchesPlayed,
+      touchesScored: stats.touchesScored,
+      touchesReceived: stats.touchesReceived,
+      index: stats.index,
+      ratio: stats.victoryRatio,
+      questPoints: questStats.questPoints,
+    });
+  }
+
+  // Pré-construire une Map de matchs directs pour éviter O(n) dans le comparateur
+  // Clé: `${idA}:${idB}` (les deux ordres sont stockés)
+  const directMatchMap = new Map<string, Match>();
+  for (const m of pool.matches) {
+    if (m.fencerA && m.fencerB && m.status === MatchStatus.FINISHED) {
+      directMatchMap.set(`${m.fencerA.id}:${m.fencerB.id}`, m);
+      directMatchMap.set(`${m.fencerB.id}:${m.fencerA.id}`, m);
+    }
+  }
+
+  // Trier selon les critères demandés
+  rankings.sort((a, b) => {
+    // 1. Nombre de victoires (décroissant)
+    if (a.victories !== b.victories) {
+      return b.victories - a.victories;
+    }
+
+    // 2. Points Quest (décroissant)
+    const aQuest = a.questPoints ?? 0;
+    const bQuest = b.questPoints ?? 0;
+    if (aQuest !== bQuest) {
+      return bQuest - aQuest;
+    }
+
+    // 3. Indice (TD - TR) (décroissant)
+    if (a.index !== b.index) {
+      return b.index - a.index;
+    }
+
+    // 4. Confrontation directe — O(1) grâce à la Map
+    const directMatch = directMatchMap.get(`${a.fencer.id}:${b.fencer.id}`);
+    if (directMatch) {
+      const aIsFirst = directMatch.fencerA?.id === a.fencer.id;
+      const aScore = aIsFirst ? directMatch.scoreA : directMatch.scoreB;
+      return aScore?.isVictory ? -1 : 1;
+    }
+
+    // En cas d'égalité parfaite, trier par classement initial
+    return (a.fencer.ranking ?? 9999) - (b.fencer.ranking ?? 9999);
+  });
+
+  assignRanks(rankings);
+  appendForfeitFencers(rankings, forfeitFencers);
 
   return rankings;
 }
@@ -243,6 +358,11 @@ export function calculatePoolRanking(pool: Pool): PoolRanking[] {
 /**
  * Distribue les tireurs dans les poules selon la méthode serpentine
  * en respectant les critères de séparation (club, ligue, nation)
+ *
+ * Algorithme:
+ * 1. Distribution serpentine pure: 1→2→3→...→8→8→7→6→...→1→1→2→...
+ * 2. Détection des conflits de club
+ * 3. Échange de tireurs entre poules pour résoudre les conflits
  */
 export function distributeFencersToPoolsSerpentine(
   fencers: Fencer[],
@@ -254,84 +374,263 @@ export function distributeFencersToPoolsSerpentine(
   }
 ): Fencer[][] {
   const pools: Fencer[][] = Array.from({ length: poolCount }, () => []);
-  
-  // Trier les tireurs par classement
-  const sortedFencers = [...fencers].sort((a, b) => 
-    (a.ranking ?? 99999) - (b.ranking ?? 99999)
-  );
 
-  // Distribution en serpentine avec respect des séparations
-  let direction = 1;
+  // Trier les tireurs par classement (meilleur classement = premier)
+  const sortedFencers = [...fencers].sort((a, b) => (a.ranking ?? 99999) - (b.ranking ?? 99999));
+
+  // Distribution serpentine pure
+  let direction = 1; // 1 = aller, -1 = retour
   let poolIndex = 0;
 
   for (const fencer of sortedFencers) {
-    // Trouver la meilleure poule pour ce tireur
-    const bestPool = findBestPoolForFencer(
-      fencer,
-      pools,
-      poolIndex,
-      poolCount,
-      direction,
-      separation
-    );
-
-    pools[bestPool].push(fencer);
+    pools[poolIndex].push(fencer);
 
     // Avancer dans la serpentine
     poolIndex += direction;
     if (poolIndex >= poolCount) {
+      // On arrive à la fin, on repart en arrière (la dernière poule est visitée deux fois)
       direction = -1;
       poolIndex = poolCount - 1;
     } else if (poolIndex < 0) {
+      // On arrive au début, on repart en avant (la première poule est visitée deux fois)
       direction = 1;
       poolIndex = 0;
     }
   }
 
+  // Résoudre les conflits de club par échanges
+  if (separation.byClub) {
+    resolveClubConflicts(pools, separation);
+  }
+
+  // Rééquilibrer les poules pour assurer un nombre égal (ou presque égal) de tireurs
+  rebalancePools(pools, separation);
+
   return pools;
 }
 
 /**
- * Trouve la meilleure poule pour un tireur en respectant les séparations
+ * Résout les conflits de club en échangeant des tireurs entre poules
+ * tout en préservant au mieux l'équilibre de la serpentine
  */
-function findBestPoolForFencer(
-  fencer: Fencer,
+function resolveClubConflicts(
   pools: Fencer[][],
-  startIndex: number,
-  poolCount: number,
-  direction: number,
   separation: { byClub: boolean; byLeague: boolean; byNation: boolean }
-): number {
-  let bestPool = startIndex;
-  let bestScore = -Infinity;
+): void {
+  const poolCount = pools.length;
+  let maxIterations = 100; // Éviter les boucles infinies
+  let improved = true;
 
-  for (let offset = 0; offset < poolCount; offset++) {
-    const index = (startIndex + offset * direction + poolCount) % poolCount;
-    const pool = pools[index];
-
-    let score = 0;
-
-    // Pénaliser les poules plus grandes
-    score -= pool.length * 10;
-
-    // Pénaliser les conflits de séparation
-    if (separation.byClub && pool.some(f => f.club === fencer.club)) {
-      score -= 100;
+  // Construire un compteur de clubs par poule pour éviter les some() O(n) en boucle
+  const buildClubMap = (pool: Fencer[]) => {
+    const m = new Map<string, number>();
+    for (const f of pool) {
+      const key = f.club ?? '';
+      m.set(key, (m.get(key) ?? 0) + 1);
     }
-    if (separation.byLeague && pool.some(f => f.league === fencer.league)) {
-      score -= 50;
-    }
-    if (separation.byNation && pool.some(f => f.nationality === fencer.nationality)) {
-      score -= 25;
-    }
+    return m;
+  };
+  const clubMaps = pools.map(buildClubMap);
 
-    if (score > bestScore) {
-      bestScore = score;
-      bestPool = index;
+  while (improved && maxIterations > 0) {
+    improved = false;
+    maxIterations--;
+
+    // Pour chaque poule
+    for (let poolIdx = 0; poolIdx < poolCount; poolIdx++) {
+      const pool = pools[poolIdx];
+
+      // Pour chaque tireur dans la poule
+      for (let fencerIdx = 0; fencerIdx < pool.length; fencerIdx++) {
+        const fencer = pool[fencerIdx];
+
+        // Vérifier si ce tireur a un conflit de club dans cette poule (O(1) au lieu de O(n))
+        const hasClubConflict = (clubMaps[poolIdx].get(fencer.club ?? '') ?? 0) > 1;
+
+        if (!hasClubConflict) continue;
+
+        // Chercher un tireur dans une autre poule avec qui échanger
+        const swapPartner = findSwapPartner(fencer, fencerIdx, poolIdx, pools, separation);
+
+        if (swapPartner) {
+          // Effectuer l'échange
+          const { poolIdx: otherPoolIdx, fencerIdx: otherFencerIdx } = swapPartner;
+          const fencerA = pools[poolIdx][fencerIdx];
+          const fencerB = pools[otherPoolIdx][otherFencerIdx];
+          pools[poolIdx][fencerIdx] = fencerB;
+          pools[otherPoolIdx][otherFencerIdx] = fencerA;
+
+          // Mettre à jour les Maps de clubs pour les deux poules concernées
+          clubMaps[poolIdx] = buildClubMap(pools[poolIdx]);
+          clubMaps[otherPoolIdx] = buildClubMap(pools[otherPoolIdx]);
+
+          improved = true;
+          break;
+        }
+      }
+
+      if (improved) break;
+    }
+  }
+}
+
+/**
+ * Trouve un partenaire d'échange pour résoudre un conflit de club
+ * Retourne null si aucun échange valide n'est trouvé
+ */
+function findSwapPartner(
+  fencer: Fencer,
+  fencerIdx: number,
+  currentPoolIdx: number,
+  pools: Fencer[][],
+  separation: { byClub: boolean; byLeague: boolean; byNation: boolean }
+): { poolIdx: number; fencerIdx: number } | null {
+  const poolCount = pools.length;
+  let bestSwap: { poolIdx: number; fencerIdx: number; score: number } | null = null;
+
+  // Chercher dans les poules voisines d'abord (préserver l'équilibre)
+  for (let offset = 1; offset < poolCount; offset++) {
+    // Chercher d'abord dans les poules proches (offset petit)
+    const directions = [offset, -offset];
+
+    for (const dir of directions) {
+      const otherPoolIdx = (currentPoolIdx + dir + poolCount) % poolCount;
+      const otherPool = pools[otherPoolIdx];
+
+      for (let otherFencerIdx = 0; otherFencerIdx < otherPool.length; otherFencerIdx++) {
+        const otherFencer = otherPool[otherFencerIdx];
+
+        // Vérifier si l'échange résoudrait le conflit
+        if (
+          canSwapResolveConflict(
+            fencer,
+            otherFencer,
+            currentPoolIdx,
+            otherPoolIdx,
+            pools,
+            separation
+          )
+        ) {
+          // Calculer le score de cet échange (préférer les échanges proches)
+          const score = 1000 - offset * 10 - Math.abs(fencerIdx - otherFencerIdx);
+
+          if (!bestSwap || score > bestSwap.score) {
+            bestSwap = {
+              poolIdx: otherPoolIdx,
+              fencerIdx: otherFencerIdx,
+              score,
+            };
+          }
+        }
+      }
     }
   }
 
-  return bestPool;
+  return bestSwap ? { poolIdx: bestSwap.poolIdx, fencerIdx: bestSwap.fencerIdx } : null;
+}
+
+/**
+ * Vérifie si un échange entre deux tireurs résoudrait les conflits de club
+ */
+function canSwapResolveConflict(
+  fencer1: Fencer,
+  fencer2: Fencer,
+  pool1Idx: number,
+  pool2Idx: number,
+  pools: Fencer[][],
+  separation: { byClub: boolean; byLeague: boolean; byNation: boolean }
+): boolean {
+  const pool1 = pools[pool1Idx];
+  const pool2 = pools[pool2Idx];
+
+  // Compter les conflits actuels
+  const conflicts1Before = pool1.filter(f => f !== fencer1 && f.club === fencer1.club).length;
+  const conflicts2Before = pool2.filter(f => f !== fencer2 && f.club === fencer2.club).length;
+
+  // Simuler l'échange et compter les conflits après
+  // conflicts1After > 0 équivaut à « fencer2 créerait un conflit dans pool1 »
+  // conflicts2After > 0 équivaut à « fencer1 créerait un conflit dans pool2 »
+  const conflicts1After = pool1.filter(f => f !== fencer1 && f.club === fencer2.club).length;
+  const conflicts2After = pool2.filter(f => f !== fencer2 && f.club === fencer1.club).length;
+
+  // L'échange est valide si:
+  // 1. Il ne crée pas de nouveaux conflits
+  // 2. Il réduit ou maintient le nombre total de conflits
+  if (conflicts1After > 0 || conflicts2After > 0) {
+    return false;
+  }
+
+  const totalConflictsBefore = conflicts1Before + conflicts2Before;
+  const totalConflictsAfter = conflicts1After + conflicts2After;
+
+  return totalConflictsAfter <= totalConflictsBefore;
+}
+
+/**
+ * Rééquilibre les poules pour assurer un nombre égal (ou presque égal) de tireurs
+ * Déplace des tireurs des poules surchargées vers les poules sous-chargées
+ */
+function rebalancePools(
+  pools: Fencer[][],
+  separation: { byClub: boolean; byLeague: boolean; byNation: boolean }
+): void {
+  const poolCount = pools.length;
+  if (poolCount === 0) return;
+
+  // Calculer la taille idéale
+  const totalFencers = pools.reduce((sum, pool) => sum + pool.length, 0);
+  const idealSize = Math.floor(totalFencers / poolCount);
+  const maxSize = idealSize + (totalFencers % poolCount > 0 ? 1 : 0);
+
+  let rebalanced = true;
+  let iterations = 0;
+  const maxIterations = 100;
+
+  while (rebalanced && iterations < maxIterations) {
+    rebalanced = false;
+    iterations++;
+
+    // Trouver les poules sources (> idealSize) et sous-chargées (< idealSize)
+    // On utilise idealSize comme seuil source (pas maxSize) pour corriger les cas où
+    // toutes les poules sont à maxSize mais certaines restent sous idealSize
+    const overloaded = pools
+      .map((pool, idx) => ({ idx, pool, size: pool.length }))
+      .filter(p => p.size > idealSize)
+      .sort((a, b) => b.size - a.size);
+
+    const underloaded = pools
+      .map((pool, idx) => ({ idx, pool, size: pool.length }))
+      .filter(p => p.size < idealSize)
+      .sort((a, b) => a.size - b.size);
+
+    if (overloaded.length === 0 || underloaded.length === 0) break;
+
+    // Déplacer des tireurs des poules surchargées vers les sous-chargées
+    for (const source of overloaded) {
+      for (const target of underloaded) {
+        if (source.size <= idealSize || target.size >= idealSize) continue;
+
+        // Chercher un tireur à déplacer qui ne crée pas de conflit
+        for (let i = source.pool.length - 1; i >= 0; i--) {
+          const fencer = source.pool[i];
+
+          // Vérifier que le déplacement ne crée pas de conflit de club
+          const wouldCreateConflict =
+            separation.byClub && target.pool.some(f => f.club === fencer.club);
+
+          if (!wouldCreateConflict) {
+            // Déplacer le tireur
+            source.pool.splice(i, 1);
+            target.pool.push(fencer);
+            source.size--;
+            target.size++;
+            rebalanced = true;
+            break;
+          }
+        }
+      }
+    }
+  }
 }
 
 // ============================================================================
@@ -389,9 +688,11 @@ export function calculateOptimalPoolCount(
   maxPoolSize: number = 8
 ): number {
   // Objectif: avoir des poules de taille similaire entre min et max
-  for (let poolCount = Math.ceil(fencerCount / maxPoolSize); 
-       poolCount <= Math.ceil(fencerCount / minPoolSize); 
-       poolCount++) {
+  for (
+    let poolCount = Math.ceil(fencerCount / maxPoolSize);
+    poolCount <= Math.ceil(fencerCount / minPoolSize);
+    poolCount++
+  ) {
     const avgSize = fencerCount / poolCount;
     if (avgSize >= minPoolSize && avgSize <= maxPoolSize) {
       return poolCount;
@@ -435,22 +736,26 @@ export function formatIndex(index: number): string {
  */
 export function calculateQuestPoints(winnerScore: number, loserScore: number): number {
   const diff = winnerScore - loserScore;
-  
-  if (diff >= 12) return 4;      // Écart très important (≥12 points)
-  if (diff >= 8) return 3;       // Écart important (8-11 points)
-  if (diff >= 4) return 2;       // Écart moyen (4-7 points)
-  return 1;                       // Écart faible (≤3 points)
+
+  if (diff >= 12) return 4; // Écart très important (≥12 points)
+  if (diff >= 8) return 3; // Écart important (8-11 points)
+  if (diff >= 4) return 2; // Écart moyen (4-7 points)
+  return 1; // Écart faible (≤3 points)
 }
 
 /**
  * Calcule les statistiques Quest d'un tireur
+ * Règle forfait : Si l'adversaire est en forfait/abandon, le match ne compte pas
  */
 export function calculateFencerQuestStats(
   fencer: Fencer,
   matches: Match[]
 ): { questPoints: number; v4: number; v3: number; v2: number; v1: number } {
   let questPoints = 0;
-  let v4 = 0, v3 = 0, v2 = 0, v1 = 0;
+  let v4 = 0,
+    v3 = 0,
+    v2 = 0,
+    v1 = 0;
 
   for (const match of matches) {
     const isA = match.fencerA?.id === fencer.id;
@@ -461,22 +766,40 @@ export function calculateFencerQuestStats(
 
     const myScore = isA ? match.scoreA : match.scoreB;
     const oppScore = isA ? match.scoreB : match.scoreA;
+    const opponent = isA ? match.fencerB : match.fencerA;
 
     if (!myScore || !oppScore) continue;
 
+    // Si l'adversaire est en forfait/abandon/exclusion, le match ne compte pas
+    if (
+      opponent?.status === FencerStatus.FORFAIT ||
+      opponent?.status === FencerStatus.ABANDONED ||
+      opponent?.status === FencerStatus.EXCLUDED
+    ) {
+      continue;
+    }
+
     // Vérifier si victoire
-    const isVictory = myScore.isVictory || 
-      (oppScore.isAbstention || oppScore.isExclusion || oppScore.isForfait);
+    const isVictory =
+      myScore.isVictory || oppScore.isAbstention || oppScore.isExclusion || oppScore.isForfait;
 
     if (isVictory && myScore.value !== null && oppScore.value !== null) {
       const points = calculateQuestPoints(myScore.value, oppScore.value);
       questPoints += points;
-      
+
       switch (points) {
-        case 4: v4++; break;
-        case 3: v3++; break;
-        case 2: v2++; break;
-        case 1: v1++; break;
+        case 4:
+          v4++;
+          break;
+        case 3:
+          v3++;
+          break;
+        case 2:
+          v2++;
+          break;
+        case 1:
+          v1++;
+          break;
       }
     }
   }
@@ -494,11 +817,31 @@ export function calculateFencerQuestStats(
  */
 export function calculatePoolRankingQuest(pool: Pool): PoolRanking[] {
   const rankings: PoolRanking[] = [];
+  const forfeitFencers: PoolRanking[] = [];
 
   for (const fencer of pool.fencers) {
-    if (fencer.status === FencerStatus.EXCLUDED || 
-        fencer.status === FencerStatus.FORFAIT ||
-        fencer.status === FencerStatus.ABANDONED) {
+    // Si tireur forfait/abandon/exclu, l'ajouter à la liste séparée
+    if (
+      fencer.status === FencerStatus.EXCLUDED ||
+      fencer.status === FencerStatus.FORFAIT ||
+      fencer.status === FencerStatus.ABANDONED
+    ) {
+      forfeitFencers.push({
+        fencer,
+        rank: 0,
+        victories: 0,
+        defeats: 0,
+        matchesPlayed: 0,
+        touchesScored: 0,
+        touchesReceived: 0,
+        index: 0,
+        ratio: 0,
+        questPoints: 0,
+        questVictories4: 0,
+        questVictories3: 0,
+        questVictories2: 0,
+        questVictories1: 0,
+      });
       continue;
     }
 
@@ -510,6 +853,7 @@ export function calculatePoolRankingQuest(pool: Pool): PoolRanking[] {
       rank: 0,
       victories: stats.victories,
       defeats: stats.defeats,
+      matchesPlayed: stats.matchesPlayed,
       touchesScored: stats.touchesScored,
       touchesReceived: stats.touchesReceived,
       index: stats.index,
@@ -522,103 +866,71 @@ export function calculatePoolRankingQuest(pool: Pool): PoolRanking[] {
     });
   }
 
-  // Trier selon les règles Quest
+  // Trier selon les critères demandés (même ordre que calculatePoolRanking)
   rankings.sort((a, b) => {
-    // 1. Points Quest (décroissant)
-    if ((a.questPoints ?? 0) !== (b.questPoints ?? 0)) {
-      return (b.questPoints ?? 0) - (a.questPoints ?? 0);
-    }
-
-    // 2. Touches données (décroissant)
-    if (a.touchesScored !== b.touchesScored) {
-      return b.touchesScored - a.touchesScored;
-    }
-
-    // 3. Nombre de victoires (décroissant)
+    // 1. Nombre de victoires (décroissant)
     if (a.victories !== b.victories) {
       return b.victories - a.victories;
     }
 
-    // 4. Victoires à 4 points (décroissant)
-    if ((a.questVictories4 ?? 0) !== (b.questVictories4 ?? 0)) {
-      return (b.questVictories4 ?? 0) - (a.questVictories4 ?? 0);
+    // 2. Points Quest (décroissant)
+    const aQuest = a.questPoints ?? 0;
+    const bQuest = b.questPoints ?? 0;
+    if (aQuest !== bQuest) {
+      return bQuest - aQuest;
     }
 
-    // 5. Victoires à 3 points (décroissant)
-    if ((a.questVictories3 ?? 0) !== (b.questVictories3 ?? 0)) {
-      return (b.questVictories3 ?? 0) - (a.questVictories3 ?? 0);
+    // 3. Indice (TD-TR) (décroissant)
+    if (a.index !== b.index) {
+      return b.index - a.index;
     }
 
-    // 6. Victoires à 2 points (décroissant)
-    if ((a.questVictories2 ?? 0) !== (b.questVictories2 ?? 0)) {
-      return (b.questVictories2 ?? 0) - (a.questVictories2 ?? 0);
-    }
-
-    // 7. Victoires à 1 point (décroissant)
-    if ((a.questVictories1 ?? 0) !== (b.questVictories1 ?? 0)) {
-      return (b.questVictories1 ?? 0) - (a.questVictories1 ?? 0);
-    }
-
-    // 8. Égalité parfaite - classement initial
+    // 4. Égalité parfaite - classement initial
     return (a.fencer.ranking ?? 9999) - (b.fencer.ranking ?? 9999);
   });
 
-  // Assigner les rangs
-  let currentRank = 1;
-  for (let i = 0; i < rankings.length; i++) {
-    if (i > 0) {
-      const prev = rankings[i - 1];
-      const curr = rankings[i];
-
-      const sameQuest = (prev.questPoints ?? 0) === (curr.questPoints ?? 0);
-      const sameTD = prev.touchesScored === curr.touchesScored;
-      const sameV = prev.victories === curr.victories;
-
-      if (sameQuest && sameTD && sameV) {
-        rankings[i].rank = rankings[i - 1].rank;
-      } else {
-        rankings[i].rank = currentRank;
-      }
-    } else {
-      rankings[i].rank = currentRank;
-    }
-    currentRank++;
-  }
+  assignRanks(rankings);
+  appendForfeitFencers(rankings, forfeitFencers);
 
   return rankings;
 }
 
 /**
  * Calcule le classement général Quest à partir de toutes les poules
+ * Ordre de priorité:
+ * 1. Nombre de victoires (décroissant)
+ * 2. Points Quest (décroissant)
+ * 3. Indice (TD-TR) (décroissant)
  */
 export function calculateOverallRankingQuest(pools: Pool[]): PoolRanking[] {
   const allRankings: PoolRanking[] = [];
-  
+
   pools.forEach(pool => {
     const ranking = calculatePoolRankingQuest(pool);
     allRankings.push(...ranking);
   });
 
-  // Trier selon les règles Quest
+  // Trier selon les critères demandés (même ordre que calculateOverallRanking)
   allRankings.sort((a, b) => {
-    if ((a.questPoints ?? 0) !== (b.questPoints ?? 0)) {
-      return (b.questPoints ?? 0) - (a.questPoints ?? 0);
-    }
-    if (a.touchesScored !== b.touchesScored) {
-      return b.touchesScored - a.touchesScored;
-    }
+    // 1. Nombre de victoires (décroissant)
     if (a.victories !== b.victories) {
       return b.victories - a.victories;
     }
-    if ((a.questVictories4 ?? 0) !== (b.questVictories4 ?? 0)) {
-      return (b.questVictories4 ?? 0) - (a.questVictories4 ?? 0);
+    // 2. Points Quest (décroissant)
+    const aQuest = a.questPoints ?? 0;
+    const bQuest = b.questPoints ?? 0;
+    if (aQuest !== bQuest) {
+      return bQuest - aQuest;
     }
+    // 3. Indice (TD-TR) (décroissant)
+    if (a.index !== b.index) {
+      return b.index - a.index;
+    }
+    // 4. Égalité parfaite - garder l'ordre
     return 0;
   });
 
-  allRankings.forEach((r, idx) => {
-    r.rank = idx + 1;
-  });
+  assignRanks(allRankings);
 
   return allRankings;
 }
@@ -630,7 +942,7 @@ export function calculateOverallRankingQuest(pools: Pool[]): PoolRanking[] {
 export function calculateOverallRanking(pools: Pool[]): PoolRanking[] {
   // Collecter tous les classements de poules
   const allRankings: PoolRanking[] = [];
-  
+
   pools.forEach(pool => {
     if (pool.ranking && pool.ranking.length > 0) {
       allRankings.push(...pool.ranking);
@@ -641,31 +953,30 @@ export function calculateOverallRanking(pools: Pool[]): PoolRanking[] {
     }
   });
 
-  // Trier selon les règles FIE:
-  // 1. Ratio V/M (décroissant)
-  // 2. Indice TD-TR (décroissant)
-  // 3. Touches données TD (décroissant)
+  // Trier selon les critères demandés:
+  // 1. Nombre de victoires (décroissant)
+  // 2. Points Quest (décroissant)
+  // 3. Indice (TD-TR) (décroissant)
   allRankings.sort((a, b) => {
-    // 1. Ratio
-    if (Math.abs(a.ratio - b.ratio) > 0.0001) {
-      return b.ratio - a.ratio;
+    // 1. Nombre de victoires
+    if (a.victories !== b.victories) {
+      return b.victories - a.victories;
     }
-    // 2. Indice
+    // 2. Points Quest
+    const aQuest = a.questPoints ?? 0;
+    const bQuest = b.questPoints ?? 0;
+    if (aQuest !== bQuest) {
+      return bQuest - aQuest;
+    }
+    // 3. Indice (TD-TR)
     if (a.index !== b.index) {
       return b.index - a.index;
-    }
-    // 3. Touches données
-    if (a.touchesScored !== b.touchesScored) {
-      return b.touchesScored - a.touchesScored;
     }
     // 4. Égalité parfaite - garder l'ordre
     return 0;
   });
 
-  // Assigner les rangs
-  allRankings.forEach((r, idx) => {
-    r.rank = idx + 1;
-  });
+  assignRanks(allRankings);
 
   return allRankings;
 }

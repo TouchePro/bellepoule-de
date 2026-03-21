@@ -6,17 +6,11 @@
 import { app, BrowserWindow, ipcMain, dialog, Menu, shell } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
+import JSZip from 'jszip';
 import { DatabaseManager } from '../database';
 import { RemoteScoreServer } from './remoteScoreServer';
 import { AutoUpdater } from './autoUpdater';
-import {
-  Competition,
-  Fencer,
-  FencerStatus,
-  Match,
-  MatchStatus,
-  Pool,
-} from '../shared/types';
+import { Competition, Fencer, FencerStatus, Match, MatchStatus, Pool } from '../shared/types';
 
 // Database instance
 const db = new DatabaseManager();
@@ -42,7 +36,7 @@ function getVersionInfo(): { version: string; build: number; date: string } {
       path.join(__dirname, '..', '..', 'version.json'),
       path.join(process.cwd(), 'version.json'),
     ];
-    
+
     for (const versionPath of versionPaths) {
       if (fs.existsSync(versionPath)) {
         const content = fs.readFileSync(versionPath, 'utf-8');
@@ -52,7 +46,7 @@ function getVersionInfo(): { version: string; build: number; date: string } {
   } catch (e) {
     console.error('Failed to read version.json:', e);
   }
-  
+
   // Fallback: lire depuis package.json
   try {
     const pkgPath = path.join(app.getAppPath(), 'package.json');
@@ -63,18 +57,16 @@ function getVersionInfo(): { version: string; build: number; date: string } {
         return {
           version: match[1],
           build: parseInt(match[2]) || 0,
-          date: new Date().toISOString()
+          date: new Date().toISOString(),
         };
       }
     }
   } catch (e) {
     console.error('Failed to read package.json:', e);
   }
-  
+
   return { version: '1.0.0', build: 0, date: 'Unknown' };
 }
-
-
 
 // ============================================================================
 // Window Creation
@@ -82,7 +74,7 @@ function getVersionInfo(): { version: string; build: number; date: string } {
 
 function createWindow(): void {
   const versionInfo = getVersionInfo();
-  
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -97,9 +89,31 @@ function createWindow(): void {
     icon: path.join(__dirname, '../../resources/icons/icon.png'),
   });
 
+  // Security: Set CSP headers for all requests
+  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [
+          "default-src 'self'; " +
+            "script-src 'self' 'unsafe-inline' https://cdn.socket.io; " +
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+            "font-src 'self' https://fonts.gstatic.com; " +
+            "img-src 'self' data: blob:; " +
+            "connect-src 'self' http://localhost:* https://api.github.com; " +
+            "frame-ancestors 'none';",
+        ],
+        'X-Content-Type-Options': ['nosniff'],
+        'X-Frame-Options': ['DENY'],
+        'X-XSS-Protection': ['1; mode=block'],
+        'Referrer-Policy': ['strict-origin-when-cross-origin'],
+      },
+    });
+  });
+
   // Load the renderer
   if (process.env.NODE_ENV === 'development') {
-    mainWindow.loadURL('http://localhost:3000');
+    mainWindow.loadURL('http://localhost:8066');
     mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
@@ -162,6 +176,7 @@ function createMenu(): void {
             { type: 'separator' },
             { label: 'Exporter tireurs (.txt)', click: () => handleExport('fencers-txt') },
             { label: 'Exporter tireurs (.fff)', click: () => handleExport('fencers-fff') },
+            { label: 'Exporter tireurs + photos (.bpf)', click: () => handleExport('fencers-bpf') },
           ],
         },
         {
@@ -170,6 +185,7 @@ function createMenu(): void {
             { label: 'Importer XML (BellePoule)', click: () => handleImport('xml') },
             { label: 'Importer liste FFE (.fff)', click: () => handleImport('fff') },
             { label: 'Importer classement FFE', click: () => handleImport('ranking') },
+            { label: 'Importer tireurs + photos (.bpf)', click: () => handleImport('fencers-bpf') },
           ],
         },
         { type: 'separator' },
@@ -257,7 +273,7 @@ function createMenu(): void {
               dialog.showMessageBox(mainWindow!, {
                 type: 'warning',
                 title: 'Mises à jour',
-                message: 'Le système de mise à jour n\'est pas disponible',
+                message: "Le système de mise à jour n'est pas disponible",
                 buttons: ['OK'],
               });
             }
@@ -310,15 +326,15 @@ function startRemoteScoreServer(): void {
   }
 
   try {
-    remoteScoreServer = new RemoteScoreServer(db, 3001);
+    remoteScoreServer = new RemoteScoreServer(db, 8066);
     remoteScoreServer.start();
-    
+
     const serverUrl = remoteScoreServer.getServerUrl();
     dialog.showMessageBox(mainWindow!, {
       type: 'info',
       title: 'Saisie distante démarrée',
-      message: `Les arbitres peuvent maintenant se connecter sur ${serverUrl}`,
-      detail: 'Partagez cette URL avec les arbitres munis de tablettes.\nAssurez-vous que le pare-feu Windows autorise les connexions sur le port 3001.',
+      message: `Les arbitres peuvent maintenant se connecter`,
+      detail: `Arène 1: ${serverUrl}/arene1/arbitre\nArène 2: ${serverUrl}/arene2/arbitre\nArène 3: ${serverUrl}/arene3/arbitre\nArène 4: ${serverUrl}/arene4/arbitre\n\nAffichage kiosk (grand écran public): ${serverUrl}/kiosk\nClassement en direct: ${serverUrl}/\n\nPartagez ces URLs avec les arbitres munis de tablettes.\nAssurez-vous que le pare-feu Windows autorise les connexions sur le port 8066.`,
       buttons: ['OK'],
     });
 
@@ -334,7 +350,7 @@ function stopRemoteScoreServer(): void {
     dialog.showMessageBox(mainWindow!, {
       type: 'info',
       title: 'Saisie distante',
-      message: 'Le serveur de saisie distante n\'est pas démarré',
+      message: "Le serveur de saisie distante n'est pas démarré",
       buttons: ['OK'],
     });
     return;
@@ -343,7 +359,7 @@ function stopRemoteScoreServer(): void {
   try {
     remoteScoreServer.stop();
     remoteScoreServer = null;
-    
+
     dialog.showMessageBox(mainWindow!, {
       type: 'info',
       title: 'Saisie distante arrêtée',
@@ -385,9 +401,7 @@ async function handleSaveAs(): Promise<void> {
   const result = await dialog.showSaveDialog(mainWindow!, {
     title: 'Enregistrer la compétition',
     defaultPath: 'competition.bpm',
-    filters: [
-      { name: 'BellePoule Modern', extensions: ['bpm'] },
-    ],
+    filters: [{ name: 'BellePoule Modern', extensions: ['bpm'] }],
   });
 
   if (!result.canceled && result.filePath) {
@@ -419,7 +433,11 @@ async function handleImport(format: string): Promise<void> {
       break;
     case 'ranking':
       title = 'Importer un classement FFE';
-      filters = [{ name: 'Fichier classement', extensions: ['csv', 'txt', 'xlsx'] }];
+      filters = [{ name: 'Fichier classement', extensions: ['fff', 'csv', 'txt', 'xlsx'] }];
+      break;
+    case 'fencers-bpf':
+      title = 'Importer tireurs + photos (.bpf)';
+      filters = [{ name: 'BellePoule Fencers', extensions: ['bpf'] }];
       break;
     default:
       filters = [{ name: 'Tous les fichiers', extensions: ['*'] }];
@@ -434,12 +452,15 @@ async function handleImport(format: string): Promise<void> {
   if (!result.canceled && result.filePaths.length > 0) {
     const filepath = result.filePaths[0];
     try {
-      // Lire le contenu du fichier
-      const content = fs.readFileSync(filepath, 'utf-8');
-      // Envoyer au renderer pour traitement
-      mainWindow?.webContents.send('menu:import', format, filepath, content);
+      if (format === 'fencers-bpf') {
+        // Fichier binaire : envoyer uniquement le chemin, le renderer appellera importFencersArchive
+        mainWindow?.webContents.send('menu:import', format, filepath, '');
+      } else {
+        const content = fs.readFileSync(filepath, 'utf-8');
+        mainWindow?.webContents.send('menu:import', format, filepath, content);
+      }
     } catch (error) {
-      dialog.showErrorBox('Erreur d\'import', `Impossible de lire le fichier: ${error}`);
+      dialog.showErrorBox("Erreur d'import", `Impossible de lire le fichier: ${error}`);
     }
   }
 }
@@ -451,9 +472,9 @@ function showAbout(): void {
     month: 'long',
     year: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
   });
-  
+
   dialog.showMessageBox(mainWindow!, {
     type: 'info',
     title: 'À propos de BellePoule Modern',
@@ -463,7 +484,7 @@ Date: ${buildDate}
 
 Logiciel de gestion de compétitions d'escrime.
 
-Réécriture moderne du logiciel BellePoule original créé par Yannick Le Roux.
+Réécriture moderne du logiciel BellePoule original créé par Yann Deboeuf.
 
 Licence: GPL-3.0
 © 2024-2026 BellePoule Modern Contributors
@@ -520,8 +541,8 @@ ipcMain.handle('db:deleteFencer', async (_, id) => {
   return db.deleteFencer(id);
 });
 
-ipcMain.handle('db:deleteAllFencers', async () => {
-  return db.deleteAllFencers();
+ipcMain.handle('db:deleteAllFencers', async (_, competitionId) => {
+  return db.deleteAllFencers(competitionId);
 });
 
 // Match handlers
@@ -568,6 +589,23 @@ ipcMain.handle('db:updatePool', async (_, pool) => {
 //   return db.getPoolFencers(poolId);
 // });
 
+// Statistiques combattants
+ipcMain.handle('db:saveTouch', async (_, touch) => {
+  return db.saveTouch(touch);
+});
+
+ipcMain.handle('db:saveCard', async (_, card) => {
+  return db.saveCard(card);
+});
+
+ipcMain.handle('db:updateMatchTiming', async (_, timing) => {
+  return db.updateMatchTiming(timing.matchId, timing.startTime, timing.endTime, timing.duration);
+});
+
+ipcMain.handle('db:getFencerHistory', async (_, fencerId) => {
+  return db.getFencerHistory(fencerId);
+});
+
 // File handlers
 ipcMain.handle('file:export', async (_, filepath) => {
   db.exportToFile(filepath);
@@ -582,9 +620,108 @@ ipcMain.handle('file:writeContent', async (_, filepath: string, content: string)
   fs.writeFileSync(filepath, content, 'utf-8');
 });
 
+// Photo ZIP export handler
+ipcMain.handle('file:exportPhotos', async (_, competitionId: string, filepath: string) => {
+  const photos = db.getFencerPhotos(competitionId);
+  const zip = new JSZip();
+
+  for (const { license, photo } of photos) {
+    const base64 = photo.replace(/^data:image\/\w+;base64,/, '');
+    const buffer = Buffer.from(base64, 'base64');
+    zip.file(`${license}.jpg`, buffer);
+  }
+
+  const content = await zip.generateAsync({ type: 'nodebuffer' });
+  const tmpPath = filepath + '.tmp';
+  try {
+    fs.writeFileSync(tmpPath, content);
+    try {
+      fs.renameSync(tmpPath, filepath);
+    } catch {
+      fs.writeFileSync(filepath, content);
+      try { fs.unlinkSync(tmpPath); } catch { /* ignore */ }
+    }
+  } catch {
+    fs.writeFileSync(filepath, content);
+  }
+
+  return { count: photos.length };
+});
+
+// Photo ZIP import handler
+ipcMain.handle('file:importPhotos', async (_, competitionId: string, filepath: string) => {
+  const buffer = fs.readFileSync(filepath);
+  const zip = await JSZip.loadAsync(buffer);
+
+  const photos: { license: string; photo: string }[] = [];
+
+  for (const [filename, file] of Object.entries(zip.files)) {
+    if (file.dir) continue;
+    const ext = path.extname(filename).toLowerCase();
+    if (!['.jpg', '.jpeg', '.png'].includes(ext)) continue;
+    const basename = path.basename(filename, ext);
+    const data = await file.async('base64');
+    const mimeType = ext === '.png' ? 'image/png' : 'image/jpeg';
+    photos.push({ license: basename, photo: `data:${mimeType};base64,${data}` });
+  }
+
+  return db.updateFencerPhotosByLicense(competitionId, photos);
+});
+
+// Fencer archive (.bpf) export handler
+ipcMain.handle('file:exportFencersArchive', async (_, competitionId: string, filepath: string) => {
+  const fencers = db.getFencersByCompetition(competitionId);
+  const competition = db.getCompetition(competitionId);
+  const zip = new JSZip();
+  zip.file('meta.json', JSON.stringify({
+    version: '1',
+    competitionName: competition?.title ?? '',
+    exportDate: new Date().toISOString(),
+    count: fencers.length,
+  }));
+  zip.file('fencers.json', JSON.stringify(fencers));
+  const content = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
+  const tmpPath = filepath + '.tmp';
+  try {
+    fs.writeFileSync(tmpPath, content);
+    try {
+      fs.renameSync(tmpPath, filepath);
+    } catch {
+      fs.writeFileSync(filepath, content);
+      try { fs.unlinkSync(tmpPath); } catch { /* ignore */ }
+    }
+  } catch {
+    fs.writeFileSync(filepath, content);
+  }
+  return { count: fencers.length };
+});
+
+// Fencer archive (.bpf) import handler
+ipcMain.handle('file:importFencersArchive', async (_, competitionId: string, filepath: string) => {
+  const buffer = fs.readFileSync(filepath);
+  const zip = await JSZip.loadAsync(buffer);
+  const fencersFile = zip.file('fencers.json');
+  if (!fencersFile) throw new Error('Format .bpf invalide : fencers.json manquant');
+  const fencers = JSON.parse(await fencersFile.async('string'));
+  return db.upsertFencersByLicense(competitionId, fencers);
+});
+
 // Dialog handlers
 ipcMain.handle('dialog:openFile', async (_, options) => {
-  return dialog.showOpenDialog(mainWindow!, options);
+  const result = await dialog.showOpenDialog(mainWindow!, options);
+
+  if (!result.canceled && result.filePaths.length > 0) {
+    const filePath = result.filePaths[0];
+    try {
+      const content = fs.readFileSync(filePath, 'utf-8');
+      return { filePath, content };
+    } catch (error) {
+      console.error('Error reading file:', error);
+      return { filePath, content: '' };
+    }
+  }
+
+  return null;
 });
 
 ipcMain.handle('dialog:saveFile', async (_, options) => {
@@ -602,20 +739,20 @@ ipcMain.handle('remote:startServer', async () => {
     if (remoteScoreServer) {
       return { success: false, error: 'Le serveur est déjà démarré' };
     }
-    
-    remoteScoreServer = new RemoteScoreServer(db, 3001);
+
+    remoteScoreServer = new RemoteScoreServer(db, 8066);
     remoteScoreServer.start();
-    
+
     const serverUrl = remoteScoreServer.getServerUrl();
     const serverInfo = {
       url: serverUrl,
       ip: remoteScoreServer.getLocalIPAddress(),
-      port: 3001
+      port: 8066,
     };
-    
+
     // Stocker la référence globale pour le serveur distant
     (global as any).mainWindow = mainWindow;
-    
+
     return { success: true, serverInfo };
   } catch (error) {
     console.error('Error starting remote server:', error);
@@ -626,12 +763,12 @@ ipcMain.handle('remote:startServer', async () => {
 ipcMain.handle('remote:stopServer', async () => {
   try {
     if (!remoteScoreServer) {
-      return { success: false, error: 'Le serveur n\'est pas démarré' };
+      return { success: false, error: "Le serveur n'est pas démarré" };
     }
-    
+
     remoteScoreServer.stop();
     remoteScoreServer = null;
-    
+
     return { success: true };
   } catch (error) {
     console.error('Error stopping remote server:', error);
@@ -641,22 +778,170 @@ ipcMain.handle('remote:stopServer', async () => {
 
 ipcMain.handle('remote:getServerInfo', async () => {
   if (!remoteScoreServer) {
-    return { success: false, error: 'Le serveur n\'est pas démarré' };
+    return { success: false, error: "Le serveur n'est pas démarré" };
   }
-  
+
   return {
     success: true,
     serverInfo: {
       url: remoteScoreServer.getServerUrl(),
       ip: remoteScoreServer.getLocalIPAddress(),
-      port: 3001
-    }
+      port: 8066,
+    },
   };
+});
+
+// Remote session handlers
+ipcMain.handle(
+  'remote:startSession',
+  async (_, competitionId: string, strips: number, matches?: any[], showPhotos?: boolean) => {
+    try {
+      if (!remoteScoreServer) {
+        return { success: false, error: 'Le serveur distant n est pas démarré' };
+      }
+
+      const session = await remoteScoreServer.startSession(competitionId, strips, matches, showPhotos);
+      return { success: true, session };
+    } catch (error) {
+      console.error('Error starting session:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+    }
+  }
+);
+
+ipcMain.handle(
+  'remote:updateMatchArena',
+  async (_, matchId: string, fromArena: number | null, toArena: number | null) => {
+    try {
+      if (!remoteScoreServer) {
+        return { success: false, error: 'Serveur non démarré' };
+      }
+      remoteScoreServer.updateMatchArena(matchId, fromArena, toArena);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Erreur' };
+    }
+  }
+);
+
+ipcMain.handle('remote:stopSession', async () => {
+  try {
+    if (!remoteScoreServer) {
+      return { success: false, error: 'Le serveur distant n est pas démarré' };
+    }
+
+    remoteScoreServer.stopSession();
+    return { success: true };
+  } catch (error) {
+    console.error('Error stopping session:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
+ipcMain.handle('remote:getSession', async () => {
+  if (!remoteScoreServer) {
+    return { success: false, error: 'Le serveur distant n est pas démarré' };
+  }
+
+  return { success: true, session: remoteScoreServer.getSession() };
+});
+
+ipcMain.handle('remote:getArenas', async () => {
+  if (!remoteScoreServer) {
+    return { success: false, error: 'Le serveur distant n est pas démarré' };
+  }
+
+  return { success: true, arenas: remoteScoreServer.getAllArenas() };
+});
+
+ipcMain.handle('remote:updateStripCount', async (_, newCount: number) => {
+  try {
+    if (!remoteScoreServer) {
+      return { success: false, error: 'Le serveur distant n est pas démarré' };
+    }
+
+    const session = remoteScoreServer.updateStripCount(newCount);
+    return { success: true, session };
+  } catch (error) {
+    console.error('Error updating strip count:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
+ipcMain.handle('remote:updateShowPhotos', async (_, value: boolean) => {
+  try {
+    if (!remoteScoreServer) {
+      return { success: false, error: 'Le serveur distant n est pas démarré' };
+    }
+    remoteScoreServer.updateShowPhotos(value);
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating showPhotos:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
+ipcMain.handle('remote:setArenaPassword', async (_, arenaId: string, password: string) => {
+  try {
+    if (!remoteScoreServer) {
+      return { success: false, error: 'Le serveur distant n est pas démarré' };
+    }
+    remoteScoreServer.setArenaPassword(arenaId, password);
+    return { success: true };
+  } catch (error) {
+    console.error('Error setting arena password:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
 });
 
 // App info handlers
 ipcMain.handle('app:getVersionInfo', async () => {
   return getVersionInfo();
+});
+
+// AutoUpdater handlers
+ipcMain.handle('updater:check', async () => {
+  if (autoUpdater) {
+    return await autoUpdater.checkForUpdates();
+  }
+  return null;
+});
+
+ipcMain.handle('updater:setSilentMode', async (_, enabled: boolean) => {
+  if (autoUpdater) {
+    autoUpdater.setSilentMode(enabled);
+    return { success: true, silent: enabled };
+  }
+  return { success: false, error: 'AutoUpdater not initialized' };
+});
+
+ipcMain.handle('updater:getSilentMode', async () => {
+  if (autoUpdater) {
+    return { silent: autoUpdater.isSilentMode() };
+  }
+  return { silent: false };
+});
+
+ipcMain.handle('updater:hasPendingUpdate', async () => {
+  if (autoUpdater) {
+    return { hasPending: autoUpdater.hasPendingUpdate() };
+  }
+  return { hasPending: false };
+});
+
+ipcMain.handle('updater:getPendingUpdateInfo', async () => {
+  if (autoUpdater) {
+    return autoUpdater.getPendingUpdateInfo();
+  }
+  return null;
+});
+
+ipcMain.handle('updater:installPendingUpdate', async () => {
+  if (autoUpdater) {
+    autoUpdater.checkAndInstallPendingUpdate();
+    return { success: true };
+  }
+  return { success: false, error: 'AutoUpdater not initialized' };
 });
 
 // ============================================================================
@@ -683,36 +968,62 @@ app.whenReady().then(async () => {
 
   await db.open(dbPath);
   console.log('Base de données ouverte:', db.getPath());
-  
+
   createWindow();
 
   // Initialize auto updater
   if (mainWindow) {
     autoUpdater = new AutoUpdater(mainWindow, {
-      autoDownload: false, // Pour l'instant, téléchargement manuel
+      autoDownload: false, // Par défaut manuel, peut être activé via silent mode
       autoInstall: false,
       checkInterval: 12, // Vérifier toutes les 12 heures
-      betaChannel: false
+      betaChannel: true, // Activer le canal beta pour détecter les dev builds
+      silent: false,
+      installOnQuit: false,
     });
+
+    // Vérifier s'il y a une mise à jour en attente d'installation
+    if (autoUpdater.hasPendingUpdate()) {
+      const pendingInfo = autoUpdater.getPendingUpdateInfo();
+      console.log(`[Main] Mise à jour en attente trouvée: v${pendingInfo?.version}`);
+      // Demander à l'utilisateur s'il veut installer maintenant
+      const result = await dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: 'Mise à jour en attente',
+        message: `La version ${pendingInfo?.version} est prête à être installée.`,
+        detail: "Voulez-vous installer cette mise à jour maintenant ? L'application va redémarrer.",
+        buttons: ['Installer maintenant', 'Plus tard'],
+        defaultId: 0,
+        cancelId: 1,
+      });
+
+      if (result.response === 0) {
+        autoUpdater.checkAndInstallPendingUpdate();
+        return; // Arrêter le démarrage normal
+      }
+    }
   }
 
   // Autosave every 2 minutes
   let autosaveInterval: NodeJS.Timeout | null = null;
-  
+
   const startAutosave = () => {
     if (autosaveInterval) clearInterval(autosaveInterval);
-    autosaveInterval = setInterval(() => {
-      try {
-        db.forceSave();
-        console.log('Autosave completed at', new Date().toISOString());
-        mainWindow?.webContents.send('autosave:completed');
-      } catch (error) {
-        console.error('Autosave failed:', error);
-        mainWindow?.webContents.send('autosave:failed');
-      }
-    }, 2 * 60 * 1000); // 2 minutes
+    autosaveInterval = setInterval(
+      () => {
+        try {
+          db.forceSave();
+          console.log('Autosave completed at', new Date().toISOString());
+          mainWindow?.webContents.send('autosave:completed');
+        } catch (error) {
+          console.error('Autosave failed:', error);
+          mainWindow?.webContents.send('autosave:failed');
+        }
+      },
+      2 * 60 * 1000
+    ); // 2 minutes
   };
-  
+
   startAutosave();
 
   app.on('activate', () => {
@@ -736,7 +1047,7 @@ app.on('before-quit', () => {
 });
 
 // Handle uncaught exceptions - save before crash
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', error => {
   console.error('Uncaught Exception:', error);
   try {
     db.forceSave(); // Try to save data before showing error

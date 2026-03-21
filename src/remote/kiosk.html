@@ -1,0 +1,868 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kiosk - BellePoule Modern</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Inter', system-ui, sans-serif;
+        background: #0f172a;
+        min-height: 100vh;
+        color: white;
+        overflow: hidden;
+      }
+
+      /* Progress bar */
+      #progress-bar-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.1);
+        z-index: 100;
+      }
+
+      #progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+        width: 0%;
+        transition: width 0.1s linear;
+      }
+
+      /* Menu escamotable */
+      #kiosk-menu {
+        position: fixed;
+        top: 4px;
+        left: 0;
+        right: 0;
+        z-index: 90;
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 0.75rem 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        opacity: 0;
+        transform: translateY(-100%);
+      }
+
+      #kiosk-menu.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .menu-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #fbbf24;
+      }
+
+      .menu-competition {
+        font-size: 0.875rem;
+        color: #9ca3af;
+        margin-left: 1rem;
+      }
+
+      .menu-nav {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .menu-nav button {
+        padding: 0.4rem 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 0.5rem;
+        background: rgba(255, 255, 255, 0.05);
+        color: white;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .menu-nav button:hover,
+      .menu-nav button.active {
+        background: #3b82f6;
+        border-color: #3b82f6;
+      }
+
+      .menu-status {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.75rem;
+        color: #9ca3af;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #ef4444;
+      }
+
+      .status-dot.ok {
+        background: #10b981;
+        animation: pulse-dot 2s infinite;
+      }
+
+      @keyframes pulse-dot {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+      }
+
+      /* Vues */
+      .kiosk-view {
+        position: fixed;
+        inset: 0;
+        padding: 2.5rem 2.5rem 1.5rem;
+        overflow: hidden;
+        display: none;
+        flex-direction: column;
+      }
+
+      .kiosk-view.active {
+        display: flex;
+      }
+
+      /* En-tête de vue */
+      .view-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+        flex-shrink: 0;
+      }
+
+      .view-title {
+        font-size: 1.75rem;
+        font-weight: 800;
+        background: linear-gradient(90deg, #fbbf24, #f59e0b);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .view-subtitle {
+        font-size: 0.875rem;
+        color: #64748b;
+        margin-top: 0.25rem;
+      }
+
+      .view-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        background: rgba(59, 130, 246, 0.2);
+        color: #93c5fd;
+        border: 1px solid rgba(59, 130, 246, 0.3);
+      }
+
+      /* Vue Poules */
+      #view-poules .pools-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        gap: 1rem;
+        overflow-y: auto;
+        flex: 1;
+      }
+
+      .pool-card {
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 0.75rem;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        overflow: hidden;
+      }
+
+      .pool-card-header {
+        padding: 0.75rem 1rem;
+        background: rgba(59, 130, 246, 0.15);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .pool-card-header h3 {
+        font-size: 1rem;
+        font-weight: 600;
+      }
+
+      .pool-pill {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: 1rem;
+        background: #10b981;
+        font-weight: 600;
+      }
+
+      .pool-pill.ongoing {
+        background: #f59e0b;
+        animation: blink 1.5s ease infinite;
+      }
+
+      @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+      }
+
+      .pool-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+      }
+
+      .pool-table th {
+        padding: 0.5rem 0.75rem;
+        text-align: left;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        background: rgba(0, 0, 0, 0.2);
+      }
+
+      .pool-table td {
+        padding: 0.5rem 0.75rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      }
+
+      .pool-table tr:last-child td {
+        border-bottom: none;
+      }
+
+      .rank-col { width: 36px; font-weight: 700; }
+      .rank-1 { color: #fbbf24; }
+      .rank-2 { color: #94a3b8; }
+      .rank-3 { color: #b45309; }
+
+      .fencer-name { font-weight: 500; }
+      .fencer-club { font-size: 0.7rem; color: #64748b; }
+
+      td.victories { text-align: center; color: #10b981; font-weight: 600; }
+      td.ind { text-align: center; color: #60a5fa; }
+      td.td { text-align: center; color: #94a3b8; }
+
+      /* Vue Classement */
+      #view-classement {
+        overflow: hidden;
+      }
+
+      .ranking-scroll-wrapper {
+        flex: 1;
+        overflow: hidden;
+        border-radius: 0.75rem;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .ranking-scroll-inner {
+        /* auto-scroll via JS */
+      }
+
+      .ranking-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .ranking-table thead {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+      }
+
+      .ranking-table th {
+        padding: 1rem 1.25rem;
+        text-align: left;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        background: rgba(15, 23, 42, 0.98);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .ranking-table td {
+        padding: 0.875rem 1.25rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        font-size: 0.95rem;
+      }
+
+      .ranking-table tr:last-child td {
+        border-bottom: none;
+      }
+
+      .ranking-table tr:hover td {
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .top-row {
+        background: linear-gradient(90deg, rgba(251, 191, 36, 0.08), transparent);
+      }
+
+      .rank-medal { font-size: 1.25rem; }
+
+      /* Vue Matchs en direct */
+      .arenas-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+        gap: 1.25rem;
+        flex: 1;
+        overflow-y: auto;
+      }
+
+      .arena-card {
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 0.75rem;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 1.25rem;
+      }
+
+      .arena-card.match-active {
+        border-color: rgba(16, 185, 129, 0.3);
+        background: rgba(16, 185, 129, 0.04);
+      }
+
+      .arena-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        font-size: 0.875rem;
+      }
+
+      .arena-name {
+        font-weight: 600;
+        color: #94a3b8;
+      }
+
+      .arena-status-pill {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: 1rem;
+        background: rgba(100, 116, 139, 0.3);
+        color: #94a3b8;
+      }
+
+      .arena-status-pill.in-progress {
+        background: rgba(16, 185, 129, 0.2);
+        color: #10b981;
+        animation: blink 1.5s ease infinite;
+      }
+
+      .arena-matchup {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+      }
+
+      .arena-fencer {
+        flex: 1;
+        text-align: center;
+      }
+
+      .arena-fencer .fname {
+        font-size: 1.1rem;
+        font-weight: 600;
+        line-height: 1.2;
+      }
+
+      .arena-fencer .fclub {
+        font-size: 0.75rem;
+        color: #64748b;
+        margin-top: 0.25rem;
+      }
+
+      .arena-scores {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-shrink: 0;
+      }
+
+      .arena-score {
+        font-size: 2.5rem;
+        font-weight: 900;
+        line-height: 1;
+        min-width: 2.5rem;
+        text-align: center;
+      }
+
+      .score-a { color: #ef4444; }
+      .score-b { color: #10b981; }
+
+      .arena-vs {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #475569;
+      }
+
+      .arena-idle {
+        text-align: center;
+        padding: 1.5rem;
+        color: #475569;
+        font-size: 0.875rem;
+      }
+
+      /* No data */
+      .no-data {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+        color: #475569;
+        text-align: center;
+        gap: 0.75rem;
+      }
+
+      .no-data-icon { font-size: 3rem; }
+      .no-data h3 { font-size: 1.25rem; color: #64748b; }
+
+      /* Scrollbar */
+      ::-webkit-scrollbar { width: 4px; height: 4px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+    </style>
+  </head>
+  <body>
+    <!-- Barre de progression rotation -->
+    <div id="progress-bar-container">
+      <div id="progress-bar"></div>
+    </div>
+
+    <!-- Menu escamotable -->
+    <div id="kiosk-menu">
+      <div style="display:flex;align-items:center">
+        <span class="menu-title">🏆 BellePoule</span>
+        <span class="menu-competition" id="menu-competition-name">—</span>
+      </div>
+      <div class="menu-nav">
+        <button id="btn-poules" class="active" onclick="switchView('poules')">Poules</button>
+        <button id="btn-classement" onclick="switchView('classement')">Classement</button>
+        <button id="btn-direct" onclick="switchView('direct')">Matchs en direct</button>
+      </div>
+      <div class="menu-status">
+        <div id="status-dot" class="status-dot"></div>
+        <span id="status-text">—</span>
+      </div>
+    </div>
+
+    <!-- Vue Poules -->
+    <div id="view-poules" class="kiosk-view active">
+      <div class="view-header">
+        <div>
+          <div class="view-title">Poules</div>
+          <div class="view-subtitle" id="poules-subtitle">Classements des poules</div>
+        </div>
+        <div class="view-badge" id="poules-badge">—</div>
+      </div>
+      <div class="pools-grid" id="pools-container">
+        <div class="no-data">
+          <div class="no-data-icon">🤺</div>
+          <h3>Aucune poule disponible</h3>
+          <p>Démarrez la compétition pour voir les poules</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vue Classement -->
+    <div id="view-classement" class="kiosk-view">
+      <div class="view-header">
+        <div>
+          <div class="view-title">Classement Général</div>
+          <div class="view-subtitle">Tous tireurs confondus</div>
+        </div>
+        <div class="view-badge" id="classement-badge">—</div>
+      </div>
+      <div class="ranking-scroll-wrapper" id="ranking-scroll-wrapper">
+        <div class="ranking-scroll-inner" id="ranking-scroll-inner">
+          <table class="ranking-table">
+            <thead>
+              <tr>
+                <th style="width:60px">Rg</th>
+                <th>Tireur</th>
+                <th>Club</th>
+                <th style="text-align:center">V</th>
+                <th style="text-align:center">Ind</th>
+                <th style="text-align:center">TD</th>
+              </tr>
+            </thead>
+            <tbody id="ranking-body">
+              <tr>
+                <td colspan="6" style="text-align:center;color:#64748b;padding:3rem">En attente des résultats...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vue Matchs en direct -->
+    <div id="view-direct" class="kiosk-view">
+      <div class="view-header">
+        <div>
+          <div class="view-title">Matchs en Direct</div>
+          <div class="view-subtitle">État des pistes</div>
+        </div>
+        <div class="view-badge" id="direct-badge">—</div>
+      </div>
+      <div class="arenas-grid" id="arenas-container">
+        <div class="no-data">
+          <div class="no-data-icon">⏱️</div>
+          <h3>Aucun match en cours</h3>
+          <p>Les matchs apparaîtront ici en temps réel</p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ─── État ────────────────────────────────────────────────────────────────
+      const state = {
+        currentView: 'poules',
+        views: ['poules', 'classement', 'direct'],
+        rotationMs: 15000,
+        rotationTimer: null,
+        progressTimer: null,
+        progressStart: null,
+        menuTimer: null,
+        session: null,
+        poolsData: [],   // pools avec rankings
+        arenasData: [],  // arènes
+        overallRanking: [],
+        lastUpdate: null,
+      };
+
+      // ─── Rotation automatique ────────────────────────────────────────────────
+      function startRotation() {
+        clearTimeout(state.rotationTimer);
+        clearInterval(state.progressTimer);
+        state.progressStart = Date.now();
+
+        state.progressTimer = setInterval(() => {
+          const elapsed = Date.now() - state.progressStart;
+          const pct = Math.min(100, (elapsed / state.rotationMs) * 100);
+          document.getElementById('progress-bar').style.width = pct + '%';
+        }, 100);
+
+        state.rotationTimer = setTimeout(() => {
+          const idx = state.views.indexOf(state.currentView);
+          const next = state.views[(idx + 1) % state.views.length];
+          switchView(next);
+        }, state.rotationMs);
+      }
+
+      function switchView(name) {
+        state.currentView = name;
+
+        state.views.forEach(v => {
+          document.getElementById('view-' + v).classList.toggle('active', v === name);
+          const btn = document.getElementById('btn-' + v);
+          if (btn) btn.classList.toggle('active', v === name);
+        });
+
+        // Reset scroll for classement
+        if (name === 'classement') {
+          const wrapper = document.getElementById('ranking-scroll-wrapper');
+          wrapper.scrollTop = 0;
+          startAutoScroll(wrapper);
+        }
+
+        document.getElementById('progress-bar').style.width = '0%';
+        startRotation();
+      }
+
+      // ─── Auto-scroll classement ──────────────────────────────────────────────
+      let scrollAnimFrame = null;
+
+      function startAutoScroll(wrapper) {
+        cancelAnimationFrame(scrollAnimFrame);
+        const duration = 12000; // ms pour parcourir tout le contenu
+        const start = performance.now();
+        const startTop = 0;
+
+        function step(now) {
+          const elapsed = now - start;
+          const maxScroll = wrapper.scrollHeight - wrapper.clientHeight;
+          if (maxScroll <= 0) return;
+
+          const progress = Math.min(1, elapsed / duration);
+          wrapper.scrollTop = startTop + progress * maxScroll;
+
+          if (progress < 1) {
+            scrollAnimFrame = requestAnimationFrame(step);
+          }
+        }
+
+        scrollAnimFrame = requestAnimationFrame(step);
+      }
+
+      // ─── Menu escamotable ────────────────────────────────────────────────────
+      function showMenu() {
+        document.getElementById('kiosk-menu').classList.add('visible');
+        clearTimeout(state.menuTimer);
+        state.menuTimer = setTimeout(() => {
+          document.getElementById('kiosk-menu').classList.remove('visible');
+        }, 4000);
+      }
+
+      document.addEventListener('mousemove', showMenu);
+      document.addEventListener('keydown', (e) => {
+        showMenu();
+        if (e.key === 'ArrowRight') {
+          const idx = state.views.indexOf(state.currentView);
+          switchView(state.views[(idx + 1) % state.views.length]);
+        }
+        if (e.key === 'ArrowLeft') {
+          const idx = state.views.indexOf(state.currentView);
+          switchView(state.views[(idx - 1 + state.views.length) % state.views.length]);
+        }
+      });
+
+      // ─── Statut connexion ────────────────────────────────────────────────────
+      function setStatus(ok, text) {
+        const dot = document.getElementById('status-dot');
+        dot.classList.toggle('ok', ok);
+        document.getElementById('status-text').textContent = text;
+      }
+
+      // ─── Chargement des données ──────────────────────────────────────────────
+      async function fetchData() {
+        try {
+          // 1. Session
+          const sessRes = await fetch('/api/session');
+          if (!sessRes.ok) {
+            setStatus(false, 'Aucune session active');
+            return;
+          }
+          state.session = await sessRes.json();
+          const competitionId = state.session.competitionId;
+
+          document.getElementById('menu-competition-name').textContent =
+            state.session.competitionName || '';
+
+          // 2. Données poules + classements
+          const poolsRes = await fetch('/api/competitions/' + competitionId + '/results-data');
+          if (poolsRes.ok) {
+            const data = await poolsRes.json();
+            state.poolsData = data.pools || [];
+            buildOverallRanking();
+            renderPools();
+            renderRanking();
+          }
+
+          // 3. Arènes
+          const arenasRes = await fetch('/api/arenas');
+          if (arenasRes.ok) {
+            state.arenasData = await arenasRes.json();
+            renderArenas();
+          }
+
+          state.lastUpdate = new Date();
+          setStatus(true, 'Mis à jour ' + state.lastUpdate.toLocaleTimeString('fr-FR'));
+        } catch (err) {
+          setStatus(false, 'Erreur de connexion');
+        }
+      }
+
+      // ─── Classement général (agrégation des poules) ──────────────────────────
+      function buildOverallRanking() {
+        const map = new Map();
+        for (const pool of state.poolsData) {
+          for (const r of (pool.rankings || [])) {
+            const key = r.id || (r.lastName + '_' + r.firstName);
+            if (!map.has(key)) {
+              map.set(key, { ...r, victories: 0, index: 0, touchesFor: 0, touchesAgainst: 0, matchCount: 0 });
+            }
+            const entry = map.get(key);
+            entry.victories += r.victories || 0;
+            entry.index += r.index || 0;
+            entry.touchesFor += r.touchesFor || 0;
+            entry.touchesAgainst += r.touchesAgainst || 0;
+            entry.matchCount += r.matchCount || 0;
+          }
+        }
+
+        state.overallRanking = Array.from(map.values()).sort((a, b) => {
+          if (b.victories !== a.victories) return b.victories - a.victories;
+          if (b.index !== a.index) return b.index - a.index;
+          return b.touchesFor - a.touchesFor;
+        });
+      }
+
+      // ─── Rendu Poules ────────────────────────────────────────────────────────
+      function renderPools() {
+        const container = document.getElementById('pools-container');
+        const pools = state.poolsData;
+
+        document.getElementById('poules-badge').textContent = pools.length + ' poule' + (pools.length > 1 ? 's' : '');
+
+        if (!pools || pools.length === 0) {
+          container.innerHTML = '<div class="no-data"><div class="no-data-icon">🤺</div><h3>Aucune poule disponible</h3><p>Démarrez la compétition pour voir les poules</p></div>';
+          return;
+        }
+
+        container.innerHTML = pools.map(pool => {
+          const rankings = pool.rankings || [];
+          const isComplete = rankings.every(r => (r.matchCount || 0) > 0);
+          const rows = rankings.map((r, i) => {
+            const ind = (r.index >= 0 ? '+' : '') + (r.index || 0);
+            const rankClass = i < 3 ? ' rank-' + (i + 1) : '';
+            return `<tr>
+              <td class="rank-col${rankClass}">${i + 1}</td>
+              <td>
+                <div class="fencer-name">${escHtml(r.lastName)} ${escHtml(r.firstName || '')}</div>
+                <div class="fencer-club">${escHtml(r.club || '')}</div>
+              </td>
+              <td style="text-align:center;color:#94a3b8">${r.matchesPlayed || 0}</td>
+              <td class="victories">${r.victories || 0}</td>
+              <td class="ind">${ind}</td>
+              <td class="td">${r.touchesFor || 0}</td>
+            </tr>`;
+          }).join('');
+
+          return `<div class="pool-card">
+            <div class="pool-card-header">
+              <h3>${escHtml(pool.name || ('Poule ' + (pool.number || '')))}</h3>
+              <span class="pool-pill ${isComplete ? '' : 'ongoing'}">${isComplete ? 'Terminée' : 'En cours'}</span>
+            </div>
+            <table class="pool-table">
+              <thead>
+                <tr>
+                  <th>Rg</th><th>Tireur</th><th>M</th><th>V</th><th>Ind</th><th>TD</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>`;
+        }).join('');
+      }
+
+      // ─── Rendu Classement ────────────────────────────────────────────────────
+      function renderRanking() {
+        const tbody = document.getElementById('ranking-body');
+        const ranking = state.overallRanking;
+
+        document.getElementById('classement-badge').textContent = ranking.length + ' tireur' + (ranking.length > 1 ? 's' : '');
+
+        if (!ranking || ranking.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#64748b;padding:3rem">En attente des résultats...</td></tr>';
+          return;
+        }
+
+        const medals = ['🥇', '🥈', '🥉'];
+        tbody.innerHTML = ranking.map((r, i) => {
+          const ind = (r.index >= 0 ? '+' : '') + (r.index || 0);
+          const topClass = i < 3 ? ' class="top-row"' : '';
+          const rankDisplay = i < 3
+            ? `<span class="rank-medal">${medals[i]}</span>`
+            : `<span style="color:#64748b;font-weight:700">${i + 1}</span>`;
+          return `<tr${topClass}>
+            <td>${rankDisplay}</td>
+            <td>
+              <div style="font-weight:500">${escHtml(r.lastName)} ${escHtml(r.firstName || '')}</div>
+            </td>
+            <td style="color:#64748b;font-size:0.85rem">${escHtml(r.club || '—')}</td>
+            <td style="text-align:center;color:#10b981;font-weight:600">${r.victories || 0}</td>
+            <td style="text-align:center;color:#60a5fa">${ind}</td>
+            <td style="text-align:center;color:#94a3b8">${r.touchesFor || 0}</td>
+          </tr>`;
+        }).join('');
+      }
+
+      // ─── Rendu Arènes ────────────────────────────────────────────────────────
+      function renderArenas() {
+        const container = document.getElementById('arenas-container');
+        const arenas = state.arenasData;
+
+        const activeCount = arenas.filter(a => a.status === 'in_progress').length;
+        document.getElementById('direct-badge').textContent = activeCount + ' piste' + (activeCount > 1 ? 's' : '') + ' active' + (activeCount > 1 ? 's' : '');
+
+        if (!arenas || arenas.length === 0) {
+          container.innerHTML = '<div class="no-data"><div class="no-data-icon">⏱️</div><h3>Aucune piste configurée</h3></div>';
+          return;
+        }
+
+        container.innerHTML = arenas.map(arena => {
+          const m = arena.currentMatch;
+          const isActive = arena.status === 'in_progress' && m;
+
+          if (!m) {
+            return `<div class="arena-card">
+              <div class="arena-card-header">
+                <span class="arena-name">Piste ${arena.id || arena.arenaId || '?'}</span>
+                <span class="arena-status-pill">En attente</span>
+              </div>
+              <div class="arena-idle">Aucun match assigné</div>
+            </div>`;
+          }
+
+          const scoreA = m.scoreA ?? '—';
+          const scoreB = m.scoreB ?? '—';
+          const nameA = [m.fencerA?.lastName, m.fencerA?.firstName].filter(Boolean).join(' ') || m.fencerA || '?';
+          const nameB = [m.fencerB?.lastName, m.fencerB?.firstName].filter(Boolean).join(' ') || m.fencerB || '?';
+          const clubA = m.fencerA?.club || '';
+          const clubB = m.fencerB?.club || '';
+
+          return `<div class="arena-card ${isActive ? 'match-active' : ''}">
+            <div class="arena-card-header">
+              <span class="arena-name">Piste ${arena.id || arena.arenaId || '?'}</span>
+              <span class="arena-status-pill ${isActive ? 'in-progress' : ''}">${isActive ? 'En cours' : 'Assigné'}</span>
+            </div>
+            <div class="arena-matchup">
+              <div class="arena-fencer">
+                <div class="fname">${escHtml(nameA)}</div>
+                <div class="fclub">${escHtml(clubA)}</div>
+              </div>
+              <div class="arena-scores">
+                <span class="arena-score score-a">${scoreA}</span>
+                <span class="arena-vs">-</span>
+                <span class="arena-score score-b">${scoreB}</span>
+              </div>
+              <div class="arena-fencer">
+                <div class="fname">${escHtml(nameB)}</div>
+                <div class="fclub">${escHtml(clubB)}</div>
+              </div>
+            </div>
+          </div>`;
+        }).join('');
+      }
+
+      // ─── Helpers ─────────────────────────────────────────────────────────────
+      function escHtml(s) {
+        if (!s) return '';
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      }
+
+      // ─── Init ─────────────────────────────────────────────────────────────────
+      window.addEventListener('DOMContentLoaded', () => {
+        fetchData();
+        setInterval(fetchData, 15000);
+        startRotation();
+
+        // Plein écran automatique au clic
+        document.addEventListener('click', () => {
+          if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(() => {});
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

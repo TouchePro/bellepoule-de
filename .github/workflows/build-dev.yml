@@ -6,24 +6,110 @@ on:
   workflow_dispatch:
 
 jobs:
+  increment-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      build: ${{ steps.version.outputs.build }}
+      full_version: ${{ steps.version.outputs.full_version }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get Version from package.json
+        id: version
+        run: |
+          # Get current version from package.json
+          VERSION=$(node -p "require('./package.json').version" | sed 's/-build\..*//')
+          CURRENT_BUILD=$(node -p "require('./package.json').version" | sed 's/.*-build\.//')
+
+          # Use GitHub run number as build number
+          NEW_BUILD=$GITHUB_RUN_NUMBER
+
+          FULL_VERSION="${VERSION}-build.${NEW_BUILD}"
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "build=$NEW_BUILD" >> $GITHUB_OUTPUT
+          echo "full_version=$FULL_VERSION" >> $GITHUB_OUTPUT
+
+          echo "Current version: $VERSION"
+          echo "Build number: $NEW_BUILD"
+          echo "Full version: $FULL_VERSION"
+
+      - name: Write version files
+        run: |
+          cat > version.json << EOF
+          {
+            "version": "${{ steps.version.outputs.version }}",
+            "build": ${{ steps.version.outputs.build }},
+            "date": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          }
+          EOF
+
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = '${{ steps.version.outputs.full_version }}';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
+
+          cat version.json
+
+      - name: Commit and push
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add version.json package.json
+          git diff --staged --quiet || git commit -m "🔖 Dev Build #${{ steps.version.outputs.build }}"
+          git push || echo "Nothing to push"
+
   build-windows:
+    needs: increment-version
     runs-on: windows-latest
 
     steps:
       - uses: actions/checkout@v4
         with:
           ref: dev
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
       - name: Install Dependencies
-        run: npm install
+        shell: bash
+        run: |
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            npm ci && break
+            echo "npm ci failed, trying npm install..."
+            npm install && break
+            echo "Failed, waiting 10s before retry..."
+            sleep 10
+          done
+
+      - name: Update version files
+        run: |
+          node -e "const fs=require('fs');const v='${{ needs.increment-version.outputs.version }}';const b=${{ needs.increment-version.outputs.build }};const f='${{ needs.increment-version.outputs.full_version }}';fs.writeFileSync('version.json',JSON.stringify({version:v,build:b,date:new Date().toISOString()},null,2));const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.version=f;fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
 
       - name: Build TypeScript and Webpack
-        run: npm run build
+        run: npm run build:ci
 
       - name: Update package.json for dev build
         shell: pwsh
@@ -35,7 +121,12 @@ jobs:
           Set-Content package.json $content -NoNewline
 
       - name: Package with Electron Builder
-        run: npx electron-builder --win portable --x64
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 15
+          max_attempts: 3
+          retry_on: error
+          command: npx electron-builder --win portable --x64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -46,64 +137,172 @@ jobs:
           path: release/*-dev-*.exe
           retention-days: 7
 
-  build-macos:
+  build-macos-x64:
+    needs: increment-version
     runs-on: macos-latest
 
     steps:
       - uses: actions/checkout@v4
         with:
           ref: dev
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
       - name: Install Dependencies
-        run: npm install
+        run: npm ci
+
+      - name: Update version files
+        run: |
+          node -e "const fs=require('fs');const v='${{ needs.increment-version.outputs.version }}';const b=${{ needs.increment-version.outputs.build }};const f='${{ needs.increment-version.outputs.full_version }}';fs.writeFileSync('version.json',JSON.stringify({version:v,build:b,date:new Date().toISOString()},null,2));const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.version=f;fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
 
       - name: Build TypeScript and Webpack
-        run: npm run build
+        run: npm run build:ci
 
       - name: Update package.json for dev build
         run: |
           node -e "
             const fs = require('fs');
             const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            pkg.build.mac.artifactName = '\${productName}-dev-\${version}.\${ext}';
+            pkg.build.mac.artifactName = '\${productName}-dev-\${version}-\${arch}.\${ext}';
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
           "
 
       - name: Package with Electron Builder
-        run: npx electron-builder --mac --x64
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 15
+          max_attempts: 3
+          retry_on: error
+          command: npx electron-builder --mac --x64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: macos-dmg-dev
-          path: release/*-dev-*.dmg
+          name: macos-x64-dmg-dev
+          path: release/*-dev-*-x64.dmg
           retention-days: 7
 
-  build-linux-x64:
-    runs-on: ubuntu-latest
+  build-macos-arm64:
+    needs: increment-version
+    runs-on: macos-latest
 
     steps:
       - uses: actions/checkout@v4
         with:
           ref: dev
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
       - name: Install Dependencies
-        run: npm install
+        run: |
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            npm ci && break
+            echo "npm ci failed, trying npm install..."
+            npm install && break
+            echo "Failed, waiting 10s before retry..."
+            sleep 10
+          done
+
+      - name: Update version files
+        run: |
+          node -e "const fs=require('fs');const v='${{ needs.increment-version.outputs.version }}';const b=${{ needs.increment-version.outputs.build }};const f='${{ needs.increment-version.outputs.full_version }}';fs.writeFileSync('version.json',JSON.stringify({version:v,build:b,date:new Date().toISOString()},null,2));const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.version=f;fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
 
       - name: Build TypeScript and Webpack
-        run: npm run build
+        run: npm run build:ci
+
+      - name: Update package.json for dev build
+        run: |
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.build.mac.artifactName = '\${productName}-dev-\${version}-\${arch}.\${ext}';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
+
+      - name: Package with Electron Builder
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 15
+          max_attempts: 3
+          retry_on: error
+          command: npx electron-builder --mac --arm64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-arm64-dmg-dev
+          path: release/*-dev-*-arm64.dmg
+          retention-days: 7
+
+  build-linux-x64:
+    needs: increment-version
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      - name: Install Dependencies
+        run: |
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            npm ci && break
+            echo "npm ci failed, trying npm install..."
+            npm install && break
+            echo "Failed, waiting 10s before retry..."
+            sleep 10
+          done
+
+      - name: Update version files
+        run: |
+          node -e "const fs=require('fs');const v='${{ needs.increment-version.outputs.version }}';const b=${{ needs.increment-version.outputs.build }};const f='${{ needs.increment-version.outputs.full_version }}';fs.writeFileSync('version.json',JSON.stringify({version:v,build:b,date:new Date().toISOString()},null,2));const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.version=f;fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
+
+      - name: Build TypeScript and Webpack
+        run: npm run build:ci
 
       - name: Update package.json for dev build
         run: |
@@ -115,7 +314,12 @@ jobs:
           "
 
       - name: Package with Electron Builder
-        run: npx electron-builder --linux AppImage --x64
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 15
+          max_attempts: 3
+          retry_on: error
+          command: npx electron-builder --linux AppImage --x64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -127,23 +331,45 @@ jobs:
           retention-days: 7
 
   build-linux-arm64:
+    needs: increment-version
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
         with:
           ref: dev
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
       - name: Install Dependencies
-        run: npm install
+        run: |
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            npm ci && break
+            echo "npm ci failed, trying npm install..."
+            npm install && break
+            echo "Failed, waiting 10s before retry..."
+            sleep 10
+          done
+
+      - name: Update version files
+        run: |
+          node -e "const fs=require('fs');const v='${{ needs.increment-version.outputs.version }}';const b=${{ needs.increment-version.outputs.build }};const f='${{ needs.increment-version.outputs.full_version }}';fs.writeFileSync('version.json',JSON.stringify({version:v,build:b,date:new Date().toISOString()},null,2));const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.version=f;fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
 
       - name: Build TypeScript and Webpack
-        run: npm run build
+        run: npm run build:ci
 
       - name: Update package.json for dev build
         run: |
@@ -155,7 +381,12 @@ jobs:
           "
 
       - name: Package with Electron Builder
-        run: npx electron-builder --linux AppImage --arm64
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 15
+          max_attempts: 3
+          retry_on: error
+          command: npx electron-builder --linux AppImage --arm64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -167,7 +398,15 @@ jobs:
           retention-days: 7
 
   create-dev-release:
-    needs: [build-windows, build-macos, build-linux-x64, build-linux-arm64]
+    needs:
+      [
+        increment-version,
+        build-windows,
+        build-macos-x64,
+        build-macos-arm64,
+        build-linux-x64,
+        build-linux-arm64,
+      ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -194,14 +433,17 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: dev
-          name: "🧪 BellePoule Modern - Version de Développement"
+          name: '🧪 BellePoule Modern Dev v${{ needs.increment-version.outputs.version }} Build #${{ needs.increment-version.outputs.build }}'
           body: |
             ## 🧪 Version de Développement
 
+            **Version**: `${{ needs.increment-version.outputs.version }}`
+            **Build**: `#${{ needs.increment-version.outputs.build }}`
+
             **Ceci est une version de test !** 
-            
+
             Cette release contient les dernières modifications de la branche `dev` et est destinée aux tests.
-            
+
             Pour la version stable, utilisez la release principale.
 
             ### 📥 Téléchargements
@@ -210,6 +452,7 @@ jobs:
             |------------|--------------|---------|
             | **Windows** | x64 | `.exe` portable |
             | **macOS** | x64 | `.dmg` |
+            | **macOS** | ARM64 | `.dmg` (Apple Silicon M1/M2/M3) |
             | **Linux** | x64 | `.AppImage` |
             | **Linux** | ARM64 | `.AppImage` (Raspberry Pi, etc.) |
 
@@ -222,7 +465,8 @@ jobs:
             **Build automatique** • Branche: `dev` • Commit: `${{ github.sha }}`
           files: |
             builds/windows-exe-dev/*.exe
-            builds/macos-dmg-dev/*.dmg
+            builds/macos-x64-dmg-dev/*.dmg
+            builds/macos-arm64-dmg-dev/*.dmg
             builds/linux-x64-appimage-dev/*.AppImage
             builds/linux-arm64-appimage-dev/*.AppImage
           draft: false

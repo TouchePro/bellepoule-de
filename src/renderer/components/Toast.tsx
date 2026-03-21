@@ -28,7 +28,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const showToast = useCallback((message: string, type: ToastType = 'info') => {
     const id = ++toastId;
     setToasts(prev => [...prev, { id, message, type }]);
-    
+
     // Auto-remove after 4 seconds
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
@@ -41,37 +41,47 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const getIcon = (type: ToastType) => {
     switch (type) {
-      case 'success': return '✅';
-      case 'warning': return '⚠️';
-      case 'error': return '❌';
-      default: return 'ℹ️';
+      case 'success':
+        return '✅';
+      case 'warning':
+        return '⚠️';
+      case 'error':
+        return '❌';
+      default:
+        return 'ℹ️';
     }
   };
 
   const getColors = (type: ToastType) => {
     switch (type) {
-      case 'success': return { bg: '#f0fdf4', border: '#22c55e', text: '#166534' };
-      case 'warning': return { bg: '#fffbeb', border: '#f59e0b', text: '#92400e' };
-      case 'error': return { bg: '#fef2f2', border: '#ef4444', text: '#991b1b' };
-      default: return { bg: '#eff6ff', border: '#3b82f6', text: '#1e40af' };
+      case 'success':
+        return { bg: '#f0fdf4', border: '#22c55e', text: '#166534' };
+      case 'warning':
+        return { bg: '#fffbeb', border: '#f59e0b', text: '#92400e' };
+      case 'error':
+        return { bg: '#fef2f2', border: '#ef4444', text: '#991b1b' };
+      default:
+        return { bg: '#eff6ff', border: '#3b82f6', text: '#1e40af' };
     }
   };
 
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      
+
       {/* Toast Container */}
-      <div style={{
-        position: 'fixed',
-        top: '1rem',
-        right: '1rem',
-        zIndex: 10000,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.5rem',
-        pointerEvents: 'none',
-      }}>
+      <div
+        style={{
+          position: 'fixed',
+          top: '1rem',
+          right: '1rem',
+          zIndex: 10000,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.5rem',
+          pointerEvents: 'none',
+        }}
+      >
         {toasts.map(toast => {
           const colors = getColors(toast.type);
           return (
@@ -138,7 +148,7 @@ export const useToast = (): ToastContextType => {
     return {
       showToast: (message: string) => {
         console.warn('Toast used outside provider:', message);
-      }
+      },
     };
   }
   return context;

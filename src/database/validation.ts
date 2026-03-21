@@ -14,7 +14,7 @@ import {
   Gender,
   Weapon,
   Category,
-  MatchStatus
+  MatchStatus,
 } from '../shared/types';
 
 // ============================================================================
@@ -22,7 +22,10 @@ import {
 // ============================================================================
 
 export class ValidationError extends Error {
-  constructor(message: string, public field?: string) {
+  constructor(
+    message: string,
+    public field?: string
+  ) {
     super(message);
     this.name = 'ValidationError';
   }
@@ -41,7 +44,11 @@ export const validateId = (id: string, fieldName: string = 'ID'): void => {
   }
 };
 
-export const validateRequiredString = (value: string, fieldName: string, maxLength: number = 255): void => {
+export const validateRequiredString = (
+  value: string,
+  fieldName: string,
+  maxLength: number = 255
+): void => {
   if (!value || typeof value !== 'string' || value.trim().length === 0) {
     throw new ValidationError(`${fieldName} is required and must be a non-empty string`, fieldName);
   }
@@ -50,7 +57,11 @@ export const validateRequiredString = (value: string, fieldName: string, maxLeng
   }
 };
 
-export const validateOptionalString = (value: string | undefined, fieldName: string, maxLength: number = 255): void => {
+export const validateOptionalString = (
+  value: string | undefined,
+  fieldName: string,
+  maxLength: number = 255
+): void => {
   if (value !== undefined && value !== null) {
     if (typeof value !== 'string') {
       throw new ValidationError(`${fieldName} must be a string`, fieldName);
@@ -61,7 +72,12 @@ export const validateOptionalString = (value: string | undefined, fieldName: str
   }
 };
 
-export const validateNumber = (value: number, fieldName: string, min: number = 0, max?: number): void => {
+export const validateNumber = (
+  value: number,
+  fieldName: string,
+  min: number = 0,
+  max?: number
+): void => {
   if (typeof value !== 'number' || isNaN(value)) {
     throw new ValidationError(`${fieldName} must be a valid number`, fieldName);
   }
@@ -73,7 +89,12 @@ export const validateNumber = (value: number, fieldName: string, min: number = 0
   }
 };
 
-export const validateOptionalNumber = (value: number | undefined, fieldName: string, min: number = 0, max?: number): void => {
+export const validateOptionalNumber = (
+  value: number | undefined,
+  fieldName: string,
+  min: number = 0,
+  max?: number
+): void => {
   if (value !== undefined && value !== null) {
     validateNumber(value, fieldName, min, max);
   }
@@ -97,7 +118,11 @@ export const validateEnum = (value: string, fieldName: string, validValues: stri
   }
 };
 
-export const validateOptionalEnum = (value: string | undefined, fieldName: string, validValues: string[]): void => {
+export const validateOptionalEnum = (
+  value: string | undefined,
+  fieldName: string,
+  validValues: string[]
+): void => {
   if (value !== undefined && value !== null) {
     validateEnum(value, fieldName, validValues);
   }
@@ -159,7 +184,10 @@ export const validateCompetitionSettings = (settings: CompetitionSettings): void
   validateNumber(settings.minTeamSize, 'minTeamSize', 1);
 
   if (settings.defaultPoolMaxScore > 15) {
-    throw new ValidationError('defaultPoolMaxScore should not exceed 15 for practical fencing', 'defaultPoolMaxScore');
+    throw new ValidationError(
+      'defaultPoolMaxScore should not exceed 15 for practical fencing',
+      'defaultPoolMaxScore'
+    );
   }
 };
 
@@ -188,7 +216,10 @@ export const validateFencerData = (data: Partial<Fencer>): void => {
 
   // Validate nationality format (ISO country code)
   if (data.nationality && !/^[A-Z]{2,3}$/.test(data.nationality)) {
-    throw new ValidationError('nationality must be a valid ISO country code (2-3 letters)', 'nationality');
+    throw new ValidationError(
+      'nationality must be a valid ISO country code (2-3 letters)',
+      'nationality'
+    );
   }
 
   // Validate birth date if provided (not in future)
@@ -225,7 +256,8 @@ export const validateMatchData = (data: Partial<Match>): void => {
   // Validate duration consistency with start/end times
   if (data.duration && data.startTime && data.endTime) {
     const expectedDuration = Math.floor((data.endTime.getTime() - data.startTime.getTime()) / 1000);
-    if (Math.abs(data.duration - expectedDuration) > 60) { // Allow 1 minute tolerance
+    if (Math.abs(data.duration - expectedDuration) > 60) {
+      // Allow 1 minute tolerance
       throw new ValidationError('duration does not match start/end time difference', 'duration');
     }
   }

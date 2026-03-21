@@ -7,10 +7,7 @@ export class FencerStatsCalculator {
   /**
    * Calcule les statistiques d'un tireur dans une poule (version optimisée)
    */
-  static calculateFencerPoolStats(
-    fencer: Fencer,
-    matches: Match[],
-  ): PoolStats {
+  static calculateFencerPoolStats(fencer: Fencer, matches: Match[]): PoolStats {
     let victories = 0;
     let defeats = 0;
     let touchesScored = 0;
@@ -67,17 +64,14 @@ export class FencerStatsCalculator {
   /**
    * Calcule les statistiques de plusieurs tireurs en lot (optimisé)
    */
-  static calculateStatsBatch(
-    fencers: Fencer[],
-    matches: Match[],
-  ): Map<string, PoolStats> {
+  static calculateStatsBatch(fencers: Fencer[], matches: Match[]): Map<string, PoolStats> {
     const statsMap = new Map<string, PoolStats>();
-    
+
     // Optimisation: traiter tous les tireurs en une seule passe
     fencers.forEach(fencer => {
       statsMap.set(fencer.id, this.calculateFencerPoolStats(fencer, matches));
     });
-    
+
     return statsMap;
   }
 
@@ -89,7 +83,10 @@ export class FencerStatsCalculator {
     matches: Match[]
   ): { questPoints: number; v4: number; v3: number; v2: number; v1: number } {
     let questPoints = 0;
-    let v4 = 0, v3 = 0, v2 = 0, v1 = 0;
+    let v4 = 0,
+      v3 = 0,
+      v2 = 0,
+      v1 = 0;
 
     // Optimisation: pré-filtrer les matchs concernés
     const fencerMatches = matches.filter(match => {
@@ -105,18 +102,26 @@ export class FencerStatsCalculator {
 
       if (!myScore || !oppScore) continue;
 
-      const isVictory = myScore.isVictory || 
-        (oppScore.isAbstention || oppScore.isExclusion || oppScore.isForfait);
+      const isVictory =
+        myScore.isVictory || oppScore.isAbstention || oppScore.isExclusion || oppScore.isForfait;
 
       if (isVictory && myScore.value !== null && oppScore.value !== null) {
         const points = this.calculateQuestPoints(myScore.value, oppScore.value);
         questPoints += points;
-        
+
         switch (points) {
-          case 4: v4++; break;
-          case 3: v3++; break;
-          case 2: v2++; break;
-          case 1: v1++; break;
+          case 4:
+            v4++;
+            break;
+          case 3:
+            v3++;
+            break;
+          case 2:
+            v2++;
+            break;
+          case 1:
+            v1++;
+            break;
         }
       }
     }
@@ -129,9 +134,9 @@ export class FencerStatsCalculator {
    */
   private static calculateQuestPoints(myScore: number, oppScore: number): number {
     const diff = Math.abs(myScore - oppScore);
-    if (diff >= 8) return 4;         // Écart très grand (≥8 points)
-    if (diff >= 6) return 3;         // Écart grand (6-7 points)
-    if (diff >= 4) return 2;         // Écart moyen (4-5 points)
-    return 1;                       // Écart faible (≤3 points)
+    if (diff >= 8) return 4; // Écart très grand (≥8 points)
+    if (diff >= 6) return 3; // Écart grand (6-7 points)
+    if (diff >= 4) return 2; // Écart moyen (4-5 points)
+    return 1; // Écart faible (≤3 points)
   }
 }

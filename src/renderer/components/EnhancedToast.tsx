@@ -42,9 +42,9 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const addToast = (toast: Omit<Toast, 'id'>) => {
     const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
     const newToast: Toast = { ...toast, id };
-    
+
     setToasts(prev => [...prev, newToast]);
-    
+
     // Auto-remove after duration (default 5 seconds)
     if (!toast.persistent && toast.duration !== 0) {
       setTimeout(() => {
@@ -75,15 +75,17 @@ const ToastContainer: React.FC = () => {
   if (toasts.length === 0) return null;
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: '20px',
-      right: '20px',
-      zIndex: 9999,
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '10px'
-    }}>
+    <div
+      style={{
+        position: 'fixed',
+        top: '20px',
+        right: '20px',
+        zIndex: 9999,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '10px',
+      }}
+    >
       {toasts.map(toast => (
         <ToastItem key={toast.id} toast={toast} onRemove={removeToast} />
       ))}
@@ -117,29 +119,29 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove }) => {
       transform: isVisible ? 'translateX(0)' : 'translateX(100%)',
       opacity: isVisible ? 1 : 0,
       transition: 'all 0.3s ease-in-out',
-      backgroundColor: '#fff'
+      backgroundColor: '#fff',
     };
 
     switch (toast.type) {
       case 'success':
         return {
           ...baseStyle,
-          borderLeft: '4px solid #10b981'
+          borderLeft: '4px solid #10b981',
         };
       case 'error':
         return {
           ...baseStyle,
-          borderLeft: '4px solid #ef4444'
+          borderLeft: '4px solid #ef4444',
         };
       case 'warning':
         return {
           ...baseStyle,
-          borderLeft: '4px solid #f59e0b'
+          borderLeft: '4px solid #f59e0b',
         };
       case 'info':
         return {
           ...baseStyle,
-          borderLeft: '4px solid #3b82f6'
+          borderLeft: '4px solid #3b82f6',
         };
       default:
         return baseStyle;
@@ -148,33 +150,40 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove }) => {
 
   const getIcon = (): string => {
     switch (toast.type) {
-      case 'success': return '✅';
-      case 'error': return '❌';
-      case 'warning': return '⚠️';
-      case 'info': return 'ℹ️';
-      default: return '📢';
+      case 'success':
+        return '✅';
+      case 'error':
+        return '❌';
+      case 'warning':
+        return '⚠️';
+      case 'info':
+        return 'ℹ️';
+      default:
+        return '📢';
     }
   };
 
   return (
     <div style={getToastStyle()}>
-      <div style={{ fontSize: '20px', lineHeight: 1 }}>
-        {getIcon()}
-      </div>
+      <div style={{ fontSize: '20px', lineHeight: 1 }}>{getIcon()}</div>
       <div style={{ flex: 1 }}>
-        <div style={{ 
-          fontWeight: 'bold', 
-          marginBottom: toast.message ? '4px' : '0',
-          color: toast.type === 'error' ? '#dc2626' : '#111827'
-        }}>
+        <div
+          style={{
+            fontWeight: 'bold',
+            marginBottom: toast.message ? '4px' : '0',
+            color: toast.type === 'error' ? '#dc2626' : '#111827',
+          }}
+        >
           {toast.title}
         </div>
         {toast.message && (
-          <div style={{ 
-            fontSize: '14px', 
-            color: '#6b7280',
-            lineHeight: 1.4
-          }}>
+          <div
+            style={{
+              fontSize: '14px',
+              color: '#6b7280',
+              lineHeight: 1.4,
+            }}
+          >
             {toast.message}
           </div>
         )}
@@ -189,7 +198,7 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove }) => {
               color: 'white',
               border: 'none',
               borderRadius: '4px',
-              cursor: 'pointer'
+              cursor: 'pointer',
             }}
           >
             {toast.action.label}
@@ -205,7 +214,7 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove }) => {
           cursor: 'pointer',
           color: '#9ca3af',
           padding: '0',
-          lineHeight: 1
+          lineHeight: 1,
         }}
       >
         ×
@@ -222,16 +231,28 @@ export const useToastHelpers = () => {
   const { addToast } = useToast();
 
   return {
-    success: (title: string, message?: string, options?: Partial<Omit<Toast, 'id' | 'type' | 'title' | 'message'>>) => 
-      addToast({ type: 'success', title, message, ...options }),
-    
-    error: (title: string, message?: string, options?: Partial<Omit<Toast, 'id' | 'type' | 'title' | 'message'>>) => 
-      addToast({ type: 'error', title, message, persistent: true, ...options }),
-    
-    warning: (title: string, message?: string, options?: Partial<Omit<Toast, 'id' | 'type' | 'title' | 'message'>>) => 
-      addToast({ type: 'warning', title, message, ...options }),
-    
-    info: (title: string, message?: string, options?: Partial<Omit<Toast, 'id' | 'type' | 'title' | 'message'>>) => 
-      addToast({ type: 'info', title, message, ...options }),
+    success: (
+      title: string,
+      message?: string,
+      options?: Partial<Omit<Toast, 'id' | 'type' | 'title' | 'message'>>
+    ) => addToast({ type: 'success', title, message, ...options }),
+
+    error: (
+      title: string,
+      message?: string,
+      options?: Partial<Omit<Toast, 'id' | 'type' | 'title' | 'message'>>
+    ) => addToast({ type: 'error', title, message, persistent: true, ...options }),
+
+    warning: (
+      title: string,
+      message?: string,
+      options?: Partial<Omit<Toast, 'id' | 'type' | 'title' | 'message'>>
+    ) => addToast({ type: 'warning', title, message, ...options }),
+
+    info: (
+      title: string,
+      message?: string,
+      options?: Partial<Omit<Toast, 'id' | 'type' | 'title' | 'message'>>
+    ) => addToast({ type: 'info', title, message, ...options }),
   };
 };

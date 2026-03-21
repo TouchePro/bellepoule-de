@@ -1,9 +1,23 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
 
 module.exports = {
   mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
+  optimization: {
+    minimize: process.env.NODE_ENV === 'production',
+    minimizer: [
+      new TerserPlugin({
+        terserOptions: {
+          compress: {
+            drop_console: true,
+            drop_debugger: true,
+          },
+        },
+      }),
+    ],
+  },
   entry: './src/renderer/index.tsx',
   target: 'electron-renderer',
   devtool: 'source-map',
@@ -12,7 +26,7 @@ module.exports = {
     filename: 'renderer.js',
   },
   devServer: {
-    port: 3001,
+    port: 8066,
     host: '0.0.0.0', // Accessible depuis l'extérieur
     hot: true,
     open: false,
@@ -20,8 +34,8 @@ module.exports = {
     allowedHosts: 'all', // Permet les connexions depuis n'importe quelle source
     static: {
       directory: path.join(__dirname, 'dist/renderer'),
-      publicPath: '/'
-    }
+      publicPath: '/',
+    },
   },
   resolve: {
     extensions: ['.ts', '.tsx', '.js', '.jsx'],
@@ -31,7 +45,7 @@ module.exports = {
     },
   },
   stats: {
-    warnings: false
+    warnings: false,
   },
   module: {
     rules: [
@@ -52,7 +66,6 @@ module.exports = {
         test: /\.(woff|woff2|eot|ttf|otf)$/i,
         type: 'asset/resource',
       },
-
     ],
   },
   plugins: [
@@ -65,9 +78,14 @@ module.exports = {
         {
           from: 'src/renderer/locales',
           to: 'locales',
-          noErrorOnMissing: true
-        }
-      ]
+          noErrorOnMissing: true,
+        },
+        {
+          from: 'src/remote',
+          to: '../remote',
+          noErrorOnMissing: true,
+        },
+      ],
     }),
   ],
 };

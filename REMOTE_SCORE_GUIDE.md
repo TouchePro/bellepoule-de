@@ -13,27 +13,27 @@ graph TB
         B --> C[RemoteScoreServer]
         C --> D[(Base de données)]
     end
-    
-    subgraph "Serveur Web (Port 3001)"
+
+    subgraph "Serveur Web (Port 8066)"
         C --> E[API REST]
         C --> F[WebSocket Server]
         E --> G[Routes HTTP]
         F --> H[Socket.IO]
     end
-    
+
     subgraph "Interface Arbitre (Web)"
         I[index.html] --> J[app.js]
         J --> K[styles.css]
         K --> L[Socket.IO Client]
         L --> F
     end
-    
+
     subgraph "Tablettes Arbitres"
         M[Navigateur Web] --> I
         N[Navigateur Web] --> I
         O[Navigateur Web] --> I
     end
-    
+
     style A fill:#e1f5fe
     style B fill:#f3e5f5
     style C fill:#e8f5e8
@@ -50,13 +50,15 @@ graph TB
 **Rôle** : Serveur principal qui gère la communication avec les arbitres
 
 **Fonctionnalités** :
-- Serveur web Express (port 3001 par défaut)
+
+- Serveur web Express (port 8066 par défaut - référence à l'Ordre 66)
 - Serveur WebSocket (Socket.IO) pour la communication en temps réel
 - Gestion des sessions de saisie distante
 - Authentification des arbitres par code d'accès
 - Synchronisation des scores avec la base de données
 
 **Endpoints API** :
+
 - `GET /` : Interface web arbitre
 - `GET /api/session` : Informations de session active
 - `POST /api/session/start` : Démarrer une session
@@ -65,6 +67,7 @@ graph TB
 - `POST /api/matches/:matchId/score` : Mettre à jour un score
 
 **Événements WebSocket** :
+
 - `login` : Connexion d'un arbitre
 - `score_update` : Mise à jour d'un score
 - `match_complete` : Finalisation d'un match
@@ -75,11 +78,13 @@ graph TB
 **Rôle** : Interface web pour les arbitres sur tablette
 
 **Fichiers** :
+
 - `index.html` : Structure de la page
 - `styles.css` : Style responsive et moderne
 - `app.js` : Logique JavaScript (Vanilla JS)
 
 **Fonctionnalités** :
+
 - Connexion par code d'accès
 - Affichage du match en cours
 - Saisie des scores
@@ -92,6 +97,7 @@ graph TB
 **Rôle** : Composant React pour gérer la saisie distante depuis l'application principale
 
 **Fonctionnalités** :
+
 - Démarrage/arrêt du serveur distant
 - Configuration des pistes et arbitres
 - Visualisation de l'état des connexions
@@ -111,7 +117,7 @@ graph TB
 ### 2. Connexion des arbitres
 
 1. Sur chaque tablette, ouvrir un navigateur web
-2. Aller à l'adresse : `http://<IP-ordinateur>:3001`
+2. Aller à l'adresse : `http://<IP-ordinateur>:8066`
 3. Entrer le code d'accès fourni par l'organisateur
 4. L'interface affiche le match assigné à la piste
 
@@ -128,7 +134,7 @@ graph TB
 
 ### Configuration réseau
 
-- **Port par défaut** : 3001
+- **Port par défaut** : 8066 (référence à l'Ordre 66)
 - **Protocole** : HTTP + WebSocket
 - **CORS** : Configuré pour accepter toutes les origines (à restreindre en production)
 - **Pas d'authentification** : Basé sur des codes d'accès simples
@@ -158,7 +164,7 @@ graph TB
    ```bash
    npm run build
    npm start
-   # Le serveur démarre automatiquement sur le port 3001
+    # Le serveur démarre automatiquement sur le port 8066
    ```
 
 ### Dépannage
@@ -168,7 +174,7 @@ graph TB
 1. **"Impossible de se connecter"**
    - Vérifier que l'ordinateur et la tablette sont sur le même réseau
    - Vérifier l'adresse IP utilisée
-   - Confirmer que le port 3001 n'est pas bloqué par un firewall
+   - Confirmer que le port 8066 n'est pas bloqué par un firewall
 
 2. **"Code d'accès invalide"**
    - Vérifier que le code a été correctement saisi
@@ -184,8 +190,8 @@ graph TB
 Les logs du serveur sont visibles dans la console de l'application Electron principale :
 
 ```
-Remote score server started on port 3001
-Arbitres peuvent se connecter sur: http://localhost:3001
+Remote score server started on port 8066
+Arbitres peuvent se connecter sur: http://localhost:8066
 Referee John Doe connected with code ABC123
 ```
 

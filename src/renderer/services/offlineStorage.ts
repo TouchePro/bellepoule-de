@@ -44,7 +44,7 @@ export class OfflineStorageManager {
         resolve();
       };
 
-      request.onupgradeneeded = (event) => {
+      request.onupgradeneeded = event => {
         const db = (event.target as IDBOpenDBRequest).result;
 
         // Store for cached competitions
@@ -91,25 +91,19 @@ export class OfflineStorageManager {
   async cacheFencers(fencers: Fencer[]): Promise<void> {
     await this.ensureDB();
     const tx = this.db!.transaction(['fencers'], 'readwrite');
-    await Promise.all(
-      fencers.map(fencer => this.storeInTransaction(tx, 'fencers', fencer))
-    );
+    await Promise.all(fencers.map(fencer => this.storeInTransaction(tx, 'fencers', fencer)));
   }
 
   async cachePools(pools: Pool[]): Promise<void> {
     await this.ensureDB();
     const tx = this.db!.transaction(['pools'], 'readwrite');
-    await Promise.all(
-      pools.map(pool => this.storeInTransaction(tx, 'pools', pool))
-    );
+    await Promise.all(pools.map(pool => this.storeInTransaction(tx, 'pools', pool)));
   }
 
   async cacheMatches(matches: Match[]): Promise<void> {
     await this.ensureDB();
     const tx = this.db!.transaction(['matches'], 'readwrite');
-    await Promise.all(
-      matches.map(match => this.storeInTransaction(tx, 'matches', match))
-    );
+    await Promise.all(matches.map(match => this.storeInTransaction(tx, 'matches', match)));
   }
 
   // Retrieve cached data
@@ -146,7 +140,7 @@ export class OfflineStorageManager {
       ...action,
       id: crypto.randomUUID(),
       timestamp: Date.now(),
-      retryCount: 0
+      retryCount: 0,
     };
 
     await this.store('pendingActions', pendingAction);
@@ -167,7 +161,7 @@ export class OfflineStorageManager {
 
   async incrementRetryCount(id: string): Promise<void> {
     await this.ensureDB();
-    const action = await this.get('pendingActions', id) as PendingAction;
+    const action = (await this.get('pendingActions', id)) as PendingAction;
     if (action) {
       action.retryCount = (action.retryCount || 0) + 1;
       await this.store('pendingActions', action);
@@ -180,7 +174,7 @@ export class OfflineStorageManager {
     const syncConflict: SyncConflict = {
       ...conflict,
       id: crypto.randomUUID(),
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     await this.store('conflicts', syncConflict);
@@ -195,7 +189,7 @@ export class OfflineStorageManager {
 
   async resolveConflict(id: string, resolution: 'local' | 'remote'): Promise<void> {
     await this.ensureDB();
-    const conflict = await this.get('conflicts', id) as SyncConflict;
+    const conflict = (await this.get('conflicts', id)) as SyncConflict;
     if (conflict) {
       conflict.resolved = true;
       await this.store('conflicts', conflict);
@@ -211,13 +205,13 @@ export class OfflineStorageManager {
     await this.ensureDB();
     const [pendingActions, conflicts] = await Promise.all([
       this.getPendingActions(),
-      this.getConflicts()
+      this.getConflicts(),
     ]);
 
     return {
       pendingActions: pendingActions.length,
       conflicts: conflicts.length,
-      lastSync: await this.getLastSyncTimestamp()
+      lastSync: await this.getLastSyncTimestamp(),
     };
   }
 
@@ -225,12 +219,12 @@ export class OfflineStorageManager {
   async clearCache(olderThan: number = 7 * 24 * 60 * 60 * 1000): Promise<void> {
     await this.ensureDB();
     const cutoffTime = Date.now() - olderThan;
-    
+
     const stores = ['competitions', 'fencers', 'pools', 'matches'];
     for (const storeName of stores) {
       const items = await this.getAll(storeName);
-      const oldItems = items.filter((item: any) => 
-        item.updatedAt && new Date(item.updatedAt).getTime() < cutoffTime
+      const oldItems = items.filter(
+        (item: any) => item.updatedAt && new Date(item.updatedAt).getTime() < cutoffTime
       );
 
       const tx = this.db!.transaction([storeName], 'readwrite');
@@ -246,7 +240,7 @@ export class OfflineStorageManager {
     breakdown: Record<string, number>;
   }> {
     await this.ensureDB();
-    
+
     if ('storage' in navigator && 'estimate' in navigator.storage) {
       const estimate = await navigator.storage.estimate();
       const breakdown: Record<string, number> = {};
@@ -260,7 +254,7 @@ export class OfflineStorageManager {
       return {
         used: estimate.usage || 0,
         available: estimate.quota ? estimate.quota - (estimate.usage || 0) : 0,
-        breakdown
+        breakdown,
       };
     }
 
@@ -285,7 +279,11 @@ export class OfflineStorageManager {
     });
   }
 
-  private async storeInTransaction(tx: IDBTransaction, storeName: string, data: any): Promise<void> {
+  private async storeInTransaction(
+    tx: IDBTransaction,
+    storeName: string,
+    data: any
+  ): Promise<void> {
     return new Promise((resolve, reject) => {
       const store = tx.objectStore(storeName);
       const request = store.put(data);
@@ -328,7 +326,11 @@ export class OfflineStorageManager {
     });
   }
 
-  private async deleteInTransaction(tx: IDBTransaction, storeName: string, id: string): Promise<void> {
+  private async deleteInTransaction(
+    tx: IDBTransaction,
+    storeName: string,
+    id: string
+  ): Promise<void> {
     return new Promise((resolve, reject) => {
       const store = tx.objectStore(storeName);
       const request = store.delete(id);

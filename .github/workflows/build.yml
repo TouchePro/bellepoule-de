@@ -73,7 +73,7 @@ jobs:
         run: npm install
 
       - name: Build TypeScript and Webpack
-        run: npm run build
+        run: npm run build:ci
 
       - name: Package with Electron Builder
         run: npx electron-builder --win portable --x64
@@ -87,7 +87,7 @@ jobs:
           path: release/*.exe
           retention-days: 5
 
-  build-macos:
+  build-macos-x64:
     needs: increment-version
     runs-on: macos-latest
 
@@ -105,7 +105,7 @@ jobs:
         run: npm install
 
       - name: Build TypeScript and Webpack
-        run: npm run build
+        run: npm run build:ci
 
       - name: Package with Electron Builder
         run: npx electron-builder --mac --x64
@@ -115,7 +115,39 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: macos-dmg
+          name: macos-x64-dmg
+          path: release/*.dmg
+          retention-days: 5
+
+  build-macos-arm64:
+    needs: increment-version
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build TypeScript and Webpack
+        run: npm run build:ci
+
+      - name: Package with Electron Builder
+        run: npx electron-builder --mac --arm64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-arm64-dmg
           path: release/*.dmg
           retention-days: 5
 
@@ -137,7 +169,7 @@ jobs:
         run: npm install
 
       - name: Build TypeScript and Webpack
-        run: npm run build
+        run: npm run build:ci
 
       - name: Package with Electron Builder
         run: npx electron-builder --linux AppImage --x64
@@ -169,7 +201,7 @@ jobs:
         run: npm install
 
       - name: Build TypeScript and Webpack
-        run: npm run build
+        run: npm run build:ci
 
       - name: Package with Electron Builder
         run: npx electron-builder --linux AppImage --arm64
@@ -184,7 +216,15 @@ jobs:
           retention-days: 5
 
   create-release:
-    needs: [increment-version, build-windows, build-macos, build-linux-x64, build-linux-arm64]
+    needs:
+      [
+        increment-version,
+        build-windows,
+        build-macos-x64,
+        build-macos-arm64,
+        build-linux-x64,
+        build-linux-arm64,
+      ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -217,7 +257,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: latest
-          name: "🚀 BellePoule Modern v${{ needs.increment-version.outputs.version }} Build #${{ needs.increment-version.outputs.build }}"
+          name: '🚀 BellePoule Modern v${{ needs.increment-version.outputs.version }} Build #${{ needs.increment-version.outputs.build }}'
           body: |
             ## BellePoule Modern
 
@@ -229,6 +269,7 @@ jobs:
             |------------|--------------|---------|
             | **Windows** | x64 | `.exe` portable |
             | **macOS** | x64 | `.dmg` |
+            | **macOS** | ARM64 | `.dmg` (Apple Silicon M1/M2/M3) |
             | **Linux** | x64 | `.AppImage` |
             | **Linux** | ARM64 | `.AppImage` (Raspberry Pi, etc.) |
 
@@ -236,7 +277,8 @@ jobs:
             Menu **Aide > À propos** ou **F1**
           files: |
             builds/windows-exe/*.exe
-            builds/macos-dmg/*.dmg
+            builds/macos-x64-dmg/*.dmg
+            builds/macos-arm64-dmg/*.dmg
             builds/linux-x64-appimage/*.AppImage
             builds/linux-arm64-appimage/*.AppImage
           draft: false

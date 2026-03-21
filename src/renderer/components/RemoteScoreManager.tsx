@@ -4,15 +4,21 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useEffect } from 'react';
-import { Competition, Match, Fencer, Pool, MatchStatus } from '../../shared/types';
+import React, { useState, useEffect, useCallback } from 'react';
+import QRCode from 'qrcode';
+import { Competition, Pool } from '../../shared/types';
+import { TableauMatch } from './TableauView';
 import { useToast } from './Toast';
 
 interface RemoteScoreManagerProps {
   competition: Competition;
+  pools: Pool[];
+  tableauMatches?: TableauMatch[];
+  onArenaCountChange?: (count: number) => void;
   onStartRemote: () => void;
   onStopRemote: () => void;
   isRemoteActive?: boolean;
+  initialStripCount?: number;
 }
 
 interface RemoteSession {
@@ -23,171 +29,244 @@ interface RemoteSession {
     currentMatch?: any;
     assignedReferee?: string;
   }>;
-  referees: Array<{
-    id: string;
-    name: string;
-    code: string;
-    isActive: boolean;
-    currentMatch?: string;
-    lastActivity: Date;
-  }>;
-  activeMatches: any[];
   isRunning: boolean;
   startTime?: Date;
 }
 
-const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({ 
-  competition, 
-  onStartRemote, 
-  onStopRemote, 
-  isRemoteActive = false 
+const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
+  competition,
+  pools,
+  tableauMatches,
+  onArenaCountChange,
+  onStartRemote,
+  onStopRemote,
+  isRemoteActive = false,
+  initialStripCount,
 }) => {
   const { showToast } = useToast();
   const [session, setSession] = useState<RemoteSession | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [refereeName, setRefereeName] = useState('');
-  const [stripCount, setStripCount] = useState(4);
-  const [serverUrl, setServerUrl] = useState<string>('http://localhost:3001');
+  const [serverUrl, setServerUrl] = useState<string>('http://localhost:8066');
+  // pendingCount : valeur affichée (modifiée par +/−, non encore appliquée)
+  const [pendingCount, setPendingCount] = useState<number | null>(null);
+  // committedCount : valeur appliquée au serveur ou confirmée par l'utilisateur
+  const [committedCount, setCommittedCount] = useState<number | null>(null);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [activeQR, setActiveQR] = useState<{ url: string; label: string } | null>(null);
+  const [arenaPasswords, setArenaPasswords] = useState<Record<string, string>>({});
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [showPhotos, setShowPhotos] = useState(false);
 
   useEffect(() => {
-    if (isRemoteActive) {
-      checkSessionStatus();
-      fetchServerInfo();
-      const interval = setInterval(checkSessionStatus, 5000);
-      return () => clearInterval(interval);
-    }
-  }, [isRemoteActive]);
+    if (!activeQR) { setQrDataUrl(null); return; }
+    QRCode.toDataURL(activeQR.url, { width: 220, margin: 1 })
+      .then(setQrDataUrl)
+      .catch(() => setQrDataUrl(null));
+  }, [activeQR]);
 
-  const fetchServerInfo = async () => {
-    try {
-      const response = await fetch('http://localhost:3001/api/server-info');
-      if (response.ok) {
-        const info = await response.json();
-        setServerUrl(info.url);
-      }
-    } catch (error) {
-      console.error('Failed to fetch server info:', error);
-    }
-  };
+  // Initialisation : priorité à initialStripCount (persisté depuis parent), puis nombre de poules
+  useEffect(() => {
+    if (pendingCount !== null) return;
+    const initial = initialStripCount ?? (pools.length > 0 ? pools.length : 1);
+    setPendingCount(initial);
+    setCommittedCount(initial);
+  }, [initialStripCount, pools.length]);
 
-  const checkSessionStatus = async () => {
-    try {
-      const response = await fetch('http://localhost:3001/api/session');
-      if (response.ok) {
-        const sessionData = await response.json();
-        setSession(sessionData);
-      }
-    } catch (error) {
-      console.error('Failed to check session status:', error);
-    }
-  };
+  const effectivePending = pendingCount ?? pools.length ?? 1;
+  const effectiveCommitted = committedCount ?? pools.length ?? 1;
+  const hasPendingChanges = effectivePending !== effectiveCommitted;
 
-  const handleStartSession = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('http://localhost:3001/api/session/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          competitionId: competition.id,
-          strips: stripCount
-        })
-      });
-
-      if (response.ok) {
-        const sessionData = await response.json();
-        setSession(sessionData);
-        showToast('Session de saisie distante démarrée', 'success');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!isRemoteActive) return;
+    // Si une session est déjà active (retour sur l'onglet après navigation), on reconnecte
+    // sans redémarrer le serveur pour ne pas perdre l'état des pistes configurées.
+    window.electronAPI.remote.getSession().then(async (result: any) => {
+      if (result.success && result.session) {
+        // Récupérer l'IP réseau réelle (éviter localhost)
+        const info = await window.electronAPI.remote.getServerInfo();
+        if (info.success && info.serverInfo) setServerUrl(info.serverInfo.url);
+        setSession(result.session);
+        const existingCount = result.session.strips.length;
+        setPendingCount(existingCount);
+        setCommittedCount(existingCount);
       } else {
-        const error = await response.json();
-        showToast(`Erreur: ${error.error}`, 'error');
-      }
-    } catch (error) {
-      showToast('Impossible de démarrer la session distante', 'error');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleStopSession = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('http://localhost:3001/api/session/stop', {
-        method: 'POST'
-      });
-
-      if (response.ok) {
-        setSession(null);
-        showToast('Session de saisie distante arrêtée', 'success');
-      }
-    } catch (error) {
-      showToast('Impossible d\'arrêter la session distante', 'error');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleAddReferee = async () => {
-    if (!refereeName.trim()) {
-      showToast('Veuillez entrer un nom d\'arbitre', 'error');
-      return;
-    }
-
-    try {
-      const response = await fetch('http://localhost:3001/api/referees', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: refereeName })
-      });
-
-      if (response.ok) {
-        const referee = await response.json();
-        showToast(`Arbitre ${referee.name} ajouté avec le code ${referee.code}`, 'success');
-        setRefereeName('');
-        checkSessionStatus();
-      }
-    } catch (error) {
-      showToast('Impossible d\'ajouter l\'arbitre', 'error');
-    }
-  };
-
-  const generateMatchesForRemote = () => {
-    const matches: Match[] = [];
-    
-    // Générer les matchs de poules
-    // Note: À adapter selon la structure réelle de la compétition
-    // competition.pools?.forEach(pool => {
-    //   pool.matches.forEach(match => {
-    //     if (match.status !== MatchStatus.FINISHED) {
-    //       matches.push(match);
-    //     }
-    //   });
-    // });
-
-    // Générer les matchs de tableau
-    // competition.tableau?.matches.forEach(match => {
-    //   if (match.status !== MatchStatus.FINISHED) {
-    //     matches.push(match);
-    //   }
-    // });
-
-    return matches;
-  };
-
-  const assignMatchesToStrips = () => {
-    if (!session) return;
-    
-    const matches = generateMatchesForRemote();
-    const availableStrips = session.strips.filter(strip => strip.status === 'available');
-    
-    // Logique simple d'assignation des matchs aux pistes
-    matches.slice(0, availableStrips.length).forEach((match, index) => {
-      if (index < availableStrips.length) {
-        // Assigner le match à la piste
-        console.log(`Assigning match ${match.id} to strip ${availableStrips[index].number}`);
+        startRemoteServer();
       }
     });
+  }, [isRemoteActive]);
+
+  const startRemoteServer = async () => {
+    try {
+      setIsLoading(true);
+      const result = await window.electronAPI.remote.startServer();
+
+      if (result.success && result.serverInfo) {
+        setServerUrl(result.serverInfo.url);
+        await startSession(result.serverInfo.url, effectivePending);
+      } else {
+        showToast(`Erreur: ${result.error || 'Impossible de démarrer le serveur'}`, 'error');
+      }
+    } catch (error) {
+      console.error('Failed to start remote server:', error);
+      showToast('Impossible de démarrer le serveur distant', 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const startSession = async (baseUrl: string, count: number) => {
+    try {
+      // Prepend fencer-order markers so the server can rebuild poolFencersCache correctly.
+      // The FIE match order for 4-fencer pools starts with [1,4] not [1,2], so naively
+      // extracting fencers from match pairs produces the wrong order.
+      const poolMatches = pools.flatMap(pool => [
+        { __poolFencers: true, poolId: pool.id, fencers: pool.fencers || [] },
+        ...(pool.matches || []),
+      ]);
+      const deMatches = (tableauMatches || [])
+        .filter(m => m.winner === null && m.fencerA && m.fencerB)
+        .map(m => ({ ...m, isTableau: true }));
+      const allMatches = [...poolMatches, ...deMatches];
+      console.log(
+        '[RemoteScoreManager] Passing matches to server:',
+        poolMatches.length,
+        'pool +',
+        deMatches.length,
+        'DE'
+      );
+      const result = await window.electronAPI.remote.startSession(
+        competition.id,
+        count,
+        allMatches,
+        showPhotos
+      );
+      if (result.success && result.session) {
+        setSession(result.session);
+        setCommittedCount(count);
+        onArenaCountChange?.(count);
+        showToast('Saisie distante démarrée', 'success');
+      } else {
+        showToast(`Erreur session: ${result.error}`, 'error');
+      }
+    } catch (error) {
+      console.error('Failed to start session:', error);
+    }
+  };
+
+  const handleSaveStripCount = async () => {
+    const newCount = effectivePending;
+    if (newCount < 1 || newCount > 20) return;
+
+    if (session) {
+      // Serveur actif : appliquer via IPC
+      try {
+        const result = await window.electronAPI.remote.updateStripCount(newCount);
+        if (result.success && result.session) {
+          setSession(result.session);
+          setCommittedCount(newCount);
+          onArenaCountChange?.(newCount);
+          showToast('Nombre de pistes mis à jour', 'success');
+        } else {
+          showToast(`Erreur: ${result.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Failed to update strip count:', error);
+      }
+    } else {
+      // Serveur non démarré : persister la préférence
+      setCommittedCount(newCount);
+      onArenaCountChange?.(newCount);
+      showToast('Préférence sauvegardée', 'success');
+    }
+  };
+
+  const handleStopRemote = async () => {
+    setIsLoading(true);
+    try {
+      const result = await window.electronAPI.remote.stopServer();
+
+      if (result.success) {
+        setSession(null);
+        showToast('Saisie distante arrêtée', 'success');
+        onStopRemote();
+      } else {
+        showToast(`Erreur: ${result.error || "Impossible d'arrêter le serveur"}`, 'error');
+      }
+    } catch (error) {
+      console.error('Failed to stop remote server:', error);
+      showToast("Impossible d'arrêter le serveur distant", 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const copyToClipboard = useCallback(async (text: string, index: number) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedIndex(index);
+      setTimeout(() => setCopiedIndex(null), 2000);
+    } catch {
+      // Fallback
+      const el = document.createElement('textarea');
+      el.value = text;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      setCopiedIndex(index);
+      setTimeout(() => setCopiedIndex(null), 2000);
+    }
+  }, []);
+
+  // La grille d'URLs reflète l'état réel du serveur (committedCount) ou la session active
+  const arenaCount = session ? session.strips.length : effectiveCommitted;
+  const kioskUrl = `${serverUrl}/kiosk`;
+  const arenaUrls = Array.from({ length: arenaCount }, (_, i) => ({
+    number: i + 1,
+    refereeUrl: `${serverUrl}/arene${i + 1}/arbitre`,
+    displayUrl: `${serverUrl}/arene${i + 1}`,
+    poolUrl: `${serverUrl}/arene${i + 1}/poule`,
+  }));
+
+  // Contrôles +/− communs aux deux vues (pending uniquement, sans appel IPC direct)
+  const stripCountControls = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      <button
+        className="btn btn-secondary"
+        onClick={() => setPendingCount(Math.max(1, effectivePending - 1))}
+        disabled={effectivePending <= 1 || isLoading}
+        style={{ padding: '0.2rem 0.5rem', fontSize: '1rem' }}
+      >
+        −
+      </button>
+      <strong style={{ minWidth: '1.5rem', textAlign: 'center' }}>{effectivePending}</strong>
+      <button
+        className="btn btn-secondary"
+        onClick={() => setPendingCount(Math.min(20, effectivePending + 1))}
+        disabled={effectivePending >= 20 || isLoading}
+        style={{ padding: '0.2rem 0.5rem', fontSize: '1rem' }}
+      >
+        +
+      </button>
+      {hasPendingChanges && (
+        <span
+          style={{ color: 'var(--warning-color, orange)', fontSize: '0.85rem' }}
+          title="Modifications non sauvegardées"
+        >
+          ●
+        </span>
+      )}
+      <button
+        className="btn btn-primary"
+        onClick={handleSaveStripCount}
+        disabled={!hasPendingChanges || isLoading}
+        style={{ padding: '0.2rem 0.6rem' }}
+      >
+        Sauvegarder
+      </button>
+    </div>
+  );
 
   if (!isRemoteActive) {
     return (
@@ -195,13 +274,22 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         <div className="remote-status inactive">
           <h3>🔴 Saisie distante inactive</h3>
           <p>
-            La saisie distante permet aux arbitres de saisir les scores depuis une tablette.
-            Les arbitres se connectent via un navigateur web sur le réseau local.
+            La saisie distante permet aux arbitres de saisir les scores depuis une tablette. Les
+            arbitres se connectent via un navigateur web sur le réseau local.
           </p>
-          <button 
-            className="btn-primary" 
-            onClick={onStartRemote}
-          >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', margin: '0.75rem 0' }}>
+            <span>Pistes :</span>
+            {stripCountControls}
+          </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.5rem 0', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={showPhotos}
+              onChange={e => setShowPhotos(e.target.checked)}
+            />
+            Afficher les photos des combattants avant le combat
+          </label>
+          <button className="btn-primary" onClick={onStartRemote}>
             ⚡ Démarrer la saisie distante
           </button>
         </div>
@@ -214,137 +302,224 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       <div className="remote-header">
         <div className="remote-status active">
           <h3>🟢 Saisie distante active</h3>
-          <p>Les arbitres peuvent se connecter sur: <strong>{serverUrl}</strong></p>
+          <p>
+            Serveur: <strong>{serverUrl}</strong>
+          </p>
         </div>
-        <button 
-          className="btn-secondary" 
-          onClick={onStopRemote}
-        >
+        <button className="btn-secondary" onClick={handleStopRemote} disabled={isLoading}>
           🛑 Arrêter
         </button>
       </div>
 
-      {!session ? (
-        <div className="session-setup">
-          <h4>Configuration de la session</h4>
-          <div className="setup-form">
-            <div className="form-group">
-              <label>Nombre de pistes:</label>
-              <input 
-                type="number" 
-                min="1" 
-                max="20" 
-                value={stripCount}
-                onChange={(e) => setStripCount(parseInt(e.target.value) || 1)}
-              />
-            </div>
-            <button 
-              className="btn-primary"
-              onClick={handleStartSession}
-              disabled={isLoading}
-            >
-              {isLoading ? 'Démarrage...' : 'Démarrer la session'}
-            </button>
-          </div>
+      <div className="arena-urls-section">
+        <div
+          style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}
+        >
+          <h4 style={{ margin: 0 }}>Pistes ({arenaCount})</h4>
+          {stripCountControls}
         </div>
-      ) : (
-        <div className="session-active">
-          <div className="session-info">
-            <h4>Session active</h4>
-            <p>Démarrée: {session.startTime ? new Date(session.startTime).toLocaleString() : 'Inconnue'}</p>
-            <p>Pistes: {session.strips.length}</p>
-            <p>Arbitres: {session.referees.length}</p>
-          </div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.5rem 0', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={showPhotos}
+            onChange={async e => {
+              setShowPhotos(e.target.checked);
+              await window.electronAPI.remote.updateShowPhotos(e.target.checked);
+            }}
+          />
+          Afficher les photos des combattants avant le combat
+        </label>
 
-          <div className="referee-management">
-            <h5>Ajouter un arbitre</h5>
-            <div className="add-referee">
-              <input 
-                type="text" 
-                placeholder="Nom de l'arbitre"
-                value={refereeName}
-                onChange={(e) => setRefereeName(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleAddReferee()}
-              />
-              <button 
-                className="btn-primary"
-                onClick={handleAddReferee}
-              >
-                Ajouter
-              </button>
-            </div>
-          </div>
-
-          <div className="referees-list">
-            <h5>Arbitres ({session.referees.length})</h5>
-            {session.referees.length === 0 ? (
-              <p className="no-referees">Aucun arbitre ajouté</p>
-            ) : (
-              <div className="referee-grid">
-                {session.referees.map(referee => (
-                  <div key={referee.id} className={`referee-card ${referee.isActive ? 'active' : 'inactive'}`}>
-                    <h6>{referee.name}</h6>
-                    <p><strong>Code:</strong> {referee.code}</p>
-                    <p><strong>Statut:</strong> {referee.isActive ? '🟢 Connecté' : '🔴 Déconnecté'}</p>
-                    {referee.currentMatch && (
-                      <p><strong>Match actuel:</strong> {referee.currentMatch}</p>
-                    )}
-                    <p><small>Dernière activité: {new Date(referee.lastActivity).toLocaleTimeString()}</small></p>
-                  </div>
-                ))}
+        <div className="arena-url-grid">
+          {arenaUrls.map(arena => (
+            <div key={arena.number} className="arena-url-card">
+              <div className="arena-url-header">
+                <strong>Piste {arena.number}</strong>
               </div>
-            )}
-          </div>
-
-          <div className="strips-status">
-            <h5>État des pistes</h5>
-            <div className="strip-grid">
-              {session.strips.map(strip => (
-                <div key={strip.number} className={`strip-card ${strip.status}`}>
-                  <h6>Piste {strip.number}</h6>
-                  <p><strong>Statut:</strong> {
-                    strip.status === 'available' ? '✅ Disponible' :
-                    strip.status === 'occupied' ? '🔄 Occupée' : '🔧 Maintenance'
-                  }</p>
-                  {strip.currentMatch && (
-                    <p><strong>Match:</strong> {strip.currentMatch}</p>
-                  )}
-                  {strip.assignedReferee && (
-                    <p><strong>Arbitre:</strong> {strip.assignedReferee}</p>
-                  )}
-                </div>
-              ))}
+              <div className="arena-url-row">
+                <span className="arena-url-label">Arbitre</span>
+                <code className="arena-url-value">{arena.refereeUrl}</code>
+                <button
+                  className="btn-copy"
+                  onClick={() => copyToClipboard(arena.refereeUrl, arena.number * 10)}
+                  title="Copier l'URL"
+                >
+                  {copiedIndex === arena.number * 10 ? '✓' : '📋'}
+                </button>
+                <button
+                  className="btn-qr"
+                  onClick={() =>
+                    setActiveQR({ url: arena.refereeUrl, label: `Piste ${arena.number} – Arbitre` })
+                  }
+                  title="QR code"
+                >
+                  📱
+                </button>
+              </div>
+              <div className="arena-url-row">
+                <span className="arena-url-label">Affichage</span>
+                <code className="arena-url-value">{arena.displayUrl}</code>
+                <button
+                  className="btn-copy"
+                  onClick={() => copyToClipboard(arena.displayUrl, arena.number * 10 + 1)}
+                  title="Copier l'URL"
+                >
+                  {copiedIndex === arena.number * 10 + 1 ? '✓' : '📋'}
+                </button>
+                <button
+                  className="btn-qr"
+                  onClick={() =>
+                    setActiveQR({
+                      url: arena.displayUrl,
+                      label: `Piste ${arena.number} – Affichage`,
+                    })
+                  }
+                  title="QR code"
+                >
+                  📱
+                </button>
+              </div>
+              <div className="arena-url-row">
+                <span className="arena-url-label">Poule</span>
+                <code className="arena-url-value">{arena.poolUrl}</code>
+                <button
+                  className="btn-copy"
+                  onClick={() => copyToClipboard(arena.poolUrl, arena.number * 10 + 2)}
+                  title="Copier l'URL"
+                >
+                  {copiedIndex === arena.number * 10 + 2 ? '✓' : '📋'}
+                </button>
+                <button
+                  className="btn-qr"
+                  onClick={() =>
+                    setActiveQR({
+                      url: arena.poolUrl,
+                      label: `Piste ${arena.number} – Poule`,
+                    })
+                  }
+                  title="QR code"
+                >
+                  📱
+                </button>
+              </div>
+              <div className="arena-url-row">
+                <span className="arena-url-label">🔒 MDP</span>
+                <input
+                  type="password"
+                  className="arena-password-input"
+                  placeholder="Aucun (accès libre)"
+                  value={arenaPasswords[`arena${arena.number}`] ?? ''}
+                  onChange={e =>
+                    setArenaPasswords(p => ({
+                      ...p,
+                      [`arena${arena.number}`]: e.target.value,
+                    }))
+                  }
+                  onKeyDown={async e => {
+                    if (e.key === 'Enter') {
+                      const pwd = arenaPasswords[`arena${arena.number}`] ?? '';
+                      const result = await window.electronAPI.remote.setArenaPassword(
+                        `arena${arena.number}`,
+                        pwd
+                      );
+                      if (result.success) {
+                        showToast(
+                          pwd
+                            ? `Mot de passe défini pour la piste ${arena.number}`
+                            : `Mot de passe supprimé pour la piste ${arena.number}`,
+                          'success'
+                        );
+                      } else {
+                        showToast(result.error ?? 'Erreur', 'error');
+                      }
+                    }
+                  }}
+                />
+                <button
+                  className="btn-copy"
+                  title="Définir le mot de passe"
+                  onClick={async () => {
+                    const pwd = arenaPasswords[`arena${arena.number}`] ?? '';
+                    const result = await window.electronAPI.remote.setArenaPassword(
+                      `arena${arena.number}`,
+                      pwd
+                    );
+                    if (result.success) {
+                      showToast(
+                        pwd
+                          ? `Mot de passe défini pour la piste ${arena.number}`
+                          : `Mot de passe supprimé pour la piste ${arena.number}`,
+                        'success'
+                      );
+                    } else {
+                      showToast(result.error ?? 'Erreur', 'error');
+                    }
+                  }}
+                >
+                  ✓
+                </button>
+              </div>
             </div>
-          </div>
+          ))}
+        </div>
 
-          <div className="session-actions">
-            <button 
-              className="btn-secondary"
-              onClick={assignMatchesToStrips}
+        <div className="arena-url-card" style={{ marginTop: '1rem' }}>
+          <div className="arena-url-header">
+            <strong>🖥️ Kiosk (affichage public)</strong>
+          </div>
+          <div className="arena-url-row">
+            <span className="arena-url-label">URL</span>
+            <code className="arena-url-value">{kioskUrl}</code>
+            <button
+              className="btn-copy"
+              onClick={() => copyToClipboard(kioskUrl, 999)}
+              title="Copier l'URL"
             >
-              📋 Assigner les matchs
+              {copiedIndex === 999 ? '✓' : '📋'}
             </button>
-            <button 
-              className="btn-danger"
-              onClick={handleStopSession}
-              disabled={isLoading}
+            <button
+              className="btn-qr"
+              onClick={() => setActiveQR({ url: kioskUrl, label: 'Kiosk – Affichage public' })}
+              title="QR code"
             >
-              🛑 Arrêter la session
+              📱
             </button>
           </div>
         </div>
-      )}
+      </div>
 
       <div className="remote-instructions">
         <h5>Instructions pour les arbitres</h5>
         <ol>
           <li>Ouvrir un navigateur web sur la tablette</li>
-          <li>Aller à l'adresse: <strong>{serverUrl}</strong></li>
-          <li>Entrer le code d'accès fourni par l'organisateur</li>
+          <li>
+            Aller à l'URL <strong>Arbitre</strong> correspondant à sa piste
+          </li>
           <li>Saisir les scores du match en cours</li>
           <li>Cliquer sur "Match suivant" pour passer au match suivant</li>
         </ol>
       </div>
+
+      {activeQR && (
+        <div className="qr-popup-overlay" onClick={() => setActiveQR(null)}>
+          <div className="qr-popup" onClick={e => e.stopPropagation()}>
+            <strong>{activeQR.label}</strong>
+            {qrDataUrl ? (
+              <img src={qrDataUrl} alt="QR code" width={220} height={220} />
+            ) : (
+              <div style={{ width: 220, height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                Génération…
+              </div>
+            )}
+            <code style={{ fontSize: '0.75rem', wordBreak: 'break-all', textAlign: 'center' }}>
+              {activeQR.url}
+            </code>
+            <button className="btn btn-secondary" onClick={() => setActiveQR(null)}>
+              Fermer
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

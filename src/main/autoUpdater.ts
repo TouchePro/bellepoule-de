@@ -25,9 +25,11 @@ interface UpdateInfo {
 
 interface AutoUpdaterConfig {
   autoDownload: boolean;
-  autoInstall: boolean;
+  autoInstall: boolean; // Installer automatiquement au redémarrage sans demander
   checkInterval: number; // en heures
   betaChannel: boolean;
+  silent: boolean; // Mode silencieux - aucune interaction utilisateur
+  installOnQuit: boolean; // Installer automatiquement quand l'utilisateur quitte
 }
 
 export class AutoUpdater {
@@ -40,10 +42,12 @@ export class AutoUpdater {
     this.mainWindow = mainWindow;
     this.config = {
       autoDownload: true,
-      autoInstall: false, // Sécurité : ne pas installer automatiquement
+      autoInstall: false,
       checkInterval: 24, // Vérifier chaque jour
       betaChannel: false,
-      ...config
+      silent: false,
+      installOnQuit: false,
+      ...config,
     };
 
     this.setupAutoCheck();
@@ -56,9 +60,12 @@ export class AutoUpdater {
     }, 5000); // 5 secondes après démarrage
 
     // Vérifier périodiquement
-    setInterval(() => {
-      this.checkAndNotify();
-    }, this.config.checkInterval * 60 * 60 * 1000);
+    setInterval(
+      () => {
+        this.checkAndNotify();
+      },
+      this.config.checkInterval * 60 * 60 * 1000
+    );
   }
 
   private async checkAndNotify(): Promise<void> {
@@ -76,26 +83,73 @@ export class AutoUpdater {
     try {
       const currentInfo = this.getCurrentVersion();
       const release = await this.fetchLatestRelease();
-      
+
       if (!release) return null;
 
-      // Extraire le numéro de build depuis le nom de la release
-      const buildMatch = release.name?.match(/Build #(\d+)/);
-      const latestBuild = buildMatch ? parseInt(buildMatch[1]) : 0;
-      
-      const versionMatch = release.name?.match(/v(\d+\.\d+\.\d+)/);
-      const latestVersion = versionMatch ? versionMatch[1] : currentInfo.version;
-      
-      const hasUpdate = latestBuild > currentInfo.build;
+      // Extraire le numéro de build depuis plusieurs sources possibles
+      let latestBuild = 0;
+      const buildPatterns = [/Build #(\d+)/i, /build\.(\d+)/i, /#(\d+)/, /(\d+)(?:-|$)/];
+
+      // Chercher dans le nom de la release
+      for (const pattern of buildPatterns) {
+        const match = release.name?.match(pattern);
+        if (match) {
+          const parsed = parseInt(match[1]);
+          if (parsed > latestBuild) {
+            latestBuild = parsed;
+          }
+        }
+      }
+
+      // Si pas trouvé, chercher dans le tag_name
+      if (latestBuild === 0 && release.tag_name) {
+        for (const pattern of buildPatterns) {
+          const match = release.tag_name.match(pattern);
+          if (match) {
+            const parsed = parseInt(match[1]);
+            if (parsed > latestBuild) {
+              latestBuild = parsed;
+            }
+          }
+        }
+      }
+
+      // Si toujours pas trouvé, chercher dans le body
+      if (latestBuild === 0 && release.body) {
+        for (const pattern of buildPatterns) {
+          const match = release.body.match(pattern);
+          if (match) {
+            const parsed = parseInt(match[1]);
+            if (parsed > latestBuild) {
+              latestBuild = parsed;
+            }
+          }
+        }
+      }
+
+      // Extraire la version depuis le tag_name ou le nom
+      let latestVersion = currentInfo.version;
+      const versionPattern = /v?(\d+\.\d+\.\d+)/;
+      const versionMatch =
+        release.tag_name?.match(versionPattern) || release.name?.match(versionPattern);
+      if (versionMatch) {
+        latestVersion = versionMatch[1];
+      }
+
+      // Comparer les builds - aussi considérer si c'est une prerelease
+      const isNewerBuild = latestBuild > currentInfo.build;
+      const hasUpdate = isNewerBuild || (release.prerelease && this.config.betaChannel);
 
       this.updateInfo = {
         hasUpdate,
         currentBuild: currentInfo.build,
         latestBuild,
         latestVersion,
-        downloadUrl: release.html_url || `https://github.com/klinnex/bellepoule-modern/releases/tag/v${latestVersion}`,
+        downloadUrl:
+          release.html_url ||
+          `https://github.com/klinnex/bellepoule-modern/releases/tag/v${latestVersion}`,
         releaseNotes: release.body || '',
-        assets: release.assets || []
+        assets: release.assets || [],
       };
 
       this.lastCheck = new Date();
@@ -108,14 +162,26 @@ export class AutoUpdater {
 
   private async fetchLatestRelease(): Promise<any> {
     try {
-      // Pour le canal beta, on doit chercher manuellement dans toutes les releases
-      if (this.config.betaChannel) {
-        const releases = await this.fetchReleases();
-        return releases && releases.length > 0 ? releases[0] : null;
+      // Toujours récupérer toutes les releases pour trouver la plus récente (y compris dev/beta)
+      const releases = await this.fetchReleases();
+
+      if (!releases || releases.length === 0) {
+        // Fallback sur /latest si aucune release trouvée
+        return await this.fetchLatestReleaseDirect();
       }
-      
-      // Pour le canal stable, utiliser l'endpoint /latest qui ne retourne que la dernière release non-prerelease
-      return await this.fetchLatestReleaseDirect();
+
+      // Si betaChannel est false, filtrer pour ne garder que les releases non-prerelease
+      // Mais si on est sur une version dev/beta, on veut quand même voir les更新
+      const filteredReleases = this.config.betaChannel
+        ? releases
+        : releases.filter((r: any) => !r.prerelease);
+
+      if (filteredReleases.length > 0) {
+        return filteredReleases[0];
+      }
+
+      // Si aucune release stable, retourner la première release (dev)
+      return releases[0];
     } catch (error) {
       console.error('Failed to fetch release:', error);
       // En cas d'erreur, essayer avec les tags comme fallback
@@ -128,7 +194,7 @@ export class AutoUpdater {
           html_url: `https://github.com/klinnex/bellepoule-modern/releases/tag/${latestTag.name}`,
           body: `Release: ${latestTag.name}`,
           prerelease: false,
-          assets: []
+          assets: [],
         };
       }
       return null;
@@ -136,24 +202,24 @@ export class AutoUpdater {
   }
 
   private async fetchLatestReleaseDirect(): Promise<any> {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       const options = {
         hostname: 'api.github.com',
         path: '/repos/klinnex/bellepoule-modern/releases/latest',
         method: 'GET',
         headers: {
           'User-Agent': 'BellePoule-Modern',
-          'Accept': 'application/vnd.github.v3+json'
-        }
+          Accept: 'application/vnd.github.v3+json',
+        },
       };
 
-      const req = https.request(options, (res) => {
+      const req = https.request(options, res => {
         let data = '';
-        
-        res.on('data', (chunk) => {
+
+        res.on('data', chunk => {
           data += chunk;
         });
-        
+
         res.on('end', () => {
           try {
             if (res.statusCode === 200) {
@@ -173,30 +239,30 @@ export class AutoUpdater {
         req.destroy();
         resolve(null);
       });
-      
+
       req.end();
     });
   }
 
   private async fetchReleases(): Promise<any[]> {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       const options = {
         hostname: 'api.github.com',
         path: '/repos/klinnex/bellepoule-modern/releases',
         method: 'GET',
         headers: {
           'User-Agent': 'BellePoule-Modern',
-          'Accept': 'application/vnd.github.v3+json'
-        }
+          Accept: 'application/vnd.github.v3+json',
+        },
       };
 
-      const req = https.request(options, (res) => {
+      const req = https.request(options, res => {
         let data = '';
-        
-        res.on('data', (chunk) => {
+
+        res.on('data', chunk => {
           data += chunk;
         });
-        
+
         res.on('end', () => {
           try {
             if (res.statusCode === 200) {
@@ -216,7 +282,7 @@ export class AutoUpdater {
         req.destroy();
         resolve([]);
       });
-      
+
       req.end();
     });
   }
@@ -229,17 +295,17 @@ export class AutoUpdater {
         method: 'GET',
         headers: {
           'User-Agent': 'BellePoule-Modern',
-          'Accept': 'application/vnd.github.v3+json'
-        }
+          Accept: 'application/vnd.github.v3+json',
+        },
       };
 
-      const req = https.request(options, (res) => {
+      const req = https.request(options, res => {
         let data = '';
-        
-        res.on('data', (chunk) => {
+
+        res.on('data', chunk => {
           data += chunk;
         });
-        
+
         res.on('end', () => {
           try {
             if (res.statusCode === 200) {
@@ -259,7 +325,7 @@ export class AutoUpdater {
         req.destroy();
         resolve([]);
       });
-      
+
       req.end();
     });
   }
@@ -270,7 +336,7 @@ export class AutoUpdater {
         path.join(app.getAppPath(), 'version.json'),
         path.join(process.cwd(), 'version.json'),
       ];
-      
+
       for (const versionPath of versionPaths) {
         if (fs.existsSync(versionPath)) {
           const content = fs.readFileSync(versionPath, 'utf-8');
@@ -278,9 +344,9 @@ export class AutoUpdater {
         }
       }
     } catch (e) {
-      console.error('Failed to read version:', e);
+      console.error('Failed to read version:', e instanceof Error ? e.message : e);
     }
-    
+
     // Fallback depuis package.json
     try {
       const pkgPath = path.join(app.getAppPath(), 'package.json');
@@ -290,24 +356,48 @@ export class AutoUpdater {
         if (match) {
           return {
             version: match[1],
-            build: parseInt(match[2]) || 0
+            build: parseInt(match[2]) || 0,
+          };
+        }
+      }
+    } catch (e) {
+      console.error('Failed to read package.json:', e instanceof Error ? e.message : e);
+    }
+
+    // Fallback depuis package.json
+    try {
+      const pkgPath = path.join(app.getAppPath(), 'package.json');
+      if (fs.existsSync(pkgPath)) {
+        const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+        const match = pkg.version.match(/(\d+\.\d+\.\d+)(?:-build\.(\d+))?/);
+        if (match) {
+          return {
+            version: match[1],
+            build: parseInt(match[2]) || 0,
           };
         }
       }
     } catch (e) {
       console.error('Failed to read package.json:', e);
     }
-    
+
     return { version: '1.0.0', build: 0 };
   }
 
   private showUpdateNotification(updateInfo: UpdateInfo): void {
     // Notification discrète dans la console
-    console.log(`🚀 Mise à jour disponible: v${updateInfo.latestVersion} (Build #${updateInfo.latestBuild})`);
-    
-    // Notification système si disponible
-    if (this.mainWindow) {
-      this.mainWindow.webContents.send('update:available', updateInfo);
+    console.log(
+      `🚀 Mise à jour disponible: v${updateInfo.latestVersion} (Build #${updateInfo.latestBuild})`
+    );
+
+    // En mode silencieux, ne pas afficher de notification visuelle
+    if (this.config.silent) {
+      console.log('[AutoUpdater] Mode silencieux - pas de notification visuelle');
+    } else {
+      // Notification système si disponible
+      if (this.mainWindow) {
+        this.mainWindow.webContents.send('update:available', updateInfo);
+      }
     }
 
     // Si autoDownload est activé, télécharger automatiquement
@@ -320,25 +410,303 @@ export class AutoUpdater {
     try {
       const platform = this.getPlatform();
       const asset = this.findAssetForPlatform(updateInfo.assets, platform);
-      
-      if (asset) {
-        console.log(`📥 Téléchargement automatique de ${asset.name}...`);
-        // TODO: Implémenter le téléchargement automatique
-        // Pour l'instant, on notifie juste l'utilisateur
+
+      if (!asset) {
+        console.log('No suitable asset found for current platform');
+        return;
+      }
+
+      console.log(
+        `📥 Téléchargement automatique de ${asset.name} (${(asset.size / 1024 / 1024).toFixed(2)} MB)...`
+      );
+
+      // Notifier le début du téléchargement
+      if (this.mainWindow) {
+        this.mainWindow.webContents.send('update:download-started', {
+          version: updateInfo.latestVersion,
+          size: asset.size,
+        });
+      }
+
+      // Télécharger le fichier avec suivi de progression
+      const downloadPath = await this.downloadFile(
+        asset.browser_download_url,
+        asset.name,
+        (downloaded, total) => {
+          const progress = total > 0 ? Math.round((downloaded / total) * 100) : 0;
+          if (this.mainWindow && progress % 10 === 0) {
+            // Envoyer tous les 10%
+            this.mainWindow.webContents.send('update:progress', { progress, downloaded, total });
+          }
+        }
+      );
+
+      if (downloadPath) {
+        console.log(`✅ Mise à jour téléchargée: ${downloadPath}`);
+
+        // Sauvegarder les informations pour l'installation au redémarrage
+        this.saveDownloadedUpdate(downloadPath, updateInfo);
+
+        // Notifier l'utilisateur
+        if (this.mainWindow) {
+          this.mainWindow.webContents.send('update:downloaded', {
+            version: updateInfo.latestVersion,
+            path: downloadPath,
+            installOnQuit: true,
+          });
+        }
+
+        // Sur Windows, proposer d'installer immédiatement (sauf en mode silencieux)
+        if (platform === 'windows' && !this.config.silent) {
+          this.promptForImmediateInstall(updateInfo, downloadPath);
+        } else if (platform === 'windows' && this.config.silent) {
+          console.log(
+            '[AutoUpdater] Mode silencieux - installation différée au prochain redémarrage'
+          );
+        }
       }
     } catch (error) {
-      console.error('Auto download failed:', error);
+      console.error('❌ Auto download failed:', error);
+      if (this.mainWindow) {
+        this.mainWindow.webContents.send('update:error', {
+          message: 'Échec du téléchargement automatique',
+          error: String(error),
+        });
+      }
+    }
+  }
+
+  private promptForImmediateInstall(updateInfo: UpdateInfo, downloadPath: string): void {
+    if (!this.mainWindow) return;
+
+    const response = dialog.showMessageBoxSync(this.mainWindow, {
+      type: 'question',
+      title: 'Mise à jour prête',
+      message: `BellePoule v${updateInfo.latestVersion} a été téléchargé`,
+      detail: "Voulez-vous installer la mise à jour maintenant ? L'application va redémarrer.",
+      buttons: ['Installer maintenant', 'Plus tard'],
+      defaultId: 0,
+      cancelId: 1,
+    });
+
+    if (response === 0) {
+      this.launchInstaller(downloadPath);
+    }
+  }
+
+  private async downloadFile(
+    url: string,
+    filename: string,
+    onProgress?: (downloaded: number, total: number) => void
+  ): Promise<string | null> {
+    const https = require('https');
+    const fs = require('fs');
+    const path = require('path');
+    const os = require('os');
+
+    return new Promise((resolve, reject) => {
+      const tempDir = os.tmpdir();
+      const downloadPath = path.join(tempDir, `bellepoule-update-${filename}`);
+
+      // Supprimer l'ancien fichier s'il existe
+      if (fs.existsSync(downloadPath)) {
+        try {
+          fs.unlinkSync(downloadPath);
+        } catch (e) {
+          console.warn('Could not remove old update file:', e);
+        }
+      }
+
+      const file = fs.createWriteStream(downloadPath);
+      let downloadedBytes = 0;
+      let totalBytes = 0;
+
+      const request = https.get(url, { timeout: 30000 }, (response: any) => {
+        if (response.statusCode === 301 || response.statusCode === 302) {
+          // Redirection - suivre le lien
+          file.close();
+          resolve(this.downloadFile(response.headers.location, filename, onProgress));
+          return;
+        }
+
+        if (response.statusCode !== 200) {
+          file.close();
+          fs.unlinkSync(downloadPath);
+          reject(new Error(`HTTP ${response.statusCode}: ${response.statusMessage}`));
+          return;
+        }
+
+        totalBytes = parseInt(response.headers['content-length'] || '0', 10);
+
+        response.on('data', (chunk: Buffer) => {
+          downloadedBytes += chunk.length;
+          if (onProgress && totalBytes > 0) {
+            onProgress(downloadedBytes, totalBytes);
+          }
+        });
+
+        response.pipe(file);
+
+        file.on('finish', () => {
+          file.close();
+          // Vérifier la taille du fichier téléchargé
+          const stats = fs.statSync(downloadPath);
+          if (totalBytes > 0 && stats.size !== totalBytes) {
+            fs.unlinkSync(downloadPath);
+            reject(new Error('Download incomplete - size mismatch'));
+            return;
+          }
+          console.log(`✅ Download completed: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
+          resolve(downloadPath);
+        });
+      });
+
+      request.on('error', (err: Error) => {
+        file.close();
+        if (fs.existsSync(downloadPath)) {
+          fs.unlinkSync(downloadPath);
+        }
+        reject(err);
+      });
+
+      request.on('timeout', () => {
+        request.destroy();
+        file.close();
+        if (fs.existsSync(downloadPath)) {
+          fs.unlinkSync(downloadPath);
+        }
+        reject(new Error('Download timeout'));
+      });
+
+      request.setTimeout(30000);
+    });
+  }
+
+  private saveDownloadedUpdate(downloadPath: string, updateInfo: UpdateInfo): void {
+    const updateData = {
+      version: updateInfo.latestVersion,
+      path: downloadPath,
+      downloadedAt: new Date().toISOString(),
+    };
+
+    // Sauvegarder dans un fichier de config
+    const configPath = require('path').join(
+      require('os').tmpdir(),
+      'bellepoule-pending-update.json'
+    );
+    require('fs').writeFileSync(configPath, JSON.stringify(updateData, null, 2));
+  }
+
+  /**
+   * Vérifier s'il y a une mise à jour en attente et l'installer
+   */
+  checkAndInstallPendingUpdate(): void {
+    try {
+      const configPath = require('path').join(
+        require('os').tmpdir(),
+        'bellepoule-pending-update.json'
+      );
+
+      if (require('fs').existsSync(configPath)) {
+        const updateData = JSON.parse(require('fs').readFileSync(configPath, 'utf8'));
+
+        if (require('fs').existsSync(updateData.path)) {
+          console.log(`🔄 Installation de la mise à jour ${updateData.version}...`);
+
+          // Lancer l'installateur
+          this.launchInstaller(updateData.path);
+
+          // Supprimer le fichier de config
+          require('fs').unlinkSync(configPath);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to install pending update:', error);
+    }
+  }
+
+  private launchInstaller(installerPath: string): void {
+    const { spawn } = require('child_process');
+    const platform = process.platform;
+
+    try {
+      if (platform === 'win32') {
+        // Vérifier que c'est bien un fichier .exe valide
+        if (!installerPath.endsWith('.exe')) {
+          console.error('Invalid Windows installer format');
+          return;
+        }
+
+        // Windows: lancer le .exe avec options optimisées
+        // /VERYSILENT = aucune interface utilisateur
+        // /NORESTART = ne pas redémarrer automatiquement
+        // /CLOSEAPPLICATIONS = fermer l'app en cours
+        // /MERGETASKS = conserver les paramètres existants
+        const installer = spawn(
+          installerPath,
+          ['/VERYSILENT', '/NORESTART', '/CLOSEAPPLICATIONS', '/MERGETASKS=!desktopicon'],
+          {
+            detached: true,
+            stdio: 'ignore',
+            windowsHide: true, // Cacher la fenêtre console
+          }
+        );
+
+        // Gestion des erreurs du processus
+        installer.on('error', (err: Error) => {
+          console.error('Installer launch error:', err);
+          dialog.showErrorBox(
+            "Erreur d'installation",
+            "Impossible de lancer l'installateur. Veuillez installer manuellement."
+          );
+        });
+
+        // Attendre que l'installateur démarre avant de quitter
+        installer.on('spawn', () => {
+          console.log('✅ Installateur Windows lancé');
+          // Attendre 3 secondes pour que l'installateur prenne le relais
+          setTimeout(() => {
+            app.quit();
+          }, 3000);
+        });
+
+        return; // Quitter la fonction ici pour éviter le double timeout
+      } else if (platform === 'darwin') {
+        // macOS: ouvrir le .dmg
+        spawn('open', [installerPath], {
+          detached: true,
+          stdio: 'ignore',
+        });
+      } else if (platform === 'linux') {
+        // Linux: rendre exécutable et lancer
+        require('fs').chmodSync(installerPath, '755');
+        spawn(installerPath, [], {
+          detached: true,
+          stdio: 'ignore',
+        });
+      }
+
+      // Quitter l'application pour permettre l'installation (macOS/Linux uniquement)
+      setTimeout(() => {
+        app.quit();
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to launch installer:', error);
+      dialog.showErrorBox(
+        "Erreur d'installation",
+        "Une erreur est survenue lors du lancement de l'installateur."
+      );
     }
   }
 
   private getPlatform(): string {
     const platform = process.platform;
     const arch = process.arch;
-    
+
     if (platform === 'win32') return 'windows';
     if (platform === 'darwin') return 'macos';
     if (platform === 'linux') return 'linux';
-    
+
     return 'unknown';
   }
 
@@ -346,13 +714,11 @@ export class AutoUpdater {
     const patterns = {
       windows: ['.exe'],
       macos: ['.dmg'],
-      linux: ['.AppImage', '.deb', '.rpm']
+      linux: ['.AppImage', '.deb', '.rpm'],
     };
 
     const extensions = patterns[platform as keyof typeof patterns] || [];
-    return assets.find((asset: any) => 
-      extensions.some(ext => asset.name.endsWith(ext))
-    );
+    return assets.find((asset: any) => extensions.some(ext => asset.name.endsWith(ext)));
   }
 
   async showUpdateDialog(): Promise<void> {
@@ -363,7 +729,8 @@ export class AutoUpdater {
           type: 'info',
           title: 'Mises à jour',
           message: 'Aucune release disponible',
-          detail: 'Aucune version publiée n\'est disponible pour le moment. Vous utilisez déjà la dernière version de développement.',
+          detail:
+            "Aucune version publiée n'est disponible pour le moment. Vous utilisez déjà la dernière version de développement.",
           buttons: ['OK'],
         });
         return;
@@ -391,11 +758,7 @@ export class AutoUpdater {
       title: '🚀 Mise à jour disponible',
       message: `Une nouvelle version est disponible !`,
       detail: `Version actuelle : Build #${this.updateInfo.currentBuild}\nNouvelle version : Build #${this.updateInfo.latestBuild} (v${this.updateInfo.latestVersion})\n\n${this.updateInfo.releaseNotes ? '\nNotes de version:\n' + this.updateInfo.releaseNotes.substring(0, 200) + '...' : ''}`,
-      buttons: [
-        '📥 Télécharger maintenant',
-        '🔗 Voir les releases',
-        '✖️ Plus tard'
-      ],
+      buttons: ['📥 Télécharger maintenant', '🔗 Voir les releases', '✖️ Plus tard'],
       defaultId: 0,
       cancelId: 2,
     });
@@ -417,7 +780,7 @@ export class AutoUpdater {
     try {
       const platform = this.getPlatform();
       const asset = this.findAssetForPlatform(this.updateInfo!.assets, platform);
-      
+
       // Construire l'URL direct vers la release spécifique
       let downloadUrl: string;
       if (this.updateInfo!.latestVersion && this.updateInfo!.latestBuild) {
@@ -434,7 +797,8 @@ export class AutoUpdater {
           type: 'info',
           title: '📥 Téléchargement',
           message: 'Redirection vers la page de téléchargement...',
-          detail: 'Téléchargez la version correspondant à votre système et remplacez l\'application actuelle.',
+          detail:
+            "Téléchargez la version correspondant à votre système et remplacez l'application actuelle.",
           buttons: ['OK'],
         });
       } else {
@@ -457,6 +821,66 @@ export class AutoUpdater {
 
   isUpdateAvailable(): boolean {
     return this.updateInfo?.hasUpdate || false;
+  }
+
+  /**
+   * Activer/désactiver le mode silencieux
+   * En mode silencieux, les mises à jour se font automatiquement sans interaction utilisateur
+   */
+  setSilentMode(enabled: boolean): void {
+    this.config.silent = enabled;
+    this.config.autoDownload = enabled;
+    this.config.installOnQuit = enabled;
+    console.log(`[AutoUpdater] Mode silencieux ${enabled ? 'activé' : 'désactivé'}`);
+  }
+
+  isSilentMode(): boolean {
+    return this.config.silent;
+  }
+
+  /**
+   * Vérifier s'il y a une mise à jour téléchargée en attente d'installation
+   */
+  hasPendingUpdate(): boolean {
+    try {
+      const configPath = require('path').join(
+        require('os').tmpdir(),
+        'bellepoule-pending-update.json'
+      );
+
+      if (require('fs').existsSync(configPath)) {
+        const updateData = JSON.parse(require('fs').readFileSync(configPath, 'utf8'));
+        return require('fs').existsSync(updateData.path);
+      }
+    } catch (error) {
+      console.error('Failed to check pending update:', error);
+    }
+    return false;
+  }
+
+  /**
+   * Récupérer les informations de la mise à jour en attente
+   */
+  getPendingUpdateInfo(): { version: string; path: string } | null {
+    try {
+      const configPath = require('path').join(
+        require('os').tmpdir(),
+        'bellepoule-pending-update.json'
+      );
+
+      if (require('fs').existsSync(configPath)) {
+        const updateData = JSON.parse(require('fs').readFileSync(configPath, 'utf8'));
+        if (require('fs').existsSync(updateData.path)) {
+          return {
+            version: updateData.version,
+            path: updateData.path,
+          };
+        }
+      }
+    } catch (error) {
+      console.error('Failed to get pending update info:', error);
+    }
+    return null;
   }
 }
 

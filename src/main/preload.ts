@@ -5,7 +5,7 @@
  */
 
 import { contextBridge, ipcRenderer } from 'electron';
-import type { 
+import type {
   ElectronAPI,
   CompetitionCreateData,
   CompetitionUpdateData,
@@ -19,7 +19,10 @@ import type {
   FileOpenResult,
   FileSaveResult,
   VersionInfo,
-  Pool
+  Pool,
+  MatchTouchData,
+  MatchCardData,
+  MatchTimingData,
 } from '../shared/types/preload';
 
 // Input validation functions
@@ -42,8 +45,9 @@ const validateFencerData = (fencer: FencerCreateData): void => {
   if (!fencer.firstName || typeof fencer.firstName !== 'string') {
     throw new Error('Fencer first name is required and must be a string');
   }
-  if (typeof fencer.ref !== 'number' || fencer.ref < 0) {
-    throw new Error('Fencer reference number is required and must be positive');
+  // ref est optionnel - il sera généré automatiquement par la base de données
+  if (fencer.ref !== undefined && (typeof fencer.ref !== 'number' || fencer.ref < 0)) {
+    throw new Error('Fencer reference number must be positive');
   }
 };
 
@@ -85,7 +89,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }
       return ipcRenderer.invoke('db:deleteCompetition', id);
     },
-    
+
     // Fencers
     addFencer: (competitionId: string, fencer: FencerCreateData) => {
       if (!competitionId || typeof competitionId !== 'string') {
@@ -118,10 +122,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }
       return ipcRenderer.invoke('db:deleteFencer', id);
     },
-    deleteAllFencers: () => {
-      return ipcRenderer.invoke('db:deleteAllFencers');
+    deleteAllFencers: (competitionId: string) => {
+      if (!competitionId || typeof competitionId !== 'string') {
+        throw new Error('Competition ID is required and must be a string');
+      }
+      return ipcRenderer.invoke('db:deleteAllFencers', competitionId);
     },
-    
+
     // Matches
     createMatch: (match: MatchCreateData, poolId?: string) => {
       validateMatchData(match);
@@ -145,7 +152,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }
       return ipcRenderer.invoke('db:updateMatch', id, updates);
     },
-    
+
     // Pools
     createPool: (phaseId: string, number: number) => {
       if (!phaseId || typeof phaseId !== 'string') {
@@ -180,7 +187,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }
       return ipcRenderer.invoke('db:updatePool', pool);
     },
-    
+
     // Session State
     saveSessionState: (competitionId: string, state: SessionState) => {
       if (!competitionId || typeof competitionId !== 'string') {
@@ -199,6 +206,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
         throw new Error('Competition ID is required and must be a string');
       }
       return ipcRenderer.invoke('db:clearSessionState', competitionId);
+    },
+
+    // Statistiques combattants
+    saveTouch: (touch: MatchTouchData) => ipcRenderer.invoke('db:saveTouch', touch),
+    saveCard: (card: MatchCardData) => ipcRenderer.invoke('db:saveCard', card),
+    updateMatchTiming: (timing: MatchTimingData) =>
+      ipcRenderer.invoke('db:updateMatchTiming', timing),
+    getFencerHistory: (fencerId: string) => {
+      if (!fencerId || typeof fencerId !== 'string') {
+        throw new Error('Fencer ID is required and must be a string');
+      }
+      return ipcRenderer.invoke('db:getFencerHistory', fencerId);
     },
   },
 
@@ -225,6 +244,42 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }
       return ipcRenderer.invoke('file:writeContent', filepath, content);
     },
+    exportPhotos: (competitionId: string, filepath: string) => {
+      if (!competitionId || typeof competitionId !== 'string') {
+        throw new Error('Competition ID is required and must be a string');
+      }
+      if (!filepath || typeof filepath !== 'string') {
+        throw new Error('Filepath is required and must be a string');
+      }
+      return ipcRenderer.invoke('file:exportPhotos', competitionId, filepath);
+    },
+    importPhotos: (competitionId: string, filepath: string) => {
+      if (!competitionId || typeof competitionId !== 'string') {
+        throw new Error('Competition ID is required and must be a string');
+      }
+      if (!filepath || typeof filepath !== 'string') {
+        throw new Error('Filepath is required and must be a string');
+      }
+      return ipcRenderer.invoke('file:importPhotos', competitionId, filepath);
+    },
+    exportFencersArchive: (competitionId: string, filepath: string) => {
+      if (!competitionId || typeof competitionId !== 'string') {
+        throw new Error('Competition ID is required and must be a string');
+      }
+      if (!filepath || typeof filepath !== 'string') {
+        throw new Error('Filepath is required and must be a string');
+      }
+      return ipcRenderer.invoke('file:exportFencersArchive', competitionId, filepath);
+    },
+    importFencersArchive: (competitionId: string, filepath: string) => {
+      if (!competitionId || typeof competitionId !== 'string') {
+        throw new Error('Competition ID is required and must be a string');
+      }
+      if (!filepath || typeof filepath !== 'string') {
+        throw new Error('Filepath is required and must be a string');
+      }
+      return ipcRenderer.invoke('file:importFencersArchive', competitionId, filepath);
+    },
   },
 
   // Dialog operations with validation
@@ -244,40 +299,74 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 
   // Menu event listeners
-  onMenuNewCompetition: (callback: () => void) => 
-    ipcRenderer.on('menu:new-competition', callback),
-  onMenuSave: (callback: () => void) => 
-    ipcRenderer.on('menu:save', callback),
-  onMenuCompetitionProperties: (callback: () => void) => 
+  onMenuNewCompetition: (callback: () => void) => ipcRenderer.on('menu:new-competition', callback),
+  onMenuSave: (callback: () => void) => ipcRenderer.on('menu:save', callback),
+  onMenuCompetitionProperties: (callback: () => void) =>
     ipcRenderer.on('menu:competition-properties', callback),
-  onMenuAddFencer: (callback: () => void) => 
-    ipcRenderer.on('menu:add-fencer', callback),
-  onMenuAddReferee: (callback: () => void) => 
-    ipcRenderer.on('menu:add-referee', callback),
-  onMenuNextPhase: (callback: () => void) => 
-    ipcRenderer.on('menu:next-phase', callback),
-  onMenuExport: (callback: (format: string) => void) => 
+  onMenuAddFencer: (callback: () => void) => ipcRenderer.on('menu:add-fencer', callback),
+  onMenuAddReferee: (callback: () => void) => ipcRenderer.on('menu:add-referee', callback),
+  onMenuNextPhase: (callback: () => void) => ipcRenderer.on('menu:next-phase', callback),
+  onMenuExport: (callback: (format: string) => void) =>
     ipcRenderer.on('menu:export', (_, format) => callback(format)),
-  onMenuImport: (callback: (format: string, filepath: string, content: string) => void) => 
-    ipcRenderer.on('menu:import', (_, format, filepath, content) => callback(format, filepath, content)),
-  onMenuReportIssue: (callback: () => void) => 
-    ipcRenderer.on('menu:report-issue', callback),
-  onFileOpened: (callback: (filepath: string) => void) => 
+  onMenuImport: (callback: (format: string, filepath: string, content: string) => void) =>
+    ipcRenderer.on('menu:import', (_, format, filepath, content) =>
+      callback(format, filepath, content)
+    ),
+  onMenuReportIssue: (callback: () => void) => ipcRenderer.on('menu:report-issue', callback),
+  onFileOpened: (callback: (filepath: string) => void) =>
     ipcRenderer.on('file:opened', (_, filepath) => callback(filepath)),
-  onFileSaved: (callback: (filepath: string) => void) => 
+  onFileSaved: (callback: (filepath: string) => void) =>
     ipcRenderer.on('file:saved', (_, filepath) => callback(filepath)),
-  onAutosaveCompleted: (callback: () => void) => 
-    ipcRenderer.on('autosave:completed', callback),
-  onAutosaveFailed: (callback: () => void) => 
-    ipcRenderer.on('autosave:failed', callback),
+  onAutosaveCompleted: (callback: () => void) => ipcRenderer.on('autosave:completed', callback),
+  onAutosaveFailed: (callback: () => void) => ipcRenderer.on('autosave:failed', callback),
 
   // Utility functions
   openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url),
   getVersionInfo: () => ipcRenderer.invoke('app:getVersionInfo'),
 
+  // Updater functions
+  updater: {
+    check: () => ipcRenderer.invoke('updater:check'),
+    setSilentMode: (enabled: boolean) => {
+      if (typeof enabled !== 'boolean') {
+        throw new Error('Enabled must be a boolean');
+      }
+      return ipcRenderer.invoke('updater:setSilentMode', enabled);
+    },
+    getSilentMode: () => ipcRenderer.invoke('updater:getSilentMode'),
+    hasPendingUpdate: () => ipcRenderer.invoke('updater:hasPendingUpdate'),
+    getPendingUpdateInfo: () => ipcRenderer.invoke('updater:getPendingUpdateInfo'),
+    installPendingUpdate: () => ipcRenderer.invoke('updater:installPendingUpdate'),
+  },
+
+  // Remote score server functions
+  remote: {
+    startServer: () => ipcRenderer.invoke('remote:startServer'),
+    stopServer: () => ipcRenderer.invoke('remote:stopServer'),
+    getServerInfo: () => ipcRenderer.invoke('remote:getServerInfo'),
+    startSession: (competitionId: string, strips: number, matches?: any[], showPhotos?: boolean) =>
+      ipcRenderer.invoke('remote:startSession', competitionId, strips, matches, showPhotos),
+    stopSession: () => ipcRenderer.invoke('remote:stopSession'),
+    getSession: () => ipcRenderer.invoke('remote:getSession'),
+    getArenas: () => ipcRenderer.invoke('remote:getArenas'),
+    updateStripCount: (count: number) => ipcRenderer.invoke('remote:updateStripCount', count),
+    updateShowPhotos: (value: boolean) => ipcRenderer.invoke('remote:updateShowPhotos', value),
+    updateMatchArena: (matchId: string, fromArena: number | null, toArena: number | null) =>
+      ipcRenderer.invoke('remote:updateMatchArena', matchId, fromArena, toArena),
+    setArenaPassword: (arenaId: string, password: string) =>
+      ipcRenderer.invoke('remote:setArenaPassword', arenaId, password),
+  },
+
+  // Remote event listeners (for real-time updates)
+  onRemoteArenaUpdate: (callback: (data: any) => void) => {
+    ipcRenderer.on('arena:update', (_, data) => callback(data));
+  },
+  onRemoteMatchFinished: (callback: (data: any) => void) => {
+    ipcRenderer.on('match:finished', (_, data) => callback(data));
+  },
+
   // Remove listeners
-  removeAllListeners: (channel: string) => 
-    ipcRenderer.removeAllListeners(channel),
+  removeAllListeners: (channel: string) => ipcRenderer.removeAllListeners(channel),
 });
 
 // Type declarations for the renderer
@@ -286,4 +375,3 @@ declare global {
     electronAPI: ElectronAPI;
   }
 }
-

@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Accès protégé - BellePoule</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        min-height: 100vh;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .login-card {
+        background: rgba(0, 0, 0, 0.35);
+        border-radius: 16px;
+        padding: 2.5rem 2rem;
+        width: 100%;
+        max-width: 380px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        text-align: center;
+      }
+
+      .lock-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+      }
+
+      h1 {
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin-bottom: 0.4rem;
+      }
+
+      .subtitle {
+        font-size: 0.9rem;
+        opacity: 0.75;
+        margin-bottom: 1.8rem;
+      }
+
+      label {
+        display: block;
+        text-align: left;
+        font-size: 0.85rem;
+        font-weight: 600;
+        opacity: 0.9;
+        margin-bottom: 0.4rem;
+      }
+
+      input[type="password"] {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid rgba(255, 255, 255, 0.25);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+        font-size: 1rem;
+        outline: none;
+        transition: border-color 0.2s;
+        margin-bottom: 1.2rem;
+      }
+
+      input[type="password"]:focus {
+        border-color: rgba(255, 255, 255, 0.6);
+      }
+
+      input[type="password"]::placeholder {
+        opacity: 0.5;
+      }
+
+      button {
+        width: 100%;
+        padding: 0.85rem;
+        border: none;
+        border-radius: 8px;
+        background: #4caf50;
+        color: #fff;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background 0.2s, transform 0.1s;
+      }
+
+      button:hover {
+        background: #43a047;
+      }
+
+      button:active {
+        transform: scale(0.98);
+      }
+
+      button:disabled {
+        background: #555;
+        cursor: not-allowed;
+      }
+
+      .error-msg {
+        display: none;
+        margin-top: 1rem;
+        padding: 0.65rem 1rem;
+        background: rgba(244, 67, 54, 0.25);
+        border: 1px solid rgba(244, 67, 54, 0.5);
+        border-radius: 8px;
+        font-size: 0.9rem;
+        color: #ff8a80;
+      }
+
+      .error-msg.visible {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-card">
+      <div class="lock-icon">🔒</div>
+      <h1 id="title">Accès protégé</h1>
+      <p class="subtitle" id="subtitle">Piste —</p>
+      <label for="password">Mot de passe</label>
+      <input type="password" id="password" placeholder="Saisir le mot de passe" autofocus />
+      <button id="submit-btn" onclick="doLogin()">Valider</button>
+      <div class="error-msg" id="error-msg">Mot de passe incorrect</div>
+    </div>
+
+    <script>
+      (function () {
+        const params = new URLSearchParams(window.location.search);
+        const arenaParam = params.get('arena') || '';
+        const returnPath = params.get('return') || '/';
+
+        // Extraire le numéro de piste pour l'affichage
+        const arenaNum = arenaParam.replace(/^arena/, '');
+        if (arenaNum) {
+          document.getElementById('subtitle').textContent = 'Piste ' + arenaNum;
+          document.title = 'Piste ' + arenaNum + ' – Accès protégé';
+        }
+
+        // Permettre validation par Entrée
+        document.getElementById('password').addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') doLogin();
+        });
+
+        window.doLogin = async function () {
+          const pwd = document.getElementById('password').value;
+          const btn = document.getElementById('submit-btn');
+          const errEl = document.getElementById('error-msg');
+
+          if (!pwd) return;
+
+          btn.disabled = true;
+          errEl.classList.remove('visible');
+
+          try {
+            const res = await fetch('/api/auth/login/' + encodeURIComponent(arenaParam), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ password: pwd }),
+            });
+            const data = await res.json();
+            if (data.success) {
+              window.location.href = returnPath;
+            } else {
+              errEl.textContent = data.error || 'Mot de passe incorrect';
+              errEl.classList.add('visible');
+              document.getElementById('password').value = '';
+              document.getElementById('password').focus();
+            }
+          } catch (e) {
+            errEl.textContent = 'Erreur de connexion au serveur';
+            errEl.classList.add('visible');
+          } finally {
+            btn.disabled = false;
+          }
+        };
+      })();
+    </script>
+  </body>
+</html>

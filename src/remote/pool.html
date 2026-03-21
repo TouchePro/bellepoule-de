@@ -1,0 +1,1020 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Saisie Poule – BellePoule</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #1a1a2e;
+        min-height: 100vh;
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* ── Header ── */
+      .header {
+        background: rgba(0, 0, 0, 0.5);
+        padding: 0.75rem 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        flex-shrink: 0;
+      }
+
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .header-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #e2e8f0;
+      }
+
+      .header-badge {
+        font-size: 0.75rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: 1rem;
+        background: rgba(99, 102, 241, 0.25);
+        color: #a5b4fc;
+        border: 1px solid rgba(99, 102, 241, 0.4);
+        font-weight: 600;
+      }
+
+      .connection-badge {
+        font-size: 0.8rem;
+        padding: 0.3rem 0.7rem;
+        border-radius: 1rem;
+        background: rgba(239, 68, 68, 0.2);
+        color: #fca5a5;
+        border: 1px solid rgba(239, 68, 68, 0.4);
+        transition: all 0.3s;
+      }
+
+      .connection-badge.connected {
+        background: rgba(34, 197, 94, 0.2);
+        color: #86efac;
+        border-color: rgba(34, 197, 94, 0.4);
+      }
+
+      /* ── Tabs ── */
+      .tabs {
+        display: flex;
+        gap: 0;
+        padding: 0.75rem 1.5rem 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        flex-shrink: 0;
+        background: rgba(0, 0, 0, 0.3);
+      }
+
+      .tab-btn {
+        padding: 0.55rem 1.2rem;
+        background: none;
+        border: none;
+        color: #64748b;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+        transition: color 0.2s, border-color 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+      }
+
+      .tab-btn:hover {
+        color: #94a3b8;
+      }
+
+      .tab-btn.active {
+        color: #e2e8f0;
+        border-bottom-color: #3b82f6;
+      }
+
+      /* ── Pool container ── */
+      .pool-container {
+        flex: 1;
+        padding: 1.2rem 1.5rem;
+        overflow: auto;
+      }
+
+      /* ── Pool grid ── */
+      .pool-table-wrapper {
+        overflow-x: auto;
+        border-radius: 0.5rem;
+      }
+
+      table.pool-grid {
+        border-collapse: collapse;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 0.5rem;
+        overflow: hidden;
+      }
+
+      table.pool-grid th,
+      table.pool-grid td {
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        text-align: center;
+        font-size: 0.85rem;
+        padding: 0;
+      }
+
+      /* Corner */
+      table.pool-grid .corner-cell {
+        background: rgba(0, 0, 0, 0.25);
+        min-width: 100px;
+        width: 100px;
+        padding: 0.5rem;
+      }
+
+      /* Column number headers */
+      table.pool-grid .col-num-header {
+        background: rgba(30, 60, 120, 0.45);
+        width: 52px;
+        min-width: 52px;
+        padding: 0.5rem 0;
+        font-weight: 700;
+        color: #94a3b8;
+        font-size: 0.8rem;
+      }
+
+      /* Row fencer headers */
+      table.pool-grid .fencer-header {
+        background: rgba(30, 60, 120, 0.3);
+        padding: 0.5rem 0.75rem;
+        white-space: nowrap;
+        text-align: left;
+        min-width: 100px;
+        max-width: 180px;
+      }
+
+      .fencer-rank {
+        font-weight: 700;
+        color: #94a3b8;
+        margin-right: 0.3rem;
+        font-size: 0.8rem;
+      }
+
+      .fencer-lastname {
+        font-weight: 700;
+        color: #e2e8f0;
+        font-size: 0.85rem;
+      }
+
+      .fencer-firstname {
+        color: #94a3b8;
+        font-size: 0.78rem;
+        margin-left: 0.25rem;
+      }
+
+      /* Score cells */
+      table.pool-grid .score-cell {
+        width: 52px;
+        min-width: 52px;
+        height: 44px;
+        cursor: pointer;
+        transition: background 0.15s, transform 0.1s;
+        font-weight: 700;
+        font-size: 0.88rem;
+      }
+
+      table.pool-grid .score-cell:hover {
+        filter: brightness(1.3);
+        transform: scale(1.05);
+        z-index: 1;
+        position: relative;
+      }
+
+      /* Diagonal */
+      table.pool-grid .score-cell.diagonal {
+        background: rgba(15, 30, 60, 0.85);
+        color: transparent;
+        cursor: default;
+      }
+
+      table.pool-grid .score-cell.diagonal:hover {
+        filter: none;
+        transform: none;
+      }
+
+      /* Not played */
+      table.pool-grid .score-cell.not-played {
+        background: rgba(30, 41, 59, 0.5);
+        color: #475569;
+      }
+
+      table.pool-grid .score-cell.not-played::after {
+        content: '–';
+      }
+
+      table.pool-grid .score-cell.not-played:hover {
+        background: rgba(59, 130, 246, 0.25);
+        color: #93c5fd;
+      }
+
+      table.pool-grid .score-cell.not-played:hover::after {
+        content: '+';
+        font-size: 1.1rem;
+      }
+
+      /* Victory */
+      table.pool-grid .score-cell.victory {
+        background: rgba(21, 128, 61, 0.5);
+        color: #bbf7d0;
+      }
+
+      /* Defeat */
+      table.pool-grid .score-cell.defeat {
+        background: rgba(185, 28, 28, 0.4);
+        color: #fecaca;
+      }
+
+      /* Special (abandon / forfait / exclusion) */
+      table.pool-grid .score-cell.special {
+        background: rgba(100, 100, 100, 0.35);
+        color: #94a3b8;
+        font-size: 0.75rem;
+      }
+
+      /* ── Matches list view ── */
+      .matches-view {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .match-item {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 0.6rem;
+        padding: 0.75rem 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s;
+      }
+
+      .match-item:hover {
+        background: rgba(59, 130, 246, 0.15);
+        border-color: rgba(59, 130, 246, 0.4);
+      }
+
+      .match-item.finished {
+        opacity: 0.65;
+        cursor: default;
+      }
+
+      .match-item.finished:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.1);
+      }
+
+      .match-num {
+        font-size: 0.75rem;
+        color: #64748b;
+        font-weight: 600;
+        min-width: 28px;
+        text-align: center;
+      }
+
+      .match-fencers {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+      }
+
+      .match-fencer-name {
+        flex: 1;
+        font-weight: 600;
+        color: #e2e8f0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .match-fencer-name.winner {
+        color: #86efac;
+      }
+
+      .match-score-sep {
+        color: #475569;
+        font-weight: 700;
+        font-size: 0.85rem;
+      }
+
+      .match-score {
+        font-size: 1rem;
+        font-weight: 700;
+        min-width: 28px;
+        text-align: center;
+      }
+
+      .match-score.victory {
+        color: #86efac;
+      }
+
+      .match-score.defeat {
+        color: #fca5a5;
+      }
+
+      .match-score.special {
+        color: #94a3b8;
+        font-size: 0.8rem;
+      }
+
+      .match-status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #475569;
+        flex-shrink: 0;
+      }
+
+      .match-status-dot.finished {
+        background: #22c55e;
+      }
+
+      .match-status-dot.pending {
+        background: #f59e0b;
+      }
+
+      /* Section labels */
+      .section-label {
+        font-size: 0.75rem;
+        color: #64748b;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        padding: 0.4rem 0 0.2rem;
+      }
+
+      /* ── Loading / Error ── */
+      .status-message {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 200px;
+        font-size: 1.1rem;
+        color: #94a3b8;
+      }
+
+      /* ── Modal ── */
+      .modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 100;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .modal-overlay.visible {
+        display: flex;
+      }
+
+      .modal {
+        background: #1e293b;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        width: 360px;
+        max-width: 95vw;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+      }
+
+      .modal h2 {
+        font-size: 1rem;
+        color: #94a3b8;
+        margin-bottom: 1.2rem;
+        text-align: center;
+        font-weight: 500;
+      }
+
+      .modal h2 strong {
+        color: #e2e8f0;
+        display: block;
+        font-size: 1.1rem;
+        margin-top: 0.2rem;
+      }
+
+      .score-inputs {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 0.5rem;
+        align-items: center;
+        margin-bottom: 1rem;
+      }
+
+      .score-fencer {
+        text-align: center;
+      }
+
+      .score-fencer-name {
+        font-size: 0.8rem;
+        color: #94a3b8;
+        margin-bottom: 0.4rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 120px;
+        margin: 0 auto 0.4rem;
+        display: block;
+        font-weight: 600;
+      }
+
+      .score-fencer input[type='number'] {
+        width: 80px;
+        text-align: center;
+        font-size: 2.2rem;
+        font-weight: 700;
+        background: rgba(255, 255, 255, 0.08);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        border-radius: 0.5rem;
+        color: #fff;
+        padding: 0.4rem;
+        display: block;
+        margin: 0 auto;
+        -moz-appearance: textfield;
+      }
+
+      .score-fencer input[type='number']::-webkit-inner-spin-button,
+      .score-fencer input[type='number']::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+      }
+
+      .score-fencer input[type='number']:focus {
+        outline: none;
+        border-color: #3b82f6;
+        background: rgba(59, 130, 246, 0.1);
+      }
+
+      .score-vs {
+        font-size: 1.3rem;
+        color: #475569;
+        font-weight: 700;
+      }
+
+      .modal-actions {
+        display: flex;
+        gap: 0.7rem;
+        justify-content: center;
+        margin-top: 1.2rem;
+      }
+
+      .btn {
+        padding: 0.55rem 1.2rem;
+        border: none;
+        border-radius: 0.5rem;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.2s;
+      }
+
+      .btn:hover { opacity: 0.85; }
+      .btn:disabled { opacity: 0.4; cursor: default; }
+
+      .btn-primary { background: #2563eb; color: #fff; }
+      .btn-secondary { background: rgba(255, 255, 255, 0.12); color: #cbd5e1; }
+
+      .modal-error {
+        color: #fca5a5;
+        font-size: 0.8rem;
+        text-align: center;
+        margin-top: 0.5rem;
+        min-height: 1.2rem;
+      }
+
+      /* ── FIN overlay ── */
+      .fin-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+        z-index: 200;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 1.5rem;
+        text-align: center;
+      }
+
+      .fin-overlay.visible { display: flex; }
+
+      .fin-overlay h1 {
+        font-size: clamp(1.8rem, 5vw, 3.5rem);
+        font-weight: 800;
+        color: #e2e8f0;
+        letter-spacing: 0.02em;
+      }
+
+      .fin-overlay .fin-icon { font-size: 4rem; }
+
+      /* ── Responsive ── */
+      @media (max-width: 480px) {
+        .pool-container { padding: 0.75rem; }
+        table.pool-grid .fencer-header { min-width: 80px; max-width: 120px; }
+        table.pool-grid .score-cell { width: 42px; min-width: 42px; height: 40px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div class="header-left">
+        <div class="header-title" id="pool-title">Chargement…</div>
+        <div class="header-badge" id="match-count-badge" style="display:none"></div>
+      </div>
+      <div class="connection-badge" id="connection-badge">⚡ Connexion…</div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-tableau" onclick="switchTab('tableau')">
+        ⊞ Tableau
+      </button>
+      <button class="tab-btn" id="tab-matches" onclick="switchTab('matches')">
+        ⚔ Matchs
+      </button>
+    </div>
+
+    <div class="pool-container" id="pool-container">
+      <div class="status-message" id="status-message">Chargement de la poule…</div>
+    </div>
+
+    <!-- Modal de saisie de score -->
+    <div class="modal-overlay" id="modal-overlay">
+      <div class="modal">
+        <h2>Saisie du score<strong id="modal-match-label"></strong></h2>
+        <div class="score-inputs">
+          <div class="score-fencer">
+            <span class="score-fencer-name" id="modal-fencer-a"></span>
+            <input type="number" id="input-score-a" min="0" max="99" value="0" />
+          </div>
+          <div class="score-vs">–</div>
+          <div class="score-fencer">
+            <span class="score-fencer-name" id="modal-fencer-b"></span>
+            <input type="number" id="input-score-b" min="0" max="99" value="0" />
+          </div>
+        </div>
+        <div class="modal-error" id="modal-error"></div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" id="btn-cancel">Annuler</button>
+          <button class="btn btn-primary" id="btn-submit">Valider</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overlay fin de poule -->
+    <div class="fin-overlay" id="fin-overlay">
+      <div class="fin-icon">🏆</div>
+      <h1>POULE TERMINÉE</h1>
+    </div>
+
+    <script>
+      // ── Extraction de l'arenaId depuis l'URL (/areneN/poule → "N") ──
+      const pathMatch = window.location.pathname.match(/\/arene(\w+)\/poule/);
+      const arenaNumber = pathMatch ? pathMatch[1] : '1';
+      const arenaId = `arena${arenaNumber}`;
+
+      // ── État global ──
+      let poolData = null;
+      let pendingMatch = null;
+      let currentTab = 'tableau';
+
+      // ── Onglets ──
+      function switchTab(tab) {
+        currentTab = tab;
+        document.getElementById('tab-tableau').classList.toggle('active', tab === 'tableau');
+        document.getElementById('tab-matches').classList.toggle('active', tab === 'matches');
+        if (poolData) renderAll(poolData);
+      }
+
+      // ── Socket.IO ──
+      const socket = io();
+
+      socket.on('connect', () => {
+        document.getElementById('connection-badge').textContent = '🟢 Connecté';
+        document.getElementById('connection-badge').classList.add('connected');
+        socket.emit('join_pool', { arenaId });
+        loadPoolData();
+      });
+
+      socket.on('disconnect', () => {
+        document.getElementById('connection-badge').textContent = '🔴 Déconnecté';
+        document.getElementById('connection-badge').classList.remove('connected');
+      });
+
+      socket.on(`pool:${arenaId}:update`, data => {
+        poolData = data;
+        renderAll(data);
+      });
+
+      // ── Chargement initial ──
+      async function loadPoolData() {
+        try {
+          const res = await fetch(`/api/arenas/${arenaNumber}/pool-data`);
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            showStatusMessage(err.error || 'Aucune poule assignée à cette arène.');
+            return;
+          }
+          poolData = await res.json();
+          renderAll(poolData);
+        } catch (e) {
+          showStatusMessage('Erreur de connexion au serveur.');
+        }
+      }
+
+      function showStatusMessage(msg) {
+        document.getElementById('pool-container').innerHTML =
+          `<div class="status-message">${msg}</div>`;
+      }
+
+      // ── Rendu principal ──
+      function renderAll(data) {
+        if (data.isComplete) {
+          document.getElementById('fin-overlay').classList.add('visible');
+          return;
+        }
+        document.getElementById('fin-overlay').classList.remove('visible');
+
+        document.getElementById('pool-title').textContent =
+          `${data.poolName || 'Poule'} — Piste ${arenaNumber}`;
+
+        const done = data.matches.filter(m => m.status === 'finished').length;
+        const total = data.matches.length;
+        const badge = document.getElementById('match-count-badge');
+        badge.style.display = '';
+        badge.textContent = `${done}/${total}`;
+
+        if (currentTab === 'tableau') {
+          renderGrid(data.fencers, data.matches);
+        } else {
+          renderMatchesList(data.fencers, data.matches);
+        }
+      }
+
+      // ── Grille NxN avec colonnes numérotées ──
+      function renderGrid(fencers, matches) {
+        const container = document.getElementById('pool-container');
+
+        const table = document.createElement('table');
+        table.className = 'pool-grid';
+
+        // En-tête (numéros de colonnes)
+        const thead = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+
+        const corner = document.createElement('th');
+        corner.className = 'corner-cell';
+        headerRow.appendChild(corner);
+
+        fencers.forEach((f, idx) => {
+          const th = document.createElement('th');
+          th.className = 'col-num-header';
+          th.textContent = idx + 1;
+          th.title = fullName(f);
+          headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+
+        // Corps : lignes "N. NOM Prénom"
+        const tbody = document.createElement('tbody');
+        fencers.forEach((rowFencer, rowIdx) => {
+          const tr = document.createElement('tr');
+
+          // En-tête de ligne
+          const th = document.createElement('th');
+          th.className = 'fencer-header';
+          const rank = document.createElement('span');
+          rank.className = 'fencer-rank';
+          rank.textContent = `${rowIdx + 1}.`;
+          const lastName = document.createElement('span');
+          lastName.className = 'fencer-lastname';
+          lastName.textContent = (rowFencer.lastName || rowFencer.last_name || '').toUpperCase();
+          const firstName = document.createElement('span');
+          firstName.className = 'fencer-firstname';
+          firstName.textContent = rowFencer.firstName || rowFencer.first_name || '';
+          th.appendChild(rank);
+          th.appendChild(lastName);
+          th.appendChild(firstName);
+          tr.appendChild(th);
+
+          fencers.forEach((colFencer, colIdx) => {
+            const td = document.createElement('td');
+            td.className = 'score-cell';
+
+            if (rowIdx === colIdx) {
+              td.classList.add('diagonal');
+            } else {
+              const match = findMatch(matches, rowFencer.id, colFencer.id);
+              renderCell(td, match, rowFencer, colFencer);
+            }
+
+            tr.appendChild(td);
+          });
+
+          tbody.appendChild(tr);
+        });
+
+        table.appendChild(tbody);
+
+        container.innerHTML = '';
+        const wrapper = document.createElement('div');
+        wrapper.className = 'pool-table-wrapper';
+        wrapper.appendChild(table);
+        container.appendChild(wrapper);
+      }
+
+      // ── Liste des matchs ──
+      function renderMatchesList(fencers, matches) {
+        const container = document.getElementById('pool-container');
+        container.innerHTML = '';
+
+        const view = document.createElement('div');
+        view.className = 'matches-view';
+
+        // Trier : non joués en premier, puis joués
+        const pending = matches.filter(m => m.status !== 'finished');
+        const finished = matches.filter(m => m.status === 'finished');
+
+        if (pending.length > 0) {
+          const lbl = document.createElement('div');
+          lbl.className = 'section-label';
+          lbl.textContent = `À jouer (${pending.length})`;
+          view.appendChild(lbl);
+          pending.forEach((m, i) => view.appendChild(buildMatchItem(m, fencers, i + 1, false)));
+        }
+
+        if (finished.length > 0) {
+          const lbl = document.createElement('div');
+          lbl.className = 'section-label';
+          lbl.textContent = `Terminés (${finished.length})`;
+          view.appendChild(lbl);
+          finished.forEach((m, i) => view.appendChild(buildMatchItem(m, fencers, i + 1, true)));
+        }
+
+        if (matches.length === 0) {
+          const empty = document.createElement('div');
+          empty.className = 'status-message';
+          empty.textContent = 'Aucun match dans cette poule.';
+          view.appendChild(empty);
+        }
+
+        container.appendChild(view);
+      }
+
+      function buildMatchItem(match, fencers, idx, isFinished) {
+        const item = document.createElement('div');
+        item.className = 'match-item' + (isFinished ? ' finished' : '');
+
+        const dot = document.createElement('div');
+        dot.className = 'match-status-dot ' + (isFinished ? 'finished' : 'pending');
+        item.appendChild(dot);
+
+        const num = document.createElement('div');
+        num.className = 'match-num';
+        num.textContent = '#' + idx;
+        item.appendChild(num);
+
+        const fencersDiv = document.createElement('div');
+        fencersDiv.className = 'match-fencers';
+
+        const fA = match.fencerA || fencers.find(f => f.id === match.fencerAId);
+        const fB = match.fencerB || fencers.find(f => f.id === match.fencerBId);
+
+        const sA = match.scoreA;
+        const sB = match.scoreB;
+        const winnerA = sA && sA.isVictory;
+        const winnerB = sB && sB.isVictory;
+
+        const nameA = document.createElement('span');
+        nameA.className = 'match-fencer-name' + (winnerA ? ' winner' : '');
+        nameA.textContent = fA ? shortName(fA) : '?';
+
+        const scoreA = document.createElement('span');
+        scoreA.className = 'match-score ' + scoreClass(sA, isFinished);
+        scoreA.textContent = isFinished ? scoreLabel(sA) : '';
+
+        const sep = document.createElement('span');
+        sep.className = 'match-score-sep';
+        sep.textContent = isFinished ? '' : 'vs';
+
+        const scoreB = document.createElement('span');
+        scoreB.className = 'match-score ' + scoreClass(sB, isFinished);
+        scoreB.textContent = isFinished ? scoreLabel(sB) : '';
+
+        const nameB = document.createElement('span');
+        nameB.className = 'match-fencer-name' + (winnerB ? ' winner' : '');
+        nameB.textContent = fB ? shortName(fB) : '?';
+
+        fencersDiv.appendChild(nameA);
+        fencersDiv.appendChild(scoreA);
+        fencersDiv.appendChild(sep);
+        fencersDiv.appendChild(scoreB);
+        fencersDiv.appendChild(nameB);
+        item.appendChild(fencersDiv);
+
+        if (!isFinished && fA && fB) {
+          item.addEventListener('click', () => openModal(match, fA, fB));
+        } else if (isFinished) {
+          item.addEventListener('click', () => {
+            if (fA && fB) openModal(match, fA, fB);
+          });
+          item.style.cursor = 'pointer';
+        }
+
+        return item;
+      }
+
+      function scoreClass(score, finished) {
+        if (!finished || !score) return '';
+        if (score.isAbstention || score.isForfait || score.isExclusion) return 'special';
+        return score.isVictory ? 'victory' : 'defeat';
+      }
+
+      function scoreLabel(score) {
+        if (!score) return '–';
+        if (score.isAbstention) return 'Ab';
+        if (score.isForfait) return 'Ff';
+        if (score.isExclusion) return 'Ex';
+        return score.isVictory ? `V${score.value ?? ''}` : `D${score.value ?? ''}`;
+      }
+
+      // ── Helpers ──
+      function findMatch(matches, fencerAId, fencerBId) {
+        return matches.find(
+          m =>
+            (m.fencerA && m.fencerA.id === fencerAId && m.fencerB && m.fencerB.id === fencerBId) ||
+            (m.fencerA && m.fencerA.id === fencerBId && m.fencerB && m.fencerB.id === fencerAId)
+        ) || null;
+      }
+
+      function renderCell(td, match, rowFencer, colFencer) {
+        if (!match) {
+          td.classList.add('not-played');
+          return;
+        }
+
+        const isRowA = match.fencerA && match.fencerA.id === rowFencer.id;
+        const scoreForRow = isRowA ? match.scoreA : match.scoreB;
+
+        if (!scoreForRow || match.status !== 'finished') {
+          td.classList.add('not-played');
+          td.addEventListener('click', () => openModal(match, rowFencer, colFencer));
+          return;
+        }
+
+        if (scoreForRow.isAbstention) {
+          td.classList.add('special'); td.textContent = 'Ab';
+        } else if (scoreForRow.isForfait) {
+          td.classList.add('special'); td.textContent = 'Ff';
+        } else if (scoreForRow.isExclusion) {
+          td.classList.add('special'); td.textContent = 'Ex';
+        } else if (scoreForRow.isVictory) {
+          td.classList.add('victory'); td.textContent = `V${scoreForRow.value ?? ''}`;
+        } else {
+          td.classList.add('defeat'); td.textContent = `D${scoreForRow.value ?? ''}`;
+        }
+
+        td.style.cursor = 'pointer';
+        td.addEventListener('click', () => openModal(match, rowFencer, colFencer));
+      }
+
+      function shortName(f) {
+        const last = (f.lastName || f.last_name || '').toUpperCase();
+        const first = f.firstName || f.first_name || '';
+        return first ? `${last} ${first.charAt(0)}.` : last;
+      }
+
+      function fullName(f) {
+        const last = (f.lastName || f.last_name || '').toUpperCase();
+        const first = f.firstName || f.first_name || '';
+        return `${last} ${first}`.trim();
+      }
+
+      // ── Modal ──
+      function openModal(match, rowFencer, colFencer) {
+        const isRowA = match.fencerA && match.fencerA.id === rowFencer.id;
+        const fA = isRowA ? (match.fencerA || rowFencer) : (match.fencerB || colFencer);
+        const fB = isRowA ? (match.fencerB || colFencer) : (match.fencerA || rowFencer);
+
+        pendingMatch = { match, rowFencer };
+
+        document.getElementById('modal-match-label').textContent =
+          `${shortName(fA)} vs ${shortName(fB)}`;
+        document.getElementById('modal-fencer-a').textContent = fullName(fA);
+        document.getElementById('modal-fencer-b').textContent = fullName(fB);
+
+        const saVal = isRowA ? (match.scoreA?.value ?? 0) : (match.scoreB?.value ?? 0);
+        const sbVal = isRowA ? (match.scoreB?.value ?? 0) : (match.scoreA?.value ?? 0);
+
+        document.getElementById('input-score-a').value = saVal;
+        document.getElementById('input-score-b').value = sbVal;
+        const maxScore = match.maxScore || 5;
+        document.getElementById('input-score-a').max = maxScore;
+        document.getElementById('input-score-b').max = maxScore;
+        document.getElementById('modal-error').textContent = '';
+
+        document.getElementById('modal-overlay').classList.add('visible');
+        document.getElementById('input-score-a').focus();
+        document.getElementById('input-score-a').select();
+      }
+
+      function closeModal() {
+        pendingMatch = null;
+        document.getElementById('modal-overlay').classList.remove('visible');
+      }
+
+      document.getElementById('btn-cancel').addEventListener('click', closeModal);
+
+      document.getElementById('modal-overlay').addEventListener('click', e => {
+        if (e.target === document.getElementById('modal-overlay')) closeModal();
+      });
+
+      document.getElementById('btn-submit').addEventListener('click', submitScore);
+
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') closeModal();
+        if (e.key === 'Enter' && document.getElementById('modal-overlay').classList.contains('visible')) {
+          submitScore();
+        }
+      });
+
+      async function submitScore() {
+        if (!pendingMatch || !poolData) return;
+        const { match, rowFencer } = pendingMatch;
+
+        const rawA = parseInt(document.getElementById('input-score-a').value, 10);
+        const rawB = parseInt(document.getElementById('input-score-b').value, 10);
+
+        if (isNaN(rawA) || isNaN(rawB) || rawA < 0 || rawB < 0) {
+          document.getElementById('modal-error').textContent = 'Scores invalides.';
+          return;
+        }
+
+        const maxScore = pendingMatch.match.maxScore || 5;
+        if (rawA > maxScore || rawB > maxScore) {
+          document.getElementById('modal-error').textContent =
+            `Score maximum dépassé (max : ${maxScore}).`;
+          return;
+        }
+
+        if (rawA === rawB) {
+          document.getElementById('modal-error').textContent =
+            'Égalité non autorisée en poule.';
+          return;
+        }
+
+        const isRowA = match.fencerA && match.fencerA.id === rowFencer.id;
+        const finalScoreA = isRowA ? rawA : rawB;
+        const finalScoreB = isRowA ? rawB : rawA;
+
+        document.getElementById('btn-submit').disabled = true;
+        document.getElementById('modal-error').textContent = '';
+
+        try {
+          const res = await fetch(
+            `/api/pools/${poolData.poolId}/matches/${match.id}/score`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ scoreA: finalScoreA, scoreB: finalScoreB }),
+            }
+          );
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            document.getElementById('modal-error').textContent =
+              err.error || 'Erreur lors de la sauvegarde.';
+            return;
+          }
+          closeModal();
+          setTimeout(() => { if (poolData) loadPoolData(); }, 1500);
+        } catch (e) {
+          document.getElementById('modal-error').textContent = 'Erreur réseau.';
+        } finally {
+          document.getElementById('btn-submit').disabled = false;
+        }
+      }
+    </script>
+  </body>
+</html>

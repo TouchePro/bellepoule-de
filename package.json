@@ -1,12 +1,14 @@
 {
   "name": "bellepoule-modern",
   "productName": "BellePoule Modern",
-  "version": "1.0.1-build.182",
+  "version": "1.0.2-build.480",
   "description": "Modern fencing tournament management software - Rewritten from the original BellePoule",
   "main": "dist/main/main.js",
   "scripts": {
+    "increment-build": "node scripts/increment-build.js",
     "start": "npm run build && electron .",
-    "build": "tsc && webpack --config webpack.renderer.config.js",
+    "build": "npm run increment-build && tsc && webpack --config webpack.renderer.config.js",
+    "build:ci": "tsc && webpack --config webpack.renderer.config.js",
     "build:main": "tsc",
     "build:renderer": "webpack --config webpack.renderer.config.js",
     "dev": "concurrently \"npm run dev:main\" \"npm run dev:renderer\"",
@@ -15,10 +17,15 @@
     "package": "npm run build && electron-builder",
     "package:win": "npm run build && electron-builder --win",
     "package:mac": "npm run build && electron-builder --mac",
+    "package:mac-arm": "npm run build && electron-builder --mac --arm64",
     "package:linux": "npm run build && electron-builder --linux",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\""
   },
   "keywords": [
     "fencing",
@@ -44,8 +51,12 @@
     },
     "files": [
       "dist/**/*",
+      "dist/remote/**/*",
       "package.json",
       "version.json"
+    ],
+    "asarUnpack": [
+      "dist/remote/**/*"
     ],
     "extraResources": [
       {
@@ -67,12 +78,24 @@
     },
     "mac": {
       "target": [
-        "dmg",
-        "zip"
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
       ],
       "icon": "resources/icons/icon.icns",
       "category": "public.app-category.sports",
-      "artifactName": "${productName}-${version}.${ext}"
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
     },
     "linux": {
       "target": [
@@ -97,38 +120,45 @@
   "dependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^22.0.0",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.1.4",
     "@types/react-dom": "^19.1.5",
     "@types/socket.io": "^3.0.2",
     "@types/uuid": "^10.0.0",
     "@types/xml2js": "^0.4.14",
     "express": "^5.2.1",
+    "immer": "^10.1.1",
     "jspdf": "^4.1.0",
     "jspdf-autotable": "^5.0.7",
+    "jszip": "^3.10.1",
+    "qrcode": "^1.5.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "socket.io": "^4.8.3",
     "sql.js": "^1.13.0",
     "typescript": "^5.8.3",
     "uuid": "^11.1.0",
-    "xml2js": "^0.6.2"
+    "xml2js": "^0.6.2",
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
-    "@electron-forge/cli": "^7.8.0",
-    "@electron-forge/maker-deb": "^7.8.0",
-    "@electron-forge/maker-rpm": "^7.8.0",
-    "@electron-forge/maker-squirrel": "^7.8.0",
-    "@electron-forge/maker-zip": "^7.8.0",
-    "@electron-forge/plugin-auto-unpack-natives": "^7.8.0",
-    "@electron-forge/plugin-fuses": "^7.8.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
     "@vitest/coverage-v8": "^4.0.18",
     "concurrently": "^9.1.2",
     "copy-webpack-plugin": "^13.0.1",
     "css-loader": "^7.1.2",
     "electron": "^40.1.0",
     "electron-builder": "^26.4.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.0",
+    "eslint-plugin-react": "^7.34.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
     "html-webpack-plugin": "^5.6.3",
+    "prettier": "^3.2.0",
     "style-loader": "^4.0.0",
+    "terser-webpack-plugin": "^5.3.16",
     "ts-loader": "^9.5.2",
     "vitest": "^4.0.18",
     "wait-on": "^8.0.3",

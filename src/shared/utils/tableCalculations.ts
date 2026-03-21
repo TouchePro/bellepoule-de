@@ -43,7 +43,7 @@ export function calculateByeCount(fencerCount: number, tableSize: number): numbe
 /**
  * Génère la position de placement pour un classement donné
  * Utilise l'algorithme standard FIE pour le placement en tableau
- * 
+ *
  * Pour un tableau de 8:
  * Position 1: Seed 1 vs Seed 8
  * Position 2: Seed 4 vs Seed 5
@@ -60,7 +60,7 @@ export function getSeedPosition(seed: number, tableSize: number): number {
 
   for (let round = 0; round < rounds; round++) {
     range = range / 2;
-    const bit = (seed - 1) >> (rounds - 1 - round) & 1;
+    const bit = ((seed - 1) >> (rounds - 1 - round)) & 1;
     if (bit === 1) {
       position += range;
     }
@@ -83,10 +83,7 @@ export function generateSeedingChart(tableSize: number): number[] {
 /**
  * Place les tireurs dans le tableau selon leur classement
  */
-export function placeFencersInTable(
-  fencers: Fencer[],
-  tableSize: number
-): (Fencer | null)[] {
+export function placeFencersInTable(fencers: Fencer[], tableSize: number): (Fencer | null)[] {
   const placements: (Fencer | null)[] = new Array(tableSize).fill(null);
   const seedingChart = generateSeedingChart(tableSize);
 
@@ -121,7 +118,7 @@ export function createDirectEliminationTable(
 ): DirectEliminationTable {
   const tableSize = calculateTableSize(fencers.length);
   const placements = placeFencersInTable(fencers, tableSize);
-  
+
   const now = new Date();
   const tableId = uuidv4();
 
@@ -271,12 +268,20 @@ export function updateTableAfterMatch(
     return node;
   });
 
+  // Construire des Maps en une passe unique pour éviter les find() O(n) répétés
+  const byMatchId = new Map<string, TableNode>();
+  // byParent : childId → parent node (le nœud dont parentA ou parentB === childId)
+  const byParent = new Map<string, TableNode>();
+  for (const node of updatedNodes) {
+    if (node.match) byMatchId.set(node.match.id, node);
+    if (node.parentA) byParent.set(node.parentA, node);
+    if (node.parentB) byParent.set(node.parentB, node);
+  }
+
   // Propager le gagnant vers le tour suivant
-  const nodeWithMatch = updatedNodes.find(n => n.match?.id === matchId);
+  const nodeWithMatch = byMatchId.get(matchId);
   if (nodeWithMatch) {
-    const nextNode = updatedNodes.find(
-      n => n.parentA === nodeWithMatch.id || n.parentB === nodeWithMatch.id
-    );
+    const nextNode = byParent.get(nodeWithMatch.id);
 
     if (nextNode) {
       const isFromA = nextNode.parentA === nodeWithMatch.id;
@@ -299,10 +304,8 @@ export function updateTableAfterMatch(
     }
   }
 
-  // Vérifier si le tableau est complet
-  const isComplete = updatedNodes
-    .filter(n => n.round === 1)
-    .every(n => n.winner);
+  // Vérifier si le tableau est complet (une seule passe, pas de filter+every)
+  const isComplete = updatedNodes.every(n => n.round !== 1 || !!n.winner);
 
   return {
     ...table,
@@ -327,11 +330,73 @@ function getNextMatchNumber(nodes: TableNode[]): number {
 // ============================================================================
 
 /**
+ * Calcule les touches marquées par un tireur dans le tableau
+ */
+function calculateTableTouchesScored(fencerId: string, table: DirectEliminationTable): number {
+  let touches = 0;
+
+  for (const node of table.nodes) {
+    if (!node.match || node.match.status !== MatchStatus.FINISHED) continue;
+
+    // Vérifier si le tireur a participé à ce match
+    if (node.fencerA?.id === fencerId) {
+      // Le tireur est fencerA
+      const scoreA = node.match.scoreA;
+      if (typeof scoreA === 'number') {
+        touches += scoreA;
+      } else if (scoreA && typeof scoreA === 'object' && 'value' in scoreA) {
+        touches += (scoreA.value as number) || 0;
+      }
+    } else if (node.fencerB?.id === fencerId) {
+      // Le tireur est fencerB
+      const scoreB = node.match.scoreB;
+      if (typeof scoreB === 'number') {
+        touches += scoreB;
+      } else if (scoreB && typeof scoreB === 'object' && 'value' in scoreB) {
+        touches += (scoreB.value as number) || 0;
+      }
+    }
+  }
+
+  return touches;
+}
+
+/**
+ * Calcule le total des touches (poules + tableau) pour un tireur
+ */
+function calculateTotalTouches(fencer: Fencer, table: DirectEliminationTable): number {
+  const poolTouches = fencer.poolStats?.touchesScored || 0;
+  const tableTouches = calculateTableTouchesScored(fencer.id, table);
+  return poolTouches + tableTouches;
+}
+
+/**
  * Calcule le classement final d'un tableau
+ *
+ * Règles de classement :
+ * 1. Places 1-4 : Déterminées par les résultats des finales
+ * 2. Places 5+ : Départagées par le total des touches marquées (poules + tableau)
+ *
+ * Issues corrigées :
+ * - #60 : Chaque tireur éliminé à un tour donné a un rang distinct (pas d'ex aequo)
+ * - #59 : Départage au-delà de la 4e place par somme des touches
+ * - #61 : Correction du tri des classements
  */
 export function calculateTableRanking(table: DirectEliminationTable): TableRanking[] {
   const rankings: TableRanking[] = [];
   const firstPlace = table.firstPlace;
+
+  // Pré-calculer les touches tableau par tireur en une seule passe (O(n) au lieu de O(n²))
+  const tableTouchesMap = new Map<string, number>();
+  for (const node of table.nodes) {
+    if (!node.match || node.match.status !== MatchStatus.FINISHED) continue;
+    const scoreA = node.match.scoreA;
+    const scoreB = node.match.scoreB;
+    const valA = typeof scoreA === 'number' ? scoreA : (scoreA as any)?.value ?? 0;
+    const valB = typeof scoreB === 'number' ? scoreB : (scoreB as any)?.value ?? 0;
+    if (node.fencerA) tableTouchesMap.set(node.fencerA.id, (tableTouchesMap.get(node.fencerA.id) ?? 0) + valA);
+    if (node.fencerB) tableTouchesMap.set(node.fencerB.id, (tableTouchesMap.get(node.fencerB.id) ?? 0) + valB);
+  }
 
   // Finale (place 1 et 2)
   const finale = table.nodes.find(n => n.round === 1);
@@ -342,9 +407,7 @@ export function calculateTableRanking(table: DirectEliminationTable): TableRanki
       eliminatedAt: 1,
     });
 
-    const loser = finale.fencerA?.id === finale.winner.id 
-      ? finale.fencerB 
-      : finale.fencerA;
+    const loser = finale.fencerA?.id === finale.winner.id ? finale.fencerB : finale.fencerA;
     if (loser) {
       rankings.push({
         fencer: loser,
@@ -354,30 +417,58 @@ export function calculateTableRanking(table: DirectEliminationTable): TableRanki
     }
   }
 
-  // Parcourir les autres tours
-  let currentPlace = firstPlace + 2;
+  // Match pour la 3ème place (si activé)
+  const thirdPlaceMatch = table.nodes.find(n => n.round === 0);
+  if (thirdPlaceMatch?.winner) {
+    rankings.push({
+      fencer: thirdPlaceMatch.winner,
+      rank: firstPlace + 2,
+      eliminatedAt: 0,
+    });
+
+    const loser =
+      thirdPlaceMatch.fencerA?.id === thirdPlaceMatch.winner.id
+        ? thirdPlaceMatch.fencerB
+        : thirdPlaceMatch.fencerA;
+    if (loser) {
+      rankings.push({
+        fencer: loser,
+        rank: firstPlace + 3,
+        eliminatedAt: 0,
+      });
+    }
+  }
+
+  // Parcourir les autres tours (demi-finales et suivants)
+  let currentPlace = firstPlace + (thirdPlaceMatch?.winner ? 4 : 2);
   let round = 2;
 
   while (round <= table.size / 2) {
     const roundNodes = table.nodes.filter(n => n.round === round);
-    const losers: Fencer[] = [];
+    const losers: Array<{ fencer: Fencer; totalTouches: number }> = [];
 
     for (const node of roundNodes) {
       if (node.winner) {
-        const loser = node.fencerA?.id === node.winner.id 
-          ? node.fencerB 
-          : node.fencerA;
+        const loser = node.fencerA?.id === node.winner.id ? node.fencerB : node.fencerA;
         if (loser) {
-          losers.push(loser);
+          const totalTouches =
+            (loser.poolStats?.touchesScored ?? 0) + (tableTouchesMap.get(loser.id) ?? 0);
+          losers.push({ fencer: loser, totalTouches });
         }
       }
     }
 
-    // Les perdants de ce tour partagent les places ex aequo
-    for (const loser of losers) {
+    // Au-delà de la 4e place (firstPlace + 3), départager par touches
+    if (currentPlace > firstPlace + 3) {
+      // Trier par touches marquées (décroissant)
+      losers.sort((a, b) => b.totalTouches - a.totalTouches);
+    }
+
+    // Attribuer un rang distinct à chaque perdant
+    for (let i = 0; i < losers.length; i++) {
       rankings.push({
-        fencer: loser,
-        rank: currentPlace,
+        fencer: losers[i].fencer,
+        rank: currentPlace + i,
         eliminatedAt: round,
       });
     }
@@ -385,6 +476,9 @@ export function calculateTableRanking(table: DirectEliminationTable): TableRanki
     currentPlace += losers.length;
     round *= 2;
   }
+
+  // Trier le classement final par rang
+  rankings.sort((a, b) => a.rank - b.rank);
 
   return rankings;
 }
@@ -430,10 +524,7 @@ export function getRoundName(round: number, locale: string = 'fr'): string {
 /**
  * Trouve un noeud par son ID
  */
-export function findNodeById(
-  table: DirectEliminationTable,
-  nodeId: string
-): TableNode | undefined {
+export function findNodeById(table: DirectEliminationTable, nodeId: string): TableNode | undefined {
   return table.nodes.find(n => n.id === nodeId);
 }
 
@@ -450,22 +541,15 @@ export function findNodeByMatch(
 /**
  * Obtient tous les matchs d'un tour
  */
-export function getMatchesInRound(
-  table: DirectEliminationTable,
-  round: number
-): Match[] {
-  return table.nodes
-    .filter(n => n.round === round && n.match)
-    .map(n => n.match!);
+export function getMatchesInRound(table: DirectEliminationTable, round: number): Match[] {
+  return table.nodes.filter(n => n.round === round && n.match).map(n => n.match!);
 }
 
 /**
  * Compte les matchs restants dans un tableau
  */
 export function countRemainingMatches(table: DirectEliminationTable): number {
-  return table.nodes.filter(
-    n => n.match && n.match.status !== MatchStatus.FINISHED
-  ).length;
+  return table.nodes.filter(n => n.match && n.match.status !== MatchStatus.FINISHED).length;
 }
 
 /**
@@ -474,8 +558,6 @@ export function countRemainingMatches(table: DirectEliminationTable): number {
 export function canTableStart(table: DirectEliminationTable): boolean {
   const firstRound = table.size / 2;
   const firstRoundNodes = table.nodes.filter(n => n.round === firstRound);
-  
-  return firstRoundNodes.every(
-    n => n.isBye || (n.fencerA && n.fencerB)
-  );
+
+  return firstRoundNodes.every(n => n.isBye || (n.fencerA && n.fencerB));
 }

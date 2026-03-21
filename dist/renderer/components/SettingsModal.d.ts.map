@@ -1,1 +1,0 @@
-{"version":3,"file":"SettingsModal.d.ts","sourceRoot":"","sources":["../../../src/renderer/components/SettingsModal.tsx"],"names":[],"mappings":"AAAA;;;GAGG;AAEH,OAAO,KAA8B,MAAM,OAAO,CAAC;AAInD,UAAU,kBAAkB;IAC1B,OAAO,EAAE,MAAM,IAAI,CAAC;IACpB,MAAM,EAAE,CAAC,QAAQ,EAAE,GAAG,KAAK,IAAI,CAAC;CACjC;AAED,QAAA,MAAM,aAAa,EAAE,KAAK,CAAC,EAAE,CAAC,kBAAkB,CAuF/C,CAAC;AAEF,eAAe,aAAa,CAAC"}

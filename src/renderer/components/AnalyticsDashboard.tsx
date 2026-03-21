@@ -50,6 +50,7 @@ interface AnalyticsDashboardProps {
   matches: Match[];
   fencers: Fencer[];
   className?: string;
+  onClose?: () => void;
 }
 
 export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
@@ -57,7 +58,8 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   pools,
   matches,
   fencers,
-  className = ''
+  className = '',
+  onClose,
 }) => {
   const [selectedTimeframe, setSelectedTimeframe] = useState<'live' | 'last30min' | 'all'>('live');
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -80,10 +82,10 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
   const filterMatchesByTimeframe = (matchList: Match[], timeframe: string): Match[] => {
     if (timeframe === 'all') return matchList;
-    
+
     const now = new Date();
     const cutoffTime = new Date(now.getTime() - (timeframe === 'last30min' ? 30 : 5) * 60 * 1000);
-    
+
     return matchList.filter(match => {
       if (!match.updatedAt) return false;
       return new Date(match.updatedAt) >= cutoffTime;
@@ -99,7 +101,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   ): AnalyticsData => {
     const filteredMatches = filterMatchesByTimeframe(matchList, timeframe);
     const completedMatches = filteredMatches.filter(match => match.status === MatchStatus.FINISHED);
-    
+
     return {
       totalFencers: fencerList.length,
       completedMatches: completedMatches.length,
@@ -107,73 +109,82 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       averageMatchDuration: calculateAverageMatchDuration(completedMatches),
       fencerPerformance: calculateFencerPerformance(fencerList, completedMatches),
       weaponStats: calculateWeaponStats(completedMatches),
-      poolProgress: calculatePoolProgress(poolList, filteredMatches)
+      poolProgress: calculatePoolProgress(poolList, filteredMatches),
     };
   };
 
   const calculateAverageMatchDuration = (matches: Match[]): number => {
     if (matches.length === 0) return 0;
-    
-    const durations = matches.map(match => {
-      if (!match.createdAt || !match.updatedAt) return 0;
-      return new Date(match.updatedAt).getTime() - new Date(match.createdAt).getTime();
-    }).filter(d => d > 0);
-    
+
+    const durations = matches
+      .map(match => {
+        if (!match.createdAt || !match.updatedAt) return 0;
+        return new Date(match.updatedAt).getTime() - new Date(match.createdAt).getTime();
+      })
+      .filter(d => d > 0);
+
     return durations.length > 0 ? durations.reduce((a, b) => a + b, 0) / durations.length : 0;
   };
 
-  const calculateFencerPerformance = (fencerList: Fencer[], matches: Match[]): FencerPerformance[] => {
-    return fencerList.map(fencer => {
-      const fencerMatches = matches.filter(m => 
-        (m.fencerA?.id === fencer.id || m.fencerB?.id === fencer.id) && 
-        m.status === MatchStatus.FINISHED
-      );
+  const calculateFencerPerformance = (
+    fencerList: Fencer[],
+    matches: Match[]
+  ): FencerPerformance[] => {
+    return fencerList
+      .map(fencer => {
+        const fencerMatches = matches.filter(
+          m =>
+            (m.fencerA?.id === fencer.id || m.fencerB?.id === fencer.id) &&
+            m.status === MatchStatus.FINISHED
+        );
 
-      const victories = fencerMatches.filter(m => {
-        const isA = m.fencerA?.id === fencer.id;
-        const score = isA ? m.scoreA : m.scoreB;
-        return score?.isVictory;
-      }).length;
+        const victories = fencerMatches.filter(m => {
+          const isA = m.fencerA?.id === fencer.id;
+          const score = isA ? m.scoreA : m.scoreB;
+          return score?.isVictory;
+        }).length;
 
-      const totalScored = fencerMatches.reduce((total, match) => {
-        const isA = match.fencerA?.id === fencer.id;
-        const score = isA ? match.scoreA : match.scoreB;
-        return total + (score?.value || 0);
-      }, 0);
+        const totalScored = fencerMatches.reduce((total, match) => {
+          const isA = match.fencerA?.id === fencer.id;
+          const score = isA ? match.scoreA : match.scoreB;
+          return total + (score?.value || 0);
+        }, 0);
 
-      const totalReceived = fencerMatches.reduce((total, match) => {
-        const isA = match.fencerA?.id === fencer.id;
-        const score = isA ? match.scoreB : match.scoreA;
-        return total + (score?.value || 0);
-      }, 0);
+        const totalReceived = fencerMatches.reduce((total, match) => {
+          const isA = match.fencerA?.id === fencer.id;
+          const score = isA ? match.scoreB : match.scoreA;
+          return total + (score?.value || 0);
+        }, 0);
 
-      const currentStreak = calculateCurrentStreak(fencer, matches);
-      const bestStreak = calculateBestStreak(fencer, matches);
-      const recentForm = calculateRecentForm(fencer, matches);
+        const currentStreak = calculateCurrentStreak(fencer, matches);
+        const bestStreak = calculateBestStreak(fencer, matches);
+        const recentForm = calculateRecentForm(fencer, matches);
 
-      return {
-        fencer,
-        victoryRate: fencerMatches.length > 0 ? victories / fencerMatches.length : 0,
-        averageScore: fencerMatches.length > 0 ? totalScored / fencerMatches.length : 0,
-        touchesScoredPerMatch: fencerMatches.length > 0 ? totalScored / fencerMatches.length : 0,
-        touchesReceivedPerMatch: fencerMatches.length > 0 ? totalReceived / fencerMatches.length : 0,
-        currentStreak,
-        bestStreak,
-        recentForm
-      };
-    }).sort((a, b) => b.victoryRate - a.victoryRate);
+        return {
+          fencer,
+          victoryRate: fencerMatches.length > 0 ? victories / fencerMatches.length : 0,
+          averageScore: fencerMatches.length > 0 ? totalScored / fencerMatches.length : 0,
+          touchesScoredPerMatch: fencerMatches.length > 0 ? totalScored / fencerMatches.length : 0,
+          touchesReceivedPerMatch:
+            fencerMatches.length > 0 ? totalReceived / fencerMatches.length : 0,
+          currentStreak,
+          bestStreak,
+          recentForm,
+        };
+      })
+      .sort((a, b) => b.victoryRate - a.victoryRate);
   };
 
   const calculateCurrentStreak = (fencer: Fencer, matches: Match[]): number => {
     const fencerMatches = matches
-      .filter(m => (m.fencerA?.id === fencer.id || m.fencerB?.id === fencer.id))
+      .filter(m => m.fencerA?.id === fencer.id || m.fencerB?.id === fencer.id)
       .sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime());
 
     let streak = 0;
     for (const match of fencerMatches) {
       const isA = match.fencerA?.id === fencer.id;
       const score = isA ? match.scoreA : match.scoreB;
-      
+
       if (score?.isVictory) {
         streak++;
       } else {
@@ -189,9 +200,12 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     return 0; // Placeholder
   };
 
-  const calculateRecentForm = (fencer: Fencer, matches: Match[]): 'excellent' | 'good' | 'average' | 'poor' => {
+  const calculateRecentForm = (
+    fencer: Fencer,
+    matches: Match[]
+  ): 'excellent' | 'good' | 'average' | 'poor' => {
     const recentMatches = matches
-      .filter(m => (m.fencerA?.id === fencer.id || m.fencerB?.id === fencer.id))
+      .filter(m => m.fencerA?.id === fencer.id || m.fencerB?.id === fencer.id)
       .slice(-5); // Last 5 matches
 
     if (recentMatches.length === 0) return 'average';
@@ -211,38 +225,43 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   };
 
   const calculateWeaponStats = (matches: Match[]): WeaponStats => {
-    const margins = matches.map(m => {
-      if (m.status !== MatchStatus.FINISHED) return 0;
-      const margin = Math.abs((m.scoreA?.value || 0) - (m.scoreB?.value || 0));
-      return margin;
-    }).filter(m => m > 0);
+    const margins = matches
+      .map(m => {
+        if (m.status !== MatchStatus.FINISHED) return 0;
+        const margin = Math.abs((m.scoreA?.value || 0) - (m.scoreB?.value || 0));
+        return margin;
+      })
+      .filter(m => m > 0);
+
+    const totalTouches = matches.map(m => (m.scoreA?.value || 0) + (m.scoreB?.value || 0));
+    const mostTouchingMatch = totalTouches.length > 0 ? Math.max(...totalTouches) : 0;
 
     return {
       totalMatches: matches.length,
-      averageVictoryMargin: margins.length > 0 ? margins.reduce((a, b) => a + b, 0) / margins.length : 0,
+      averageVictoryMargin:
+        margins.length > 0 ? margins.reduce((a, b) => a + b, 0) / margins.length : 0,
       longestMatch: 0, // Would need duration data
       shortestMatch: 0, // Would need duration data
-      mostTouchingMatch: Math.max(...matches.map(m => 
-        (m.scoreA?.value || 0) + (m.scoreB?.value || 0)
-      ))
+      mostTouchingMatch,
     };
   };
 
   const calculatePoolProgress = (pools: Pool[], matches: Match[]): PoolProgress[] => {
     return pools.map(pool => {
-      const poolMatches = matches.filter(m => 
+      const poolMatches = matches.filter(m =>
         pools.some(p => p.matches.some(pm => pm.id === m.id))
       );
-      
+
       const completed = poolMatches.filter(m => m.status === MatchStatus.FINISHED).length;
-      const completionPercentage = poolMatches.length > 0 ? (completed / poolMatches.length) * 100 : 0;
-      
+      const completionPercentage =
+        poolMatches.length > 0 ? (completed / poolMatches.length) * 100 : 0;
+
       return {
         poolId: pool.id,
         poolNumber: pool.number || 0,
         completionPercentage,
         averageTimeRemaining: 0, // Complex calculation based on remaining matches
-        projectedFinishTime: new Date()
+        projectedFinishTime: new Date(),
       };
     });
   };
@@ -255,11 +274,16 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
   const getFormColor = (form: string): string => {
     switch (form) {
-      case 'excellent': return 'text-green-600 bg-green-100';
-      case 'good': return 'text-blue-600 bg-blue-100';
-      case 'average': return 'text-yellow-600 bg-yellow-100';
-      case 'poor': return 'text-red-600 bg-red-100';
-      default: return 'text-gray-600 bg-gray-100';
+      case 'excellent':
+        return 'text-green-600 bg-green-100';
+      case 'good':
+        return 'text-blue-600 bg-blue-100';
+      case 'average':
+        return 'text-yellow-600 bg-yellow-100';
+      case 'poor':
+        return 'text-red-600 bg-red-100';
+      default:
+        return 'text-gray-600 bg-gray-100';
     }
   };
 
@@ -277,14 +301,16 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               type="checkbox"
               id="autoRefresh"
               checked={autoRefresh}
-              onChange={(e) => setAutoRefresh(e.target.checked)}
+              onChange={e => setAutoRefresh(e.target.checked)}
               className="rounded"
             />
-            <label htmlFor="autoRefresh" className="text-sm text-gray-600">Auto-refresh</label>
+            <label htmlFor="autoRefresh" className="text-sm text-gray-600">
+              Auto-refresh
+            </label>
           </div>
           <select
             value={selectedTimeframe}
-            onChange={(e) => setSelectedTimeframe(e.target.value as any)}
+            onChange={e => setSelectedTimeframe(e.target.value as any)}
             className="px-3 py-2 border border-gray-300 rounded-md"
           >
             <option value="live">Live</option>
@@ -314,9 +340,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         </div>
         <div className="bg-orange-50 rounded-lg p-4">
           <div className="text-orange-600 text-sm font-medium">Last Update</div>
-          <div className="text-lg font-bold text-orange-800">
-            {lastUpdate.toLocaleTimeString()}
-          </div>
+          <div className="text-lg font-bold text-orange-800">{lastUpdate.toLocaleTimeString()}</div>
         </div>
       </div>
 
@@ -326,19 +350,26 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           <h3 className="text-lg font-semibold mb-4">Top Performers</h3>
           <div className="space-y-2">
             {analyticsData.fencerPerformance.slice(0, 5).map((perf, index) => (
-              <div key={perf.fencer.id} className="flex items-center justify-between p-2 bg-white rounded">
+              <div
+                key={perf.fencer.id}
+                className="flex items-center justify-between p-2 bg-white rounded"
+              >
                 <div className="flex items-center space-x-3">
                   <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
                     {index + 1}
                   </div>
                   <div>
                     <div className="font-medium">{`${perf.fencer.lastName} ${perf.fencer.firstName?.charAt(0)}.`}</div>
-                    <div className="text-xs text-gray-500">Win rate: {(perf.victoryRate * 100).toFixed(1)}%</div>
+                    <div className="text-xs text-gray-500">
+                      Win rate: {(perf.victoryRate * 100).toFixed(1)}%
+                    </div>
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="font-medium">{perf.averageScore.toFixed(1)}</div>
-                  <div className={`text-xs px-2 py-1 rounded-full ${getFormColor(perf.recentForm)}`}>
+                  <div
+                    className={`text-xs px-2 py-1 rounded-full ${getFormColor(perf.recentForm)}`}
+                  >
                     {perf.recentForm}
                   </div>
                 </div>
@@ -351,14 +382,16 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         <div className="bg-gray-50 rounded-lg p-4">
           <h3 className="text-lg font-semibold mb-4">Pool Progress</h3>
           <div className="space-y-3">
-            {analyticsData.poolProgress.map((pool) => (
+            {analyticsData.poolProgress.map(pool => (
               <div key={pool.poolId} className="p-3 bg-white rounded">
                 <div className="flex justify-between items-center mb-2">
                   <span className="font-medium">Pool {pool.poolNumber}</span>
-                  <span className="text-sm text-gray-600">{pool.completionPercentage.toFixed(1)}%</span>
+                  <span className="text-sm text-gray-600">
+                    {pool.completionPercentage.toFixed(1)}%
+                  </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
+                  <div
                     className="bg-blue-500 h-2 rounded-full transition-all duration-300"
                     style={{ width: `${pool.completionPercentage}%` }}
                   />
@@ -379,7 +412,9 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           </div>
           <div>
             <div className="text-sm text-gray-600">Avg Victory Margin</div>
-            <div className="font-bold">{analyticsData.weaponStats.averageVictoryMargin.toFixed(1)}</div>
+            <div className="font-bold">
+              {analyticsData.weaponStats.averageVictoryMargin.toFixed(1)}
+            </div>
           </div>
           <div>
             <div className="text-sm text-gray-600">Most Touching Match</div>

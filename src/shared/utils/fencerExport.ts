@@ -23,35 +23,55 @@ function formatDateFFF(date?: Date): string {
  */
 function genderToFFF(gender: Gender): string {
   switch (gender) {
-    case Gender.MALE: return 'M';
-    case Gender.FEMALE: return 'F';
-    default: return '';
+    case Gender.MALE:
+      return 'M';
+    case Gender.FEMALE:
+      return 'F';
+    default:
+      return '';
   }
 }
 
 /**
  * Exporte la liste des tireurs au format FFF (FFE - Federation Francaise d'Escrime)
- * Format: NOM;PRENOM;SEXE;DATE_NAISSANCE;NATION;LIGUE;CLUB;LICENCE;CLASSEMENT
+ * Format standard FFF: NOM,Prénom,Naissance,Sexe,Nationalité;,,;Licence,Ligue,Club,Classement,?,?;Position,t
  */
 export function exportFencersToFFF(fencers: Fencer[]): string {
   const lines: string[] = [];
 
   // En-tete standard FFF
-  lines.push('NOM;PRENOM;SEXE;DATE_NAISSANCE;NATION;LIGUE;CLUB;LICENCE;CLASSEMENT');
+  lines.push('FFF;WIN;competition;;individuel');
 
+  let position = 1;
   for (const fencer of fencers) {
-    const fields = [
+    // Section 0: NOM,Prénom,Naissance,Sexe,Nationalité (séparés par virgule)
+    const section0 = [
       fencer.lastName.toUpperCase(),
       fencer.firstName,
-      genderToFFF(fencer.gender),
       formatDateFFF(fencer.birthDate),
-      fencer.nationality || '',
+      genderToFFF(fencer.gender),
+      fencer.nationality || 'FRA',
+    ].join(',');
+
+    // Section 1: Vide (,,)
+    const section1 = ',,';
+
+    // Section 2: Licence,Ligue,Club,Classement,Nationalité?,?
+    const section2 = [
+      fencer.license || '',
       fencer.league || '',
       fencer.club || '',
-      fencer.license || '',
       fencer.ranking != null ? String(fencer.ranking) : '',
-    ];
-    lines.push(fields.join(';'));
+      '', // Nationalité (doublon)
+      '', // ?
+    ].join(',');
+
+    // Section 3: Position,Statut
+    const section3 = `${position},t`;
+
+    // Assembler les sections séparées par ;
+    lines.push(`${section0};${section1};${section2};${section3}`);
+    position++;
   }
 
   return lines.join('\n');
@@ -97,7 +117,9 @@ export function exportFencersToTXT(fencers: Fencer[], title?: string): string {
 
   for (const fencer of fencers) {
     const birthYear = fencer.birthDate
-      ? (fencer.birthDate instanceof Date ? fencer.birthDate : new Date(fencer.birthDate)).getFullYear().toString()
+      ? (fencer.birthDate instanceof Date ? fencer.birthDate : new Date(fencer.birthDate))
+          .getFullYear()
+          .toString()
       : '-';
 
     const line = [

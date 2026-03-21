@@ -6,7 +6,11 @@
 
 import { useMemo, useCallback, useState } from 'react';
 import { Pool, Fencer, Match, MatchStatus, Score, Weapon, PoolRanking } from '../../shared/types';
-import { calculatePoolRanking, formatRatio, formatIndex } from '../../shared/utils/poolCalculations';
+import {
+  calculatePoolRanking,
+  formatRatio,
+  formatIndex,
+} from '../../shared/utils/poolCalculations';
 
 // ============================================================================
 // Pool Calculation Hooks
@@ -17,13 +21,16 @@ export const usePoolCalculations = (pool: Pool, weapon?: Weapon) => {
 
   // Memoized fencer calculations
   const fencerStats = useMemo(() => {
-    const stats = new Map<string, {
-      victories: number;
-      defeats: number;
-      touchesScored: number;
-      touchesReceived: number;
-      matchesPlayed: number;
-    }>();
+    const stats = new Map<
+      string,
+      {
+        victories: number;
+        defeats: number;
+        touchesScored: number;
+        touchesReceived: number;
+        matchesPlayed: number;
+      }
+    >();
 
     // Initialize all fencers with zero stats
     pool.fencers.forEach(fencer => {
@@ -32,7 +39,7 @@ export const usePoolCalculations = (pool: Pool, weapon?: Weapon) => {
         defeats: 0,
         touchesScored: 0,
         touchesReceived: 0,
-        matchesPlayed: 0
+        matchesPlayed: 0,
       });
     });
 
@@ -44,29 +51,29 @@ export const usePoolCalculations = (pool: Pool, weapon?: Weapon) => {
 
       const fencerAId = match.fencerA.id;
       const fencerBId = match.fencerB.id;
-      
+
       const statA = stats.get(fencerAId);
       const statB = stats.get(fencerBId);
-      
+
       if (!statA || !statB) return;
 
       const scoreA = match.scoreA?.value ?? 0;
       const scoreB = match.scoreB?.value ?? 0;
-      
+
       // Update stats
       statA.matchesPlayed++;
       statB.matchesPlayed++;
-      
+
       statA.touchesScored += scoreA;
       statA.touchesReceived += scoreB;
-      
+
       statB.touchesScored += scoreB;
       statB.touchesReceived += scoreA;
-      
+
       // Determine winner (considering victory overrides for laser sabre)
       const winnerA = match.scoreA?.isVictory || (scoreA > scoreB && !isLaserSabre);
       const winnerB = match.scoreB?.isVictory || (scoreB > scoreA && !isLaserSabre);
-      
+
       if (winnerA) {
         statA.victories++;
         statB.defeats++;
@@ -89,7 +96,7 @@ export const usePoolCalculations = (pool: Pool, weapon?: Weapon) => {
     const pending = pool.matches
       .map((m, idx) => ({ match: m, index: idx }))
       .filter(({ match }) => match.status !== MatchStatus.FINISHED);
-    
+
     const finished = pool.matches
       .map((m, idx) => ({ match: m, index: idx }))
       .filter(({ match }) => match.status === MatchStatus.FINISHED);
@@ -101,7 +108,7 @@ export const usePoolCalculations = (pool: Pool, weapon?: Weapon) => {
     fencerStats,
     poolRanking,
     matchCategories,
-    isLaserSabre
+    isLaserSabre,
   };
 };
 
@@ -111,64 +118,62 @@ export const usePoolCalculations = (pool: Pool, weapon?: Weapon) => {
 
 export const useOrderedMatches = (pool: Pool) => {
   const orderedMatches = useMemo(() => {
-    const pending = pool.matches
-      .map((m, idx) => ({ match: m, index: idx }))
-      .filter(({ match }) => match.status !== MatchStatus.FINISHED);
-    
-    const finished = pool.matches
-      .map((m, idx) => ({ match: m, index: idx }))
-      .filter(({ match }) => match.status === MatchStatus.FINISHED);
+    // Partitionner en une seule passe
+    const pending: { match: Match; index: number }[] = [];
+    const finished: { match: Match; index: number }[] = [];
+    pool.matches.forEach((match, idx) => {
+      if (match.status === MatchStatus.FINISHED) {
+        finished.push({ match, index: idx });
+      } else {
+        pending.push({ match, index: idx });
+      }
+    });
 
     if (pending.length === 0) return { pending: [], finished };
 
-    // Smart ordering algorithm to prevent fencers from fighting twice in a row
-    const ordered: typeof pending = [];
-    const remaining = [...pending];
-    let lastFencerIds: Set<string> = new Set();
+    // Map O(1) pour les refs de tireurs — évite find() dans la boucle interne
+    const fencerRef = new Map<string, number>();
+    pool.fencers.forEach(f => fencerRef.set(f.id, f.ref));
 
-    while (remaining.length > 0) {
-      let bestMatch: typeof pending[0] | null = null;
+    // Algorithme d'ordonnancement : éviter qu'un tireur enchaîne deux matchs
+    const ordered: typeof pending = [];
+    // Tableau booléen pour marquer les éléments consommés (évite indexOf + splice O(n))
+    const consumed = new Array<boolean>(pending.length).fill(false);
+    let remaining = pending.length;
+    const lastFencerIds: Set<string> = new Set();
+
+    while (remaining > 0) {
+      let bestIdx = -1;
       let bestScore = -1;
 
-      for (const candidate of remaining) {
-        const fencerAId = candidate.match.fencerA?.id;
-        const fencerBId = candidate.match.fencerB?.id;
-        
+      for (let i = 0; i < pending.length; i++) {
+        if (consumed[i]) continue;
+        const { match } = pending[i];
+        const fencerAId = match.fencerA?.id;
+        const fencerBId = match.fencerB?.id;
+
         let score = 0;
-        
-        // Prefer matches with fencers who haven't fought recently
         if (fencerAId && !lastFencerIds.has(fencerAId)) score += 2;
         if (fencerBId && !lastFencerIds.has(fencerBId)) score += 2;
-        
-        // Prefer matches with higher-numbered fencers (to finish their matches earlier)
-        if (fencerAId) {
-          const fencerA = pool.fencers.find(f => f.id === fencerAId);
-          if (fencerA) score += fencerA.ref * 0.1;
-        }
-        if (fencerBId) {
-          const fencerB = pool.fencers.find(f => f.id === fencerBId);
-          if (fencerB) score += fencerB.ref * 0.1;
-        }
+        if (fencerAId) score += (fencerRef.get(fencerAId) ?? 0) * 0.1;
+        if (fencerBId) score += (fencerRef.get(fencerBId) ?? 0) * 0.1;
 
         if (score > bestScore) {
           bestScore = score;
-          bestMatch = candidate;
+          bestIdx = i;
         }
       }
 
-      if (bestMatch) {
-        ordered.push(bestMatch);
-        remaining.splice(remaining.indexOf(bestMatch), 1);
-        
-        // Update last fencers set
-        lastFencerIds.clear();
-        if (bestMatch.match.fencerA) lastFencerIds.add(bestMatch.match.fencerA.id);
-        if (bestMatch.match.fencerB) lastFencerIds.add(bestMatch.match.fencerB.id);
-      } else {
-        // Fallback: add remaining matches in order
-        ordered.push(...remaining);
-        break;
-      }
+      if (bestIdx === -1) break; // sécurité
+
+      const best = pending[bestIdx];
+      ordered.push(best);
+      consumed[bestIdx] = true;
+      remaining--;
+
+      lastFencerIds.clear();
+      if (best.match.fencerA) lastFencerIds.add(best.match.fencerA.id);
+      if (best.match.fencerB) lastFencerIds.add(best.match.fencerB.id);
     }
 
     return { pending: ordered, finished };
@@ -220,7 +225,7 @@ export const useScoreEditing = () => {
     setVictoryB,
     startEditing,
     cancelEditing,
-    clearEditing
+    clearEditing,
   };
 };
 
@@ -248,7 +253,7 @@ export const useFencerDisplay = (fencers: Fencer[]) => {
   return {
     fencerById,
     getFencerDisplay,
-    getFencerShortDisplay
+    getFencerShortDisplay,
   };
 };
 
@@ -260,13 +265,15 @@ export const usePoolGridData = (pool: Pool, poolRanking: PoolRanking[]) => {
   const gridData = useMemo(() => {
     // Create grid data structure for efficient rendering
     const gridSize = pool.fencers.length;
-    const grid: Array<Array<{
-      fencerA: Fencer;
-      fencerB: Fencer;
-      match: Match | null;
-      score: string;
-      winner: 'A' | 'B' | null;
-    }>> = [];
+    const grid: Array<
+      Array<{
+        fencerA: Fencer;
+        fencerB: Fencer;
+        match: Match | null;
+        score: string;
+        winner: 'A' | 'B' | null;
+      }>
+    > = [];
 
     // Initialize empty grid
     for (let i = 0; i < gridSize; i++) {
@@ -277,24 +284,28 @@ export const usePoolGridData = (pool: Pool, poolRanking: PoolRanking[]) => {
           fencerB: pool.fencers[j],
           match: null,
           score: '',
-          winner: null
+          winner: null,
         };
       }
     }
+
+    // Map O(1) pour les index de tireurs — évite findIndex dans la boucle
+    const fencerIndex = new Map<string, number>();
+    pool.fencers.forEach((f, i) => fencerIndex.set(f.id, i));
 
     // Fill with match data
     pool.matches.forEach(match => {
       if (!match.fencerA || !match.fencerB) return;
 
-      const indexA = pool.fencers.findIndex(f => f.id === match.fencerA!.id);
-      const indexB = pool.fencers.findIndex(f => f.id === match.fencerB!.id);
+      const indexA = fencerIndex.get(match.fencerA.id) ?? -1;
+      const indexB = fencerIndex.get(match.fencerB.id) ?? -1;
 
       if (indexA !== -1 && indexB !== -1) {
         const scoreA = match.scoreA?.value ?? 0;
         const scoreB = match.scoreB?.value ?? 0;
         const victoryA = match.scoreA?.isVictory;
         const victoryB = match.scoreB?.isVictory;
-        
+
         let winner: 'A' | 'B' | null = null;
         if (victoryA) winner = 'A';
         else if (victoryB) winner = 'B';
@@ -306,7 +317,7 @@ export const usePoolGridData = (pool: Pool, poolRanking: PoolRanking[]) => {
           fencerB: pool.fencers[indexB],
           match,
           score: `${scoreA}-${scoreB}`,
-          winner
+          winner,
         };
       }
     });

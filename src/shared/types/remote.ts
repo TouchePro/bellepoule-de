@@ -47,10 +47,18 @@ export interface RemoteSession {
   activeMatches: RemoteMatch[];
   isRunning: boolean;
   startTime?: Date;
+  weapon?: string;
 }
 
 export interface WebSocketMessage {
-  type: 'score_update' | 'match_assigned' | 'match_finished' | 'referee_connected' | 'referee_disconnected' | 'strip_status_change' | 'score_update_broadcast';
+  type:
+    | 'score_update'
+    | 'match_assigned'
+    | 'match_finished'
+    | 'referee_connected'
+    | 'referee_disconnected'
+    | 'strip_status_change'
+    | 'score_update_broadcast';
   data: any;
   timestamp: Date;
   sender: string;
@@ -73,7 +81,13 @@ export interface ClientMessage {
 
 // Messages serveur vers client
 export interface ServerMessage {
-  type: 'login_success' | 'login_error' | 'match_assignment' | 'score_update_broadcast' | 'session_update' | 'error';
+  type:
+    | 'login_success'
+    | 'login_error'
+    | 'match_assignment'
+    | 'score_update_broadcast'
+    | 'session_update'
+    | 'error';
   data: any;
 }
 
@@ -85,24 +99,26 @@ export interface Arena {
   currentMatch: ArenaMatch | null;
   status: 'idle' | 'ready' | 'in_progress' | 'finished';
   startTime: Date | null;
-  elapsedTime: number; // in seconds
   settings: ArenaSettings;
+  password?: string;
 }
 
 export interface ArenaSettings {
   matchDuration: number; // in seconds
   breakDuration: number; // between matches
   autoAdvance: boolean; // automatically load next match
+  showPhotos?: boolean; // afficher les photos avant le combat
 }
 
 export interface ArenaMatch {
   id: string;
-  poolId: string;
+  poolId?: string; // absent pour les matchs d'élimination directe
+  isTableau?: boolean; // true pour les matchs DE (élimination directe)
   fencerA: Fencer;
   fencerB: Fencer;
   scoreA: number;
   scoreB: number;
-  status: 'pending' | 'in_progress' | 'finished';
+  status: 'pending' | 'in_progress' | 'finished' | 'not_started';
   startTime: Date | null;
   endTime: Date | null;
   duration?: number; // in seconds
@@ -117,6 +133,11 @@ export interface ArenaUpdate {
   status: Arena['status'];
   fencerA?: Fencer;
   fencerB?: Fencer;
+  timerStatus?: 'running' | 'paused' | 'reset';
+  cardsA?: string[];
+  cardsB?: string[];
+  suddenDeath?: boolean;
+  showPhotos?: boolean; // afficher les photos avant le combat
 }
 
 export interface RefereeControl {
