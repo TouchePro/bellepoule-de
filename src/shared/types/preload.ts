@@ -299,7 +299,8 @@ export interface RemoteServerAPI {
   startSession: (
     competitionId: string,
     strips: number,
-    matches?: any[]
+    matches?: any[],
+    showPhotos?: boolean
   ) => Promise<{ success: boolean; session?: any; error?: string }>;
   stopSession: () => Promise<{ success: boolean; error?: string }>;
   getSession: () => Promise<{ success: boolean; session?: any; error?: string }>;

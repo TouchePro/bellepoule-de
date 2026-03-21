@@ -462,13 +462,6 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     // Propager les gagnants avant de sauvegarder
     propagateWinners(updatedMatches, tableauSize);
 
-    // Debug: vérifier que les matchs sont bien mis à jour
-    const finalMatch = updatedMatches.find(m => m.round === 2);
-    const thirdPlaceMatch = updatedMatches.find(m => m.round === 3);
-    // DEBUG: console.log('=== Après propagateWinners ===');
-    // DEBUG: console.log('Finale:', finalMatch?.fencerA?.lastName, 'vs', finalMatch?.fencerB?.lastName);
-    // DEBUG: console.log('Petite finale:', thirdPlaceMatch?.fencerA?.lastName, 'vs', thirdPlaceMatch?.fencerB?.lastName);
-
     // Créer une copie profonde pour forcer React à re-renderer
     const matchesCopy = updatedMatches.map(m => ({ ...m }));
     onMatchesChange(matchesCopy);
