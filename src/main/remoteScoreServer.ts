@@ -736,16 +736,16 @@ export class RemoteScoreServer {
         // (pas seulement le match courant) pour que l'arbitre voie les prochains matchs.
         const currentPoolId = arena?.currentMatch?.poolId;
         if (currentPoolId && this.sessionMatches.length > 0) {
-          const poolMatches = this.sessionMatches
+          const rawPoolMatches = this.sessionMatches
             .filter((m: any) => {
               const matchPoolId = m.poolId || m.pool?.id || `pool-${m.poolNumber || m.number}`;
               return matchPoolId === currentPoolId;
             })
-            .sort((a: any, b: any) => (a.number || 0) - (b.number || 0))
             .map((m: any) => {
               const scoreUpdate = this.sessionMatchScores.get(m.id);
               return scoreUpdate ? { ...m, ...scoreUpdate } : m;
             });
+          const poolMatches = this.applySmartMatchOrder(rawPoolMatches as Match[]);
           console.log(`[RemoteScoreServer] ${poolMatches.length} matchs de pool pour arène ${arenaId} (pool ${currentPoolId})`);
           if (poolMatches.length > 0) {
             return res.json({ matches: poolMatches, poolId: currentPoolId, poolName: null });
@@ -1347,6 +1347,50 @@ export class RemoteScoreServer {
       `[RemoteScoreServer] Détails: ${strips} pistes, ${session.referees.length} arbitres`
     );
     return session;
+  }
+
+  private applySmartMatchOrder(matches: Match[]): Match[] {
+    const pending = matches.filter(m => m.status !== MatchStatus.FINISHED);
+    const finished = matches.filter(m => m.status === MatchStatus.FINISHED);
+
+    if (pending.length === 0) return matches;
+
+    const ordered: Match[] = [];
+    const remaining = [...pending];
+    let lastFencerIds: Set<string> = new Set();
+
+    if (finished.length > 0) {
+      const lastMatch = finished[finished.length - 1];
+      if (lastMatch.fencerA) lastFencerIds.add(lastMatch.fencerA.id);
+      if (lastMatch.fencerB) lastFencerIds.add(lastMatch.fencerB.id);
+    }
+
+    while (remaining.length > 0) {
+      let bestIdx = -1;
+      let bestScore = -1;
+
+      for (let i = 0; i < remaining.length; i++) {
+        const match = remaining[i];
+        let score = 0;
+        if (!lastFencerIds.has(match.fencerA?.id || '')) score++;
+        if (!lastFencerIds.has(match.fencerB?.id || '')) score++;
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestIdx = i;
+        }
+        if (score === 2) break;
+      }
+
+      const chosen = remaining.splice(bestIdx >= 0 ? bestIdx : 0, 1)[0];
+      ordered.push(chosen);
+
+      lastFencerIds = new Set();
+      if (chosen.fencerA) lastFencerIds.add(chosen.fencerA.id);
+      if (chosen.fencerB) lastFencerIds.add(chosen.fencerB.id);
+    }
+
+    return [...finished, ...ordered];
   }
 
   private async updateMatchScore(matchId: string, update: RemoteScoreUpdate): Promise<void> {
