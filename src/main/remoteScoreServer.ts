@@ -92,7 +92,7 @@ export class RemoteScoreServer {
     const isDev = process.env.NODE_ENV === 'development';
 
     // Liste des fichiers à charger
-    const filesToLoad = ['referee.html', 'arena.html', 'dashboard.html', 'index.html', 'pool.html', 'kiosk.html', 'login.html'];
+    const filesToLoad = ['referee.html', 'arena.html', 'dashboard.html', 'index.html', 'pool.html', 'kiosk.html', 'login.html', 'public.html'];
 
     // Essayer plusieurs chemins pour trouver les fichiers
     const possiblePaths = isDev
@@ -537,6 +537,19 @@ export class RemoteScoreServer {
         return res.redirect(302, `/login?arena=arena${arenaId}&return=${encodeURIComponent(req.path)}`);
       }
       this.sendHtmlFromMemory('referee.html', res);
+    });
+
+    // Vue publique par arène (lecture seule, pas d'authentification requise)
+    this.app.get('/arene:arenaId/public', (req, res) => {
+      const arenaId = req.params.arenaId;
+      console.log(`[RemoteScoreServer] Accès vue publique /arene${arenaId}/public`);
+      this.sendHtmlFromMemory('public.html', res);
+    });
+
+    this.app.get('/arena:arenaId/public', (req, res) => {
+      const arenaId = req.params.arenaId;
+      console.log(`[RemoteScoreServer] Accès vue publique /arena${arenaId}/public`);
+      this.sendHtmlFromMemory('public.html', res);
     });
 
     // Vue de saisie de poule par arène
