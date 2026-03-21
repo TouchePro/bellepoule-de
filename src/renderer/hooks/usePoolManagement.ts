@@ -405,6 +405,26 @@ export const usePoolManagement = ({
     [computePoolRanking, computeOverallRanking]
   );
 
+  // Synchroniser les données des tireurs (ex: photo) dans les matches de poule
+  const syncFencersToPool = useCallback((updatedFencers: Fencer[]) => {
+    if (updatedFencers.length === 0) return;
+    const fencerMap = new Map(updatedFencers.map(f => [f.id, f]));
+
+    const syncPools = (poolList: Pool[]): Pool[] =>
+      poolList.map(pool => ({
+        ...pool,
+        fencers: pool.fencers.map(f => fencerMap.get(f.id) ?? f),
+        matches: pool.matches.map(match => ({
+          ...match,
+          fencerA: match.fencerA ? (fencerMap.get(match.fencerA.id) ?? match.fencerA) : match.fencerA,
+          fencerB: match.fencerB ? (fencerMap.get(match.fencerB.id) ?? match.fencerB) : match.fencerB,
+        })),
+      }));
+
+    setPools(prev => (prev.length === 0 ? prev : syncPools(prev)));
+    setPoolHistory(prev => (prev.length === 0 ? prev : prev.map(round => syncPools(round))));
+  }, []);
+
   return {
     pools,
     setPools,
@@ -423,6 +443,7 @@ export const usePoolManagement = ({
     computePoolRanking,
     computeOverallRanking,
     handleFencerForfeit,
+    syncFencersToPool,
   };
 };
 
