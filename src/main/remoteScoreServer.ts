@@ -847,7 +847,7 @@ export class RemoteScoreServer {
           });
           // Mettre à jour les scores de l'arène puis terminer le match via l'IPC
           for (const [arenaId, arena] of this.arenas) {
-            if (arena.currentMatch?.id === matchId) {
+            if (arena.currentMatch && arena.currentMatch.id === matchId) {
               arena.currentMatch.scoreA = scoreA;
               arena.currentMatch.scoreB = scoreB;
               this.finishArenaMatch(arenaId);
