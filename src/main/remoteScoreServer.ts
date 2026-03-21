@@ -1126,6 +1126,7 @@ export class RemoteScoreServer {
             scoreA: arena.currentMatch?.scoreA,
             scoreB: arena.currentMatch?.scoreB,
             status: arena.status,
+            showPhotos: this.sessionShowPhotos,
             fencerA: arena.currentMatch?.fencerA,
             fencerB: arena.currentMatch?.fencerB,
           });
