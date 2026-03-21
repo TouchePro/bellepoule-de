@@ -217,9 +217,30 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     onShowProperties: () => setShowPropertiesModal(true),
     onShowAddFencer: () => setShowAddFencerModal(true),
     onExportFencers: format => exportFencersList(fencers, format),
+    onExportFencersBpf: async () => {
+      const result = await window.electronAPI.dialog.saveFile({
+        title: 'Exporter tireurs + photos (.bpf)',
+        defaultPath: `tireurs-${competition.title}.bpf`,
+        filters: [{ name: 'BellePoule Fencers', extensions: ['bpf'] }],
+      });
+      if (result && !result.canceled && result.filePath) {
+        await window.electronAPI.file.exportFencersArchive(competition.id, result.filePath);
+      }
+    },
     onExportRanking: format => exportRanking(overallRanking, format, isLaserSabre),
     onExportResults: format => exportResults(finalResults, format),
-    onImport: (format, filepath, content) => setImportData({ format, filepath, content }),
+    onImport: async (format, filepath, content) => {
+      if (format === 'fencers-bpf') {
+        try {
+          await window.electronAPI.file.importFencersArchive(competition.id, filepath);
+          loadFencers();
+        } catch (err) {
+          console.error('Erreur import .bpf:', err);
+        }
+        return;
+      }
+      setImportData({ format, filepath, content });
+    },
     onReportIssue: () => {}, // À implémenter
     onNextPhase: () => {},
     loadFencers,
@@ -658,6 +679,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         {currentPhase === 'checkin' && (
           <FencerList
             fencers={fencers}
+            competitionId={competition.id}
             onCheckIn={handleCheckInFencer}
             onAddFencer={() => setShowAddFencerModal(true)}
             onEditFencer={updateFencer}
@@ -666,6 +688,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             onCheckInAll={checkInAll}
             onUncheckAll={uncheckAll}
             onImport={handleOpenImportDialog}
+            onFencersImported={loadFencers}
             onSetFencerStatus={(id, status) => {
               // Si forfait, abandon ou exclusion, mettre à jour tous les matchs du tireur
               if (status === FencerStatus.FORFAIT) {

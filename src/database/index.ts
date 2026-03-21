@@ -650,6 +650,101 @@ export class DatabaseManager {
     return results;
   }
 
+  public getFencerPhotos(competitionId: string): { license: string; photo: string }[] {
+    if (!this.db) throw new Error('Database not open');
+    const results: { license: string; photo: string }[] = [];
+    const stmt = this.db.prepare(
+      "SELECT license, photo FROM fencers WHERE competition_id = ? AND photo IS NOT NULL AND license IS NOT NULL AND license != ''"
+    );
+    stmt.bind([competitionId]);
+    while (stmt.step()) {
+      const row = stmt.getAsObject();
+      results.push({ license: row.license as string, photo: row.photo as string });
+    }
+    stmt.free();
+    return results;
+  }
+
+  public updateFencerPhotosByLicense(
+    competitionId: string,
+    photos: { license: string; photo: string }[]
+  ): { matched: number; total: number } {
+    if (!this.db) throw new Error('Database not open');
+    let matched = 0;
+    const now = new Date().toISOString();
+
+    for (const { license, photo } of photos) {
+      const stmt = this.db.prepare(
+        'SELECT id FROM fencers WHERE competition_id = ? AND license = ? LIMIT 1'
+      );
+      stmt.bind([competitionId, license]);
+      const exists = stmt.step();
+      stmt.free();
+
+      if (exists) {
+        this.db.run(
+          'UPDATE fencers SET photo = ?, updated_at = ? WHERE competition_id = ? AND license = ?',
+          [photo, now, competitionId, license]
+        );
+        matched++;
+      }
+    }
+
+    this.save();
+    return { matched, total: photos.length };
+  }
+
+  public upsertFencersByLicense(
+    competitionId: string,
+    fencers: Partial<Fencer>[]
+  ): { added: number; updated: number } {
+    if (!this.db) throw new Error('Database not open');
+    let added = 0;
+    let updated = 0;
+
+    for (const fencer of fencers) {
+      let existing: Fencer | null = null;
+      const key = fencer.license?.trim();
+
+      if (key) {
+        const stmt = this.db.prepare(
+          'SELECT id FROM fencers WHERE competition_id = ? AND license = ? LIMIT 1'
+        );
+        stmt.bind([competitionId, key]);
+        if (stmt.step()) {
+          const row = stmt.getAsObject();
+          existing = this.getFencer(row.id as string);
+        }
+        stmt.free();
+      }
+
+      if (!existing && fencer.lastName && fencer.firstName) {
+        const stmt = this.db.prepare(
+          'SELECT id FROM fencers WHERE competition_id = ? AND LOWER(last_name) = LOWER(?) AND LOWER(first_name) = LOWER(?) LIMIT 1'
+        );
+        stmt.bind([competitionId, fencer.lastName, fencer.firstName]);
+        if (stmt.step()) {
+          const row = stmt.getAsObject();
+          existing = this.getFencer(row.id as string);
+        }
+        stmt.free();
+      }
+
+      if (existing) {
+        const updates = { ...fencer };
+        if (existing.photo) delete updates.photo;
+        this.updateFencer(existing.id, updates);
+        updated++;
+      } else {
+        this.addFencer(competitionId, fencer);
+        added++;
+      }
+    }
+
+    this.save();
+    return { added, updated };
+  }
+
   public updateFencer(id: string, updates: Partial<Fencer>): void {
     if (!this.db) throw new Error('Database not open');
     const now = new Date().toISOString();

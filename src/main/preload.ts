@@ -244,6 +244,42 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }
       return ipcRenderer.invoke('file:writeContent', filepath, content);
     },
+    exportPhotos: (competitionId: string, filepath: string) => {
+      if (!competitionId || typeof competitionId !== 'string') {
+        throw new Error('Competition ID is required and must be a string');
+      }
+      if (!filepath || typeof filepath !== 'string') {
+        throw new Error('Filepath is required and must be a string');
+      }
+      return ipcRenderer.invoke('file:exportPhotos', competitionId, filepath);
+    },
+    importPhotos: (competitionId: string, filepath: string) => {
+      if (!competitionId || typeof competitionId !== 'string') {
+        throw new Error('Competition ID is required and must be a string');
+      }
+      if (!filepath || typeof filepath !== 'string') {
+        throw new Error('Filepath is required and must be a string');
+      }
+      return ipcRenderer.invoke('file:importPhotos', competitionId, filepath);
+    },
+    exportFencersArchive: (competitionId: string, filepath: string) => {
+      if (!competitionId || typeof competitionId !== 'string') {
+        throw new Error('Competition ID is required and must be a string');
+      }
+      if (!filepath || typeof filepath !== 'string') {
+        throw new Error('Filepath is required and must be a string');
+      }
+      return ipcRenderer.invoke('file:exportFencersArchive', competitionId, filepath);
+    },
+    importFencersArchive: (competitionId: string, filepath: string) => {
+      if (!competitionId || typeof competitionId !== 'string') {
+        throw new Error('Competition ID is required and must be a string');
+      }
+      if (!filepath || typeof filepath !== 'string') {
+        throw new Error('Filepath is required and must be a string');
+      }
+      return ipcRenderer.invoke('file:importFencersArchive', competitionId, filepath);
+    },
   },
 
   // Dialog operations with validation
