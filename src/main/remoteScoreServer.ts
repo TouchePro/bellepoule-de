@@ -1767,10 +1767,9 @@ export class RemoteScoreServer {
 
     const currentMatchId = arena.currentMatch?.id;
     const currentPoolId = arena.currentMatch?.poolId;
-    const nextIndex = this.arenaNextMatchIndex.get(arenaId) || 0;
 
     console.log(
-      `[RemoteScoreServer] loadNextMatch: arena=${arenaId}, pool=${currentPoolId}, index=${nextIndex}, total=${this.sessionMatches.length}`
+      `[RemoteScoreServer] loadNextMatch: arena=${arenaId}, pool=${currentPoolId}, total=${this.sessionMatches.length}`
     );
 
     // Si pas de matches en mémoire, essayer la DB
@@ -1788,67 +1787,44 @@ export class RemoteScoreServer {
       this.sessionMatches = pendingMatches;
     }
 
-    // Chercher le prochain match dans le même pool
+    // Chercher le prochain match dans le même pool (ordre smart = même ordre que l'affichage)
     if (currentPoolId) {
-      const poolMatches = this.sessionMatches
+      const rawPoolMatches = this.sessionMatches
         .filter(m => {
           const matchPoolId = m.poolId || m.pool?.id || `pool-${m.poolNumber || m.number}`;
           return matchPoolId === currentPoolId;
         })
-        .sort((a: any, b: any) => (a.number || 0) - (b.number || 0));
+        .map((m: any) => {
+          const scoreUpdate = this.sessionMatchScores.get(m.id);
+          return scoreUpdate ? { ...m, ...scoreUpdate } : m;
+        });
+      const poolMatches = this.applySmartMatchOrder(rawPoolMatches as Match[])
+        .filter(m => m.status !== MatchStatus.FINISHED);
 
       console.log(
-        `[RemoteScoreServer] ${poolMatches.length} matches dans le pool ${currentPoolId}, prochain index: ${nextIndex}`
+        `[RemoteScoreServer] ${poolMatches.length} matches en attente dans le pool ${currentPoolId} (ordre smart)`
       );
 
-      if (nextIndex < poolMatches.length) {
-        const nextMatch = poolMatches[nextIndex];
+      const nextMatch = poolMatches.find(m => m.id !== currentMatchId);
+      if (nextMatch) {
+        console.log(
+          `[RemoteScoreServer] Chargement du match ${nextMatch.id} (pool ${currentPoolId}) sur arène ${arenaId}`
+        );
 
-        // Ignorer le match actuel
-        if (nextMatch.id === currentMatchId && nextIndex + 1 < poolMatches.length) {
-          const actualNextMatch = poolMatches[nextIndex + 1];
-          this.arenaNextMatchIndex.set(arenaId, nextIndex + 2);
+        const arenaMatch: ArenaMatch = {
+          id: nextMatch.id,
+          poolId: currentPoolId,
+          fencerA: nextMatch.fencerA!,
+          fencerB: nextMatch.fencerB!,
+          scoreA: 0,
+          scoreB: 0,
+          status: 'not_started',
+          startTime: null,
+          endTime: null,
+        };
 
-          console.log(
-            `[RemoteScoreServer] Chargement du match suivant ${actualNextMatch.id} (pool ${currentPoolId}) sur arène ${arenaId}`
-          );
-
-          const arenaMatch: ArenaMatch = {
-            id: actualNextMatch.id,
-            poolId: currentPoolId,
-            fencerA: actualNextMatch.fencerA!,
-            fencerB: actualNextMatch.fencerB!,
-            scoreA: 0,
-            scoreB: 0,
-            status: 'not_started',
-            startTime: null,
-            endTime: null,
-          };
-
-          this.assignMatchToArena(arenaId, arenaMatch);
-          return;
-        } else if (nextMatch.id !== currentMatchId) {
-          this.arenaNextMatchIndex.set(arenaId, nextIndex + 1);
-
-          console.log(
-            `[RemoteScoreServer] Chargement du match ${nextMatch.id} (pool ${currentPoolId}) sur arène ${arenaId}`
-          );
-
-          const arenaMatch: ArenaMatch = {
-            id: nextMatch.id,
-            poolId: currentPoolId,
-            fencerA: nextMatch.fencerA!,
-            fencerB: nextMatch.fencerB!,
-            scoreA: 0,
-            scoreB: 0,
-            status: 'not_started',
-            startTime: null,
-            endTime: null,
-          };
-
-          this.assignMatchToArena(arenaId, arenaMatch);
-          return;
-        }
+        this.assignMatchToArena(arenaId, arenaMatch);
+        return;
       }
 
       console.log(
