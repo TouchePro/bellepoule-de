@@ -6,6 +6,7 @@
 import { app, BrowserWindow, ipcMain, dialog, Menu, shell } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
+import JSZip from 'jszip';
 import { DatabaseManager } from '../database';
 import { RemoteScoreServer } from './remoteScoreServer';
 import { AutoUpdater } from './autoUpdater';
@@ -175,6 +176,7 @@ function createMenu(): void {
             { type: 'separator' },
             { label: 'Exporter tireurs (.txt)', click: () => handleExport('fencers-txt') },
             { label: 'Exporter tireurs (.fff)', click: () => handleExport('fencers-fff') },
+            { label: 'Exporter tireurs + photos (.bpf)', click: () => handleExport('fencers-bpf') },
           ],
         },
         {
@@ -183,6 +185,7 @@ function createMenu(): void {
             { label: 'Importer XML (BellePoule)', click: () => handleImport('xml') },
             { label: 'Importer liste FFE (.fff)', click: () => handleImport('fff') },
             { label: 'Importer classement FFE', click: () => handleImport('ranking') },
+            { label: 'Importer tireurs + photos (.bpf)', click: () => handleImport('fencers-bpf') },
           ],
         },
         { type: 'separator' },
@@ -432,6 +435,10 @@ async function handleImport(format: string): Promise<void> {
       title = 'Importer un classement FFE';
       filters = [{ name: 'Fichier classement', extensions: ['fff', 'csv', 'txt', 'xlsx'] }];
       break;
+    case 'fencers-bpf':
+      title = 'Importer tireurs + photos (.bpf)';
+      filters = [{ name: 'BellePoule Fencers', extensions: ['bpf'] }];
+      break;
     default:
       filters = [{ name: 'Tous les fichiers', extensions: ['*'] }];
   }
@@ -445,10 +452,13 @@ async function handleImport(format: string): Promise<void> {
   if (!result.canceled && result.filePaths.length > 0) {
     const filepath = result.filePaths[0];
     try {
-      // Lire le contenu du fichier
-      const content = fs.readFileSync(filepath, 'utf-8');
-      // Envoyer au renderer pour traitement
-      mainWindow?.webContents.send('menu:import', format, filepath, content);
+      if (format === 'fencers-bpf') {
+        // Fichier binaire : envoyer uniquement le chemin, le renderer appellera importFencersArchive
+        mainWindow?.webContents.send('menu:import', format, filepath, '');
+      } else {
+        const content = fs.readFileSync(filepath, 'utf-8');
+        mainWindow?.webContents.send('menu:import', format, filepath, content);
+      }
     } catch (error) {
       dialog.showErrorBox("Erreur d'import", `Impossible de lire le fichier: ${error}`);
     }
@@ -608,6 +618,92 @@ ipcMain.handle('file:import', async (_, filepath) => {
 // File content write handler
 ipcMain.handle('file:writeContent', async (_, filepath: string, content: string) => {
   fs.writeFileSync(filepath, content, 'utf-8');
+});
+
+// Photo ZIP export handler
+ipcMain.handle('file:exportPhotos', async (_, competitionId: string, filepath: string) => {
+  const photos = db.getFencerPhotos(competitionId);
+  const zip = new JSZip();
+
+  for (const { license, photo } of photos) {
+    const base64 = photo.replace(/^data:image\/\w+;base64,/, '');
+    const buffer = Buffer.from(base64, 'base64');
+    zip.file(`${license}.jpg`, buffer);
+  }
+
+  const content = await zip.generateAsync({ type: 'nodebuffer' });
+  const tmpPath = filepath + '.tmp';
+  try {
+    fs.writeFileSync(tmpPath, content);
+    try {
+      fs.renameSync(tmpPath, filepath);
+    } catch {
+      fs.writeFileSync(filepath, content);
+      try { fs.unlinkSync(tmpPath); } catch { /* ignore */ }
+    }
+  } catch {
+    fs.writeFileSync(filepath, content);
+  }
+
+  return { count: photos.length };
+});
+
+// Photo ZIP import handler
+ipcMain.handle('file:importPhotos', async (_, competitionId: string, filepath: string) => {
+  const buffer = fs.readFileSync(filepath);
+  const zip = await JSZip.loadAsync(buffer);
+
+  const photos: { license: string; photo: string }[] = [];
+
+  for (const [filename, file] of Object.entries(zip.files)) {
+    if (file.dir) continue;
+    const ext = path.extname(filename).toLowerCase();
+    if (!['.jpg', '.jpeg', '.png'].includes(ext)) continue;
+    const basename = path.basename(filename, ext);
+    const data = await file.async('base64');
+    const mimeType = ext === '.png' ? 'image/png' : 'image/jpeg';
+    photos.push({ license: basename, photo: `data:${mimeType};base64,${data}` });
+  }
+
+  return db.updateFencerPhotosByLicense(competitionId, photos);
+});
+
+// Fencer archive (.bpf) export handler
+ipcMain.handle('file:exportFencersArchive', async (_, competitionId: string, filepath: string) => {
+  const fencers = db.getFencersByCompetition(competitionId);
+  const competition = db.getCompetition(competitionId);
+  const zip = new JSZip();
+  zip.file('meta.json', JSON.stringify({
+    version: '1',
+    competitionName: competition?.title ?? '',
+    exportDate: new Date().toISOString(),
+    count: fencers.length,
+  }));
+  zip.file('fencers.json', JSON.stringify(fencers));
+  const content = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
+  const tmpPath = filepath + '.tmp';
+  try {
+    fs.writeFileSync(tmpPath, content);
+    try {
+      fs.renameSync(tmpPath, filepath);
+    } catch {
+      fs.writeFileSync(filepath, content);
+      try { fs.unlinkSync(tmpPath); } catch { /* ignore */ }
+    }
+  } catch {
+    fs.writeFileSync(filepath, content);
+  }
+  return { count: fencers.length };
+});
+
+// Fencer archive (.bpf) import handler
+ipcMain.handle('file:importFencersArchive', async (_, competitionId: string, filepath: string) => {
+  const buffer = fs.readFileSync(filepath);
+  const zip = await JSZip.loadAsync(buffer);
+  const fencersFile = zip.file('fencers.json');
+  if (!fencersFile) throw new Error('Format .bpf invalide : fencers.json manquant');
+  const fencers = JSON.parse(await fencersFile.async('string'));
+  return db.upsertFencersByLicense(competitionId, fencers);
 });
 
 // Dialog handlers

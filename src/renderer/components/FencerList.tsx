@@ -12,6 +12,7 @@ import { useConfirm } from './ConfirmDialog';
 
 interface FencerListProps {
   fencers: Fencer[];
+  competitionId?: string;
   onCheckIn: (id: string) => void;
   onAddFencer: () => void;
   onEditFencer?: (id: string, updates: Partial<Fencer>) => void;
@@ -21,10 +22,12 @@ interface FencerListProps {
   onUncheckAll?: () => void;
   onSetFencerStatus?: (id: string, status: FencerStatus) => void;
   onImport?: () => void;
+  onFencersImported?: () => void;
 }
 
 const FencerListComponent: React.FC<FencerListProps> = ({
   fencers,
+  competitionId,
   onCheckIn,
   onAddFencer,
   onEditFencer,
@@ -34,6 +37,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
   onUncheckAll,
   onSetFencerStatus,
   onImport,
+  onFencersImported,
 }) => {
   const { t } = useTranslation();
   const { confirm } = useConfirm();
@@ -50,6 +54,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
 
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'club' | 'ranking' | 'age'>('ranking');
+  const [photoMessage, setPhotoMessage] = useState<string | null>(null);
   const [editingFencer, setEditingFencer] = useState<Fencer | null>(null);
   const filteredFencers = fencers
     .filter(f => {
@@ -107,6 +112,78 @@ const FencerListComponent: React.FC<FencerListProps> = ({
   const handleImportFencers = () => {
     if (onImport) {
       onImport();
+    }
+  };
+
+  const showPhotoMessage = (msg: string) => {
+    setPhotoMessage(msg);
+    setTimeout(() => setPhotoMessage(null), 4000);
+  };
+
+  const handleExportPhotos = async () => {
+    if (!competitionId) return;
+    const result = await window.electronAPI.dialog.saveFile({
+      title: 'Exporter les photos (.zip)',
+      defaultPath: 'photos-tireurs.zip',
+      filters: [{ name: 'Archive ZIP', extensions: ['zip'] }],
+    });
+    if (result && !result.canceled && result.filePath) {
+      try {
+        const { count } = await window.electronAPI.file.exportPhotos(competitionId, result.filePath);
+        showPhotoMessage(`${count} photo${count !== 1 ? 's' : ''} exportée${count !== 1 ? 's' : ''}`);
+      } catch {
+        showPhotoMessage('Erreur lors de l\'export');
+      }
+    }
+  };
+
+  const handleImportPhotos = async () => {
+    if (!competitionId) return;
+    const result = await window.electronAPI.dialog.openFile({
+      title: 'Importer les photos (.zip)',
+      filters: [{ name: 'Archive ZIP', extensions: ['zip'] }],
+    });
+    if (result && result.filePath) {
+      try {
+        const { matched, total } = await window.electronAPI.file.importPhotos(competitionId, result.filePath);
+        showPhotoMessage(`${matched}/${total} photo${total !== 1 ? 's' : ''} importée${total !== 1 ? 's' : ''}`);
+      } catch {
+        showPhotoMessage('Erreur lors de l\'import');
+      }
+    }
+  };
+
+  const handleExportFencersArchive = async () => {
+    if (!competitionId) return;
+    const result = await window.electronAPI.dialog.saveFile({
+      title: 'Exporter tireurs + photos (.bpf)',
+      defaultPath: 'tireurs.bpf',
+      filters: [{ name: 'BellePoule Fencers', extensions: ['bpf'] }],
+    });
+    if (result && !result.canceled && result.filePath) {
+      try {
+        const { count } = await window.electronAPI.file.exportFencersArchive(competitionId, result.filePath);
+        showPhotoMessage(`${count} tireur${count !== 1 ? 's' : ''} exporté${count !== 1 ? 's' : ''} (.bpf)`);
+      } catch {
+        showPhotoMessage('Erreur lors de l\'export .bpf');
+      }
+    }
+  };
+
+  const handleImportFencersArchive = async () => {
+    if (!competitionId) return;
+    const result = await window.electronAPI.dialog.openFile({
+      title: 'Importer tireurs + photos (.bpf)',
+      filters: [{ name: 'BellePoule Fencers', extensions: ['bpf'] }],
+    });
+    if (result && result.filePath) {
+      try {
+        const { added, updated } = await window.electronAPI.file.importFencersArchive(competitionId, result.filePath);
+        showPhotoMessage(`${added} ajouté${added !== 1 ? 's' : ''}, ${updated} mis à jour (.bpf)`);
+        if (onFencersImported) onFencersImported();
+      } catch {
+        showPhotoMessage('Erreur lors de l\'import .bpf');
+      }
     }
   };
 
@@ -203,11 +280,49 @@ const FencerListComponent: React.FC<FencerListProps> = ({
           >
             FFF
           </button>
+          {competitionId && (
+            <>
+              <button
+                className="btn btn-secondary"
+                onClick={handleExportPhotos}
+                title="Exporter les photos des tireurs (.zip)"
+              >
+                📷 Photos
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={handleImportPhotos}
+                title="Importer des photos depuis un .zip (matching par licence)"
+              >
+                📂 Photos
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={handleExportFencersArchive}
+                title="Exporter tireurs + photos dans un fichier .bpf"
+              >
+                💾 .bpf
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={handleImportFencersArchive}
+                title="Importer tireurs + photos depuis un fichier .bpf"
+              >
+                📦 .bpf
+              </button>
+            </>
+          )}
           <button className="btn btn-primary" onClick={onAddFencer}>
             + {t('fencer.add')}
           </button>
         </div>
       </div>
+
+      {photoMessage && (
+        <div className="alert alert-success mb-4" style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}>
+          {photoMessage}
+        </div>
+      )}
 
       <div className="card mb-4">
         <div className="card-body flex gap-4">

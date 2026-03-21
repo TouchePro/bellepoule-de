@@ -363,6 +363,10 @@ export interface FileAPI {
   export: (filepath: string) => Promise<FileSaveResult>;
   import: (filepath: string) => Promise<FileOpenResult>;
   writeContent: (filepath: string, content: string) => Promise<void>;
+  exportPhotos: (competitionId: string, filepath: string) => Promise<{ count: number }>;
+  importPhotos: (competitionId: string, filepath: string) => Promise<{ matched: number; total: number }>;
+  exportFencersArchive: (competitionId: string, filepath: string) => Promise<{ count: number }>;
+  importFencersArchive: (competitionId: string, filepath: string) => Promise<{ added: number; updated: number }>;
 }
 
 export interface DialogAPI {
