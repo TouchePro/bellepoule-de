@@ -811,12 +811,12 @@ ipcMain.handle(
 
 ipcMain.handle(
   'remote:updateMatchArena',
-  async (_, matchId: string, fromArena: number | null, toArena: number | null) => {
+  async (_, matchId: string, fromArena: number | null, toArena: number | null, fencerA?: any, fencerB?: any) => {
     try {
       if (!remoteScoreServer) {
         return { success: false, error: 'Serveur non démarré' };
       }
-      remoteScoreServer.updateMatchArena(matchId, fromArena, toArena);
+      remoteScoreServer.updateMatchArena(matchId, fromArena, toArena, fencerA, fencerB);
       return { success: true };
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : 'Erreur' };

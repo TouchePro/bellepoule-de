@@ -1558,7 +1558,9 @@ export class RemoteScoreServer {
   public updateMatchArena(
     matchId: string,
     fromArena: number | null,
-    toArena: number | null
+    toArena: number | null,
+    fencerA?: any,
+    fencerB?: any
   ): void {
     let matchToMove: ArenaMatch | undefined;
 
@@ -1597,7 +1599,7 @@ export class RemoteScoreServer {
       }
     }
 
-    // Si le match n'est dans aucune arène, le construire depuis sessionMatches
+    // Si le match n'est dans aucune arène, le construire depuis sessionMatches ou les données passées
     if (!matchToMove) {
       const sm = this.sessionMatches.find((m: any) => m.id === matchId);
       if (sm) {
@@ -1612,6 +1614,21 @@ export class RemoteScoreServer {
           endTime: null,
           isTableau: true,
         };
+      } else if (fencerA && fencerB) {
+        // Match DE non encore en session (ex: session de poule toujours active) → créer depuis les données passées
+        matchToMove = {
+          id: matchId,
+          fencerA,
+          fencerB,
+          scoreA: 0,
+          scoreB: 0,
+          status: 'not_started',
+          startTime: null,
+          endTime: null,
+          isTableau: true,
+        };
+        this.sessionMatches.push({ id: matchId, fencerA, fencerB, isTableau: true, status: 'not_started' } as any);
+        console.log(`[RemoteScoreServer] Match DE ${matchId} ajouté à sessionMatches depuis updateMatchArena`);
       }
     }
 
@@ -1955,9 +1972,15 @@ export class RemoteScoreServer {
     this.sessionWeapon = competition.weapon || null;
     console.log(`[RemoteScoreServer] Type d'arme de la compétition: ${this.sessionWeapon}`);
 
-    // Auto-detect number of strips from pool count if not specified or too small
+    // Auto-detect number of strips from pool count if not specified or too small.
+    // Ne pas ajuster pour une session DE pure (uniquement des matchs tableau) car le nombre de
+    // poules de la phase précédente ne doit pas gonfler le nombre d'arènes d'élimination.
     const poolCount = this.db.getPoolCount(competitionId);
-    if (strips <= 0 || strips < poolCount) {
+    const isDeOnlySession =
+      matchesFromRenderer &&
+      matchesFromRenderer.length > 0 &&
+      matchesFromRenderer.every((m: any) => m.isTableau || m.__poolFencers);
+    if (!isDeOnlySession && (strips <= 0 || strips < poolCount)) {
       const actualStrips = poolCount > 0 ? poolCount : 1;
       console.log(
         `[RemoteScoreServer] Nombre de pistes ajusté: ${strips} -> ${actualStrips} (basé sur ${poolCount} poules)`

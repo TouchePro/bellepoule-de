@@ -310,7 +310,9 @@ export interface RemoteServerAPI {
   updateMatchArena: (
     matchId: string,
     fromArena: number | null,
-    toArena: number | null
+    toArena: number | null,
+    fencerA?: Fencer | null,
+    fencerB?: Fencer | null
   ) => Promise<{ success: boolean; error?: string }>;
   setArenaPassword: (arenaId: string, password: string) => Promise<{ success: boolean; error?: string }>;
 }
