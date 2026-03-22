@@ -400,7 +400,7 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
           </div>
 
           {/* Tableau défilant */}
-          <div ref={rankingScrollRef} style={{ flex: 1, overflowY: 'hidden', paddingBottom: '40px' }}>
+          <div ref={rankingScrollRef} data-kiosk-scroll="" style={{ flex: 1, overflowY: 'auto', paddingBottom: '40px' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '1.05rem' }}>
               <thead>
                 <tr style={{ color: '#64748b', textAlign: 'left', borderBottom: '1px solid #334155' }}>
@@ -454,7 +454,7 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
 
           {/* Contenu */}
           {activeRound !== null ? (
-            <div ref={tableauScrollRef} style={{ flex: 1, overflowY: 'hidden', paddingBottom: '40px' }}>
+            <div ref={tableauScrollRef} data-kiosk-scroll="" style={{ flex: 1, overflowY: 'auto', paddingBottom: '40px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '16px' }}>
                 {activeRoundMatches.map(match => {
                   if (match.isBye) {
@@ -543,6 +543,8 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
           0%, 100% { opacity: 1; }
           50% { opacity: 0.6; }
         }
+        [data-kiosk-scroll]::-webkit-scrollbar { display: none; }
+        [data-kiosk-scroll] { scrollbar-width: none; -ms-overflow-style: none; }
       `}</style>
     </div>
   );
