@@ -590,14 +590,16 @@
 
       // ─── Auto-scroll classement ──────────────────────────────────────────────
       let scrollAnimFrame = null;
+      let scrollDelayTimer = null;
 
       function startAutoScroll(wrapper) {
         cancelAnimationFrame(scrollAnimFrame);
-        const duration = 12000; // ms pour parcourir tout le contenu
-        const start = performance.now();
+        clearTimeout(scrollDelayTimer);
+        const duration = 20000; // ms pour parcourir tout le contenu
         const startTop = 0;
 
         function step(now) {
+          const start = step._start || (step._start = now);
           const elapsed = now - start;
           const maxScroll = wrapper.scrollHeight - wrapper.clientHeight;
           if (maxScroll <= 0) return;
@@ -610,7 +612,9 @@
           }
         }
 
-        scrollAnimFrame = requestAnimationFrame(step);
+        scrollDelayTimer = setTimeout(() => {
+          scrollAnimFrame = requestAnimationFrame(step);
+        }, 2000);
       }
 
       // ─── Menu escamotable ────────────────────────────────────────────────────
