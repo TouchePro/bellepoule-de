@@ -196,20 +196,21 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
     el.scrollTop = 0;
     let animId: number;
     let last: number | null = null;
+    let delayId: ReturnType<typeof setTimeout>;
 
     const step = (t: number) => {
       if (last !== null) {
         const maxScroll = el.scrollHeight - el.clientHeight;
         if (maxScroll > 0) {
-          el.scrollTop += ((t - last) / 1000) * 40;
+          el.scrollTop += ((t - last) / 1000) * 20;
           if (el.scrollTop >= maxScroll) el.scrollTop = 0;
         }
       }
       last = t;
       animId = requestAnimationFrame(step);
     };
-    animId = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(animId);
+    delayId = setTimeout(() => { animId = requestAnimationFrame(step); }, 2000);
+    return () => { clearTimeout(delayId); cancelAnimationFrame(animId); };
   }, [currentView, overallRanking]);
 
   // Auto-scroll tableau
@@ -220,20 +221,21 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
     el.scrollTop = 0;
     let animId: number;
     let last: number | null = null;
+    let delayId: ReturnType<typeof setTimeout>;
 
     const step = (t: number) => {
       if (last !== null) {
         const maxScroll = el.scrollHeight - el.clientHeight;
         if (maxScroll > 0) {
-          el.scrollTop += ((t - last) / 1000) * 40;
+          el.scrollTop += ((t - last) / 1000) * 20;
           if (el.scrollTop >= maxScroll) el.scrollTop = 0;
         }
       }
       last = t;
       animId = requestAnimationFrame(step);
     };
-    animId = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(animId);
+    delayId = setTimeout(() => { animId = requestAnimationFrame(step); }, 2000);
+    return () => { clearTimeout(delayId); cancelAnimationFrame(animId); };
   }, [currentView, activeRound]);
 
   // Données de la poule courante
