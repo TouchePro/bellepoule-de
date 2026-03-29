@@ -56,6 +56,14 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [currentView, setCurrentView] = useState<KioskView>(initialView);
+
+  // Auto-switch vers tableau quand les matchs d'élimination arrivent (changement de phase en direct)
+  useEffect(() => {
+    if (tableauMatches.length > 0 && currentView !== 'tableau') {
+      setCurrentView('tableau');
+    }
+  }, [tableauMatches.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [menuVisible, setMenuVisible] = useState(true);
   const menuTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
