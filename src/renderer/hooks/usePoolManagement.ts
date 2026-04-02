@@ -14,6 +14,7 @@ import {
   Weapon,
   PoolRanking,
 } from '../../shared/types';
+import { logger, LogCategory } from '@shared/services/logger';
 import { useToast } from '../components/Toast';
 import {
   distributeFencersToPoolsSerpentine,
@@ -388,7 +389,7 @@ export const usePoolManagement = ({
         }
 
         if (!matchFound) {
-          console.warn('[usePoolManagement] Match non trouvé:', matchId);
+          logger.warn(LogCategory.UI, '[usePoolManagement] Match non trouvé', { matchId });
           return prevPools;
         }
 
@@ -396,9 +397,7 @@ export const usePoolManagement = ({
         const newOverallRanking = computeOverallRanking(updatedPools);
         setOverallRanking(newOverallRanking);
 
-        console.log(
-          `[usePoolManagement] Match ${matchId} mis à jour depuis remote: ${scoreA}-${scoreB}`
-        );
+        logger.debug(LogCategory.UI, `[usePoolManagement] Match ${matchId} mis à jour depuis remote: ${scoreA}-${scoreB}`);
         return updatedPools;
       });
     },

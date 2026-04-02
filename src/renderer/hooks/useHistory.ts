@@ -5,6 +5,7 @@
  */
 
 import { useState, useCallback, useRef } from 'react';
+import { logger, LogCategory } from '@shared/services/logger';
 
 export type ActionType =
   | 'UPDATE_SCORE'
@@ -90,7 +91,7 @@ export function useHistory(options: UseHistoryOptions = {}): UseHistoryReturn {
         setCurrentIndex(prev => prev - 1);
         onUndo?.(action);
       } catch (error) {
-        console.error("Erreur lors de l'annulation:", error);
+        logger.error(LogCategory.UI, "Erreur lors de l'annulation", error as Error);
       }
     }
   }, [currentIndex, history, onUndo]);
@@ -106,7 +107,7 @@ export function useHistory(options: UseHistoryOptions = {}): UseHistoryReturn {
         setCurrentIndex(nextIndex);
         onRedo?.(action);
       } catch (error) {
-        console.error('Erreur lors du rétablissement:', error);
+        logger.error(LogCategory.UI, 'Erreur lors du rétablissement', error as Error);
       }
     }
   }, [currentIndex, history, onRedo]);

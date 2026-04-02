@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
+import { useShallow } from 'zustand/shallow';
 import { AnalyticsState, AnalyticsActions } from '../types/analytics.types';
 import { AnalyticsService } from '../services/analyticsService';
 
@@ -65,3 +66,17 @@ export const useAnalyticsStore = create<AnalyticsState & AnalyticsActions>()(
     { name: 'AnalyticsStore' }
   )
 );
+
+// ── Selector hooks ───────────────────────────────────────────────────────────
+export const useFencerStats = () => useAnalyticsStore(useShallow(s => s.fencerStats));
+export const useCompetitionMetrics = () => useAnalyticsStore(s => s.competitionMetrics);
+export const usePredictions = () => useAnalyticsStore(useShallow(s => s.predictions));
+export const useAnalyticsLoading = () => useAnalyticsStore(s => s.isLoading);
+export const useAnalyticsError = () => useAnalyticsStore(s => s.error);
+export const useAnalyticsActions = () =>
+  useAnalyticsStore(
+    useShallow(s => ({
+      loadFencerStats: s.loadFencerStats,
+      clearError: s.clearError,
+    }))
+  );

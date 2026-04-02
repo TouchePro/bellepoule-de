@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
+import { useShallow } from 'zustand/shallow';
 import { PoolState, PoolActions, PoolGenerationConfig, ScoreUpdateDTO } from '../types/pool.types';
 import { PoolService } from '../services/poolService';
 import { MatchStatus } from '../../../shared/types';
@@ -127,3 +128,21 @@ export const usePoolStore = create<PoolState & PoolActions>()(
     { name: 'PoolStore' }
   )
 );
+
+// ── Selector hooks (évite les re-renders inutiles) ──────────────────────────
+export const usePools = () => usePoolStore(useShallow(s => s.pools));
+export const useCurrentPool = () => usePoolStore(s => s.currentPool);
+export const useOverallRanking = () => usePoolStore(useShallow(s => s.overallRanking));
+export const usePoolLoading = () => usePoolStore(s => s.isLoading);
+export const usePoolError = () => usePoolStore(s => s.error);
+export const usePoolActions = () =>
+  usePoolStore(
+    useShallow(s => ({
+      loadPools: s.loadPools,
+      generatePools: s.generatePools,
+      updateScore: s.updateScore,
+      computeRanking: s.computeRanking,
+      setCurrentPool: s.setCurrentPool,
+      clearError: s.clearError,
+    }))
+  );

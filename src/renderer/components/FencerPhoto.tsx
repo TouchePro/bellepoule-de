@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useRef, useCallback } from 'react';
+import { logger, LogCategory } from '@shared/services/logger';
 
 interface FencerPhotoProps {
   photo?: string;
@@ -105,7 +106,7 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
         const base64 = await resizeImage(file);
         onPhotoChange?.(base64);
       } catch (error) {
-        console.error('Error processing image:', error);
+        logger.error(LogCategory.UI, 'Error processing image', error as Error);
         alert("Erreur lors du traitement de l'image");
       } finally {
         setIsLoading(false);
@@ -137,7 +138,7 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
         const base64 = await resizeImage(file);
         onPhotoChange?.(base64);
       } catch (error) {
-        console.error('Error processing image:', error);
+        logger.error(LogCategory.UI, 'Error processing image', error as Error);
         alert("Erreur lors du traitement de l'image");
       } finally {
         setIsLoading(false);

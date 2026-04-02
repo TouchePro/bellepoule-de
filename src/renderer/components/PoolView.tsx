@@ -7,6 +7,7 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useModalResize } from '../hooks/useModalResize';
 import { Pool, Fencer, Match, MatchStatus, Score, Weapon, FencerStatus } from '../../shared/types';
+import { logger, LogCategory } from '@shared/services/logger';
 import { formatRatio, formatIndex } from '../../shared/utils/poolCalculations';
 import { useToast } from './Toast';
 import { useConfirm } from './ConfirmDialog';
@@ -331,7 +332,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
       });
       showToast(`Export PDF de la poule ${pool.number} généré avec succès`, 'success');
     } catch (error) {
-      console.error("Erreur lors de l'export PDF:", error);
+      logger.error(LogCategory.UI, "Erreur lors de l'export PDF", error as Error);
       showToast(
         `Erreur lors de la génération du PDF: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
         'error'

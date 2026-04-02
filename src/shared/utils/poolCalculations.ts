@@ -24,6 +24,9 @@ import {
  * Utilise les tableaux d'ordre standard selon le nombre de tireurs
  */
 export function generatePoolMatchOrder(fencerCount: number): [number, number][] {
+  if (!Number.isInteger(fencerCount) || fencerCount < 2) {
+    throw new RangeError(`generatePoolMatchOrder: fencerCount doit être un entier ≥ 2 (reçu: ${fencerCount})`);
+  }
   const orders: { [key: number]: [number, number][] } = {
     3: [
       [1, 2],
@@ -147,6 +150,8 @@ function generateGenericMatchOrder(fencerCount: number): [number, number][] {
  * Règle forfait : Si l'adversaire est en forfait/abandon, le match ne compte pas
  */
 export function calculateFencerPoolStats(fencer: Fencer, matches: Match[]): PoolStats {
+  if (!fencer) throw new TypeError('calculateFencerPoolStats: fencer ne peut pas être null/undefined');
+  if (!Array.isArray(matches)) throw new TypeError('calculateFencerPoolStats: matches doit être un tableau');
   let victories = 0;
   let defeats = 0;
   let touchesScored = 0;
@@ -259,6 +264,9 @@ function appendForfeitFencers(rankings: PoolRanking[], forfeitFencers: PoolRanki
  * 4. Confrontation directe (si 2 tireurs à égalité)
  */
 export function calculatePoolRanking(pool: Pool): PoolRanking[] {
+  if (!pool) throw new TypeError('calculatePoolRanking: pool ne peut pas être null/undefined');
+  if (!Array.isArray(pool.fencers)) throw new TypeError('calculatePoolRanking: pool.fencers doit être un tableau');
+  if (!Array.isArray(pool.matches)) throw new TypeError('calculatePoolRanking: pool.matches doit être un tableau');
   const rankings: PoolRanking[] = [];
   const forfeitFencers: PoolRanking[] = [];
 
@@ -373,6 +381,13 @@ export function distributeFencersToPoolsSerpentine(
     byNation: boolean;
   }
 ): Fencer[][] {
+  if (!Array.isArray(fencers)) throw new TypeError('distributeFencersToPoolsSerpentine: fencers doit être un tableau');
+  if (!Number.isInteger(poolCount) || poolCount < 1) {
+    throw new RangeError(`distributeFencersToPoolsSerpentine: poolCount doit être un entier ≥ 1 (reçu: ${poolCount})`);
+  }
+  if (fencers.length < poolCount) {
+    throw new RangeError(`distributeFencersToPoolsSerpentine: pas assez de tireurs (${fencers.length}) pour ${poolCount} poules`);
+  }
   const pools: Fencer[][] = Array.from({ length: poolCount }, () => []);
 
   // Trier les tireurs par classement (meilleur classement = premier)
@@ -687,6 +702,11 @@ export function calculateOptimalPoolCount(
   minPoolSize: number = 5,
   maxPoolSize: number = 8
 ): number {
+  if (!Number.isFinite(fencerCount) || fencerCount < 1) {
+    throw new RangeError(`calculateOptimalPoolCount: fencerCount doit être ≥ 1 (reçu: ${fencerCount})`);
+  }
+  if (minPoolSize < 2) throw new RangeError(`calculateOptimalPoolCount: minPoolSize doit être ≥ 2 (reçu: ${minPoolSize})`);
+  if (maxPoolSize < minPoolSize) throw new RangeError(`calculateOptimalPoolCount: maxPoolSize (${maxPoolSize}) doit être ≥ minPoolSize (${minPoolSize})`);
   // Objectif: avoir des poules de taille similaire entre min et max
   for (
     let poolCount = Math.ceil(fencerCount / maxPoolSize);
@@ -707,6 +727,9 @@ export function calculateOptimalPoolCount(
  * Calcule le nombre de matchs dans une poule
  */
 export function calculatePoolMatchCount(fencerCount: number): number {
+  if (!Number.isInteger(fencerCount) || fencerCount < 0) {
+    throw new RangeError(`calculatePoolMatchCount: fencerCount doit être un entier ≥ 0 (reçu: ${fencerCount})`);
+  }
   return (fencerCount * (fencerCount - 1)) / 2;
 }
 
@@ -714,6 +737,7 @@ export function calculatePoolMatchCount(fencerCount: number): number {
  * Formate le ratio V/M pour l'affichage
  */
 export function formatRatio(ratio: number): string {
+  if (!Number.isFinite(ratio)) return '0.000';
   return ratio.toFixed(3);
 }
 

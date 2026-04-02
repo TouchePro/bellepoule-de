@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useRef, useCallback } from 'react';
+import { logger, LogCategory } from '@shared/services/logger';
 
 interface PhotoBoothProps {
   fencerName: string;
@@ -41,7 +42,7 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ fencerName, onPhotoCaptu
       }
       setIsCapturing(true);
     } catch (err) {
-      console.error('Error accessing camera:', err);
+      logger.error(LogCategory.UI, 'Error accessing camera', err as Error);
       alert("Impossible d'accéder à la caméra");
     }
   }, []);
