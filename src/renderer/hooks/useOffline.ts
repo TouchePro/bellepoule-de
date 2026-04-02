@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { logger, LogCategory } from '@shared/services/logger';
 import { offlineSync } from '../services/offlineSync';
 import { offlineStorage } from '../services/offlineStorage';
 import { Competition, Fencer, Pool, Match } from '../../shared/types';
@@ -70,7 +71,7 @@ export const useOffline = (competitionId?: string): UseOfflineResult => {
         matches: data[3],
       });
     } catch (error) {
-      console.error('[useOffline] Failed to load cache data:', error);
+      logger.error(LogCategory.UI, '[useOffline] Failed to load cache data', error as Error);
     }
   }, [competitionId]);
 

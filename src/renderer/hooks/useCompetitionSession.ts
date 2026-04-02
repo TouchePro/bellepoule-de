@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Pool, PoolRanking } from '../../shared/types';
+import { logger, LogCategory } from '@shared/services/logger';
 import { TableauMatch, FinalResult } from '../components/TableauView';
 
 export type Phase = 'checkin' | 'poolprep' | 'pools' | 'ranking' | 'tableau' | 'results' | 'remote';
@@ -98,7 +99,7 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
     try {
       await window.electronAPI.db.saveSessionState(props.competitionId, state);
     } catch (e) {
-      console.error('Failed to save session state:', e);
+      logger.error(LogCategory.UI, 'Failed to save session state', e as Error);
     }
   }, [props, isLoaded]);
 
@@ -130,10 +131,10 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
           },
         });
 
-        console.log('Session state restored');
+        logger.debug(LogCategory.UI, 'Session state restored');
       }
     } catch (e) {
-      console.error('Failed to restore session state:', e);
+      logger.error(LogCategory.UI, 'Failed to restore session state', e as Error);
     }
     setIsLoaded(true);
   }, [props.competitionId]);

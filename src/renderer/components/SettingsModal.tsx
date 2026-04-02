@@ -23,43 +23,24 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
 
   // Update local settings when global language/theme changes (e.g., from localStorage)
   useEffect(() => {
-    console.log(
-      `🔄 SettingsModal: Global language changed to ${language}, theme to ${theme}, updating local state`
-    );
     setSettings(prev => ({ ...prev, language, theme }));
   }, [language, theme]);
 
   const handleLanguageChange = (newLanguage: Language) => {
-    console.log(
-      `🔄 SettingsModal: Language selected: ${newLanguage} (current: ${settings.language})`
-    );
     setSettings(prev => ({ ...prev, language: newLanguage }));
   };
 
   const handleThemeChange = (newTheme: 'default' | 'light' | 'dark') => {
-    console.log(`🎨 SettingsModal: Theme selected: ${newTheme} (current: ${settings.theme})`);
     setSettings(prev => ({ ...prev, theme: newTheme }));
   };
 
   const handleSave = () => {
-    // Appliquer le changement de langue seulement à la sauvegarde
     if (settings.language !== language) {
-      console.log(
-        `🌍 SettingsModal: Applying language change from ${language} to ${settings.language}`
-      );
       changeLanguage(settings.language);
-    } else {
-      console.log(`🌍 SettingsModal: No language change needed`);
     }
-
-    // Appliquer le changement de thème
     if (settings.theme !== theme) {
-      console.log(`🎨 SettingsModal: Applying theme change from ${theme} to ${settings.theme}`);
       changeTheme(settings.theme);
-    } else {
-      console.log(`🎨 SettingsModal: No theme change needed`);
     }
-
     onSave(settings);
     onClose();
   };

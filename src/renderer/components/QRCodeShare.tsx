@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
+import { logger, LogCategory } from '@shared/services/logger';
 import { Competition } from '../../shared/types';
 
 interface QRCodeShareProps {
@@ -43,7 +44,7 @@ export const QRCodeShare: React.FC<QRCodeShareProps> = ({ competition, onClose }
       const dataUrl = await QRCode.toDataURL(url, { width: 300, margin: 1 });
       setQrCodeUrl(dataUrl);
     } catch (err) {
-      console.error('Erreur génération QR:', err);
+      logger.error(LogCategory.UI, 'Erreur génération QR', err as Error);
       setError('Erreur lors de la génération du QR code');
     } finally {
       setIsGenerating(false);

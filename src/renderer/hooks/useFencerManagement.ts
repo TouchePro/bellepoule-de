@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Competition, Fencer, FencerStatus } from '../../shared/types';
+import { logger, LogCategory } from '@shared/services/logger';
 import { useToast } from '../components/Toast';
 import { importRankingFromFFF, RankingImportResult } from '../../shared/utils/fileParser';
 
@@ -32,7 +33,7 @@ export const useFencerManagement = ({ competition, onUpdate }: UseFencerManageme
       setFencers(data);
       onUpdate({ ...competition, fencers: data });
     } catch (error) {
-      console.error('Failed to load fencers:', error);
+      logger.error(LogCategory.UI, 'Failed to load fencers', error as Error);
       showToast('Erreur lors du chargement des tireurs', 'error');
     }
   }, [competition, onUpdate, showToast]);
@@ -40,24 +41,16 @@ export const useFencerManagement = ({ competition, onUpdate }: UseFencerManageme
   // Ajouter un tireur
   const addFencer = useCallback(
     async (fencerData: Omit<Fencer, 'id' | 'createdAt' | 'updatedAt'>) => {
-      console.log('addFencer called with data:', fencerData);
-      console.log('window.electronAPI available:', !!window.electronAPI);
-      console.log('window.electronAPI.db available:', !!window.electronAPI?.db);
-      console.log(
-        'window.electronAPI.db.addFencer available:',
-        !!window.electronAPI?.db?.addFencer
-      );
+      logger.debug(LogCategory.UI, 'addFencer called', { fencerData });
 
       if (!window.electronAPI?.db?.addFencer) {
-        console.error('electronAPI.db.addFencer is not available');
+        logger.error(LogCategory.UI, 'electronAPI.db.addFencer is not available');
         showToast('Erreur: API non disponible', 'error');
         throw new Error('API non disponible');
       }
 
       try {
-        console.log('Calling db.addFencer with competitionId:', competition.id);
         const newFencer = await window.electronAPI.db.addFencer(competition.id, fencerData as any);
-        console.log('db.addFencer returned:', newFencer);
 
         const updatedFencers = [...fencers, newFencer];
         setFencers(updatedFencers);
@@ -65,7 +58,7 @@ export const useFencerManagement = ({ competition, onUpdate }: UseFencerManageme
         showToast('Tireur ajouté avec succès', 'success');
         return newFencer;
       } catch (error) {
-        console.error('Failed to add fencer:', error);
+        logger.error(LogCategory.UI, 'Failed to add fencer', error as Error);
         showToast(
           "Erreur lors de l'ajout du tireur: " +
             (error instanceof Error ? error.message : 'Erreur inconnue'),
@@ -91,7 +84,7 @@ export const useFencerManagement = ({ competition, onUpdate }: UseFencerManageme
         onUpdate({ ...competition, fencers: updatedFencers });
         showToast('Tireur mis à jour', 'success');
       } catch (error) {
-        console.error('Failed to update fencer:', error);
+        logger.error(LogCategory.UI, 'Failed to update fencer', error as Error);
         showToast('Erreur lors de la mise à jour', 'error');
         throw error;
       }
@@ -111,7 +104,7 @@ export const useFencerManagement = ({ competition, onUpdate }: UseFencerManageme
         onUpdate({ ...competition, fencers: updatedFencers });
         showToast('Tireur supprimé', 'success');
       } catch (error) {
-        console.error('Failed to delete fencer:', error);
+        logger.error(LogCategory.UI, 'Failed to delete fencer', error as Error);
         showToast('Erreur lors de la suppression', 'error');
         throw error;
       }
@@ -129,7 +122,7 @@ export const useFencerManagement = ({ competition, onUpdate }: UseFencerManageme
       onUpdate({ ...competition, fencers: [] });
       showToast('Tous les tireurs ont été supprimés', 'success');
     } catch (error) {
-      console.error('Failed to delete all fencers:', error);
+      logger.error(LogCategory.UI, 'Failed to delete all fencers', error as Error);
       showToast('Erreur lors de la suppression', 'error');
       throw error;
     }
@@ -154,7 +147,7 @@ export const useFencerManagement = ({ competition, onUpdate }: UseFencerManageme
     const promises = notCheckedIn.map(f =>
       window.electronAPI?.db
         ?.updateFencer?.(f.id, { status: FencerStatus.CHECKED_IN })
-        .catch(err => console.error(`Failed to check in fencer ${f.id}:`, err))
+        .catch(err => logger.error(LogCategory.UI, `Failed to check in fencer ${f.id}`, err as Error))
     );
 
     await Promise.allSettled(promises);
@@ -180,7 +173,7 @@ export const useFencerManagement = ({ competition, onUpdate }: UseFencerManageme
     const promises = checkedIn.map(f =>
       window.electronAPI?.db
         ?.updateFencer?.(f.id, { status: FencerStatus.NOT_CHECKED_IN })
-        .catch(err => console.error(`Failed to uncheck fencer ${f.id}:`, err))
+        .catch(err => logger.error(LogCategory.UI, `Failed to uncheck fencer ${f.id}`, err as Error))
     );
 
     await Promise.allSettled(promises);
@@ -217,7 +210,7 @@ export const useFencerManagement = ({ competition, onUpdate }: UseFencerManageme
           .filter(d => d.matched && d.fencerId)
           .map(d =>
             window.electronAPI!.db!.updateFencer!(d.fencerId!, { ranking: d.ranking }).catch(err =>
-              console.error(`Failed to update ranking for fencer ${d.fencerId}:`, err)
+              logger.error(LogCategory.UI, `Failed to update ranking for fencer ${d.fencerId}`, err as Error)
             )
           );
 
@@ -256,7 +249,7 @@ export const useFencerManagement = ({ competition, onUpdate }: UseFencerManageme
 
         return result;
       } catch (error) {
-        console.error('Failed to import ranking:', error);
+        logger.error(LogCategory.UI, 'Failed to import ranking', error as Error);
         showToast("Erreur lors de l'import du classement", 'error');
         throw error;
       }

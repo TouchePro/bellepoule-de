@@ -5,6 +5,7 @@
  */
 
 import { offlineStorage, PendingAction, SyncConflict } from './offlineStorage';
+import { logger, LogCategory } from '@shared/services/logger';
 
 export interface SyncResult {
   success: boolean;
@@ -31,13 +32,13 @@ export class OfflineSyncManager {
 
       window.addEventListener('online', () => {
         this.isOnline = true;
-        console.log('[Sync] Network connection restored');
+        logger.debug(LogCategory.NETWORK, '[Sync] Network connection restored');
         this.triggerSync();
       });
 
       window.addEventListener('offline', () => {
         this.isOnline = false;
-        console.log('[Sync] Network connection lost');
+        logger.debug(LogCategory.NETWORK, '[Sync] Network connection lost');
       });
     }
   }
@@ -74,7 +75,7 @@ export class OfflineSyncManager {
     }
 
     this.syncInProgress = true;
-    console.log('[Sync] Starting synchronization...');
+    logger.debug(LogCategory.NETWORK, '[Sync] Starting synchronization...');
 
     try {
       const result = await this.performSync();
@@ -114,16 +115,16 @@ export class OfflineSyncManager {
       errors: [],
     };
 
-    console.log(`[Sync] Processing ${pendingActions.length} pending actions`);
+    logger.debug(LogCategory.NETWORK, `[Sync] Processing ${pendingActions.length} pending actions`);
 
     for (const action of pendingActions) {
       try {
         await this.processAction(action);
         await offlineStorage.removePendingAction(action.id);
         result.synced++;
-        console.log(`[Sync] Successfully processed action: ${action.type}`);
+        logger.debug(LogCategory.NETWORK, `[Sync] Successfully processed action: ${action.type}`);
       } catch (error) {
-        console.error(`[Sync] Failed to process action:`, action, error);
+        logger.error(LogCategory.NETWORK, `[Sync] Failed to process action`, error as Error, { action });
 
         if (error instanceof ConflictError) {
           await this.handleConflict(action, error.conflictData);
@@ -141,9 +142,7 @@ export class OfflineSyncManager {
     // Update last sync timestamp
     await offlineStorage.updateLastSync();
 
-    console.log(
-      `[Sync] Sync completed: ${result.synced} synced, ${result.failed} failed, ${result.conflicts} conflicts`
-    );
+    logger.debug(LogCategory.NETWORK, `[Sync] Sync completed: ${result.synced} synced, ${result.failed} failed, ${result.conflicts} conflicts`);
     return result;
   }
 
@@ -250,7 +249,7 @@ export class OfflineSyncManager {
     };
 
     await offlineStorage.addConflict(conflict);
-    console.log('[Sync] Conflict detected and stored:', conflict);
+    logger.debug(LogCategory.NETWORK, '[Sync] Conflict detected and stored', { conflict });
   }
 
   private getEntityTypeFromAction(actionType: string): 'match' | 'fencer' | 'pool' {
@@ -267,12 +266,12 @@ export class OfflineSyncManager {
   // Cache management
   public async refreshCache(competitionId: string): Promise<void> {
     if (!this.isOnline) {
-      console.log('[Sync] Skipping cache refresh - offline');
+      logger.debug(LogCategory.NETWORK, '[Sync] Skipping cache refresh - offline');
       return;
     }
 
     try {
-      console.log('[Sync] Refreshing cache for competition:', competitionId);
+      logger.debug(LogCategory.NETWORK, '[Sync] Refreshing cache for competition', { competitionId });
 
       // Fetch latest data
       const [competition, fencers, pools, matches] = await Promise.all([
@@ -290,9 +289,9 @@ export class OfflineSyncManager {
         offlineStorage.cacheMatches(matches),
       ]);
 
-      console.log('[Sync] Cache refreshed successfully');
+      logger.debug(LogCategory.NETWORK, '[Sync] Cache refreshed successfully');
     } catch (error) {
-      console.error('[Sync] Failed to refresh cache:', error);
+      logger.error(LogCategory.NETWORK, '[Sync] Failed to refresh cache', error as Error);
     }
   }
 
@@ -335,7 +334,7 @@ export class OfflineSyncManager {
       try {
         callback(result);
       } catch (error) {
-        console.error('[Sync] Error in sync callback:', error);
+        logger.error(LogCategory.NETWORK, '[Sync] Error in sync callback', error as Error);
       }
     });
   }
@@ -372,9 +371,9 @@ export class OfflineSyncManager {
       }
 
       await offlineStorage.resolveConflict(conflictId, resolution);
-      console.log(`[Sync] Conflict ${conflictId} resolved with ${resolution} version`);
+      logger.debug(LogCategory.NETWORK, `[Sync] Conflict ${conflictId} resolved with ${resolution} version`);
     } catch (error) {
-      console.error(`[Sync] Failed to resolve conflict ${conflictId}:`, error);
+      logger.error(LogCategory.NETWORK, `[Sync] Failed to resolve conflict ${conflictId}`, error as Error);
       throw error;
     }
   }
@@ -412,7 +411,7 @@ export class OfflineSyncManager {
   private async acceptRemoteVersion(conflict: SyncConflict): Promise<void> {
     // Update local cache with remote version
     // Implementation depends on what needs to be updated
-    console.log(`[Sync] Accepting remote version for ${conflict.entityType} ${conflict.entityId}`);
+    logger.debug(LogCategory.NETWORK, `[Sync] Accepting remote version for ${conflict.entityType} ${conflict.entityId}`);
   }
 }
 

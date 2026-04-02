@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Competition, Fencer, FencerStatus, MatchStatus, Weapon } from '../../shared/types';
+import { logger, LogCategory } from '@shared/services/logger';
 import { RankingImportResult } from '../../shared/utils/fileParser';
 import FencerList from './FencerList';
 import PoolView from './PoolView';
@@ -194,7 +195,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
     const handleMatchFinished = (data: { matchId: string; scoreA: number; scoreB: number; isTableau?: boolean }) => {
       const { matchId, scoreA, scoreB } = data;
-      console.log(`[CompetitionView] Match terminé reçu: ${matchId} - Score: ${scoreA}-${scoreB}`);
+      logger.debug(LogCategory.UI, `[CompetitionView] Match terminé reçu: ${matchId} - Score: ${scoreA}-${scoreB}`);
       updateMatchFromRemote(matchId, scoreA, scoreB, MatchStatus.FINISHED);
 
       // Mise à jour du tableau d'élimination directe si c'est un match DE
@@ -243,7 +244,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
           await window.electronAPI.file.importFencersArchive(competition.id, filepath);
           loadFencers();
         } catch (err) {
-          console.error('Erreur import .bpf:', err);
+          logger.error(LogCategory.UI, 'Erreur import .bpf', err as Error);
         }
         return;
       }
@@ -329,7 +330,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
       setImportData(null);
     } catch (error) {
-      console.error('Failed to import ranking:', error);
+      logger.error(LogCategory.UI, 'Failed to import ranking', error as Error);
       showToast("Erreur lors de l'import du classement", 'error');
     }
   };

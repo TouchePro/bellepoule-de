@@ -7,6 +7,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import QRCode from 'qrcode';
 import { Competition, Pool } from '../../shared/types';
+import { logger, LogCategory } from '@shared/services/logger';
 import { TableauMatch } from './TableauView';
 import { useToast } from './Toast';
 
@@ -108,7 +109,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         showToast(`Erreur: ${result.error || 'Impossible de démarrer le serveur'}`, 'error');
       }
     } catch (error) {
-      console.error('Failed to start remote server:', error);
+      logger.error(LogCategory.UI, 'Failed to start remote server', error as Error);
       showToast('Impossible de démarrer le serveur distant', 'error');
     } finally {
       setIsLoading(false);
@@ -128,13 +129,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         .filter(m => m.winner === null && m.fencerA && m.fencerB)
         .map(m => ({ ...m, isTableau: true }));
       const allMatches = [...poolMatches, ...deMatches];
-      console.log(
-        '[RemoteScoreManager] Passing matches to server:',
-        poolMatches.length,
-        'pool +',
-        deMatches.length,
-        'DE'
-      );
+      logger.debug(LogCategory.UI, '[RemoteScoreManager] Passing matches to server', { pool: poolMatches.length, de: deMatches.length });
       const result = await window.electronAPI.remote.startSession(
         competition.id,
         count,
@@ -150,7 +145,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         showToast(`Erreur session: ${result.error}`, 'error');
       }
     } catch (error) {
-      console.error('Failed to start session:', error);
+      logger.error(LogCategory.UI, 'Failed to start session', error as Error);
     }
   };
 
@@ -171,7 +166,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           showToast(`Erreur: ${result.error}`, 'error');
         }
       } catch (error) {
-        console.error('Failed to update strip count:', error);
+        logger.error(LogCategory.UI, 'Failed to update strip count', error as Error);
       }
     } else {
       // Serveur non démarré : persister la préférence
@@ -194,7 +189,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         showToast(`Erreur: ${result.error || "Impossible d'arrêter le serveur"}`, 'error');
       }
     } catch (error) {
-      console.error('Failed to stop remote server:', error);
+      logger.error(LogCategory.UI, 'Failed to stop remote server', error as Error);
       showToast("Impossible d'arrêter le serveur distant", 'error');
     } finally {
       setIsLoading(false);

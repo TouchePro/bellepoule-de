@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
+import { useShallow } from 'zustand/shallow';
 import { BracketState, BracketActions, BracketConfig } from '../types/bracket.types';
 import { BracketService } from '../services/bracketService';
 
@@ -80,3 +81,18 @@ export const useBracketStore = create<BracketState & BracketActions>()(
     { name: 'BracketStore' }
   )
 );
+
+// ── Selector hooks ───────────────────────────────────────────────────────────
+export const useBracketMatches = () => useBracketStore(useShallow(s => s.matches));
+export const useFinalResults = () => useBracketStore(useShallow(s => s.finalResults));
+export const useThirdPlaceMatch = () => useBracketStore(s => s.thirdPlaceMatch);
+export const useBracketLoading = () => useBracketStore(s => s.isLoading);
+export const useBracketError = () => useBracketStore(s => s.error);
+export const useBracketActions = () =>
+  useBracketStore(
+    useShallow(s => ({
+      generateBracket: s.generateBracket,
+      updateMatchResult: s.updateMatchResult,
+      clearError: s.clearError,
+    }))
+  );

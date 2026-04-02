@@ -7,6 +7,7 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
+import { useShallow } from 'zustand/shallow';
 import {
   Team,
   TeamMatch,
@@ -279,5 +280,13 @@ export const useTeamStore = create<TeamState & TeamActions>()(
     { name: 'TeamStore' }
   )
 );
+
+// ── Selector hooks ───────────────────────────────────────────────────────────
+export const useTeams = () => useTeamStore(useShallow(s => s.teams));
+export const useTeamMatches = () => useTeamStore(useShallow(s => s.matches));
+export const useTeamPools = () => useTeamStore(useShallow(s => s.pools));
+export const useCurrentTeamMatch = () => useTeamStore(s => s.currentMatch);
+export const useTeamLoading = () => useTeamStore(s => s.isLoading);
+export const useTeamError = () => useTeamStore(s => s.error);
 
 export default useTeamStore;

@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Competition, Fencer, FencerStatus, Pool, Match, PhaseType } from '../shared/types';
+import { logger, LogCategory } from '@shared/services/logger';
 import CompetitionList from './components/CompetitionList';
 import CompetitionView from './components/CompetitionView';
 import NewCompetitionModal from './components/NewCompetitionModal';
@@ -48,12 +49,12 @@ const AppContent: React.FC = () => {
 
       // Listen for file operations
       window.electronAPI.onFileOpened(async (filepath: string) => {
-        console.log('Fichier .BPM ouvert:', filepath);
+        logger.debug(LogCategory.UI, 'Fichier .BPM ouvert', { filepath });
         await loadCompetitions();
       });
 
       window.electronAPI.onFileSaved(async (filepath: string) => {
-        console.log('Fichier sauvegardé:', filepath);
+        logger.debug(LogCategory.UI, 'Fichier sauvegardé', { filepath });
       });
 
       // Listen for save events
@@ -62,7 +63,7 @@ const AppContent: React.FC = () => {
       });
 
       window.electronAPI.onAutosaveCompleted(() => {
-        console.log('Autosave OK');
+        logger.debug(LogCategory.UI, 'Autosave OK');
       });
 
       window.electronAPI.onAutosaveFailed(() => {
@@ -91,7 +92,7 @@ const AppContent: React.FC = () => {
         setCompetitions(comps);
       }
     } catch (error) {
-      console.error('Failed to load competitions:', error);
+      logger.error(LogCategory.UI, 'Failed to load competitions', error as Error);
     }
     setIsLoading(false);
   }, []);
@@ -121,60 +122,43 @@ const AppContent: React.FC = () => {
         setView('competition');
       }
     } catch (error) {
-      console.error('Failed to create competition:', error);
+      logger.error(LogCategory.UI, 'Failed to create competition', error as Error);
     }
     setShowNewCompetitionModal(false);
   }, []);
 
   const handleSelectCompetition = async (competition: Competition) => {
-    console.log('=== handleSelectCompetition ===');
-    console.log('Competition ID:', competition.id);
-    console.log('Competition title:', competition.title);
+    logger.debug(LogCategory.UI, 'handleSelectCompetition', { id: competition.id, title: competition.title });
 
     try {
       if (window.electronAPI) {
-        // Vérifier si la compétition est déjà ouverte
         const existingOpenComp = openCompetitions.find(
           open => open.competition.id === competition.id
         );
 
         if (existingOpenComp) {
-          console.log("Competition déjà ouverte, activation de l'onglet");
-          // Activer l'onglet existant
           setActiveTabId(competition.id);
           setCurrentCompetition(existingOpenComp.competition);
           setView('competition');
         } else {
-          console.log('Chargement de la compétition depuis la DB...');
-          // Ouvrir dans un nouvel onglet
           const comp = await window.electronAPI.db.getCompetition(competition.id);
-          console.log('Compétition chargée:', comp ? 'OK' : 'NULL');
 
           if (comp) {
-            console.log('Chargement des tireurs...');
             const fencers = await window.electronAPI.db.getFencersByCompetition(competition.id);
-            console.log('Nombre de tireurs:', fencers.length);
             comp.fencers = fencers;
-
-            console.log('Vérification des données:');
-            console.log('- date:', comp.date);
-            console.log('- weapon:', comp.weapon);
-            console.log('- fencers:', comp.fencers.length);
 
             setOpenCompetitions(prev => [...prev, { competition: comp, isDirty: false }]);
             setActiveTabId(comp.id);
             setCurrentCompetition(comp);
             setView('competition');
-            console.log('Compétition ouverte avec succès');
           } else {
-            console.error('Compétition non trouvée dans la DB');
+            logger.error(LogCategory.UI, 'Compétition non trouvée dans la DB', undefined, { id: competition.id });
             showToast('Erreur: Compétition non trouvée', 'error');
           }
         }
       }
     } catch (error) {
-      console.error('Failed to load competition:', error);
-      console.error('Stack:', error instanceof Error ? error.stack : 'No stack');
+      logger.error(LogCategory.UI, 'Failed to load competition', error as Error);
       showToast('Erreur lors du chargement de la compétition', 'error');
     }
   };
@@ -249,7 +233,7 @@ const AppContent: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('Failed to delete competition:', error);
+      logger.error(LogCategory.UI, 'Failed to delete competition', error as Error);
     }
   };
 
@@ -260,7 +244,7 @@ const AppContent: React.FC = () => {
   const handleSettingsSave = (settings: any) => {
     // Currently settings handling would go here
     // For now, the language change is handled in the SettingsModal component
-    console.log('Settings saved:', settings);
+    logger.debug(LogCategory.UI, 'Settings saved', { settings });
   };
 
   const handleUpdateCompetition = (updated: Competition) => {
