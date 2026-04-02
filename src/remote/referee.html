@@ -9,6 +9,7 @@
     <title>Arbitrage - Arène BellePoule</title>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
+
       * {
         margin: 0;
         padding: 0;
@@ -128,7 +129,7 @@
       .fencer-club {
         font-size: 0.7rem;
         color: #6b7280;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.2rem;
       }
 
       /* Cartons */
@@ -172,9 +173,10 @@
 
       /* Score principal */
       .score-display {
-        font-size: 3rem;
-        font-weight: 800;
-        margin-bottom: 0.5rem;
+        font-family: Impact, 'Arial Black', sans-serif;
+        font-size: 4.5rem;
+        font-weight: 900;
+        margin-bottom: 0.3rem;
       }
 
       .score-display.red-score {
@@ -307,7 +309,7 @@
       .timer-display {
         font-size: 4rem;
         font-weight: 800;
-        font-family: 'Courier New', monospace;
+        font-family: 'Courier New', Courier, monospace;
         color: #fff;
         text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
         margin-bottom: 0.75rem;
@@ -596,7 +598,7 @@
         }
 
         .score-display {
-          font-size: 4rem;
+          font-size: 5.5rem;
         }
 
         .timer-display {
@@ -631,21 +633,18 @@
               <button
                 id="btn-plus-1-a"
                 class="score-btn btn-plus-1"
-                onclick="refereeApp.addScore('A', 1)"
               >
                 +1
               </button>
               <button
                 id="btn-plus-3-a"
                 class="score-btn btn-plus-3"
-                onclick="refereeApp.addScore('A', 3)"
               >
                 +3
               </button>
               <button
                 id="btn-plus-5-a"
                 class="score-btn btn-plus-5"
-                onclick="refereeApp.addScore('A', 5)"
               >
                 +5
               </button>
@@ -654,7 +653,6 @@
               <button
                 id="btn-card-white-a"
                 class="card-btn card-btn-white"
-                onclick="refereeApp.addCard('A', 'white')"
                 title="Carton blanc"
               >
                 B
@@ -662,7 +660,6 @@
               <button
                 id="btn-card-yellow-a"
                 class="card-btn card-btn-yellow"
-                onclick="refereeApp.addCard('A', 'yellow')"
                 title="Carton jaune (+3 adv)"
               >
                 J
@@ -670,7 +667,6 @@
               <button
                 id="btn-card-red-a"
                 class="card-btn card-btn-red"
-                onclick="refereeApp.addCard('A', 'red')"
                 title="Carton rouge (+5 adv)"
               >
                 R
@@ -691,21 +687,18 @@
               <button
                 id="btn-plus-1-b"
                 class="score-btn btn-plus-1"
-                onclick="refereeApp.addScore('B', 1)"
               >
                 +1
               </button>
               <button
                 id="btn-plus-3-b"
                 class="score-btn btn-plus-3"
-                onclick="refereeApp.addScore('B', 3)"
               >
                 +3
               </button>
               <button
                 id="btn-plus-5-b"
                 class="score-btn btn-plus-5"
-                onclick="refereeApp.addScore('B', 5)"
               >
                 +5
               </button>
@@ -714,7 +707,6 @@
               <button
                 id="btn-card-white-b"
                 class="card-btn card-btn-white"
-                onclick="refereeApp.addCard('B', 'white')"
                 title="Carton blanc"
               >
                 B
@@ -722,7 +714,6 @@
               <button
                 id="btn-card-yellow-b"
                 class="card-btn card-btn-yellow"
-                onclick="refereeApp.addCard('B', 'yellow')"
                 title="Carton jaune (+3 adv)"
               >
                 J
@@ -730,7 +721,6 @@
               <button
                 id="btn-card-red-b"
                 class="card-btn card-btn-red"
-                onclick="refereeApp.addCard('B', 'red')"
                 title="Carton rouge (+5 adv)"
               >
                 R
@@ -866,30 +856,25 @@
             if (!btn) return;
 
             let longPressTimer = null;
-            let longPressExecuted = false;
 
             // Mouse events
             btn.addEventListener('mousedown', e => {
-              longPressExecuted = false;
               btn.classList.add('long-press-active');
               longPressTimer = setTimeout(() => {
                 btn.classList.remove('long-press-active');
                 this.removeScore(config.fencer, config.points);
-                longPressExecuted = true;
                 longPressTimer = null;
               }, LONG_PRESS_DURATION);
             });
 
             btn.addEventListener('mouseup', e => {
               if (longPressTimer) {
+                // Appui court : ajouter le score
                 clearTimeout(longPressTimer);
                 longPressTimer = null;
+                this.addScore(config.fencer, config.points);
               }
               btn.classList.remove('long-press-active');
-              if (longPressExecuted) {
-                e.preventDefault();
-                e.stopPropagation();
-              }
             });
 
             btn.addEventListener('mouseleave', () => {
@@ -903,26 +888,23 @@
             // Touch events pour mobile
             btn.addEventListener('touchstart', e => {
               e.preventDefault();
-              longPressExecuted = false;
               btn.classList.add('long-press-active');
               longPressTimer = setTimeout(() => {
                 btn.classList.remove('long-press-active');
                 this.removeScore(config.fencer, config.points);
-                longPressExecuted = true;
                 longPressTimer = null;
               }, LONG_PRESS_DURATION);
             });
 
             btn.addEventListener('touchend', e => {
+              e.preventDefault(); // empêche les ghost clicks souris
               if (longPressTimer) {
+                // Appui court : ajouter le score
                 clearTimeout(longPressTimer);
                 longPressTimer = null;
+                this.addScore(config.fencer, config.points);
               }
               btn.classList.remove('long-press-active');
-              if (longPressExecuted) {
-                e.preventDefault();
-                e.stopPropagation();
-              }
             });
 
             btn.addEventListener('touchcancel', () => {
@@ -949,30 +931,25 @@
             if (!btn) return;
 
             let longPressTimer = null;
-            let longPressExecuted = false;
 
             // Mouse events
             btn.addEventListener('mousedown', e => {
-              longPressExecuted = false;
               btn.classList.add('long-press-active');
               longPressTimer = setTimeout(() => {
                 btn.classList.remove('long-press-active');
                 this.removeCard(config.fencer, config.cardType);
-                longPressExecuted = true;
                 longPressTimer = null;
               }, LONG_PRESS_DURATION);
             });
 
             btn.addEventListener('mouseup', e => {
               if (longPressTimer) {
+                // Appui court : ajouter le carton
                 clearTimeout(longPressTimer);
                 longPressTimer = null;
+                this.addCard(config.fencer, config.cardType);
               }
               btn.classList.remove('long-press-active');
-              if (longPressExecuted) {
-                e.preventDefault();
-                e.stopPropagation();
-              }
             });
 
             btn.addEventListener('mouseleave', () => {
@@ -986,26 +963,23 @@
             // Touch events pour mobile
             btn.addEventListener('touchstart', e => {
               e.preventDefault();
-              longPressExecuted = false;
               btn.classList.add('long-press-active');
               longPressTimer = setTimeout(() => {
                 btn.classList.remove('long-press-active');
                 this.removeCard(config.fencer, config.cardType);
-                longPressExecuted = true;
                 longPressTimer = null;
               }, LONG_PRESS_DURATION);
             });
 
             btn.addEventListener('touchend', e => {
+              e.preventDefault(); // empêche les ghost clicks souris
               if (longPressTimer) {
+                // Appui court : ajouter le carton
                 clearTimeout(longPressTimer);
                 longPressTimer = null;
+                this.addCard(config.fencer, config.cardType);
               }
               btn.classList.remove('long-press-active');
-              if (longPressExecuted) {
-                e.preventDefault();
-                e.stopPropagation();
-              }
             });
 
             btn.addEventListener('touchcancel', () => {

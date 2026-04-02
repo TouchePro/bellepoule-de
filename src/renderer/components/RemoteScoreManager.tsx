@@ -227,6 +227,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     refereeUrl: `${serverUrl}/arene${i + 1}/arbitre`,
     displayUrl: `${serverUrl}/arene${i + 1}`,
     poolUrl: `${serverUrl}/arene${i + 1}/poule`,
+    publicUrl: `${serverUrl}/arene${i + 1}/public`,
   }));
 
   // Contrôles +/− communs aux deux vues (pending uniquement, sans appel IPC direct)
@@ -395,6 +396,29 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                     setActiveQR({
                       url: arena.poolUrl,
                       label: `Piste ${arena.number} – Poule`,
+                    })
+                  }
+                  title="QR code"
+                >
+                  📱
+                </button>
+              </div>
+              <div className="arena-url-row">
+                <span className="arena-url-label">Public</span>
+                <code className="arena-url-value">{arena.publicUrl}</code>
+                <button
+                  className="btn-copy"
+                  onClick={() => copyToClipboard(arena.publicUrl, arena.number * 10 + 3)}
+                  title="Copier l'URL"
+                >
+                  {copiedIndex === arena.number * 10 + 3 ? '✓' : '📋'}
+                </button>
+                <button
+                  className="btn-qr"
+                  onClick={() =>
+                    setActiveQR({
+                      url: arena.publicUrl,
+                      label: `Piste ${arena.number} – Public`,
                     })
                   }
                   title="QR code"

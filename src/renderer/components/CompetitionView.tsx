@@ -114,6 +114,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     computeOverallRanking,
     areAllPoolsComplete,
     handleFencerForfeit,
+    syncFencersToPool,
   } = usePoolManagement({ isLaserSabre, poolMaxScore, showToast });
 
   const { exportFencersList, exportRanking, exportResults, exportPoolsPDF } = useExport({
@@ -177,6 +178,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   useEffect(() => {
     loadFencers();
   }, [loadFencers]);
+
+  // Synchroniser les photos/données tireurs dans les matches de poule à chaque mise à jour
+  useEffect(() => {
+    if (fencers.length > 0) {
+      syncFencersToPool(fencers);
+    }
+  }, [fencers]);
 
   // Écouter les mises à jour des matches distants
   // Note: pas de garde sur currentPhase car la phase 'remote' affiche le panel de saisie distante
@@ -807,7 +815,12 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             }}
             onMatchArenaChange={(matchId, oldArena, newArena) => {
               if (isRemoteActive) {
-                window.electronAPI.remote.updateMatchArena(matchId, oldArena, newArena);
+                const match = tableauMatches.find(m => m.id === matchId);
+                window.electronAPI.remote.updateMatchArena(
+                  matchId, oldArena, newArena,
+                  match?.fencerA ?? null,
+                  match?.fencerB ?? null
+                );
               }
             }}
           />

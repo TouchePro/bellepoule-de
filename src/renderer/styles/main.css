@@ -140,7 +140,11 @@ body {
   border-radius: var(--radius);
   border: 1px solid transparent;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .btn:disabled {
@@ -492,7 +496,7 @@ body {
   color: var(--color-text-light);
   cursor: pointer;
   border-bottom: 2px solid transparent;
-  transition: all 0.15s ease;
+  transition: color 0.15s ease, border-bottom-color 0.15s ease;
 }
 
 .tab:hover {
@@ -593,7 +597,7 @@ body {
   padding: 0.5rem 1rem;
   border-radius: var(--radius);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .phase-step:hover {
@@ -789,7 +793,8 @@ body {
   border-radius: var(--radius-lg);
   padding: 1.5rem;
   text-align: center;
-  transition: all 0.2s ease;
+  contain: layout style;
+  transition: box-shadow 0.2s ease;
 }
 
 .comparison__card:hover {
@@ -897,7 +902,8 @@ body {
   border-radius: var(--radius-lg);
   padding: 1rem;
   text-align: center;
-  transition: all 0.2s ease;
+  contain: layout style;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .analytics__card:hover {
@@ -976,13 +982,16 @@ body {
   background: var(--color-bg);
   border-radius: var(--radius);
   overflow: hidden;
+  contain: layout;
 }
 
 .prediction-bar__fill {
+  width: 100%;
   height: 100%;
   background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
   border-radius: var(--radius);
-  transition: width 0.5s ease-out;
+  transform-origin: left center;
+  transition: transform 0.5s ease-out;
 }
 
 .prediction-bar__value {
@@ -1139,7 +1148,7 @@ body {
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .theme-toggle:hover {
@@ -1261,16 +1270,16 @@ body {
   }
 }
 
-/* Glow */
+/* Glow — filter: drop-shadow est composité (pas de repaint) */
 @keyframes glow {
   0%,
   100% {
-    box-shadow: 0 0 5px var(--color-primary);
+    filter: drop-shadow(0 0 3px var(--color-primary));
   }
   50% {
-    box-shadow:
-      0 0 20px var(--color-primary),
-      0 0 30px var(--color-primary-light);
+    filter:
+      drop-shadow(0 0 10px var(--color-primary))
+      drop-shadow(0 0 16px var(--color-primary-light));
   }
 }
 
@@ -1312,10 +1321,12 @@ body {
 }
 
 .animate-pulse {
+  will-change: transform;
   animation: pulse 2s infinite;
 }
 
 .animate-bounce {
+  will-change: transform;
   animation: bounce 1s infinite;
 }
 
@@ -1324,6 +1335,7 @@ body {
 }
 
 .animate-glow {
+  will-change: filter;
   animation: glow 2s infinite;
 }
 
@@ -1334,7 +1346,7 @@ body {
 
 /* Transitions fluides */
 .transition-all {
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
 .transition-transform {

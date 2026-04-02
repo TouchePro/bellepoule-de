@@ -137,7 +137,7 @@ function generatePoolHTML(pool: Pool, title: string): string {
           const cellClass = scoreData.isVictory ? 'victory' : 'defeat';
           gridHTML += `<td class="${cellClass}">${scoreData.display}</td>`;
         } else {
-          gridHTML += '<td class="pending">-</td>';
+          gridHTML += '<td class="pending"></td>';
         }
       }
     }

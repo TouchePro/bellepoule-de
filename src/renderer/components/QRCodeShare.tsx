@@ -20,7 +20,8 @@ export const QRCodeShare: React.FC<QRCodeShareProps> = ({ competition, onClose }
 
   useEffect(() => {
     generateQRCode();
-  }, [competition]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [competition.id]);
 
   const generateQRCode = async () => {
     setIsGenerating(true);

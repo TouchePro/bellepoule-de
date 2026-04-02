@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Competition, Pool, Weapon, MatchStatus } from '../../shared/types';
+import { Competition, Pool, Weapon, MatchStatus, Fencer } from '../../shared/types';
 import { TableauMatch } from './TableauView';
 import {
   calculateOverallRanking,
@@ -18,13 +18,14 @@ import {
 type KioskView = 'pools' | 'ranking' | 'tableau';
 
 const roundNames: Record<number, string> = {
-  1: 'Finale',
-  2: 'Demi-finales',
-  4: 'Quarts de finale',
-  8: '8èmes de finale',
-  16: '16èmes de finale',
-  32: '32èmes de finale',
-  64: '64èmes de finale',
+  2: 'Finale',
+  3: 'Petite finale',
+  4: 'Demi-finales',
+  8: 'Quarts de finale',
+  16: '1/8 de finale',
+  32: '1/16 de finale',
+  64: '1/32 de finale',
+  128: '1/64 de finale',
 };
 
 interface KioskDisplayProps {
@@ -55,6 +56,14 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [currentView, setCurrentView] = useState<KioskView>(initialView);
+
+  // Auto-switch vers tableau quand les matchs d'élimination arrivent (changement de phase en direct)
+  useEffect(() => {
+    if (tableauMatches.length > 0 && currentView !== 'tableau') {
+      setCurrentView('tableau');
+    }
+  }, [tableauMatches.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [menuVisible, setMenuVisible] = useState(true);
   const menuTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -84,12 +93,61 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
     return tableauMatches.filter(m => m.round === activeRound);
   }, [tableauMatches, activeRound]);
 
-  // Champion (quand tableau terminé)
-  const champion = useMemo(() => {
+  // Podium (quand tableau terminé)
+  const podium = useMemo(() => {
     if (activeRound !== null) return null;
-    const finalMatch = tableauMatches.find(m => m.round === 1) ||
-      tableauMatches.find(m => m.round === 2);
-    return finalMatch?.winner ?? null;
+    const finalMatch = tableauMatches.find(m => m.round === 2);
+    if (!finalMatch?.winner) return null;
+    const first = finalMatch.winner;
+    const second = finalMatch.fencerA?.id === first.id ? finalMatch.fencerB : finalMatch.fencerA;
+    const thirdMatch = tableauMatches.find(m => m.round === 3);
+    const third = thirdMatch?.winner ?? null;
+    return { first, second, third };
+  }, [tableauMatches, activeRound]);
+
+  // Classement d'élimination complet (quand tableau terminé)
+  const elimRanking = useMemo(() => {
+    if (activeRound !== null) return [];
+    const results: { place: number; fencer: Fencer; eliminatedAt: string }[] = [];
+
+    const finalMatch = tableauMatches.find(m => m.round === 2);
+    if (!finalMatch?.winner) return [];
+
+    const first = finalMatch.winner;
+    const second = finalMatch.fencerA?.id === first.id ? finalMatch.fencerB : finalMatch.fencerA;
+    results.push({ place: 1, fencer: first, eliminatedAt: '' });
+    if (second) results.push({ place: 2, fencer: second, eliminatedAt: 'Finale' });
+
+    const thirdMatch = tableauMatches.find(m => m.round === 3);
+    if (thirdMatch?.winner) {
+      const third = thirdMatch.winner;
+      const fourth = thirdMatch.fencerA?.id === third.id ? thirdMatch.fencerB : thirdMatch.fencerA;
+      results.push({ place: 3, fencer: third, eliminatedAt: '' });
+      if (fourth) results.push({ place: 4, fencer: fourth, eliminatedAt: 'Petite finale' });
+    } else {
+      // Sans petite finale : perdants des demi-finales ex-aequo 3e
+      const semis = tableauMatches.filter(m => m.round === 4 && m.winner);
+      let place = 3;
+      for (const semi of semis) {
+        const loser = semi.fencerA?.id === semi.winner!.id ? semi.fencerB : semi.fencerA;
+        if (loser) results.push({ place, fencer: loser, eliminatedAt: 'Demi-finales' });
+        place++;
+      }
+    }
+
+    // Tours suivants : perdants de chaque round
+    let currentPlace = results.length + 1;
+    for (const round of [8, 16, 32, 64, 128]) {
+      const roundMatches = tableauMatches.filter(m => m.round === round && m.winner);
+      if (roundMatches.length === 0) break;
+      for (const m of roundMatches) {
+        const loser = m.fencerA?.id === m.winner!.id ? m.fencerB : m.fencerA;
+        if (loser) results.push({ place: currentPlace, fencer: loser, eliminatedAt: roundNames[round] || `Tour ${round}` });
+      }
+      currentPlace += roundMatches.length;
+    }
+
+    return results;
   }, [tableauMatches, activeRound]);
 
   // Menu auto-masquant
@@ -146,20 +204,21 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
     el.scrollTop = 0;
     let animId: number;
     let last: number | null = null;
+    let delayId: ReturnType<typeof setTimeout>;
 
     const step = (t: number) => {
       if (last !== null) {
         const maxScroll = el.scrollHeight - el.clientHeight;
         if (maxScroll > 0) {
-          el.scrollTop += ((t - last) / 1000) * 40;
+          el.scrollTop += ((t - last) / 1000) * 20;
           if (el.scrollTop >= maxScroll) el.scrollTop = 0;
         }
       }
       last = t;
       animId = requestAnimationFrame(step);
     };
-    animId = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(animId);
+    delayId = setTimeout(() => { animId = requestAnimationFrame(step); }, 2000);
+    return () => { clearTimeout(delayId); cancelAnimationFrame(animId); };
   }, [currentView, overallRanking]);
 
   // Auto-scroll tableau
@@ -170,20 +229,21 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
     el.scrollTop = 0;
     let animId: number;
     let last: number | null = null;
+    let delayId: ReturnType<typeof setTimeout>;
 
     const step = (t: number) => {
       if (last !== null) {
         const maxScroll = el.scrollHeight - el.clientHeight;
         if (maxScroll > 0) {
-          el.scrollTop += ((t - last) / 1000) * 40;
+          el.scrollTop += ((t - last) / 1000) * 20;
           if (el.scrollTop >= maxScroll) el.scrollTop = 0;
         }
       }
       last = t;
       animId = requestAnimationFrame(step);
     };
-    animId = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(animId);
+    delayId = setTimeout(() => { animId = requestAnimationFrame(step); }, 2000);
+    return () => { clearTimeout(delayId); cancelAnimationFrame(animId); };
   }, [currentView, activeRound]);
 
   // Données de la poule courante
@@ -400,7 +460,7 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
           </div>
 
           {/* Tableau défilant */}
-          <div ref={rankingScrollRef} style={{ flex: 1, overflowY: 'hidden', paddingBottom: '40px' }}>
+          <div ref={rankingScrollRef} data-kiosk-scroll="" style={{ flex: 1, overflowY: 'auto', paddingBottom: '40px' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '1.05rem' }}>
               <thead>
                 <tr style={{ color: '#64748b', textAlign: 'left', borderBottom: '1px solid #334155' }}>
@@ -454,7 +514,7 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
 
           {/* Contenu */}
           {activeRound !== null ? (
-            <div ref={tableauScrollRef} style={{ flex: 1, overflowY: 'hidden', paddingBottom: '40px' }}>
+            <div ref={tableauScrollRef} data-kiosk-scroll="" style={{ flex: 1, overflowY: 'auto', paddingBottom: '40px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '16px' }}>
                 {activeRoundMatches.map(match => {
                   if (match.isBye) {
@@ -518,20 +578,83 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
               </div>
             </div>
           ) : (
-            /* Tableau terminé – afficher le champion */
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '24px' }}>
-              <div style={{ fontSize: '5rem' }}>🥇</div>
-              {champion ? (
-                <>
-                  <div style={{ fontSize: '2.5rem', fontWeight: 'bold', textAlign: 'center' }}>
-                    {champion.lastName} {champion.firstName}
+            /* Tableau terminé – podium + classement */
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, gap: '24px' }}>
+              {/* Titre */}
+              <div style={{ textAlign: 'center', fontSize: '1.4rem', fontWeight: 700, color: '#fbbf24', letterSpacing: '0.05em', flexShrink: 0 }}>
+                🏆 RÉSULTATS FINAUX
+              </div>
+
+              {/* Podium visuel */}
+              {podium ? (
+                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '16px', flexShrink: 0 }}>
+                  {/* 2e place */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ fontSize: '2.2rem' }}>🥈</div>
+                    <div style={{ fontWeight: 700, fontSize: '1.2rem', textAlign: 'center', maxWidth: '200px' }}>
+                      {podium.second ? `${podium.second.lastName} ${podium.second.firstName}` : '–'}
+                    </div>
+                    {podium.second?.club && <div style={{ fontSize: '0.85rem', color: '#94a3b8', textAlign: 'center' }}>{podium.second.club}</div>}
+                    <div style={{ width: '180px', height: '80px', backgroundColor: '#475569', borderRadius: '6px 6px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: 800, color: '#94a3b8' }}>2</div>
                   </div>
-                  {champion.club && (
-                    <div style={{ fontSize: '1.3rem', color: '#94a3b8' }}>{champion.club}</div>
-                  )}
-                </>
+                  {/* 1re place */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ fontSize: '3rem' }}>🥇</div>
+                    <div style={{ fontWeight: 800, fontSize: '1.5rem', textAlign: 'center', maxWidth: '220px', color: '#fbbf24' }}>
+                      {podium.first.lastName} {podium.first.firstName}
+                    </div>
+                    {podium.first.club && <div style={{ fontSize: '0.9rem', color: '#fbbf24', opacity: 0.8, textAlign: 'center' }}>{podium.first.club}</div>}
+                    <div style={{ width: '200px', height: '120px', backgroundColor: '#b45309', borderRadius: '6px 6px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 800, color: '#fbbf24' }}>1</div>
+                  </div>
+                  {/* 3e place */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ fontSize: '2.2rem' }}>🥉</div>
+                    <div style={{ fontWeight: 700, fontSize: '1.2rem', textAlign: 'center', maxWidth: '200px' }}>
+                      {podium.third ? `${podium.third.lastName} ${podium.third.firstName}` : '–'}
+                    </div>
+                    {podium.third?.club && <div style={{ fontSize: '0.85rem', color: '#94a3b8', textAlign: 'center' }}>{podium.third.club}</div>}
+                    <div style={{ width: '180px', height: '60px', backgroundColor: '#713f12', borderRadius: '6px 6px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: 800, color: '#d97706' }}>3</div>
+                  </div>
+                </div>
               ) : (
-                <div style={{ fontSize: '1.5rem', color: '#94a3b8' }}>Tableau terminé</div>
+                <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: '1.3rem' }}>Tableau terminé</div>
+              )}
+
+              {/* Classement général */}
+              {elimRanking.length > 0 && (
+                <div ref={tableauScrollRef} style={{ flex: 1, overflowY: 'hidden', borderTop: '1px solid #334155', paddingTop: '16px' }}>
+                  <div style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px', paddingLeft: '4px' }}>
+                    Classement général
+                  </div>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '1rem' }}>
+                    <thead>
+                      <tr style={{ color: '#64748b', textAlign: 'left', borderBottom: '1px solid #334155' }}>
+                        <th style={{ padding: '6px 10px', width: '50px' }}>Rg</th>
+                        <th style={{ padding: '6px 10px' }}>Nom</th>
+                        <th style={{ padding: '6px 10px' }}>Prénom</th>
+                        <th style={{ padding: '6px 10px' }}>Club</th>
+                        <th style={{ padding: '6px 10px', color: '#475569', fontStyle: 'italic' }}>Éliminé en</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {elimRanking.map((r) => {
+                        const medals: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
+                        const isTop3 = r.place <= 3;
+                        return (
+                          <tr key={r.fencer.id} style={{ borderBottom: '1px solid #1e293b', backgroundColor: isTop3 ? 'rgba(251,191,36,0.06)' : 'transparent' }}>
+                            <td style={{ padding: '8px 10px', fontWeight: 'bold', fontSize: '1.1rem' }}>
+                              {medals[r.place] ?? <span style={{ color: '#64748b' }}>{r.place}</span>}
+                            </td>
+                            <td style={{ padding: '8px 10px', fontWeight: 600 }}>{r.fencer.lastName}</td>
+                            <td style={{ padding: '8px 10px' }}>{r.fencer.firstName}</td>
+                            <td style={{ padding: '8px 10px', color: '#94a3b8', fontSize: '0.9rem' }}>{r.fencer.club || '–'}</td>
+                            <td style={{ padding: '8px 10px', color: '#475569', fontSize: '0.85rem', fontStyle: 'italic' }}>{r.eliminatedAt}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           )}
@@ -543,6 +666,8 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
           0%, 100% { opacity: 1; }
           50% { opacity: 0.6; }
         }
+        [data-kiosk-scroll]::-webkit-scrollbar { display: none; }
+        [data-kiosk-scroll] { scrollbar-width: none; -ms-overflow-style: none; }
       `}</style>
     </div>
   );
