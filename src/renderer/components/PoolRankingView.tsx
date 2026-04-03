@@ -162,11 +162,37 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
     setEditedRanking(newRanking);
   };
 
-  // Sauvegarder les modifications
+  // Sauvegarder les modifications et propager vers le parent
   const saveChanges = () => {
-    // TODO: Propager les changements vers les pools si nécessaire
+    const rankingChanged =
+      JSON.stringify(overallRanking.map(r => r.fencer.id)) !==
+      JSON.stringify(editedRanking.map(r => r.fencer.id));
+
+    if (onPoolsChange) {
+      if (rankingChanged) {
+        // Propager les rangs globaux manuels dans chaque pool pour que le bracket
+        // puisse utiliser le bon ordre de qualification
+        const fencerToGlobalRank = new Map(editedRanking.map(r => [r.fencer.id, r.rank]));
+        const updatedPools = pools.map(pool => ({
+          ...pool,
+          ranking: pool.ranking.map(pr => ({
+            ...pr,
+            rank: fencerToGlobalRank.get(pr.fencer.id) ?? pr.rank,
+          })),
+        }));
+        onPoolsChange(updatedPools, true);
+      } else {
+        onPoolsChange(pools, false);
+      }
+    }
+
     setIsEditing(false);
-    showToast('Classement modifié avec succès !', 'success');
+    showToast(
+      rankingChanged
+        ? 'Classement modifié — le tableau sera régénéré avec le nouvel ordre.'
+        : 'Classement sauvegardé (inchangé).',
+      rankingChanged ? 'warning' : 'success'
+    );
   };
 
   const generateCSV = () => {

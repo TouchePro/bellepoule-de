@@ -659,7 +659,7 @@ export function validatePool(pool: Pool): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
 
   // Vérifier que tous les matchs sont terminés
-  const incompleteMatches = pool.matches.filter(
+  const incompleteMatches = (pool.matches ?? []).filter(
     m => m.status !== MatchStatus.FINISHED && m.status !== MatchStatus.CANCELLED
   );
   if (incompleteMatches.length > 0) {
@@ -667,7 +667,7 @@ export function validatePool(pool: Pool): { valid: boolean; errors: string[] } {
   }
 
   // Vérifier la cohérence des scores
-  for (const match of pool.matches) {
+  for (const match of pool.matches ?? []) {
     if (match.status !== MatchStatus.FINISHED) continue;
 
     if (!match.scoreA || !match.scoreB) {

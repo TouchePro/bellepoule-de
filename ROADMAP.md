@@ -11,7 +11,7 @@ _Dernière mise à jour : avril 2026_
 | Couverture tests | ~5% (11 fichiers / 136) | 60% |
 | `console.log` en prod | ~325 occurrences | 0 |
 | Composants > 500 lignes | 5 fichiers | 0 |
-| Locales implémentées | 7 / 7 déclarées ⚠️ | 7 / 7 |
+| Locales implémentées | 7 / 7 ✅ | 7 / 7 |
 | Bundle size | ~1.8 MB | < 1.5 MB |
 
 ---
@@ -23,7 +23,7 @@ Détail dans `.planning/roadmap.md`.
 ```
 Phase 1 : Core Sabre Laser          ████████████████████ 100% ✅
 Phase 2 : Tests unitaires           ████████████████████ 100% ✅
-Phase 3 : Saisie distante + PWA     ░░░░░░░░░░░░░░░░░░░░   0% 🔜  ← ACTUELLE
+Phase 3 : Saisie distante + PWA     ████████████░░░░░░░░  ~55% 🔜  ← ACTUELLE
 Phase 4 : Dashboard Live            ░░░░░░░░░░░░░░░░░░░░   0% 📋
 Phase 5 : Formule ASL               ░░░░░░░░░░░░░░░░░░░░   0% 📋
 ```
@@ -33,13 +33,14 @@ Phase 5 : Formule ASL               ░░░░░░░░░░░░░░�
 Tâches clés :
 
 - [ ] `remote-1` Audit `referee.html` existant
-- [ ] `remote-2` Zones A/B/C fonctionnelles sur tablette
-- [ ] `remote-3` Cartons complets (groupes 1-4)
-- [ ] `remote-4` Mort subite (2 modes)
-- [ ] `remote-5` Sortie d'arène
-- [ ] `remote-6` Chronomètre synchronisé
-- [ ] `remote-7` Undo + historique
-- [ ] `remote-8` UI optimisée tactile
+- [x] `remote-2` Zones A/B/C fonctionnelles sur tablette ✅
+- [x] `remote-3` Cartons (blanc→jaune, jaune, rouge) avec pénalités ✅
+- [x] `remote-4` Mort subite (Timeout + Challenger ≥10 pts) + blocage zones A/B ✅
+- [x] `remote-5` Sortie d'arène (+3 pts adversaire) ✅
+- [x] `remote-6` Chronomètre synchronisé (start/pause/reset + alertes) ✅
+- [x] `remote-7` Undo + historique (10 actions) ✅
+- [ ] `remote-8` UI optimisée tactile (boutons ≥48px, paysage)
+- [ ] `remote-9` Sélection match avancée
 - [ ] `offline-1` IndexedDB côté referee
 - [ ] `offline-2` Service Worker PWA
 - [ ] `offline-3` Queue de sync + indicateurs UI
@@ -48,22 +49,20 @@ Tâches clés :
 
 ## Bugs critiques
 
-### 🔴 Crash potentiel
+### ✅ Résolus
 
-**1. Locale `nl` manquante**
-- `src/shared/types/index.ts:487` déclare `'nl'` dans l'union `language`
-- Aucun fichier `src/locales/nl.json` n'existe
-- Sélectionner "Dutch" dans les paramètres → crash `TranslationContext`
-- **Fix :** ajouter `nl.json` ou retirer `'nl'` du type
+**1. Locale `nl` manquante** — ~~`src/shared/types/index.ts:487` déclarait `'nl'`~~
+- Corrigé : union de types mise à jour avec les locales réelles (`br`, `ca`, `zh-HK`)
 
-**2. TODO non résolu — propagation ranking poules**
-- `src/renderer/components/PoolRankingView.tsx:167`
-- Les changements de ranking ne se propagent pas vers le tableau d'élimination
-- Risque : qualifications incorrectes en tournoi multi-poules
+**2. Propagation ranking poules → tableau** — ~~TODO non résolu dans `PoolRankingView.tsx:167`~~
+- Corrigé : `saveChanges()` propage désormais les rangs globaux manuels via `onPoolsChange`
+
+**3. Null checks `pool.matches`**
+- Corrigé dans `pdfTemplates.ts`, `poolCalculations.ts`, `FencerComparison.tsx`
 
 ### 🟡 Implémentations incomplètes déclarées terminées
 
-**3. Cloud Sync — chiffrement non fonctionnel**
+**4. Cloud Sync — chiffrement non fonctionnel**
 - `src/shared/services/cloudSyncService.ts:70-82`
 - `generateKey()` crée une clé mais ne la persiste pas
 - Aucun workflow de déchiffrement implémenté
