@@ -922,6 +922,29 @@ export class RemoteScoreServer {
       }
     });
 
+    // API : synchronisation des actions hors-ligne (tablettes arbitres)
+    this.app.post('/api/sync', async (req, res) => {
+      const actions: Array<{ id: string; type: string; payload: unknown }> = req.body?.actions || [];
+      const results: Array<{ id: string; success: boolean }> = [];
+      for (const action of actions) {
+        try {
+          if (action.type === 'score_save') {
+            const p = action.payload as { matchId: string; scoreA: number; scoreB: number; status: string };
+            if (p?.matchId) {
+              await this.updateMatchScore(p.matchId, { scoreA: p.scoreA, scoreB: p.scoreB, status: p.status as any });
+            }
+          }
+          // Les autres types d'actions (score_update, card, arena_exit) sont déjà broadcast
+          // via Socket.IO en temps réel ; on les accepte sans traitement supplémentaire.
+          results.push({ id: action.id, success: true });
+        } catch (err) {
+          console.error('[RemoteScoreServer] Erreur sync action', action.id, err);
+          results.push({ id: action.id, success: false });
+        }
+      }
+      res.json({ results });
+    });
+
     // API : données de résultats d'une compétition (classements de poules)
     this.app.get('/api/competitions/:competitionId/results-data', (req, res) => {
       try {
