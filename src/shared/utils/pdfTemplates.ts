@@ -165,8 +165,9 @@ export class SimplePdfTemplateManager {
     doc.setFont(fonts.body.family, 'normal');
     doc.setTextColor(colors.secondary);
 
-    const completedMatches = pool.matches.filter(m => m.status === MatchStatus.FINISHED).length;
-    const info = `Tireurs: ${pool.fencers.length} | Matchs: ${pool.matches.length} | Terminés: ${completedMatches}/${pool.matches.length}`;
+    const matches = pool.matches ?? [];
+    const completedMatches = matches.filter(m => m.status === MatchStatus.FINISHED).length;
+    const info = `Tireurs: ${pool.fencers?.length ?? 0} | Matchs: ${matches.length} | Terminés: ${completedMatches}/${matches.length}`;
     doc.text(info, DIMENSIONS.PAGE_WIDTH / 2, currentY, { align: 'center' });
     currentY += 10;
 

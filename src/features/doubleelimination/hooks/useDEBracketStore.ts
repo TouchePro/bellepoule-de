@@ -7,6 +7,7 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
+import { useShallow } from 'zustand/shallow';
 
 export interface DEBracketNode {
   id: string;
@@ -310,5 +311,21 @@ export const useDEBracketStore = create<DEBracketState & DEBracketActions>()(
     { name: 'DEBracketStore' }
   )
 );
+
+// ── Selector hooks ───────────────────────────────────────────────────────────
+export const useDEBracket = () => useDEBracketStore(s => s.bracket);
+export const useDEFencers = () => useDEBracketStore(useShallow(s => s.fencers));
+export const useDEGenerating = () => useDEBracketStore(s => s.isGenerating);
+export const useDEActions = () =>
+  useDEBracketStore(
+    useShallow(s => ({
+      generateBracket: s.generateBracket,
+      updateMatchResult: s.updateMatchResult,
+      advanceWinner: s.advanceWinner,
+      advanceLoser: s.advanceLoser,
+      finalizeBracket: s.finalizeBracket,
+      clearBracket: s.clearBracket,
+    }))
+  );
 
 export default useDEBracketStore;

@@ -484,7 +484,7 @@ export interface AppState {
 }
 
 export interface UISettings {
-  language: 'fr' | 'en' | 'de' | 'es' | 'nl';
+  language: 'fr' | 'en' | 'de' | 'es' | 'br' | 'ca' | 'zh-HK';
   theme: 'light' | 'dark' | 'system';
   fontSize: 'small' | 'medium' | 'large';
   showTips: boolean;

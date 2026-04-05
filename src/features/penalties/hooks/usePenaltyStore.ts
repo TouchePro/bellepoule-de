@@ -7,6 +7,7 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
+import { useShallow } from 'zustand/shallow';
 import {
   Penalty,
   PenaltyHistory,
@@ -230,5 +231,20 @@ export const usePenaltyStore = create<PenaltyState & PenaltyActions>()(
     { name: 'PenaltyStore' }
   )
 );
+
+// ── Selector hooks ───────────────────────────────────────────────────────────
+export const usePenalties = () => usePenaltyStore(useShallow(s => s.penalties));
+export const usePenaltyConfig = () => usePenaltyStore(s => s.config);
+export const usePenaltyLoading = () => usePenaltyStore(s => s.isLoading);
+export const usePenaltyError = () => usePenaltyStore(s => s.error);
+export const usePenaltyActions = () =>
+  usePenaltyStore(
+    useShallow(s => ({
+      addPenalty: s.addPenalty,
+      removePenalty: s.removePenalty,
+      updatePenalty: s.updatePenalty,
+      updateConfig: s.updateConfig,
+    }))
+  );
 
 export default usePenaltyStore;

@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Competition, Pool, Match, MatchStatus } from '../../shared/types';
+import { logger, LogCategory } from '@shared/services/logger';
 
 interface PresentationModeProps {
   competition: Competition;
@@ -28,7 +29,7 @@ export const PresentationMode: React.FC<PresentationModeProps> = ({
         await document.documentElement.requestFullscreen();
         setIsFullscreen(true);
       } catch (error) {
-        console.warn("Impossible d'activer le plein écran:", error);
+        logger.warn(LogCategory.UI, "Impossible d'activer le plein écran", undefined, error as Error);
       }
     };
 

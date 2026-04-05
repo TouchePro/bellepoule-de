@@ -5,6 +5,7 @@
  */
 
 import { useEffect, useRef, useCallback } from 'react';
+import { logger, LogCategory } from '@shared/services/logger';
 
 // ============================================================================
 // Event Listener Management Hook
@@ -82,7 +83,7 @@ export const useEventManager = () => {
       try {
         element.removeEventListener(event, handler, options);
       } catch (error) {
-        console.warn('Error removing event listener:', error);
+        logger.warn(LogCategory.UI, 'Error removing event listener', undefined, error as Error);
       }
     });
     listenersRef.current = [];
@@ -96,7 +97,7 @@ export const useEventManager = () => {
           window.clearInterval(id);
         }
       } catch (error) {
-        console.warn('Error clearing timer:', error);
+        logger.warn(LogCategory.UI, 'Error clearing timer', undefined, error as Error);
       }
     });
     timersRef.current = [];
@@ -205,7 +206,7 @@ export const useAutoSave = (
       try {
         await saveFunction();
       } catch (error) {
-        console.error('Auto-save failed:', error);
+        logger.error(LogCategory.UI, 'Auto-save failed', error as Error);
       }
     }, intervalMs);
   }, [saveFunction, intervalMs, managedSetInterval, managedClearInterval]);
@@ -243,7 +244,7 @@ export const useIPCEvents = (eventHandlers: Record<string, (...args: any[]) => v
           try {
             handler(...args);
           } catch (error) {
-            console.error(`Error in IPC event handler for ${event}:`, error);
+            logger.error(LogCategory.UI, `Error in IPC event handler for ${event}`, error as Error);
           }
         };
 
@@ -269,7 +270,7 @@ export const useIPCEvents = (eventHandlers: Record<string, (...args: any[]) => v
               window.electronAPI.removeAllListeners(`menu:${channel}`);
             }
           } catch (error) {
-            console.warn('Error removing IPC listener:', error);
+            logger.warn(LogCategory.UI, 'Error removing IPC listener', undefined, error as Error);
           }
         });
       }

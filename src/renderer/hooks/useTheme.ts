@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { logger, LogCategory } from '@shared/services/logger';
 
 export type Theme = 'light' | 'dark' | 'default';
 
@@ -14,7 +15,7 @@ const applyTheme = (theme: Theme) => {
     document.body.classList.add(`theme-${theme}`);
   }
 
-  console.log(`🎨 Applied theme: ${theme}`);
+  logger.debug(LogCategory.UI, `Applied theme: ${theme}`);
 };
 
 export const useTheme = () => {
@@ -31,7 +32,7 @@ export const useTheme = () => {
     setThemeState(newTheme);
     applyTheme(newTheme);
     localStorage.setItem('bellepoule-theme', newTheme);
-    console.log(`✅ Theme changed to ${newTheme}`);
+    logger.debug(LogCategory.UI, `Theme changed to ${newTheme}`);
   }, []);
 
   const toggleTheme = useCallback(() => {

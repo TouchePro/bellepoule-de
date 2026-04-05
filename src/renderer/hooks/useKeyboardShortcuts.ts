@@ -5,6 +5,7 @@
  */
 
 import { useEffect, useCallback, useRef } from 'react';
+import { logger, LogCategory } from '@shared/services/logger';
 
 export type KeyboardShortcut = {
   key: string;
@@ -67,10 +68,7 @@ export function useKeyboardShortcuts(options: UseKeyboardShortcutsOptions) {
           try {
             shortcut.action();
           } catch (error) {
-            console.error(
-              `Erreur lors de l'exécution du raccourci ${shortcut.description}:`,
-              error
-            );
+            logger.error(LogCategory.UI, `Erreur lors de l'exécution du raccourci ${shortcut.description}`, error as Error);
           }
           break;
         }
