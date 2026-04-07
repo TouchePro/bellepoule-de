@@ -880,6 +880,53 @@ export class DatabaseManager {
     }
   }
 
+  public deleteAllFencers(): void {
+    if (!this.db) throw new Error('Database not open');
+    
+    console.log('Tentative de suppression de tous les tireurs');
+    
+    try {
+      // Compter les tireurs avant suppression
+      const countStmt = this.db.prepare('SELECT COUNT(*) as count FROM fencers');
+      countStmt.bind([]);
+      const countRow = countStmt.getAsObject();
+      countStmt.step();
+      countStmt.free();
+      const fencerCount = countRow?.count || 0;
+      
+      if (fencerCount === 0) {
+        console.log('Aucun tireur à supprimer');
+        return;
+      }
+      
+      console.log(`${fencerCount} tireurs à supprimer`);
+      
+      // Supprimer d'abord toutes les associations pool_fencers
+      const poolFencerResult = this.db.run('DELETE FROM pool_fencers');
+      console.log('Associations pool_fencers supprimées:', poolFencerResult.changes);
+      
+      // Supprimer tous les matchs
+      const matchResult = this.db.run('DELETE FROM matches');
+      console.log('Matchs supprimés:', matchResult.changes);
+      
+      // Supprimer tous les tireurs
+      const result = this.db.run('DELETE FROM fencers');
+      console.log('Tireurs supprimés:', result.changes);
+      
+      // Vérifier que la suppression a réussi
+      if (result.changes !== fencerCount) {
+        console.warn(`Attention: ${result.changes} tireurs supprimés sur ${fencerCount} attendus`);
+      }
+      
+      this.save();
+      console.log('Suppression de tous les tireurs terminée avec succès');
+    } catch (error) {
+      console.error('Erreur lors de la suppression de tous les tireurs:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Erreur de base de données lors de la suppression des tireurs: ${errorMessage}`);
+    }
+  }
+
   // Match CRUD
   public createMatch(match: Partial<Match>, poolId?: string): Match {
     if (!this.db) throw new Error('Database not open');

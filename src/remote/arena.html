@@ -838,6 +838,9 @@
               badge.classList.add('status-waiting');
               break;
             case 'ready':
+              badge.textContent = 'Prochain';
+              badge.classList.add('status-waiting');
+              break;
             case 'in_progress':
               badge.textContent = 'En cours';
               badge.classList.add('status-progress');
@@ -936,10 +939,15 @@
             matchDisplay.classList.remove('active');
             photoIntro.classList.remove('hidden');
             this.updatePhotoIntro();
-          } else {
+          } else if (this.matchStatus === 'in_progress' || this.matchStatus === 'finished') {
             waitingScreen.classList.add('hidden');
             photoIntro.classList.add('hidden');
             matchDisplay.classList.add('active');
+          } else {
+            // 'ready' sans photos : écran d'attente (combat pas encore démarré)
+            waitingScreen.classList.remove('hidden');
+            matchDisplay.classList.remove('active');
+            photoIntro.classList.add('hidden');
           }
         }
 
