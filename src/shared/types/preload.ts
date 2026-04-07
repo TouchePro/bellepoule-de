@@ -402,6 +402,7 @@ export interface MenuAPI {
 }
 
 export interface UtilityAPI {
+  print: () => Promise<void>;
   openExternal: (url: string) => Promise<void>;
   getVersionInfo: () => Promise<VersionInfo>;
   removeAllListeners: (channel: string) => void;

@@ -285,24 +285,9 @@ function generatePoolHTML(pool: Pool, title: string): string {
     .pending-match { background: #fef3c7; }
     .finished-match { background: #d1fae5; }
     
-    /* Bouton imprimer */
-    .print-btn {
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      padding: 8px 16px;
-      background: #3182ce;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 12pt;
-    }
-    .print-btn:hover { background: #2c5282; }
   </style>
 </head>
 <body>
-  <button class="print-btn no-print" onclick="window.print()">🖨️ Imprimer / PDF</button>
   <h1>${title}</h1>
   <h2>${fencers.length} tireurs • ${finishedCount}/${matches.length} matchs joués</h2>
   ${gridHTML}
@@ -333,6 +318,11 @@ export async function exportPoolToPDF(pool: Pool, options: PoolExportOptions = {
   if (printWindow) {
     printWindow.document.write(html);
     printWindow.document.close();
+    printWindow.focus();
+    // Déclencher depuis l'ouvreur pour éviter les inline scripts bloqués par CSP
+    setTimeout(() => {
+      if (!printWindow.closed) printWindow.print();
+    }, 300);
   } else {
     throw new Error(
       "Impossible d'ouvrir la fenêtre d'impression. Vérifiez que les popups sont autorisés."
@@ -482,16 +472,9 @@ function generateTableauHTML(
       height: 18mm; vertical-align: middle; text-align: center;
     }
     .sig-box { height: 18mm; }
-    .print-btn {
-      position: fixed; top: 10px; right: 10px;
-      padding: 8px 16px; background: #3182ce; color: white;
-      border: none; border-radius: 4px; cursor: pointer; font-size: 12pt;
-    }
-    .print-btn:hover { background: #2c5282; }
   </style>
 </head>
 <body>
-  <button class="print-btn no-print" onclick="window.print()">🖨️ Imprimer / PDF</button>
   <h1>${title}</h1>
   ${pagesHTML}
 </body>
@@ -517,6 +500,11 @@ export async function exportTableauToPDF(
   if (printWindow) {
     printWindow.document.write(html);
     printWindow.document.close();
+    printWindow.focus();
+    // Déclencher depuis l'ouvreur pour éviter les inline scripts bloqués par CSP
+    setTimeout(() => {
+      if (!printWindow.closed) printWindow.print();
+    }, 300);
   } else {
     throw new Error(
       "Impossible d'ouvrir la fenêtre d'impression. Vérifiez que les popups sont autorisés."

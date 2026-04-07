@@ -139,7 +139,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
   };
 
   const handlePrint = () => {
-    window.print();
+    window.electronAPI.print();
   };
 
   // Déplacer un tireur vers le haut
