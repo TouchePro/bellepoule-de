@@ -164,14 +164,51 @@ const CompetitionListComponent: React.FC<CompetitionListProps> = ({
       </div>
 
       {totalItems > pageSize && (
-        <div className="pagination-bar" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '1rem', justifyContent: 'center' }}>
-          <button className="btn btn-secondary btn-sm" onClick={goToFirst} disabled={!hasPrev} title="Première page">«</button>
-          <button className="btn btn-secondary btn-sm" onClick={goToPrev} disabled={!hasPrev} title="Page précédente">‹</button>
+        <div
+          className="pagination-bar"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            marginTop: '1rem',
+            justifyContent: 'center',
+          }}
+        >
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={goToFirst}
+            disabled={!hasPrev}
+            title="Première page"
+          >
+            «
+          </button>
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={goToPrev}
+            disabled={!hasPrev}
+            title="Page précédente"
+          >
+            ‹
+          </button>
           <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
             {startIndex + 1}–{endIndex} / {totalItems}
           </span>
-          <button className="btn btn-secondary btn-sm" onClick={goToNext} disabled={!hasNext} title="Page suivante">›</button>
-          <button className="btn btn-secondary btn-sm" onClick={goToLast} disabled={!hasNext} title="Dernière page">»</button>
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={goToNext}
+            disabled={!hasNext}
+            title="Page suivante"
+          >
+            ›
+          </button>
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={goToLast}
+            disabled={!hasNext}
+            title="Dernière page"
+          >
+            »
+          </button>
           <select
             className="form-select form-select-sm"
             value={pageSize}
@@ -179,7 +216,9 @@ const CompetitionListComponent: React.FC<CompetitionListProps> = ({
             style={{ marginLeft: '0.5rem', fontSize: '0.875rem' }}
           >
             {pageSizeOptions.map(s => (
-              <option key={s} value={s}>{s} / page</option>
+              <option key={s} value={s}>
+                {s} / page
+              </option>
             ))}
           </select>
         </div>

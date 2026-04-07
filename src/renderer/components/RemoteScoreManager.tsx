@@ -59,7 +59,10 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const [showPhotos, setShowPhotos] = useState(false);
 
   useEffect(() => {
-    if (!activeQR) { setQrDataUrl(null); return; }
+    if (!activeQR) {
+      setQrDataUrl(null);
+      return;
+    }
     QRCode.toDataURL(activeQR.url, { width: 220, margin: 1 })
       .then(setQrDataUrl)
       .catch(() => setQrDataUrl(null));
@@ -129,7 +132,10 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         .filter(m => m.winner === null && m.fencerA && m.fencerB)
         .map(m => ({ ...m, isTableau: true }));
       const allMatches = [...poolMatches, ...deMatches];
-      logger.debug(LogCategory.UI, '[RemoteScoreManager] Passing matches to server', { pool: poolMatches.length, de: deMatches.length });
+      logger.debug(LogCategory.UI, '[RemoteScoreManager] Passing matches to server', {
+        pool: poolMatches.length,
+        de: deMatches.length,
+      });
       const result = await window.electronAPI.remote.startSession(
         competition.id,
         count,
@@ -277,7 +283,15 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             <span>Pistes :</span>
             {stripCountControls}
           </div>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.5rem 0', cursor: 'pointer' }}>
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              margin: '0.5rem 0',
+              cursor: 'pointer',
+            }}
+          >
             <input
               type="checkbox"
               checked={showPhotos}
@@ -314,7 +328,15 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           <h4 style={{ margin: 0 }}>Pistes ({arenaCount})</h4>
           {stripCountControls}
         </div>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.5rem 0', cursor: 'pointer' }}>
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            margin: '0.5rem 0',
+            cursor: 'pointer',
+          }}
+        >
           <input
             type="checkbox"
             checked={showPhotos}
@@ -526,7 +548,15 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             {qrDataUrl ? (
               <img src={qrDataUrl} alt="QR code" width={220} height={220} />
             ) : (
-              <div style={{ width: 220, height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div
+                style={{
+                  width: 220,
+                  height: 220,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
                 Génération…
               </div>
             )}

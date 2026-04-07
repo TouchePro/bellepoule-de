@@ -147,7 +147,9 @@ export const useFencerManagement = ({ competition, onUpdate }: UseFencerManageme
     const promises = notCheckedIn.map(f =>
       window.electronAPI?.db
         ?.updateFencer?.(f.id, { status: FencerStatus.CHECKED_IN })
-        .catch(err => logger.error(LogCategory.UI, `Failed to check in fencer ${f.id}`, err as Error))
+        .catch(err =>
+          logger.error(LogCategory.UI, `Failed to check in fencer ${f.id}`, err as Error)
+        )
     );
 
     await Promise.allSettled(promises);
@@ -173,7 +175,9 @@ export const useFencerManagement = ({ competition, onUpdate }: UseFencerManageme
     const promises = checkedIn.map(f =>
       window.electronAPI?.db
         ?.updateFencer?.(f.id, { status: FencerStatus.NOT_CHECKED_IN })
-        .catch(err => logger.error(LogCategory.UI, `Failed to uncheck fencer ${f.id}`, err as Error))
+        .catch(err =>
+          logger.error(LogCategory.UI, `Failed to uncheck fencer ${f.id}`, err as Error)
+        )
     );
 
     await Promise.allSettled(promises);
@@ -210,7 +214,11 @@ export const useFencerManagement = ({ competition, onUpdate }: UseFencerManageme
           .filter(d => d.matched && d.fencerId)
           .map(d =>
             window.electronAPI!.db!.updateFencer!(d.fencerId!, { ranking: d.ranking }).catch(err =>
-              logger.error(LogCategory.UI, `Failed to update ranking for fencer ${d.fencerId}`, err as Error)
+              logger.error(
+                LogCategory.UI,
+                `Failed to update ranking for fencer ${d.fencerId}`,
+                err as Error
+              )
             )
           );
 

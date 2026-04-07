@@ -56,15 +56,15 @@ export function usePagination<T>(
   const goToFirst = useCallback(() => setPageRaw(0), []);
   const goToLast = useCallback(() => setPageRaw(totalPages - 1), [totalPages]);
   const goToPrev = useCallback(() => setPageRaw(p => Math.max(0, p - 1)), []);
-  const goToNext = useCallback(() => setPageRaw(p => Math.min(p + 1, totalPages - 1)), [totalPages]);
+  const goToNext = useCallback(
+    () => setPageRaw(p => Math.min(p + 1, totalPages - 1)),
+    [totalPages]
+  );
 
   const startIndex = page * pageSize;
   const endIndex = Math.min(startIndex + pageSize, totalItems);
 
-  const items = useMemo(
-    () => data.slice(startIndex, endIndex),
-    [data, startIndex, endIndex]
-  );
+  const items = useMemo(() => data.slice(startIndex, endIndex), [data, startIndex, endIndex]);
 
   return {
     page,

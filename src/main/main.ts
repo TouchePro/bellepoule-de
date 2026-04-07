@@ -639,7 +639,11 @@ ipcMain.handle('file:exportPhotos', async (_, competitionId: string, filepath: s
       fs.renameSync(tmpPath, filepath);
     } catch {
       fs.writeFileSync(filepath, content);
-      try { fs.unlinkSync(tmpPath); } catch { /* ignore */ }
+      try {
+        fs.unlinkSync(tmpPath);
+      } catch {
+        /* ignore */
+      }
     }
   } catch {
     fs.writeFileSync(filepath, content);
@@ -673,12 +677,15 @@ ipcMain.handle('file:exportFencersArchive', async (_, competitionId: string, fil
   const fencers = db.getFencersByCompetition(competitionId);
   const competition = db.getCompetition(competitionId);
   const zip = new JSZip();
-  zip.file('meta.json', JSON.stringify({
-    version: '1',
-    competitionName: competition?.title ?? '',
-    exportDate: new Date().toISOString(),
-    count: fencers.length,
-  }));
+  zip.file(
+    'meta.json',
+    JSON.stringify({
+      version: '1',
+      competitionName: competition?.title ?? '',
+      exportDate: new Date().toISOString(),
+      count: fencers.length,
+    })
+  );
   zip.file('fencers.json', JSON.stringify(fencers));
   const content = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
   const tmpPath = filepath + '.tmp';
@@ -688,7 +695,11 @@ ipcMain.handle('file:exportFencersArchive', async (_, competitionId: string, fil
       fs.renameSync(tmpPath, filepath);
     } catch {
       fs.writeFileSync(filepath, content);
-      try { fs.unlinkSync(tmpPath); } catch { /* ignore */ }
+      try {
+        fs.unlinkSync(tmpPath);
+      } catch {
+        /* ignore */
+      }
     }
   } catch {
     fs.writeFileSync(filepath, content);
@@ -800,7 +811,12 @@ ipcMain.handle(
         return { success: false, error: 'Le serveur distant n est pas démarré' };
       }
 
-      const session = await remoteScoreServer.startSession(competitionId, strips, matches, showPhotos);
+      const session = await remoteScoreServer.startSession(
+        competitionId,
+        strips,
+        matches,
+        showPhotos
+      );
       return { success: true, session };
     } catch (error) {
       console.error('Error starting session:', error);
@@ -811,7 +827,14 @@ ipcMain.handle(
 
 ipcMain.handle(
   'remote:updateMatchArena',
-  async (_, matchId: string, fromArena: number | null, toArena: number | null, fencerA?: any, fencerB?: any) => {
+  async (
+    _,
+    matchId: string,
+    fromArena: number | null,
+    toArena: number | null,
+    fencerA?: any,
+    fencerB?: any
+  ) => {
     try {
       if (!remoteScoreServer) {
         return { success: false, error: 'Serveur non démarré' };

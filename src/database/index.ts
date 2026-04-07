@@ -235,18 +235,26 @@ export class DatabaseManager {
     // Colonnes de timing sur les matchs (migration idempotente)
     try {
       this.db.run(`ALTER TABLE matches ADD COLUMN start_time TEXT`);
-    } catch { /* colonne déjà présente */ }
+    } catch {
+      /* colonne déjà présente */
+    }
     try {
       this.db.run(`ALTER TABLE matches ADD COLUMN end_time TEXT`);
-    } catch { /* colonne déjà présente */ }
+    } catch {
+      /* colonne déjà présente */
+    }
     try {
       this.db.run(`ALTER TABLE matches ADD COLUMN duration INTEGER`);
-    } catch { /* colonne déjà présente */ }
+    } catch {
+      /* colonne déjà présente */
+    }
 
     // Photo des tireurs (migration idempotente)
     try {
       this.db.run(`ALTER TABLE fencers ADD COLUMN photo TEXT`);
-    } catch { /* colonne déjà présente */ }
+    } catch {
+      /* colonne déjà présente */
+    }
 
     // Création des index pour optimiser les performances
     this.createIndexes();
@@ -1503,11 +1511,14 @@ export class DatabaseManager {
     }
     matchStmt.free();
 
-    const matches = matchRows.map((row) => {
+    const matches = matchRows.map(row => {
       const side: 'A' | 'B' = row.fencer_a_id === fencerId ? 'A' : 'B';
-      const opponentId = side === 'A' ? (row.fencer_b_id as string | null) : (row.fencer_a_id as string | null);
-      const opponentLastName = side === 'A' ? (row.opp_b_last as string | null) : (row.opp_a_last as string | null);
-      const opponentFirstName = side === 'A' ? (row.opp_b_first as string | null) : (row.opp_a_first as string | null);
+      const opponentId =
+        side === 'A' ? (row.fencer_b_id as string | null) : (row.fencer_a_id as string | null);
+      const opponentLastName =
+        side === 'A' ? (row.opp_b_last as string | null) : (row.opp_a_last as string | null);
+      const opponentFirstName =
+        side === 'A' ? (row.opp_b_first as string | null) : (row.opp_a_first as string | null);
 
       // Touches de ce combattant dans ce match
       const touches: any[] = [];

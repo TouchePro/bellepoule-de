@@ -480,18 +480,28 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                   fontSize: '3rem',
                   padding: '0.75rem',
                   borderColor:
-                    (parseInt(editScoreA, 10) || 0) > ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) || maxScore || 999)
+                    (parseInt(editScoreA, 10) || 0) >
+                    ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) ||
+                      maxScore ||
+                      999)
                       ? '#ef4444'
                       : undefined,
                   borderWidth:
-                    (parseInt(editScoreA, 10) || 0) > ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) || maxScore || 999)
+                    (parseInt(editScoreA, 10) || 0) >
+                    ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) ||
+                      maxScore ||
+                      999)
                       ? '2px'
                       : undefined,
                 }}
                 value={editScoreA}
                 onChange={e => setEditScoreA(e.target.value)}
                 min="0"
-                max={(editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) || maxScore || undefined}
+                max={
+                  (editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) ||
+                  maxScore ||
+                  undefined
+                }
                 autoFocus
                 onKeyDown={e => {
                   if (e.key === 'Enter') {
@@ -525,18 +535,28 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                   fontSize: '3rem',
                   padding: '0.75rem',
                   borderColor:
-                    (parseInt(editScoreB, 10) || 0) > ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) || maxScore || 999)
+                    (parseInt(editScoreB, 10) || 0) >
+                    ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) ||
+                      maxScore ||
+                      999)
                       ? '#ef4444'
                       : undefined,
                   borderWidth:
-                    (parseInt(editScoreB, 10) || 0) > ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) || maxScore || 999)
+                    (parseInt(editScoreB, 10) || 0) >
+                    ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) ||
+                      maxScore ||
+                      999)
                       ? '2px'
                       : undefined,
                 }}
                 value={editScoreB}
                 onChange={e => setEditScoreB(e.target.value)}
                 min="0"
-                max={(editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) || maxScore || undefined}
+                max={
+                  (editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) ||
+                  maxScore ||
+                  undefined
+                }
                 onKeyDown={e => {
                   if (e.key === 'Enter') {
                     e.preventDefault();

@@ -9,10 +9,7 @@ import { Fencer, PoolRanking } from '../../shared/types';
 import { useToast } from './Toast';
 import { useModalResize } from '../hooks/useModalResize';
 import Bracket from './Bracket';
-import {
-  exportTableauToPDF,
-  MAX_MATCHES_PER_PAGE_TABLEAU,
-} from '../../shared/utils/pdfExport';
+import { exportTableauToPDF, MAX_MATCHES_PER_PAGE_TABLEAU } from '../../shared/utils/pdfExport';
 
 interface BracketMatch {
   id: string;
@@ -1639,7 +1636,8 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                 <button
                   className={`btn ${!matches.find(m => m.id === selectedMatchForArena)?.arena ? 'btn-primary' : 'btn-secondary'}`}
                   onClick={() => {
-                    const oldArena = matches.find(m => m.id === selectedMatchForArena)?.arena ?? null;
+                    const oldArena =
+                      matches.find(m => m.id === selectedMatchForArena)?.arena ?? null;
                     const updatedMatches = matches.map(m =>
                       m.id === selectedMatchForArena ? { ...m, arena: null } : m
                     );
@@ -1661,7 +1659,8 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                       key={arenaNum}
                       className={`btn ${matches.find(m => m.id === selectedMatchForArena)?.arena === arenaNum ? 'btn-primary' : 'btn-secondary'}`}
                       onClick={() => {
-                        const oldArena = matches.find(m => m.id === selectedMatchForArena)?.arena ?? null;
+                        const oldArena =
+                          matches.find(m => m.id === selectedMatchForArena)?.arena ?? null;
                         const updatedMatches = matches.map(m =>
                           m.id === selectedMatchForArena ? { ...m, arena: arenaNum } : m
                         );
@@ -1674,7 +1673,9 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                     >
                       Piste {arenaNum}
                       {queueCount > 0 && (
-                        <span style={{ fontSize: '0.7rem', marginLeft: '0.3rem', color: '#6b7280' }}>
+                        <span
+                          style={{ fontSize: '0.7rem', marginLeft: '0.3rem', color: '#6b7280' }}
+                        >
                           (+{queueCount})
                         </span>
                       )}

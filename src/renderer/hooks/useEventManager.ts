@@ -151,12 +151,8 @@ export const useKeyboardEvents = (keyMap: Record<string, () => void>, dependenci
 // ============================================================================
 
 export const useWindowResize = (handler: () => void, debounceMs: number = 100) => {
-  const {
-    addEventListener,
-    removeEventListener,
-    managedSetTimeout,
-    managedClearTimeout,
-  } = useEventManager();
+  const { addEventListener, removeEventListener, managedSetTimeout, managedClearTimeout } =
+    useEventManager();
   const timeoutRef = useRef<number>(0);
 
   useEffect(() => {

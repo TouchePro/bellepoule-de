@@ -497,9 +497,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
               <input
                 type="checkbox"
                 checked={separationConfig[key]}
-                onChange={e =>
-                  setSeparationConfig(prev => ({ ...prev, [key]: e.target.checked }))
-                }
+                onChange={e => setSeparationConfig(prev => ({ ...prev, [key]: e.target.checked }))}
               />
               {label}
             </label>
