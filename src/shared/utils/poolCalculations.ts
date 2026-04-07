@@ -363,6 +363,9 @@ export function calculatePoolRanking(pool: Pool): PoolRanking[] {
 // Pool Distribution Algorithm
 // ============================================================================
 
+/** Fonction extracteur de clé pour un critère de séparation */
+type CriterionKey = (f: Fencer) => string;
+
 /**
  * Distribue les tireurs dans les poules selon la méthode serpentine
  * en respectant les critères de séparation (club, ligue, nation)
@@ -413,9 +416,22 @@ export function distributeFencersToPoolsSerpentine(
     }
   }
 
-  // Résoudre les conflits de club par échanges
+  // Résoudre les conflits par ordre de priorité : Club > Ligue > Nation
+  const clubKey: CriterionKey = (f) => f.club ?? '';
+  const leagueKey: CriterionKey = (f) => f.league ?? '';
+  const nationKey: CriterionKey = (f) => f.nationality ?? '';
+
   if (separation.byClub) {
-    resolveClubConflicts(pools, separation);
+    resolveConflictsForCriterion(pools, clubKey, []);
+  }
+  if (separation.byLeague) {
+    resolveConflictsForCriterion(pools, leagueKey, separation.byClub ? [clubKey] : []);
+  }
+  if (separation.byNation) {
+    resolveConflictsForCriterion(pools, nationKey, [
+      ...(separation.byClub ? [clubKey] : []),
+      ...(separation.byLeague ? [leagueKey] : []),
+    ]);
   }
 
   // Rééquilibrer les poules pour assurer un nombre égal (ou presque égal) de tireurs
@@ -425,59 +441,64 @@ export function distributeFencersToPoolsSerpentine(
 }
 
 /**
- * Résout les conflits de club en échangeant des tireurs entre poules
- * tout en préservant au mieux l'équilibre de la serpentine
+ * Résout les conflits pour un critère donné (club, ligue, nation) en échangeant des tireurs
+ * entre poules tout en préservant au mieux l'équilibre de la serpentine.
+ * Les critères de priorité supérieure (protectedCriteria) ne sont jamais aggravés.
  */
-function resolveClubConflicts(
+function resolveConflictsForCriterion(
   pools: Fencer[][],
-  separation: { byClub: boolean; byLeague: boolean; byNation: boolean }
+  getCriterionKey: CriterionKey,
+  protectedCriteria: CriterionKey[]
 ): void {
   const poolCount = pools.length;
-  let maxIterations = 100; // Éviter les boucles infinies
+  let maxIterations = 100;
   let improved = true;
 
-  // Construire un compteur de clubs par poule pour éviter les some() O(n) en boucle
-  const buildClubMap = (pool: Fencer[]) => {
+  const buildKeyMap = (pool: Fencer[]) => {
     const m = new Map<string, number>();
     for (const f of pool) {
-      const key = f.club ?? '';
-      m.set(key, (m.get(key) ?? 0) + 1);
+      const key = getCriterionKey(f);
+      if (key !== '') m.set(key, (m.get(key) ?? 0) + 1);
     }
     return m;
   };
-  const clubMaps = pools.map(buildClubMap);
+  const keyMaps = pools.map(buildKeyMap);
 
   while (improved && maxIterations > 0) {
     improved = false;
     maxIterations--;
 
-    // Pour chaque poule
     for (let poolIdx = 0; poolIdx < poolCount; poolIdx++) {
       const pool = pools[poolIdx];
 
-      // Pour chaque tireur dans la poule
       for (let fencerIdx = 0; fencerIdx < pool.length; fencerIdx++) {
         const fencer = pool[fencerIdx];
+        const key = getCriterionKey(fencer);
 
-        // Vérifier si ce tireur a un conflit de club dans cette poule (O(1) au lieu de O(n))
-        const hasClubConflict = (clubMaps[poolIdx].get(fencer.club ?? '') ?? 0) > 1;
+        // Ignorer les tireurs sans valeur pour ce critère
+        if (key === '') continue;
 
-        if (!hasClubConflict) continue;
+        const hasConflict = (keyMaps[poolIdx].get(key) ?? 0) > 1;
+        if (!hasConflict) continue;
 
-        // Chercher un tireur dans une autre poule avec qui échanger
-        const swapPartner = findSwapPartner(fencer, fencerIdx, poolIdx, pools, separation);
+        const swapPartner = findSwapPartner(
+          fencer,
+          fencerIdx,
+          poolIdx,
+          pools,
+          getCriterionKey,
+          protectedCriteria
+        );
 
         if (swapPartner) {
-          // Effectuer l'échange
           const { poolIdx: otherPoolIdx, fencerIdx: otherFencerIdx } = swapPartner;
           const fencerA = pools[poolIdx][fencerIdx];
           const fencerB = pools[otherPoolIdx][otherFencerIdx];
           pools[poolIdx][fencerIdx] = fencerB;
           pools[otherPoolIdx][otherFencerIdx] = fencerA;
 
-          // Mettre à jour les Maps de clubs pour les deux poules concernées
-          clubMaps[poolIdx] = buildClubMap(pools[poolIdx]);
-          clubMaps[otherPoolIdx] = buildClubMap(pools[otherPoolIdx]);
+          keyMaps[poolIdx] = buildKeyMap(pools[poolIdx]);
+          keyMaps[otherPoolIdx] = buildKeyMap(pools[otherPoolIdx]);
 
           improved = true;
           break;
@@ -490,22 +511,21 @@ function resolveClubConflicts(
 }
 
 /**
- * Trouve un partenaire d'échange pour résoudre un conflit de club
- * Retourne null si aucun échange valide n'est trouvé
+ * Trouve un partenaire d'échange pour résoudre un conflit sur un critère donné.
+ * Retourne null si aucun échange valide n'est trouvé.
  */
 function findSwapPartner(
   fencer: Fencer,
   fencerIdx: number,
   currentPoolIdx: number,
   pools: Fencer[][],
-  separation: { byClub: boolean; byLeague: boolean; byNation: boolean }
+  getCriterionKey: CriterionKey,
+  protectedCriteria: CriterionKey[]
 ): { poolIdx: number; fencerIdx: number } | null {
   const poolCount = pools.length;
   let bestSwap: { poolIdx: number; fencerIdx: number; score: number } | null = null;
 
-  // Chercher dans les poules voisines d'abord (préserver l'équilibre)
   for (let offset = 1; offset < poolCount; offset++) {
-    // Chercher d'abord dans les poules proches (offset petit)
     const directions = [offset, -offset];
 
     for (const dir of directions) {
@@ -515,7 +535,6 @@ function findSwapPartner(
       for (let otherFencerIdx = 0; otherFencerIdx < otherPool.length; otherFencerIdx++) {
         const otherFencer = otherPool[otherFencerIdx];
 
-        // Vérifier si l'échange résoudrait le conflit
         if (
           canSwapResolveConflict(
             fencer,
@@ -523,18 +542,14 @@ function findSwapPartner(
             currentPoolIdx,
             otherPoolIdx,
             pools,
-            separation
+            getCriterionKey,
+            protectedCriteria
           )
         ) {
-          // Calculer le score de cet échange (préférer les échanges proches)
           const score = 1000 - offset * 10 - Math.abs(fencerIdx - otherFencerIdx);
 
           if (!bestSwap || score > bestSwap.score) {
-            bestSwap = {
-              poolIdx: otherPoolIdx,
-              fencerIdx: otherFencerIdx,
-              score,
-            };
+            bestSwap = { poolIdx: otherPoolIdx, fencerIdx: otherFencerIdx, score };
           }
         }
       }
@@ -545,7 +560,8 @@ function findSwapPartner(
 }
 
 /**
- * Vérifie si un échange entre deux tireurs résoudrait les conflits de club
+ * Vérifie si un échange entre deux tireurs améliore le critère cible
+ * sans aggraver les critères de priorité supérieure (protectedCriteria).
  */
 function canSwapResolveConflict(
   fencer1: Fencer,
@@ -553,32 +569,36 @@ function canSwapResolveConflict(
   pool1Idx: number,
   pool2Idx: number,
   pools: Fencer[][],
-  separation: { byClub: boolean; byLeague: boolean; byNation: boolean }
+  getCriterionKey: CriterionKey,
+  protectedCriteria: CriterionKey[]
 ): boolean {
   const pool1 = pools[pool1Idx];
   const pool2 = pools[pool2Idx];
 
-  // Compter les conflits actuels
-  const conflicts1Before = pool1.filter(f => f !== fencer1 && f.club === fencer1.club).length;
-  const conflicts2Before = pool2.filter(f => f !== fencer2 && f.club === fencer2.club).length;
+  const key1 = getCriterionKey(fencer1);
+  const key2 = getCriterionKey(fencer2);
 
-  // Simuler l'échange et compter les conflits après
-  // conflicts1After > 0 équivaut à « fencer2 créerait un conflit dans pool1 »
-  // conflicts2After > 0 équivaut à « fencer1 créerait un conflit dans pool2 »
-  const conflicts1After = pool1.filter(f => f !== fencer1 && f.club === fencer2.club).length;
-  const conflicts2After = pool2.filter(f => f !== fencer2 && f.club === fencer1.club).length;
+  const conflicts1Before = pool1.filter(f => f !== fencer1 && getCriterionKey(f) === key1).length;
+  const conflicts2Before = pool2.filter(f => f !== fencer2 && getCriterionKey(f) === key2).length;
+  const conflicts1After = pool1.filter(f => f !== fencer1 && getCriterionKey(f) === key2).length;
+  const conflicts2After = pool2.filter(f => f !== fencer2 && getCriterionKey(f) === key1).length;
 
-  // L'échange est valide si:
-  // 1. Il ne crée pas de nouveaux conflits
-  // 2. Il réduit ou maintient le nombre total de conflits
-  if (conflicts1After > 0 || conflicts2After > 0) {
-    return false;
+  if (conflicts1After > 0 || conflicts2After > 0) return false;
+  if (conflicts1After + conflicts2After > conflicts1Before + conflicts2Before) return false;
+
+  // Vérifier que l'échange ne crée aucun nouveau conflit sur les critères protégés
+  for (const getProtectedKey of protectedCriteria) {
+    const pk1 = getProtectedKey(fencer1);
+    const pk2 = getProtectedKey(fencer2);
+    // Si les deux tireurs ont la même clé protégée, l'échange est neutre → OK
+    if (pk1 === pk2) continue;
+    // fencer2 irait dans pool1 : vérifier qu'aucun autre tireur de pool1 n'a déjà pk2
+    if (pk2 !== '' && pool1.some(f => f !== fencer1 && getProtectedKey(f) === pk2)) return false;
+    // fencer1 irait dans pool2 : vérifier qu'aucun autre tireur de pool2 n'a déjà pk1
+    if (pk1 !== '' && pool2.some(f => f !== fencer2 && getProtectedKey(f) === pk1)) return false;
   }
 
-  const totalConflictsBefore = conflicts1Before + conflicts2Before;
-  const totalConflictsAfter = conflicts1After + conflicts2After;
-
-  return totalConflictsAfter <= totalConflictsBefore;
+  return true;
 }
 
 /**
@@ -629,9 +649,13 @@ function rebalancePools(
         for (let i = source.pool.length - 1; i >= 0; i--) {
           const fencer = source.pool[i];
 
-          // Vérifier que le déplacement ne crée pas de conflit de club
+          // Vérifier que le déplacement ne crée pas de conflit sur les critères actifs
+          const clubVal = fencer.club ?? '';
+          const leagueVal = fencer.league ?? '';
           const wouldCreateConflict =
-            separation.byClub && target.pool.some(f => f.club === fencer.club);
+            (separation.byClub && clubVal !== '' && target.pool.some(f => (f.club ?? '') === clubVal)) ||
+            (separation.byLeague && leagueVal !== '' && target.pool.some(f => (f.league ?? '') === leagueVal)) ||
+            (separation.byNation && target.pool.some(f => f.nationality === fencer.nationality));
 
           if (!wouldCreateConflict) {
             // Déplacer le tireur

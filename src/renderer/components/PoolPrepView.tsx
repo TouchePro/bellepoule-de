@@ -47,6 +47,12 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
     null
   );
 
+  const [separationConfig, setSeparationConfig] = useState({
+    byClub: true,
+    byLeague: true,
+    byNation: false,
+  });
+
   // Historique des modifications pour la fonction restore
   const [history, setHistory] = useState<PoolStateHistory[]>([]);
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState<number>(-1);
@@ -160,16 +166,12 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
     if (poolCount > 0 && fencers.length > 0) {
       generatePools(poolCount);
     }
-  }, [poolCount, minFencersPerPool, maxFencersPerPool]);
+  }, [poolCount, minFencersPerPool, maxFencersPerPool, separationConfig]);
 
   const generatePools = (count: number) => {
     if (fencers.length === 0) return;
 
-    const distribution = distributeFencersToPoolsSerpentine(fencers, count, {
-      byClub: true,
-      byLeague: true,
-      byNation: false,
-    });
+    const distribution = distributeFencersToPoolsSerpentine(fencers, count, separationConfig);
 
     const generatedPools: Pool[] = distribution.map((poolFencers, index) => {
       const matchOrder = generatePoolMatchOrder(poolFencers.length);
@@ -472,6 +474,36 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
             max={10}
             style={{ width: '80px', padding: '0.5rem' }}
           />
+        </div>
+
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          {(
+            [
+              { key: 'byClub', label: 'Séparer par club' },
+              { key: 'byLeague', label: 'Séparer par ligue' },
+              { key: 'byNation', label: 'Séparer par nation' },
+            ] as { key: keyof typeof separationConfig; label: string }[]
+          ).map(({ key, label }) => (
+            <label
+              key={key}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.375rem',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={separationConfig[key]}
+                onChange={e =>
+                  setSeparationConfig(prev => ({ ...prev, [key]: e.target.checked }))
+                }
+              />
+              {label}
+            </label>
+          ))}
         </div>
 
         <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
