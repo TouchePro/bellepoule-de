@@ -892,6 +892,18 @@
     <div class="notification" id="notification"></div>
 
     <script>
+      // ─── Utilitaire sécurité : encodage HTML pour éviter les XSS ───────────
+      function escHtml(str) {
+        if (str === null || str === undefined) return '';
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#x27;');
+      }
+    </script>
+    <script>
       // ─── Queue hors-ligne (IndexedDB) ───────────────────────────────────────
       class OfflineQueueInline {
         constructor() {
@@ -1988,16 +2000,19 @@
           };
           container.innerHTML = matches
             .map(match => {
-              const poolLabel = match.poolId ? `<span style="opacity:0.5;font-size:0.72rem;">Poule ${match.poolId.replace(/\D/g,'') || '?'}</span>` : '';
+              const poolNum = match.poolId ? match.poolId.replace(/\D/g,'') || '?' : '';
+              const poolLabel = match.poolId ? `<span style="opacity:0.5;font-size:0.72rem;">Poule ${escHtml(poolNum)}</span>` : '';
+              const safeId = escHtml(match.id);
+              const clubLine = [match.fencerA?.club, match.fencerB?.club].filter(Boolean).map(escHtml).join(' · ') || '';
               return `
-              <div class="next-match-card" onclick="refereeApp.selectMatchFromNextScreen('${match.id}')">
+              <div class="next-match-card" onclick="refereeApp.selectMatchFromNextScreen('${safeId}')">
                 <div>
                   <div class="next-match-card-names">
-                    ${match.fencerA?.lastName || '?'} <span style="opacity:0.6;font-weight:400">vs</span> ${match.fencerB?.lastName || '?'}
+                    ${escHtml(match.fencerA?.lastName) || '?'} <span style="opacity:0.6;font-weight:400">vs</span> ${escHtml(match.fencerB?.lastName) || '?'}
                     ${statusBadge(match.status)}
                   </div>
                   <div class="next-match-card-sub">
-                    ${[match.fencerA?.club, match.fencerB?.club].filter(Boolean).join(' · ') || ''}
+                    ${clubLine}
                     ${poolLabel}
                   </div>
                 </div>

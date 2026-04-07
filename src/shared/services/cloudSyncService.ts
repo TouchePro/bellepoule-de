@@ -65,17 +65,33 @@ export class CloudSyncService {
   }
 
   /**
-   * Initialize encryption for data security
+   * Initialize encryption for data security.
+   * La clé AES-GCM est persistée en localStorage (JWK) pour survivre aux redémarrages.
    */
   private async initializeEncryption(): Promise<void> {
+    const STORAGE_KEY = 'bellepoule-sync-key';
     try {
-      // Generate or retrieve encryption key
-      const keyData = await window.crypto.subtle.generateKey(
-        { name: 'AES-GCM', length: 256 },
-        true,
-        ['encrypt', 'decrypt']
-      );
-      this.encryptionKey = keyData;
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        // Importer la clé existante
+        const jwk = JSON.parse(stored) as JsonWebKey;
+        this.encryptionKey = await window.crypto.subtle.importKey(
+          'jwk',
+          jwk,
+          { name: 'AES-GCM', length: 256 },
+          true,
+          ['encrypt', 'decrypt']
+        );
+      } else {
+        // Générer une nouvelle clé et la persister
+        this.encryptionKey = await window.crypto.subtle.generateKey(
+          { name: 'AES-GCM', length: 256 },
+          true,
+          ['encrypt', 'decrypt']
+        );
+        const jwk = await window.crypto.subtle.exportKey('jwk', this.encryptionKey);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(jwk));
+      }
     } catch (error) {
       console.error('Failed to initialize encryption:', error);
       throw new Error('Encryption initialization failed');
