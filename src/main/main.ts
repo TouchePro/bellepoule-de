@@ -134,146 +134,146 @@ function createWindow(): void {
 function createMenu(): void {
   const template: Electron.MenuItemConstructorOptions[] = [
     {
-      label: 'Fichier',
+      label: 'Datei',
       submenu: [
         {
-          label: 'Nouvelle compétition',
+          label: 'Neues Turnier',
           accelerator: 'CmdOrCtrl+N',
           click: () => mainWindow?.webContents.send('menu:new-competition'),
         },
         {
-          label: 'Ouvrir...',
+          label: 'Öffnen...',
           accelerator: 'CmdOrCtrl+O',
           click: handleOpenFile,
         },
         { type: 'separator' },
         {
-          label: 'Enregistrer',
+          label: 'Speichern',
           accelerator: 'CmdOrCtrl+S',
           click: () => {
             try {
               db.forceSave();
-              console.log('Sauvegarde manuelle effectuée');
+              console.log('Manuelles Speichern erfolgreich');
               mainWindow?.webContents.send('menu:save');
             } catch (error) {
-              console.error('Échec sauvegarde manuelle:', error);
+              console.error('Fehler beim manuellen Speichern:', error);
               mainWindow?.webContents.send('autosave:failed');
             }
           },
         },
         {
-          label: 'Enregistrer sous...',
+          label: 'Speichern unter...',
           accelerator: 'CmdOrCtrl+Shift+S',
           click: handleSaveAs,
         },
         { type: 'separator' },
         {
-          label: 'Exporter',
+          label: 'Exportieren',
           submenu: [
-            { label: 'Exporter en XML (BellePoule)', click: () => handleExport('xml') },
-            { label: 'Exporter en CSV', click: () => handleExport('csv') },
-            { label: 'Exporter en PDF', click: () => handleExport('pdf') },
+            { label: 'XML exportieren (BellePoule)', click: () => handleExport('xml') },
+            { label: 'CSV exportieren', click: () => handleExport('csv') },
+            { label: 'PDF exportieren', click: () => handleExport('pdf') },
             { type: 'separator' },
-            { label: 'Exporter tireurs (.txt)', click: () => handleExport('fencers-txt') },
-            { label: 'Exporter tireurs (.fff)', click: () => handleExport('fencers-fff') },
-            { label: 'Exporter tireurs + photos (.bpf)', click: () => handleExport('fencers-bpf') },
+            { label: 'Fechter exportieren (.txt)', click: () => handleExport('fencers-txt') },
+            { label: 'Fechter exportieren (.fff)', click: () => handleExport('fencers-fff') },
+            { label: 'Fechter + Fotos exportieren (.bpf)', click: () => handleExport('fencers-bpf') },
           ],
         },
         {
-          label: 'Importer',
+          label: 'Importieren',
           submenu: [
-            { label: 'Importer XML (BellePoule)', click: () => handleImport('xml') },
-            { label: 'Importer liste FFE (.fff)', click: () => handleImport('fff') },
-            { label: 'Importer classement FFE', click: () => handleImport('ranking') },
-            { label: 'Importer tireurs + photos (.bpf)', click: () => handleImport('fencers-bpf') },
+            { label: 'XML importieren (BellePoule)', click: () => handleImport('xml') },
+            { label: 'FFE-Liste importieren (.fff)', click: () => handleImport('fff') },
+            { label: 'FFE-Rangliste importieren', click: () => handleImport('ranking') },
+            { label: 'Fechter + Fotos importieren (.bpf)', click: () => handleImport('fencers-bpf') },
           ],
         },
         { type: 'separator' },
         {
-          label: 'Quitter',
+          label: 'Beenden',
           accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Alt+F4',
           click: () => app.quit(),
         },
       ],
     },
     {
-      label: 'Édition',
+      label: 'Bearbeiten',
       submenu: [
-        { role: 'undo', label: 'Annuler' },
-        { role: 'redo', label: 'Rétablir' },
+        { role: 'undo', label: 'Rückgängig' },
+        { role: 'redo', label: 'Wiederholen' },
         { type: 'separator' },
-        { role: 'cut', label: 'Couper' },
-        { role: 'copy', label: 'Copier' },
-        { role: 'paste', label: 'Coller' },
-        { role: 'selectAll', label: 'Tout sélectionner' },
+        { role: 'cut', label: 'Ausschneiden' },
+        { role: 'copy', label: 'Kopieren' },
+        { role: 'paste', label: 'Einfügen' },
+        { role: 'selectAll', label: 'Alles auswählen' },
       ],
     },
     {
-      label: 'Compétition',
+      label: 'Turnier',
       submenu: [
         {
-          label: 'Propriétés',
+          label: 'Eigenschaften',
           click: () => mainWindow?.webContents.send('menu:competition-properties'),
         },
         { type: 'separator' },
         {
-          label: 'Ajouter un tireur',
+          label: 'Fechter hinzufügen',
           accelerator: 'CmdOrCtrl+T',
           click: () => mainWindow?.webContents.send('menu:add-fencer'),
         },
         {
-          label: 'Ajouter un arbitre',
+          label: 'Schiedsrichter hinzufügen',
           click: () => mainWindow?.webContents.send('menu:add-referee'),
         },
         { type: 'separator' },
         {
-          label: '⚡ Démarrer saisie distante',
+          label: '⚡ Remote Zugriff starten',
           click: () => startRemoteScoreServer(),
         },
         {
-          label: '🛑 Arrêter saisie distante',
+          label: '🛑 Remote Zugriff stoppen',
           click: () => stopRemoteScoreServer(),
         },
         { type: 'separator' },
         {
-          label: 'Tour suivant',
+          label: 'Nächste Runde',
           accelerator: 'CmdOrCtrl+Right',
           click: () => mainWindow?.webContents.send('menu:next-phase'),
         },
       ],
     },
     {
-      label: 'Affichage',
+      label: 'Ansicht',
       submenu: [
-        { role: 'reload', label: 'Recharger' },
-        { role: 'forceReload', label: 'Forcer le rechargement' },
-        { role: 'toggleDevTools', label: 'Outils de développement' },
+        { role: 'reload', label: 'Neu laden' },
+        { role: 'forceReload', label: 'Erzwungen neu laden' },
+        { role: 'toggleDevTools', label: 'Entwicklerwerkzeuge' },
         { type: 'separator' },
-        { role: 'resetZoom', label: 'Réinitialiser le zoom' },
-        { role: 'zoomIn', label: 'Zoom avant' },
-        { role: 'zoomOut', label: 'Zoom arrière' },
+        { role: 'resetZoom', label: 'Zoom zurücksetzen' },
+        { role: 'zoomIn', label: 'Vergrößern' },
+        { role: 'zoomOut', label: 'Verkleinern' },
         { type: 'separator' },
-        { role: 'togglefullscreen', label: 'Plein écran' },
+        { role: 'togglefullscreen', label: 'Vollbild' },
       ],
     },
     {
-      label: 'Aide',
+      label: 'Hilfe',
       submenu: [
         {
-          label: 'À propos de BellePoule Modern',
+          label: 'Über BellePoule Modern',
           accelerator: 'F1',
           click: showAbout,
         },
         {
-          label: '🔄 Vérifier les mises à jour...',
+          label: '🔄 Nach Updates suchen...',
           click: async () => {
             if (autoUpdater) {
               await autoUpdater.showUpdateDialog();
             } else {
               dialog.showMessageBox(mainWindow!, {
                 type: 'warning',
-                title: 'Mises à jour',
-                message: "Le système de mise à jour n'est pas disponible",
+                title: 'Updates',
+                message: 'Das Update-System ist nicht verfügbar',
                 buttons: ['OK'],
               });
             }
@@ -281,14 +281,14 @@ function createMenu(): void {
         },
         { type: 'separator' },
         {
-          label: 'Documentation',
+          label: 'Dokumentation',
           click: () => {
             const { shell } = require('electron');
             shell.openExternal('https://github.com/klinnex/bellepoule-modern/wiki');
           },
         },
         {
-          label: '📝 Signaler un bug / Suggestion',
+          label: '📝 Fehler melden / Vorschlag',
           accelerator: 'CmdOrCtrl+Shift+I',
           click: () => {
             mainWindow?.webContents.send('menu:report-issue');

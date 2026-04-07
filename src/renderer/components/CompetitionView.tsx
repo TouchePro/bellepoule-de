@@ -547,7 +547,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               fontSize: '0.875rem',
             }}
           >
-            ⚔️ Comparaisons
+            ⚔️ Vergleiche
           </button>
           <button
             onClick={() => setShowAnalytics(true)}
@@ -561,7 +561,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               fontSize: '0.875rem',
             }}
           >
-            📊 Analytics
+            📊 Auswertung
           </button>
           <button
             onClick={() => setShowQRCode(true)}
@@ -575,7 +575,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               fontSize: '0.875rem',
             }}
           >
-            📱 Partager
+            📱 Teilen
           </button>
           {currentPhase === 'pools' && pools.length > 0 && (
             <>
@@ -637,7 +637,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               fontSize: '0.875rem',
             }}
           >
-            ⚙️ Propriétés
+            ⚙️ Eigenschaften
           </button>
         </div>
       </div>
