@@ -368,6 +368,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Remove listeners
   removeAllListeners: (channel: string) => ipcRenderer.removeAllListeners(channel),
+
+  // Notify main process of language change (to rebuild native menu)
+  notifyLanguageChanged: (lang: string) => ipcRenderer.send('app:language-changed', lang),
 });
 
 // Type declarations for the renderer

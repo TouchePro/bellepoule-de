@@ -136,6 +136,8 @@ export const TranslationProvider: React.FC<TranslationProviderProps> = ({ childr
       setLanguage(newLanguage);
       setTranslations(loadedTranslations);
       localStorage.setItem('bellepoule-language', newLanguage);
+      // Rebuild native Electron menu in the new language
+      window.electronAPI?.notifyLanguageChanged?.(newLanguage);
     } catch (error) {
       logger.error(LogCategory.UI, 'Failed to change language', error as Error);
     } finally {

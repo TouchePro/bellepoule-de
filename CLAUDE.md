@@ -55,7 +55,7 @@ npm run format:check    # Prettier validation
 
 ```
 Main Process (src/main/)
-├── main.ts              # Window management, menu (French), IPC handlers, DB lifecycle
+├── main.ts              # Window management, menu (i18n: fr/en/de), IPC handlers, DB lifecycle
 ├── preload.ts           # Secure IPC bridge (contextIsolation: true)
 ├── remoteScoreServer.ts # Express + Socket.IO for referee tablets (port 8066)
 └── autoUpdater.ts       # Auto-update functionality
@@ -66,7 +66,7 @@ Renderer Process (src/renderer/)
 ├── hooks/               # 14+ custom hooks
 ├── contexts/            # TranslationContext (i18n)
 ├── services/            # offlineStorage.ts, offlineSync.ts
-├── locales/             # i18n: fr, en, br (Breton)
+├── locales/             # i18n: fr, en, br (Breton), ca (Catalan), de (Deutsch), es (Español), zh-HK
 ├── styles/              # CSS files
 └── sw.js                # Service worker (offline support)
 
@@ -125,6 +125,7 @@ Database (src/database/)
    - `dialog.*` – Open/save file dialogs
    - `remote.*` – Start/stop server, manage arenas/sessions
    - `updater.*` – Auto-update control
+   - `notifyLanguageChanged(lang)` – Rebuild native menu when UI language changes
 
 ## TypeScript Configuration
 
