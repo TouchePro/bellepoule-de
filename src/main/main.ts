@@ -96,7 +96,7 @@ function createWindow(): void {
         ...details.responseHeaders,
         'Content-Security-Policy': [
           "default-src 'self'; " +
-            "script-src 'self' 'unsafe-inline' https://cdn.socket.io; " +
+            "script-src 'self' https://cdn.socket.io; " +
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
             "font-src 'self' https://fonts.gstatic.com; " +
             "img-src 'self' data: blob:; " +
@@ -741,6 +741,11 @@ ipcMain.handle('dialog:saveFile', async (_, options) => {
 
 // Shell handlers
 ipcMain.handle('shell:openExternal', async (_, url: string) => {
+  // N'autoriser que les URLs https:// pour éviter les exploits via des schémas arbitraires
+  if (typeof url !== 'string' || !url.startsWith('https://')) {
+    console.warn('[shell:openExternal] URL rejetée (schéma non-https):', url);
+    return;
+  }
   await shell.openExternal(url);
 });
 

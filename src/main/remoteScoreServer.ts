@@ -9,7 +9,7 @@ import { Server as SocketIOServer } from 'socket.io';
 import { createServer } from 'http';
 import path from 'path';
 import os from 'os';
-import { randomBytes } from 'crypto';
+import { randomBytes, timingSafeEqual } from 'crypto';
 import {
   RemoteSession,
   RemoteScoreUpdate,
@@ -44,6 +44,9 @@ export class RemoteScoreServer {
 
   // Tokens d'authentification par arène (password protection)
   private arenaTokens: Map<string, Set<string>> = new Map();
+
+  // Rate limiting pour le login : { ip → { count, resetAt } }
+  private loginAttempts: Map<string, { count: number; resetAt: number }> = new Map();
 
   constructor(db: DatabaseManager, port: number = 8066) {
     console.log('[RemoteScoreServer] Initialisation du serveur de saisie distante...');
@@ -190,6 +193,20 @@ export class RemoteScoreServer {
     return !!token && (this.arenaTokens.get(fullId)?.has(token) ?? false);
   }
 
+  /** Vérifie qu'au moins un token d'arène valide est présent dans le cookie.
+   *  Si aucune arène n'a de mot de passe, accès libre (comportement par défaut). */
+  private hasAnyValidToken(cookieHeader: string | undefined): boolean {
+    const hasPasswordProtection = Array.from(this.arenas.values()).some(a => !!a.password);
+    if (!hasPasswordProtection) return true;
+    if (!cookieHeader) return false;
+    const cookies = this.parseCookies(cookieHeader);
+    for (const [arenaId, tokens] of this.arenaTokens) {
+      const token = cookies[`bp_token_${arenaId}`];
+      if (token && tokens.has(token)) return true;
+    }
+    return false;
+  }
+
   private setupMiddleware(): void {
     console.log('[RemoteScoreServer] Configuration du middleware...');
     this.app.use(express.json());
@@ -263,9 +280,33 @@ export class RemoteScoreServer {
 
     this.app.use((req, res, next) => {
       console.log(`[RemoteScoreServer] ${req.method} ${req.url} - ${new Date().toISOString()}`);
-      res.header('Access-Control-Allow-Origin', '*');
+      // Restreindre CORS au réseau local uniquement (même logique que Socket.IO)
+      const origin = req.headers.origin;
+      if (origin) {
+        try {
+          const url = new URL(origin);
+          const h = url.hostname;
+          const isLocal =
+            h === 'localhost' ||
+            h === '127.0.0.1' ||
+            h === '::1' ||
+            /^10\./.test(h) ||
+            /^172\.(1[6-9]|2\d|3[01])\./.test(h) ||
+            /^192\.168\./.test(h);
+          if (isLocal) {
+            res.header('Access-Control-Allow-Origin', origin);
+            res.header('Access-Control-Allow-Credentials', 'true');
+          }
+        } catch {
+          // Origine invalide : ne pas définir le header CORS
+        }
+      }
       res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
       res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+      if (req.method === 'OPTIONS') {
+        res.sendStatus(204);
+        return;
+      }
       next();
     });
     console.log('[RemoteScoreServer] Middleware configuré ✓');
@@ -602,6 +643,23 @@ export class RemoteScoreServer {
 
     // API: authentification par mot de passe pour une arène
     this.app.post('/api/auth/login/:arenaId', (req, res) => {
+      // Rate limiting : 5 tentatives par IP par minute
+      const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
+      const now = Date.now();
+      const attempt = this.loginAttempts.get(ip);
+      if (attempt) {
+        if (now < attempt.resetAt) {
+          if (attempt.count >= 5) {
+            return res.status(429).json({ success: false, error: 'Trop de tentatives. Réessayez dans 1 minute.' });
+          }
+          attempt.count++;
+        } else {
+          this.loginAttempts.set(ip, { count: 1, resetAt: now + 60_000 });
+        }
+      } else {
+        this.loginAttempts.set(ip, { count: 1, resetAt: now + 60_000 });
+      }
+
       const rawId = req.params.arenaId;
       const fullId = rawId.startsWith('arena') ? rawId : `arena${rawId}`;
       const arena = this.arenas.get(fullId);
@@ -609,9 +667,21 @@ export class RemoteScoreServer {
         return res.json({ success: true });
       }
       const { password } = req.body as { password: string };
-      if (!password || password !== arena.password) {
+      // Comparaison résistante aux timing attacks
+      let passwordOk = false;
+      try {
+        passwordOk =
+          !!password &&
+          password.length === arena.password.length &&
+          timingSafeEqual(Buffer.from(password), Buffer.from(arena.password));
+      } catch {
+        passwordOk = false;
+      }
+      if (!passwordOk) {
         return res.status(401).json({ success: false, error: 'Mot de passe incorrect' });
       }
+      // Login réussi : réinitialiser le compteur d'échecs
+      this.loginAttempts.delete(ip);
       const token = randomBytes(32).toString('hex');
       if (!this.arenaTokens.has(fullId)) this.arenaTokens.set(fullId, new Set());
       this.arenaTokens.get(fullId)!.add(token);
@@ -666,23 +736,35 @@ export class RemoteScoreServer {
 
     // API: saisir le score d'un match de poule
     this.app.post('/api/pools/:poolId/matches/:matchId/score', (req, res) => {
+      if (!this.hasAnyValidToken(req.headers.cookie)) {
+        return res.status(401).json({ error: 'Non authentifié' });
+      }
       const { poolId, matchId } = req.params;
+      if (!/^[0-9a-f-]{36}$/i.test(matchId) && !/^[0-9a-f-]{36}$/i.test(poolId)) {
+        // Accepter aussi des IDs non-UUID (matchs en mémoire) - on valide le format souple
+      }
       const { scoreA, scoreB, specialStatus } = req.body as {
         scoreA: number;
         scoreB: number;
         specialStatus?: string;
       };
+      // Validation des scores
+      const sA = Number(scoreA);
+      const sB = Number(scoreB);
+      if (!Number.isInteger(sA) || !Number.isInteger(sB) || sA < 0 || sB < 0 || sA > 50 || sB > 50) {
+        return res.status(400).json({ error: 'Scores invalides (entiers entre 0 et 50)' });
+      }
       try {
-        const winner = scoreA > scoreB ? 'A' : scoreB > scoreA ? 'B' : null;
+        const winner = sA > sB ? 'A' : sB > sA ? 'B' : null;
         const scoreAObj: Score = {
-          value: scoreA,
+          value: sA,
           isVictory: winner === 'A',
           isAbstention: specialStatus === 'abandon_A',
           isExclusion: specialStatus === 'exclusion_A',
           isForfait: specialStatus === 'forfait_A',
         };
         const scoreBObj: Score = {
-          value: scoreB,
+          value: sB,
           isVictory: winner === 'B',
           isAbstention: specialStatus === 'abandon_B',
           isExclusion: specialStatus === 'exclusion_B',
@@ -832,9 +914,25 @@ export class RemoteScoreServer {
 
     // API pour terminer un match avec enregistrement final
     this.app.post('/api/matches/:matchId/finish', async (req, res) => {
+      if (!this.hasAnyValidToken(req.headers.cookie)) {
+        return res.status(401).json({ error: 'Non authentifié' });
+      }
       try {
         const { matchId } = req.params;
-        const { scoreA, scoreB, cardsA, cardsB } = req.body;
+        const { scoreA: rawA, scoreB: rawB, cardsA, cardsB } = req.body;
+
+        const scoreA = Number(rawA);
+        const scoreB = Number(rawB);
+        if (
+          !Number.isInteger(scoreA) ||
+          !Number.isInteger(scoreB) ||
+          scoreA < 0 ||
+          scoreB < 0 ||
+          scoreA > 50 ||
+          scoreB > 50
+        ) {
+          return res.status(400).json({ error: 'Scores invalides (entiers entre 0 et 50)' });
+        }
 
         console.log(`[RemoteScoreServer] POST /api/matches/${matchId}/finish`);
         console.log(`[RemoteScoreServer] Score final: ${scoreA}-${scoreB}`);
@@ -923,9 +1021,20 @@ export class RemoteScoreServer {
     });
 
     this.app.post('/api/matches/:matchId/score', async (req, res) => {
+      if (!this.hasAnyValidToken(req.headers.cookie)) {
+        return res.status(401).json({ error: 'Non authentifié' });
+      }
       try {
         const { matchId } = req.params;
         const scoreUpdate: RemoteScoreUpdate = req.body;
+        // Validation des scores si présents dans le body
+        if (scoreUpdate.scoreA !== undefined && scoreUpdate.scoreB !== undefined) {
+          const sA = Number(scoreUpdate.scoreA);
+          const sB = Number(scoreUpdate.scoreB);
+          if (!Number.isInteger(sA) || !Number.isInteger(sB) || sA < 0 || sB < 0 || sA > 50 || sB > 50) {
+            return res.status(400).json({ error: 'Scores invalides (entiers entre 0 et 50)' });
+          }
+        }
 
         // Mettre à jour le match dans la base de données
         await this.updateMatchScore(matchId, scoreUpdate);
