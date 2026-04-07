@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from '../contexts/TranslationContext';
 
 interface MatchTimerProps {
   duration?: number;
@@ -69,6 +70,8 @@ export const MatchTimer: React.FC<MatchTimerProps> = ({
     };
   }, [isRunning, isPaused, remaining, onTimeUp, onTick]);
 
+  const { t } = useTranslation();
+
   const formatTime = useCallback((seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -97,21 +100,21 @@ export const MatchTimer: React.FC<MatchTimerProps> = ({
               onClick={onResume}
               className="px-6 py-3 bg-green-500 text-white rounded-lg font-bold hover:bg-green-600 transition-colors"
             >
-              ▶️ Reprendre
+              {t('timer.resume')}
             </button>
           ) : (
             <button
               onClick={onPause}
               className="px-6 py-3 bg-yellow-500 text-white rounded-lg font-bold hover:bg-yellow-600 transition-colors"
             >
-              ⏸️ Pause (Incident)
+              {t('timer.pause_incident')}
             </button>
           )}
         </div>
       )}
 
       {isPaused && (
-        <div className="text-yellow-600 font-bold animate-pulse">⚠️ PAUSE - Incident en cours</div>
+        <div className="text-yellow-600 font-bold animate-pulse">{t('timer.pause_active')}</div>
       )}
     </div>
   );

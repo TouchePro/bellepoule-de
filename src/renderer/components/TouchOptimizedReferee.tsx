@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Fencer, Match, MatchStatus, TargetZone } from '../../shared/types';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface TouchOptimizedRefereeProps {
   match: Match;
@@ -17,10 +18,10 @@ interface TouchOptimizedRefereeProps {
   onVoiceCommand?: (command: string) => void;
 }
 
-const ZONES = [
-  { zone: TargetZone.ZONE_A, points: 1, label: 'A', desc: 'Main', color: 'bg-blue-500' },
-  { zone: TargetZone.ZONE_B, points: 3, label: 'B', desc: 'Bras', color: 'bg-purple-500' },
-  { zone: TargetZone.ZONE_C, points: 5, label: 'C', desc: 'Tête', color: 'bg-pink-500' },
+const getZones = (t: (key: string) => string) => [
+  { zone: TargetZone.ZONE_A, points: 1, label: 'A', desc: t('touch_referee.zone_main'), color: 'bg-blue-500' },
+  { zone: TargetZone.ZONE_B, points: 3, label: 'B', desc: t('touch_referee.zone_arm'), color: 'bg-purple-500' },
+  { zone: TargetZone.ZONE_C, points: 5, label: 'C', desc: t('touch_referee.zone_head'), color: 'bg-pink-500' },
 ];
 
 export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
@@ -32,6 +33,8 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
   onMatchEnd,
   onVoiceCommand,
 }) => {
+  const { t, language } = useTranslation();
+  const zones = getZones(t);
   const [scoreA, setScoreA] = useState(match.scoreA?.value || 0);
   const [scoreB, setScoreB] = useState(match.scoreB?.value || 0);
   const [matchTime, setMatchTime] = useState(0);
@@ -105,7 +108,7 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
     const recognition = new (window as any).webkitSpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = false;
-    recognition.lang = 'fr-FR';
+    recognition.lang = language === 'de' ? 'de-DE' : language === 'en' ? 'en-US' : 'fr-FR';
 
     recognition.onresult = (event: any) => {
       const last = event.results.length - 1;
@@ -213,7 +216,7 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
       {/* Header */}
       <div className="bg-white shadow-md p-4">
         <div className="flex justify-between items-center">
-          <div className="text-2xl font-bold text-gray-800">Piste {match.number || 1}</div>
+          <div className="text-2xl font-bold text-gray-800">{t('touch_referee.strip')} {match.number || 1}</div>
           <div className="flex items-center space-x-4">
             <div className="text-xl font-mono">{formatTime(matchTime)}</div>
             <button
@@ -245,7 +248,7 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
                 <div className="text-6xl font-bold text-gray-800 mb-4">{scoreA}</div>
                 {/* Zone buttons for Sabre Laser */}
                 <div className="grid grid-cols-3 gap-2 mb-4">
-                  {ZONES.map(({ zone, points, label, desc, color }) => (
+                  {zones.map(({ zone, points, label, desc, color }) => (
                     <button
                       key={zone}
                       onClick={() => handleZoneScore('A', zone, points)}
@@ -276,7 +279,7 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
                 </div>
               </div>
               <div className="mt-4 text-sm text-gray-600 text-center">
-                Glisser vers la gauche ou toucher +1 pour ajouter un point
+                {t('touch_referee.hint_left')}
               </div>
             </div>
 
@@ -297,7 +300,7 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
                 <div className="text-6xl font-bold text-gray-800 mb-4">{scoreB}</div>
                 {/* Zone buttons for Sabre Laser */}
                 <div className="grid grid-cols-3 gap-2 mb-4">
-                  {ZONES.map(({ zone, points, label, desc, color }) => (
+                  {zones.map(({ zone, points, label, desc, color }) => (
                     <button
                       key={zone}
                       onClick={() => handleZoneScore('B', zone, points)}
@@ -328,7 +331,7 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
                 </div>
               </div>
               <div className="mt-4 text-sm text-gray-600 text-center">
-                Glisser vers la droite ou toucher +1 pour ajouter un point
+                {t('touch_referee.hint_right')}
               </div>
             </div>
           </div>
@@ -339,7 +342,7 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
               <span>
                 {scoreA} / {maxScore}
               </span>
-              <span>Premier à {maxScore} points</span>
+              <span>{t('touch_referee.first_to', { count: maxScore })}</span>
               <span>
                 {scoreB} / {maxScore}
               </span>
@@ -368,13 +371,13 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
               }}
               className="bg-yellow-500 text-white px-6 py-4 rounded-lg font-medium text-lg active:scale-95 transition-transform"
             >
-              Réinitialiser Score
+              {t('touch_referee.reset_score')}
             </button>
             <button
               onClick={handleMatchEnd}
               className="bg-blue-500 text-white px-6 py-4 rounded-lg font-medium text-lg active:scale-95 transition-transform"
             >
-              Terminer Match
+              {t('touch_referee.end_match')}
             </button>
           </div>
         </div>
@@ -395,17 +398,17 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
                 voiceEnabled ? 'bg-blue-500 text-white' : 'bg-gray-300 text-gray-700'
               }`}
             >
-              🎤 {voiceEnabled ? 'Actif' : 'Inactif'}
+              🎤 {voiceEnabled ? t('touch_referee.voice_active') : t('touch_referee.voice_inactive')}
             </button>
             {isListening && (
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                <span className="text-sm text-gray-600">Écoute...</span>
+                <span className="text-sm text-gray-600">{t('touch_referee.listening')}</span>
               </div>
             )}
           </div>
           <div className="text-sm text-gray-600">
-            Commandes: "Point rouge/vert", "Pause", "Reprendre", "Terminer"
+            {t('touch_referee.voice_commands_hint')}
           </div>
         </div>
       </div>

@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Competition, Fencer, Pool, Match, MatchStatus } from '../../shared/types';
+import { useTranslation } from '../contexts/TranslationContext';
 
 interface AnalyticsData {
   totalFencers: number;
@@ -61,6 +62,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   className = '',
   onClose,
 }) => {
+  const { t } = useTranslation();
   const [selectedTimeframe, setSelectedTimeframe] = useState<'live' | 'last30min' | 'all'>('live');
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastUpdate, setLastUpdate] = useState(new Date());
@@ -292,7 +294,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Analytics Dashboard</h2>
+          <h2 className="text-2xl font-bold text-gray-800">{t('analytics.title')}</h2>
           <p className="text-gray-600">{competition.title}</p>
         </div>
         <div className="flex items-center space-x-4">
@@ -305,7 +307,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               className="rounded"
             />
             <label htmlFor="autoRefresh" className="text-sm text-gray-600">
-              Auto-refresh
+              {t('analytics.auto_refresh')}
             </label>
           </div>
           <select
@@ -313,9 +315,9 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             onChange={e => setSelectedTimeframe(e.target.value as any)}
             className="px-3 py-2 border border-gray-300 rounded-md"
           >
-            <option value="live">Live</option>
-            <option value="last30min">Last 30 min</option>
-            <option value="all">All time</option>
+            <option value="live">{t('analytics.timeframe_live')}</option>
+            <option value="last30min">{t('analytics.timeframe_last30min')}</option>
+            <option value="all">{t('analytics.timeframe_all')}</option>
           </select>
         </div>
       </div>
@@ -323,23 +325,23 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-blue-50 rounded-lg p-4">
-          <div className="text-blue-600 text-sm font-medium">Fencers</div>
+          <div className="text-blue-600 text-sm font-medium">{t('analytics.fencers')}</div>
           <div className="text-2xl font-bold text-blue-800">{analyticsData.totalFencers}</div>
         </div>
         <div className="bg-green-50 rounded-lg p-4">
-          <div className="text-green-600 text-sm font-medium">Completed Matches</div>
+          <div className="text-green-600 text-sm font-medium">{t('analytics.completed_matches')}</div>
           <div className="text-2xl font-bold text-green-800">
             {analyticsData.completedMatches}/{analyticsData.totalMatches}
           </div>
         </div>
         <div className="bg-purple-50 rounded-lg p-4">
-          <div className="text-purple-600 text-sm font-medium">Avg Match Duration</div>
+          <div className="text-purple-600 text-sm font-medium">{t('analytics.avg_match_duration')}</div>
           <div className="text-2xl font-bold text-purple-800">
             {formatTime(analyticsData.averageMatchDuration)}
           </div>
         </div>
         <div className="bg-orange-50 rounded-lg p-4">
-          <div className="text-orange-600 text-sm font-medium">Last Update</div>
+          <div className="text-orange-600 text-sm font-medium">{t('analytics.last_update')}</div>
           <div className="text-lg font-bold text-orange-800">{lastUpdate.toLocaleTimeString()}</div>
         </div>
       </div>
@@ -347,7 +349,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Performers */}
         <div className="bg-gray-50 rounded-lg p-4">
-          <h3 className="text-lg font-semibold mb-4">Top Performers</h3>
+          <h3 className="text-lg font-semibold mb-4">{t('analytics.top_performers')}</h3>
           <div className="space-y-2">
             {analyticsData.fencerPerformance.slice(0, 5).map((perf, index) => (
               <div
@@ -361,7 +363,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                   <div>
                     <div className="font-medium">{`${perf.fencer.lastName} ${perf.fencer.firstName?.charAt(0)}.`}</div>
                     <div className="text-xs text-gray-500">
-                      Win rate: {(perf.victoryRate * 100).toFixed(1)}%
+                      {t('analytics.win_rate')}: {(perf.victoryRate * 100).toFixed(1)}%
                     </div>
                   </div>
                 </div>
@@ -370,7 +372,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                   <div
                     className={`text-xs px-2 py-1 rounded-full ${getFormColor(perf.recentForm)}`}
                   >
-                    {perf.recentForm}
+                    {t(`analytics.form_${perf.recentForm}`)}
                   </div>
                 </div>
               </div>
@@ -380,12 +382,12 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
         {/* Pool Progress */}
         <div className="bg-gray-50 rounded-lg p-4">
-          <h3 className="text-lg font-semibold mb-4">Pool Progress</h3>
+          <h3 className="text-lg font-semibold mb-4">{t('analytics.pool_progress')}</h3>
           <div className="space-y-3">
             {analyticsData.poolProgress.map(pool => (
               <div key={pool.poolId} className="p-3 bg-white rounded">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="font-medium">Pool {pool.poolNumber}</span>
+                  <span className="font-medium">{t('analytics.pool_label')} {pool.poolNumber}</span>
                   <span className="text-sm text-gray-600">
                     {pool.completionPercentage.toFixed(1)}%
                   </span>
@@ -404,24 +406,24 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
       {/* Weapon Statistics */}
       <div className="mt-6 bg-gray-50 rounded-lg p-4">
-        <h3 className="text-lg font-semibold mb-4">Weapon Statistics</h3>
+        <h3 className="text-lg font-semibold mb-4">{t('analytics.weapon_statistics')}</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
-            <div className="text-sm text-gray-600">Total Matches</div>
+            <div className="text-sm text-gray-600">{t('analytics.total_matches')}</div>
             <div className="font-bold">{analyticsData.weaponStats.totalMatches}</div>
           </div>
           <div>
-            <div className="text-sm text-gray-600">Avg Victory Margin</div>
+            <div className="text-sm text-gray-600">{t('analytics.avg_victory_margin')}</div>
             <div className="font-bold">
               {analyticsData.weaponStats.averageVictoryMargin.toFixed(1)}
             </div>
           </div>
           <div>
-            <div className="text-sm text-gray-600">Most Touching Match</div>
+            <div className="text-sm text-gray-600">{t('analytics.most_touching_match')}</div>
             <div className="font-bold">{analyticsData.weaponStats.mostTouchingMatch}</div>
           </div>
           <div>
-            <div className="text-sm text-gray-600">Competition</div>
+            <div className="text-sm text-gray-600">{t('analytics.competition')}</div>
             <div className="font-bold">{competition.weapon}</div>
           </div>
         </div>

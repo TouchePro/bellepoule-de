@@ -8,8 +8,12 @@ import React, { useState, useEffect } from 'react';
 import { Fencer, PoolRanking } from '../../shared/types';
 import { useToast } from './Toast';
 import { useModalResize } from '../hooks/useModalResize';
+import { useTranslation } from '../contexts/TranslationContext';
 import Bracket from './Bracket';
-import { exportTableauToPDF, MAX_MATCHES_PER_PAGE_TABLEAU } from '../../shared/utils/pdfExport';
+import {
+  exportTableauToPDF,
+  MAX_MATCHES_PER_PAGE_TABLEAU,
+} from '../../shared/utils/pdfExport';
 
 interface BracketMatch {
   id: string;
@@ -154,6 +158,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   onMatchArenaChange,
 }) => {
   const { showToast } = useToast();
+  const { t } = useTranslation();
   const [tableauSize, setTableauSize] = useState<number>(0);
   const [editingMatch, setEditingMatch] = useState<string | null>(null);
   const [showScoreModal, setShowScoreModal] = useState(false);
@@ -304,20 +309,18 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   };
 
   const getRoundName = (round: number): string => {
-    if (round === 2) return 'Finale';
-    if (round === 3) return 'Petite finale';
-    if (round === 4) return 'Demi-finales';
-    if (round === 8) return 'Quarts de finale';
-    if (round === 16) return 'Tableau de 16';
-    if (round === 32) return 'Tableau de 32';
-    if (round === 64) return 'Tableau de 64';
-    return `Tableau de ${round}`;
+    if (round === 2) return t('tableau_view.round_final');
+    if (round === 3) return t('tableau_view.round_third_place');
+    if (round === 4) return t('tableau_view.round_semi');
+    if (round === 8) return t('tableau_view.round_quarter');
+    if (round === 16) return t('tableau_view.round_16');
+    if (round === 32) return t('tableau_view.round_32');
+    if (round === 64) return t('tableau_view.round_64');
+    return t('tableau_view.round_n', { n: round });
   };
 
   const handleAutoFillScores = () => {
-    const confirmed = window.confirm(
-      'Remplir automatiquement tous les scores des matchs non terminés ?\n\nLes scores seront générés aléatoirement pour les tests.'
-    );
+    const confirmed = window.confirm(t('tableau_view.auto_fill_confirm'));
 
     if (!confirmed) return;
 
@@ -403,7 +406,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     // Créer une copie profonde pour forcer React à re-renderer
     const matchesCopy = updatedMatches.map(m => ({ ...m }));
     onMatchesChange(matchesCopy);
-    showToast(`Scores générés pour ${filledCount} match(s)`, 'success');
+    showToast(t('tableau_view.scores_generated', { count: filledCount }), 'success');
 
     // Vérifier si le tableau est complet
     const champion = updatedMatches.find(m => m.round === 2)?.winner;
@@ -421,13 +424,13 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
     // Validation
     if (scoreA === scoreB && !victoryA && !victoryB) {
-      showToast('Les scores ne peuvent pas être égaux en élimination directe', 'error');
+      showToast(t('tableau_view.equal_scores_not_allowed'), 'error');
       return;
     }
 
     if (!isUnlimitedScore && maxScore > 0) {
       if (scoreA > maxScore || scoreB > maxScore) {
-        showToast(`Le score ne peut pas dépasser ${maxScore}`, 'error');
+        showToast(t('tableau_view.score_exceeds_max', { max: maxScore }), 'error');
         return;
       }
     }
@@ -580,7 +583,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
       results.push({
         rank: 1,
         fencer: finalMatch.winner,
-        eliminatedAt: 'Vainqueur',
+        eliminatedAt: t('tableau_view.winner'),
         questPoints: winnerPoolData?.questPoints,
         poolTouches: winnerPoolData?.touchesScored,
         tableTouches: getTableTouches(finalMatch.winner.id, matchList),
@@ -597,7 +600,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         results.push({
           rank: 2,
           fencer: loser,
-          eliminatedAt: 'Finale',
+          eliminatedAt: t('tableau_view.finalist'),
           questPoints: loserPoolData?.questPoints,
           poolTouches: loserPoolData?.touchesScored,
           tableTouches: getTableTouches(loser.id, matchList),
@@ -617,7 +620,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
       results.push({
         rank: 3,
         fencer: thirdPlaceMatch.winner,
-        eliminatedAt: 'Petite Finale',
+        eliminatedAt: t('tableau_view.third_place_finalist'),
         questPoints: winnerPoolData?.questPoints,
         poolTouches: winnerPoolData?.touchesScored,
         tableTouches: getTableTouches(thirdPlaceMatch.winner.id, matchList),
@@ -638,7 +641,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         results.push({
           rank: 4,
           fencer: fourthPlace,
-          eliminatedAt: 'Petite Finale',
+          eliminatedAt: t('tableau_view.third_place_finalist'),
           questPoints: fourthPoolData?.questPoints,
           poolTouches: fourthPoolData?.touchesScored,
           tableTouches: getTableTouches(fourthPlace.id, matchList),
@@ -777,9 +780,9 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
               cursor: 'pointer',
               fontWeight: '500',
             }}
-            title={match.arena ? `Piste ${match.arena}` : 'Assigner à une piste'}
+            title={match.arena ? t('tableau_view.arena_assigned', { num: match.arena }) : t('tableau_view.assign_arena')}
           >
-            {match.arena ? `P${match.arena}` : '+P'}
+            {match.arena ? `P${match.arena}` : t('tableau_view.arena_button_add')}
           </button>
         )}
         <div
@@ -849,7 +852,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
               marginTop: '0.25rem',
             }}
           >
-            Exempt
+            {t('kiosk.bye')}
           </div>
         )}
         {canEdit && !hasScore && viewMode !== 'full' && (
@@ -866,7 +869,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
               textAlign: 'center',
             }}
           >
-            Saisir score
+            {t('tableau_view.enter_score')}
           </div>
         )}
         {canEdit && hasScore && viewMode !== 'full' && (
@@ -883,7 +886,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
               textAlign: 'center',
             }}
           >
-            Modifier score
+            {t('tableau_view.edit_score')}
           </div>
         )}
       </div>
@@ -982,9 +985,9 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     return (
       <div className="empty-state">
         <div className="empty-state-icon">🏆</div>
-        <h2 className="empty-state-title">Tableau à élimination directe</h2>
+        <h2 className="empty-state-title">{t('tableau_view.empty_title')}</h2>
         <p className="empty-state-description">
-          Terminez d'abord les poules pour générer le tableau
+          {t('tableau_view.empty_description')}
         </p>
       </div>
     );
@@ -1033,7 +1036,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
       .filter(m => m.round === round)
       .sort((a, b) => a.position - b.position);
     const isExpanded = expandedRounds.has(round);
-    const roundName = round === 3 ? 'Petite Finale' : `Tableau de ${round}`;
+    const roundName = round === 3 ? t('tableau_view.round_third_place') : t('tableau_view.round_n', { n: round });
 
     return (
       <div
@@ -1063,7 +1066,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
             <span style={{ fontWeight: '600', color: '#374151' }}>{roundName}</span>
           </div>
           <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-            {roundMatches.length} match{roundMatches.length !== 1 ? 's' : ''}
+            {roundMatches.length} {t('tableau_view.match_count', { count: roundMatches.length })}
           </span>
         </div>
         {isExpanded && (
@@ -1090,7 +1093,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         }}
       >
         <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>
-          Tableau de {tableauSize} - {ranking.length} qualifiés
+          {t('tableau_view.bracket_title', { size: tableauSize, count: ranking.length })}
         </h2>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <button
@@ -1109,7 +1112,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
               gap: '0.25rem',
             }}
           >
-            🎲 Remplir auto
+            🎲 {t('tableau_view.auto_fill')}
           </button>
           <button
             onClick={() => setViewMode(viewMode === 'full' ? 'pending' : 'full')}
@@ -1128,11 +1131,11 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
             }}
             title={
               viewMode === 'full'
-                ? 'Afficher les matches en attente'
-                : 'Afficher le tableau complet'
+                ? t('tableau_view.show_pending_matches')
+                : t('tableau_view.show_full_bracket')
             }
           >
-            {viewMode === 'full' ? '📋 Matchs en attente' : '📊 Tableau complet'}
+            {viewMode === 'full' ? `📋 ${t('tableau_view.pending_matches')}` : `📊 ${t('tableau_view.full_bracket')}`}
           </button>
           <button
             onClick={() => setPyramidViewMode(!pyramidViewMode)}
@@ -1149,9 +1152,9 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
               alignItems: 'center',
               gap: '0.25rem',
             }}
-            title={pyramidViewMode ? 'Vue tableau' : 'Vue pyramidale'}
+            title={pyramidViewMode ? t('tableau_view.view_bracket') : t('tableau_view.view_pyramid')}
           >
-            {pyramidViewMode ? '🔲 Tableau' : '🔺 Pyramide'}
+            {pyramidViewMode ? `🔲 ${t('tableau_view.bracket')}` : `🔺 ${t('tableau_view.pyramid')}`}
           </button>
           <button
             onClick={() => setShowPdfModal(true)}
@@ -1168,9 +1171,9 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
               alignItems: 'center',
               gap: '0.25rem',
             }}
-            title="Exporter les feuilles de match en PDF"
+            title={t('tableau_view.export_pdf_tooltip')}
           >
-            📄 Export PDF
+            📄 {t('tableau_view.export_pdf')}
           </button>
           {champion && (
             <div
@@ -1220,9 +1223,9 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                     alignItems: 'center',
                     gap: '0.25rem',
                   }}
-                  title={pendingOrder === 'asc' ? 'Affichage croissant' : 'Affichage décroissant'}
+                  title={pendingOrder === 'asc' ? t('tableau_view.ascending_order') : t('tableau_view.descending_order')}
                 >
-                  {pendingOrder === 'asc' ? '🔼 Croissant' : '🔽 Décroissant'}
+                  {pendingOrder === 'asc' ? `🔼 ${t('tableau_view.ascending')}` : `🔽 ${t('tableau_view.descending')}`}
                 </button>
               </div>
               {pendingViewRounds.map(round => renderPendingSection(round))}
@@ -1236,7 +1239,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                 }}
               >
                 <h4 style={{ fontSize: '0.875rem', fontWeight: '600', marginBottom: '0.5rem' }}>
-                  Résumé des pistes
+                  {t('tableau_view.arena_summary')}
                 </h4>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                   {Array.from({ length: arenaCount }, (_, i) => i + 1).map(arenaNum => {
@@ -1252,8 +1255,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                           border: '1px solid #e5e7eb',
                         }}
                       >
-                        <strong>Piste {arenaNum}</strong>: {arenaMatches.length} match
-                        {arenaMatches.length !== 1 ? 's' : ''}
+                        <strong>{t('tableau_view.arena', { num: arenaNum })}</strong>: {arenaMatches.length} {t('tableau_view.match_count', { count: arenaMatches.length })}
                       </div>
                     );
                   })}
@@ -1267,15 +1269,15 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                       border: '1px solid #e5e7eb',
                     }}
                   >
-                    <strong>Non assignés</strong>: {pendingMatches.filter(m => !m.arena).length}{' '}
-                    match{pendingMatches.filter(m => !m.arena).length !== 1 ? 's' : ''}
+                    <strong>{t('tableau_view.unassigned')}</strong>: {pendingMatches.filter(m => !m.arena).length}{' '}
+                    {t('tableau_view.match_count', { count: pendingMatches.filter(m => !m.arena).length })}
                   </div>
                 </div>
               </div>
             </>
           ) : (
             <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
-              ✓ Tous les matches sont terminés
+              ✓ {t('tableau_view.all_matches_completed')}
             </div>
           )
         ) : pyramidViewMode ? (
@@ -1289,7 +1291,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
       <div style={{ marginTop: '2rem' }}>
         <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>
-          Classement après poules
+          {t('tableau_view.pool_ranking')}
         </h3>
         <div
           style={{
@@ -1350,7 +1352,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
               onClick={e => e.stopPropagation()}
             >
               <div className="modal-header" style={{ cursor: 'move' }}>
-                <h3 className="modal-title">{getRoundName(match.round)} - Saisie rapide</h3>
+                <h3 className="modal-title">{getRoundName(match.round)} - {t('tableau_view.quick_entry')}</h3>
               </div>
               <div className="modal-body" style={{ padding: '2rem' }}>
                 {/* Ligne unique avec les deux tireurs côte à côte */}
@@ -1492,7 +1494,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                     className="text-sm text-muted"
                     style={{ textAlign: 'center', marginBottom: '1rem', fontSize: '1rem' }}
                   >
-                    💡 Score maximum : {maxScore} touches
+                    💡 {t('tableau_view.max_score_info', { max: maxScore })}
                   </p>
                 )}
 
@@ -1512,21 +1514,21 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                     onClick={() => handleSpecialStatus('abandon')}
                     style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
                   >
-                    🚴 Abandon
+                    🚴 {t('fencer.abandon')}
                   </button>
                   <button
                     className="btn btn-warning"
                     onClick={() => handleSpecialStatus('forfait')}
                     style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
                   >
-                    📋 Forfait
+                    📋 {t('fencer.forfait')}
                   </button>
                   <button
                     className="btn btn-danger"
                     onClick={() => handleSpecialStatus('exclusion')}
                     style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
                   >
-                    🚫 Exclusion
+                    🚫 {t('tableau_view.exclusion')}
                   </button>
                 </div>
               </div>
@@ -1535,10 +1537,10 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                 style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}
               >
                 <button className="btn btn-secondary" onClick={() => setShowScoreModal(false)}>
-                  Annuler
+                  {t('actions.cancel')}
                 </button>
                 <button className="btn btn-primary" onClick={handleScoreSubmit}>
-                  Valider
+                  {t('actions.confirm')}
                 </button>
               </div>
             </div>
@@ -1552,18 +1554,17 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         <div className="modal-overlay" onClick={() => setShowPdfModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
             <div className="modal-header">
-              <h3 className="modal-title">Export PDF – Feuilles de match</h3>
+              <h3 className="modal-title">{t('tableau_view.pdf_export_title')}</h3>
               <button className="btn-close" onClick={() => setShowPdfModal(false)}>
                 &times;
               </button>
             </div>
             <div className="modal-body" style={{ padding: '1.5rem' }}>
               <p style={{ marginBottom: '1rem', color: '#6b7280', fontSize: '0.875rem' }}>
-                Chaque fiche contient le nom complet des combattants, une case score et une case
-                signature.
+                {t('tableau_view.pdf_description')}
               </p>
               <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem' }}>
-                Matchs par feuille A4{' '}
+                {t('tableau_view.matches_per_page')} {' '}
                 <span style={{ fontWeight: '400', color: '#6b7280' }}>
                   (max {MAX_MATCHES_PER_PAGE_TABLEAU})
                 </span>
@@ -1590,16 +1591,11 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                 ))}
               </div>
               <p style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: '#9ca3af' }}>
-                {matches.filter(m => !m.isBye && m.fencerA && m.fencerB).length} matchs →{' '}
+                {matches.filter(m => !m.isBye && m.fencerA && m.fencerB).length} {t('tableau_view.matches')} →{' '}
                 {Math.ceil(
                   matches.filter(m => !m.isBye && m.fencerA && m.fencerB).length / pdfMatchesPerPage
                 )}{' '}
-                feuille
-                {Math.ceil(
-                  matches.filter(m => !m.isBye && m.fencerA && m.fencerB).length / pdfMatchesPerPage
-                ) > 1
-                  ? 's'
-                  : ''}
+                {t('tableau_view.page_count', { count: Math.ceil(matches.filter(m => !m.isBye && m.fencerA && m.fencerB).length / pdfMatchesPerPage) })}
               </p>
             </div>
             <div
@@ -1607,10 +1603,10 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
               style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}
             >
               <button className="btn btn-secondary" onClick={() => setShowPdfModal(false)}>
-                Annuler
+                {t('actions.cancel')}
               </button>
               <button className="btn btn-primary" onClick={handleExportPDF}>
-                Générer PDF
+                {t('tableau_view.generate_pdf')}
               </button>
             </div>
           </div>
@@ -1621,14 +1617,14 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         <div className="modal-overlay" onClick={() => setShowArenaModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
             <div className="modal-header">
-              <h3 className="modal-title">Assigner à une piste</h3>
+              <h3 className="modal-title">{t('tableau_view.assign_arena_title')}</h3>
               <button className="btn-close" onClick={() => setShowArenaModal(false)}>
                 &times;
               </button>
             </div>
             <div className="modal-body" style={{ padding: '1.5rem' }}>
               <p style={{ marginBottom: '1rem', color: '#6b7280' }}>
-                Sélectionnez la piste pour ce match :
+                {t('tableau_view.select_arena')}
               </p>
               <div
                 style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}
@@ -1636,8 +1632,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                 <button
                   className={`btn ${!matches.find(m => m.id === selectedMatchForArena)?.arena ? 'btn-primary' : 'btn-secondary'}`}
                   onClick={() => {
-                    const oldArena =
-                      matches.find(m => m.id === selectedMatchForArena)?.arena ?? null;
+                    const oldArena = matches.find(m => m.id === selectedMatchForArena)?.arena ?? null;
                     const updatedMatches = matches.map(m =>
                       m.id === selectedMatchForArena ? { ...m, arena: null } : m
                     );
@@ -1659,8 +1654,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                       key={arenaNum}
                       className={`btn ${matches.find(m => m.id === selectedMatchForArena)?.arena === arenaNum ? 'btn-primary' : 'btn-secondary'}`}
                       onClick={() => {
-                        const oldArena =
-                          matches.find(m => m.id === selectedMatchForArena)?.arena ?? null;
+                        const oldArena = matches.find(m => m.id === selectedMatchForArena)?.arena ?? null;
                         const updatedMatches = matches.map(m =>
                           m.id === selectedMatchForArena ? { ...m, arena: arenaNum } : m
                         );
@@ -1671,11 +1665,9 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                       }}
                       style={{ padding: '0.75rem', position: 'relative' }}
                     >
-                      Piste {arenaNum}
+                      {t('tableau_view.arena', { num: arenaNum })}
                       {queueCount > 0 && (
-                        <span
-                          style={{ fontSize: '0.7rem', marginLeft: '0.3rem', color: '#6b7280' }}
-                        >
+                        <span style={{ fontSize: '0.7rem', marginLeft: '0.3rem', color: '#6b7280' }}>
                           (+{queueCount})
                         </span>
                       )}

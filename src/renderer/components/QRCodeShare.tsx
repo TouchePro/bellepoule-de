@@ -5,8 +5,8 @@
 
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
-import { logger, LogCategory } from '@shared/services/logger';
 import { Competition } from '../../shared/types';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface QRCodeShareProps {
   competition: Competition;
@@ -14,6 +14,7 @@ interface QRCodeShareProps {
 }
 
 export const QRCodeShare: React.FC<QRCodeShareProps> = ({ competition, onClose }) => {
+  const { t } = useTranslation();
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(true);
   const [error, setError] = useState<string>('');
@@ -31,9 +32,7 @@ export const QRCodeShare: React.FC<QRCodeShareProps> = ({ competition, onClose }
     try {
       const info = await window.electronAPI.remote.getServerInfo();
       if (!info.success || !info.serverInfo) {
-        setError(
-          "Le serveur distant doit être démarré pour partager les résultats.\nActivez la saisie distante depuis l'onglet correspondant."
-        );
+        setError(t('qrcode.server_not_running'));
         setIsGenerating(false);
         return;
       }
@@ -44,8 +43,8 @@ export const QRCodeShare: React.FC<QRCodeShareProps> = ({ competition, onClose }
       const dataUrl = await QRCode.toDataURL(url, { width: 300, margin: 1 });
       setQrCodeUrl(dataUrl);
     } catch (err) {
-      logger.error(LogCategory.UI, 'Erreur génération QR', err as Error);
-      setError('Erreur lors de la génération du QR code');
+      console.error('QR generation error:', err);
+      setError(t('qrcode.generation_error'));
     } finally {
       setIsGenerating(false);
     }
@@ -64,7 +63,7 @@ export const QRCodeShare: React.FC<QRCodeShareProps> = ({ competition, onClose }
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(shareUrl).then(() => {
-      alert('URL copiée dans le presse-papier !');
+      alert(t('qrcode.copy_success'));
     });
   };
 
@@ -72,7 +71,7 @@ export const QRCodeShare: React.FC<QRCodeShareProps> = ({ competition, onClose }
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal modal--md" onClick={e => e.stopPropagation()}>
         <div className="modal__header">
-          <h2 className="modal__title">📱 Partager les résultats</h2>
+          <h2 className="modal__title">📱 {t('qrcode.title')}</h2>
           <button className="modal__close" onClick={onClose}>
             ×
           </button>
@@ -81,7 +80,7 @@ export const QRCodeShare: React.FC<QRCodeShareProps> = ({ competition, onClose }
         <div className="modal__body">
           <div className="qrcode__container">
             <p className="qrcode__description">
-              Scannez ce QR code pour accéder aux résultats de la compétition{' '}
+              {t('qrcode.description')}{' '}
               <strong>"{competition.title}"</strong>
             </p>
 
@@ -89,30 +88,24 @@ export const QRCodeShare: React.FC<QRCodeShareProps> = ({ competition, onClose }
               {isGenerating ? (
                 <div className="qrcode__loading">
                   <div className="spinner" />
-                  <p>Génération du QR code...</p>
+                  <p>{t('qrcode.loading')}</p>
                 </div>
               ) : error ? (
                 <div className="alert alert--error" style={{ whiteSpace: 'pre-line' }}>
                   {error}
                 </div>
               ) : (
-                <img
-                  src={qrCodeUrl}
-                  alt="QR Code"
-                  className="qrcode__canvas"
-                  width={300}
-                  height={300}
-                />
+                <img src={qrCodeUrl} alt="QR Code" className="qrcode__canvas" width={300} height={300} />
               )}
             </div>
 
             {!error && shareUrl && (
               <div className="qrcode__url">
-                <label className="form-label">URL de partage :</label>
+                <label className="form-label">{t('qrcode.url_label')}</label>
                 <div className="qrcode__url-input">
                   <input type="text" value={shareUrl} readOnly className="form-control" />
                   <button className="btn btn-secondary" onClick={copyToClipboard}>
-                    📋 Copier
+                    📋 {t('qrcode.copy')}
                   </button>
                 </div>
               </div>
@@ -120,11 +113,11 @@ export const QRCodeShare: React.FC<QRCodeShareProps> = ({ competition, onClose }
 
             <div className="qrcode__info">
               <div className="alert alert--info">
-                <strong>💡 Comment utiliser :</strong>
+                <strong>💡 {t('qrcode.how_to_use')}</strong>
                 <ul>
-                  <li>Scannez le QR code avec votre smartphone</li>
-                  <li>ou copiez l'URL pour la partager</li>
-                  <li>Les spectateurs peuvent voir les résultats en temps réel</li>
+                  <li>{t('qrcode.hint_scan')}</li>
+                  <li>{t('qrcode.hint_copy')}</li>
+                  <li>{t('qrcode.hint_spectators')}</li>
                 </ul>
               </div>
             </div>
@@ -133,14 +126,14 @@ export const QRCodeShare: React.FC<QRCodeShareProps> = ({ competition, onClose }
 
         <div className="modal__footer">
           <button className="btn btn-secondary" onClick={onClose}>
-            Fermer
+            {t('actions.close')}
           </button>
           <button
             className="btn btn-primary"
             onClick={downloadQRCode}
             disabled={!qrCodeUrl || isGenerating}
           >
-            💾 Télécharger le QR Code
+            💾 {t('qrcode.download')}
           </button>
         </div>
       </div>

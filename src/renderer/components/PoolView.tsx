@@ -7,12 +7,12 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useModalResize } from '../hooks/useModalResize';
 import { Pool, Fencer, Match, MatchStatus, Score, Weapon, FencerStatus } from '../../shared/types';
-import { logger, LogCategory } from '@shared/services/logger';
 import { formatRatio, formatIndex } from '../../shared/utils/poolCalculations';
 import { useToast } from './Toast';
 import { useConfirm } from './ConfirmDialog';
 import { exportPoolToPDF } from '../../shared/utils/pdfExport';
 import { useColumnVisibility, POOL_COLUMNS, ColumnId } from '../hooks/useColumnVisibility';
+import { useTranslation } from '../contexts/TranslationContext';
 
 interface PoolViewProps {
   pool: Pool;
@@ -42,6 +42,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   const { showToast } = useToast();
   const { confirm } = useConfirm();
   const { isColumnVisible, toggleColumn, getVisibleColumns } = useColumnVisibility();
+  const { t } = useTranslation();
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [editingMatch, setEditingMatch] = useState<number | null>(null);
   const [showColumnMenu, setShowColumnMenu] = useState(false);
@@ -205,11 +206,11 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     const effectiveMax = pool.matches[editingMatch]?.maxScore || maxScore || 0;
     if (effectiveMax > 0) {
       if (scoreA > effectiveMax) {
-        showToast(`Le score du tireur A ne peut pas dépasser ${effectiveMax}`, 'error');
+        showToast(t('pool_view.score_fencer_a_exceeds', { max: effectiveMax }), 'error');
         return;
       }
       if (scoreB > effectiveMax) {
-        showToast(`Le score du tireur B ne peut pas dépasser ${effectiveMax}`, 'error');
+        showToast(t('pool_view.score_fencer_b_exceeds', { max: effectiveMax }), 'error');
         return;
       }
     }
@@ -224,10 +225,10 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         const winner = editingFromRowA ? (victoryA ? 'A' : 'B') : victoryB ? 'A' : 'B';
         onScoreUpdate(editingMatch, actualScoreA, actualScoreB, winner);
       } else if (isLaserSabre) {
-        showToast('Match nul : cliquez sur V pour attribuer la victoire', 'warning');
+        showToast(t('pool_view.draw_click_v'), 'warning');
         return;
       } else {
-        showToast('Match nul impossible en escrime !', 'error');
+        showToast(t('pool_view.draw_impossible'), 'error');
         return;
       }
     } else {
@@ -252,12 +253,16 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     const match = pool.matches[editingMatch];
 
     // Déterminer quel tireur abandonne (le premier par défaut, pourrait être paramétrable)
-    const statusVerb =
-      status === 'abandon' ? 'abandonne' : status === 'forfait' ? 'déclare forfait' : 'est exclu';
-    const statusInf =
-      status === 'abandon' ? 'abandonner' : status === 'forfait' ? 'déclarer forfait' : 'exclure';
+    const statusKey = status === 'abandon' ? 'abandon' : status === 'forfait' ? 'forfait' : 'exclusion';
+    const statusVerb = t(`pool_view.special_status_verb.${statusKey}`);
+    const statusInf = t(`pool_view.special_status_infinitive.${statusKey}`);
     const isA = await confirm({
-      message: `${match.fencerA?.lastName} ${match.fencerA?.firstName?.charAt(0)}. ${statusVerb} ?\n\nCliquez sur Annuler pour ${statusInf} ${match.fencerB?.lastName} ${match.fencerB?.firstName?.charAt(0)}.`,
+      message: t('pool_view.confirm_special_status', {
+        fencerA: `${match.fencerA?.lastName} ${match.fencerA?.firstName?.charAt(0)}.`,
+        statusVerb,
+        fencerB: `${match.fencerB?.lastName} ${match.fencerB?.firstName?.charAt(0)}.`,
+        statusInf,
+      }),
       confirmLabel: `${match.fencerA?.lastName}`,
       cancelLabel: `${match.fencerB?.lastName}`,
     });
@@ -325,16 +330,16 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   const handleExportPDF = async () => {
     try {
       await exportPoolToPDF(pool, {
-        title: `Poule ${pool.number} - ${pool.fencers.length} tireurs`,
+        title: t('pool_view.pdf_title', { number: pool.number, count: pool.fencers.length }),
         includeFinishedMatches: true,
         includePendingMatches: true,
         includePoolStats: true,
       });
-      showToast(`Export PDF de la poule ${pool.number} généré avec succès`, 'success');
+      showToast(t('pool_view.pdf_export_success', { number: pool.number }), 'success');
     } catch (error) {
-      logger.error(LogCategory.UI, "Erreur lors de l'export PDF", error as Error);
+      console.error(t('pool_view.pdf_export_error'), error);
       showToast(
-        `Erreur lors de la génération du PDF: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
+        t('pool_view.pdf_generation_error', { error: error instanceof Error ? error.message : t('pool_view.unknown_error') }),
         'error'
       );
     }
@@ -343,10 +348,9 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   // Fonction pour remplir automatiquement tous les scores de la poule (pour les tests)
   const handleAutoFillScores = async () => {
     const confirmed = await confirm({
-      message:
-        'Remplir automatiquement tous les scores des matchs non terminés ?\n\nLes scores seront générés aléatoirement pour les tests.',
-      confirmLabel: 'Remplir',
-      cancelLabel: 'Annuler',
+      message: t('pool_view.auto_fill_confirm'),
+      confirmLabel: t('pool_view.auto_fill_confirm_btn'),
+      cancelLabel: t('actions.cancel'),
     });
 
     if (!confirmed) return;
@@ -356,7 +360,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
       .filter(({ match }) => match.status !== MatchStatus.FINISHED);
 
     if (pendingMatches.length === 0) {
-      showToast('Tous les matchs sont déjà terminés', 'info');
+      showToast(t('pool_view.all_matches_finished'), 'info');
       return;
     }
 
@@ -392,7 +396,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     }
 
     setMatchesUpdateTrigger(prev => prev + 1);
-    showToast(`Scores générés pour ${pendingMatches.length} match(s)`, 'success');
+    showToast(t('pool_view.scores_generated', { count: pendingMatches.length }), 'success');
   };
 
   // Render Score Modal
@@ -416,7 +420,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           style={{ maxWidth: '900px', width: '95%', minHeight: '400px' }}
         >
           <div className="modal-header" style={{ cursor: 'move' }}>
-            <h3 className="modal-title">Saisie rapide du score</h3>
+            <h3 className="modal-title">{t('pool_view.quick_score_input')}</h3>
           </div>
           <div className="modal-body" style={{ padding: '2rem' }}>
             {/* Ligne unique avec les deux tireurs côte à côte */}
@@ -480,28 +484,18 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                   fontSize: '3rem',
                   padding: '0.75rem',
                   borderColor:
-                    (parseInt(editScoreA, 10) || 0) >
-                    ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) ||
-                      maxScore ||
-                      999)
+                    (parseInt(editScoreA, 10) || 0) > ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) || maxScore || 999)
                       ? '#ef4444'
                       : undefined,
                   borderWidth:
-                    (parseInt(editScoreA, 10) || 0) >
-                    ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) ||
-                      maxScore ||
-                      999)
+                    (parseInt(editScoreA, 10) || 0) > ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) || maxScore || 999)
                       ? '2px'
                       : undefined,
                 }}
                 value={editScoreA}
                 onChange={e => setEditScoreA(e.target.value)}
                 min="0"
-                max={
-                  (editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) ||
-                  maxScore ||
-                  undefined
-                }
+                max={(editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) || maxScore || undefined}
                 autoFocus
                 onKeyDown={e => {
                   if (e.key === 'Enter') {
@@ -535,28 +529,18 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                   fontSize: '3rem',
                   padding: '0.75rem',
                   borderColor:
-                    (parseInt(editScoreB, 10) || 0) >
-                    ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) ||
-                      maxScore ||
-                      999)
+                    (parseInt(editScoreB, 10) || 0) > ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) || maxScore || 999)
                       ? '#ef4444'
                       : undefined,
                   borderWidth:
-                    (parseInt(editScoreB, 10) || 0) >
-                    ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) ||
-                      maxScore ||
-                      999)
+                    (parseInt(editScoreB, 10) || 0) > ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) || maxScore || 999)
                       ? '2px'
                       : undefined,
                 }}
                 value={editScoreB}
                 onChange={e => setEditScoreB(e.target.value)}
                 min="0"
-                max={
-                  (editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) ||
-                  maxScore ||
-                  undefined
-                }
+                max={(editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) || maxScore || undefined}
                 onKeyDown={e => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
@@ -624,7 +608,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                 className="text-sm text-muted"
                 style={{ textAlign: 'center', marginBottom: '1rem' }}
               >
-                💡 En cas d'égalité, cliquez sur V pour attribuer la victoire
+                {t('pool_view.draw_victory_hint')}
               </p>
             )}
 
@@ -644,21 +628,21 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                 onClick={() => handleSpecialStatus('abandon')}
                 style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
               >
-                🚴 Abandon
+                🚴 {t('fencer.abandon')}
               </button>
               <button
                 className="btn btn-warning"
                 onClick={() => handleSpecialStatus('forfait')}
                 style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
               >
-                📋 Forfait
+                📋 {t('fencer.forfait')}
               </button>
               <button
                 className="btn btn-danger"
                 onClick={() => handleSpecialStatus('exclusion')}
                 style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
               >
-                🚫 Exclusion
+                🚫 {t('pool_view.exclusion')}
               </button>
             </div>
           </div>
@@ -673,10 +657,10 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                 setEditingFromRowA(true);
               }}
             >
-              Annuler
+              {t('actions.cancel')}
             </button>
             <button className="btn btn-primary" onClick={handleScoreSubmit}>
-              Valider
+              {t('actions.confirm')}
             </button>
           </div>
         </div>
@@ -701,7 +685,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               e.preventDefault();
               toggleColumn('pool', 'victories');
             }}
-            title="Clic droit pour masquer"
+            title={t('pool_view.right_click_to_hide')}
           >
             V
           </div>
@@ -713,7 +697,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               e.preventDefault();
               toggleColumn('pool', 'ratio');
             }}
-            title="Clic droit pour masquer"
+            title={t('pool_view.right_click_to_hide')}
           >
             V/M
           </div>
@@ -725,7 +709,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               e.preventDefault();
               toggleColumn('pool', 'td');
             }}
-            title="Clic droit pour masquer"
+            title={t('pool_view.right_click_to_hide')}
           >
             TD
           </div>
@@ -737,7 +721,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               e.preventDefault();
               toggleColumn('pool', 'tr');
             }}
-            title="Clic droit pour masquer"
+            title={t('pool_view.right_click_to_hide')}
           >
             TR
           </div>
@@ -750,7 +734,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               e.preventDefault();
               toggleColumn('pool', 'quest');
             }}
-            title="Clic droit pour masquer"
+            title={t('pool_view.right_click_to_hide')}
           >
             Quest
           </div>
@@ -762,7 +746,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               e.preventDefault();
               toggleColumn('pool', 'index');
             }}
-            title="Clic droit pour masquer"
+            title={t('pool_view.right_click_to_hide')}
           >
             Ind
           </div>
@@ -774,7 +758,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               e.preventDefault();
               toggleColumn('pool', 'rank');
             }}
-            title="Clic droit pour masquer"
+            title={t('pool_view.right_click_to_hide')}
           >
             Rg
           </div>
@@ -805,7 +789,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                     e.stopPropagation();
                     onFencerChangePool(rowFencer);
                   }}
-                  title="Changer de poule"
+                  title={t('pool_view.change_pool')}
                   style={{
                     padding: '0.125rem 0.25rem',
                     fontSize: '0.625rem',
@@ -850,7 +834,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                       backgroundColor: '#e5e7eb',
                       color: '#9ca3af',
                     }}
-                    title="Match non disputé (abandon/forfait)"
+                    title={t('pool_view.not_played')}
                   >
                     <span>-</span>
                   </div>
@@ -1367,8 +1351,8 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
       {orderedMatches.pending.length === 0 && (
         <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
           <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🏁</div>
-          <div style={{ fontWeight: '600' }}>Poule terminée !</div>
-          <div style={{ fontSize: '0.875rem' }}>Tous les matches ont été joués</div>
+          <div style={{ fontWeight: '600' }}>{t('pool_view.pool_finished')}</div>
+          <div style={{ fontSize: '0.875rem' }}>{t('pool_view.all_matches_played')}</div>
         </div>
       )}
     </div>
@@ -1381,7 +1365,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <span>Poule {pool.number}</span>
+          <span>{t('pool_view.pool_number', { number: pool.number })}</span>
           <span className={`badge ${pool.isComplete ? 'badge-success' : 'badge-warning'}`}>
             {pool.isComplete ? 'Terminée' : `${finishedCount}/${totalMatches}`}
           </span>
@@ -1398,7 +1382,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               borderRadius: '4px',
               cursor: 'pointer',
             }}
-            title="Remplir automatiquement les scores (test)"
+            title={t('pool_view.auto_fill_tooltip')}
           >
             🎲 Auto
           </button>
@@ -1413,7 +1397,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               borderRadius: '4px',
               cursor: 'pointer',
             }}
-            title="Exporter la pôle en PDF"
+            title={t('pool_view.export_pdf_tooltip')}
           >
             📄 PDF
           </button>
@@ -1429,7 +1413,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                 borderRadius: '4px',
                 cursor: 'pointer',
               }}
-              title="Afficher/masquer les colonnes"
+              title={t('pool_view.column_menu_tooltip')}
             >
               ⚙️
             </button>

@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useToast } from './Toast';
+import { useTranslation } from '../contexts/TranslationContext';
 
 interface UpdateNotificationProps {
   visible?: boolean;
@@ -22,6 +23,7 @@ interface UpdateInfo {
 
 const UpdateNotification: React.FC<UpdateNotificationProps> = ({ visible: propVisible }) => {
   const { showToast } = useToast();
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(propVisible || false);
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
   const [dismissed, setDismissed] = useState(false);
@@ -48,24 +50,24 @@ const UpdateNotification: React.FC<UpdateNotificationProps> = ({ visible: propVi
 
   const handleDownload = () => {
     // Ouvre directement vers la dernière release (pas l'historique complet)
-    window.open('https://github.com/klinnex/bellepoule-modern/releases/latest', '_blank');
-    showToast('Redirection vers la page de téléchargement...', 'info');
+    window.open('https://github.com/skycreations/klinge/releases/latest', '_blank');
+    showToast(t('update.redirecting'), 'info');
     setVisible(false);
   };
 
   const handleDismiss = () => {
     setDismissed(true);
     setVisible(false);
-    showToast('Vous pourrez mettre à jour plus tard depuis le menu Aide', 'info');
+    showToast(t('update.later'), 'info');
   };
 
   const handleViewRelease = () => {
     // Ouvre vers la page de la release spécifique (pas l'historique complet)
     if (updateInfo?.latestVersion) {
-      const releaseUrl = `https://github.com/klinnex/bellepoule-modern/releases/tag/v${updateInfo.latestVersion}`;
+      const releaseUrl = `https://github.com/skycreations/klinge/releases/tag/v${updateInfo.latestVersion}`;
       window.open(releaseUrl, '_blank');
     } else {
-      window.open('https://github.com/klinnex/bellepoule-modern/releases/latest', '_blank');
+      window.open('https://github.com/skycreations/klinge/releases/latest', '_blank');
     }
   };
 
@@ -78,22 +80,22 @@ const UpdateNotification: React.FC<UpdateNotificationProps> = ({ visible: propVi
       <div className="update-notification-content">
         <div className="update-notification-icon">🚀</div>
         <div className="update-notification-text">
-          <h4>Mise à jour disponible !</h4>
+          <h4>{t('update.available')}</h4>
           <p>
             Version <strong>v{updateInfo.latestVersion}</strong> (Build #{updateInfo.latestBuild})
           </p>
           {updateInfo.latestBuild - updateInfo.currentBuild > 1 && (
             <p className="update-notification-multiple">
-              Vous avez {updateInfo.latestBuild - updateInfo.currentBuild} mises à jour de retard
+              {t('update.behind', { count: String(updateInfo.latestBuild - updateInfo.currentBuild) })}
             </p>
           )}
         </div>
         <div className="update-notification-actions">
           <button className="btn btn-primary btn-sm" onClick={handleDownload}>
-            📥 Télécharger
+            {t('update.download')}
           </button>
           <button className="btn btn-secondary btn-sm" onClick={handleViewRelease}>
-            📋 Voir les notes
+            {t('update.view_notes')}
           </button>
           <button className="btn btn-ghost btn-sm" onClick={handleDismiss}>
             ✖️

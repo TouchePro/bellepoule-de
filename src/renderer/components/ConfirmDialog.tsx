@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect, useRef, createContext, useContext, useCallback } from 'react';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface ConfirmOptions {
   message: string;
@@ -26,6 +27,7 @@ interface PendingConfirm {
 }
 
 export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { t } = useTranslation();
   const [pending, setPending] = useState<PendingConfirm | null>(null);
   const confirmBtnRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -44,12 +46,12 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return new Promise<boolean>(resolve => {
       setPending({
         message: options.message,
-        confirmLabel: options.confirmLabel || 'OK',
-        cancelLabel: options.cancelLabel || 'Annuler',
+        confirmLabel: options.confirmLabel || t('actions.ok'),
+        cancelLabel: options.cancelLabel || t('actions.cancel'),
         resolve,
       });
     });
-  }, []);
+  }, [t]);
 
   const handleConfirm = () => {
     if (pending) {
@@ -86,7 +88,7 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
         >
           <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '420px' }}>
             <div className="modal-header">
-              <h2 className="modal-title">Confirmation</h2>
+              <h2 className="modal-title">{t('actions.confirm')}</h2>
             </div>
             <div className="modal-body">
               <p style={{ whiteSpace: 'pre-line', margin: 0 }}>{pending.message}</p>

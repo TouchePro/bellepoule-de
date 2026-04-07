@@ -8,6 +8,7 @@ import React from 'react';
 import { Fencer, PoolRanking, Competition, Weapon, FencerStatus } from '../../shared/types';
 import { useToast } from './Toast';
 import { exportResultsXMLFFE } from '../../shared/utils/multiFormatExport';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface FinalResult {
   rank: number;
@@ -23,6 +24,7 @@ interface ResultsViewProps {
 }
 
 const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, finalResults }) => {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const isLaserSabre = competition.weapon === Weapon.LASER;
 
@@ -47,7 +49,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
       : poolRanking.map((pr, idx) => ({
           rank: idx + 1,
           fencer: pr.fencer,
-          eliminatedAt: 'Poules',
+          eliminatedAt: t('phases.pools'),
           questPoints: pr.questPoints,
         }));
 
@@ -96,7 +98,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
     link.href = URL.createObjectURL(blob);
     link.download = `resultats_${competition.title.replace(/[^a-z0-9]/gi, '_')}.csv`;
     link.click();
-    showToast('Export CSV réussi !', 'success');
+    showToast(t('messages.export_success', { format: 'CSV' }), 'success');
   };
 
   // Export XML
@@ -116,7 +118,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
     link.href = URL.createObjectURL(blob);
     link.download = `resultats_${competition.title.replace(/[^a-z0-9]/gi, '_')}.xml`;
     link.click();
-    showToast('Export XML réussi !', 'success');
+    showToast(t('messages.export_success', { format: 'XML' }), 'success');
   };
 
   const champion = resultsToDisplay.find(r => r.rank === 1);
@@ -137,7 +139,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
           }}
         >
           <div style={{ fontSize: '4rem', marginBottom: '0.5rem' }}>🏆</div>
-          <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Champion</h1>
+          <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{t('results.champion')}</h1>
           <div style={{ fontSize: '2rem', fontWeight: '700' }}>
             {champion.fencer.firstName} {champion.fencer.lastName}
           </div>
@@ -177,7 +179,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
             <div style={{ fontWeight: '600', fontSize: '0.875rem' }}>
               {resultsToDisplay[1].fencer.lastName}
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>2ème</div>
+            <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{t('results.podium_2nd')}</div>
           </div>
         )}
 
@@ -201,7 +203,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
             <div style={{ fontWeight: '700', fontSize: '1rem' }}>
               {resultsToDisplay[0].fencer.lastName}
             </div>
-            <div style={{ fontSize: '0.875rem', color: '#92400e' }}>1er</div>
+            <div style={{ fontSize: '0.875rem', color: '#92400e' }}>{t('results.podium_1st')}</div>
           </div>
         )}
 
@@ -224,7 +226,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
             <div style={{ fontWeight: '600', fontSize: '0.875rem' }}>
               {resultsToDisplay[2].fencer.lastName}
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>3ème</div>
+            <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{t('results.podium_3rd')}</div>
           </div>
         )}
       </div>
@@ -246,19 +248,19 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
             fontWeight: '600',
           }}
         >
-          📊 Classement final - {resultsToDisplay.length} tireurs
+          📊 {t('results.final_ranking_header', { count: resultsToDisplay.length })}
         </div>
 
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
-              <th style={{ padding: '0.75rem', textAlign: 'left', width: '60px' }}>Rang</th>
-              <th style={{ padding: '0.75rem', textAlign: 'left' }}>Tireur</th>
-              <th style={{ padding: '0.75rem', textAlign: 'left' }}>Club</th>
+              <th style={{ padding: '0.75rem', textAlign: 'left', width: '60px' }}>{t('ranking.rank')}</th>
+              <th style={{ padding: '0.75rem', textAlign: 'left' }}>{t('results.col_fencer')}</th>
+              <th style={{ padding: '0.75rem', textAlign: 'left' }}>{t('ranking.club')}</th>
               {isLaserSabre && (
-                <th style={{ padding: '0.75rem', textAlign: 'center' }}>Pts Quest</th>
+                <th style={{ padding: '0.75rem', textAlign: 'center' }}>{t('results.col_quest_pts')}</th>
               )}
-              <th style={{ padding: '0.75rem', textAlign: 'center' }}>Éliminé en</th>
+              <th style={{ padding: '0.75rem', textAlign: 'center' }}>{t('kiosk.col_eliminated_at')}</th>
             </tr>
           </thead>
           <tbody>
@@ -332,18 +334,18 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
             gap: '0.5rem',
           }}
         >
-          🖨️ Imprimer
+          🖨️ {t('results.print')}
         </button>
         <button
           onClick={() => {
             const text = resultsToDisplay
               .map(
                 r =>
-                  `${r.rank}. ${r.fencer.firstName} ${r.fencer.lastName} (${r.fencer.club || 'Sans club'})`
+                  `${r.rank}. ${r.fencer.firstName} ${r.fencer.lastName} (${r.fencer.club || t('kiosk.no_club')})`
               )
               .join('\n');
             navigator.clipboard.writeText(text);
-            showToast('Résultats copiés dans le presse-papier !', 'success');
+            showToast(t('results.copy_success'), 'success');
           }}
           style={{
             padding: '0.75rem 1.5rem',
@@ -358,7 +360,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
             gap: '0.5rem',
           }}
         >
-          📋 Copier
+          📋 {t('results.copy')}
         </button>
         <button
           onClick={exportCSV}
@@ -405,7 +407,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
           color: '#6b7280',
         }}
       >
-        (A) = Abandon • (F) = Forfait • (X) = Exclu
+        {t('results.legend')}
       </div>
     </div>
   );

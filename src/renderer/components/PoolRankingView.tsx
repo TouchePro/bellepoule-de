@@ -5,6 +5,7 @@
  */
 
 import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import { useTranslation } from '../hooks/useTranslation';
 import { PoolRanking, Pool, Weapon, FencerStatus } from '../../shared/types';
 import {
   formatRatio,
@@ -36,6 +37,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
   onExport,
   onPoolsChange,
 }) => {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const { isColumnVisible, toggleColumn } = useColumnVisibility();
   const isLaserSabre = weapon === 'L';
@@ -83,9 +85,9 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
     setRecalcKey(prev => prev + 1);
 
     if (rankingChanged) {
-      showToast('Classement recalculé et modifié ! Le tableau sera régénéré.', 'warning');
+      showToast(t('pool_ranking.recalculated_changed'), 'warning');
     } else {
-      showToast('Classement recalculé avec succès !', 'success');
+      showToast(t('pool_ranking.recalculated_success'), 'success');
     }
   }, [pools, isLaserSabre, onPoolsChange, showToast, overallRanking]);
 
@@ -132,9 +134,9 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      showToast('Export CSV réussi', 'success');
+      showToast(t('pool_ranking.csv_exported'), 'success');
     } else {
-      showToast(`Export ${format.toUpperCase()} non implémenté`, 'warning');
+      showToast(t('pool_ranking.format_not_implemented', { format: format.toUpperCase() }), 'warning');
     }
   };
 
@@ -244,37 +246,36 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
         }}
       >
         <div>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>Classement après poules</h2>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>{t('pool_ranking.title')}</h2>
           <p className="text-sm text-muted">
-            {pools.length} poule{pools.length > 1 ? 's' : ''} • {editedRanking.length} tireur
-            {editedRanking.length > 1 ? 's' : ''}
-            {isEditing && ' (mode édition)'}
+            {t('pool_ranking.subtitle', { pools: pools.length, fencers: editedRanking.length })}
+            {isEditing && ` ${t('pool_ranking.edit_mode')}`}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button
             className="btn btn-secondary"
             onClick={handleRecalculate}
-            title="Recalculer le classement"
+            title={t('pool_ranking.recalculate_title')}
           >
-            🔄 Recalculer
+            🔄 {t('pool_ranking.recalculate')}
           </button>
           <button
             className="btn btn-secondary"
             onClick={() => handleExport('csv')}
-            title="Exporter en CSV"
+            title={t('pool_ranking.export_csv_title')}
           >
             📄 CSV
           </button>
-          <button className="btn btn-secondary" onClick={handlePrint} title="Imprimer">
-            🖨️ Imprimer
+          <button className="btn btn-secondary" onClick={handlePrint} title={t('pool_ranking.print_title')}>
+            🖨️ {t('pool_ranking.print_title')}
           </button>
           <button
             className="btn btn-secondary"
             onClick={() => setIsEditing(!isEditing)}
-            title={isEditing ? 'Terminer la modification' : 'Modifier le classement'}
+            title={isEditing ? t('pool_ranking.btn_finish_edit') : t('pool_ranking.btn_edit')}
           >
-            {isEditing ? '✓ Terminer' : '✏️ Modifier'}
+            {isEditing ? t('pool_ranking.btn_finish_edit') : t('pool_ranking.btn_edit')}
           </button>
           <div style={{ position: 'relative' }} ref={columnMenuRef}>
             <button
@@ -288,7 +289,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
                 borderRadius: '4px',
                 cursor: 'pointer',
               }}
-              title="Afficher/masquer les colonnes"
+              title={t('pool_ranking.toggle_columns_title')}
             >
               ⚙️
             </button>
@@ -317,7 +318,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
                     marginBottom: '0.25rem',
                   }}
                 >
-                  Colonnes à afficher
+                  {t('pool_ranking.column_menu_title')}
                 </div>
                 {RANKING_COLUMNS.filter(col => col.id !== 'quest' || isLaserSabre).map(col => (
                   <label
@@ -353,19 +354,19 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
         <table className="table">
           <thead>
             <tr>
-              {isVisible('rank') && <th style={{ width: '50px' }}>Rg</th>}
-              {isVisible('lastName') && <th>Nom</th>}
-              {isVisible('firstName') && <th>Prénom</th>}
-              {isVisible('club') && <th>Club</th>}
-              {isVisible('victories') && <th style={{ width: '40px' }}>V</th>}
-              {isVisible('matches') && <th style={{ width: '40px' }}>M</th>}
-              {isVisible('ratio') && <th style={{ width: '60px' }}>V/M</th>}
-              {isVisible('td') && <th style={{ width: '50px' }}>TD</th>}
-              {isVisible('tr') && <th style={{ width: '50px' }}>TR</th>}
+              {isVisible('rank') && <th style={{ width: '50px' }}>{t('ranking.rank')}</th>}
+              {isVisible('lastName') && <th>{t('ranking.name')}</th>}
+              {isVisible('firstName') && <th>{t('ranking.first_name')}</th>}
+              {isVisible('club') && <th>{t('ranking.club')}</th>}
+              {isVisible('victories') && <th style={{ width: '40px' }}>{t('ranking.victories')}</th>}
+              {isVisible('matches') && <th style={{ width: '40px' }}>{t('ranking.matches')}</th>}
+              {isVisible('ratio') && <th style={{ width: '60px' }}>{t('ranking.ratio')}</th>}
+              {isVisible('td') && <th style={{ width: '50px' }}>{t('ranking.touches_scored')}</th>}
+              {isVisible('tr') && <th style={{ width: '50px' }}>{t('ranking.touches_received')}</th>}
               {isVisible('quest') && isLaserSabre && (
-                <th style={{ width: '70px', color: '#7c3aed' }}>Quest</th>
+                <th style={{ width: '70px', color: '#7c3aed' }}>{t('ranking.quest')}</th>
               )}
-              {isVisible('index') && <th style={{ width: '60px' }}>Indice</th>}
+              {isVisible('index') && <th style={{ width: '60px' }}>{t('ranking.index')}</th>}
             </tr>
           </thead>
           <tbody>
@@ -463,20 +464,18 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
         }}
       >
         <div className="text-sm text-muted">
-          <strong>Légende :</strong> V = Victoires, M = Matchs, V/M = Ratio Victoires/Matchs, TD =
-          Touches Données, TR = Touches Reçues
-          {isLaserSabre && ', Quest = Points Quest (Sabre Laser)'}
-          {', Indice = TD - TR'}
-          {' • (A) = Abandon • (F) = Forfait • (X) = Exclu'}
+          <strong>{t('pool_ranking.legend_label')}</strong> {t('pool_ranking.legend_base')}
+          {isLaserSabre && `, ${t('pool_ranking.legend_quest')}`}
+          {`, ${t('pool_ranking.legend_suffix')}`}
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {hasDirectElimination ? (
             <button className="btn btn-primary" onClick={onGoToTableau}>
-              Passer au tableau →
+              {t('ranking.go_to_tableau')}
             </button>
           ) : (
             <button className="btn btn-primary" onClick={onGoToResults}>
-              Voir les résultats →
+              {t('ranking.go_to_results')}
             </button>
           )}
         </div>

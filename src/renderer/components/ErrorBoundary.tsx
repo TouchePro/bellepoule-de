@@ -71,10 +71,10 @@ export class ErrorBoundary extends Component<Props, State> {
             fontFamily: 'Arial, sans-serif',
           }}
         >
-          <h2 style={{ color: '#cc0000', marginTop: 0 }}>🚫 Une erreur est survenue</h2>
+          <h2 style={{ color: '#cc0000', marginTop: 0 }}>🚫 Ein Fehler ist aufgetreten</h2>
           <p style={{ color: '#666', marginBottom: '20px' }}>
-            BellePoule Modern a rencontré une erreur technique. Veuillez rafraîchir la page ou
-            contacter le support.
+            BellePoule Modern hat einen technischen Fehler festgestellt. Bitte die Seite neu laden
+            oder den Support kontaktieren.
           </p>
 
           {process.env.NODE_ENV === 'development' && this.state.error && (
@@ -87,10 +87,10 @@ export class ErrorBoundary extends Component<Props, State> {
               }}
             >
               <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>
-                Détails techniques (développement)
+                Technische Details (Entwicklung)
               </summary>
               <div style={{ marginTop: '10px' }}>
-                <h4>Erreur:</h4>
+                <h4>Fehler:</h4>
                 <pre
                   style={{
                     backgroundColor: '#fff',
@@ -138,7 +138,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 marginRight: '10px',
               }}
             >
-              🔄 Réessayer
+              🔄 Erneut versuchen
             </button>
             <button
               onClick={() => window.location.reload()}
@@ -151,7 +151,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 cursor: 'pointer',
               }}
             >
-              🔄 Rafraîchir la page
+              🔄 Seite neu laden
             </button>
           </div>
         </div>
@@ -180,9 +180,9 @@ export class CompetitionErrorBoundary extends Component<Props> {
         }}
         fallback={
           <div style={{ padding: '20px', textAlign: 'center' }}>
-            <h3>🤺 Erreur de compétition</h3>
-            <p>Une erreur est survenue lors du chargement de la compétition.</p>
-            <button onClick={() => window.location.reload()}>Recharger l'application</button>
+            <h3>🤺 Fehler im Wettbewerb</h3>
+            <p>Beim Laden des Wettbewerbs ist ein Fehler aufgetreten.</p>
+            <button onClick={() => window.location.reload()}>App neu laden</button>
           </div>
         }
       >
@@ -199,9 +199,9 @@ export class PoolErrorBoundary extends Component<Props> {
         {...this.props}
         fallback={
           <div style={{ padding: '20px', textAlign: 'center' }}>
-            <h3>🏊 Erreur de poule</h3>
-            <p>Une erreur est survenue lors du calcul des poules.</p>
-            <button onClick={() => window.location.reload()}>Recharger la page</button>
+            <h3>🏊 Fehler in der Pool-Berechnung</h3>
+            <p>Beim Berechnen der Pools ist ein Fehler aufgetreten.</p>
+            <button onClick={() => window.location.reload()}>Seite neu laden</button>
           </div>
         }
       >
@@ -231,10 +231,10 @@ export class DatabaseErrorBoundary extends Component<Props> {
         }}
         fallback={
           <div style={{ padding: '20px', textAlign: 'center' }}>
-            <h3>💾 Erreur de base de données</h3>
-            <p>Une erreur est survenue lors de l'accès aux données.</p>
-            <p>Les données peuvent être corrompues. Veuillez contacter le support.</p>
-            <button onClick={() => window.location.reload()}>Redémarrer l'application</button>
+            <h3>💾 Datenbankfehler</h3>
+            <p>Beim Zugriff auf die Daten ist ein Fehler aufgetreten.</p>
+            <p>Die Daten könnten beschädigt sein. Bitte den Support kontaktieren.</p>
+            <button onClick={() => window.location.reload()}>App neu starten</button>
           </div>
         }
       >

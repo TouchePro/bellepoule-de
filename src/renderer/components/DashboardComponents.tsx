@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from '../hooks/useTranslation';
 
 // Modern Stat Card with icon and trend
 interface StatCardProps {
@@ -16,6 +17,7 @@ interface StatCardProps {
 }
 
 export const ModernStatCard: React.FC<StatCardProps> = ({ title, value, icon, trend, color }) => {
+  const { t } = useTranslation();
   const colors = {
     blue: { bg: '#eff6ff', icon: '#3b82f6', text: '#1e40af' },
     green: { bg: '#f0fdf4', icon: '#10b981', text: '#065f46' },
@@ -69,7 +71,7 @@ export const ModernStatCard: React.FC<StatCardProps> = ({ title, value, icon, tr
             >
               {trend.isPositive ? '↑' : '↓'} {Math.abs(trend.value)}%
             </span>
-            <span style={{ color: '#9ca3af', fontSize: '12px' }}>vs dernier mois</span>
+            <span style={{ color: '#9ca3af', fontSize: '12px' }}>{t('dashboard.vs_last_month')}</span>
           </div>
         )}
       </div>
@@ -251,6 +253,7 @@ export const LeaderboardItem: React.FC<{
   avatar?: string;
   isCurrentUser?: boolean;
 }> = ({ rank, name, score, avatar, isCurrentUser }) => {
+  const { t } = useTranslation();
   const getRankColor = () => {
     switch (rank) {
       case 1:
@@ -330,7 +333,7 @@ export const LeaderboardItem: React.FC<{
           <span
             style={{ marginLeft: '8px', fontSize: '12px', color: '#3b82f6', fontWeight: '500' }}
           >
-            (Vous)
+            {t('dashboard.you')}
           </span>
         )}
       </div>
@@ -417,11 +420,12 @@ export const ConditionWidget: React.FC<{
   label: string;
   value: string;
 }> = ({ condition, label, value }) => {
+  const { t } = useTranslation();
   const conditions = {
-    excellent: { color: '#10b981', icon: '✨', label: 'Excellent' },
-    good: { color: '#3b82f6', icon: '👍', label: 'Bon' },
-    fair: { color: '#f59e0b', icon: '⚠️', label: 'Moyen' },
-    poor: { color: '#ef4444', icon: '🔴', label: 'Faible' },
+    excellent: { color: '#10b981', icon: '✨' },
+    good: { color: '#3b82f6', icon: '👍' },
+    fair: { color: '#f59e0b', icon: '⚠️' },
+    poor: { color: '#ef4444', icon: '🔴' },
   };
 
   const theme = conditions[condition];
@@ -458,7 +462,7 @@ export const ConditionWidget: React.FC<{
         <p
           style={{ margin: '2px 0 0 0', fontSize: '18px', fontWeight: 'bold', color: theme.color }}
         >
-          {value}
+          {t(`dashboard.condition_${condition}`)}
         </p>
       </div>
     </div>

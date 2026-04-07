@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from '../hooks/useTranslation';
 import { Fencer, Pool, Match, MatchStatus } from '../../shared/types';
 import {
   calculateOptimalPoolCount,
@@ -39,6 +40,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
   onPoolsConfirm,
   onSettingsChange,
 }) => {
+  const { t } = useTranslation();
   const [poolCount, setPoolCount] = useState<number>(0);
   const [minFencersPerPool, setMinFencersPerPool] = useState<number>(initialMin);
   const [maxFencersPerPool, setMaxFencersPerPool] = useState<number>(initialMax);
@@ -46,12 +48,6 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
   const [draggedFencer, setDraggedFencer] = useState<{ fencer: Fencer; poolIndex: number } | null>(
     null
   );
-
-  const [separationConfig, setSeparationConfig] = useState({
-    byClub: true,
-    byLeague: true,
-    byNation: false,
-  });
 
   // Historique des modifications pour la fonction restore
   const [history, setHistory] = useState<PoolStateHistory[]>([]);
@@ -166,12 +162,16 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
     if (poolCount > 0 && fencers.length > 0) {
       generatePools(poolCount);
     }
-  }, [poolCount, minFencersPerPool, maxFencersPerPool, separationConfig]);
+  }, [poolCount, minFencersPerPool, maxFencersPerPool]);
 
   const generatePools = (count: number) => {
     if (fencers.length === 0) return;
 
-    const distribution = distributeFencersToPoolsSerpentine(fencers, count, separationConfig);
+    const distribution = distributeFencersToPoolsSerpentine(fencers, count, {
+      byClub: true,
+      byLeague: true,
+      byNation: false,
+    });
 
     const generatedPools: Pool[] = distribution.map((poolFencers, index) => {
       const matchOrder = generatePoolMatchOrder(poolFencers.length);
@@ -402,7 +402,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
               marginBottom: '0.25rem',
             }}
           >
-            Nombre de poules
+            {t('pool_prep.pool_count')}
           </label>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <button
@@ -443,7 +443,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
               marginBottom: '0.25rem',
             }}
           >
-            Tireurs par poule (min)
+            {t('pool_prep.fencers_per_pool_min')}
           </label>
           <input
             type="number"
@@ -464,7 +464,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
               marginBottom: '0.25rem',
             }}
           >
-            Tireurs par poule (max)
+            {t('pool_prep.fencers_per_pool_max')}
           </label>
           <input
             type="number"
@@ -476,40 +476,12 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
           />
         </div>
 
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-          {(
-            [
-              { key: 'byClub', label: 'Séparer par club' },
-              { key: 'byLeague', label: 'Séparer par ligue' },
-              { key: 'byNation', label: 'Séparer par nation' },
-            ] as { key: keyof typeof separationConfig; label: string }[]
-          ).map(({ key, label }) => (
-            <label
-              key={key}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.375rem',
-                cursor: 'pointer',
-                fontSize: '0.875rem',
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={separationConfig[key]}
-                onChange={e => setSeparationConfig(prev => ({ ...prev, [key]: e.target.checked }))}
-              />
-              {label}
-            </label>
-          ))}
-        </div>
-
         <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
           <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-            {fencers.length} tireurs répartis
+            {t('pool_prep.fencers_distributed', { count: fencers.length })}
           </div>
           <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
-            Min: {stats.min}, Max: {stats.max}, Moy: {stats.avg}
+            {t('pool_prep.stats_min_max_avg', { min: stats.min, max: stats.max, avg: stats.avg })}
           </div>
         </div>
       </div>
@@ -548,7 +520,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
                 borderBottom: '1px solid #e5e7eb',
               }}
             >
-              <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>Poule {pool.number}</h3>
+              <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>{t('pool_prep.pool_header', { number: pool.number })}</h3>
               <span
                 style={{
                   fontSize: '0.875rem',
@@ -559,7 +531,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
                       : '#6b7280',
                 }}
               >
-                {pool.fencers.length} tireurs
+                {t('pool_prep.fencers_in_pool', { count: pool.fencers.length })}
               </span>
             </div>
 
@@ -592,7 +564,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
                     {fencerIndex > 0 && (
                       <button
                         onClick={() => handleMoveFencerUp(poolIndex, fencerIndex)}
-                        title="Monter dans l'ordre"
+                        title={t('pool_prep.move_up')}
                         style={{
                           padding: '0.125rem 0.375rem',
                           fontSize: '0.75rem',
@@ -609,7 +581,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
                     {fencerIndex < pool.fencers.length - 1 && (
                       <button
                         onClick={() => handleMoveFencerDown(poolIndex, fencerIndex)}
-                        title="Descendre dans l'ordre"
+                        title={t('pool_prep.move_down')}
                         style={{
                           padding: '0.125rem 0.375rem',
                           fontSize: '0.75rem',
@@ -625,7 +597,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
                     {poolIndex > 0 && (
                       <button
                         onClick={() => handleMoveFencer(fencer.id, poolIndex, poolIndex - 1)}
-                        title="Déplacer vers la poule précédente"
+                        title={t('pool_prep.move_to_previous_pool')}
                         style={{
                           padding: '0.125rem 0.375rem',
                           fontSize: '0.75rem',
@@ -641,7 +613,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
                     {poolIndex < pools.length - 1 && (
                       <button
                         onClick={() => handleMoveFencer(fencer.id, poolIndex, poolIndex + 1)}
-                        title="Déplacer vers la poule suivante"
+                        title={t('pool_prep.move_to_next_pool')}
                         style={{
                           padding: '0.125rem 0.375rem',
                           fontSize: '0.75rem',
@@ -668,7 +640,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
                   fontSize: '0.875rem',
                 }}
               >
-                Déposez des tireurs ici
+                {t('pool_prep.drop_fencers_here')}
               </div>
             )}
           </div>
@@ -686,9 +658,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
           color: '#1e40af',
         }}
       >
-        💡 <strong>Astuce :</strong> Glissez-déposez les tireurs entre les poules ou utilisez les
-        flèches (← →) pour les déplacer entre poules. Utilisez les flèches (↑ ↓) pour changer
-        l'ordre des tireurs dans une poule.
+        💡 {t('pool_prep.hint')}
       </div>
 
       {/* Action Buttons */}
@@ -714,7 +684,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
               opacity: canRestore() ? 1 : 0.5,
             }}
           >
-            ↩️ Annuler
+            ↩️ {t('pool_prep.restore')}
           </button>
           {canRestore() && (
             <span
@@ -735,7 +705,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
           disabled={pools.length === 0 || pools.some(p => p.fencers.length < 3)}
           style={{ fontSize: '1rem', padding: '0.75rem 2rem' }}
         >
-          Lancer les poules →
+          {t('pool_prep.start_pools')}
         </button>
       </div>
     </div>

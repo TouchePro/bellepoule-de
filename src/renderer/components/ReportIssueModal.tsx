@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useToast } from './Toast';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface ReportIssueModalProps {
   onClose: () => void;
@@ -19,6 +20,7 @@ interface VersionInfo {
 
 const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ onClose }) => {
   const { showToast } = useToast();
+  const { t } = useTranslation();
   const [issueType, setIssueType] = useState<'bug' | 'feature'>('bug');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -34,12 +36,11 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ onClose }) => {
           setVersionInfo(info);
         })
         .catch(() => {
-          setVersionInfo({ version: '1.0.0', build: 0, date: 'Inconnue' });
+          setVersionInfo({ version: '1.0.0', build: 0, date: 'Unknown' });
         });
     }
 
     // Récupérer les infos système
-    const platform = navigator.platform || 'Unknown';
     const userAgent = navigator.userAgent || '';
     let os = 'Unknown';
 
@@ -57,35 +58,17 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ onClose }) => {
 
   const handleSubmit = () => {
     if (!title.trim()) {
-      showToast('Veuillez entrer un titre', 'warning');
+      showToast(t('report_issue.title_required'), 'warning');
       return;
     }
 
     const timestamp = new Date().toISOString();
     const versionString = versionInfo
       ? `${versionInfo.version}-build.${versionInfo.build}`
-      : 'Inconnue';
+      : 'Unknown';
 
     // Construire le corps de l'issue
-    const issueBody = `## Description
-
-${description || '_Aucune description fournie_'}
-
-## Informations système
-
-| Info | Valeur |
-|------|--------|
-| **Version** | \`${versionString}\` |
-| **Build Date** | ${versionInfo?.date || 'Inconnue'} |
-| **OS** | ${systemInfo} |
-| **Timestamp** | ${timestamp} |
-
-## ${issueType === 'bug' ? 'Étapes pour reproduire' : 'Détails supplémentaires'}
-
-${issueType === 'bug' ? '_Décrivez les étapes pour reproduire le bug..._' : '_Ajoutez des détails si nécessaire..._'}
-
----
-_Issue créée automatiquement depuis BellePoule Modern_`;
+    const issueBody = `## Description\n\n${description || '_No description provided_'}\n\n## System Information\n\n| Info | Value |\n|------|-------|\n| **Version** | \`${versionString}\` |\n| **Build Date** | ${versionInfo?.date || 'Unknown'} |\n| **OS** | ${systemInfo} |\n| **Timestamp** | ${timestamp} |\n\n## ${issueType === 'bug' ? 'Steps to Reproduce' : 'Additional Details'}\n\n${issueType === 'bug' ? '_Describe the steps to reproduce the bug..._' : '_Add additional details if needed..._'}\n\n---\n_Issue created automatically from BellePoule Modern_`;
 
     // Construire l'URL GitHub
     const labels = issueType === 'bug' ? 'bug' : 'enhancement';
@@ -97,7 +80,7 @@ _Issue créée automatiquement depuis BellePoule Modern_`;
       labels: labels,
     });
 
-    const githubUrl = `https://github.com/klinnex/bellepoule-modern/issues/new?${params.toString()}`;
+    const githubUrl = `https://github.com/skycreations/klinge/issues/new?${params.toString()}`;
 
     // Ouvrir dans le navigateur
     if (window.electronAPI?.openExternal) {
@@ -113,7 +96,7 @@ _Issue créée automatiquement depuis BellePoule Modern_`;
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
         <div className="modal-header">
-          <h2>📝 Signaler un bug / Suggestion</h2>
+          <h2>📝 {t('report_issue.title')}</h2>
           <button className="btn-close" onClick={onClose}>
             &times;
           </button>
@@ -122,7 +105,7 @@ _Issue créée automatiquement depuis BellePoule Modern_`;
         <div className="modal-body">
           {/* Type selector */}
           <div className="form-group">
-            <label>Type</label>
+            <label>{t('report_issue.type')}</label>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button
                 type="button"
@@ -139,7 +122,7 @@ _Issue créée automatiquement depuis BellePoule Modern_`;
                   color: issueType === 'bug' ? '#dc2626' : '#374151',
                 }}
               >
-                🐛 Bug
+                🐛 {t('report_issue.bug')}
               </button>
               <button
                 type="button"
@@ -156,7 +139,7 @@ _Issue créée automatiquement depuis BellePoule Modern_`;
                   color: issueType === 'feature' ? '#16a34a' : '#374151',
                 }}
               >
-                ✨ Suggestion
+                ✨ {t('report_issue.feature')}
               </button>
             </div>
           </div>
@@ -164,7 +147,7 @@ _Issue créée automatiquement depuis BellePoule Modern_`;
           {/* Title */}
           <div className="form-group">
             <label htmlFor="issue-title">
-              {issueType === 'bug' ? 'Résumé du problème' : 'Titre de la suggestion'}
+              {issueType === 'bug' ? t('report_issue.bug_summary') : t('report_issue.feature_title')}
             </label>
             <input
               type="text"
@@ -174,8 +157,8 @@ _Issue créée automatiquement depuis BellePoule Modern_`;
               onChange={e => setTitle(e.target.value)}
               placeholder={
                 issueType === 'bug'
-                  ? "Ex: Le score ne s'enregistre pas correctement"
-                  : "Ex: Ajouter l'export PDF des résultats"
+                  ? t('report_issue.bug_summary_placeholder')
+                  : t('report_issue.feature_title_placeholder')
               }
               autoFocus
             />
@@ -184,7 +167,9 @@ _Issue créée automatiquement depuis BellePoule Modern_`;
           {/* Description */}
           <div className="form-group">
             <label htmlFor="issue-description">
-              {issueType === 'bug' ? "Que s'est-il passé ?" : 'Décrivez votre idée'}
+              {issueType === 'bug'
+                ? t('report_issue.what_happened')
+                : t('report_issue.describe_idea')}
             </label>
             <textarea
               id="issue-description"
@@ -193,8 +178,8 @@ _Issue créée automatiquement depuis BellePoule Modern_`;
               onChange={e => setDescription(e.target.value)}
               placeholder={
                 issueType === 'bug'
-                  ? "Décrivez ce qui s'est passé et ce que vous attendiez..."
-                  : 'Expliquez votre suggestion en détail...'
+                  ? t('report_issue.what_happened_placeholder')
+                  : t('report_issue.describe_idea_placeholder')
               }
               rows={4}
               style={{ resize: 'vertical' }}
@@ -212,19 +197,19 @@ _Issue créée automatiquement depuis BellePoule Modern_`;
             }}
           >
             <div style={{ fontWeight: '600', marginBottom: '0.5rem', color: '#374151' }}>
-              ℹ️ Informations automatiquement incluses :
+              ℹ️ {t('report_issue.included_info')}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.25rem' }}>
-              <span>• Version :</span>
+              <span>• {t('report_issue.version')}:</span>
               <span style={{ fontFamily: 'monospace' }}>
                 {versionInfo
                   ? `${versionInfo.version}-build.${versionInfo.build}`
-                  : 'Chargement...'}
+                  : t('messages.loading')}
               </span>
-              <span>• Système :</span>
-              <span>{systemInfo || 'Chargement...'}</span>
-              <span>• Date :</span>
-              <span>{new Date().toLocaleString('fr-FR')}</span>
+              <span>• {t('report_issue.system')}:</span>
+              <span>{systemInfo || t('messages.loading')}</span>
+              <span>• {t('report_issue.date')}:</span>
+              <span>{new Date().toLocaleString()}</span>
             </div>
           </div>
 
@@ -236,15 +221,15 @@ _Issue créée automatiquement depuis BellePoule Modern_`;
               textAlign: 'center',
             }}
           >
-            Cliquer sur "Créer sur GitHub" ouvrira votre navigateur.
+            {t('report_issue.click_github')}
             <br />
-            Vous devrez vous connecter à GitHub pour soumettre l'issue.
+            {t('report_issue.github_login')}
           </p>
         </div>
 
         <div className="modal-footer">
           <button type="button" className="btn btn-secondary" onClick={onClose}>
-            Annuler
+            {t('actions.cancel')}
           </button>
           <button
             type="button"
@@ -257,7 +242,7 @@ _Issue créée automatiquement depuis BellePoule Modern_`;
               gap: '0.5rem',
             }}
           >
-            Créer sur GitHub 🔗
+            {t('report_issue.create_github')} 🔗
           </button>
         </div>
       </div>

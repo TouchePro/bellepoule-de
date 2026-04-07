@@ -6,6 +6,7 @@
 
 import React, { memo } from 'react';
 import { Fencer, Match, MatchStatus } from '../../shared/types';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface PoolGridProps {
   fencers: Fencer[];
@@ -26,12 +27,14 @@ const GridCell = memo(
     isDiagonal,
     rowFencer,
     colFencer,
+    t,
   }: {
     match: Match | null;
     onClick: () => void;
     isDiagonal: boolean;
     rowFencer?: Fencer;
     colFencer?: Fencer;
+    t: (key: string) => string;
   }) => {
     if (isDiagonal) {
       return (
@@ -66,7 +69,7 @@ const GridCell = memo(
             color: '#9ca3af',
             cursor: 'not-allowed',
           }}
-          title="Match non disputé (abandon/forfait)"
+          title={t('pool_grid.match_not_played')}
         >
           -
         </td>
@@ -130,7 +133,7 @@ const GridCell = memo(
 
 GridCell.displayName = 'GridCell';
 
-const HeaderRow = memo(({ fencers }: { fencers: Fencer[] }) => (
+const HeaderRow = memo(({ fencers, t }: { fencers: Fencer[]; t: (key: string) => string }) => (
   <tr>
     <th
       style={{
@@ -152,7 +155,7 @@ const HeaderRow = memo(({ fencers }: { fencers: Fencer[] }) => (
         fontSize: '12px',
       }}
     >
-      Tireur
+      {t('pool_grid.fencer_col')}
     </th>
     {fencers.map(fencer => (
       <th
@@ -185,6 +188,7 @@ const FencerRow = memo(
     fencerCount,
     matches,
     onMatchClick,
+    t,
   }: {
     fencer: Fencer;
     fencers: Fencer[];
@@ -192,6 +196,7 @@ const FencerRow = memo(
     fencerCount: number;
     matches: Match[];
     onMatchClick: (match: Match) => void;
+    t: (key: string) => string;
   }) => {
     const getMatchForCell = (
       colIndex: number
@@ -243,6 +248,7 @@ const FencerRow = memo(
               isDiagonal={isDiagonal}
               rowFencer={fencer}
               colFencer={colFencer}
+              t={t}
             />
           );
         })}
@@ -255,6 +261,8 @@ FencerRow.displayName = 'FencerRow';
 
 export const PoolGrid: React.FC<PoolGridProps> = memo(
   ({ fencers, matches, maxScore, onMatchClick }) => {
+    const { t } = useTranslation();
+
     const createMatch = (fencerAId: string, fencerBId: string, index: number): Match => {
       const fencerA = fencers.find(f => f.id === fencerAId);
       const fencerB = fencers.find(f => f.id === fencerBId);
@@ -293,7 +301,7 @@ export const PoolGrid: React.FC<PoolGridProps> = memo(
           }}
         >
           <thead>
-            <HeaderRow fencers={fencers} />
+            <HeaderRow fencers={fencers} t={t} />
           </thead>
           <tbody>
             {fencers.map((fencer, rowIndex) => (
@@ -305,6 +313,7 @@ export const PoolGrid: React.FC<PoolGridProps> = memo(
                 fencerCount={fencers.length}
                 matches={matches}
                 onMatchClick={onMatchClick}
+                t={t}
               />
             ))}
           </tbody>

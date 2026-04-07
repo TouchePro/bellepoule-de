@@ -6,6 +6,7 @@
 
 import React, { useState, useCallback, useMemo } from 'react';
 import { Fencer } from '../../shared/types';
+import { useTranslation } from '../contexts/TranslationContext';
 
 interface BracketMatch {
   id: string;
@@ -48,6 +49,7 @@ const Bracket: React.FC<BracketProps> = ({
   thirdPlaceMatch = false,
   className = '',
 }) => {
+  const { t } = useTranslation();
   const [hoveredMatch, setHoveredMatch] = useState<string | null>(null);
   const [editingMatch, setEditingMatch] = useState<string | null>(null);
   const [layoutMode, setLayoutMode] = useState<'horizontal' | 'pyramid'>('horizontal');
@@ -139,7 +141,7 @@ const Bracket: React.FC<BracketProps> = ({
           fontSize={12}
           fontWeight={isWinner ? 'bold' : 'normal'}
         >
-          {fencer ? `${fencer.lastName} ${fencer.firstName.charAt(0)}.` : 'TBD'}
+          {fencer ? `${fencer.lastName} ${fencer.firstName.charAt(0)}.` : t('kiosk.tbd')}
         </text>
         <rect
           x={MATCH_WIDTH - 40}
@@ -230,7 +232,7 @@ const Bracket: React.FC<BracketProps> = ({
               fontSize: '0.75rem',
             }}
           >
-            Tout déplier
+            {t('bracket.expand_all')}
           </button>
           <button
             onClick={collapseAll}
@@ -244,7 +246,7 @@ const Bracket: React.FC<BracketProps> = ({
               fontSize: '0.75rem',
             }}
           >
-            Tout replier
+            {t('bracket.collapse_all')}
           </button>
         </div>
         {sortedRounds.map(round => {
@@ -253,18 +255,18 @@ const Bracket: React.FC<BracketProps> = ({
 
           const roundName =
             round === 1
-              ? 'Finale'
+              ? t('tableau.finalist')
               : round === 2
-                ? 'Demi-finales'
+                ? t('kiosk.round_semi')
                 : round === 4
-                  ? 'Quarts'
+                  ? t('kiosk.round_quarter')
                   : round === 8
-                    ? '8èmes'
+                    ? t('kiosk.round_8')
                     : round === 16
-                      ? '16èmes'
+                      ? t('kiosk.round_16')
                       : round === 32
-                        ? '32èmes'
-                        : `Tour ${round}`;
+                        ? t('kiosk.round_32')
+                        : t('bracket.round_n', { n: round });
 
           return (
             <div
@@ -341,7 +343,7 @@ const Bracket: React.FC<BracketProps> = ({
                             fill="#6c757d"
                             fontSize={10}
                           >
-                            EXEMPT
+                            {t('kiosk.bye')}
                           </text>
                         )}
 
@@ -378,9 +380,9 @@ const Bracket: React.FC<BracketProps> = ({
             alignItems: 'center',
             gap: '0.25rem',
           }}
-          title="Vue horizontale"
+          title={t('bracket.view_horizontal')}
         >
-          🔲 Vue horizontale
+          🔲 {t('bracket.view_horizontal')}
         </button>
         <button
           onClick={() => setLayoutMode('pyramid')}
@@ -397,9 +399,9 @@ const Bracket: React.FC<BracketProps> = ({
             alignItems: 'center',
             gap: '0.25rem',
           }}
-          title="Vue pyramidale"
+          title={t('bracket.view_pyramid')}
         >
-          🔺 Vue pyramidale
+          🔺 {t('bracket.view_pyramid')}
         </button>
       </div>
 
@@ -463,7 +465,7 @@ const Bracket: React.FC<BracketProps> = ({
                     fill="#6c757d"
                     fontSize={10}
                   >
-                    EXEMPT
+                    {t('kiosk.bye')}
                   </text>
                 )}
 
@@ -480,7 +482,7 @@ const Bracket: React.FC<BracketProps> = ({
                     fill="#6c757d"
                     fontSize={10}
                   >
-                    {match.position <= tableSize / 4 ? `1/${tableSize / 2}` : 'Finale'}
+                    {match.position <= tableSize / 4 ? `1/${tableSize / 2}` : t('tableau.finalist')}
                   </text>
                 )}
               </g>
@@ -490,14 +492,25 @@ const Bracket: React.FC<BracketProps> = ({
           {/* Round labels */}
           {Array.from(rounds.keys()).map(round => {
             const pos = calculateMatchPosition(round, 1);
-            const roundNames: Record<number, string> = {
-              1: 'Finale',
-              2: 'Demi-finales',
-              4: 'Quarts',
-              8: '8èmes',
-              16: '16èmes',
-              32: '32èmes',
-              64: '64èmes',
+            const getRoundName = (r: number): string => {
+              switch (r) {
+                case 1:
+                  return t('tableau.finalist');
+                case 2:
+                  return t('kiosk.round_semi');
+                case 4:
+                  return t('kiosk.round_quarter');
+                case 8:
+                  return t('kiosk.round_8');
+                case 16:
+                  return t('kiosk.round_16');
+                case 32:
+                  return t('kiosk.round_32');
+                case 64:
+                  return t('kiosk.round_64');
+                default:
+                  return t('bracket.round_n', { n: r });
+              }
             };
 
             return (
@@ -510,7 +523,7 @@ const Bracket: React.FC<BracketProps> = ({
                 fontSize={12}
                 fontWeight="bold"
               >
-                {roundNames[round] || `Tour ${round}`}
+                {getRoundName(round)}
               </text>
             );
           })}

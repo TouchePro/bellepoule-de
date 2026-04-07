@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Competition, Pool, Match, MatchStatus } from '../../shared/types';
-import { logger, LogCategory } from '@shared/services/logger';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface PresentationModeProps {
   competition: Competition;
@@ -19,6 +19,7 @@ export const PresentationMode: React.FC<PresentationModeProps> = ({
   pools,
   onClose,
 }) => {
+  const { t } = useTranslation();
   const [currentPoolIndex, setCurrentPoolIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -29,12 +30,7 @@ export const PresentationMode: React.FC<PresentationModeProps> = ({
         await document.documentElement.requestFullscreen();
         setIsFullscreen(true);
       } catch (error) {
-        logger.warn(
-          LogCategory.UI,
-          "Impossible d'activer le plein écran",
-          undefined,
-          error as Error
-        );
+        console.warn("Impossible d'activer le plein écran:", error);
       }
     };
 
@@ -114,14 +110,14 @@ export const PresentationMode: React.FC<PresentationModeProps> = ({
         <div>
           <h1 style={{ margin: 0, fontSize: '2.5rem', fontWeight: 'bold' }}>{competition.title}</h1>
           <p style={{ margin: '10px 0 0 0', fontSize: '1.2rem', color: '#94a3b8' }}>
-            Poule {currentPool.number} sur {pools.length}
+            {t('presentation.pool_of', { number: currentPool.number, total: pools.length })}
           </p>
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#3b82f6' }}>
             {completedMatches}/{totalMatches}
           </div>
-          <div style={{ fontSize: '1rem', color: '#64748b' }}>matchs terminés</div>
+          <div style={{ fontSize: '1rem', color: '#64748b' }}>{t('presentation.matches_done')}</div>
         </div>
       </div>
 
@@ -150,7 +146,7 @@ export const PresentationMode: React.FC<PresentationModeProps> = ({
       <div style={{ flex: 1, display: 'flex', gap: '30px' }}>
         {/* Liste des tireurs */}
         <div style={{ flex: 1 }}>
-          <h2 style={{ marginBottom: '20px', fontSize: '1.5rem', color: '#94a3b8' }}>Classement</h2>
+          <h2 style={{ marginBottom: '20px', fontSize: '1.5rem', color: '#94a3b8' }}>{t('presentation.ranking')}</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
             {currentPool.ranking?.slice(0, 8).map((rank, index) => (
               <div
@@ -185,7 +181,7 @@ export const PresentationMode: React.FC<PresentationModeProps> = ({
                     {rank.fencer.lastName} {rank.fencer.firstName}
                   </div>
                   <div style={{ fontSize: '1rem', color: '#64748b' }}>
-                    {rank.fencer.club || 'Sans club'}
+                    {rank.fencer.club || t('presentation.no_club')}
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
@@ -204,7 +200,7 @@ export const PresentationMode: React.FC<PresentationModeProps> = ({
         {/* Matchs en cours */}
         <div style={{ width: '400px' }}>
           <h2 style={{ marginBottom: '20px', fontSize: '1.5rem', color: '#94a3b8' }}>
-            Matchs en cours
+            {t('presentation.matches_live')}
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
             {currentPool.matches
@@ -234,7 +230,7 @@ export const PresentationMode: React.FC<PresentationModeProps> = ({
                     <span>{match.fencerB?.lastName || 'TBD'}</span>
                   </div>
                   <div style={{ textAlign: 'center', marginTop: '10px', fontSize: '1.1rem' }}>
-                    Piste {match.strip || idx + 1} - En cours
+                    {t('presentation.strip_in_progress', { strip: match.strip || idx + 1 })}
                   </div>
                 </div>
               ))}
@@ -248,7 +244,7 @@ export const PresentationMode: React.FC<PresentationModeProps> = ({
                   fontSize: '1.2rem',
                 }}
               >
-                Aucun match en cours
+                {t('presentation.no_matches_live')}
               </div>
             )}
           </div>
@@ -265,7 +261,7 @@ export const PresentationMode: React.FC<PresentationModeProps> = ({
           color: '#475569',
         }}
       >
-        ← → Naviguer | Echap Quitter
+        {t('presentation.nav_hint')}
       </div>
 
       <style>{`

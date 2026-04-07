@@ -5,7 +5,6 @@
  */
 
 import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
-import { logger, LogCategory } from '@shared/services/logger';
 
 type ToastType = 'info' | 'success' | 'warning' | 'error';
 
@@ -148,7 +147,7 @@ export const useToast = (): ToastContextType => {
     // Fallback if used outside provider
     return {
       showToast: (message: string) => {
-        logger.warn(LogCategory.UI, 'Toast used outside provider', { message });
+        console.warn('Toast used outside provider:', message);
       },
     };
   }

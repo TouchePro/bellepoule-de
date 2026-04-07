@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useRef, useCallback } from 'react';
-import { logger, LogCategory } from '@shared/services/logger';
+import { useTranslation } from '../contexts/TranslationContext';
 
 interface PhotoBoothProps {
   fencerName: string;
@@ -13,6 +13,7 @@ interface PhotoBoothProps {
 }
 
 export const PhotoBooth: React.FC<PhotoBoothProps> = ({ fencerName, onPhotoCapture }) => {
+  const { t } = useTranslation();
   const [isCapturing, setIsCapturing] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [photo, setPhoto] = useState<string | null>(null);
@@ -42,8 +43,8 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ fencerName, onPhotoCaptu
       }
       setIsCapturing(true);
     } catch (err) {
-      logger.error(LogCategory.UI, 'Error accessing camera', err as Error);
-      alert("Impossible d'accéder à la caméra");
+      console.error('Error accessing camera:', err);
+      alert(t('photo_booth.camera_access_error'));
     }
   }, []);
 
@@ -116,7 +117,7 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ fencerName, onPhotoCaptu
     ctx.fillStyle = 'white';
     ctx.shadowColor = 'rgba(0,0,0,0.5)';
     ctx.shadowBlur = 4;
-    ctx.fillText(fencerName || 'Tireur', width / 2, height - 40);
+    ctx.fillText(fencerName || t('photo_booth.default_fencer_name'), width / 2, height - 40);
     ctx.shadowBlur = 0;
   };
 
@@ -137,7 +138,7 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ fencerName, onPhotoCaptu
       }}
     >
       <h2 style={{ margin: '0 0 20px 0', textAlign: 'center', fontSize: '24px' }}>
-        📸 Photo Booth
+        📸 {t('photo_booth.title')}
       </h2>
 
       {!isCapturing && !photo && (
@@ -170,7 +171,7 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ fencerName, onPhotoCaptu
               cursor: 'pointer',
             }}
           >
-            📸 Prendre une photo
+            📸 {t('photo_booth.start_button')}
           </button>
         </div>
       )}
@@ -251,7 +252,7 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ fencerName, onPhotoCaptu
                 cursor: countdown > 0 ? 'not-allowed' : 'pointer',
               }}
             >
-              {countdown > 0 ? '⏳ ...' : '📸 Capturer'}
+              {countdown > 0 ? '⏳ ...' : `📸 ${t('photo_booth.capture_button')}`}
             </button>
             <button
               onClick={stopCamera}
@@ -275,7 +276,7 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ fencerName, onPhotoCaptu
         <div style={{ textAlign: 'center' }}>
           <img
             src={photo}
-            alt="Captured"
+            alt={t('photo_booth.captured_photo')}
             style={{
               width: '100%',
               borderRadius: '12px',
@@ -295,12 +296,12 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ fencerName, onPhotoCaptu
                 cursor: 'pointer',
               }}
             >
-              🔄 Recommencer
+              🔄 {t('photo_booth.retake_button')}
             </button>
             <button
               onClick={() => {
                 const link = document.createElement('a');
-                link.download = `${fencerName || 'photo'}.jpg`;
+                link.download = `${fencerName || t('photo_booth.photo_filename')}.jpg`;
                 link.href = photo;
                 link.click();
               }}
@@ -314,7 +315,7 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ fencerName, onPhotoCaptu
                 cursor: 'pointer',
               }}
             >
-              💾 Télécharger
+              💾 {t('photo_booth.download_button')}
             </button>
           </div>
         </div>

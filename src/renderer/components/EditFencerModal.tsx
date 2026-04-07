@@ -5,6 +5,7 @@
 
 import React, { useState } from 'react';
 import { Fencer, Gender, FencerStatus } from '../../shared/types';
+import { useTranslation } from '../hooks/useTranslation';
 import FencerPhoto from './FencerPhoto';
 
 interface EditFencerModalProps {
@@ -14,6 +15,7 @@ interface EditFencerModalProps {
 }
 
 const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClose }) => {
+  const { t } = useTranslation();
   const [lastName, setLastName] = useState(fencer.lastName);
   const [firstName, setFirstName] = useState(fencer.firstName);
   const [gender, setGender] = useState<Gender>(fencer.gender);
@@ -48,7 +50,7 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
         <div className="modal-header">
-          <h2>Modifier le tireur</h2>
+          <h2>{t('fencer.edit_title')}</h2>
           <button className="btn-close" onClick={onClose}>
             &times;
           </button>
@@ -68,7 +70,7 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
-              <label className="form-label">Nom *</label>
+              <label className="form-label">{t('fencer.last_name')} *</label>
               <input
                 type="text"
                 className="form-input"
@@ -79,7 +81,7 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
             </div>
 
             <div className="form-group">
-              <label className="form-label">Prénom *</label>
+              <label className="form-label">{t('fencer.first_name')} *</label>
               <input
                 type="text"
                 className="form-input"
@@ -92,36 +94,36 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
-              <label className="form-label">Sexe</label>
+              <label className="form-label">{t('fencer.gender')}</label>
               <select
                 className="form-input form-select"
                 value={gender}
                 onChange={e => setGender(e.target.value as Gender)}
               >
-                <option value={Gender.MALE}>Homme</option>
-                <option value={Gender.FEMALE}>Femme</option>
-                <option value={Gender.MIXED}>Mixte</option>
+                <option value={Gender.MALE}>{t('genders.male')}</option>
+                <option value={Gender.FEMALE}>{t('genders.female')}</option>
+                <option value={Gender.MIXED}>{t('genders.mixed')}</option>
               </select>
             </div>
 
             <div className="form-group">
-              <label className="form-label">Statut</label>
+              <label className="form-label">{t('fencer.status')}</label>
               <select
                 className="form-input form-select"
                 value={status}
                 onChange={e => setStatus(e.target.value as FencerStatus)}
               >
-                <option value={FencerStatus.NOT_CHECKED_IN}>Non pointé</option>
-                <option value={FencerStatus.CHECKED_IN}>Pointé (présent)</option>
-                <option value={FencerStatus.FORFAIT}>Forfait</option>
-                <option value={FencerStatus.ABANDONED}>Abandon</option>
-                <option value={FencerStatus.EXCLUDED}>Exclu</option>
+                <option value={FencerStatus.NOT_CHECKED_IN}>{t('status.not_checked_in')}</option>
+                <option value={FencerStatus.CHECKED_IN}>{t('status.checked_in')}</option>
+                <option value={FencerStatus.FORFAIT}>{t('status.forfeit')}</option>
+                <option value={FencerStatus.ABANDONED}>{t('status.abandoned')}</option>
+                <option value={FencerStatus.EXCLUDED}>{t('status.excluded')}</option>
               </select>
             </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Club</label>
+            <label className="form-label">{t('fencer.club')}</label>
             <input
               type="text"
               className="form-input"
@@ -133,7 +135,7 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
-              <label className="form-label">Ligue</label>
+              <label className="form-label">{t('fencer.league')}</label>
               <input
                 type="text"
                 className="form-input"
@@ -144,7 +146,7 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
             </div>
 
             <div className="form-group">
-              <label className="form-label">Nationalité</label>
+              <label className="form-label">{t('fencer.nationality')}</label>
               <input
                 type="text"
                 className="form-input"
@@ -158,7 +160,7 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
-              <label className="form-label">N° Licence</label>
+              <label className="form-label">{t('fencer.license')}</label>
               <input
                 type="text"
                 className="form-input"
@@ -168,24 +170,24 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
             </div>
 
             <div className="form-group">
-              <label className="form-label">Classement</label>
+              <label className="form-label">{t('fencer.ranking')}</label>
               <input
                 type="number"
                 className="form-input"
                 value={ranking}
                 onChange={e => setRanking(e.target.value)}
                 min="1"
-                placeholder="Non classé"
+                placeholder={t('actions.default')}
               />
             </div>
           </div>
 
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary" onClick={onClose}>
-              Annuler
+              {t('actions.cancel')}
             </button>
             <button type="submit" className="btn btn-primary">
-              Enregistrer
+              {t('actions.save')}
             </button>
           </div>
         </form>

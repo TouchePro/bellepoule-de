@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
+import { useTranslation } from '../hooks/useTranslation';
 import { CardReason, CardGroup, Card, Fencer } from '../../shared/types';
 import { CardType } from '../../features/penalties/types/penalty.types';
 import {
@@ -31,6 +32,7 @@ export const CardModal: React.FC<CardModalProps> = ({
   previousCards,
   opponentName,
 }) => {
+  const { t } = useTranslation();
   const [selectedReason, setSelectedReason] = useState<CardReason | null>(null);
 
   const reasonsByGroup = useMemo(() => getReasonsByGroup(), []);
@@ -93,12 +95,12 @@ export const CardModal: React.FC<CardModalProps> = ({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <h2 className="text-xl font-bold mb-4">
-          Carton pour {fencer.lastName} {fencer.firstName}
+          {t('card_modal.title', { lastName: fencer.lastName, firstName: fencer.firstName })}
         </h2>
 
         {previousCards.length > 0 && (
           <div className="mb-4 p-3 bg-gray-100 rounded">
-            <p className="text-sm font-medium">Cartons précédents :</p>
+            <p className="text-sm font-medium">{t('card_modal.previous_cards')}</p>
             <div className="flex gap-2 mt-1">
               {previousCards.map(card => (
                 <span
@@ -147,25 +149,25 @@ export const CardModal: React.FC<CardModalProps> = ({
           <div className={`mt-4 p-4 rounded-lg border-2 ${getCardBgColor(preview.type)}`}>
             <p className="font-bold text-lg">
               {preview.type === CardType.YELLOW
-                ? '🟨 CARTON JAUNE'
+                ? `🟨 ${t('card_modal.yellow_card')}`
                 : preview.type === CardType.RED
-                  ? '🟥 CARTON ROUGE'
-                  : '⬛ CARTON NOIR'}
+                  ? `🟥 ${t('card_modal.red_card')}`
+                  : `⬛ ${t('card_modal.black_card')}`}
             </p>
             {preview.points > 0 && (
               <p className="text-sm mt-1">
-                +{preview.points} point pour {opponentName}
+                {t('card_modal.points_for_opponent', { points: preview.points, opponent: opponentName })}
               </p>
             )}
             {preview.shouldExclude && (
-              <p className="text-sm mt-1 font-bold">⚠️ EXCLUSION DE LA COMPÉTITION</p>
+              <p className="text-sm mt-1 font-bold">⚠️ {t('card_modal.exclusion')}</p>
             )}
           </div>
         )}
 
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} className="flex-1 px-4 py-2 border rounded hover:bg-gray-50">
-            Annuler
+            {t('actions.cancel')}
           </button>
           <button
             onClick={handleConfirm}
@@ -174,7 +176,7 @@ export const CardModal: React.FC<CardModalProps> = ({
               preview?.type
             )} disabled:opacity-50`}
           >
-            Confirmer
+            {t('actions.confirm')}
           </button>
         </div>
       </div>

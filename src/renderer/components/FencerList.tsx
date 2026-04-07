@@ -92,14 +92,14 @@ const FencerListComponent: React.FC<FencerListProps> = ({
 
   const handleExportFencers = async (format: 'txt' | 'fff') => {
     const extension = format === 'fff' ? 'fff' : 'txt';
-    const filterName = format === 'fff' ? 'Fichier FFE' : 'Fichier texte';
+    const filterName = format === 'fff' ? t('fencer_list.filter_ffe') : t('fencer_list.filter_txt');
 
     const result = await window.electronAPI.dialog.saveFile({
-      title: `Exporter les tireurs (.${extension})`,
+      title: t('fencer_list.export_fencers_title', { ext: extension }),
       defaultPath: `tireurs.${extension}`,
       filters: [
         { name: filterName, extensions: [extension] },
-        { name: 'Tous les fichiers', extensions: ['*'] },
+        { name: t('fencer_list.filter_all_files'), extensions: ['*'] },
       ],
     });
 
@@ -123,21 +123,16 @@ const FencerListComponent: React.FC<FencerListProps> = ({
   const handleExportPhotos = async () => {
     if (!competitionId) return;
     const result = await window.electronAPI.dialog.saveFile({
-      title: 'Exporter les photos (.zip)',
+      title: t('fencer_list.export_photos_title'),
       defaultPath: 'photos-tireurs.zip',
       filters: [{ name: 'Archive ZIP', extensions: ['zip'] }],
     });
     if (result && !result.canceled && result.filePath) {
       try {
-        const { count } = await window.electronAPI.file.exportPhotos(
-          competitionId,
-          result.filePath
-        );
-        showPhotoMessage(
-          `${count} photo${count !== 1 ? 's' : ''} exportée${count !== 1 ? 's' : ''}`
-        );
+        const { count } = await window.electronAPI.file.exportPhotos(competitionId, result.filePath);
+        showPhotoMessage(t('fencer_list.photos_exported', { count }));
       } catch {
-        showPhotoMessage("Erreur lors de l'export");
+        showPhotoMessage(t('fencer_list.export_error'));
       }
     }
   };
@@ -145,20 +140,15 @@ const FencerListComponent: React.FC<FencerListProps> = ({
   const handleImportPhotos = async () => {
     if (!competitionId) return;
     const result = await window.electronAPI.dialog.openFile({
-      title: 'Importer les photos (.zip)',
+      title: t('fencer_list.import_photos_title'),
       filters: [{ name: 'Archive ZIP', extensions: ['zip'] }],
     });
     if (result && result.filePath) {
       try {
-        const { matched, total } = await window.electronAPI.file.importPhotos(
-          competitionId,
-          result.filePath
-        );
-        showPhotoMessage(
-          `${matched}/${total} photo${total !== 1 ? 's' : ''} importée${total !== 1 ? 's' : ''}`
-        );
+        const { matched, total } = await window.electronAPI.file.importPhotos(competitionId, result.filePath);
+        showPhotoMessage(t('fencer_list.photos_imported', { matched, total }));
       } catch {
-        showPhotoMessage("Erreur lors de l'import");
+        showPhotoMessage(t('fencer_list.import_error'));
       }
     }
   };
@@ -166,21 +156,16 @@ const FencerListComponent: React.FC<FencerListProps> = ({
   const handleExportFencersArchive = async () => {
     if (!competitionId) return;
     const result = await window.electronAPI.dialog.saveFile({
-      title: 'Exporter tireurs + photos (.bpf)',
+      title: t('fencer_list.export_archive_title'),
       defaultPath: 'tireurs.bpf',
       filters: [{ name: 'BellePoule Fencers', extensions: ['bpf'] }],
     });
     if (result && !result.canceled && result.filePath) {
       try {
-        const { count } = await window.electronAPI.file.exportFencersArchive(
-          competitionId,
-          result.filePath
-        );
-        showPhotoMessage(
-          `${count} tireur${count !== 1 ? 's' : ''} exporté${count !== 1 ? 's' : ''} (.bpf)`
-        );
+        const { count } = await window.electronAPI.file.exportFencersArchive(competitionId, result.filePath);
+        showPhotoMessage(t('fencer_list.archive_exported', { count }));
       } catch {
-        showPhotoMessage("Erreur lors de l'export .bpf");
+        showPhotoMessage(t('fencer_list.export_archive_error'));
       }
     }
   };
@@ -188,19 +173,16 @@ const FencerListComponent: React.FC<FencerListProps> = ({
   const handleImportFencersArchive = async () => {
     if (!competitionId) return;
     const result = await window.electronAPI.dialog.openFile({
-      title: 'Importer tireurs + photos (.bpf)',
+      title: t('fencer_list.import_archive_title'),
       filters: [{ name: 'BellePoule Fencers', extensions: ['bpf'] }],
     });
     if (result && result.filePath) {
       try {
-        const { added, updated } = await window.electronAPI.file.importFencersArchive(
-          competitionId,
-          result.filePath
-        );
-        showPhotoMessage(`${added} ajouté${added !== 1 ? 's' : ''}, ${updated} mis à jour (.bpf)`);
+        const { added, updated } = await window.electronAPI.file.importFencersArchive(competitionId, result.filePath);
+        showPhotoMessage(t('fencer_list.archive_imported', { added, updated }));
         if (onFencersImported) onFencersImported();
       } catch {
-        showPhotoMessage("Erreur lors de l'import .bpf");
+        showPhotoMessage(t('fencer_list.import_archive_error'));
       }
     }
   };
@@ -248,7 +230,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
             <button
               className="btn btn-secondary"
               onClick={onCheckInAll}
-              title={`Pointer les ${notCheckedInCount} tireurs non pointés`}
+              title={t('actions.check_in_all')}
             >
               ✓ {t('actions.check_in_all')}
             </button>
@@ -257,7 +239,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
             <button
               className="btn btn-secondary"
               onClick={onUncheckAll}
-              title={t('fencer.uncheck_all')}
+              title={t('actions.uncheck_all')}
             >
               ✗ {t('actions.uncheck_all')}
             </button>
@@ -266,11 +248,11 @@ const FencerListComponent: React.FC<FencerListProps> = ({
             <button
               className="btn btn-danger"
               onClick={async () => {
-                if (await confirm(t('messages.confirm_delete_fencer'))) {
+                if (await confirm(t('fencer_list.confirm_delete_all', { count: fencers.length }))) {
                   onDeleteAllFencers();
                 }
               }}
-              title={`Supprimer les ${fencers.length} tireurs`}
+              title={t('fencer_list.delete_all_title', { count: fencers.length })}
             >
               🗑️ {t('actions.delete')}
             </button>
@@ -279,22 +261,22 @@ const FencerListComponent: React.FC<FencerListProps> = ({
             <button
               className="btn btn-secondary"
               onClick={handleImportFencers}
-              title="Importer depuis un fichier (.ffe, .csv, .txt)"
+              title={t('fencer_list.import_fencers_title')}
             >
-              📥 Importer
+              📥 {t('actions.import')}
             </button>
           )}
           <button
             className="btn btn-secondary"
             onClick={() => handleExportFencers('txt')}
-            title="Exporter en TXT"
+            title={t('fencer_list.export_txt_title')}
           >
             TXT
           </button>
           <button
             className="btn btn-secondary"
             onClick={() => handleExportFencers('fff')}
-            title="Exporter en FFF"
+            title={t('fencer_list.export_fff_title')}
           >
             FFF
           </button>
@@ -303,28 +285,28 @@ const FencerListComponent: React.FC<FencerListProps> = ({
               <button
                 className="btn btn-secondary"
                 onClick={handleExportPhotos}
-                title="Exporter les photos des tireurs (.zip)"
+                title={t('fencer_list.export_photos_title')}
               >
                 📷 Photos
               </button>
               <button
                 className="btn btn-secondary"
                 onClick={handleImportPhotos}
-                title="Importer des photos depuis un .zip (matching par licence)"
+                title={t('fencer_list.import_photos_title')}
               >
                 📂 Photos
               </button>
               <button
                 className="btn btn-secondary"
                 onClick={handleExportFencersArchive}
-                title="Exporter tireurs + photos dans un fichier .bpf"
+                title={t('fencer_list.export_archive_title')}
               >
                 💾 .bpf
               </button>
               <button
                 className="btn btn-secondary"
                 onClick={handleImportFencersArchive}
-                title="Importer tireurs + photos depuis un fichier .bpf"
+                title={t('fencer_list.import_archive_title')}
               >
                 📦 .bpf
               </button>
@@ -337,10 +319,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
       </div>
 
       {photoMessage && (
-        <div
-          className="alert alert-success mb-4"
-          style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
-        >
+        <div className="alert alert-success mb-4" style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}>
           {photoMessage}
         </div>
       )}
@@ -351,7 +330,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
             type="text"
             className="form-input"
             style={{ flex: 1 }}
-            placeholder="Rechercher..."
+            placeholder={t('actions.search')}
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
           />
@@ -361,10 +340,10 @@ const FencerListComponent: React.FC<FencerListProps> = ({
             value={sortBy}
             onChange={e => setSortBy(e.target.value as any)}
           >
-            <option value="ranking">Par classement</option>
-            <option value="name">Par nom</option>
-            <option value="age">Par âge</option>
-            <option value="club">Par club</option>
+            <option value="ranking">{t('fencer_list.sort_ranking')}</option>
+            <option value="name">{t('fencer_list.sort_name')}</option>
+            <option value="age">{t('fencer_list.sort_age')}</option>
+            <option value="club">{t('fencer_list.sort_club')}</option>
           </select>
         </div>
       </div>
@@ -372,21 +351,21 @@ const FencerListComponent: React.FC<FencerListProps> = ({
       {filteredFencers.length === 0 ? (
         <div className="empty-state">
           <div className="empty-state-icon">🤺</div>
-          <h2 className="empty-state-title">Aucun tireur</h2>
+          <h2 className="empty-state-title">{t('messages.no_fencers')}</h2>
         </div>
       ) : (
         <div className="card">
           <table className="table">
             <thead>
               <tr>
-                <th style={{ width: '50px' }}>N°</th>
-                <th>Nom</th>
-                <th>Prénom</th>
-                <th>Né(e)</th>
-                <th>Club</th>
-                <th>Classement</th>
-                <th>Statut</th>
-                <th style={{ width: '250px' }}>Actions</th>
+                <th style={{ width: '50px' }}>{t('fencer_list.col_number')}</th>
+                <th>{t('fencer.last_name')}</th>
+                <th>{t('fencer.first_name')}</th>
+                <th>{t('fencer_list.col_birth')}</th>
+                <th>{t('fencer.club')}</th>
+                <th>{t('fencer.ranking')}</th>
+                <th>{t('fencer.status')}</th>
+                <th style={{ width: '250px' }}>{t('fencer_list.col_actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -417,7 +396,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                       <button
                         className="btn btn-sm btn-secondary"
                         onClick={() => setEditingFencer(fencer)}
-                        title="Modifier"
+                        title={t('fencer.edit')}
                         style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
                       >
                         ✏️
@@ -427,7 +406,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                         onClick={() => onCheckIn(fencer.id)}
                         style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
                       >
-                        {fencer.status === FencerStatus.CHECKED_IN ? 'Annuler' : 'Pointer'}
+                        {fencer.status === FencerStatus.CHECKED_IN ? t('fencer.uncheck') : t('fencer.check_in')}
                       </button>
                       {onSetFencerStatus && fencer.status === FencerStatus.CHECKED_IN && (
                         <>
@@ -442,7 +421,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                                 })
                               )
                             }
-                            title="Abandonner"
+                            title={t('fencer.abandon')}
                             style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
                           >
                             🚶
@@ -458,7 +437,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                                 })
                               )
                             }
-                            title="Forfait"
+                            title={t('fencer.forfait')}
                             style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
                           >
                             📋
@@ -479,7 +458,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                                 })
                               )
                             }
-                            title="Réactiver"
+                            title={t('fencer.reactivate')}
                             style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
                           >
                             ✅
@@ -489,7 +468,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                         <button
                           className="btn btn-sm btn-danger"
                           onClick={() => handleDeleteFencer(fencer.id)}
-                          title="Supprimer"
+                          title={t('fencer.delete')}
                           style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
                         >
                           🗑️

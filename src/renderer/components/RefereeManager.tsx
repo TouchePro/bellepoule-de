@@ -7,6 +7,7 @@
 import React, { useState, useMemo } from 'react';
 import { Referee, Match, Pool, Competition } from '../../shared/types';
 import { RefereeManager, RefereeRotationConfig } from '../../shared/services/refereeManager';
+import { useTranslation } from '../contexts/TranslationContext';
 
 interface RefereeManagerProps {
   competition: Competition;
@@ -25,6 +26,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
   onRefereesChange,
   onAssignmentsChange,
 }) => {
+  const { t } = useTranslation();
   const [config, setConfig] = useState<RefereeRotationConfig>({
     maxConsecutiveMatches: 3,
     minRestTimeMinutes: 15,
@@ -65,7 +67,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
     const fencerBClub = match.fencerB?.club;
 
     if (referee.club && (fencerAClub === referee.club || fencerBClub === referee.club)) {
-      return `⚠️ Conflit: Arbitre du club ${referee.club}`;
+      return `⚠️ ${t('referee_manager.conflict_warning', { club: referee.club })}`;
     }
     return null;
   };
@@ -83,7 +85,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
           paddingBottom: '0.5rem',
         }}
       >
-        👨‍⚖️ Gestion des Arbitres
+        👨‍⚖️ {t('referee_manager.title')}
       </h2>
 
       {/* Configuration */}
@@ -97,7 +99,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
         }}
       >
         <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', color: '#374151' }}>
-          Configuration de Rotation
+          {t('referee_manager.rotation_config')}
         </h3>
         <div
           style={{
@@ -112,7 +114,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
               checked={config.avoidSameClub}
               onChange={e => setConfig({ ...config, avoidSameClub: e.target.checked })}
             />
-            Éviter les arbitres du même club
+            {t('referee_manager.avoid_same_club')}
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <input
@@ -120,10 +122,10 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
               checked={config.balanceAssignment}
               onChange={e => setConfig({ ...config, balanceAssignment: e.target.checked })}
             />
-            Équilibrer les assignations
+            {t('referee_manager.balance_assignments')}
           </label>
           <label>
-            Matchs consécutifs max:
+            {t('referee_manager.max_consecutive_matches')}
             <input
               type="number"
               value={config.maxConsecutiveMatches}
@@ -136,7 +138,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
             />
           </label>
           <label>
-            Temps de repos min (min):
+            {t('referee_manager.min_rest_time')}
             <input
               type="number"
               value={config.minRestTimeMinutes}
@@ -166,7 +168,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
             fontWeight: '500',
           }}
         >
-          🔄 Assignation Automatique
+          🔄 {t('referee_manager.auto_assign')}
         </button>
         <button
           onClick={() => setShowReport(!showReport)}
@@ -181,7 +183,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
             fontWeight: '500',
           }}
         >
-          📊 {showReport ? 'Masquer' : 'Afficher'} le Rapport
+          📊 {showReport ? t('referee_manager.hide_report') : t('referee_manager.show_report')}
         </button>
       </div>
 
@@ -196,7 +198,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
             border: '1px solid #86efac',
           }}
         >
-          <h3 style={{ marginBottom: '1rem', color: '#166534' }}>Rapport de Rotation</h3>
+          <h3 style={{ marginBottom: '1rem', color: '#166534' }}>{t('referee_manager.rotation_report')}</h3>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: '#dcfce7' }}>
@@ -207,7 +209,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
                     borderBottom: '2px solid #86efac',
                   }}
                 >
-                  Arbitre
+                  {t('referee_manager.referee')}
                 </th>
                 <th
                   style={{
@@ -216,7 +218,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
                     borderBottom: '2px solid #86efac',
                   }}
                 >
-                  Matchs
+                  {t('referee_manager.matches')}
                 </th>
                 <th
                   style={{
@@ -225,7 +227,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
                     borderBottom: '2px solid #86efac',
                   }}
                 >
-                  Violations Repos
+                  {t('referee_manager.rest_violations')}
                 </th>
                 <th
                   style={{
@@ -234,7 +236,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
                     borderBottom: '2px solid #86efac',
                   }}
                 >
-                  Conflits
+                  {t('referee_manager.conflicts')}
                 </th>
               </tr>
             </thead>
@@ -270,7 +272,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
 
       {/* Arbitres List */}
       <div style={{ marginBottom: '1.5rem' }}>
-        <h3 style={{ marginBottom: '1rem', color: '#374151' }}>Arbitres Disponibles</h3>
+        <h3 style={{ marginBottom: '1rem', color: '#374151' }}>{t('referee_manager.available_referees')}</h3>
         <div
           style={{
             display: 'grid',
@@ -295,12 +297,12 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
                   {referee.firstName} {referee.lastName}
                 </div>
                 <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-                  {referee.category} • {referee.club || 'Sans club'}
+                  {referee.category} • {referee.club || t('referee_manager.no_club')}
                 </div>
                 <div style={{ marginTop: '0.5rem', fontSize: '0.875rem' }}>
-                  <span style={{ color: '#374151' }}>Matchs aujourd'hui: {stats.todayMatches}</span>
+                  <span style={{ color: '#374151' }}>{t('referee_manager.today_matches', { count: stats.todayMatches })}</span>
                   <br />
-                  <span style={{ color: '#374151' }}>Total: {stats.totalMatches}</span>
+                  <span style={{ color: '#374151' }}>{t('referee_manager.total_matches', { count: stats.totalMatches })}</span>
                 </div>
               </div>
             );
@@ -310,7 +312,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
 
       {/* Match Assignments */}
       <div>
-        <h3 style={{ marginBottom: '1rem', color: '#374151' }}>Assignations des Matchs</h3>
+        <h3 style={{ marginBottom: '1rem', color: '#374151' }}>{t('referee_manager.match_assignments')}</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {matches.map(match => {
             const assignedReferee = assignments.get(match.id);
@@ -339,7 +341,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
                   </div>
                   {match.poolId && (
                     <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-                      Poule {pools.find(p => p.id === match.poolId)?.number}
+                      {t('referee_manager.pool', { number: pools.find(p => p.id === match.poolId)?.number ?? '' })}
                     </div>
                   )}
                 </div>
@@ -360,7 +362,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
                       background: 'white',
                     }}
                   >
-                    <option value="">-- Choisir un arbitre --</option>
+                    <option value="">{t('referee_manager.select_referee')}</option>
                     {referees.map(referee => (
                       <option key={referee.id} value={referee.id}>
                         {referee.firstName} {referee.lastName}

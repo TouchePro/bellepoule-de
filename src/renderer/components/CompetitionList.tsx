@@ -6,7 +6,6 @@
 import React from 'react';
 import { Competition, Weapon, Gender, Category } from '../../shared/types';
 import { useTranslation } from '../hooks/useTranslation';
-import { usePagination } from '../hooks/usePagination';
 
 interface CompetitionListProps {
   competitions: Competition[];
@@ -23,24 +22,7 @@ const CompetitionListComponent: React.FC<CompetitionListProps> = ({
   onDelete,
   onNewCompetition,
 }) => {
-  const { t } = useTranslation();
-  const {
-    items: paginatedCompetitions,
-    page,
-    totalPages,
-    totalItems,
-    pageSize,
-    hasNext,
-    hasPrev,
-    goToNext,
-    goToPrev,
-    goToFirst,
-    goToLast,
-    setPageSize,
-    pageSizeOptions,
-    startIndex,
-    endIndex,
-  } = usePagination(competitions, { defaultPageSize: 20 });
+  const { t, language } = useTranslation();
 
   if (isLoading) {
     return (
@@ -94,7 +76,7 @@ const CompetitionListComponent: React.FC<CompetitionListProps> = ({
   }
 
   const formatDate = (date: Date): string => {
-    return new Date(date).toLocaleDateString('fr-FR', {
+    return new Date(date).toLocaleDateString(language, {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
@@ -112,7 +94,7 @@ const CompetitionListComponent: React.FC<CompetitionListProps> = ({
       </div>
 
       <div className="competition-grid">
-        {paginatedCompetitions.map(competition => (
+        {competitions.map(competition => (
           <div
             key={competition.id}
             className="card competition-card"
@@ -162,67 +144,6 @@ const CompetitionListComponent: React.FC<CompetitionListProps> = ({
           </div>
         ))}
       </div>
-
-      {totalItems > pageSize && (
-        <div
-          className="pagination-bar"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            marginTop: '1rem',
-            justifyContent: 'center',
-          }}
-        >
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={goToFirst}
-            disabled={!hasPrev}
-            title="Première page"
-          >
-            «
-          </button>
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={goToPrev}
-            disabled={!hasPrev}
-            title="Page précédente"
-          >
-            ‹
-          </button>
-          <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-            {startIndex + 1}–{endIndex} / {totalItems}
-          </span>
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={goToNext}
-            disabled={!hasNext}
-            title="Page suivante"
-          >
-            ›
-          </button>
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={goToLast}
-            disabled={!hasNext}
-            title="Dernière page"
-          >
-            »
-          </button>
-          <select
-            className="form-select form-select-sm"
-            value={pageSize}
-            onChange={e => setPageSize(Number(e.target.value))}
-            style={{ marginLeft: '0.5rem', fontSize: '0.875rem' }}
-          >
-            {pageSizeOptions.map(s => (
-              <option key={s} value={s}>
-                {s} / page
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
     </div>
   );
 };

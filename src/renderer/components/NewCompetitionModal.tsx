@@ -13,7 +13,7 @@ interface NewCompetitionModalProps {
 }
 
 const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCreate }) => {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [title, setTitle] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [weapon, setWeapon] = useState<Weapon>(Weapon.EPEE);
@@ -25,7 +25,7 @@ const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCr
     e.preventDefault();
 
     onCreate({
-      title: title || `Compétition du ${new Date(date).toLocaleDateString('fr-FR')}`,
+      title: title || `${t('competition.new')} ${new Date(date).toLocaleDateString(language === 'de' ? 'de-DE' : language === 'en' ? 'en-GB' : 'fr-FR')}`,
       date: new Date(date),
       weapon,
       gender,
@@ -72,7 +72,7 @@ const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCr
               <input
                 type="text"
                 className="form-input"
-                placeholder="Ex: Championnat Régional"
+                placeholder={t('new_competition.title_placeholder')}
                 value={title}
                 onChange={e => setTitle(e.target.value)}
               />
@@ -155,7 +155,7 @@ const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCr
               <input
                 type="text"
                 className="form-input"
-                placeholder={`Ex: Gymnase Jean Moulin, Paris`}
+                placeholder={t('new_competition.location_placeholder')}
                 value={location}
                 onChange={e => setLocation(e.target.value)}
               />

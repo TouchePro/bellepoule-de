@@ -7,9 +7,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import QRCode from 'qrcode';
 import { Competition, Pool } from '../../shared/types';
-import { logger, LogCategory } from '@shared/services/logger';
 import { TableauMatch } from './TableauView';
 import { useToast } from './Toast';
+import { useTranslation } from '../contexts/TranslationContext';
 
 interface RemoteScoreManagerProps {
   competition: Competition;
@@ -45,6 +45,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   initialStripCount,
 }) => {
   const { showToast } = useToast();
+  const { t } = useTranslation();
   const [session, setSession] = useState<RemoteSession | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [serverUrl, setServerUrl] = useState<string>('http://localhost:8066');
@@ -59,10 +60,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const [showPhotos, setShowPhotos] = useState(false);
 
   useEffect(() => {
-    if (!activeQR) {
-      setQrDataUrl(null);
-      return;
-    }
+    if (!activeQR) { setQrDataUrl(null); return; }
     QRCode.toDataURL(activeQR.url, { width: 220, margin: 1 })
       .then(setQrDataUrl)
       .catch(() => setQrDataUrl(null));
@@ -109,11 +107,11 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         setServerUrl(result.serverInfo.url);
         await startSession(result.serverInfo.url, effectivePending);
       } else {
-        showToast(`Erreur: ${result.error || 'Impossible de démarrer le serveur'}`, 'error');
+        showToast(`${t('messages.error')}: ${result.error || t('remote_score.server_start_error')}`, 'error');
       }
     } catch (error) {
-      logger.error(LogCategory.UI, 'Failed to start remote server', error as Error);
-      showToast('Impossible de démarrer le serveur distant', 'error');
+      console.error('Failed to start remote server:', error);
+      showToast(t('remote_score.server_start_error'), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -132,10 +130,13 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         .filter(m => m.winner === null && m.fencerA && m.fencerB)
         .map(m => ({ ...m, isTableau: true }));
       const allMatches = [...poolMatches, ...deMatches];
-      logger.debug(LogCategory.UI, '[RemoteScoreManager] Passing matches to server', {
-        pool: poolMatches.length,
-        de: deMatches.length,
-      });
+      console.log(
+        '[RemoteScoreManager] Passing matches to server:',
+        poolMatches.length,
+        'pool +',
+        deMatches.length,
+        'DE'
+      );
       const result = await window.electronAPI.remote.startSession(
         competition.id,
         count,
@@ -146,12 +147,12 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         setSession(result.session);
         setCommittedCount(count);
         onArenaCountChange?.(count);
-        showToast('Saisie distante démarrée', 'success');
+        showToast(t('remote_score.started'), 'success');
       } else {
-        showToast(`Erreur session: ${result.error}`, 'error');
+        showToast(`${t('messages.error')} ${t('remote_score.session')}: ${result.error}`, 'error');
       }
     } catch (error) {
-      logger.error(LogCategory.UI, 'Failed to start session', error as Error);
+      console.error('Failed to start session:', error);
     }
   };
 
@@ -167,18 +168,18 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           setSession(result.session);
           setCommittedCount(newCount);
           onArenaCountChange?.(newCount);
-          showToast('Nombre de pistes mis à jour', 'success');
+          showToast(t('remote_score.strip_count_updated'), 'success');
         } else {
-          showToast(`Erreur: ${result.error}`, 'error');
+          showToast(`${t('messages.error')}: ${result.error}`, 'error');
         }
       } catch (error) {
-        logger.error(LogCategory.UI, 'Failed to update strip count', error as Error);
+        console.error('Failed to update strip count:', error);
       }
     } else {
       // Serveur non démarré : persister la préférence
       setCommittedCount(newCount);
       onArenaCountChange?.(newCount);
-      showToast('Préférence sauvegardée', 'success');
+      showToast(t('remote_score.preference_saved'), 'success');
     }
   };
 
@@ -189,14 +190,14 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
 
       if (result.success) {
         setSession(null);
-        showToast('Saisie distante arrêtée', 'success');
+        showToast(t('remote_score.stopped'), 'success');
         onStopRemote();
       } else {
-        showToast(`Erreur: ${result.error || "Impossible d'arrêter le serveur"}`, 'error');
+        showToast(`${t('messages.error')}: ${result.error || t('remote_score.server_stop_error')}`, 'error');
       }
     } catch (error) {
-      logger.error(LogCategory.UI, 'Failed to stop remote server', error as Error);
-      showToast("Impossible d'arrêter le serveur distant", 'error');
+      console.error('Failed to stop remote server:', error);
+      showToast(t('remote_score.server_stop_error'), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -254,7 +255,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       {hasPendingChanges && (
         <span
           style={{ color: 'var(--warning-color, orange)', fontSize: '0.85rem' }}
-          title="Modifications non sauvegardées"
+          title={t('remote_score.unsaved_changes')}
         >
           ●
         </span>
@@ -265,7 +266,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         disabled={!hasPendingChanges || isLoading}
         style={{ padding: '0.2rem 0.6rem' }}
       >
-        Sauvegarder
+        {t('actions.save')}
       </button>
     </div>
   );
@@ -274,33 +275,24 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     return (
       <div className="remote-score-manager">
         <div className="remote-status inactive">
-          <h3>🔴 Saisie distante inactive</h3>
+          <h3>🔴 {t('remote_score.inactive_title')}</h3>
           <p>
-            La saisie distante permet aux arbitres de saisir les scores depuis une tablette. Les
-            arbitres se connectent via un navigateur web sur le réseau local.
+            {t('remote_score.inactive_description')}
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', margin: '0.75rem 0' }}>
-            <span>Pistes :</span>
+            <span>{t('remote.arena')}:</span>
             {stripCountControls}
           </div>
-          <label
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              margin: '0.5rem 0',
-              cursor: 'pointer',
-            }}
-          >
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.5rem 0', cursor: 'pointer' }}>
             <input
               type="checkbox"
               checked={showPhotos}
               onChange={e => setShowPhotos(e.target.checked)}
             />
-            Afficher les photos des combattants avant le combat
+            {t('remote_score.show_photos')}
           </label>
           <button className="btn-primary" onClick={onStartRemote}>
-            ⚡ Démarrer la saisie distante
+            ⚡ {t('remote_score.start_button')}
           </button>
         </div>
       </div>
@@ -311,13 +303,13 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     <div className="remote-score-manager">
       <div className="remote-header">
         <div className="remote-status active">
-          <h3>🟢 Saisie distante active</h3>
+          <h3>🟢 {t('remote_score.active_title')}</h3>
           <p>
-            Serveur: <strong>{serverUrl}</strong>
+            {t('remote_score.server')}: <strong>{serverUrl}</strong>
           </p>
         </div>
         <button className="btn-secondary" onClick={handleStopRemote} disabled={isLoading}>
-          🛑 Arrêter
+          🛑 {t('remote_score.stop_button')}
         </button>
       </div>
 
@@ -325,18 +317,10 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         <div
           style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}
         >
-          <h4 style={{ margin: 0 }}>Pistes ({arenaCount})</h4>
+          <h4 style={{ margin: 0 }}>{t('remote.arena')} ({arenaCount})</h4>
           {stripCountControls}
         </div>
-        <label
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            margin: '0.5rem 0',
-            cursor: 'pointer',
-          }}
-        >
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.5rem 0', cursor: 'pointer' }}>
           <input
             type="checkbox"
             checked={showPhotos}
@@ -345,17 +329,17 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
               await window.electronAPI.remote.updateShowPhotos(e.target.checked);
             }}
           />
-          Afficher les photos des combattants avant le combat
+          {t('remote_score.show_photos')}
         </label>
 
         <div className="arena-url-grid">
           {arenaUrls.map(arena => (
             <div key={arena.number} className="arena-url-card">
               <div className="arena-url-header">
-                <strong>Piste {arena.number}</strong>
+                <strong>{t('remote_score.arena_label')} {arena.number}</strong>
               </div>
               <div className="arena-url-row">
-                <span className="arena-url-label">Arbitre</span>
+                <span className="arena-url-label">{t('remote_score.referee_label')}</span>
                 <code className="arena-url-value">{arena.refereeUrl}</code>
                 <button
                   className="btn-copy"
@@ -367,7 +351,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                 <button
                   className="btn-qr"
                   onClick={() =>
-                    setActiveQR({ url: arena.refereeUrl, label: `Piste ${arena.number} – Arbitre` })
+                    setActiveQR({ url: arena.refereeUrl, label: `${t('remote_score.arena_label')} ${arena.number} – ${t('remote_score.referee_label')}` })
                   }
                   title="QR code"
                 >
@@ -375,7 +359,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                 </button>
               </div>
               <div className="arena-url-row">
-                <span className="arena-url-label">Affichage</span>
+                <span className="arena-url-label">{t('remote_score.display_label')}</span>
                 <code className="arena-url-value">{arena.displayUrl}</code>
                 <button
                   className="btn-copy"
@@ -389,7 +373,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                   onClick={() =>
                     setActiveQR({
                       url: arena.displayUrl,
-                      label: `Piste ${arena.number} – Affichage`,
+                      label: `${t('remote_score.arena_label')} ${arena.number} – ${t('remote_score.display_label')}`,
                     })
                   }
                   title="QR code"
@@ -398,7 +382,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                 </button>
               </div>
               <div className="arena-url-row">
-                <span className="arena-url-label">Poule</span>
+                <span className="arena-url-label">{t('remote_score.pool_label')}</span>
                 <code className="arena-url-value">{arena.poolUrl}</code>
                 <button
                   className="btn-copy"
@@ -412,7 +396,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                   onClick={() =>
                     setActiveQR({
                       url: arena.poolUrl,
-                      label: `Piste ${arena.number} – Poule`,
+                      label: `${t('remote_score.arena_label')} ${arena.number} – ${t('remote_score.pool_label')}`,
                     })
                   }
                   title="QR code"
@@ -421,7 +405,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                 </button>
               </div>
               <div className="arena-url-row">
-                <span className="arena-url-label">Public</span>
+                <span className="arena-url-label">{t('remote_score.public_label')}</span>
                 <code className="arena-url-value">{arena.publicUrl}</code>
                 <button
                   className="btn-copy"
@@ -435,7 +419,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                   onClick={() =>
                     setActiveQR({
                       url: arena.publicUrl,
-                      label: `Piste ${arena.number} – Public`,
+                      label: `${t('remote_score.arena_label')} ${arena.number} – ${t('remote_score.public_label')}`,
                     })
                   }
                   title="QR code"
@@ -444,11 +428,11 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                 </button>
               </div>
               <div className="arena-url-row">
-                <span className="arena-url-label">🔒 MDP</span>
+                <span className="arena-url-label">🔒 {t('remote_score.password_label')}</span>
                 <input
                   type="password"
                   className="arena-password-input"
-                  placeholder="Aucun (accès libre)"
+                  placeholder={t('remote_score.password_placeholder')}
                   value={arenaPasswords[`arena${arena.number}`] ?? ''}
                   onChange={e =>
                     setArenaPasswords(p => ({
@@ -466,12 +450,12 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                       if (result.success) {
                         showToast(
                           pwd
-                            ? `Mot de passe défini pour la piste ${arena.number}`
-                            : `Mot de passe supprimé pour la piste ${arena.number}`,
+                            ? t('remote_score.password_set', { arenaNumber: arena.number })
+                            : t('remote_score.password_removed', { arenaNumber: arena.number }),
                           'success'
                         );
                       } else {
-                        showToast(result.error ?? 'Erreur', 'error');
+                        showToast(result.error ?? t('messages.error'), 'error');
                       }
                     }
                   }}
@@ -488,12 +472,12 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                     if (result.success) {
                       showToast(
                         pwd
-                          ? `Mot de passe défini pour la piste ${arena.number}`
-                          : `Mot de passe supprimé pour la piste ${arena.number}`,
+                          ? t('remote_score.password_set', { arenaNumber: arena.number })
+                          : t('remote_score.password_removed', { arenaNumber: arena.number }),
                         'success'
                       );
                     } else {
-                      showToast(result.error ?? 'Erreur', 'error');
+                      showToast(result.error ?? t('messages.error'), 'error');
                     }
                   }}
                 >
@@ -506,10 +490,10 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
 
         <div className="arena-url-card" style={{ marginTop: '1rem' }}>
           <div className="arena-url-header">
-            <strong>🖥️ Kiosk (affichage public)</strong>
+            <strong>🖥️ {t('remote_score.kiosk_label')} ({t('remote_score.public_display')})</strong>
           </div>
           <div className="arena-url-row">
-            <span className="arena-url-label">URL</span>
+            <span className="arena-url-label">{t('remote_score.url_label')}</span>
             <code className="arena-url-value">{kioskUrl}</code>
             <button
               className="btn-copy"
@@ -520,7 +504,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             </button>
             <button
               className="btn-qr"
-              onClick={() => setActiveQR({ url: kioskUrl, label: 'Kiosk – Affichage public' })}
+              onClick={() => setActiveQR({ url: kioskUrl, label: `${t('remote_score.kiosk_label')} – ${t('remote_score.public_display')}` })}
               title="QR code"
             >
               📱
@@ -530,14 +514,14 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       </div>
 
       <div className="remote-instructions">
-        <h5>Instructions pour les arbitres</h5>
+        <h5>{t('remote_score.instructions_title')}</h5>
         <ol>
-          <li>Ouvrir un navigateur web sur la tablette</li>
+          <li>{t('remote_score.instruction_step_1')}</li>
           <li>
-            Aller à l'URL <strong>Arbitre</strong> correspondant à sa piste
+            {t('remote_score.instruction_step_2')} <strong>{t('remote_score.referee_label')}</strong> {t('remote_score.instruction_step_2_end')}
           </li>
-          <li>Saisir les scores du match en cours</li>
-          <li>Cliquer sur "Match suivant" pour passer au match suivant</li>
+          <li>{t('remote_score.instruction_step_3')}</li>
+          <li>{t('remote_score.instruction_step_4')}</li>
         </ol>
       </div>
 
@@ -548,23 +532,15 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             {qrDataUrl ? (
               <img src={qrDataUrl} alt="QR code" width={220} height={220} />
             ) : (
-              <div
-                style={{
-                  width: 220,
-                  height: 220,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                Génération…
+              <div style={{ width: 220, height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {t('remote_score.generating')}
               </div>
             )}
             <code style={{ fontSize: '0.75rem', wordBreak: 'break-all', textAlign: 'center' }}>
               {activeQR.url}
             </code>
             <button className="btn btn-secondary" onClick={() => setActiveQR(null)}>
-              Fermer
+              {t('actions.close')}
             </button>
           </div>
         </div>

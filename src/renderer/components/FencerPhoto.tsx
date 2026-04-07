@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useRef, useCallback } from 'react';
-import { logger, LogCategory } from '@shared/services/logger';
+import { useTranslation } from '../contexts/TranslationContext';
 
 interface FencerPhotoProps {
   photo?: string;
@@ -27,6 +27,7 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { t } = useTranslation();
 
   const sizeClasses = {
     small: 'w-10 h-10 text-xs',
@@ -91,13 +92,13 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
 
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        alert('Veuillez sélectionner une image valide');
+        alert(t('fencer_photo.invalid_image'));
         return;
       }
 
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        alert("L'image ne doit pas dépasser 5 Mo");
+        alert(t('fencer_photo.image_too_large'));
         return;
       }
 
@@ -106,13 +107,13 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
         const base64 = await resizeImage(file);
         onPhotoChange?.(base64);
       } catch (error) {
-        logger.error(LogCategory.UI, 'Error processing image', error as Error);
-        alert("Erreur lors du traitement de l'image");
+        console.error('Error processing image:', error);
+        alert(t('fencer_photo.processing_error'));
       } finally {
         setIsLoading(false);
       }
     },
-    [onPhotoChange]
+    [onPhotoChange, t]
   );
 
   const handleDrop = useCallback(
@@ -124,12 +125,12 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
       if (!file) return;
 
       if (!file.type.startsWith('image/')) {
-        alert('Veuillez déposer une image valide');
+        alert(t('fencer_photo.invalid_image'));
         return;
       }
 
       if (file.size > 5 * 1024 * 1024) {
-        alert("L'image ne doit pas dépasser 5 Mo");
+        alert(t('fencer_photo.image_too_large'));
         return;
       }
 
@@ -138,13 +139,13 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
         const base64 = await resizeImage(file);
         onPhotoChange?.(base64);
       } catch (error) {
-        logger.error(LogCategory.UI, 'Error processing image', error as Error);
-        alert("Erreur lors du traitement de l'image");
+        console.error('Error processing image:', error);
+        alert(t('fencer_photo.processing_error'));
       } finally {
         setIsLoading(false);
       }
     },
-    [onPhotoChange]
+    [onPhotoChange, t]
   );
 
   const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
@@ -177,7 +178,7 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
         onDrop={editable ? handleDrop : undefined}
         onDragOver={editable ? handleDragOver : undefined}
         onDragLeave={editable ? handleDragLeave : undefined}
-        title={editable ? 'Cliquer ou glisser-déposer une photo' : ''}
+        title={editable ? t('fencer_photo.click_or_drag') : ''}
       >
         {isLoading ? (
           <div className="animate-spin rounded-full h-1/2 w-1/2 border-2 border-white border-t-transparent" />
@@ -199,7 +200,7 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
             handleRemovePhoto();
           }}
           className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600 transition-colors shadow-md"
-          title="Supprimer la photo"
+          title={t('fencer_photo.delete_photo')}
         >
           ×
         </button>
@@ -217,7 +218,7 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
 
       {isDragging && (
         <div className="absolute inset-0 bg-blue-500 bg-opacity-20 rounded-full flex items-center justify-center pointer-events-none">
-          <span className="text-blue-700 text-xs font-medium">Déposer ici</span>
+          <span className="text-blue-700 text-xs font-medium">{t('fencer_photo.drop_here')}</span>
         </div>
       )}
     </div>

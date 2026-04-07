@@ -5,7 +5,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { Competition, Fencer, FencerStatus, MatchStatus, Weapon } from '../../shared/types';
-import { logger, LogCategory } from '@shared/services/logger';
 import { RankingImportResult } from '../../shared/utils/fileParser';
 import FencerList from './FencerList';
 import PoolView from './PoolView';
@@ -193,17 +192,9 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   useEffect(() => {
     if (!window.electronAPI?.onRemoteMatchFinished) return;
 
-    const handleMatchFinished = (data: {
-      matchId: string;
-      scoreA: number;
-      scoreB: number;
-      isTableau?: boolean;
-    }) => {
+    const handleMatchFinished = (data: { matchId: string; scoreA: number; scoreB: number; isTableau?: boolean }) => {
       const { matchId, scoreA, scoreB } = data;
-      logger.debug(
-        LogCategory.UI,
-        `[CompetitionView] Match terminé reçu: ${matchId} - Score: ${scoreA}-${scoreB}`
-      );
+      console.log(`[CompetitionView] Match terminé reçu: ${matchId} - Score: ${scoreA}-${scoreB}`);
       updateMatchFromRemote(matchId, scoreA, scoreB, MatchStatus.FINISHED);
 
       // Mise à jour du tableau d'élimination directe si c'est un match DE
@@ -212,7 +203,9 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         if (idx === -1) return prev;
         const match = prev[idx];
         const winner = scoreA > scoreB ? match.fencerA : scoreB > scoreA ? match.fencerB : null;
-        const updated = prev.map((m, i) => (i === idx ? { ...m, scoreA, scoreB, winner } : m));
+        const updated = prev.map((m, i) =>
+          i === idx ? { ...m, scoreA, scoreB, winner } : m
+        );
         const size = prev.length > 0 ? Math.max(...prev.map(m => m.round)) : 0;
         propagateWinners(updated, size);
         return [...updated];
@@ -234,7 +227,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     onExportFencers: format => exportFencersList(fencers, format),
     onExportFencersBpf: async () => {
       const result = await window.electronAPI.dialog.saveFile({
-        title: 'Exporter tireurs + photos (.bpf)',
+        title: t('competition_view.export_dialog_title'),
         defaultPath: `tireurs-${competition.title}.bpf`,
         filters: [{ name: 'BellePoule Fencers', extensions: ['bpf'] }],
       });
@@ -250,7 +243,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
           await window.electronAPI.file.importFencersArchive(competition.id, filepath);
           loadFencers();
         } catch (err) {
-          logger.error(LogCategory.UI, 'Erreur import .bpf', err as Error);
+          console.error('Erreur import .bpf:', err);
         }
         return;
       }
@@ -298,7 +291,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
   const handleOpenImportDialog = async () => {
     const result = await window.electronAPI.dialog.openFile({
-      title: 'Importer des tireurs',
+      title: t('competition_view.import_dialog_title'),
       filters: [
         { name: 'Fichiers FFE', extensions: ['fff', 'csv', 'txt'] },
         { name: 'Tous les fichiers', extensions: ['*'] },
@@ -336,8 +329,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
       setImportData(null);
     } catch (error) {
-      logger.error(LogCategory.UI, 'Failed to import ranking', error as Error);
-      showToast("Erreur lors de l'import du classement", 'error');
+      console.error('Failed to import ranking:', error);
+      showToast(t('competition_view.import_ranking_error'), 'error');
     }
   };
 
@@ -356,7 +349,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     if (rankingChanged) {
       setTableauMatches([]);
       setRankingChanged(false);
-      showToast("Le classement a changé. Le tableau d'élimination va être régénéré.", 'warning');
+      showToast(t('competition_view.ranking_changed_warning'), 'warning');
     }
 
     setShowThirdPlaceDialog(true);
@@ -451,61 +444,29 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   }, [canAdvanceFromPools]);
 
   const phases = [
-    {
-      id: 'checkin',
-      label: 'Appel',
-      icon: '📋',
-      disabled: false,
-      title: undefined as string | undefined,
-    },
-    {
-      id: 'poolprep',
-      label: 'Préparation',
-      icon: '⚙️',
-      disabled: false,
-      title: undefined as string | undefined,
-    },
+    { id: 'checkin', label: t('competition_view.phase_checkin'), icon: '📋', disabled: false, title: undefined as string | undefined },
+    { id: 'poolprep', label: t('competition_view.phase_poolprep'), icon: '⚙️', disabled: false, title: undefined as string | undefined },
     {
       id: 'pools',
-      label: poolRounds > 1 ? `Poules (${currentPoolRound}/${poolRounds})` : 'Poules',
+      label: poolRounds > 1 ? `${t('competition_view.phase_pools')} (${currentPoolRound}/${poolRounds})` : t('competition_view.phase_pools'),
       icon: '🎯',
       disabled: false,
       title: undefined as string | undefined,
     },
-    {
-      id: 'ranking',
-      label: 'Classement',
-      icon: '📊',
-      disabled: false,
-      title: undefined as string | undefined,
-    },
+    { id: 'ranking', label: t('competition_view.phase_ranking'), icon: '📊', disabled: false, title: undefined as string | undefined },
     ...(hasDirectElimination
-      ? [
-          {
-            id: 'tableau',
-            label: 'Tableau',
-            icon: '🏆',
-            disabled: !isTableauUnlocked,
-            title: !isTableauUnlocked
-              ? 'Terminez toutes les poules et validez le classement pour accéder au tableau'
-              : (undefined as string | undefined),
-          },
-        ]
+      ? [{
+          id: 'tableau',
+          label: t('competition_view.phase_tableau'),
+          icon: '🏆',
+          disabled: !isTableauUnlocked,
+          title: !isTableauUnlocked
+            ? t('competition_view.tableau_unlock_message')
+            : undefined as string | undefined,
+        }]
       : []),
-    {
-      id: 'results',
-      label: 'Résultats',
-      icon: '🏁',
-      disabled: isResultsLocked,
-      title: undefined as string | undefined,
-    },
-    {
-      id: 'remote',
-      label: '📡 Saisie distante',
-      icon: '📡',
-      disabled: false,
-      title: undefined as string | undefined,
-    },
+    { id: 'results', label: t('competition_view.phase_results'), icon: '🏁', disabled: isResultsLocked, title: undefined as string | undefined },
+    { id: 'remote', label: t('competition_view.phase_remote'), icon: '📡', disabled: false, title: undefined as string | undefined },
   ];
 
   const getPoolsNextAction = () => {
@@ -513,13 +474,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
     if (!isLastPoolRound) {
       return {
-        label: `Tour ${currentPoolRound + 1} de poules →`,
+        label: t('competition_view.next_pool_round_label', { round: currentPoolRound + 1 }),
         action: handleNextPoolRound,
       };
     }
 
     return {
-      label: 'Voir le classement →',
+      label: t('competition_view.button_view_ranking'),
       action: handleGoToRanking,
     };
   };
@@ -555,10 +516,10 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <span className="badge" style={{ background: 'rgba(255,255,255,0.2)' }}>
-            {fencers.length} tireurs
+            {t('competition_view.fencer_count', { count: fencers.length })}
           </span>
           <span className="badge" style={{ background: 'rgba(255,255,255,0.2)' }}>
-            {getCheckedInFencers().length} pointés
+            {t('competition_view.checked_in_count', { count: getCheckedInFencers().length })}
           </span>
           <button
             onClick={() => setCurrentPhase('remote')}
@@ -572,7 +533,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               fontSize: '0.875rem',
             }}
           >
-            📡 Saisie distante
+            {t('competition_view.phase_remote')}
           </button>
           <button
             onClick={() => setShowFencerComparison(true)}
@@ -701,7 +662,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           {currentPhase !== 'checkin' && (
             <button className="btn btn-secondary" onClick={handleGoBack}>
-              ← Retour
+              {t('competition_view.button_back')}
             </button>
           )}
           {currentPhase === 'checkin' && (
@@ -710,7 +671,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               onClick={handleGeneratePools}
               disabled={getCheckedInFencers().length < 4}
             >
-              Générer les poules →
+              {t('competition_view.button_generate_pools')} →
             </button>
           )}
           {currentPhase === 'pools' && poolsNextAction && (
@@ -773,12 +734,12 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             {pools.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state-icon">🎯</div>
-                <h2 className="empty-state-title">Pas de poules</h2>
+                <h2 className="empty-state-title">{t('competition_view.no_pools_title')}</h2>
                 <p className="empty-state-description">
-                  Retournez à l'appel pour générer les poules
+                  {t('competition_view.no_pools_description')}
                 </p>
                 <button className="btn btn-primary" onClick={() => setCurrentPhase('checkin')}>
-                  Retour à l'appel
+                  {t('competition_view.button_return_to_checkin')}
                 </button>
               </div>
             ) : (
@@ -786,7 +747,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                 {pools.length > 1 && (
                   <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
                     <button className="btn btn-success" onClick={handleExportAllPoolsPDF}>
-                      📄 Exporter toutes les poules en PDF
+                      {t('competition_view.button_export_all_pools_pdf')}
                     </button>
                   </div>
                 )}
@@ -856,9 +817,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               if (isRemoteActive) {
                 const match = tableauMatches.find(m => m.id === matchId);
                 window.electronAPI.remote.updateMatchArena(
-                  matchId,
-                  oldArena,
-                  newArena,
+                  matchId, oldArena, newArena,
                   match?.fencerA ?? null,
                   match?.fencerB ?? null
                 );
@@ -961,10 +920,10 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               }}
             >
               <button className="btn btn-secondary" onClick={() => handleThirdPlaceDecision(false)}>
-                Non
+                {t('common.no')}
               </button>
               <button className="btn btn-primary" onClick={() => handleThirdPlaceDecision(true)}>
-                Oui
+                {t('common.yes')}
               </button>
             </div>
           </div>
