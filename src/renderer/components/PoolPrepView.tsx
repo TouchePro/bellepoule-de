@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Fencer, Pool, Match, MatchStatus } from '../../shared/types';
 import {
   calculateOptimalPoolCount,
@@ -52,6 +52,9 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
     byLeague: true,
     byNation: false,
   });
+
+  // Flag pour éviter la régénération des poules quand poolCount est défini depuis initialPools
+  const skipNextPoolGeneration = useRef(false);
 
   // Historique des modifications pour la fonction restore
   const [history, setHistory] = useState<PoolStateHistory[]>([]);
@@ -137,6 +140,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
   // Initialize pools from initialPools when component mounts or initialPools changes
   useEffect(() => {
     if (initialPools && initialPools.length > 0) {
+      skipNextPoolGeneration.current = true;
       setPools(initialPools);
       setPoolCount(initialPools.length);
       // Initialize history with the loaded state
@@ -163,6 +167,13 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
   // Regenerate pools when count or min/max fencers per pool changes
   // Note: on ne recalcule pas le nombre optimal de poules ici pour respecter le choix manuel de l'utilisateur
   useEffect(() => {
+    // Ignorer si poolCount vient d'être défini depuis initialPools (restauration de session)
+    // — sans cette garde, les poules restaurées seraient écrasées sur Linux où les tireurs
+    // se chargent plus vite que sur Windows (pas d'antivirus, FS natif).
+    if (skipNextPoolGeneration.current) {
+      skipNextPoolGeneration.current = false;
+      return;
+    }
     if (poolCount > 0 && fencers.length > 0) {
       generatePools(poolCount);
     }
