@@ -231,6 +231,6 @@ describe('Constantes et formatage', () => {
     const rules = getSuddenDeathRules();
 
     expect(rules.length).toBeGreaterThan(0);
-    expect(rules.some(r => r.includes('Zone C'))).toBe(true);
+    expect(rules.some(r => r.includes('ZONE C'))).toBe(true);
   });
 });

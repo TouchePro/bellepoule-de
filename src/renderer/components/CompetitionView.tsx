@@ -193,9 +193,17 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   useEffect(() => {
     if (!window.electronAPI?.onRemoteMatchFinished) return;
 
-    const handleMatchFinished = (data: { matchId: string; scoreA: number; scoreB: number; isTableau?: boolean }) => {
+    const handleMatchFinished = (data: {
+      matchId: string;
+      scoreA: number;
+      scoreB: number;
+      isTableau?: boolean;
+    }) => {
       const { matchId, scoreA, scoreB } = data;
-      logger.debug(LogCategory.UI, `[CompetitionView] Match terminé reçu: ${matchId} - Score: ${scoreA}-${scoreB}`);
+      logger.debug(
+        LogCategory.UI,
+        `[CompetitionView] Match terminé reçu: ${matchId} - Score: ${scoreA}-${scoreB}`
+      );
       updateMatchFromRemote(matchId, scoreA, scoreB, MatchStatus.FINISHED);
 
       // Mise à jour du tableau d'élimination directe si c'est un match DE
@@ -204,9 +212,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         if (idx === -1) return prev;
         const match = prev[idx];
         const winner = scoreA > scoreB ? match.fencerA : scoreB > scoreA ? match.fencerB : null;
-        const updated = prev.map((m, i) =>
-          i === idx ? { ...m, scoreA, scoreB, winner } : m
-        );
+        const updated = prev.map((m, i) => (i === idx ? { ...m, scoreA, scoreB, winner } : m));
         const size = prev.length > 0 ? Math.max(...prev.map(m => m.round)) : 0;
         propagateWinners(updated, size);
         return [...updated];
@@ -445,8 +451,20 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   }, [canAdvanceFromPools]);
 
   const phases = [
-    { id: 'checkin', label: 'Appel', icon: '📋', disabled: false, title: undefined as string | undefined },
-    { id: 'poolprep', label: 'Préparation', icon: '⚙️', disabled: false, title: undefined as string | undefined },
+    {
+      id: 'checkin',
+      label: 'Appel',
+      icon: '📋',
+      disabled: false,
+      title: undefined as string | undefined,
+    },
+    {
+      id: 'poolprep',
+      label: 'Préparation',
+      icon: '⚙️',
+      disabled: false,
+      title: undefined as string | undefined,
+    },
     {
       id: 'pools',
       label: poolRounds > 1 ? `Poules (${currentPoolRound}/${poolRounds})` : 'Poules',
@@ -454,20 +472,40 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       disabled: false,
       title: undefined as string | undefined,
     },
-    { id: 'ranking', label: 'Classement', icon: '📊', disabled: false, title: undefined as string | undefined },
+    {
+      id: 'ranking',
+      label: 'Classement',
+      icon: '📊',
+      disabled: false,
+      title: undefined as string | undefined,
+    },
     ...(hasDirectElimination
-      ? [{
-          id: 'tableau',
-          label: 'Tableau',
-          icon: '🏆',
-          disabled: !isTableauUnlocked,
-          title: !isTableauUnlocked
-            ? 'Terminez toutes les poules et validez le classement pour accéder au tableau'
-            : undefined as string | undefined,
-        }]
+      ? [
+          {
+            id: 'tableau',
+            label: 'Tableau',
+            icon: '🏆',
+            disabled: !isTableauUnlocked,
+            title: !isTableauUnlocked
+              ? 'Terminez toutes les poules et validez le classement pour accéder au tableau'
+              : (undefined as string | undefined),
+          },
+        ]
       : []),
-    { id: 'results', label: 'Résultats', icon: '🏁', disabled: isResultsLocked, title: undefined as string | undefined },
-    { id: 'remote', label: '📡 Saisie distante', icon: '📡', disabled: false, title: undefined as string | undefined },
+    {
+      id: 'results',
+      label: 'Résultats',
+      icon: '🏁',
+      disabled: isResultsLocked,
+      title: undefined as string | undefined,
+    },
+    {
+      id: 'remote',
+      label: '📡 Saisie distante',
+      icon: '📡',
+      disabled: false,
+      title: undefined as string | undefined,
+    },
   ];
 
   const getPoolsNextAction = () => {
@@ -818,7 +856,9 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               if (isRemoteActive) {
                 const match = tableauMatches.find(m => m.id === matchId);
                 window.electronAPI.remote.updateMatchArena(
-                  matchId, oldArena, newArena,
+                  matchId,
+                  oldArena,
+                  newArena,
                   match?.fencerA ?? null,
                   match?.fencerB ?? null
                 );

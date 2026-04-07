@@ -68,7 +68,11 @@ export function useKeyboardShortcuts(options: UseKeyboardShortcutsOptions) {
           try {
             shortcut.action();
           } catch (error) {
-            logger.error(LogCategory.UI, `Erreur lors de l'exécution du raccourci ${shortcut.description}`, error as Error);
+            logger.error(
+              LogCategory.UI,
+              `Erreur lors de l'exécution du raccourci ${shortcut.description}`,
+              error as Error
+            );
           }
           break;
         }

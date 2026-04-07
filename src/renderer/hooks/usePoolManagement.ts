@@ -397,7 +397,10 @@ export const usePoolManagement = ({
         const newOverallRanking = computeOverallRanking(updatedPools);
         setOverallRanking(newOverallRanking);
 
-        logger.debug(LogCategory.UI, `[usePoolManagement] Match ${matchId} mis à jour depuis remote: ${scoreA}-${scoreB}`);
+        logger.debug(
+          LogCategory.UI,
+          `[usePoolManagement] Match ${matchId} mis à jour depuis remote: ${scoreA}-${scoreB}`
+        );
         return updatedPools;
       });
     },
@@ -415,8 +418,12 @@ export const usePoolManagement = ({
         fencers: pool.fencers.map(f => fencerMap.get(f.id) ?? f),
         matches: pool.matches.map(match => ({
           ...match,
-          fencerA: match.fencerA ? (fencerMap.get(match.fencerA.id) ?? match.fencerA) : match.fencerA,
-          fencerB: match.fencerB ? (fencerMap.get(match.fencerB.id) ?? match.fencerB) : match.fencerB,
+          fencerA: match.fencerA
+            ? (fencerMap.get(match.fencerA.id) ?? match.fencerA)
+            : match.fencerA,
+          fencerB: match.fencerB
+            ? (fencerMap.get(match.fencerB.id) ?? match.fencerB)
+            : match.fencerB,
         })),
       }));
 

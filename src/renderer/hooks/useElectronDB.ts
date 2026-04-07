@@ -58,23 +58,29 @@ export function useElectronDB() {
     }
   }, []);
 
-  const createCompetition = useCallback(async (data: CompetitionCreateData): Promise<Competition> => {
-    try {
-      return await assertDB('createCompetition')(data);
-    } catch (err) {
-      logger.error(LogCategory.DATABASE, 'createCompetition failed', err as Error);
-      throw err;
-    }
-  }, []);
+  const createCompetition = useCallback(
+    async (data: CompetitionCreateData): Promise<Competition> => {
+      try {
+        return await assertDB('createCompetition')(data);
+      } catch (err) {
+        logger.error(LogCategory.DATABASE, 'createCompetition failed', err as Error);
+        throw err;
+      }
+    },
+    []
+  );
 
-  const updateCompetition = useCallback(async (id: string, updates: CompetitionUpdateData): Promise<void> => {
-    try {
-      await assertDB('updateCompetition')(id, updates);
-    } catch (err) {
-      logger.error(LogCategory.DATABASE, `updateCompetition(${id}) failed`, err as Error);
-      throw err;
-    }
-  }, []);
+  const updateCompetition = useCallback(
+    async (id: string, updates: CompetitionUpdateData): Promise<void> => {
+      try {
+        await assertDB('updateCompetition')(id, updates);
+      } catch (err) {
+        logger.error(LogCategory.DATABASE, `updateCompetition(${id}) failed`, err as Error);
+        throw err;
+      }
+    },
+    []
+  );
 
   const deleteCompetition = useCallback(async (id: string): Promise<void> => {
     try {
@@ -90,19 +96,26 @@ export function useElectronDB() {
     try {
       return await assertDB('getFencersByCompetition')(competitionId);
     } catch (err) {
-      logger.error(LogCategory.DATABASE, `getFencersByCompetition(${competitionId}) failed`, err as Error);
+      logger.error(
+        LogCategory.DATABASE,
+        `getFencersByCompetition(${competitionId}) failed`,
+        err as Error
+      );
       throw err;
     }
   }, []);
 
-  const addFencer = useCallback(async (competitionId: string, fencer: FencerCreateData): Promise<Fencer> => {
-    try {
-      return await assertDB('addFencer')(competitionId, fencer);
-    } catch (err) {
-      logger.error(LogCategory.DATABASE, 'addFencer failed', err as Error);
-      throw err;
-    }
-  }, []);
+  const addFencer = useCallback(
+    async (competitionId: string, fencer: FencerCreateData): Promise<Fencer> => {
+      try {
+        return await assertDB('addFencer')(competitionId, fencer);
+      } catch (err) {
+        logger.error(LogCategory.DATABASE, 'addFencer failed', err as Error);
+        throw err;
+      }
+    },
+    []
+  );
 
   const updateFencer = useCallback(async (id: string, updates: FencerUpdateData): Promise<void> => {
     try {
@@ -161,23 +174,29 @@ export function useElectronDB() {
   }, []);
 
   // Session state
-  const saveSessionState = useCallback(async (competitionId: string, state: SessionState): Promise<void> => {
-    try {
-      await assertDB('saveSessionState')(competitionId, state);
-    } catch (err) {
-      logger.error(LogCategory.DATABASE, 'saveSessionState failed', err as Error);
-      throw err;
-    }
-  }, []);
+  const saveSessionState = useCallback(
+    async (competitionId: string, state: SessionState): Promise<void> => {
+      try {
+        await assertDB('saveSessionState')(competitionId, state);
+      } catch (err) {
+        logger.error(LogCategory.DATABASE, 'saveSessionState failed', err as Error);
+        throw err;
+      }
+    },
+    []
+  );
 
-  const getSessionState = useCallback(async (competitionId: string): Promise<SessionState | null> => {
-    try {
-      return await assertDB('getSessionState')(competitionId);
-    } catch (err) {
-      logger.error(LogCategory.DATABASE, 'getSessionState failed', err as Error);
-      throw err;
-    }
-  }, []);
+  const getSessionState = useCallback(
+    async (competitionId: string): Promise<SessionState | null> => {
+      try {
+        return await assertDB('getSessionState')(competitionId);
+      } catch (err) {
+        logger.error(LogCategory.DATABASE, 'getSessionState failed', err as Error);
+        throw err;
+      }
+    },
+    []
+  );
 
   // Stats
   const saveTouch = useCallback(async (touch: MatchTouchData): Promise<void> => {

@@ -129,10 +129,15 @@ const FencerListComponent: React.FC<FencerListProps> = ({
     });
     if (result && !result.canceled && result.filePath) {
       try {
-        const { count } = await window.electronAPI.file.exportPhotos(competitionId, result.filePath);
-        showPhotoMessage(`${count} photo${count !== 1 ? 's' : ''} exportée${count !== 1 ? 's' : ''}`);
+        const { count } = await window.electronAPI.file.exportPhotos(
+          competitionId,
+          result.filePath
+        );
+        showPhotoMessage(
+          `${count} photo${count !== 1 ? 's' : ''} exportée${count !== 1 ? 's' : ''}`
+        );
       } catch {
-        showPhotoMessage('Erreur lors de l\'export');
+        showPhotoMessage("Erreur lors de l'export");
       }
     }
   };
@@ -145,10 +150,15 @@ const FencerListComponent: React.FC<FencerListProps> = ({
     });
     if (result && result.filePath) {
       try {
-        const { matched, total } = await window.electronAPI.file.importPhotos(competitionId, result.filePath);
-        showPhotoMessage(`${matched}/${total} photo${total !== 1 ? 's' : ''} importée${total !== 1 ? 's' : ''}`);
+        const { matched, total } = await window.electronAPI.file.importPhotos(
+          competitionId,
+          result.filePath
+        );
+        showPhotoMessage(
+          `${matched}/${total} photo${total !== 1 ? 's' : ''} importée${total !== 1 ? 's' : ''}`
+        );
       } catch {
-        showPhotoMessage('Erreur lors de l\'import');
+        showPhotoMessage("Erreur lors de l'import");
       }
     }
   };
@@ -162,10 +172,15 @@ const FencerListComponent: React.FC<FencerListProps> = ({
     });
     if (result && !result.canceled && result.filePath) {
       try {
-        const { count } = await window.electronAPI.file.exportFencersArchive(competitionId, result.filePath);
-        showPhotoMessage(`${count} tireur${count !== 1 ? 's' : ''} exporté${count !== 1 ? 's' : ''} (.bpf)`);
+        const { count } = await window.electronAPI.file.exportFencersArchive(
+          competitionId,
+          result.filePath
+        );
+        showPhotoMessage(
+          `${count} tireur${count !== 1 ? 's' : ''} exporté${count !== 1 ? 's' : ''} (.bpf)`
+        );
       } catch {
-        showPhotoMessage('Erreur lors de l\'export .bpf');
+        showPhotoMessage("Erreur lors de l'export .bpf");
       }
     }
   };
@@ -178,11 +193,14 @@ const FencerListComponent: React.FC<FencerListProps> = ({
     });
     if (result && result.filePath) {
       try {
-        const { added, updated } = await window.electronAPI.file.importFencersArchive(competitionId, result.filePath);
+        const { added, updated } = await window.electronAPI.file.importFencersArchive(
+          competitionId,
+          result.filePath
+        );
         showPhotoMessage(`${added} ajouté${added !== 1 ? 's' : ''}, ${updated} mis à jour (.bpf)`);
         if (onFencersImported) onFencersImported();
       } catch {
-        showPhotoMessage('Erreur lors de l\'import .bpf');
+        showPhotoMessage("Erreur lors de l'import .bpf");
       }
     }
   };
@@ -319,7 +337,10 @@ const FencerListComponent: React.FC<FencerListProps> = ({
       </div>
 
       {photoMessage && (
-        <div className="alert alert-success mb-4" style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}>
+        <div
+          className="alert alert-success mb-4"
+          style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
+        >
           {photoMessage}
         </div>
       )}

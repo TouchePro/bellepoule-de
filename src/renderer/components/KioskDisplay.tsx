@@ -48,9 +48,8 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
   // Déterminer la vue initiale selon les données disponibles
   const initialView = useMemo((): KioskView => {
     if (tableauMatches.length > 0) return 'tableau';
-    const allDone = pools.length > 0 && pools.every(p =>
-      p.matches.every(m => m.status === MatchStatus.FINISHED)
-    );
+    const allDone =
+      pools.length > 0 && pools.every(p => p.matches.every(m => m.status === MatchStatus.FINISHED));
     if (allDone) return 'ranking';
     return 'pools';
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -81,9 +80,7 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
 
   // Round actif du tableau
   const activeRound = useMemo(() => {
-    const incomplete = tableauMatches.filter(
-      m => m.fencerA && m.fencerB && !m.winner && !m.isBye
-    );
+    const incomplete = tableauMatches.filter(m => m.fencerA && m.fencerB && !m.winner && !m.isBye);
     if (incomplete.length === 0) return null;
     return Math.max(...incomplete.map(m => m.round));
   }, [tableauMatches]);
@@ -142,7 +139,12 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
       if (roundMatches.length === 0) break;
       for (const m of roundMatches) {
         const loser = m.fencerA?.id === m.winner!.id ? m.fencerB : m.fencerA;
-        if (loser) results.push({ place: currentPlace, fencer: loser, eliminatedAt: roundNames[round] || `Tour ${round}` });
+        if (loser)
+          results.push({
+            place: currentPlace,
+            fencer: loser,
+            eliminatedAt: roundNames[round] || `Tour ${round}`,
+          });
       }
       currentPlace += roundMatches.length;
     }
@@ -217,8 +219,13 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
       last = t;
       animId = requestAnimationFrame(step);
     };
-    delayId = setTimeout(() => { animId = requestAnimationFrame(step); }, 2000);
-    return () => { clearTimeout(delayId); cancelAnimationFrame(animId); };
+    delayId = setTimeout(() => {
+      animId = requestAnimationFrame(step);
+    }, 2000);
+    return () => {
+      clearTimeout(delayId);
+      cancelAnimationFrame(animId);
+    };
   }, [currentView, overallRanking]);
 
   // Auto-scroll tableau
@@ -242,8 +249,13 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
       last = t;
       animId = requestAnimationFrame(step);
     };
-    delayId = setTimeout(() => { animId = requestAnimationFrame(step); }, 2000);
-    return () => { clearTimeout(delayId); cancelAnimationFrame(animId); };
+    delayId = setTimeout(() => {
+      animId = requestAnimationFrame(step);
+    }, 2000);
+    return () => {
+      clearTimeout(delayId);
+      cancelAnimationFrame(animId);
+    };
   }, [currentView, activeRound]);
 
   // Données de la poule courante
@@ -305,27 +317,35 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
           transition: 'opacity 0.4s ease',
         }}
       >
-        <span style={{ fontSize: '1rem', color: '#94a3b8', marginRight: '0.5rem', fontWeight: 600 }}>
+        <span
+          style={{ fontSize: '1rem', color: '#94a3b8', marginRight: '0.5rem', fontWeight: 600 }}
+        >
           Mode Kiosk
         </span>
         <button
           style={btnStyle(currentView === 'pools', !hasPoolData)}
           disabled={!hasPoolData}
-          onClick={() => { if (hasPoolData) setCurrentView('pools'); }}
+          onClick={() => {
+            if (hasPoolData) setCurrentView('pools');
+          }}
         >
           🏆 Poules
         </button>
         <button
           style={btnStyle(currentView === 'ranking', !hasRankingData)}
           disabled={!hasRankingData}
-          onClick={() => { if (hasRankingData) setCurrentView('ranking'); }}
+          onClick={() => {
+            if (hasRankingData) setCurrentView('ranking');
+          }}
         >
           📊 Classement
         </button>
         <button
           style={btnStyle(currentView === 'tableau', !hasTableauData)}
           disabled={!hasTableauData}
-          onClick={() => { if (hasTableauData) setCurrentView('tableau'); }}
+          onClick={() => {
+            if (hasTableauData) setCurrentView('tableau');
+          }}
         >
           🥇 Tableau
         </button>
@@ -349,11 +369,24 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
 
       {/* ===== VUE POULES ===== */}
       {currentView === 'pools' && currentPool && (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '70px 40px 40px' }}>
+        <div
+          style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '70px 40px 40px' }}
+        >
           {/* Header poule */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '2px solid #334155', paddingBottom: '20px' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '24px',
+              borderBottom: '2px solid #334155',
+              paddingBottom: '20px',
+            }}
+          >
             <div>
-              <h1 style={{ margin: 0, fontSize: '2.2rem', fontWeight: 'bold' }}>{competition.title}</h1>
+              <h1 style={{ margin: 0, fontSize: '2.2rem', fontWeight: 'bold' }}>
+                {competition.title}
+              </h1>
               <p style={{ margin: '8px 0 0', fontSize: '1.1rem', color: '#94a3b8' }}>
                 Poule {currentPool.number} / {pools.length}
                 <span style={{ marginLeft: '1rem', fontSize: '0.9rem' }}>
@@ -370,31 +403,70 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
           </div>
 
           {/* Barre de progression */}
-          <div style={{ width: '100%', height: '6px', backgroundColor: '#1e293b', borderRadius: '3px', marginBottom: '32px', overflow: 'hidden' }}>
-            <div style={{ width: `${poolProgress}%`, height: '100%', backgroundColor: '#3b82f6', transition: 'width 0.5s ease' }} />
+          <div
+            style={{
+              width: '100%',
+              height: '6px',
+              backgroundColor: '#1e293b',
+              borderRadius: '3px',
+              marginBottom: '32px',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                width: `${poolProgress}%`,
+                height: '100%',
+                backgroundColor: '#3b82f6',
+                transition: 'width 0.5s ease',
+              }}
+            />
           </div>
 
           {/* Contenu */}
           <div style={{ flex: 1, display: 'flex', gap: '24px', minHeight: 0 }}>
             {/* Classement poule */}
             <div style={{ flex: 1 }}>
-              <h2 style={{ marginBottom: '16px', fontSize: '1.3rem', color: '#94a3b8' }}>Classement</h2>
+              <h2 style={{ marginBottom: '16px', fontSize: '1.3rem', color: '#94a3b8' }}>
+                Classement
+              </h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {currentPool.ranking?.slice(0, 8).map((rank, i) => (
-                  <div key={rank.fencer.id} style={{
-                    display: 'flex', alignItems: 'center', padding: '16px',
-                    backgroundColor: i < 3 ? '#1e3a5f' : '#1e293b',
-                    borderRadius: '10px',
-                    border: i < 3 ? '2px solid #3b82f6' : '2px solid transparent',
-                  }}>
-                    <div style={{ width: '44px', height: '44px', borderRadius: '50%', backgroundColor: i < 3 ? '#3b82f6' : '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', fontWeight: 'bold', marginRight: '16px', flexShrink: 0 }}>
+                  <div
+                    key={rank.fencer.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '16px',
+                      backgroundColor: i < 3 ? '#1e3a5f' : '#1e293b',
+                      borderRadius: '10px',
+                      border: i < 3 ? '2px solid #3b82f6' : '2px solid transparent',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '44px',
+                        height: '44px',
+                        borderRadius: '50%',
+                        backgroundColor: i < 3 ? '#3b82f6' : '#475569',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '1.3rem',
+                        fontWeight: 'bold',
+                        marginRight: '16px',
+                        flexShrink: 0,
+                      }}
+                    >
                       {i + 1}
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: '1.3rem', fontWeight: 'bold' }}>
                         {rank.fencer.lastName} {rank.fencer.firstName}
                       </div>
-                      <div style={{ fontSize: '0.9rem', color: '#64748b' }}>{rank.fencer.club || 'Sans club'}</div>
+                      <div style={{ fontSize: '0.9rem', color: '#64748b' }}>
+                        {rank.fencer.club || 'Sans club'}
+                      </div>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
                       <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#3b82f6' }}>
@@ -414,22 +486,53 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
 
             {/* Matchs en cours */}
             <div style={{ width: '360px', flexShrink: 0 }}>
-              <h2 style={{ marginBottom: '16px', fontSize: '1.3rem', color: '#94a3b8' }}>Matchs en cours</h2>
+              <h2 style={{ marginBottom: '16px', fontSize: '1.3rem', color: '#94a3b8' }}>
+                Matchs en cours
+              </h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {currentPool.matches.filter(m => m.status === MatchStatus.IN_PROGRESS).slice(0, 4).map((match, idx) => (
-                  <div key={match.id} style={{ padding: '16px', backgroundColor: '#dc2626', borderRadius: '10px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '1.2rem', fontWeight: 'bold' }}>
-                      <span>{match.fencerA?.lastName || 'TBD'}</span>
-                      <span style={{ color: '#fca5a5', fontSize: '0.9rem' }}>VS</span>
-                      <span>{match.fencerB?.lastName || 'TBD'}</span>
+                {currentPool.matches
+                  .filter(m => m.status === MatchStatus.IN_PROGRESS)
+                  .slice(0, 4)
+                  .map((match, idx) => (
+                    <div
+                      key={match.id}
+                      style={{ padding: '16px', backgroundColor: '#dc2626', borderRadius: '10px' }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          fontSize: '1.2rem',
+                          fontWeight: 'bold',
+                        }}
+                      >
+                        <span>{match.fencerA?.lastName || 'TBD'}</span>
+                        <span style={{ color: '#fca5a5', fontSize: '0.9rem' }}>VS</span>
+                        <span>{match.fencerB?.lastName || 'TBD'}</span>
+                      </div>
+                      <div
+                        style={{
+                          textAlign: 'center',
+                          marginTop: '8px',
+                          fontSize: '1rem',
+                          color: '#fca5a5',
+                        }}
+                      >
+                        Piste {match.strip || idx + 1}
+                      </div>
                     </div>
-                    <div style={{ textAlign: 'center', marginTop: '8px', fontSize: '1rem', color: '#fca5a5' }}>
-                      Piste {match.strip || idx + 1}
-                    </div>
-                  </div>
-                ))}
-                {currentPool.matches.filter(m => m.status === MatchStatus.IN_PROGRESS).length === 0 && (
-                  <div style={{ padding: '32px', textAlign: 'center', color: '#64748b', fontSize: '1.1rem' }}>
+                  ))}
+                {currentPool.matches.filter(m => m.status === MatchStatus.IN_PROGRESS).length ===
+                  0 && (
+                  <div
+                    style={{
+                      padding: '32px',
+                      textAlign: 'center',
+                      color: '#64748b',
+                      fontSize: '1.1rem',
+                    }}
+                  >
                     Aucun match en cours
                   </div>
                 )}
@@ -439,9 +542,22 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
 
           {/* Navigation dots */}
           {pools.length > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '20px' }}>
+            <div
+              style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '20px' }}
+            >
               {pools.map((_, i) => (
-                <div key={i} onClick={() => setCurrentPoolIndex(i)} style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: i === currentPoolIndex ? '#3b82f6' : '#334155', cursor: 'pointer', transition: 'background 0.2s' }} />
+                <div
+                  key={i}
+                  onClick={() => setCurrentPoolIndex(i)}
+                  style={{
+                    width: '10px',
+                    height: '10px',
+                    borderRadius: '50%',
+                    backgroundColor: i === currentPoolIndex ? '#3b82f6' : '#334155',
+                    cursor: 'pointer',
+                    transition: 'background 0.2s',
+                  }}
+                />
               ))}
             </div>
           )}
@@ -450,20 +566,42 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
 
       {/* ===== VUE CLASSEMENT ===== */}
       {currentView === 'ranking' && (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '70px 40px 0', minHeight: 0 }}>
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            padding: '70px 40px 0',
+            minHeight: 0,
+          }}
+        >
           {/* Header */}
-          <div style={{ marginBottom: '24px', borderBottom: '2px solid #334155', paddingBottom: '16px', flexShrink: 0 }}>
+          <div
+            style={{
+              marginBottom: '24px',
+              borderBottom: '2px solid #334155',
+              paddingBottom: '16px',
+              flexShrink: 0,
+            }}
+          >
             <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: 'bold' }}>{competition.title}</h1>
             <p style={{ margin: '6px 0 0', fontSize: '1.1rem', color: '#94a3b8' }}>
-              Classement Provisoire · {overallRanking.length} tireur{overallRanking.length > 1 ? 's' : ''}
+              Classement Provisoire · {overallRanking.length} tireur
+              {overallRanking.length > 1 ? 's' : ''}
             </p>
           </div>
 
           {/* Tableau défilant */}
-          <div ref={rankingScrollRef} data-kiosk-scroll="" style={{ flex: 1, overflowY: 'auto', paddingBottom: '40px' }}>
+          <div
+            ref={rankingScrollRef}
+            data-kiosk-scroll=""
+            style={{ flex: 1, overflowY: 'auto', paddingBottom: '40px' }}
+          >
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '1.05rem' }}>
               <thead>
-                <tr style={{ color: '#64748b', textAlign: 'left', borderBottom: '1px solid #334155' }}>
+                <tr
+                  style={{ color: '#64748b', textAlign: 'left', borderBottom: '1px solid #334155' }}
+                >
                   <th style={{ padding: '10px 12px', width: '60px' }}>Rg</th>
                   <th style={{ padding: '10px 12px' }}>Nom</th>
                   <th style={{ padding: '10px 12px' }}>Prénom</th>
@@ -471,24 +609,72 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
                   <th style={{ padding: '10px 12px', textAlign: 'center', width: '70px' }}>V/M</th>
                   <th style={{ padding: '10px 12px', textAlign: 'center', width: '60px' }}>TD</th>
                   <th style={{ padding: '10px 12px', textAlign: 'center', width: '60px' }}>TR</th>
-                  {isLaserSabre && <th style={{ padding: '10px 12px', textAlign: 'center', width: '80px', color: '#a78bfa' }}>Quest</th>}
-                  <th style={{ padding: '10px 12px', textAlign: 'center', width: '70px' }}>Indice</th>
+                  {isLaserSabre && (
+                    <th
+                      style={{
+                        padding: '10px 12px',
+                        textAlign: 'center',
+                        width: '80px',
+                        color: '#a78bfa',
+                      }}
+                    >
+                      Quest
+                    </th>
+                  )}
+                  <th style={{ padding: '10px 12px', textAlign: 'center', width: '70px' }}>
+                    Indice
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {overallRanking.map((r, i) => (
-                  <tr key={r.fencer.id} style={{ borderBottom: '1px solid #1e293b', backgroundColor: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
-                    <td style={{ padding: '12px', fontWeight: 'bold', fontSize: '1.2rem', color: i < 3 ? '#3b82f6' : 'white' }}>
+                  <tr
+                    key={r.fencer.id}
+                    style={{
+                      borderBottom: '1px solid #1e293b',
+                      backgroundColor: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)',
+                    }}
+                  >
+                    <td
+                      style={{
+                        padding: '12px',
+                        fontWeight: 'bold',
+                        fontSize: '1.2rem',
+                        color: i < 3 ? '#3b82f6' : 'white',
+                      }}
+                    >
                       {r.rank}
                     </td>
-                    <td style={{ padding: '12px', fontWeight: 600, fontSize: '1.1rem' }}>{r.fencer.lastName}</td>
+                    <td style={{ padding: '12px', fontWeight: 600, fontSize: '1.1rem' }}>
+                      {r.fencer.lastName}
+                    </td>
                     <td style={{ padding: '12px', fontSize: '1.05rem' }}>{r.fencer.firstName}</td>
-                    <td style={{ padding: '12px', color: '#94a3b8', fontSize: '0.95rem' }}>{r.fencer.club || '–'}</td>
+                    <td style={{ padding: '12px', color: '#94a3b8', fontSize: '0.95rem' }}>
+                      {r.fencer.club || '–'}
+                    </td>
                     <td style={{ padding: '12px', textAlign: 'center' }}>{formatRatio(r.ratio)}</td>
                     <td style={{ padding: '12px', textAlign: 'center' }}>{r.touchesScored}</td>
                     <td style={{ padding: '12px', textAlign: 'center' }}>{r.touchesReceived}</td>
-                    {isLaserSabre && <td style={{ padding: '12px', textAlign: 'center', color: '#a78bfa', fontWeight: 600 }}>{r.questPoints || 0}</td>}
-                    <td style={{ padding: '12px', textAlign: 'center', fontWeight: 600, color: r.index >= 0 ? '#10b981' : '#f87171' }}>
+                    {isLaserSabre && (
+                      <td
+                        style={{
+                          padding: '12px',
+                          textAlign: 'center',
+                          color: '#a78bfa',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {r.questPoints || 0}
+                      </td>
+                    )}
+                    <td
+                      style={{
+                        padding: '12px',
+                        textAlign: 'center',
+                        fontWeight: 600,
+                        color: r.index >= 0 ? '#10b981' : '#f87171',
+                      }}
+                    >
                       {formatIndex(r.index)}
                     </td>
                   </tr>
@@ -501,73 +687,195 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
 
       {/* ===== VUE TABLEAU ===== */}
       {currentView === 'tableau' && (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '70px 40px 0', minHeight: 0 }}>
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            padding: '70px 40px 0',
+            minHeight: 0,
+          }}
+        >
           {/* Header */}
-          <div style={{ marginBottom: '24px', borderBottom: '2px solid #334155', paddingBottom: '16px', flexShrink: 0 }}>
+          <div
+            style={{
+              marginBottom: '24px',
+              borderBottom: '2px solid #334155',
+              paddingBottom: '16px',
+              flexShrink: 0,
+            }}
+          >
             <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: 'bold' }}>{competition.title}</h1>
             <p style={{ margin: '6px 0 0', fontSize: '1.3rem', color: '#3b82f6', fontWeight: 600 }}>
               {activeRound !== null
-                ? (roundNames[activeRound] || `Tour ${activeRound}`)
+                ? roundNames[activeRound] || `Tour ${activeRound}`
                 : 'Tableau terminé'}
             </p>
           </div>
 
           {/* Contenu */}
           {activeRound !== null ? (
-            <div ref={tableauScrollRef} data-kiosk-scroll="" style={{ flex: 1, overflowY: 'auto', paddingBottom: '40px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '16px' }}>
+            <div
+              ref={tableauScrollRef}
+              data-kiosk-scroll=""
+              style={{ flex: 1, overflowY: 'auto', paddingBottom: '40px' }}
+            >
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))',
+                  gap: '16px',
+                }}
+              >
                 {activeRoundMatches.map(match => {
                   if (match.isBye) {
                     return (
-                      <div key={match.id} style={{ padding: '20px 24px', backgroundColor: '#1e293b', borderRadius: '12px', border: '1px solid #334155', opacity: 0.5 }}>
-                        <div style={{ textAlign: 'center', color: '#64748b', fontSize: '1rem' }}>EXEMPT</div>
-                        <div style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '1.2rem', marginTop: '4px' }}>
+                      <div
+                        key={match.id}
+                        style={{
+                          padding: '20px 24px',
+                          backgroundColor: '#1e293b',
+                          borderRadius: '12px',
+                          border: '1px solid #334155',
+                          opacity: 0.5,
+                        }}
+                      >
+                        <div style={{ textAlign: 'center', color: '#64748b', fontSize: '1rem' }}>
+                          EXEMPT
+                        </div>
+                        <div
+                          style={{
+                            textAlign: 'center',
+                            fontWeight: 'bold',
+                            fontSize: '1.2rem',
+                            marginTop: '4px',
+                          }}
+                        >
                           {match.fencerA?.lastName || match.fencerB?.lastName || '–'}
                         </div>
                       </div>
                     );
                   }
 
-                  const winnerIsA = match.winner && match.fencerA && match.winner.id === match.fencerA.id;
-                  const winnerIsB = match.winner && match.fencerB && match.winner.id === match.fencerB.id;
+                  const winnerIsA =
+                    match.winner && match.fencerA && match.winner.id === match.fencerA.id;
+                  const winnerIsB =
+                    match.winner && match.fencerB && match.winner.id === match.fencerB.id;
                   const isFinished = match.winner !== null;
 
                   return (
-                    <div key={match.id} style={{ padding: '20px 24px', backgroundColor: '#1e293b', borderRadius: '12px', border: `2px solid ${isFinished ? '#334155' : '#3b82f6'}` }}>
+                    <div
+                      key={match.id}
+                      style={{
+                        padding: '20px 24px',
+                        backgroundColor: '#1e293b',
+                        borderRadius: '12px',
+                        border: `2px solid ${isFinished ? '#334155' : '#3b82f6'}`,
+                      }}
+                    >
                       {/* Tireur A */}
-                      <div style={{
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        padding: '10px 12px', borderRadius: '8px', marginBottom: '6px',
-                        backgroundColor: winnerIsA ? 'rgba(16,185,129,0.2)' : winnerIsB ? 'rgba(255,255,255,0.03)' : 'transparent',
-                        border: winnerIsA ? '1px solid #10b981' : '1px solid transparent',
-                      }}>
-                        <span style={{ fontSize: '1.2rem', fontWeight: 600, color: winnerIsB ? '#475569' : 'white' }}>
-                          {match.fencerA ? `${match.fencerA.lastName} ${match.fencerA.firstName.charAt(0)}.` : 'À déterminer'}
-                          {match.fencerA?.club && <span style={{ fontSize: '0.8rem', color: '#64748b', marginLeft: '8px' }}>{match.fencerA.club}</span>}
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          marginBottom: '6px',
+                          backgroundColor: winnerIsA
+                            ? 'rgba(16,185,129,0.2)'
+                            : winnerIsB
+                              ? 'rgba(255,255,255,0.03)'
+                              : 'transparent',
+                          border: winnerIsA ? '1px solid #10b981' : '1px solid transparent',
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: '1.2rem',
+                            fontWeight: 600,
+                            color: winnerIsB ? '#475569' : 'white',
+                          }}
+                        >
+                          {match.fencerA
+                            ? `${match.fencerA.lastName} ${match.fencerA.firstName.charAt(0)}.`
+                            : 'À déterminer'}
+                          {match.fencerA?.club && (
+                            <span
+                              style={{ fontSize: '0.8rem', color: '#64748b', marginLeft: '8px' }}
+                            >
+                              {match.fencerA.club}
+                            </span>
+                          )}
                         </span>
                         {isFinished && match.scoreA !== null && (
-                          <span style={{ fontSize: '1.6rem', fontWeight: 'bold', color: winnerIsA ? '#10b981' : '#475569' }}>
+                          <span
+                            style={{
+                              fontSize: '1.6rem',
+                              fontWeight: 'bold',
+                              color: winnerIsA ? '#10b981' : '#475569',
+                            }}
+                          >
                             {match.scoreA}
                           </span>
                         )}
                       </div>
 
                       {/* Séparateur */}
-                      <div style={{ textAlign: 'center', fontSize: '0.75rem', color: '#475569', margin: '2px 0' }}>VS</div>
+                      <div
+                        style={{
+                          textAlign: 'center',
+                          fontSize: '0.75rem',
+                          color: '#475569',
+                          margin: '2px 0',
+                        }}
+                      >
+                        VS
+                      </div>
 
                       {/* Tireur B */}
-                      <div style={{
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        padding: '10px 12px', borderRadius: '8px', marginTop: '6px',
-                        backgroundColor: winnerIsB ? 'rgba(16,185,129,0.2)' : winnerIsA ? 'rgba(255,255,255,0.03)' : 'transparent',
-                        border: winnerIsB ? '1px solid #10b981' : '1px solid transparent',
-                      }}>
-                        <span style={{ fontSize: '1.2rem', fontWeight: 600, color: winnerIsA ? '#475569' : 'white' }}>
-                          {match.fencerB ? `${match.fencerB.lastName} ${match.fencerB.firstName.charAt(0)}.` : 'À déterminer'}
-                          {match.fencerB?.club && <span style={{ fontSize: '0.8rem', color: '#64748b', marginLeft: '8px' }}>{match.fencerB.club}</span>}
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          marginTop: '6px',
+                          backgroundColor: winnerIsB
+                            ? 'rgba(16,185,129,0.2)'
+                            : winnerIsA
+                              ? 'rgba(255,255,255,0.03)'
+                              : 'transparent',
+                          border: winnerIsB ? '1px solid #10b981' : '1px solid transparent',
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: '1.2rem',
+                            fontWeight: 600,
+                            color: winnerIsA ? '#475569' : 'white',
+                          }}
+                        >
+                          {match.fencerB
+                            ? `${match.fencerB.lastName} ${match.fencerB.firstName.charAt(0)}.`
+                            : 'À déterminer'}
+                          {match.fencerB?.club && (
+                            <span
+                              style={{ fontSize: '0.8rem', color: '#64748b', marginLeft: '8px' }}
+                            >
+                              {match.fencerB.club}
+                            </span>
+                          )}
                         </span>
                         {isFinished && match.scoreB !== null && (
-                          <span style={{ fontSize: '1.6rem', fontWeight: 'bold', color: winnerIsB ? '#10b981' : '#475569' }}>
+                          <span
+                            style={{
+                              fontSize: '1.6rem',
+                              fontWeight: 'bold',
+                              color: winnerIsB ? '#10b981' : '#475569',
+                            }}
+                          >
                             {match.scoreB}
                           </span>
                         )}
@@ -579,76 +887,265 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
             </div>
           ) : (
             /* Tableau terminé – podium + classement */
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, gap: '24px' }}>
+            <div
+              style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                minHeight: 0,
+                gap: '24px',
+              }}
+            >
               {/* Titre */}
-              <div style={{ textAlign: 'center', fontSize: '1.4rem', fontWeight: 700, color: '#fbbf24', letterSpacing: '0.05em', flexShrink: 0 }}>
+              <div
+                style={{
+                  textAlign: 'center',
+                  fontSize: '1.4rem',
+                  fontWeight: 700,
+                  color: '#fbbf24',
+                  letterSpacing: '0.05em',
+                  flexShrink: 0,
+                }}
+              >
                 🏆 RÉSULTATS FINAUX
               </div>
 
               {/* Podium visuel */}
               {podium ? (
-                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '16px', flexShrink: 0 }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-end',
+                    justifyContent: 'center',
+                    gap: '16px',
+                    flexShrink: 0,
+                  }}
+                >
                   {/* 2e place */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
                     <div style={{ fontSize: '2.2rem' }}>🥈</div>
-                    <div style={{ fontWeight: 700, fontSize: '1.2rem', textAlign: 'center', maxWidth: '200px' }}>
+                    <div
+                      style={{
+                        fontWeight: 700,
+                        fontSize: '1.2rem',
+                        textAlign: 'center',
+                        maxWidth: '200px',
+                      }}
+                    >
                       {podium.second ? `${podium.second.lastName} ${podium.second.firstName}` : '–'}
                     </div>
-                    {podium.second?.club && <div style={{ fontSize: '0.85rem', color: '#94a3b8', textAlign: 'center' }}>{podium.second.club}</div>}
-                    <div style={{ width: '180px', height: '80px', backgroundColor: '#475569', borderRadius: '6px 6px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: 800, color: '#94a3b8' }}>2</div>
+                    {podium.second?.club && (
+                      <div style={{ fontSize: '0.85rem', color: '#94a3b8', textAlign: 'center' }}>
+                        {podium.second.club}
+                      </div>
+                    )}
+                    <div
+                      style={{
+                        width: '180px',
+                        height: '80px',
+                        backgroundColor: '#475569',
+                        borderRadius: '6px 6px 0 0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '1.4rem',
+                        fontWeight: 800,
+                        color: '#94a3b8',
+                      }}
+                    >
+                      2
+                    </div>
                   </div>
                   {/* 1re place */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
                     <div style={{ fontSize: '3rem' }}>🥇</div>
-                    <div style={{ fontWeight: 800, fontSize: '1.5rem', textAlign: 'center', maxWidth: '220px', color: '#fbbf24' }}>
+                    <div
+                      style={{
+                        fontWeight: 800,
+                        fontSize: '1.5rem',
+                        textAlign: 'center',
+                        maxWidth: '220px',
+                        color: '#fbbf24',
+                      }}
+                    >
                       {podium.first.lastName} {podium.first.firstName}
                     </div>
-                    {podium.first.club && <div style={{ fontSize: '0.9rem', color: '#fbbf24', opacity: 0.8, textAlign: 'center' }}>{podium.first.club}</div>}
-                    <div style={{ width: '200px', height: '120px', backgroundColor: '#b45309', borderRadius: '6px 6px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 800, color: '#fbbf24' }}>1</div>
+                    {podium.first.club && (
+                      <div
+                        style={{
+                          fontSize: '0.9rem',
+                          color: '#fbbf24',
+                          opacity: 0.8,
+                          textAlign: 'center',
+                        }}
+                      >
+                        {podium.first.club}
+                      </div>
+                    )}
+                    <div
+                      style={{
+                        width: '200px',
+                        height: '120px',
+                        backgroundColor: '#b45309',
+                        borderRadius: '6px 6px 0 0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '2rem',
+                        fontWeight: 800,
+                        color: '#fbbf24',
+                      }}
+                    >
+                      1
+                    </div>
                   </div>
                   {/* 3e place */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
                     <div style={{ fontSize: '2.2rem' }}>🥉</div>
-                    <div style={{ fontWeight: 700, fontSize: '1.2rem', textAlign: 'center', maxWidth: '200px' }}>
+                    <div
+                      style={{
+                        fontWeight: 700,
+                        fontSize: '1.2rem',
+                        textAlign: 'center',
+                        maxWidth: '200px',
+                      }}
+                    >
                       {podium.third ? `${podium.third.lastName} ${podium.third.firstName}` : '–'}
                     </div>
-                    {podium.third?.club && <div style={{ fontSize: '0.85rem', color: '#94a3b8', textAlign: 'center' }}>{podium.third.club}</div>}
-                    <div style={{ width: '180px', height: '60px', backgroundColor: '#713f12', borderRadius: '6px 6px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: 800, color: '#d97706' }}>3</div>
+                    {podium.third?.club && (
+                      <div style={{ fontSize: '0.85rem', color: '#94a3b8', textAlign: 'center' }}>
+                        {podium.third.club}
+                      </div>
+                    )}
+                    <div
+                      style={{
+                        width: '180px',
+                        height: '60px',
+                        backgroundColor: '#713f12',
+                        borderRadius: '6px 6px 0 0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '1.4rem',
+                        fontWeight: 800,
+                        color: '#d97706',
+                      }}
+                    >
+                      3
+                    </div>
                   </div>
                 </div>
               ) : (
-                <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: '1.3rem' }}>Tableau terminé</div>
+                <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: '1.3rem' }}>
+                  Tableau terminé
+                </div>
               )}
 
               {/* Classement général */}
               {elimRanking.length > 0 && (
-                <div ref={tableauScrollRef} style={{ flex: 1, overflowY: 'hidden', borderTop: '1px solid #334155', paddingTop: '16px' }}>
-                  <div style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px', paddingLeft: '4px' }}>
+                <div
+                  ref={tableauScrollRef}
+                  style={{
+                    flex: 1,
+                    overflowY: 'hidden',
+                    borderTop: '1px solid #334155',
+                    paddingTop: '16px',
+                  }}
+                >
+                  <div
+                    style={{
+                      color: '#64748b',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                      marginBottom: '10px',
+                      paddingLeft: '4px',
+                    }}
+                  >
                     Classement général
                   </div>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '1rem' }}>
                     <thead>
-                      <tr style={{ color: '#64748b', textAlign: 'left', borderBottom: '1px solid #334155' }}>
+                      <tr
+                        style={{
+                          color: '#64748b',
+                          textAlign: 'left',
+                          borderBottom: '1px solid #334155',
+                        }}
+                      >
                         <th style={{ padding: '6px 10px', width: '50px' }}>Rg</th>
                         <th style={{ padding: '6px 10px' }}>Nom</th>
                         <th style={{ padding: '6px 10px' }}>Prénom</th>
                         <th style={{ padding: '6px 10px' }}>Club</th>
-                        <th style={{ padding: '6px 10px', color: '#475569', fontStyle: 'italic' }}>Éliminé en</th>
+                        <th style={{ padding: '6px 10px', color: '#475569', fontStyle: 'italic' }}>
+                          Éliminé en
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
-                      {elimRanking.map((r) => {
+                      {elimRanking.map(r => {
                         const medals: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
                         const isTop3 = r.place <= 3;
                         return (
-                          <tr key={r.fencer.id} style={{ borderBottom: '1px solid #1e293b', backgroundColor: isTop3 ? 'rgba(251,191,36,0.06)' : 'transparent' }}>
-                            <td style={{ padding: '8px 10px', fontWeight: 'bold', fontSize: '1.1rem' }}>
-                              {medals[r.place] ?? <span style={{ color: '#64748b' }}>{r.place}</span>}
+                          <tr
+                            key={r.fencer.id}
+                            style={{
+                              borderBottom: '1px solid #1e293b',
+                              backgroundColor: isTop3 ? 'rgba(251,191,36,0.06)' : 'transparent',
+                            }}
+                          >
+                            <td
+                              style={{
+                                padding: '8px 10px',
+                                fontWeight: 'bold',
+                                fontSize: '1.1rem',
+                              }}
+                            >
+                              {medals[r.place] ?? (
+                                <span style={{ color: '#64748b' }}>{r.place}</span>
+                              )}
                             </td>
-                            <td style={{ padding: '8px 10px', fontWeight: 600 }}>{r.fencer.lastName}</td>
+                            <td style={{ padding: '8px 10px', fontWeight: 600 }}>
+                              {r.fencer.lastName}
+                            </td>
                             <td style={{ padding: '8px 10px' }}>{r.fencer.firstName}</td>
-                            <td style={{ padding: '8px 10px', color: '#94a3b8', fontSize: '0.9rem' }}>{r.fencer.club || '–'}</td>
-                            <td style={{ padding: '8px 10px', color: '#475569', fontSize: '0.85rem', fontStyle: 'italic' }}>{r.eliminatedAt}</td>
+                            <td
+                              style={{ padding: '8px 10px', color: '#94a3b8', fontSize: '0.9rem' }}
+                            >
+                              {r.fencer.club || '–'}
+                            </td>
+                            <td
+                              style={{
+                                padding: '8px 10px',
+                                color: '#475569',
+                                fontSize: '0.85rem',
+                                fontStyle: 'italic',
+                              }}
+                            >
+                              {r.eliminatedAt}
+                            </td>
                           </tr>
                         );
                       })}

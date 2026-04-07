@@ -392,10 +392,12 @@ export function calculateTableRanking(table: DirectEliminationTable): TableRanki
     if (!node.match || node.match.status !== MatchStatus.FINISHED) continue;
     const scoreA = node.match.scoreA;
     const scoreB = node.match.scoreB;
-    const valA = typeof scoreA === 'number' ? scoreA : (scoreA as any)?.value ?? 0;
-    const valB = typeof scoreB === 'number' ? scoreB : (scoreB as any)?.value ?? 0;
-    if (node.fencerA) tableTouchesMap.set(node.fencerA.id, (tableTouchesMap.get(node.fencerA.id) ?? 0) + valA);
-    if (node.fencerB) tableTouchesMap.set(node.fencerB.id, (tableTouchesMap.get(node.fencerB.id) ?? 0) + valB);
+    const valA = typeof scoreA === 'number' ? scoreA : ((scoreA as any)?.value ?? 0);
+    const valB = typeof scoreB === 'number' ? scoreB : ((scoreB as any)?.value ?? 0);
+    if (node.fencerA)
+      tableTouchesMap.set(node.fencerA.id, (tableTouchesMap.get(node.fencerA.id) ?? 0) + valA);
+    if (node.fencerB)
+      tableTouchesMap.set(node.fencerB.id, (tableTouchesMap.get(node.fencerB.id) ?? 0) + valB);
   }
 
   // Finale (place 1 et 2)

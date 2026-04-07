@@ -133,8 +133,8 @@ export interface MatchCardData {
 export interface MatchTimingData {
   matchId: string;
   startTime: string | null; // ISO 8601
-  endTime: string | null;   // ISO 8601
-  duration: number | null;  // secondes
+  endTime: string | null; // ISO 8601
+  duration: number | null; // secondes
 }
 
 export interface FencerMatchRecord {
@@ -314,7 +314,10 @@ export interface RemoteServerAPI {
     fencerA?: Fencer | null,
     fencerB?: Fencer | null
   ) => Promise<{ success: boolean; error?: string }>;
-  setArenaPassword: (arenaId: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  setArenaPassword: (
+    arenaId: string,
+    password: string
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 // ============================================================================
@@ -366,9 +369,15 @@ export interface FileAPI {
   import: (filepath: string) => Promise<FileOpenResult>;
   writeContent: (filepath: string, content: string) => Promise<void>;
   exportPhotos: (competitionId: string, filepath: string) => Promise<{ count: number }>;
-  importPhotos: (competitionId: string, filepath: string) => Promise<{ matched: number; total: number }>;
+  importPhotos: (
+    competitionId: string,
+    filepath: string
+  ) => Promise<{ matched: number; total: number }>;
   exportFencersArchive: (competitionId: string, filepath: string) => Promise<{ count: number }>;
-  importFencersArchive: (competitionId: string, filepath: string) => Promise<{ added: number; updated: number }>;
+  importFencersArchive: (
+    competitionId: string,
+    filepath: string
+  ) => Promise<{ added: number; updated: number }>;
 }
 
 export interface DialogAPI {

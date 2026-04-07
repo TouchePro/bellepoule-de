@@ -35,7 +35,11 @@ export class OfflineStorageManager {
       const request = indexedDB.open(this.dbName, this.dbVersion);
 
       request.onerror = () => {
-        logger.error(LogCategory.DATABASE, '[OfflineStorage] Failed to open database', request.error as Error);
+        logger.error(
+          LogCategory.DATABASE,
+          '[OfflineStorage] Failed to open database',
+          request.error as Error
+        );
         reject(request.error);
       };
 
@@ -145,7 +149,10 @@ export class OfflineStorageManager {
     };
 
     await this.store('pendingActions', pendingAction);
-    logger.debug(LogCategory.DATABASE, '[OfflineStorage] Added pending action', { id: pendingAction.id, type: pendingAction.type });
+    logger.debug(LogCategory.DATABASE, '[OfflineStorage] Added pending action', {
+      id: pendingAction.id,
+      type: pendingAction.type,
+    });
     return pendingAction.id;
   }
 

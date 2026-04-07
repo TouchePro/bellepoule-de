@@ -216,7 +216,7 @@ describe('calculatePoolRanking', () => {
     expect(ranking[1].victories).toBe(0);
   });
 
-  it('should exclude excluded, forfeit and abandoned fencers', () => {
+  it('should rank active fencer first and append excluded/forfeit/abandoned at the end', () => {
     const fencer1 = createMockFencer('f1', 1, 'Active');
     const fencer2 = createMockFencer('f2', 2, 'Excluded');
     const fencer3 = createMockFencer('f3', 3, 'Forfeit');
@@ -242,8 +242,11 @@ describe('calculatePoolRanking', () => {
 
     const ranking = calculatePoolRanking(pool);
 
-    expect(ranking).toHaveLength(1);
-    expect(ranking[0].fencer.id).toBe(fencer1.id);
+    expect(ranking).toHaveLength(4);
+    expect(ranking[0].fencer.id).toBe(fencer1.id); // tireur actif → rang 1
+    expect(ranking.find(r => r.fencer.id === fencer2.id)).toBeDefined(); // exclu présent
+    expect(ranking.find(r => r.fencer.id === fencer3.id)).toBeDefined(); // forfait présent
+    expect(ranking.find(r => r.fencer.id === fencer4.id)).toBeDefined(); // abandon présent
   });
 });
 
