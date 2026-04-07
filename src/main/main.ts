@@ -739,6 +739,15 @@ ipcMain.handle('dialog:saveFile', async (_, options) => {
   return dialog.showSaveDialog(mainWindow!, options);
 });
 
+// Print handler
+ipcMain.handle('window:print', () => {
+  return new Promise<void>((resolve) => {
+    mainWindow?.webContents.print({ silent: false, printBackground: true }, () => {
+      resolve();
+    });
+  });
+});
+
 // Shell handlers
 ipcMain.handle('shell:openExternal', async (_, url: string) => {
   // N'autoriser que les URLs https:// pour éviter les exploits via des schémas arbitraires

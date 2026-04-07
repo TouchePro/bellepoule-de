@@ -318,7 +318,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
         }}
       >
         <button
-          onClick={() => window.print()}
+          onClick={() => window.electronAPI.print()}
           style={{
             padding: '0.75rem 1.5rem',
             background: '#3b82f6',

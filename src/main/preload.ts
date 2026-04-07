@@ -321,6 +321,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onAutosaveFailed: (callback: () => void) => ipcRenderer.on('autosave:failed', callback),
 
   // Utility functions
+  print: () => ipcRenderer.invoke('window:print'),
   openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url),
   getVersionInfo: () => ipcRenderer.invoke('app:getVersionInfo'),
 
