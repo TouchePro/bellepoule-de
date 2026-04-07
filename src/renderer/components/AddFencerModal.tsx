@@ -115,7 +115,7 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
                 </select>
               </div>
               <div className="form-group">
-                <label className="form-label">Nationalité</label>
+                <label className="form-label">{t('fencer.nationality')}</label>
                 <input
                   type="text"
                   className="form-input"
@@ -128,7 +128,7 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Club</label>
+              <label className="form-label">{t('fencer.club')}</label>
               <input
                 type="text"
                 className="form-input"
@@ -140,7 +140,7 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div className="form-group">
-                <label className="form-label">Ligue</label>
+                <label className="form-label">{t('fencer.league')}</label>
                 <input
                   type="text"
                   className="form-input"
@@ -150,7 +150,7 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">Licence</label>
+                <label className="form-label">{t('fencer.license')}</label>
                 <input
                   type="text"
                   className="form-input"
@@ -162,7 +162,7 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Classement</label>
+              <label className="form-label">{t('fencer.ranking')}</label>
               <input
                 type="number"
                 className="form-input"
@@ -176,10 +176,10 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
 
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary" onClick={onClose}>
-              Annuler
+              {t('actions.cancel')}
             </button>
             <button type="submit" className="btn btn-primary">
-              Ajouter le tireur
+              {t('fencer.add')}
             </button>
           </div>
         </form>
