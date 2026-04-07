@@ -374,7 +374,7 @@ type CriterionKey = (f: Fencer) => string;
 
 /**
  * Distribue les tireurs dans les poules selon la méthode serpentine
- * en respectant les critères de séparation (club, ligue, nation)
+ * en respectant les critères de séparation (club, région, nation)
  *
  * Algorithme:
  * 1. Distribution serpentine pure: 1→2→3→...→8→8→7→6→...→1→1→2→...
@@ -386,7 +386,7 @@ export function distributeFencersToPoolsSerpentine(
   poolCount: number,
   separation: {
     byClub: boolean;
-    byLeague: boolean;
+    byRegion: boolean;
     byNation: boolean;
   }
 ): Fencer[][] {
@@ -427,21 +427,21 @@ export function distributeFencersToPoolsSerpentine(
     }
   }
 
-  // Résoudre les conflits par ordre de priorité : Club > Ligue > Nation
+  // Résoudre les conflits par ordre de priorité : Club > Région > Nation
   const clubKey: CriterionKey = f => f.club ?? '';
-  const leagueKey: CriterionKey = f => f.league ?? '';
+  const regionKey: CriterionKey = f => f.region ?? '';
   const nationKey: CriterionKey = f => f.nationality ?? '';
 
   if (separation.byClub) {
     resolveConflictsForCriterion(pools, clubKey, []);
   }
-  if (separation.byLeague) {
-    resolveConflictsForCriterion(pools, leagueKey, separation.byClub ? [clubKey] : []);
+  if (separation.byRegion) {
+    resolveConflictsForCriterion(pools, regionKey, separation.byClub ? [clubKey] : []);
   }
   if (separation.byNation) {
     resolveConflictsForCriterion(pools, nationKey, [
       ...(separation.byClub ? [clubKey] : []),
-      ...(separation.byLeague ? [leagueKey] : []),
+      ...(separation.byRegion ? [regionKey] : []),
     ]);
   }
 
@@ -452,7 +452,7 @@ export function distributeFencersToPoolsSerpentine(
 }
 
 /**
- * Résout les conflits pour un critère donné (club, ligue, nation) en échangeant des tireurs
+ * Résout les conflits pour un critère donné (club, région, nation) en échangeant des tireurs
  * entre poules tout en préservant au mieux l'équilibre de la serpentine.
  * Les critères de priorité supérieure (protectedCriteria) ne sont jamais aggravés.
  */
@@ -618,7 +618,7 @@ function canSwapResolveConflict(
  */
 function rebalancePools(
   pools: Fencer[][],
-  separation: { byClub: boolean; byLeague: boolean; byNation: boolean }
+  separation: { byClub: boolean; byRegion: boolean; byNation: boolean }
 ): void {
   const poolCount = pools.length;
   if (poolCount === 0) return;
@@ -662,14 +662,14 @@ function rebalancePools(
 
           // Vérifier que le déplacement ne crée pas de conflit sur les critères actifs
           const clubVal = fencer.club ?? '';
-          const leagueVal = fencer.league ?? '';
+          const regionVal = fencer.region ?? '';
           const wouldCreateConflict =
             (separation.byClub &&
               clubVal !== '' &&
               target.pool.some(f => (f.club ?? '') === clubVal)) ||
-            (separation.byLeague &&
-              leagueVal !== '' &&
-              target.pool.some(f => (f.league ?? '') === leagueVal)) ||
+            (separation.byRegion &&
+              regionVal !== '' &&
+              target.pool.some(f => (f.region ?? '') === regionVal)) ||
             (separation.byNation && target.pool.some(f => f.nationality === fencer.nationality));
 
           if (!wouldCreateConflict) {

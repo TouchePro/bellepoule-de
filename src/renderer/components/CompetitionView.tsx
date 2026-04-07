@@ -389,7 +389,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     const poolCount = calculateOptimalPoolCount(rankedFencers.length, 5, 7);
     const distribution = distributeFencersToPoolsSerpentine(rankedFencers, poolCount, {
       byClub: true,
-      byLeague: true,
+      byRegion: true,
       byNation: false,
     });
 
