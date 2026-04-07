@@ -18,7 +18,7 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
   const [firstName, setFirstName] = useState(fencer.firstName);
   const [gender, setGender] = useState<Gender>(fencer.gender);
   const [club, setClub] = useState(fencer.club || '');
-  const [league, setLeague] = useState(fencer.league || '');
+  const [region, setRegion] = useState(fencer.region || '');
   const [nationality, setNationality] = useState(fencer.nationality || 'FRA');
   const [license, setLicense] = useState(fencer.license || '');
   const [ranking, setRanking] = useState(fencer.ranking?.toString() || '');
@@ -33,7 +33,7 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
       firstName,
       gender,
       club: club || undefined,
-      league: league || undefined,
+      region: region || undefined,
       nationality,
       license: license || undefined,
       ranking: ranking ? parseInt(ranking) : undefined,
@@ -133,12 +133,12 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
-              <label className="form-label">Ligue</label>
+              <label className="form-label">Région</label>
               <input
                 type="text"
                 className="form-input"
-                value={league}
-                onChange={e => setLeague(e.target.value)}
+                value={region}
+                onChange={e => setRegion(e.target.value)}
                 placeholder="Ex: IDF"
               />
             </div>

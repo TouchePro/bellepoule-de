@@ -70,7 +70,7 @@ export const usePoolManagement = ({
       const poolCount = calculateOptimalPoolCount(checkedInFencers.length, 5, 7);
       const distribution = distributeFencersToPoolsSerpentine(checkedInFencers, poolCount, {
         byClub: true,
-        byLeague: true,
+        byRegion: true,
         byNation: false,
       });
 
@@ -189,7 +189,7 @@ export const usePoolManagement = ({
       const newPoolCount = calculateOptimalPoolCount(checkedInFencers.length, 5, 7);
       const distribution = distributeFencersToPoolsSerpentine(checkedInFencers, newPoolCount, {
         byClub: true,
-        byLeague: true,
+        byRegion: true,
         byNation: false,
       });
 

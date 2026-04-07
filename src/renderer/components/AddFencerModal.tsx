@@ -18,7 +18,7 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
   const [lastName, setLastName] = useState('');
   const [firstName, setFirstName] = useState('');
   const [club, setClub] = useState('');
-  const [league, setLeague] = useState('');
+  const [region, setRegion] = useState('');
   const [license, setLicense] = useState('');
   const [ranking, setRanking] = useState('');
   const [gender, setGender] = useState<Gender>(Gender.MALE);
@@ -37,7 +37,7 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
       lastName: lastName.trim().toUpperCase(),
       firstName: firstName.trim(),
       club: club.trim() || undefined,
-      league: league.trim() || undefined,
+      region: region.trim() || undefined,
       license: license.trim() || undefined,
       ranking: ranking ? parseInt(ranking, 10) : undefined,
       gender,
@@ -138,13 +138,13 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div className="form-group">
-                <label className="form-label">Ligue</label>
+                <label className="form-label">Région</label>
                 <input
                   type="text"
                   className="form-input"
                   placeholder="Île-de-France"
-                  value={league}
-                  onChange={e => setLeague(e.target.value)}
+                  value={region}
+                  onChange={e => setRegion(e.target.value)}
                 />
               </div>
               <div className="form-group">

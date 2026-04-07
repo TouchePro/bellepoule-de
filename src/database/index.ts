@@ -158,7 +158,7 @@ export class DatabaseManager {
         id TEXT PRIMARY KEY, competition_id TEXT NOT NULL,
         ref INTEGER NOT NULL, last_name TEXT NOT NULL, first_name TEXT NOT NULL,
         birth_date TEXT, gender TEXT NOT NULL, nationality TEXT DEFAULT 'FRA',
-        league TEXT, club TEXT, license TEXT, ranking INTEGER,
+        region TEXT, club TEXT, license TEXT, ranking INTEGER,
         status TEXT DEFAULT 'N', seed_number INTEGER, final_ranking INTEGER,
         pool_stats TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
       )
@@ -254,6 +254,13 @@ export class DatabaseManager {
       this.db.run(`ALTER TABLE fencers ADD COLUMN photo TEXT`);
     } catch {
       /* colonne déjà présente */
+    }
+
+    // Renommage league → region (migration idempotente)
+    try {
+      this.db.run(`ALTER TABLE fencers RENAME COLUMN league TO region`);
+    } catch {
+      /* colonne déjà renommée */
     }
 
     // Création des index pour optimiser les performances
@@ -561,7 +568,7 @@ export class DatabaseManager {
     try {
       this.db.run(
         `
-        INSERT INTO fencers (id, competition_id, ref, last_name, first_name, birth_date, gender, nationality, club, league, license, ranking, status, photo, created_at, updated_at)
+        INSERT INTO fencers (id, competition_id, ref, last_name, first_name, birth_date, gender, nationality, club, region, license, ranking, status, photo, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
         [
@@ -574,7 +581,7 @@ export class DatabaseManager {
           fencer.gender || 'M',
           fencer.nationality || 'FRA',
           fencer.club || null,
-          fencer.league || null,
+          fencer.region || null,
           fencer.license || null,
           fencer.ranking || null,
           fencer.status || 'N',
@@ -626,7 +633,7 @@ export class DatabaseManager {
         birthDate: row.birth_date ? new Date(row.birth_date as string) : undefined,
         gender: row.gender as Gender,
         nationality: row.nationality as string,
-        league: row.league as string,
+        region: row.region as string,
         club: row.club as string,
         license: row.license as string,
         ranking: row.ranking as number,
@@ -763,7 +770,7 @@ export class DatabaseManager {
       gender: 'gender',
       nationality: 'nationality',
       club: 'club',
-      league: 'league',
+      region: 'region',
       license: 'license',
       ranking: 'ranking',
       status: 'status',

@@ -58,7 +58,7 @@ export const OFFICIAL_TEMPLATES: TournamentTemplate[] = [
       seeding: 'serpentine',
       separation: {
         byClub: true,
-        byLeague: true,
+        byRegion: true,
         byNation: false,
       },
     },
@@ -90,7 +90,7 @@ export const OFFICIAL_TEMPLATES: TournamentTemplate[] = [
       seeding: 'serpentine',
       separation: {
         byClub: true,
-        byLeague: true,
+        byRegion: true,
         byNation: false,
       },
     },
@@ -122,7 +122,7 @@ export const OFFICIAL_TEMPLATES: TournamentTemplate[] = [
       seeding: 'serpentine',
       separation: {
         byClub: true,
-        byLeague: true,
+        byRegion: true,
         byNation: false,
       },
     },
@@ -154,7 +154,7 @@ export const OFFICIAL_TEMPLATES: TournamentTemplate[] = [
       seeding: 'serpentine',
       separation: {
         byClub: false,
-        byLeague: false,
+        byRegion: false,
         byNation: false,
       },
     },
@@ -186,7 +186,7 @@ export const OFFICIAL_TEMPLATES: TournamentTemplate[] = [
       seeding: 'serpentine',
       separation: {
         byClub: true,
-        byLeague: false,
+        byRegion: false,
         byNation: false,
       },
     },

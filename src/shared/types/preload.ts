@@ -48,7 +48,7 @@ export interface FencerCreateData {
   birthDate?: Date;
   gender: string;
   nationality: string;
-  league?: string;
+  region?: string;
   club?: string;
   license?: string;
   ranking?: number;
@@ -62,7 +62,7 @@ export interface FencerUpdateData {
   birthDate?: Date;
   gender?: string;
   nationality?: string;
-  league?: string;
+  region?: string;
   club?: string;
   license?: string;
   ranking?: number;

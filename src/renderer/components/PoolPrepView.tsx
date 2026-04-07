@@ -49,7 +49,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
 
   const [separationConfig, setSeparationConfig] = useState({
     byClub: true,
-    byLeague: true,
+    byRegion: true,
     byNation: false,
   });
 
@@ -480,7 +480,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
           {(
             [
               { key: 'byClub', label: 'Séparer par club' },
-              { key: 'byLeague', label: 'Séparer par ligue' },
+              { key: 'byRegion', label: 'Séparer par région' },
               { key: 'byNation', label: 'Séparer par nation' },
             ] as { key: keyof typeof separationConfig; label: string }[]
           ).map(({ key, label }) => (
