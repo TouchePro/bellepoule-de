@@ -24,6 +24,165 @@ let autoUpdater: AutoUpdater | null = null;
 // Main window reference
 let mainWindow: BrowserWindow | null = null;
 
+// Current UI language (kept in sync via IPC)
+let currentMenuLanguage = 'fr';
+
+// ============================================================================
+// Menu Translations
+// ============================================================================
+
+type MenuLang = 'fr' | 'en' | 'de';
+
+const MENU_LABELS: Record<MenuLang, Record<string, string>> = {
+  fr: {
+    file: 'Fichier',
+    newCompetition: 'Nouvelle compétition',
+    open: 'Ouvrir...',
+    save: 'Enregistrer',
+    saveAs: 'Enregistrer sous...',
+    export: 'Exporter',
+    exportXml: 'Exporter en XML (BellePoule)',
+    exportCsv: 'Exporter en CSV',
+    exportPdf: 'Exporter en PDF',
+    exportFencersTxt: 'Exporter tireurs (.txt)',
+    exportFencersFff: 'Exporter tireurs (.fff)',
+    exportFencersBpf: 'Exporter tireurs + photos (.bpf)',
+    import: 'Importer',
+    importXml: 'Importer XML (BellePoule)',
+    importFff: 'Importer liste FFE (.fff)',
+    importRanking: 'Importer classement FFE',
+    importFencersBpf: 'Importer tireurs + photos (.bpf)',
+    quit: 'Quitter',
+    edit: 'Édition',
+    undo: 'Annuler',
+    redo: 'Rétablir',
+    cut: 'Couper',
+    copy: 'Copier',
+    paste: 'Coller',
+    selectAll: 'Tout sélectionner',
+    competition: 'Compétition',
+    properties: 'Propriétés',
+    addFencer: 'Ajouter un tireur',
+    addReferee: 'Ajouter un arbitre',
+    startRemote: '⚡ Démarrer saisie distante',
+    stopRemote: '🛑 Arrêter saisie distante',
+    nextPhase: 'Tour suivant',
+    view: 'Affichage',
+    reload: 'Recharger',
+    forceReload: 'Forcer le rechargement',
+    devTools: 'Outils de développement',
+    resetZoom: 'Réinitialiser le zoom',
+    zoomIn: 'Zoom avant',
+    zoomOut: 'Zoom arrière',
+    fullscreen: 'Plein écran',
+    help: 'Aide',
+    about: 'À propos de BellePoule Modern',
+    updates: '🔄 Vérifier les mises à jour...',
+    updatesUnavailable: "Le système de mise à jour n'est pas disponible",
+    updatesTitle: 'Mises à jour',
+    docs: 'Documentation',
+    reportBug: '📝 Signaler un bug / Suggestion',
+  },
+  en: {
+    file: 'File',
+    newCompetition: 'New Competition',
+    open: 'Open...',
+    save: 'Save',
+    saveAs: 'Save As...',
+    export: 'Export',
+    exportXml: 'Export XML (BellePoule)',
+    exportCsv: 'Export CSV',
+    exportPdf: 'Export PDF',
+    exportFencersTxt: 'Export fencers (.txt)',
+    exportFencersFff: 'Export fencers (.fff)',
+    exportFencersBpf: 'Export fencers + photos (.bpf)',
+    import: 'Import',
+    importXml: 'Import XML (BellePoule)',
+    importFff: 'Import FFE list (.fff)',
+    importRanking: 'Import FFE ranking',
+    importFencersBpf: 'Import fencers + photos (.bpf)',
+    quit: 'Quit',
+    edit: 'Edit',
+    undo: 'Undo',
+    redo: 'Redo',
+    cut: 'Cut',
+    copy: 'Copy',
+    paste: 'Paste',
+    selectAll: 'Select All',
+    competition: 'Competition',
+    properties: 'Properties',
+    addFencer: 'Add Fencer',
+    addReferee: 'Add Referee',
+    startRemote: '⚡ Start Remote Scoring',
+    stopRemote: '🛑 Stop Remote Scoring',
+    nextPhase: 'Next Round',
+    view: 'View',
+    reload: 'Reload',
+    forceReload: 'Force Reload',
+    devTools: 'Developer Tools',
+    resetZoom: 'Reset Zoom',
+    zoomIn: 'Zoom In',
+    zoomOut: 'Zoom Out',
+    fullscreen: 'Toggle Fullscreen',
+    help: 'Help',
+    about: 'About BellePoule Modern',
+    updates: '🔄 Check for Updates...',
+    updatesUnavailable: 'Update system is not available',
+    updatesTitle: 'Updates',
+    docs: 'Documentation',
+    reportBug: '📝 Report a Bug / Suggestion',
+  },
+  de: {
+    file: 'Datei',
+    newCompetition: 'Neuer Wettkampf',
+    open: 'Öffnen...',
+    save: 'Speichern',
+    saveAs: 'Speichern unter...',
+    export: 'Exportieren',
+    exportXml: 'XML exportieren (BellePoule)',
+    exportCsv: 'CSV exportieren',
+    exportPdf: 'PDF exportieren',
+    exportFencersTxt: 'Fechter exportieren (.txt)',
+    exportFencersFff: 'Fechter exportieren (.fff)',
+    exportFencersBpf: 'Fechter + Fotos exportieren (.bpf)',
+    import: 'Importieren',
+    importXml: 'XML importieren (BellePoule)',
+    importFff: 'FFE-Liste importieren (.fff)',
+    importRanking: 'FFE-Rangliste importieren',
+    importFencersBpf: 'Fechter + Fotos importieren (.bpf)',
+    quit: 'Beenden',
+    edit: 'Bearbeiten',
+    undo: 'Rückgängig',
+    redo: 'Wiederholen',
+    cut: 'Ausschneiden',
+    copy: 'Kopieren',
+    paste: 'Einfügen',
+    selectAll: 'Alles auswählen',
+    competition: 'Wettkampf',
+    properties: 'Eigenschaften',
+    addFencer: 'Fechter hinzufügen',
+    addReferee: 'Schiedsrichter hinzufügen',
+    startRemote: '⚡ Fernpunkteingabe starten',
+    stopRemote: '🛑 Fernpunkteingabe stoppen',
+    nextPhase: 'Nächste Phase',
+    view: 'Ansicht',
+    reload: 'Neu laden',
+    forceReload: 'Vollständig neu laden',
+    devTools: 'Entwicklertools',
+    resetZoom: 'Zoom zurücksetzen',
+    zoomIn: 'Vergrößern',
+    zoomOut: 'Verkleinern',
+    fullscreen: 'Vollbild',
+    help: 'Hilfe',
+    about: 'Über BellePoule Modern',
+    updates: '🔄 Updates prüfen...',
+    updatesUnavailable: 'Das Update-System ist nicht verfügbar',
+    updatesTitle: 'Updates',
+    docs: 'Dokumentation',
+    reportBug: '📝 Bug melden / Vorschlag',
+  },
+};
+
 // ============================================================================
 // Version Information
 // ============================================================================
@@ -123,32 +282,47 @@ function createWindow(): void {
     mainWindow = null;
   });
 
-  // Create application menu
-  createMenu();
+  // Create application menu using saved language preference
+  mainWindow.webContents.once('did-finish-load', async () => {
+    try {
+      const savedLang = await mainWindow!.webContents.executeJavaScript(
+        'localStorage.getItem("bellepoule-language")'
+      );
+      if (savedLang && typeof savedLang === 'string') {
+        currentMenuLanguage = savedLang;
+      }
+    } catch {
+      // Fallback to default language
+    }
+    createMenu(currentMenuLanguage);
+  });
 }
 
 // ============================================================================
 // Application Menu
 // ============================================================================
 
-function createMenu(): void {
+function createMenu(language?: string): void {
+  const lang = (MENU_LABELS[language as MenuLang] ? language : 'fr') as MenuLang;
+  const L = MENU_LABELS[lang];
+
   const template: Electron.MenuItemConstructorOptions[] = [
     {
-      label: 'Fichier',
+      label: L.file,
       submenu: [
         {
-          label: 'Nouvelle compétition',
+          label: L.newCompetition,
           accelerator: 'CmdOrCtrl+N',
           click: () => mainWindow?.webContents.send('menu:new-competition'),
         },
         {
-          label: 'Ouvrir...',
+          label: L.open,
           accelerator: 'CmdOrCtrl+O',
           click: handleOpenFile,
         },
         { type: 'separator' },
         {
-          label: 'Enregistrer',
+          label: L.save,
           accelerator: 'CmdOrCtrl+S',
           click: () => {
             try {
@@ -162,118 +336,118 @@ function createMenu(): void {
           },
         },
         {
-          label: 'Enregistrer sous...',
+          label: L.saveAs,
           accelerator: 'CmdOrCtrl+Shift+S',
           click: handleSaveAs,
         },
         { type: 'separator' },
         {
-          label: 'Exporter',
+          label: L.export,
           submenu: [
-            { label: 'Exporter en XML (BellePoule)', click: () => handleExport('xml') },
-            { label: 'Exporter en CSV', click: () => handleExport('csv') },
-            { label: 'Exporter en PDF', click: () => handleExport('pdf') },
+            { label: L.exportXml, click: () => handleExport('xml') },
+            { label: L.exportCsv, click: () => handleExport('csv') },
+            { label: L.exportPdf, click: () => handleExport('pdf') },
             { type: 'separator' },
-            { label: 'Exporter tireurs (.txt)', click: () => handleExport('fencers-txt') },
-            { label: 'Exporter tireurs (.fff)', click: () => handleExport('fencers-fff') },
-            { label: 'Exporter tireurs + photos (.bpf)', click: () => handleExport('fencers-bpf') },
+            { label: L.exportFencersTxt, click: () => handleExport('fencers-txt') },
+            { label: L.exportFencersFff, click: () => handleExport('fencers-fff') },
+            { label: L.exportFencersBpf, click: () => handleExport('fencers-bpf') },
           ],
         },
         {
-          label: 'Importer',
+          label: L.import,
           submenu: [
-            { label: 'Importer XML (BellePoule)', click: () => handleImport('xml') },
-            { label: 'Importer liste FFE (.fff)', click: () => handleImport('fff') },
-            { label: 'Importer classement FFE', click: () => handleImport('ranking') },
-            { label: 'Importer tireurs + photos (.bpf)', click: () => handleImport('fencers-bpf') },
+            { label: L.importXml, click: () => handleImport('xml') },
+            { label: L.importFff, click: () => handleImport('fff') },
+            { label: L.importRanking, click: () => handleImport('ranking') },
+            { label: L.importFencersBpf, click: () => handleImport('fencers-bpf') },
           ],
         },
         { type: 'separator' },
         {
-          label: 'Quitter',
+          label: L.quit,
           accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Alt+F4',
           click: () => app.quit(),
         },
       ],
     },
     {
-      label: 'Édition',
+      label: L.edit,
       submenu: [
-        { role: 'undo', label: 'Annuler' },
-        { role: 'redo', label: 'Rétablir' },
+        { role: 'undo', label: L.undo },
+        { role: 'redo', label: L.redo },
         { type: 'separator' },
-        { role: 'cut', label: 'Couper' },
-        { role: 'copy', label: 'Copier' },
-        { role: 'paste', label: 'Coller' },
-        { role: 'selectAll', label: 'Tout sélectionner' },
+        { role: 'cut', label: L.cut },
+        { role: 'copy', label: L.copy },
+        { role: 'paste', label: L.paste },
+        { role: 'selectAll', label: L.selectAll },
       ],
     },
     {
-      label: 'Compétition',
+      label: L.competition,
       submenu: [
         {
-          label: 'Propriétés',
+          label: L.properties,
           click: () => mainWindow?.webContents.send('menu:competition-properties'),
         },
         { type: 'separator' },
         {
-          label: 'Ajouter un tireur',
+          label: L.addFencer,
           accelerator: 'CmdOrCtrl+T',
           click: () => mainWindow?.webContents.send('menu:add-fencer'),
         },
         {
-          label: 'Ajouter un arbitre',
+          label: L.addReferee,
           click: () => mainWindow?.webContents.send('menu:add-referee'),
         },
         { type: 'separator' },
         {
-          label: '⚡ Démarrer saisie distante',
+          label: L.startRemote,
           click: () => startRemoteScoreServer(),
         },
         {
-          label: '🛑 Arrêter saisie distante',
+          label: L.stopRemote,
           click: () => stopRemoteScoreServer(),
         },
         { type: 'separator' },
         {
-          label: 'Tour suivant',
+          label: L.nextPhase,
           accelerator: 'CmdOrCtrl+Right',
           click: () => mainWindow?.webContents.send('menu:next-phase'),
         },
       ],
     },
     {
-      label: 'Affichage',
+      label: L.view,
       submenu: [
-        { role: 'reload', label: 'Recharger' },
-        { role: 'forceReload', label: 'Forcer le rechargement' },
-        { role: 'toggleDevTools', label: 'Outils de développement' },
+        { role: 'reload', label: L.reload },
+        { role: 'forceReload', label: L.forceReload },
+        { role: 'toggleDevTools', label: L.devTools },
         { type: 'separator' },
-        { role: 'resetZoom', label: 'Réinitialiser le zoom' },
-        { role: 'zoomIn', label: 'Zoom avant' },
-        { role: 'zoomOut', label: 'Zoom arrière' },
+        { role: 'resetZoom', label: L.resetZoom },
+        { role: 'zoomIn', label: L.zoomIn },
+        { role: 'zoomOut', label: L.zoomOut },
         { type: 'separator' },
-        { role: 'togglefullscreen', label: 'Plein écran' },
+        { role: 'togglefullscreen', label: L.fullscreen },
       ],
     },
     {
-      label: 'Aide',
+      label: L.help,
       submenu: [
         {
-          label: 'À propos de BellePoule Modern',
+          label: L.about,
           accelerator: 'F1',
           click: showAbout,
         },
         {
-          label: '🔄 Vérifier les mises à jour...',
+          label: L.updates,
           click: async () => {
             if (autoUpdater) {
               await autoUpdater.showUpdateDialog();
             } else {
               dialog.showMessageBox(mainWindow!, {
                 type: 'warning',
-                title: 'Mises à jour',
-                message: "Le système de mise à jour n'est pas disponible",
+                title: L.updatesTitle,
+                message: L.updatesUnavailable,
                 buttons: ['OK'],
               });
             }
@@ -281,14 +455,13 @@ function createMenu(): void {
         },
         { type: 'separator' },
         {
-          label: 'Documentation',
+          label: L.docs,
           click: () => {
-            const { shell } = require('electron');
             shell.openExternal('https://github.com/klinnex/bellepoule-modern/wiki');
           },
         },
         {
-          label: '📝 Signaler un bug / Suggestion',
+          label: L.reportBug,
           accelerator: 'CmdOrCtrl+Shift+I',
           click: () => {
             mainWindow?.webContents.send('menu:report-issue');
@@ -298,7 +471,6 @@ function createMenu(): void {
         {
           label: 'GitHub',
           click: () => {
-            const { shell } = require('electron');
             shell.openExternal('https://github.com/klinnex/bellepoule-modern');
           },
         },
@@ -934,6 +1106,12 @@ ipcMain.handle('remote:setArenaPassword', async (_, arenaId: string, password: s
 // App info handlers
 ipcMain.handle('app:getVersionInfo', async () => {
   return getVersionInfo();
+});
+
+// Language change handler — rebuild native menu in the new language
+ipcMain.on('app:language-changed', (_, lang: string) => {
+  currentMenuLanguage = lang;
+  createMenu(lang);
 });
 
 // AutoUpdater handlers

@@ -416,4 +416,5 @@ export interface ElectronAPI extends MenuAPI, UtilityAPI {
   remote: RemoteServerAPI;
   onRemoteArenaUpdate: (callback: (data: any) => void) => void;
   onRemoteMatchFinished: (callback: (data: any) => void) => void;
+  notifyLanguageChanged: (lang: string) => void;
 }
