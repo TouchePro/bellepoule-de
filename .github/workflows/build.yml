@@ -186,6 +186,7 @@ jobs:
   build-linux-arm64:
     needs: increment-version
     runs-on: ubuntu-latest
+    continue-on-error: true
 
     steps:
       - uses: actions/checkout@v4
@@ -214,6 +215,7 @@ jobs:
           name: linux-arm64-appimage
           path: release/*.AppImage
           retention-days: 5
+          if-no-files-found: warn
 
   create-release:
     needs:

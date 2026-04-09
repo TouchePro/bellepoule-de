@@ -333,6 +333,7 @@ jobs:
   build-linux-arm64:
     needs: increment-version
     runs-on: ubuntu-latest
+    continue-on-error: true
 
     steps:
       - uses: actions/checkout@v4
@@ -396,6 +397,7 @@ jobs:
           name: linux-arm64-appimage-dev
           path: release/*-dev-*.AppImage
           retention-days: 7
+          if-no-files-found: warn
 
   create-dev-release:
     needs:
