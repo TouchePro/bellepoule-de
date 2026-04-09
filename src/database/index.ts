@@ -855,73 +855,32 @@ export class DatabaseManager {
     }
   }
 
-  public deleteAllFencers(competitionId: string): void {
-    if (!this.db) throw new Error('Database not open');
-
-    try {
-      // Supprimer les associations pool_fencers des tireurs de cette compétition
-      this.db.run(
-        `DELETE FROM pool_fencers WHERE fencer_id IN (SELECT id FROM fencers WHERE competition_id = ?)`,
-        [competitionId]
-      );
-      // Supprimer les matchs des tireurs de cette compétition
-      this.db.run(
-        `DELETE FROM matches WHERE fencer_a_id IN (SELECT id FROM fencers WHERE competition_id = ?) OR fencer_b_id IN (SELECT id FROM fencers WHERE competition_id = ?)`,
-        [competitionId, competitionId]
-      );
-      // Supprimer tous les tireurs
-      this.db.run('DELETE FROM fencers WHERE competition_id = ?', [competitionId]);
-
-      this.save();
-      console.log(`Tous les tireurs de la compétition ${competitionId} supprimés`);
-    } catch (error) {
-      console.error('Erreur lors de la suppression de tous les tireurs:', error);
-      throw error;
-    }
-  }
-
-  public deleteAllFencers(): void {
+  public deleteAllFencers(competitionId?: string): void {
     if (!this.db) throw new Error('Database not open');
     
-    console.log('Tentative de suppression de tous les tireurs');
-    
     try {
-      // Compter les tireurs avant suppression
-      const countStmt = this.db.prepare('SELECT COUNT(*) as count FROM fencers');
-      countStmt.bind([]);
-      const countRow = countStmt.getAsObject();
-      countStmt.step();
-      countStmt.free();
-      const fencerCount = countRow?.count || 0;
-      
-      if (fencerCount === 0) {
-        console.log('Aucun tireur à supprimer');
-        return;
+      if (competitionId) {
+        // Suppression filtrée par compétition
+        this.db.run(
+          `DELETE FROM pool_fencers WHERE fencer_id IN (SELECT id FROM fencers WHERE competition_id = ?)`,
+          [competitionId]
+        );
+        this.db.run(
+          `DELETE FROM matches WHERE fencer_a_id IN (SELECT id FROM fencers WHERE competition_id = ?) OR fencer_b_id IN (SELECT id FROM fencers WHERE competition_id = ?)`,
+          [competitionId, competitionId]
+        );
+        this.db.run('DELETE FROM fencers WHERE competition_id = ?', [competitionId]);
+        console.log(`Tous les tireurs de la compétition ${competitionId} supprimés`);
+      } else {
+        // Suppression de tous les tireurs
+        this.db.run('DELETE FROM pool_fencers');
+        this.db.run('DELETE FROM matches');
+        this.db.run('DELETE FROM fencers');
+        console.log('Tous les tireurs supprimés');
       }
-      
-      console.log(`${fencerCount} tireurs à supprimer`);
-      
-      // Supprimer d'abord toutes les associations pool_fencers
-      const poolFencerResult = this.db.run('DELETE FROM pool_fencers');
-      console.log('Associations pool_fencers supprimées:', poolFencerResult.changes);
-      
-      // Supprimer tous les matchs
-      const matchResult = this.db.run('DELETE FROM matches');
-      console.log('Matchs supprimés:', matchResult.changes);
-      
-      // Supprimer tous les tireurs
-      const result = this.db.run('DELETE FROM fencers');
-      console.log('Tireurs supprimés:', result.changes);
-      
-      // Vérifier que la suppression a réussi
-      if (result.changes !== fencerCount) {
-        console.warn(`Attention: ${result.changes} tireurs supprimés sur ${fencerCount} attendus`);
-      }
-      
       this.save();
-      console.log('Suppression de tous les tireurs terminée avec succès');
     } catch (error) {
-      console.error('Erreur lors de la suppression de tous les tireurs:', error);
+      console.error('Erreur lors de la suppression des tireurs:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
       throw new Error(`Erreur de base de données lors de la suppression des tireurs: ${errorMessage}`);
     }
@@ -1675,3 +1634,4 @@ export class DatabaseManager {
 }
 
 export const db = new DatabaseManager();
+
