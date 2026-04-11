@@ -285,7 +285,7 @@ export const usePoolManagement = ({
         await window.electronAPI.db
           .saveAbandonSnapshot(fencerId, competitionId, previousStatus, status, affectedSnapshots)
           .catch((e: Error) =>
-            logger.warn(LogCategory.DB, 'Snapshot abandon échoué', e)
+            logger.warn(LogCategory.DATABASE, 'Snapshot abandon échoué', e)
           );
       }
 
@@ -581,3 +581,4 @@ export const usePoolManagement = ({
 };
 
 export default usePoolManagement;
+
