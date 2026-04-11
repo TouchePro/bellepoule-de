@@ -272,12 +272,7 @@ export const usePoolManagement = ({
 
       const affectedSnapshots = pools.flatMap(pool =>
         pool.matches
-          .filter(m => {
-            const involved = m.fencerA?.id === fencerId || m.fencerB?.id === fencerId;
-            const alreadyPlayed =
-              m.status === MatchStatus.FINISHED && !m.scoreA?.isForfait && !m.scoreB?.isForfait;
-            return involved && !alreadyPlayed;
-          })
+          .filter(m => m.fencerA?.id === fencerId || m.fencerB?.id === fencerId)
           .map(m => ({
             matchId: m.id,
             status: m.status as string,
@@ -320,38 +315,44 @@ export const usePoolManagement = ({
 
             if (!isFencerA && !isFencerB) return;
 
-            // Ne pas écraser les matchs déjà disputés avec de vrais scores
+            // Ne pas écraser les matchs déjà disputés avec de vrais scores,
+            // mais propager quand même le statut forfait dans la référence fencer
+            // pour que calculateFencerPoolStats annule ces matchs pour les adversaires.
             const isAlreadyPlayed =
               match.status === MatchStatus.FINISHED &&
               !match.scoreA?.isForfait &&
               !match.scoreB?.isForfait;
-            if (isAlreadyPlayed) return;
 
-            // Mettre à jour le statut du tireur dans les références du match
             if (isFencerA && match.fencerA) {
               match.fencerA.status = newFencerStatus;
-              match.scoreA = {
-                value: 0,
-                isVictory: false,
-                isAbstention: status === 'abandon',
-                isExclusion: status === 'exclusion',
-                isForfait: status === 'forfait',
-              };
+              if (!isAlreadyPlayed) {
+                match.scoreA = {
+                  value: 0,
+                  isVictory: false,
+                  isAbstention: status === 'abandon',
+                  isExclusion: status === 'exclusion',
+                  isForfait: status === 'forfait',
+                };
+              }
             } else if (isFencerB && match.fencerB) {
               match.fencerB.status = newFencerStatus;
-              match.scoreB = {
-                value: 0,
-                isVictory: false,
-                isAbstention: status === 'abandon',
-                isExclusion: status === 'exclusion',
-                isForfait: status === 'forfait',
-              };
+              if (!isAlreadyPlayed) {
+                match.scoreB = {
+                  value: 0,
+                  isVictory: false,
+                  isAbstention: status === 'abandon',
+                  isExclusion: status === 'exclusion',
+                  isForfait: status === 'forfait',
+                };
+              }
             }
 
-            // Marquer le match comme terminé (non disputé)
-            match.status = MatchStatus.FINISHED;
-            match.updatedAt = new Date();
-            modifiedCount++;
+            if (!isAlreadyPlayed) {
+              // Marquer le match comme terminé (non disputé)
+              match.status = MatchStatus.FINISHED;
+              match.updatedAt = new Date();
+              modifiedCount++;
+            }
           });
 
           // Recalculer le classement de la poule
