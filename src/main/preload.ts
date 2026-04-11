@@ -23,6 +23,7 @@ import type {
   MatchTouchData,
   MatchCardData,
   MatchTimingData,
+  MatchSnapshot,
 } from '../shared/types/preload';
 
 // Input validation functions
@@ -219,6 +220,25 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }
       return ipcRenderer.invoke('db:getFencerHistory', fencerId);
     },
+    saveAbandonSnapshot: (
+      fencerId: string,
+      competitionId: string,
+      previousStatus: string,
+      abandonType: string,
+      snapshots: MatchSnapshot[]
+    ) =>
+      ipcRenderer.invoke(
+        'db:saveAbandonSnapshot',
+        fencerId,
+        competitionId,
+        previousStatus,
+        abandonType,
+        snapshots
+      ),
+    getAbandonSnapshot: (fencerId: string) =>
+      ipcRenderer.invoke('db:getAbandonSnapshot', fencerId),
+    deleteAbandonSnapshot: (fencerId: string) =>
+      ipcRenderer.invoke('db:deleteAbandonSnapshot', fencerId),
   },
 
   // File operations with validation

@@ -13,9 +13,11 @@ import {
   FencerStatus,
   Weapon,
   PoolRanking,
+  Score,
 } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
 import { useToast } from '../components/Toast';
+import type { AbandonSnapshot } from '../../shared/types/preload';
 import {
   distributeFencersToPoolsSerpentine,
   calculateOptimalPoolCount,
@@ -30,12 +32,14 @@ interface UsePoolManagementProps {
   isLaserSabre: boolean;
   poolMaxScore: number;
   showToast: ReturnType<typeof useToast>['showToast'];
+  competitionId?: string;
 }
 
 export const usePoolManagement = ({
   isLaserSabre,
   poolMaxScore,
   showToast,
+  competitionId,
 }: UsePoolManagementProps) => {
   const [pools, setPools] = useState<Pool[]>([]);
   const [poolHistory, setPoolHistory] = useState<Pool[][]>([]);
@@ -260,7 +264,37 @@ export const usePoolManagement = ({
   // Gérer le forfait/abandon/exclusion d'un tireur sur tous ses matchs non encore disputés
   // Met à jour le statut du tireur et grise ses matchs restants dans la grille
   const handleFencerForfeit = useCallback(
-    (fencerId: string, status: 'abandon' | 'forfait' | 'exclusion') => {
+    async (fencerId: string, status: 'abandon' | 'forfait' | 'exclusion') => {
+      // --- Snapshot AVANT modification (pour pouvoir annuler) ---
+      const previousStatus =
+        pools.flatMap(p => p.fencers).find(f => f.id === fencerId)?.status ??
+        FencerStatus.CHECKED_IN;
+
+      const affectedSnapshots = pools.flatMap(pool =>
+        pool.matches
+          .filter(m => {
+            const involved = m.fencerA?.id === fencerId || m.fencerB?.id === fencerId;
+            const alreadyPlayed =
+              m.status === MatchStatus.FINISHED && !m.scoreA?.isForfait && !m.scoreB?.isForfait;
+            return involved && !alreadyPlayed;
+          })
+          .map(m => ({
+            matchId: m.id,
+            status: m.status as string,
+            scoreA: m.scoreA ? { ...m.scoreA } : null,
+            scoreB: m.scoreB ? { ...m.scoreB } : null,
+          }))
+      );
+
+      if (competitionId && window.electronAPI?.db?.saveAbandonSnapshot) {
+        await window.electronAPI.db
+          .saveAbandonSnapshot(fencerId, competitionId, previousStatus, status, affectedSnapshots)
+          .catch((e: Error) =>
+            logger.warn(LogCategory.DB, 'Snapshot abandon échoué', e)
+          );
+      }
+
+      // --- Logique existante ---
       const newFencerStatus =
         status === 'abandon'
           ? FencerStatus.ABANDONED
@@ -340,7 +374,98 @@ export const usePoolManagement = ({
         return updatedPools;
       });
     },
-    [computePoolRanking, computeOverallRanking, showToast]
+    [competitionId, pools, computePoolRanking, computeOverallRanking, showToast]
+  );
+
+  // Annuler un abandon/forfait/exclusion et restaurer les matchs affectés
+  const handleUndoAbandon = useCallback(
+    async (fencerId: string) => {
+      let snapshot: AbandonSnapshot | null = null;
+
+      if (competitionId && window.electronAPI?.db?.getAbandonSnapshot) {
+        snapshot = await window.electronAPI.db
+          .getAbandonSnapshot(fencerId)
+          .catch(() => null);
+      }
+
+      setPools(prevPools => {
+        const updatedPools = [...prevPools];
+        let restoredCount = 0;
+
+        updatedPools.forEach(pool => {
+          // Restaurer le statut du tireur dans la poule
+          const poolFencer = pool.fencers.find(f => f.id === fencerId);
+          if (poolFencer) {
+            poolFencer.status = snapshot
+              ? (snapshot.previousStatus as FencerStatus)
+              : FencerStatus.CHECKED_IN;
+          }
+
+          pool.matches.forEach(match => {
+            const isFencerA = match.fencerA?.id === fencerId;
+            const isFencerB = match.fencerB?.id === fencerId;
+            if (!isFencerA && !isFencerB) return;
+
+            if (snapshot) {
+              // Restauration depuis le snapshot
+              const saved = snapshot.matchSnapshots.find(s => s.matchId === match.id);
+              if (saved) {
+                match.status = saved.status as MatchStatus;
+                match.scoreA = saved.scoreA as Score | null;
+                match.scoreB = saved.scoreB as Score | null;
+                if (isFencerA && match.fencerA) {
+                  match.fencerA.status = snapshot.previousStatus as FencerStatus;
+                } else if (isFencerB && match.fencerB) {
+                  match.fencerB.status = snapshot.previousStatus as FencerStatus;
+                }
+                restoredCount++;
+              }
+            } else {
+              // Fallback sans snapshot : réinitialise les matchs marqués abandon/forfait/exclusion
+              // uniquement si l'adversaire n'est pas lui-même en statut spécial
+              const myScore = isFencerA ? match.scoreA : match.scoreB;
+              const oppScore = isFencerA ? match.scoreB : match.scoreA;
+              if (
+                (myScore?.isAbstention || myScore?.isForfait || myScore?.isExclusion) &&
+                !oppScore?.isAbstention &&
+                !oppScore?.isForfait &&
+                !oppScore?.isExclusion
+              ) {
+                match.status = MatchStatus.NOT_STARTED;
+                match.scoreA = null;
+                match.scoreB = null;
+                if (isFencerA && match.fencerA) {
+                  match.fencerA.status = FencerStatus.CHECKED_IN;
+                } else if (isFencerB && match.fencerB) {
+                  match.fencerB.status = FencerStatus.CHECKED_IN;
+                }
+                restoredCount++;
+              }
+            }
+          });
+
+          pool.ranking = computePoolRanking(pool);
+          pool.updatedAt = new Date();
+        });
+
+        const newOverallRanking = computeOverallRanking(updatedPools);
+        setOverallRanking(newOverallRanking);
+
+        if (restoredCount > 0) {
+          showToast(`Abandon annulé — ${restoredCount} match(s) restauré(s)`, 'success');
+        } else {
+          showToast('Statut restauré (aucun match à rétablir)', 'info');
+        }
+
+        return updatedPools;
+      });
+
+      // Supprimer le snapshot après restauration
+      if (snapshot && window.electronAPI?.db?.deleteAbandonSnapshot) {
+        await window.electronAPI.db.deleteAbandonSnapshot(fencerId).catch(() => {});
+      }
+    },
+    [competitionId, computePoolRanking, computeOverallRanking, showToast]
   );
 
   // Mettre à jour un match depuis une source externe (serveur distant)
@@ -449,6 +574,7 @@ export const usePoolManagement = ({
     computePoolRanking,
     computeOverallRanking,
     handleFencerForfeit,
+    handleUndoAbandon,
     syncFencersToPool,
   };
 };

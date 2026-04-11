@@ -232,6 +232,19 @@ export class DatabaseManager {
       )
     `);
 
+    // Table pour les snapshots d'abandon (annulation d'abandon)
+    this.db.run(`
+      CREATE TABLE IF NOT EXISTS fencer_abandons (
+        id TEXT PRIMARY KEY,
+        fencer_id TEXT NOT NULL,
+        competition_id TEXT NOT NULL,
+        previous_status TEXT NOT NULL,
+        abandon_type TEXT NOT NULL,
+        match_snapshots TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      )
+    `);
+
     // Colonnes de timing sur les matchs (migration idempotente)
     try {
       this.db.run(`ALTER TABLE matches ADD COLUMN start_time TEXT`);
@@ -1600,6 +1613,72 @@ export class DatabaseManager {
     });
 
     return { matches };
+  }
+
+  // ─── Abandon snapshots ──────────────────────────────────────────────────────
+
+  public saveAbandonSnapshot(
+    fencerId: string,
+    competitionId: string,
+    previousStatus: string,
+    abandonType: string,
+    matchSnapshots: { matchId: string; status: string; scoreA: unknown; scoreB: unknown }[]
+  ): void {
+    if (!this.db) throw new Error('Database not open');
+    const now = new Date().toISOString();
+    // Supprime un éventuel snapshot existant pour ce tireur
+    this.db.run('DELETE FROM fencer_abandons WHERE fencer_id = ?', [fencerId]);
+    this.db.run(
+      `INSERT INTO fencer_abandons (id, fencer_id, competition_id, previous_status, abandon_type, match_snapshots, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        `abandon-${fencerId}-${Date.now()}`,
+        fencerId,
+        competitionId,
+        previousStatus,
+        abandonType,
+        JSON.stringify(matchSnapshots),
+        now,
+      ]
+    );
+    this.save();
+  }
+
+  public getAbandonSnapshot(fencerId: string): {
+    id: string;
+    fencerId: string;
+    competitionId: string;
+    previousStatus: string;
+    abandonType: string;
+    matchSnapshots: { matchId: string; status: string; scoreA: unknown; scoreB: unknown }[];
+    createdAt: string;
+  } | null {
+    if (!this.db) return null;
+    const stmt = this.db.prepare(
+      'SELECT * FROM fencer_abandons WHERE fencer_id = ? ORDER BY created_at DESC LIMIT 1'
+    );
+    stmt.bind([fencerId]);
+    if (!stmt.step()) {
+      stmt.free();
+      return null;
+    }
+    const row = stmt.getAsObject();
+    stmt.free();
+    return {
+      id: row.id as string,
+      fencerId: row.fencer_id as string,
+      competitionId: row.competition_id as string,
+      previousStatus: row.previous_status as string,
+      abandonType: row.abandon_type as string,
+      matchSnapshots: JSON.parse(row.match_snapshots as string),
+      createdAt: row.created_at as string,
+    };
+  }
+
+  public deleteAbandonSnapshot(fencerId: string): void {
+    if (!this.db) return;
+    this.db.run('DELETE FROM fencer_abandons WHERE fencer_id = ?', [fencerId]);
+    this.save();
   }
 
   // Export/Import
