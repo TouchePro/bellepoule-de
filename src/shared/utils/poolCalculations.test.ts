@@ -182,6 +182,30 @@ describe('calculateFencerPoolStats', () => {
     expect(stats.matchesPlayed).toBe(0);
     expect(stats.victoryRatio).toBe(0);
   });
+
+  it("devrait annuler les matchs déjà disputés contre un tireur déclaré forfait", () => {
+    // Règle : si un adversaire est FORFAIT, les points acquis lors de TOUS
+    // ses matchs (même déjà joués) sont annulés pour les deux parties.
+    const forfaitFencer = createMockFencer('ff', 99, 'Forfait');
+    forfaitFencer.status = FencerStatus.FORFAIT;
+
+    // Match already played before forfeit was declared — statut FORFAIT
+    // maintenant propagé dans la référence fencer du match (comme handleFencerForfeit le fait)
+    const matchVsFF: Match = {
+      ...createMockMatch('m_ff', fencer1, forfaitFencer, 5, 2),
+      fencerB: forfaitFencer, // statut FORFAIT dans la référence
+    };
+
+    const otherMatch = createMockMatch('m2', fencer1, fencer2, 5, 3);
+
+    const stats = calculateFencerPoolStats(fencer1, [matchVsFF, otherMatch]);
+
+    // Seul le match contre fencer2 doit compter
+    expect(stats.matchesPlayed).toBe(1);
+    expect(stats.victories).toBe(1);
+    expect(stats.touchesScored).toBe(5);
+    expect(stats.touchesReceived).toBe(3);
+  });
 });
 
 // ============================================================================
