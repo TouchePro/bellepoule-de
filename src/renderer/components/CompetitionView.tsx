@@ -746,14 +746,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               } else if (status === FencerStatus.EXCLUDED) {
                 handleFencerForfeit(id, 'exclusion');
               } else if (status === FencerStatus.CHECKED_IN) {
-                // Si réactivation depuis un statut spécial pendant la phase de poules,
-                // restaurer les matchs affectés via le système d'annulation d'abandon
+                // Si réactivation depuis un statut spécial, restaurer les matchs affectés
                 const currentFencer = fencers.find(f => f.id === id);
                 const wasInSpecialStatus =
                   currentFencer?.status === FencerStatus.ABANDONED ||
                   currentFencer?.status === FencerStatus.FORFAIT ||
                   currentFencer?.status === FencerStatus.EXCLUDED;
-                if (wasInSpecialStatus && currentPhase === 'pools') {
+                if (wasInSpecialStatus) {
                   handleUndoAbandon(id);
                 }
               }
@@ -1228,3 +1227,4 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 };
 
 export default CompetitionView;
+
