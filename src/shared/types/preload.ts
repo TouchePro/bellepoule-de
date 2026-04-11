@@ -176,6 +176,35 @@ export interface FencerHistory {
   matches: FencerMatchRecord[];
 }
 
+export interface MatchSnapshot {
+  matchId: string;
+  status: string;
+  scoreA: {
+    value: number | null;
+    isVictory: boolean;
+    isAbstention: boolean;
+    isExclusion: boolean;
+    isForfait: boolean;
+  } | null;
+  scoreB: {
+    value: number | null;
+    isVictory: boolean;
+    isAbstention: boolean;
+    isExclusion: boolean;
+    isForfait: boolean;
+  } | null;
+}
+
+export interface AbandonSnapshot {
+  id: string;
+  fencerId: string;
+  competitionId: string;
+  previousStatus: string;
+  abandonType: 'abandon' | 'forfait' | 'exclusion';
+  matchSnapshots: MatchSnapshot[];
+  createdAt: string;
+}
+
 export interface SessionState {
   currentPhase?: number;
   selectedPool?: string;
@@ -362,6 +391,15 @@ export interface DatabaseAPI {
   saveCard: (card: MatchCardData) => Promise<void>;
   updateMatchTiming: (timing: MatchTimingData) => Promise<void>;
   getFencerHistory: (fencerId: string) => Promise<FencerHistory>;
+  saveAbandonSnapshot: (
+    fencerId: string,
+    competitionId: string,
+    previousStatus: string,
+    abandonType: string,
+    matchSnapshots: MatchSnapshot[]
+  ) => Promise<void>;
+  getAbandonSnapshot: (fencerId: string) => Promise<AbandonSnapshot | null>;
+  deleteAbandonSnapshot: (fencerId: string) => Promise<void>;
 }
 
 export interface FileAPI {

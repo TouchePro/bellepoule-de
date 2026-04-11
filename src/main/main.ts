@@ -778,6 +778,22 @@ ipcMain.handle('db:getFencerHistory', async (_, fencerId) => {
   return db.getFencerHistory(fencerId);
 });
 
+// Abandon snapshot handlers
+ipcMain.handle(
+  'db:saveAbandonSnapshot',
+  async (_, fencerId, competitionId, previousStatus, abandonType, snapshots) => {
+    db.saveAbandonSnapshot(fencerId, competitionId, previousStatus, abandonType, snapshots);
+  }
+);
+
+ipcMain.handle('db:getAbandonSnapshot', async (_, fencerId) => {
+  return db.getAbandonSnapshot(fencerId);
+});
+
+ipcMain.handle('db:deleteAbandonSnapshot', async (_, fencerId) => {
+  db.deleteAbandonSnapshot(fencerId);
+});
+
 // File handlers
 ipcMain.handle('file:export', async (_, filepath) => {
   db.exportToFile(filepath);

@@ -115,8 +115,9 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     computeOverallRanking,
     areAllPoolsComplete,
     handleFencerForfeit,
+    handleUndoAbandon,
     syncFencersToPool,
-  } = usePoolManagement({ isLaserSabre, poolMaxScore, showToast });
+  } = usePoolManagement({ isLaserSabre, poolMaxScore, showToast, competitionId: competition?.id });
 
   const { exportFencersList, exportRanking, exportResults, exportPoolsPDF } = useExport({
     competition,
@@ -744,6 +745,17 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                 handleFencerForfeit(id, 'abandon');
               } else if (status === FencerStatus.EXCLUDED) {
                 handleFencerForfeit(id, 'exclusion');
+              } else if (status === FencerStatus.CHECKED_IN) {
+                // Si réactivation depuis un statut spécial pendant la phase de poules,
+                // restaurer les matchs affectés via le système d'annulation d'abandon
+                const currentFencer = fencers.find(f => f.id === id);
+                const wasInSpecialStatus =
+                  currentFencer?.status === FencerStatus.ABANDONED ||
+                  currentFencer?.status === FencerStatus.FORFAIT ||
+                  currentFencer?.status === FencerStatus.EXCLUDED;
+                if (wasInSpecialStatus && currentPhase === 'pools') {
+                  handleUndoAbandon(id);
+                }
               }
               updateFencer(id, { status });
             }}
