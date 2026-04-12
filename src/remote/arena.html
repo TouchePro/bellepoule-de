@@ -484,8 +484,8 @@
         flex: 1;
       }
 
-      .photo-card-a { color: #ef4444; }
-      .photo-card-b { color: #22c55e; }
+      .photo-card-a { color: #22c55e; }
+      .photo-card-b { color: #ef4444; }
 
       .photo-circle {
         width: min(30vw, 42vh);
@@ -594,7 +594,7 @@
 
       <!-- Écran d'intro photo (affiché quand showPhotos=true et statut ready) -->
       <div class="photo-intro hidden" id="photo-intro">
-        <!-- Tireur A (Rouge) -->
+        <!-- Tireur A (Vert) -->
         <div class="photo-card photo-card-a">
           <div class="photo-circle">
             <img id="photo-a" src="" alt="" />
@@ -615,7 +615,7 @@
         <!-- VS -->
         <div class="vs-center">VS</div>
 
-        <!-- Tireur B (Vert) -->
+        <!-- Tireur B (Rouge) -->
         <div class="photo-card photo-card-b">
           <div class="photo-circle">
             <img id="photo-b" src="" alt="" />
@@ -637,25 +637,25 @@
       <!-- Affichage du match -->
       <div class="match-display" id="match-display">
         <div class="fencers-row">
-          <!-- Tireur A (Rouge) -->
-          <div class="fencer-display red-side">
-            <div class="color-badge red"></div>
+          <!-- Tireur A (Vert) -->
+          <div class="fencer-display green-side">
+            <div class="color-badge green"></div>
             <div class="fencer-name" id="fencer-a-name">-</div>
             <div class="fencer-club" id="fencer-a-club">-</div>
             <div class="cards-container" id="fencer-a-cards"></div>
-            <div class="score-big red" id="score-a">0</div>
+            <div class="score-big green" id="score-a">0</div>
           </div>
 
           <!-- VS -->
           <div class="vs-divider">VS</div>
 
-          <!-- Tireur B (Vert) -->
-          <div class="fencer-display green-side">
-            <div class="color-badge green"></div>
+          <!-- Tireur B (Rouge) -->
+          <div class="fencer-display red-side">
+            <div class="color-badge red"></div>
             <div class="fencer-name" id="fencer-b-name">-</div>
             <div class="fencer-club" id="fencer-b-club">-</div>
             <div class="cards-container" id="fencer-b-cards"></div>
-            <div class="score-big green" id="score-b">0</div>
+            <div class="score-big red" id="score-b">0</div>
           </div>
         </div>
 
