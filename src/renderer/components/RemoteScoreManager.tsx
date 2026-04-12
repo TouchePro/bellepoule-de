@@ -57,6 +57,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const [arenaPasswords, setArenaPasswords] = useState<Record<string, string>>({});
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [showPhotos, setShowPhotos] = useState(false);
+  const [kioskViews, setKioskViews] = useState({ poules: true, classement: true, direct: true });
 
   useEffect(() => {
     if (!activeQR) {
@@ -157,7 +158,8 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         competition.id,
         count,
         allMatches,
-        showPhotos
+        showPhotos,
+        kioskViews
       );
       if (result.success && result.session) {
         setSession(result.session);
@@ -316,6 +318,30 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             />
             Afficher les photos des combattants avant le combat
           </label>
+          <div style={{ margin: '0.5rem 0' }}>
+            <div style={{ fontSize: '0.875rem', marginBottom: '0.25rem', color: 'inherit' }}>
+              Vues kiosk :
+            </div>
+            {(
+              [
+                { key: 'poules', label: 'Poules' },
+                { key: 'classement', label: 'Classement' },
+                { key: 'direct', label: 'Matchs en direct' },
+              ] as const
+            ).map(({ key, label }) => (
+              <label
+                key={key}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
+              >
+                <input
+                  type="checkbox"
+                  checked={kioskViews[key]}
+                  onChange={e => setKioskViews(v => ({ ...v, [key]: e.target.checked }))}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
           <button className="btn-primary" onClick={onStartRemote}>
             ⚡ Démarrer la saisie distante
           </button>
@@ -364,6 +390,34 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           />
           Afficher les photos des combattants avant le combat
         </label>
+        <div style={{ margin: '0.5rem 0' }}>
+          <div style={{ fontSize: '0.875rem', marginBottom: '0.25rem', color: 'inherit' }}>
+            Vues kiosk :
+          </div>
+          {(
+            [
+              { key: 'poules', label: 'Poules' },
+              { key: 'classement', label: 'Classement' },
+              { key: 'direct', label: 'Matchs en direct' },
+            ] as const
+          ).map(({ key, label }) => (
+            <label
+              key={key}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
+            >
+              <input
+                type="checkbox"
+                checked={kioskViews[key]}
+                onChange={async e => {
+                  const next = { ...kioskViews, [key]: e.target.checked };
+                  setKioskViews(next);
+                  await window.electronAPI.remote.updateKioskViews(next);
+                }}
+              />
+              {label}
+            </label>
+          ))}
+        </div>
 
         <div className="arena-url-grid">
           {arenaUrls.map(arena => (

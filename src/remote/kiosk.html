@@ -534,6 +534,8 @@
 
     <script>
       // ─── État ────────────────────────────────────────────────────────────────
+      const ALL_VIEWS = ['poules', 'classement', 'direct'];
+
       const state = {
         currentView: 'poules',
         views: ['poules', 'classement', 'direct'],
@@ -660,6 +662,24 @@
 
           document.getElementById('menu-competition-name').textContent =
             state.session.competitionName || '';
+
+          // Appliquer les vues kiosk configurées
+          if (state.session.kioskViews) {
+            const kv = state.session.kioskViews;
+            const enabled = ALL_VIEWS.filter(v => kv[v] !== false);
+            state.views = enabled.length > 0 ? enabled : ALL_VIEWS;
+          } else {
+            state.views = ALL_VIEWS.slice();
+          }
+          // Masquer/afficher les boutons de navigation
+          ALL_VIEWS.forEach(v => {
+            const btn = document.getElementById('btn-' + v);
+            if (btn) btn.style.display = state.views.includes(v) ? '' : 'none';
+          });
+          // Si la vue courante n'est plus dans les vues actives, basculer sur la première
+          if (!state.views.includes(state.currentView)) {
+            switchView(state.views[0]);
+          }
 
           // 2. Données poules + classements
           const poolsRes = await fetch('/api/competitions/' + competitionId + '/results-data');
