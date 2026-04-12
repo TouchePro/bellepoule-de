@@ -38,6 +38,11 @@ export class RemoteScoreServer {
   private poolFencersCache: Map<string, any[]> = new Map(); // Tireurs par poolId (depuis le renderer)
   private sessionMatchScores: Map<string, { scoreA: any; scoreB: any; status: string }> = new Map(); // Scores en mémoire
   private sessionShowPhotos: boolean = false; // Afficher les photos des combattants avant le combat
+  private sessionKioskViews: { poules: boolean; classement: boolean; direct: boolean } = {
+    poules: true,
+    classement: true,
+    direct: true,
+  };
 
   // Stocker le contenu des fichiers HTML en mémoire pour éviter les problèmes de chemin
   private htmlFiles: Map<string, string> = new Map();
@@ -386,7 +391,7 @@ export class RemoteScoreServer {
       if (!this.session) {
         return res.status(404).json({ error: 'Aucune session active' });
       }
-      res.json({ ...this.session, weapon: this.sessionWeapon });
+      res.json({ ...this.session, weapon: this.sessionWeapon, kioskViews: this.sessionKioskViews });
     });
 
     this.app.post('/api/session/start', async (req, res) => {
@@ -2178,7 +2183,8 @@ export class RemoteScoreServer {
     competitionId: string,
     strips: number,
     matchesFromRenderer?: any[],
-    showPhotos?: boolean
+    showPhotos?: boolean,
+    kioskViews?: { poules: boolean; classement: boolean; direct: boolean }
   ): Promise<RemoteSession> {
     if (this.session) {
       throw new Error('Session déjà active');
@@ -2191,6 +2197,9 @@ export class RemoteScoreServer {
 
     // Stocker le réglage d'affichage des photos
     this.sessionShowPhotos = showPhotos ?? false;
+
+    // Stocker les vues kiosk activées
+    this.sessionKioskViews = kioskViews ?? { poules: true, classement: true, direct: true };
 
     // Stocker le type d'arme pour l'arrêt automatique à 15 points en Laser Sabre
     this.sessionWeapon = competition.weapon || null;
@@ -2511,6 +2520,11 @@ export class RemoteScoreServer {
         fencerB: arena.currentMatch?.fencerB,
       });
     }
+  }
+
+  public updateKioskViews(views: { poules: boolean; classement: boolean; direct: boolean }): void {
+    if (!this.session) throw new Error('Aucune session active');
+    this.sessionKioskViews = views;
   }
 
   public updatePoolFencers(updates: Array<{ poolId: string; fencers: any[] }>): void {

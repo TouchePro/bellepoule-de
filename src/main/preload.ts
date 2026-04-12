@@ -365,13 +365,28 @@ contextBridge.exposeInMainWorld('electronAPI', {
     startServer: () => ipcRenderer.invoke('remote:startServer'),
     stopServer: () => ipcRenderer.invoke('remote:stopServer'),
     getServerInfo: () => ipcRenderer.invoke('remote:getServerInfo'),
-    startSession: (competitionId: string, strips: number, matches?: any[], showPhotos?: boolean) =>
-      ipcRenderer.invoke('remote:startSession', competitionId, strips, matches, showPhotos),
+    startSession: (
+      competitionId: string,
+      strips: number,
+      matches?: any[],
+      showPhotos?: boolean,
+      kioskViews?: { poules: boolean; classement: boolean; direct: boolean }
+    ) =>
+      ipcRenderer.invoke(
+        'remote:startSession',
+        competitionId,
+        strips,
+        matches,
+        showPhotos,
+        kioskViews
+      ),
     stopSession: () => ipcRenderer.invoke('remote:stopSession'),
     getSession: () => ipcRenderer.invoke('remote:getSession'),
     getArenas: () => ipcRenderer.invoke('remote:getArenas'),
     updateStripCount: (count: number) => ipcRenderer.invoke('remote:updateStripCount', count),
     updateShowPhotos: (value: boolean) => ipcRenderer.invoke('remote:updateShowPhotos', value),
+    updateKioskViews: (views: { poules: boolean; classement: boolean; direct: boolean }) =>
+      ipcRenderer.invoke('remote:updateKioskViews', views),
     updateMatchArena: (matchId: string, fromArena: number | null, toArena: number | null) =>
       ipcRenderer.invoke('remote:updateMatchArena', matchId, fromArena, toArena),
     updatePoolFencers: (updates: Array<{ poolId: string; fencers: any[] }>) =>

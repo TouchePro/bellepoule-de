@@ -1007,7 +1007,14 @@ ipcMain.handle('remote:getServerInfo', async () => {
 // Remote session handlers
 ipcMain.handle(
   'remote:startSession',
-  async (_, competitionId: string, strips: number, matches?: any[], showPhotos?: boolean) => {
+  async (
+    _,
+    competitionId: string,
+    strips: number,
+    matches?: any[],
+    showPhotos?: boolean,
+    kioskViews?: { poules: boolean; classement: boolean; direct: boolean }
+  ) => {
     try {
       if (!remoteScoreServer) {
         return { success: false, error: 'Le serveur distant n est pas démarré' };
@@ -1017,7 +1024,8 @@ ipcMain.handle(
         competitionId,
         strips,
         matches,
-        showPhotos
+        showPhotos,
+        kioskViews
       );
       return { success: true, session };
     } catch (error) {
@@ -1118,6 +1126,22 @@ ipcMain.handle('remote:updateShowPhotos', async (_, value: boolean) => {
     return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
   }
 });
+
+ipcMain.handle(
+  'remote:updateKioskViews',
+  async (_, views: { poules: boolean; classement: boolean; direct: boolean }) => {
+    try {
+      if (!remoteScoreServer) {
+        return { success: false, error: 'Le serveur distant n est pas démarré' };
+      }
+      remoteScoreServer.updateKioskViews(views);
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating kioskViews:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+    }
+  }
+);
 
 ipcMain.handle('remote:setArenaPassword', async (_, arenaId: string, password: string) => {
   try {
