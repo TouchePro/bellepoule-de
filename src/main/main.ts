@@ -1049,6 +1049,19 @@ ipcMain.handle(
   }
 );
 
+ipcMain.handle(
+  'remote:updatePoolFencers',
+  async (_, updates: Array<{ poolId: string; fencers: any[] }>) => {
+    try {
+      if (!remoteScoreServer) return { success: false, error: 'Serveur non démarré' };
+      remoteScoreServer.updatePoolFencers(updates);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Erreur' };
+    }
+  }
+);
+
 ipcMain.handle('remote:stopSession', async () => {
   try {
     if (!remoteScoreServer) {

@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import QRCode from 'qrcode';
 import { Competition, Pool } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
@@ -79,6 +79,23 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const effectivePending = pendingCount ?? pools.length ?? 1;
   const effectiveCommitted = committedCount ?? pools.length ?? 1;
   const hasPendingChanges = effectivePending !== effectiveCommitted;
+
+  // Synchroniser le cache poolFencersCache du serveur distant quand les poules changent
+  // (interversion de combattants entre poules pendant une session active).
+  const sessionPoolsFingerprintRef = useRef<string>('');
+  useEffect(() => {
+    const fingerprint = pools
+      .map(p => `${p.id}:${(p.fencers ?? []).map((f: any) => f.id).join(',')}`)
+      .join('|');
+    if (!isRemoteActive || !session) {
+      sessionPoolsFingerprintRef.current = fingerprint;
+      return;
+    }
+    if (fingerprint === sessionPoolsFingerprintRef.current) return;
+    sessionPoolsFingerprintRef.current = fingerprint;
+    const updates = pools.map(pool => ({ poolId: pool.id, fencers: pool.fencers ?? [] }));
+    window.electronAPI.remote.updatePoolFencers(updates).catch(() => {});
+  }, [pools, isRemoteActive, session]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
