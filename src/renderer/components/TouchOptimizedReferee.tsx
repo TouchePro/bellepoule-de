@@ -135,9 +135,9 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
   const processVoiceCommand = (command: string) => {
     // Simple voice commands
     if (command.includes('point') || command.includes('touche')) {
-      if (command.includes('rouge') || command.includes('a')) {
+      if (command.includes('vert') || command.includes('a')) {
         handleScoreIncrement('A');
-      } else if (command.includes('vert') || command.includes('b')) {
+      } else if (command.includes('rouge') || command.includes('b')) {
         handleScoreIncrement('B');
       }
     } else if (command.includes('annuler')) {
@@ -235,7 +235,7 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
           <div className="grid grid-cols-2 gap-8 mb-8">
             {/* Fencer A */}
             <div className={`text-center ${getSwipeAnimation()}`}>
-              <div className="bg-red-500 text-white rounded-lg p-6 mb-4">
+              <div className="bg-green-500 text-white rounded-lg p-6 mb-4">
                 <div className="text-lg font-medium">
                   {fencerA.firstName} {fencerA.lastName}
                 </div>
@@ -287,7 +287,7 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
 
             {/* Fencer B */}
             <div className={`text-center ${getSwipeAnimation()}`}>
-              <div className="bg-green-500 text-white rounded-lg p-6 mb-4">
+              <div className="bg-red-500 text-white rounded-lg p-6 mb-4">
                 <div className="text-lg font-medium">
                   {fencerB.firstName} {fencerB.lastName}
                 </div>
