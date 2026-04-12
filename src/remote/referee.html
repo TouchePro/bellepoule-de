@@ -1421,10 +1421,9 @@
           this.broadcastUpdate();
           this.saveScore();
 
-          // Mode Challenger : mort subite si écart ≥ 10 pts (Laser Sabre uniquement)
+          // Mode Challenger : mort subite si les DEUX combattants ≥ 10 pts (Laser Sabre uniquement)
           if (this.isLaserSabre && !this.isSuddenDeath) {
-            const gap = Math.abs(this.scoreA - this.scoreB);
-            if (gap >= 10) {
+            if (this.scoreA >= 10 && this.scoreB >= 10) {
               this.triggerSuddenDeathChallenger();
             }
           }
@@ -1513,15 +1512,8 @@
 
         triggerSuddenDeathChallenger() {
           this.isSuddenDeath = true;
-          this.stopTimer();
-          this.updateTimerDisplay();
-          this.broadcastTimerUpdate();
           this.updateSuddenDeathUI();
-          this.showNotification('⚡ MORT SUBITE – Écart de 10 pts ! Zone C uniquement.');
-          // Lancer le chrono de mort subite (30s)
-          this.timerSeconds = 30;
-          this.updateTimerDisplay();
-          this.startTimer();
+          this.showNotification('⚡ MORT SUBITE – Les deux tireurs ont 10 pts ! Zone C uniquement.');
         }
 
         // Désactiver +1/+3 en mort subite (seule Zone C autorisée en Laser Sabre)
