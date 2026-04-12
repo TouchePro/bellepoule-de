@@ -2513,6 +2513,36 @@ export class RemoteScoreServer {
     }
   }
 
+  public updatePoolFencers(updates: Array<{ poolId: string; fencers: any[] }>): void {
+    for (const { poolId, fencers } of updates) {
+      if (fencers && fencers.length > 0) {
+        this.poolFencersCache.set(poolId, fencers);
+      }
+    }
+    // Notifier les tablettes connectées sur une arène affichant une poule modifiée
+    for (const { poolId } of updates) {
+      for (const [aId, arena] of this.arenas) {
+        if (arena.currentMatch?.poolId !== poolId) continue;
+        const updatedFencers = this.poolFencersCache.get(poolId) ?? [];
+        const inMemory = this.sessionMatches
+          .filter(m => (m.poolId || m.pool?.id || `pool-${m.poolNumber || m.number}`) === poolId)
+          .sort((a: any, b: any) => (a.number || 0) - (b.number || 0));
+        const matches =
+          inMemory.length > 0
+            ? inMemory.map(m => {
+                const u = this.sessionMatchScores.get(m.id);
+                return u ? { ...m, ...u } : m;
+              })
+            : this.db.getMatchesByPool(poolId);
+        const isComplete = matches.every((m: any) => m.status === MatchStatus.FINISHED);
+        this.io
+          .to(`pool:${aId}`)
+          .emit(`pool:${aId}:update`, { poolId, fencers: updatedFencers, matches, isComplete });
+        break;
+      }
+    }
+  }
+
   public getSession(): RemoteSession | null {
     return this.session;
   }

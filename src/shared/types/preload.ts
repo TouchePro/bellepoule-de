@@ -343,6 +343,9 @@ export interface RemoteServerAPI {
     fencerA?: Fencer | null,
     fencerB?: Fencer | null
   ) => Promise<{ success: boolean; error?: string }>;
+  updatePoolFencers: (
+    updates: Array<{ poolId: string; fencers: any[] }>
+  ) => Promise<{ success: boolean; error?: string }>;
   setArenaPassword: (
     arenaId: string,
     password: string

@@ -374,6 +374,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     updateShowPhotos: (value: boolean) => ipcRenderer.invoke('remote:updateShowPhotos', value),
     updateMatchArena: (matchId: string, fromArena: number | null, toArena: number | null) =>
       ipcRenderer.invoke('remote:updateMatchArena', matchId, fromArena, toArena),
+    updatePoolFencers: (updates: Array<{ poolId: string; fencers: any[] }>) =>
+      ipcRenderer.invoke('remote:updatePoolFencers', updates),
     setArenaPassword: (arenaId: string, password: string) =>
       ipcRenderer.invoke('remote:setArenaPassword', arenaId, password),
   },
