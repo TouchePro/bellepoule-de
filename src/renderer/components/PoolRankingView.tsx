@@ -25,6 +25,7 @@ interface PoolRankingViewProps {
   hasDirectElimination?: boolean;
   onExport?: (format: 'csv' | 'xml' | 'pdf') => void;
   onPoolsChange?: (pools: Pool[], rankingChanged: boolean) => void;
+  onRankingChange?: (ranking: PoolRanking[]) => void;
 }
 
 const PoolRankingView: React.FC<PoolRankingViewProps> = ({
@@ -35,6 +36,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
   hasDirectElimination = true,
   onExport,
   onPoolsChange,
+  onRankingChange,
 }) => {
   const { showToast } = useToast();
   const { isColumnVisible, toggleColumn } = useColumnVisibility();
@@ -186,6 +188,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
       }
     }
 
+    onRankingChange?.(editedRanking);
     setIsEditing(false);
     showToast(
       rankingChanged
@@ -271,7 +274,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
           </button>
           <button
             className="btn btn-secondary"
-            onClick={() => setIsEditing(!isEditing)}
+            onClick={() => (isEditing ? saveChanges() : setIsEditing(true))}
             title={isEditing ? 'Terminer la modification' : 'Modifier le classement'}
           >
             {isEditing ? '✓ Terminer' : '✏️ Modifier'}
@@ -433,7 +436,22 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
                 )}
                 {isVisible('quest') && isLaserSabre && (
                   <td style={{ textAlign: 'center', fontWeight: '600', color: '#7c3aed' }}>
-                    {ranking.questPoints || 0}
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        min="0"
+                        value={ranking.questPoints ?? 0}
+                        onChange={e => {
+                          const val = Math.max(0, parseInt(e.target.value) || 0);
+                          setEditedRanking(prev =>
+                            prev.map((r, i) => (i === index ? { ...r, questPoints: val } : r))
+                          );
+                        }}
+                        style={{ width: '52px', textAlign: 'center', padding: '1px 4px' }}
+                      />
+                    ) : (
+                      ranking.questPoints ?? 0
+                    )}
                   </td>
                 )}
                 {isVisible('index') && (

@@ -350,8 +350,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
   const handleGoToTableau = () => {
     setRankingValidated(true);
-    const ranking = computeOverallRanking(pools);
-    setOverallRanking(ranking);
+    // Ne pas recalculer : overallRanking est déjà à jour
+    // (calculé à l'entrée dans handleGoToRanking, mis à jour par onRankingChange si édité manuellement)
 
     // Si le classement a changé, réinitialiser les matches du tableau
     if (rankingChanged) {
@@ -848,6 +848,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                 setRankingChanged(true);
               }
             }}
+            onRankingChange={ranking => setOverallRanking(ranking)}
           />
         )}
 
