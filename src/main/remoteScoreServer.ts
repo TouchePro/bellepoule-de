@@ -2100,15 +2100,38 @@ export class RemoteScoreServer {
 
   public getLocalIPAddress(): string {
     const interfaces = os.networkInterfaces();
-    for (const name of Object.keys(interfaces)) {
-      for (const iface of interfaces[name] || []) {
-        // Ignorer les adresses internes (loopback) et IPv6
+    // Adaptateurs virtuels courants sur Windows (Hyper-V, WSL, VirtualBox, VMware…)
+    const VIRTUAL_KEYWORDS = [
+      'virtual',
+      'hyper-v',
+      'vmware',
+      'virtualbox',
+      'vethernet',
+      'loopback adapter',
+      'pseudo',
+      'teredo',
+      'isatap',
+    ];
+    const candidates: string[] = [];
+
+    for (const [name, addrs] of Object.entries(interfaces)) {
+      const nameLower = name.toLowerCase();
+      if (VIRTUAL_KEYWORDS.some(kw => nameLower.includes(kw))) continue;
+      for (const iface of addrs || []) {
         if (iface.family === 'IPv4' && !iface.internal) {
-          return iface.address;
+          candidates.push(iface.address);
         }
       }
     }
-    return 'localhost';
+
+    // Préférer une adresse LAN classique (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
+    const preferred = candidates.find(
+      ip =>
+        ip.startsWith('192.168.') ||
+        ip.startsWith('10.') ||
+        /^172\.(1[6-9]|2\d|3[01])\./.test(ip)
+    );
+    return preferred ?? candidates[0] ?? 'localhost';
   }
 
   public getServerUrl(): string {
