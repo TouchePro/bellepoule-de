@@ -838,6 +838,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         {currentPhase === 'ranking' && (
           <PoolRankingView
             pools={pools}
+            ranking={overallRanking}
             weapon={competition.weapon}
             hasDirectElimination={hasDirectElimination}
             onGoToTableau={handleGoToTableau}
