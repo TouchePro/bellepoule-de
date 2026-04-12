@@ -442,6 +442,16 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
             >
               +
             </button>
+            {poolCount !== 1 && (
+              <button
+                className="btn btn-secondary"
+                onClick={() => handlePoolCountChange(1)}
+                title="Mettre tous les tireurs dans une seule poule"
+                style={{ fontSize: '0.8rem', padding: '0.25rem 0.6rem', marginLeft: '0.25rem' }}
+              >
+                Poule unique
+              </button>
+            )}
           </div>
         </div>
 
@@ -559,13 +569,30 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
                 borderBottom: '1px solid #e5e7eb',
               }}
             >
-              <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>Poule {pool.number}</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>Poule {pool.number}</h3>
+                {pools.length === 1 && (
+                  <span
+                    style={{
+                      fontSize: '0.7rem',
+                      background: '#dbeafe',
+                      color: '#1d4ed8',
+                      borderRadius: '4px',
+                      padding: '0.1rem 0.4rem',
+                      fontWeight: 500,
+                    }}
+                  >
+                    Poule unique
+                  </span>
+                )}
+              </div>
               <span
                 style={{
                   fontSize: '0.875rem',
                   color:
-                    pool.fencers.length < minFencersPerPool ||
-                    pool.fencers.length > maxFencersPerPool
+                    pools.length > 1 &&
+                    (pool.fencers.length < minFencersPerPool ||
+                      pool.fencers.length > maxFencersPerPool)
                       ? '#dc2626'
                       : '#6b7280',
                 }}
