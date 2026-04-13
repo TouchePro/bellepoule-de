@@ -232,7 +232,7 @@ function assignRanks(rankings: PoolRanking[]): void {
     if (i > 0) {
       const prev = rankings[i - 1];
       const curr = rankings[i];
-      const sameVictories = prev.victories === curr.victories;
+      const sameVictories = prev.ratio === curr.ratio;
       const sameQuest = (prev.questPoints ?? 0) === (curr.questPoints ?? 0);
       const sameIndex = prev.index === curr.index;
 
@@ -330,9 +330,9 @@ export function calculatePoolRanking(pool: Pool): PoolRanking[] {
 
   // Trier selon les critères demandés
   rankings.sort((a, b) => {
-    // 1. Nombre de victoires (décroissant)
-    if (a.victories !== b.victories) {
-      return b.victories - a.victories;
+    // 1. Ratio de victoires V/M (décroissant)
+    if (a.ratio !== b.ratio) {
+      return b.ratio - a.ratio;
     }
 
     // 2. Points Quest (décroissant)
@@ -941,9 +941,9 @@ export function calculatePoolRankingQuest(pool: Pool): PoolRanking[] {
 
   // Trier selon les critères demandés (même ordre que calculatePoolRanking)
   rankings.sort((a, b) => {
-    // 1. Nombre de victoires (décroissant)
-    if (a.victories !== b.victories) {
-      return b.victories - a.victories;
+    // 1. Ratio de victoires V/M (décroissant)
+    if (a.ratio !== b.ratio) {
+      return b.ratio - a.ratio;
     }
 
     // 2. Points Quest (décroissant)
@@ -985,9 +985,9 @@ export function calculateOverallRankingQuest(pools: Pool[]): PoolRanking[] {
 
   // Trier selon les critères demandés (même ordre que calculateOverallRanking)
   allRankings.sort((a, b) => {
-    // 1. Nombre de victoires (décroissant)
-    if (a.victories !== b.victories) {
-      return b.victories - a.victories;
+    // 1. Ratio de victoires V/M (décroissant)
+    if (a.ratio !== b.ratio) {
+      return b.ratio - a.ratio;
     }
     // 2. Points Quest (décroissant)
     const aQuest = a.questPoints ?? 0;
@@ -1027,13 +1027,13 @@ export function calculateOverallRanking(pools: Pool[]): PoolRanking[] {
   });
 
   // Trier selon les critères demandés:
-  // 1. Nombre de victoires (décroissant)
+  // 1. Ratio de victoires V/M (décroissant)
   // 2. Points Quest (décroissant)
   // 3. Indice (TD-TR) (décroissant)
   allRankings.sort((a, b) => {
-    // 1. Nombre de victoires
-    if (a.victories !== b.victories) {
-      return b.victories - a.victories;
+    // 1. Ratio de victoires V/M
+    if (a.ratio !== b.ratio) {
+      return b.ratio - a.ratio;
     }
     // 2. Points Quest
     const aQuest = a.questPoints ?? 0;
