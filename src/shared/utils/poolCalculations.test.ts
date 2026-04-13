@@ -240,6 +240,47 @@ describe('calculatePoolRanking', () => {
     expect(ranking[1].victories).toBe(0);
   });
 
+  it('should rank by ratio, not absolute victories — same wins but different match counts', () => {
+    // fencerA: 2 wins / 3 matches → ratio 0.667
+    // fencerB: 2 wins / 2 matches → ratio 1.000
+    // Same absolute victories, fencerB must rank first
+    const fencerA = createMockFencer('fA', 1, 'TwoThree');
+    const fencerB = createMockFencer('fB', 2, 'TwoTwo');
+    const fencerC = createMockFencer('fC', 3, 'Helper1');
+    const fencerD = createMockFencer('fD', 4, 'Helper2');
+
+    // fencerA: beats C (m1), beats D (m2), loses to C (m3) → 2W/3M
+    // fencerB: beats C (m4), beats D (m5)                  → 2W/2M
+    const matches: Match[] = [
+      createMockMatch('m1', fencerA, fencerC, 5, 2), // A beats C
+      createMockMatch('m2', fencerA, fencerD, 5, 2), // A beats D
+      createMockMatch('m3', fencerC, fencerA, 5, 2), // C beats A
+      createMockMatch('m4', fencerB, fencerC, 5, 2), // B beats C
+      createMockMatch('m5', fencerB, fencerD, 5, 2), // B beats D
+    ];
+
+    const pool: Pool = {
+      id: 'p1',
+      number: 1,
+      phaseId: 'ph1',
+      fencers: [fencerA, fencerB, fencerC, fencerD],
+      matches,
+      referees: [],
+      isComplete: true,
+      hasError: false,
+      ranking: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const ranking = calculatePoolRanking(pool);
+
+    expect(ranking[0].fencer.id).toBe(fencerB.id); // ratio 1.000 (2V/2M)
+    expect(ranking[0].ratio).toBeCloseTo(1.0);
+    expect(ranking[1].fencer.id).toBe(fencerA.id); // ratio 0.667 (2V/3M)
+    expect(ranking[1].ratio).toBeCloseTo(2 / 3);
+  });
+
   it('should rank active fencer first and append excluded/forfeit/abandoned at the end', () => {
     const fencer1 = createMockFencer('f1', 1, 'Active');
     const fencer2 = createMockFencer('f2', 2, 'Excluded');
