@@ -329,7 +329,8 @@ export interface RemoteServerAPI {
     competitionId: string,
     strips: number,
     matches?: any[],
-    showPhotos?: boolean
+    showPhotos?: boolean,
+    kioskViews?: Record<string, boolean>
   ) => Promise<{ success: boolean; session?: any; error?: string }>;
   stopSession: () => Promise<{ success: boolean; error?: string }>;
   getSession: () => Promise<{ success: boolean; session?: any; error?: string }>;
@@ -349,6 +350,9 @@ export interface RemoteServerAPI {
   setArenaPassword: (
     arenaId: string,
     password: string
+  ) => Promise<{ success: boolean; error?: string }>;
+  updateKioskViews: (
+    views: Record<string, boolean>
   ) => Promise<{ success: boolean; error?: string }>;
 }
 
@@ -459,3 +463,4 @@ export interface ElectronAPI extends MenuAPI, UtilityAPI {
   onRemoteMatchFinished: (callback: (data: any) => void) => void;
   notifyLanguageChanged: (lang: string) => void;
 }
+
