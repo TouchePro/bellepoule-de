@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Fencer, PoolRanking, Competition, Weapon, FencerStatus } from '../../shared/types';
+import { Fencer, PoolRanking, Competition, FencerStatus } from '../../shared/types';
 import { useToast } from './Toast';
 import { exportResultsXMLFFE } from '../../shared/utils/multiFormatExport';
 
@@ -13,7 +13,6 @@ interface FinalResult {
   rank: number;
   fencer: Fencer;
   eliminatedAt?: string; // "Finale", "Demi-finale", etc.
-  questPoints?: number; // Points Quest pour Sabre Laser
 }
 
 interface ResultsViewProps {
@@ -24,7 +23,6 @@ interface ResultsViewProps {
 
 const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, finalResults }) => {
   const { showToast } = useToast();
-  const isLaserSabre = competition.weapon === Weapon.LASER;
 
   const getMedalEmoji = (rank: number): string => {
     if (rank === 1) return '🥇';
@@ -48,19 +46,11 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
           rank: idx + 1,
           fencer: pr.fencer,
           eliminatedAt: 'Poules',
-          questPoints: pr.questPoints,
         }));
-
-  // Récupérer les points Quest depuis poolRanking si disponibles
-  const getQuestPoints = (fencerId: string): number | undefined => {
-    const pr = poolRanking.find(p => p.fencer.id === fencerId);
-    return pr?.questPoints;
-  };
 
   // Export CSV
   const exportCSV = () => {
     const headers = ['Rang', 'Nom', 'Prénom', 'Club', 'Statut', 'Éliminé à'];
-    if (isLaserSabre) headers.push('Points Quest');
 
     const getStatusLabel = (status: FencerStatus) => {
       switch (status) {
@@ -76,7 +66,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
     };
 
     const rows = resultsToDisplay.map(r => {
-      const row = [
+      return [
         r.rank,
         r.fencer.lastName,
         r.fencer.firstName,
@@ -84,10 +74,6 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
         getStatusLabel(r.fencer.status),
         r.eliminatedAt || '',
       ];
-      if (isLaserSabre) {
-        row.push(String(r.questPoints ?? getQuestPoints(r.fencer.id) ?? ''));
-      }
-      return row;
     });
 
     const csv = [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
@@ -255,54 +241,36 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
               <th style={{ padding: '0.75rem', textAlign: 'left', width: '60px' }}>Rang</th>
               <th style={{ padding: '0.75rem', textAlign: 'left' }}>Tireur</th>
               <th style={{ padding: '0.75rem', textAlign: 'left' }}>Club</th>
-              {isLaserSabre && (
-                <th style={{ padding: '0.75rem', textAlign: 'center' }}>Pts Quest</th>
-              )}
               <th style={{ padding: '0.75rem', textAlign: 'center' }}>Éliminé en</th>
             </tr>
           </thead>
           <tbody>
-            {resultsToDisplay.map(result => {
-              const questPts = result.questPoints ?? getQuestPoints(result.fencer.id);
-              return (
-                <tr
-                  key={result.fencer.id}
-                  style={{
-                    ...getRowStyle(result.rank),
-                    borderBottom: '1px solid #e5e7eb',
-                  }}
-                >
-                  <td style={{ padding: '0.75rem' }}>
-                    <span style={{ marginRight: '0.5rem' }}>{getMedalEmoji(result.rank)}</span>
-                    {result.rank}
-                  </td>
-                  <td style={{ padding: '0.75rem' }}>
-                    {result.fencer.firstName} {result.fencer.lastName}
-                    {result.fencer.status === FencerStatus.ABANDONED && ' (A)'}
-                    {result.fencer.status === FencerStatus.FORFAIT && ' (F)'}
-                    {result.fencer.status === FencerStatus.EXCLUDED && ' (X)'}
-                  </td>
-                  <td style={{ padding: '0.75rem', color: '#6b7280' }}>
-                    {result.fencer.club || '-'}
-                  </td>
-                  {isLaserSabre && (
-                    <td
-                      style={{
-                        padding: '0.75rem',
-                        textAlign: 'center',
-                        fontWeight: '600',
-                        color: '#7c3aed',
-                      }}
-                    >
-                      {questPts ?? '-'}
-                    </td>
-                  )}
-                  <td style={{ padding: '0.75rem', textAlign: 'center', color: '#6b7280' }}>
-                    {result.eliminatedAt || '-'}
-                  </td>
-                </tr>
-              );
-            })}
+            {resultsToDisplay.map(result => (
+              <tr
+                key={result.fencer.id}
+                style={{
+                  ...getRowStyle(result.rank),
+                  borderBottom: '1px solid #e5e7eb',
+                }}
+              >
+                <td style={{ padding: '0.75rem' }}>
+                  <span style={{ marginRight: '0.5rem' }}>{getMedalEmoji(result.rank)}</span>
+                  {result.rank}
+                </td>
+                <td style={{ padding: '0.75rem' }}>
+                  {result.fencer.firstName} {result.fencer.lastName}
+                  {result.fencer.status === FencerStatus.ABANDONED && ' (A)'}
+                  {result.fencer.status === FencerStatus.FORFAIT && ' (F)'}
+                  {result.fencer.status === FencerStatus.EXCLUDED && ' (X)'}
+                </td>
+                <td style={{ padding: '0.75rem', color: '#6b7280' }}>
+                  {result.fencer.club || '-'}
+                </td>
+                <td style={{ padding: '0.75rem', textAlign: 'center', color: '#6b7280' }}>
+                  {result.eliminatedAt || '-'}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
