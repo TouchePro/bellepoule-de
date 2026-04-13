@@ -393,6 +393,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('remote:updatePoolFencers', updates),
     setArenaPassword: (arenaId: string, password: string) =>
       ipcRenderer.invoke('remote:setArenaPassword', arenaId, password),
+    setOrgNote: (note: any) => ipcRenderer.invoke('remote:setOrgNote', note),
+    clearOrgNote: () => ipcRenderer.invoke('remote:clearOrgNote'),
   },
 
   // Remote event listeners (for real-time updates)
@@ -401,6 +403,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   onRemoteMatchFinished: (callback: (data: any) => void) => {
     ipcRenderer.on('match:finished', (_, data) => callback(data));
+  },
+  onKioskNoteUpdate: (callback: (note: any) => void) => {
+    const handler = (_: any, note: any) => callback(note);
+    ipcRenderer.on('kiosk:note', handler);
+    return () => ipcRenderer.removeListener('kiosk:note', handler);
   },
 
   // Remove listeners

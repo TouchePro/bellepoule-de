@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Competition, Pool, Weapon, MatchStatus, Fencer } from '../../shared/types';
+import { OrgNote } from '../../shared/types/remote';
 import { TableauMatch } from './TableauView';
 import {
   calculateOverallRanking,
@@ -257,6 +258,41 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
       cancelAnimationFrame(animId);
     };
   }, [currentView, activeRound]);
+
+  // Note d'organisation
+  const [orgNote, setOrgNote] = useState<OrgNote | null>(null);
+  const [orgNoteCountdown, setOrgNoteCountdown] = useState<string>('');
+
+  useEffect(() => {
+    if (!window.electronAPI?.onKioskNoteUpdate) return;
+    const unsub = window.electronAPI.onKioskNoteUpdate(note => setOrgNote(note));
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    if (!orgNote || orgNote.type !== 'target_time' || !orgNote.targetTime) {
+      setOrgNoteCountdown('');
+      return;
+    }
+    const compute = () => {
+      const now = new Date();
+      const [hh, mm] = orgNote.targetTime!.split(':').map(Number);
+      const target = new Date(now);
+      target.setHours(hh, mm, 0, 0);
+      if (target <= now) target.setDate(target.getDate() + 1); // lendemain si dépassé
+      const diffSec = Math.max(0, Math.floor((target.getTime() - now.getTime()) / 1000));
+      if (diffSec === 0) {
+        window.electronAPI.remote.clearOrgNote();
+        return;
+      }
+      const m = Math.floor(diffSec / 60);
+      const s = diffSec % 60;
+      setOrgNoteCountdown(`${m} min ${s.toString().padStart(2, '0')} s`);
+    };
+    compute();
+    const id = setInterval(compute, 1000);
+    return () => clearInterval(id);
+  }, [orgNote]);
 
   // Données de la poule courante
   const currentPool = pools[currentPoolIndex];
@@ -1153,6 +1189,44 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
                   </table>
                 </div>
               )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ===== OVERLAY NOTE D'ORGANISATION ===== */}
+      {orgNote && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 10500,
+            background: 'rgba(2, 6, 23, 0.88)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+            padding: '4rem',
+          }}
+        >
+          <div style={{ fontSize: 'clamp(1rem, 3vw, 1.5rem)', color: '#64748b', fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: '1.5rem' }}>
+            ⏸ Pause
+          </div>
+          {orgNote.type === 'target_time' && orgNote.targetTime && (
+            <>
+              <div style={{ fontSize: 'clamp(2rem, 6vw, 4rem)', fontWeight: 700, color: '#f1f5f9', marginBottom: '0.5rem' }}>
+                Reprise à {orgNote.targetTime.replace(':', 'h')}
+              </div>
+              <div style={{ fontSize: 'clamp(1.5rem, 4vw, 2.5rem)', fontWeight: 800, color: '#3b82f6', marginBottom: '2rem', fontVariantNumeric: 'tabular-nums' }}>
+                dans {orgNoteCountdown}
+              </div>
+            </>
+          )}
+          {orgNote.message && (
+            <div style={{ fontSize: 'clamp(1.2rem, 3.5vw, 2rem)', color: '#94a3b8', fontStyle: 'italic', maxWidth: '70ch' }}>
+              «&nbsp;{orgNote.message}&nbsp;»
             </div>
           )}
         </div>

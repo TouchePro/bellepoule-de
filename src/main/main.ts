@@ -1156,6 +1156,34 @@ ipcMain.handle('remote:setArenaPassword', async (_, arenaId: string, password: s
   }
 });
 
+ipcMain.handle('remote:setOrgNote', async (_, note) => {
+  try {
+    if (!remoteScoreServer) {
+      return { success: false, error: 'Le serveur distant n est pas démarré' };
+    }
+    remoteScoreServer.setOrgNote(note);
+    mainWindow?.webContents.send('kiosk:note', note);
+    return { success: true };
+  } catch (error) {
+    console.error('Error setting org note:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
+ipcMain.handle('remote:clearOrgNote', async () => {
+  try {
+    if (!remoteScoreServer) {
+      return { success: false, error: 'Le serveur distant n est pas démarré' };
+    }
+    remoteScoreServer.clearOrgNote();
+    mainWindow?.webContents.send('kiosk:note', null);
+    return { success: true };
+  } catch (error) {
+    console.error('Error clearing org note:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
 // App info handlers
 ipcMain.handle('app:getVersionInfo', async () => {
   return getVersionInfo();

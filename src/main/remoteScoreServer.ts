@@ -18,6 +18,7 @@ import {
   ArenaMatch,
   ArenaSettings,
   ArenaUpdate,
+  OrgNote,
 } from '../shared/types/remote';
 import { Competition, Match, Fencer, MatchStatus, Score } from '../shared/types';
 import { DatabaseManager } from '../database';
@@ -38,6 +39,7 @@ export class RemoteScoreServer {
   private poolFencersCache: Map<string, any[]> = new Map(); // Tireurs par poolId (depuis le renderer)
   private sessionMatchScores: Map<string, { scoreA: any; scoreB: any; status: string }> = new Map(); // Scores en mémoire
   private sessionShowPhotos: boolean = false; // Afficher les photos des combattants avant le combat
+  private orgNote: OrgNote | null = null; // Note d'organisation affichée sur le kiosk
   private sessionKioskViews: { poules: boolean; classement: boolean; direct: boolean } = {
     poules: true,
     classement: true,
@@ -391,7 +393,7 @@ export class RemoteScoreServer {
       if (!this.session) {
         return res.status(404).json({ error: 'Aucune session active' });
       }
-      res.json({ ...this.session, weapon: this.sessionWeapon, kioskViews: this.sessionKioskViews });
+      res.json({ ...this.session, weapon: this.sessionWeapon, kioskViews: this.sessionKioskViews, orgNote: this.orgNote });
     });
 
     this.app.post('/api/session/start', async (req, res) => {
@@ -2559,6 +2561,16 @@ export class RemoteScoreServer {
 
   public getSession(): RemoteSession | null {
     return this.session;
+  }
+
+  public setOrgNote(note: OrgNote): void {
+    this.orgNote = note;
+    this.io.emit('kiosk:note', note);
+  }
+
+  public clearOrgNote(): void {
+    this.orgNote = null;
+    this.io.emit('kiosk:note', null);
   }
 
   public setArenaPassword(arenaId: string, password: string): void {
