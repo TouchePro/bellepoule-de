@@ -6,6 +6,7 @@
 
 import React, { useState, useRef, useCallback } from 'react';
 import { logger, LogCategory } from '@shared/services/logger';
+import PhotoBooth from './PhotoBooth';
 
 interface FencerPhotoProps {
   photo?: string;
@@ -26,6 +27,7 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showWebcam, setShowWebcam] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const sizeClasses = {
@@ -206,6 +208,20 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
       )}
 
       {editable && (
+        <button
+          onClick={e => {
+            e.stopPropagation();
+            setShowWebcam(true);
+          }}
+          className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors shadow-md"
+          title="Prendre une photo avec la webcam"
+          style={{ fontSize: '10px' }}
+        >
+          📷
+        </button>
+      )}
+
+      {editable && (
         <input
           ref={fileInputRef}
           type="file"
@@ -218,6 +234,60 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
       {isDragging && (
         <div className="absolute inset-0 bg-blue-500 bg-opacity-20 rounded-full flex items-center justify-center pointer-events-none">
           <span className="text-blue-700 text-xs font-medium">Déposer ici</span>
+        </div>
+      )}
+
+      {editable && showWebcam && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1100,
+          }}
+          onClick={() => setShowWebcam(false)}
+        >
+          <div
+            style={{
+              background: 'var(--color-surface)',
+              borderRadius: 'var(--radius-lg)',
+              boxShadow: 'var(--shadow-lg)',
+              padding: '1.5rem',
+              width: '480px',
+              maxWidth: '90vw',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1rem',
+              }}
+            >
+              <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: 600 }}>
+                Prendre une photo
+              </h3>
+              <button
+                className="btn btn-icon btn-secondary"
+                onClick={() => setShowWebcam(false)}
+                style={{ padding: '0.25rem' }}
+              >
+                ✕
+              </button>
+            </div>
+            <PhotoBooth
+              onConfirm={photoData => {
+                onPhotoChange?.(photoData);
+                setShowWebcam(false);
+              }}
+              onClose={() => setShowWebcam(false)}
+            />
+          </div>
         </div>
       )}
     </div>
