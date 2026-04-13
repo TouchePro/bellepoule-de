@@ -131,7 +131,7 @@
       .kiosk-view {
         position: fixed;
         inset: 0;
-        padding: 2.5rem 2.5rem 1.5rem;
+        padding: 1.25rem 1rem 0.5rem;
         overflow: hidden;
         display: none;
         flex-direction: column;
@@ -146,12 +146,12 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 1.5rem;
+        margin-bottom: 0.6rem;
         flex-shrink: 0;
       }
 
       .view-title {
-        font-size: 1.75rem;
+        font-size: 1.2rem;
         font-weight: 800;
         background: linear-gradient(90deg, #fbbf24, #f59e0b);
         -webkit-background-clip: text;
@@ -177,10 +177,11 @@
       /* Vue Poules */
       #view-poules .pools-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-        gap: 1rem;
+        grid-template-columns: repeat(auto-fill, minmax(275px, 1fr));
+        gap: 0.5rem;
         overflow-y: auto;
         flex: 1;
+        align-items: start;
       }
 
       .pool-card {
@@ -191,7 +192,7 @@
       }
 
       .pool-card-header {
-        padding: 0.75rem 1rem;
+        padding: 0.35rem 0.7rem;
         background: rgba(59, 130, 246, 0.15);
         display: flex;
         justify-content: space-between;
@@ -228,7 +229,7 @@
       }
 
       .pool-table th {
-        padding: 0.5rem 0.75rem;
+        padding: 0.25rem 0.5rem;
         text-align: left;
         font-size: 0.7rem;
         font-weight: 600;
@@ -238,7 +239,7 @@
       }
 
       .pool-table td {
-        padding: 0.5rem 0.75rem;
+        padding: 0.25rem 0.5rem;
         border-bottom: 1px solid rgba(255, 255, 255, 0.04);
       }
 
@@ -252,7 +253,13 @@
       .rank-3 { color: #b45309; }
 
       .fencer-name { font-weight: 500; }
-      .fencer-club { font-size: 0.7rem; color: #64748b; }
+      .fencer-club {
+        font-size: 0.62rem;
+        color: #64748b;
+        display: inline;
+        margin-left: 0.35em;
+      }
+      .fencer-club::before { content: '· '; }
 
       td.victories { text-align: center; color: #10b981; font-weight: 600; }
       td.ind { text-align: center; color: #60a5fa; }
@@ -439,6 +446,45 @@
       ::-webkit-scrollbar { width: 4px; height: 4px; }
       ::-webkit-scrollbar-track { background: transparent; }
       ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+      /* ── Animations de score ────────────────────────────────────────────── */
+
+      /* inline-block requis pour que transform fonctionne sur les <span> */
+      .arena-score { display: inline-block; }
+
+      /* Option A — Flash doré + micro-bounce (principal) */
+      @keyframes score-pop-flash {
+        0%   { transform: scale(1);    color: inherit; filter: none; }
+        25%  { transform: scale(1.35); color: #fbbf24; filter: drop-shadow(0 0 10px rgba(251,191,36,0.9)); }
+        65%  { transform: scale(1.1);  color: #f59e0b; filter: drop-shadow(0 0 4px rgba(251,191,36,0.4)); }
+        100% { transform: scale(1);    color: inherit; filter: none; }
+      }
+
+      .score-updated {
+        animation: score-pop-flash 0.65s ease-out forwards;
+      }
+
+      /* Option C — Épéiste slash (fun 🤺) */
+      /* Déclenché quand le score augmente d'un coup important (≥3 pts) */
+      @keyframes epee-slash {
+        0%   { left: -1.8em; opacity: 1;   transform: translateY(-55%) rotate(-15deg); }
+        70%  {               opacity: 1; }
+        100% { left: 115%;   opacity: 0;   transform: translateY(-55%) rotate(-15deg); }
+      }
+
+      .score-slash {
+        position: relative;
+      }
+
+      .score-slash::after {
+        content: '🤺';
+        position: absolute;
+        top: 50%;
+        transform: translateY(-55%) rotate(-15deg);
+        font-size: 0.85rem;
+        pointer-events: none;
+        animation: epee-slash 0.55s ease-in forwards;
+      }
     </style>
   </head>
   <body>
@@ -549,6 +595,7 @@
         arenasData: [],  // arènes
         overallRanking: [],
         lastUpdate: null,
+        prevArenaScores: {},  // { [arenaId]: { scoreA, scoreB } }
       };
 
       // ─── Rotation automatique ────────────────────────────────────────────────
@@ -751,8 +798,7 @@
             return `<tr>
               <td class="rank-col${rankClass}">${i + 1}</td>
               <td>
-                <div class="fencer-name">${escHtml(r.lastName)} ${escHtml(r.firstName || '')}</div>
-                <div class="fencer-club">${escHtml(r.club || '')}</div>
+                <span class="fencer-name">${escHtml(r.lastName)} ${escHtml(r.firstName || '')}</span><span class="fencer-club">${escHtml(r.club || '')}</span>
               </td>
               <td style="text-align:center;color:#94a3b8">${r.matchesPlayed || 0}</td>
               <td class="victories">${r.victories || 0}</td>
@@ -823,14 +869,41 @@
           return;
         }
 
+        // ── Détecter les changements de score avant de reconstruire le DOM ───
+        const changedScores = [];   // ids des éléments à animer
+        const slashScores = [];     // ids pour l'animation épéiste (≥3 pts d'un coup)
+        for (const arena of arenas) {
+          const aid = arena.id || arena.arenaId;
+          const m = arena.currentMatch;
+          if (!m || !aid) continue;
+          const prev = state.prevArenaScores[aid];
+          if (prev) {
+            const newA = m.scoreA ?? null;
+            const newB = m.scoreB ?? null;
+            if (prev.scoreA !== newA) {
+              changedScores.push('sa-' + aid);
+              if (typeof newA === 'number' && typeof prev.scoreA === 'number' && newA - prev.scoreA >= 3) {
+                slashScores.push('sa-' + aid);
+              }
+            }
+            if (prev.scoreB !== newB) {
+              changedScores.push('sb-' + aid);
+              if (typeof newB === 'number' && typeof prev.scoreB === 'number' && newB - prev.scoreB >= 3) {
+                slashScores.push('sb-' + aid);
+              }
+            }
+          }
+        }
+
         container.innerHTML = arenas.map(arena => {
+          const aid = arena.id || arena.arenaId || '?';
           const m = arena.currentMatch;
           const isActive = arena.status === 'in_progress' && m;
 
           if (!m) {
             return `<div class="arena-card">
               <div class="arena-card-header">
-                <span class="arena-name">Piste ${arena.id || arena.arenaId || '?'}</span>
+                <span class="arena-name">Piste ${aid}</span>
                 <span class="arena-status-pill">En attente</span>
               </div>
               <div class="arena-idle">Aucun match assigné</div>
@@ -846,7 +919,7 @@
 
           return `<div class="arena-card ${isActive ? 'match-active' : ''}">
             <div class="arena-card-header">
-              <span class="arena-name">Piste ${arena.id || arena.arenaId || '?'}</span>
+              <span class="arena-name">Piste ${aid}</span>
               <span class="arena-status-pill ${isActive ? 'in-progress' : ''}">${isActive ? 'En cours' : 'Assigné'}</span>
             </div>
             <div class="arena-matchup">
@@ -855,9 +928,9 @@
                 <div class="fclub">${escHtml(clubA)}</div>
               </div>
               <div class="arena-scores">
-                <span class="arena-score score-a">${scoreA}</span>
+                <span class="arena-score score-a" id="sa-${aid}">${scoreA}</span>
                 <span class="arena-vs">-</span>
-                <span class="arena-score score-b">${scoreB}</span>
+                <span class="arena-score score-b" id="sb-${aid}">${scoreB}</span>
               </div>
               <div class="arena-fencer">
                 <div class="fname">${escHtml(nameB)}</div>
@@ -866,6 +939,30 @@
             </div>
           </div>`;
         }).join('');
+
+        // ── Appliquer les animations après reconstruction du DOM ─────────────
+        for (const elemId of changedScores) {
+          const el = document.getElementById(elemId);
+          if (!el) continue;
+          el.classList.remove('score-updated', 'score-slash');
+          void el.offsetWidth;  // force reflow pour relancer l'animation
+          el.classList.add('score-updated');
+          if (slashScores.includes(elemId)) el.classList.add('score-slash');
+          el.addEventListener('animationend', () => {
+            el.classList.remove('score-updated', 'score-slash');
+          }, { once: true });
+        }
+
+        // ── Persister les scores courants pour la prochaine comparaison ───────
+        for (const arena of arenas) {
+          const aid = arena.id || arena.arenaId;
+          if (!aid) continue;
+          const m = arena.currentMatch;
+          state.prevArenaScores[aid] = {
+            scoreA: m ? (m.scoreA ?? null) : null,
+            scoreB: m ? (m.scoreB ?? null) : null,
+          };
+        }
       }
 
       // ─── Helpers ─────────────────────────────────────────────────────────────
