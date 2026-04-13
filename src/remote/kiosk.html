@@ -543,12 +543,62 @@
         height: 14px;
         cursor: pointer;
       }
+    /* ─── Overlay note d'organisation ── */
+    #org-note-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 10500;
+      background: rgba(2, 6, 23, 0.88);
+      backdrop-filter: blur(6px);
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 4rem;
+    }
+    #org-note-overlay.visible { display: flex; }
+    #org-note-label {
+      font-size: clamp(0.9rem, 2.5vw, 1.4rem);
+      color: #64748b;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+    #org-note-time {
+      font-size: clamp(2rem, 5.5vw, 3.5rem);
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 0.5rem;
+    }
+    #org-note-countdown {
+      font-size: clamp(1.5rem, 4vw, 2.5rem);
+      font-weight: 800;
+      color: #3b82f6;
+      margin-bottom: 2rem;
+      font-variant-numeric: tabular-nums;
+    }
+    #org-note-message {
+      font-size: clamp(1.1rem, 3vw, 1.8rem);
+      color: #94a3b8;
+      font-style: italic;
+      max-width: 70ch;
+    }
     </style>
   </head>
   <body>
     <!-- Barre de progression rotation -->
     <div id="progress-bar-container">
       <div id="progress-bar"></div>
+    </div>
+
+    <!-- Overlay note d'organisation -->
+    <div id="org-note-overlay">
+      <div id="org-note-label">⏸ Pause</div>
+      <div id="org-note-time"></div>
+      <div id="org-note-countdown"></div>
+      <div id="org-note-message"></div>
     </div>
 
     <!-- Menu escamotable -->
@@ -670,6 +720,48 @@
         lastUpdate: null,
         prevArenaScores: {},  // { [arenaId]: { scoreA, scoreB } }
       };
+
+      // ─── Note d'organisation ─────────────────────────────────────────────────
+      let _orgNoteInterval = null;
+      let _currentOrgNote = null;
+
+      function renderOrgNote(note) {
+        clearInterval(_orgNoteInterval);
+        _orgNoteInterval = null;
+        _currentOrgNote = note;
+        const overlay = document.getElementById('org-note-overlay');
+        if (!note) { overlay.classList.remove('visible'); return; }
+
+        document.getElementById('org-note-message').innerHTML = note.message
+          ? '\u00ab\u00a0' + escHtml(note.message) + '\u00a0\u00bb'
+          : '';
+
+        if (note.type === 'target_time' && note.targetTime) {
+          const [hh, mm] = note.targetTime.split(':').map(Number);
+          const fmtTime = String(hh).padStart(2, '0') + 'h' + String(mm).padStart(2, '0');
+          document.getElementById('org-note-time').textContent = 'Reprise à ' + fmtTime;
+
+          const computeCountdown = () => {
+            const now = new Date();
+            const target = new Date(now);
+            target.setHours(hh, mm, 0, 0);
+            if (target <= now) target.setDate(target.getDate() + 1);
+            const diffSec = Math.max(0, Math.floor((target.getTime() - now.getTime()) / 1000));
+            const m = Math.floor(diffSec / 60);
+            const s = diffSec % 60;
+            document.getElementById('org-note-countdown').textContent =
+              'dans ' + m + ' min ' + String(s).padStart(2, '0') + ' s';
+            if (diffSec === 0) { clearInterval(_orgNoteInterval); overlay.classList.remove('visible'); }
+          };
+          computeCountdown();
+          _orgNoteInterval = setInterval(computeCountdown, 1000);
+        } else {
+          document.getElementById('org-note-time').textContent = '';
+          document.getElementById('org-note-countdown').textContent = '';
+        }
+
+        overlay.classList.add('visible');
+      }
 
       // ─── Rotation automatique ────────────────────────────────────────────────
       function startRotation() {
@@ -839,6 +931,9 @@
 
           document.getElementById('menu-competition-name').textContent =
             state.session.competitionName || '';
+
+          // Note d'organisation
+          renderOrgNote(state.session.orgNote || null);
 
           // Appliquer les vues kiosk : localStorage en priorité, sinon config serveur
           const localViews = loadLocalViews();

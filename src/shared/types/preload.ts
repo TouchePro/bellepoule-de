@@ -354,6 +354,8 @@ export interface RemoteServerAPI {
   updateKioskViews: (
     views: Record<string, boolean>
   ) => Promise<{ success: boolean; error?: string }>;
+  setOrgNote: (note: import('../types/remote').OrgNote) => Promise<{ success: boolean; error?: string }>;
+  clearOrgNote: () => Promise<{ success: boolean; error?: string }>;
 }
 
 // ============================================================================
@@ -461,6 +463,7 @@ export interface ElectronAPI extends MenuAPI, UtilityAPI {
   remote: RemoteServerAPI;
   onRemoteArenaUpdate: (callback: (data: any) => void) => void;
   onRemoteMatchFinished: (callback: (data: any) => void) => void;
+  onKioskNoteUpdate: (callback: (note: import('../types/remote').OrgNote | null) => void) => () => void;
   notifyLanguageChanged: (lang: string) => void;
 }
 

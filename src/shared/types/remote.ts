@@ -148,3 +148,10 @@ export interface RefereeControl {
   finishMatch: () => void;
   nextMatch: () => void;
 }
+
+export interface OrgNote {
+  type: 'target_time' | 'free';
+  message: string;      // texte libre affiché sous le titre
+  targetTime?: string;  // "HH:MM" uniquement pour type target_time
+  createdAt: string;    // ISO timestamp
+}

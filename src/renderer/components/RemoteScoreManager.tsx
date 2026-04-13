@@ -58,6 +58,10 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [showPhotos, setShowPhotos] = useState(false);
   const [kioskViews, setKioskViews] = useState({ poules: true, classement: true, direct: true });
+  const [orgNoteType, setOrgNoteType] = useState<'free' | 'target_time'>('free');
+  const [orgNoteMessage, setOrgNoteMessage] = useState('');
+  const [orgNoteTime, setOrgNoteTime] = useState('');
+  const [orgNoteActive, setOrgNoteActive] = useState(false);
 
   useEffect(() => {
     if (!activeQR) {
@@ -417,6 +421,82 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
               {label}
             </label>
           ))}
+        </div>
+
+        {/* Note d'organisation */}
+        <div style={{ margin: '0.75rem 0', padding: '0.75rem', border: '1px solid #334155', borderRadius: '0.5rem', background: '#1e293b' }}>
+          <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem', color: '#94a3b8' }}>
+            Note d'organisation (kiosk)
+          </div>
+          <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.5rem' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+              <input
+                type="radio"
+                name="orgNoteType"
+                checked={orgNoteType === 'free'}
+                onChange={() => setOrgNoteType('free')}
+              />
+              Message libre
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+              <input
+                type="radio"
+                name="orgNoteType"
+                checked={orgNoteType === 'target_time'}
+                onChange={() => setOrgNoteType('target_time')}
+              />
+              Heure de reprise
+            </label>
+          </div>
+          <input
+            type="text"
+            placeholder="Message (ex: Déjeuner des arbitres)"
+            value={orgNoteMessage}
+            onChange={e => setOrgNoteMessage(e.target.value)}
+            style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#0f172a', color: 'inherit', boxSizing: 'border-box', marginBottom: '0.4rem' }}
+          />
+          {orgNoteType === 'target_time' && (
+            <input
+              type="time"
+              value={orgNoteTime}
+              onChange={e => setOrgNoteTime(e.target.value)}
+              style={{ padding: '0.4rem 0.6rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#0f172a', color: 'inherit', marginBottom: '0.4rem' }}
+            />
+          )}
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+            <button
+              disabled={!orgNoteMessage.trim() || (orgNoteType === 'target_time' && !orgNoteTime)}
+              onClick={async () => {
+                const note = {
+                  type: orgNoteType,
+                  message: orgNoteMessage.trim(),
+                  ...(orgNoteType === 'target_time' ? { targetTime: orgNoteTime } : {}),
+                  createdAt: new Date().toISOString(),
+                };
+                await window.electronAPI.remote.setOrgNote(note);
+                setOrgNoteActive(true);
+              }}
+              style={{ flex: 1, padding: '0.4rem', borderRadius: '0.3rem', border: 'none', background: orgNoteActive ? '#1d4ed8' : '#2563eb', color: '#fff', cursor: 'pointer', fontWeight: 500 }}
+            >
+              {orgNoteActive ? '↻ Mettre à jour' : '▶ Afficher'}
+            </button>
+            {orgNoteActive && (
+              <button
+                onClick={async () => {
+                  await window.electronAPI.remote.clearOrgNote();
+                  setOrgNoteActive(false);
+                }}
+                style={{ padding: '0.4rem 0.75rem', borderRadius: '0.3rem', border: 'none', background: '#475569', color: '#fff', cursor: 'pointer' }}
+              >
+                ✕ Masquer
+              </button>
+            )}
+          </div>
+          {orgNoteActive && (
+            <div style={{ fontSize: '0.75rem', color: '#22c55e', marginTop: '0.4rem' }}>
+              ● Note visible sur le kiosk
+            </div>
+          )}
         </div>
 
         <div className="arena-url-grid">
