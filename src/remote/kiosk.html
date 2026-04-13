@@ -135,6 +135,7 @@
         overflow: hidden;
         display: none;
         flex-direction: column;
+        background: #0f172a;
       }
 
       .kiosk-view.active {
@@ -692,7 +693,7 @@
       function switchView(name) {
         state.currentView = name;
 
-        state.views.forEach(v => {
+        ALL_VIEWS.forEach(v => {
           document.getElementById('view-' + v).classList.toggle('active', v === name);
           const btn = document.getElementById('btn-' + v);
           if (btn) btn.classList.toggle('active', v === name);
@@ -1106,12 +1107,14 @@
         setInterval(fetchData, 15000);
         startRotation();
 
-        // Plein écran automatique au clic
+        // Plein écran automatique au premier clic seulement
+        let _fsRequested = false;
         document.addEventListener('click', () => {
-          if (!document.fullscreenElement) {
+          if (!_fsRequested && !document.fullscreenElement) {
+            _fsRequested = true;
             document.documentElement.requestFullscreen().catch(() => {});
           }
-        });
+        }, { capture: true });
       });
     </script>
   </body>
