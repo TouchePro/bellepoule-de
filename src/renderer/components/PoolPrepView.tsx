@@ -247,7 +247,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
   };
 
   const handleMaxFencersChange = (value: number) => {
-    if (value >= minFencersPerPool && value <= 10) {
+    if (value >= minFencersPerPool && value <= 64) {
       saveToHistory();
       setMaxFencersPerPool(value);
       onSettingsChange?.(minFencersPerPool, value);
@@ -492,7 +492,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
             value={maxFencersPerPool}
             onChange={e => handleMaxFencersChange(parseInt(e.target.value) || 7)}
             min={minFencersPerPool}
-            max={10}
+            max={64}
             style={{ width: '80px', padding: '0.5rem' }}
           />
         </div>
