@@ -182,6 +182,7 @@
         overflow-y: auto;
         flex: 1;
         align-items: start;
+        align-content: start;
       }
 
       .pool-card {
@@ -331,6 +332,7 @@
         gap: 1.25rem;
         flex: 1;
         overflow-y: auto;
+        align-content: start;
       }
 
       .arena-card {
@@ -485,6 +487,61 @@
         pointer-events: none;
         animation: epee-slash 0.55s ease-in forwards;
       }
+
+      /* ── Bouton & panneau de configuration des vues ─────────────────────── */
+      .settings-btn {
+        padding: 0.4rem 0.75rem;
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 0.5rem;
+        background: rgba(255,255,255,0.05);
+        color: white;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .settings-btn:hover { background: #374151; }
+
+      .settings-panel {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        right: 0;
+        background: #1e293b;
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 0.75rem;
+        padding: 0.75rem 1rem;
+        min-width: 180px;
+        z-index: 200;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      }
+
+      .settings-panel.hidden { display: none; }
+
+      .settings-title {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+      }
+
+      .settings-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.35rem 0;
+        font-size: 0.875rem;
+        cursor: pointer;
+        color: #e2e8f0;
+        user-select: none;
+      }
+
+      .settings-item input[type="checkbox"] {
+        accent-color: #3b82f6;
+        width: 14px;
+        height: 14px;
+        cursor: pointer;
+      }
     </style>
   </head>
   <body>
@@ -503,6 +560,21 @@
         <button id="btn-poules" class="active" onclick="switchView('poules')">Poules</button>
         <button id="btn-classement" onclick="switchView('classement')">Classement</button>
         <button id="btn-direct" onclick="switchView('direct')">Matchs en direct</button>
+      </div>
+      <div style="position:relative;margin-left:0.5rem">
+        <button id="btn-settings" class="settings-btn" title="Configurer les vues">⚙</button>
+        <div id="settings-panel" class="settings-panel hidden">
+          <div class="settings-title">Vues affichées</div>
+          <label class="settings-item">
+            <input type="checkbox" id="cb-poules" checked> Poules
+          </label>
+          <label class="settings-item">
+            <input type="checkbox" id="cb-classement" checked> Classement
+          </label>
+          <label class="settings-item">
+            <input type="checkbox" id="cb-direct" checked> Matchs en cours
+          </label>
+        </div>
       </div>
       <div class="menu-status">
         <div id="status-dot" class="status-dot"></div>
@@ -688,6 +760,63 @@
         }
       });
 
+      // ─── Configuration locale des vues ───────────────────────────────────────
+      function saveLocalViews() {
+        const v = {};
+        ALL_VIEWS.forEach(n => { v[n] = document.getElementById('cb-' + n).checked; });
+        localStorage.setItem('kioskViewsLocal', JSON.stringify(v));
+      }
+
+      function loadLocalViews() {
+        try {
+          const stored = localStorage.getItem('kioskViewsLocal');
+          if (stored) return JSON.parse(stored);
+        } catch {}
+        return null;
+      }
+
+      function applyLocalViews() {
+        const enabled = ALL_VIEWS.filter(v => document.getElementById('cb-' + v).checked);
+        state.views = enabled.length > 0 ? enabled : ALL_VIEWS.slice();
+        ALL_VIEWS.forEach(v => {
+          const btn = document.getElementById('btn-' + v);
+          if (btn) btn.style.display = state.views.includes(v) ? '' : 'none';
+        });
+        if (!state.views.includes(state.currentView)) switchView(state.views[0]);
+      }
+
+      // Bouton ⚙ – toggle panneau
+      document.getElementById('btn-settings').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const panel = document.getElementById('settings-panel');
+        panel.classList.toggle('hidden');
+        // Prolonger le timer menu tant que le panneau est ouvert
+        if (!panel.classList.contains('hidden')) {
+          clearTimeout(state.menuTimer);
+        } else {
+          showMenu(); // relance le timer d'auto-masquage
+        }
+      });
+
+      // Fermer le panneau au clic à l'extérieur
+      document.addEventListener('click', (e) => {
+        const panel = document.getElementById('settings-panel');
+        const btn = document.getElementById('btn-settings');
+        if (!panel.classList.contains('hidden') && !panel.contains(e.target) && e.target !== btn) {
+          panel.classList.add('hidden');
+          showMenu();
+        }
+      });
+
+      // Changement d'une checkbox
+      ALL_VIEWS.forEach(v => {
+        document.getElementById('cb-' + v).addEventListener('change', () => {
+          saveLocalViews();
+          applyLocalViews();
+          clearTimeout(state.menuTimer); // garder le menu visible pendant la config
+        });
+      });
+
       // ─── Statut connexion ────────────────────────────────────────────────────
       function setStatus(ok, text) {
         const dot = document.getElementById('status-dot');
@@ -710,23 +839,23 @@
           document.getElementById('menu-competition-name').textContent =
             state.session.competitionName || '';
 
-          // Appliquer les vues kiosk configurées
-          if (state.session.kioskViews) {
+          // Appliquer les vues kiosk : localStorage en priorité, sinon config serveur
+          const localViews = loadLocalViews();
+          if (localViews) {
+            // Restaurer l'état des checkboxes depuis localStorage
+            ALL_VIEWS.forEach(v => {
+              const cb = document.getElementById('cb-' + v);
+              if (cb) cb.checked = localViews[v] !== false;
+            });
+          } else if (state.session.kioskViews) {
+            // Initialiser les checkboxes depuis la config serveur (premier chargement)
             const kv = state.session.kioskViews;
-            const enabled = ALL_VIEWS.filter(v => kv[v] !== false);
-            state.views = enabled.length > 0 ? enabled : ALL_VIEWS;
-          } else {
-            state.views = ALL_VIEWS.slice();
+            ALL_VIEWS.forEach(v => {
+              const cb = document.getElementById('cb-' + v);
+              if (cb) cb.checked = kv[v] !== false;
+            });
           }
-          // Masquer/afficher les boutons de navigation
-          ALL_VIEWS.forEach(v => {
-            const btn = document.getElementById('btn-' + v);
-            if (btn) btn.style.display = state.views.includes(v) ? '' : 'none';
-          });
-          // Si la vue courante n'est plus dans les vues actives, basculer sur la première
-          if (!state.views.includes(state.currentView)) {
-            switchView(state.views[0]);
-          }
+          applyLocalViews();
 
           // 2. Données poules + classements
           const poolsRes = await fetch('/api/competitions/' + competitionId + '/results-data');
