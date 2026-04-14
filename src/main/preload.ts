@@ -264,6 +264,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }
       return ipcRenderer.invoke('file:writeContent', filepath, content);
     },
+    printHtmlToPDF: (html: string, outputPath: string) => {
+      if (!html || typeof html !== 'string') {
+        throw new Error('HTML content is required');
+      }
+      if (!outputPath || typeof outputPath !== 'string') {
+        throw new Error('Output path is required');
+      }
+      return ipcRenderer.invoke('file:printHtmlToPDF', html, outputPath);
+    },
     exportPhotos: (competitionId: string, filepath: string) => {
       if (!competitionId || typeof competitionId !== 'string') {
         throw new Error('Competition ID is required and must be a string');
