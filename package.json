@@ -52,6 +52,7 @@
     "files": [
       "dist/**/*",
       "dist/remote/**/*",
+      "LICENSE",
       "package.json",
       "version.json"
     ],
