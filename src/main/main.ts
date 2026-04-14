@@ -6,6 +6,7 @@
 import { app, BrowserWindow, ipcMain, dialog, Menu, shell } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as os from 'os';
 import JSZip from 'jszip';
 import { DatabaseManager } from '../database';
 import { RemoteScoreServer } from './remoteScoreServer';
@@ -932,6 +933,66 @@ ipcMain.handle('window:print', () => {
   return new Promise<void>((resolve) => {
     mainWindow?.webContents.print({ silent: false, printBackground: true }, () => {
       resolve();
+    });
+  });
+});
+
+// PDF generation via hidden BrowserWindow (propre, sans menus d'application)
+ipcMain.handle('file:printHtmlToPDF', async (_, html: string, outputPath: string) => {
+  return new Promise<{ success: boolean; path?: string; error?: string }>((resolve) => {
+    const tmpFile = path.join(os.tmpdir(), `bp-pdf-${Date.now()}.html`);
+    try {
+      fs.writeFileSync(tmpFile, html, 'utf-8');
+    } catch (e) {
+      resolve({ success: false, error: `Impossible de créer le fichier temporaire: ${e}` });
+      return;
+    }
+
+    const pdfWin = new BrowserWindow({
+      show: false,
+      width: 1200,
+      height: 1600,
+      webPreferences: {
+        contextIsolation: true,
+        nodeIntegration: false,
+        javascript: false,
+      },
+    });
+    pdfWin.setMenu(null);
+
+    pdfWin.loadFile(tmpFile);
+
+    pdfWin.webContents.once('did-finish-load', () => {
+      pdfWin.webContents
+        .printToPDF({
+          printBackground: true,
+          landscape: false,
+          pageSize: 'A4',
+          preferCSSPageSize: true,
+          margins: { marginType: 'none' },
+        })
+        .then((data: Buffer) => {
+          try {
+            fs.writeFileSync(outputPath, data);
+            resolve({ success: true, path: outputPath });
+          } catch (writeErr) {
+            resolve({ success: false, error: `Impossible d'écrire le PDF: ${writeErr}` });
+          } finally {
+            try { fs.unlinkSync(tmpFile); } catch { /* ignore */ }
+            pdfWin.destroy();
+          }
+        })
+        .catch((err: Error) => {
+          try { fs.unlinkSync(tmpFile); } catch { /* ignore */ }
+          pdfWin.destroy();
+          resolve({ success: false, error: err.message });
+        });
+    });
+
+    pdfWin.webContents.once('did-fail-load', () => {
+      try { fs.unlinkSync(tmpFile); } catch { /* ignore */ }
+      pdfWin.destroy();
+      resolve({ success: false, error: 'Chargement HTML échoué' });
     });
   });
 });
