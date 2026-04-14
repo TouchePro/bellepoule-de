@@ -11,6 +11,9 @@ interface PoolExportOptions {
   competitionName?: string;
   weapon?: string;
   category?: string;
+  includeFinishedMatches?: boolean;
+  includePendingMatches?: boolean;
+  includePoolStats?: boolean;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -664,3 +667,4 @@ export async function exportTableauToPDF(
   const html = generateTableauHTML(matches, matchesPerPage, title);
   await savePDF(html, `tableau-elimination.pdf`);
 }
+
