@@ -115,8 +115,9 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     computeOverallRanking,
     areAllPoolsComplete,
     handleFencerForfeit,
+    handleUndoAbandon,
     syncFencersToPool,
-  } = usePoolManagement({ isLaserSabre, poolMaxScore, showToast });
+  } = usePoolManagement({ isLaserSabre, poolMaxScore, showToast, competitionId: competition?.id });
 
   const { exportFencersList, exportRanking, exportResults, exportPoolsPDF } = useExport({
     competition,
@@ -193,9 +194,17 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   useEffect(() => {
     if (!window.electronAPI?.onRemoteMatchFinished) return;
 
-    const handleMatchFinished = (data: { matchId: string; scoreA: number; scoreB: number; isTableau?: boolean }) => {
+    const handleMatchFinished = (data: {
+      matchId: string;
+      scoreA: number;
+      scoreB: number;
+      isTableau?: boolean;
+    }) => {
       const { matchId, scoreA, scoreB } = data;
-      logger.debug(LogCategory.UI, `[CompetitionView] Match terminé reçu: ${matchId} - Score: ${scoreA}-${scoreB}`);
+      logger.debug(
+        LogCategory.UI,
+        `[CompetitionView] Match terminé reçu: ${matchId} - Score: ${scoreA}-${scoreB}`
+      );
       updateMatchFromRemote(matchId, scoreA, scoreB, MatchStatus.FINISHED);
 
       // Mise à jour du tableau d'élimination directe si c'est un match DE
@@ -204,9 +213,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         if (idx === -1) return prev;
         const match = prev[idx];
         const winner = scoreA > scoreB ? match.fencerA : scoreB > scoreA ? match.fencerB : null;
-        const updated = prev.map((m, i) =>
-          i === idx ? { ...m, scoreA, scoreB, winner } : m
-        );
+        const updated = prev.map((m, i) => (i === idx ? { ...m, scoreA, scoreB, winner } : m));
         const size = prev.length > 0 ? Math.max(...prev.map(m => m.round)) : 0;
         propagateWinners(updated, size);
         return [...updated];
@@ -343,8 +350,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
   const handleGoToTableau = () => {
     setRankingValidated(true);
-    const ranking = computeOverallRanking(pools);
-    setOverallRanking(ranking);
+    // Ne pas recalculer : overallRanking est déjà à jour
+    // (calculé à l'entrée dans handleGoToRanking, mis à jour par onRankingChange si édité manuellement)
 
     // Si le classement a changé, réinitialiser les matches du tableau
     if (rankingChanged) {
@@ -383,7 +390,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     const poolCount = calculateOptimalPoolCount(rankedFencers.length, 5, 7);
     const distribution = distributeFencersToPoolsSerpentine(rankedFencers, poolCount, {
       byClub: true,
-      byLeague: true,
+      byRegion: true,
       byNation: false,
     });
 
@@ -445,8 +452,20 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   }, [canAdvanceFromPools]);
 
   const phases = [
-    { id: 'checkin', label: 'Appel', icon: '📋', disabled: false, title: undefined as string | undefined },
-    { id: 'poolprep', label: 'Préparation', icon: '⚙️', disabled: false, title: undefined as string | undefined },
+    {
+      id: 'checkin',
+      label: 'Appel',
+      icon: '📋',
+      disabled: false,
+      title: undefined as string | undefined,
+    },
+    {
+      id: 'poolprep',
+      label: 'Préparation',
+      icon: '⚙️',
+      disabled: false,
+      title: undefined as string | undefined,
+    },
     {
       id: 'pools',
       label: poolRounds > 1 ? `Poules (${currentPoolRound}/${poolRounds})` : 'Poules',
@@ -454,20 +473,40 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       disabled: false,
       title: undefined as string | undefined,
     },
-    { id: 'ranking', label: 'Classement', icon: '📊', disabled: false, title: undefined as string | undefined },
+    {
+      id: 'ranking',
+      label: 'Classement',
+      icon: '📊',
+      disabled: false,
+      title: undefined as string | undefined,
+    },
     ...(hasDirectElimination
-      ? [{
-          id: 'tableau',
-          label: 'Tableau',
-          icon: '🏆',
-          disabled: !isTableauUnlocked,
-          title: !isTableauUnlocked
-            ? 'Terminez toutes les poules et validez le classement pour accéder au tableau'
-            : undefined as string | undefined,
-        }]
+      ? [
+          {
+            id: 'tableau',
+            label: 'Tableau',
+            icon: '🏆',
+            disabled: !isTableauUnlocked,
+            title: !isTableauUnlocked
+              ? 'Terminez toutes les poules et validez le classement pour accéder au tableau'
+              : (undefined as string | undefined),
+          },
+        ]
       : []),
-    { id: 'results', label: 'Résultats', icon: '🏁', disabled: isResultsLocked, title: undefined as string | undefined },
-    { id: 'remote', label: '📡 Saisie distante', icon: '📡', disabled: false, title: undefined as string | undefined },
+    {
+      id: 'results',
+      label: 'Résultats',
+      icon: '🏁',
+      disabled: isResultsLocked,
+      title: undefined as string | undefined,
+    },
+    {
+      id: 'remote',
+      label: '📡 Saisie distante',
+      icon: '📡',
+      disabled: false,
+      title: undefined as string | undefined,
+    },
   ];
 
   const getPoolsNextAction = () => {
@@ -706,6 +745,16 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                 handleFencerForfeit(id, 'abandon');
               } else if (status === FencerStatus.EXCLUDED) {
                 handleFencerForfeit(id, 'exclusion');
+              } else if (status === FencerStatus.CHECKED_IN) {
+                // Si réactivation depuis un statut spécial, restaurer les matchs affectés
+                const currentFencer = fencers.find(f => f.id === id);
+                const wasInSpecialStatus =
+                  currentFencer?.status === FencerStatus.ABANDONED ||
+                  currentFencer?.status === FencerStatus.FORFAIT ||
+                  currentFencer?.status === FencerStatus.EXCLUDED;
+                if (wasInSpecialStatus) {
+                  handleUndoAbandon(id);
+                }
               }
               updateFencer(id, { status });
             }}
@@ -789,6 +838,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         {currentPhase === 'ranking' && (
           <PoolRankingView
             pools={pools}
+            ranking={overallRanking}
             weapon={competition.weapon}
             hasDirectElimination={hasDirectElimination}
             onGoToTableau={handleGoToTableau}
@@ -799,6 +849,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                 setRankingChanged(true);
               }
             }}
+            onRankingChange={ranking => setOverallRanking(ranking)}
           />
         )}
 
@@ -818,7 +869,9 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               if (isRemoteActive) {
                 const match = tableauMatches.find(m => m.id === matchId);
                 window.electronAPI.remote.updateMatchArena(
-                  matchId, oldArena, newArena,
+                  matchId,
+                  oldArena,
+                  newArena,
                   match?.fencerA ?? null,
                   match?.fencerB ?? null
                 );
@@ -1176,3 +1229,4 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 };
 
 export default CompetitionView;
+

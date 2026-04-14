@@ -83,7 +83,7 @@ D'après l'analyse du code et les demandes utilisateurs, les prochaines mises à
 - 🇺🇸 **Anglais**
 - 🇫🇷 **Brezhoneg (Breton)**
 - 🇪🇸 **Català (Catalan)** _(Nouveau !)_
-- 🇩🇪 **Deutsch (Allemand)**
+- 🇩🇪 **Deutsch (Allemand)** _(Nouveau !)_
 - 🇪🇸 **Español (Espagnol)**
 - 🇭🇰 **繁體中文 (Chinois traditionnel – Hong Kong)** _(Nouveau !)_
 

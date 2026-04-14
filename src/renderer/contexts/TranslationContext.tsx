@@ -5,14 +5,7 @@
  */
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-
-import frTranslations from '../locales/fr.json';
-import enTranslations from '../locales/en.json';
-import deTranslations from '../locales/de.json';
-import esTranslations from '../locales/es.json';
-import brTranslations from '../locales/br.json';
-import caTranslations from '../locales/ca.json';
-import zhHKTranslations from '../locales/zh-HK.json';
+import { logger, LogCategory } from '@shared/services/logger';
 
 export type Language = 'fr' | 'en' | 'br' | 'ca' | 'de' | 'es' | 'zh-HK';
 export type TranslationKey = string;
@@ -107,18 +100,16 @@ const getFallbackTranslations = (language: Language): Translations => {
   return fallbackTranslations[language] || fallbackTranslations.fr;
 };
 
-const bundledTranslations: Record<Language, Translations> = {
-  fr: frTranslations as Translations,
-  en: enTranslations as Translations,
-  de: deTranslations as Translations,
-  es: esTranslations as Translations,
-  br: brTranslations as Translations,
-  ca: caTranslations as Translations,
-  'zh-HK': zhHKTranslations as Translations,
-};
-
-const loadTranslations = (language: Language): Translations => {
-  return bundledTranslations[language] || getFallbackTranslations(language);
+const loadTranslations = async (language: Language): Promise<Translations> => {
+  try {
+    const response = await fetch(`./locales/${language}.json`);
+    if (response.ok) {
+      return await response.json();
+    }
+  } catch {
+    logger.warn(LogCategory.UI, `Failed to load translations for ${language}`);
+  }
+  return getFallbackTranslations(language);
 };
 
 const applyTheme = (theme: Theme): void => {
@@ -139,29 +130,42 @@ export const TranslationProvider: React.FC<TranslationProviderProps> = ({ childr
   const [isLoading, setIsLoading] = useState(true);
 
   const changeLanguage = useCallback(async (newLanguage: Language) => {
-    const loadedTranslations = loadTranslations(newLanguage);
-    setLanguage(newLanguage);
-    setTranslations(loadedTranslations);
-    localStorage.setItem('touchepro-language', newLanguage);
+    setIsLoading(true);
+    try {
+      const loadedTranslations = await loadTranslations(newLanguage);
+      setLanguage(newLanguage);
+      setTranslations(loadedTranslations);
+      localStorage.setItem('bellepoule-language', newLanguage);
+      // Rebuild native Electron menu in the new language
+      window.electronAPI?.notifyLanguageChanged?.(newLanguage);
+    } catch (error) {
+      logger.error(LogCategory.UI, 'Failed to change language', error as Error);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   const changeTheme = useCallback((newTheme: Theme) => {
     setTheme(newTheme);
     applyTheme(newTheme);
-    localStorage.setItem('touchepro-theme', newTheme);
+    localStorage.setItem('bellepoule-theme', newTheme);
   }, []);
 
   useEffect(() => {
-    const savedLanguage = (localStorage.getItem('touchepro-language') as Language) || 'fr';
-    const savedTheme = (localStorage.getItem('touchepro-theme') as Theme) || 'default';
+    const initialize = async () => {
+      const savedLanguage = (localStorage.getItem('bellepoule-language') as Language) || 'fr';
+      const savedTheme = (localStorage.getItem('bellepoule-theme') as Theme) || 'default';
 
-    applyTheme(savedTheme);
-    const loadedTranslations = loadTranslations(savedLanguage);
+      applyTheme(savedTheme);
+      const loadedTranslations = await loadTranslations(savedLanguage);
 
-    setLanguage(savedLanguage);
-    setTheme(savedTheme);
-    setTranslations(loadedTranslations);
-    setIsLoading(false);
+      setLanguage(savedLanguage);
+      setTheme(savedTheme);
+      setTranslations(loadedTranslations);
+      setIsLoading(false);
+    };
+
+    initialize();
   }, []);
 
   const t = useCallback(

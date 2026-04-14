@@ -206,7 +206,7 @@ export const validateFencerData = (data: Partial<Fencer>): void => {
 
   // Optional fields
   validateOptionalDate(data.birthDate, 'birthDate');
-  validateOptionalString(data.league, 'league', 100);
+  validateOptionalString(data.region, 'region', 100);
   validateOptionalString(data.club, 'club', 100);
   validateOptionalString(data.license, 'license', 50);
   validateOptionalNumber(data.ranking, 'ranking', 1);

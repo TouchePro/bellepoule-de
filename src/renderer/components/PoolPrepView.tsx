@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Fencer, Pool, Match, MatchStatus } from '../../shared/types';
 import {
   calculateOptimalPoolCount,
@@ -46,6 +46,15 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
   const [draggedFencer, setDraggedFencer] = useState<{ fencer: Fencer; poolIndex: number } | null>(
     null
   );
+
+  const [separationConfig, setSeparationConfig] = useState({
+    byClub: true,
+    byRegion: true,
+    byNation: false,
+  });
+
+  // Flag pour éviter la régénération des poules quand poolCount est défini depuis initialPools
+  const skipNextPoolGeneration = useRef(false);
 
   // Historique des modifications pour la fonction restore
   const [history, setHistory] = useState<PoolStateHistory[]>([]);
@@ -131,6 +140,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
   // Initialize pools from initialPools when component mounts or initialPools changes
   useEffect(() => {
     if (initialPools && initialPools.length > 0) {
+      skipNextPoolGeneration.current = true;
       setPools(initialPools);
       setPoolCount(initialPools.length);
       // Initialize history with the loaded state
@@ -157,19 +167,22 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
   // Regenerate pools when count or min/max fencers per pool changes
   // Note: on ne recalcule pas le nombre optimal de poules ici pour respecter le choix manuel de l'utilisateur
   useEffect(() => {
+    // Ignorer si poolCount vient d'être défini depuis initialPools (restauration de session)
+    // — sans cette garde, les poules restaurées seraient écrasées sur Linux où les tireurs
+    // se chargent plus vite que sur Windows (pas d'antivirus, FS natif).
+    if (skipNextPoolGeneration.current) {
+      skipNextPoolGeneration.current = false;
+      return;
+    }
     if (poolCount > 0 && fencers.length > 0) {
       generatePools(poolCount);
     }
-  }, [poolCount, minFencersPerPool, maxFencersPerPool]);
+  }, [poolCount, minFencersPerPool, maxFencersPerPool, separationConfig]);
 
   const generatePools = (count: number) => {
     if (fencers.length === 0) return;
 
-    const distribution = distributeFencersToPoolsSerpentine(fencers, count, {
-      byClub: true,
-      byLeague: true,
-      byNation: false,
-    });
+    const distribution = distributeFencersToPoolsSerpentine(fencers, count, separationConfig);
 
     const generatedPools: Pool[] = distribution.map((poolFencers, index) => {
       const matchOrder = generatePoolMatchOrder(poolFencers.length);
@@ -234,7 +247,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
   };
 
   const handleMaxFencersChange = (value: number) => {
-    if (value >= minFencersPerPool && value <= 10) {
+    if (value >= minFencersPerPool && value <= 64) {
       saveToHistory();
       setMaxFencersPerPool(value);
       onSettingsChange?.(minFencersPerPool, value);
@@ -429,6 +442,16 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
             >
               +
             </button>
+            {poolCount !== 1 && (
+              <button
+                className="btn btn-secondary"
+                onClick={() => handlePoolCountChange(1)}
+                title="Mettre tous les tireurs dans une seule poule"
+                style={{ fontSize: '0.8rem', padding: '0.25rem 0.6rem', marginLeft: '0.25rem' }}
+              >
+                Poule unique
+              </button>
+            )}
           </div>
         </div>
 
@@ -469,9 +492,37 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
             value={maxFencersPerPool}
             onChange={e => handleMaxFencersChange(parseInt(e.target.value) || 7)}
             min={minFencersPerPool}
-            max={10}
+            max={64}
             style={{ width: '80px', padding: '0.5rem' }}
           />
+        </div>
+
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          {(
+            [
+              { key: 'byClub', label: 'Séparer par club' },
+              { key: 'byRegion', label: 'Séparer par région' },
+              { key: 'byNation', label: 'Séparer par nation' },
+            ] as { key: keyof typeof separationConfig; label: string }[]
+          ).map(({ key, label }) => (
+            <label
+              key={key}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.375rem',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={separationConfig[key]}
+                onChange={e => setSeparationConfig(prev => ({ ...prev, [key]: e.target.checked }))}
+              />
+              {label}
+            </label>
+          ))}
         </div>
 
         <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
@@ -518,13 +569,30 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
                 borderBottom: '1px solid #e5e7eb',
               }}
             >
-              <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>Poule {pool.number}</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>Poule {pool.number}</h3>
+                {pools.length === 1 && (
+                  <span
+                    style={{
+                      fontSize: '0.7rem',
+                      background: '#dbeafe',
+                      color: '#1d4ed8',
+                      borderRadius: '4px',
+                      padding: '0.1rem 0.4rem',
+                      fontWeight: 500,
+                    }}
+                  >
+                    Poule unique
+                  </span>
+                )}
+              </div>
               <span
                 style={{
                   fontSize: '0.875rem',
                   color:
-                    pool.fencers.length < minFencersPerPool ||
-                    pool.fencers.length > maxFencersPerPool
+                    pools.length > 1 &&
+                    (pool.fencers.length < minFencersPerPool ||
+                      pool.fencers.length > maxFencersPerPool)
                       ? '#dc2626'
                       : '#6b7280',
                 }}

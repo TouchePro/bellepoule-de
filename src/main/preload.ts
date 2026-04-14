@@ -23,6 +23,7 @@ import type {
   MatchTouchData,
   MatchCardData,
   MatchTimingData,
+  MatchSnapshot,
 } from '../shared/types/preload';
 
 // Input validation functions
@@ -219,6 +220,25 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }
       return ipcRenderer.invoke('db:getFencerHistory', fencerId);
     },
+    saveAbandonSnapshot: (
+      fencerId: string,
+      competitionId: string,
+      previousStatus: string,
+      abandonType: string,
+      snapshots: MatchSnapshot[]
+    ) =>
+      ipcRenderer.invoke(
+        'db:saveAbandonSnapshot',
+        fencerId,
+        competitionId,
+        previousStatus,
+        abandonType,
+        snapshots
+      ),
+    getAbandonSnapshot: (fencerId: string) =>
+      ipcRenderer.invoke('db:getAbandonSnapshot', fencerId),
+    deleteAbandonSnapshot: (fencerId: string) =>
+      ipcRenderer.invoke('db:deleteAbandonSnapshot', fencerId),
   },
 
   // File operations with validation
@@ -243,6 +263,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
         throw new Error('Content must be a string');
       }
       return ipcRenderer.invoke('file:writeContent', filepath, content);
+    },
+    printHtmlToPDF: (html: string, outputPath: string) => {
+      if (!html || typeof html !== 'string') {
+        throw new Error('HTML content is required');
+      }
+      if (!outputPath || typeof outputPath !== 'string') {
+        throw new Error('Output path is required');
+      }
+      return ipcRenderer.invoke('file:printHtmlToPDF', html, outputPath);
     },
     exportPhotos: (competitionId: string, filepath: string) => {
       if (!competitionId || typeof competitionId !== 'string') {
@@ -321,6 +350,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onAutosaveFailed: (callback: () => void) => ipcRenderer.on('autosave:failed', callback),
 
   // Utility functions
+  print: () => ipcRenderer.invoke('window:print'),
   openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url),
   getVersionInfo: () => ipcRenderer.invoke('app:getVersionInfo'),
 
@@ -344,17 +374,36 @@ contextBridge.exposeInMainWorld('electronAPI', {
     startServer: () => ipcRenderer.invoke('remote:startServer'),
     stopServer: () => ipcRenderer.invoke('remote:stopServer'),
     getServerInfo: () => ipcRenderer.invoke('remote:getServerInfo'),
-    startSession: (competitionId: string, strips: number, matches?: any[], showPhotos?: boolean) =>
-      ipcRenderer.invoke('remote:startSession', competitionId, strips, matches, showPhotos),
+    startSession: (
+      competitionId: string,
+      strips: number,
+      matches?: any[],
+      showPhotos?: boolean,
+      kioskViews?: { poules: boolean; classement: boolean; direct: boolean }
+    ) =>
+      ipcRenderer.invoke(
+        'remote:startSession',
+        competitionId,
+        strips,
+        matches,
+        showPhotos,
+        kioskViews
+      ),
     stopSession: () => ipcRenderer.invoke('remote:stopSession'),
     getSession: () => ipcRenderer.invoke('remote:getSession'),
     getArenas: () => ipcRenderer.invoke('remote:getArenas'),
     updateStripCount: (count: number) => ipcRenderer.invoke('remote:updateStripCount', count),
     updateShowPhotos: (value: boolean) => ipcRenderer.invoke('remote:updateShowPhotos', value),
+    updateKioskViews: (views: { poules: boolean; classement: boolean; direct: boolean }) =>
+      ipcRenderer.invoke('remote:updateKioskViews', views),
     updateMatchArena: (matchId: string, fromArena: number | null, toArena: number | null) =>
       ipcRenderer.invoke('remote:updateMatchArena', matchId, fromArena, toArena),
+    updatePoolFencers: (updates: Array<{ poolId: string; fencers: any[] }>) =>
+      ipcRenderer.invoke('remote:updatePoolFencers', updates),
     setArenaPassword: (arenaId: string, password: string) =>
       ipcRenderer.invoke('remote:setArenaPassword', arenaId, password),
+    setOrgNote: (note: any) => ipcRenderer.invoke('remote:setOrgNote', note),
+    clearOrgNote: () => ipcRenderer.invoke('remote:clearOrgNote'),
   },
 
   // Remote event listeners (for real-time updates)
@@ -364,9 +413,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onRemoteMatchFinished: (callback: (data: any) => void) => {
     ipcRenderer.on('match:finished', (_, data) => callback(data));
   },
+  onKioskNoteUpdate: (callback: (note: any) => void) => {
+    const handler = (_: any, note: any) => callback(note);
+    ipcRenderer.on('kiosk:note', handler);
+    return () => ipcRenderer.removeListener('kiosk:note', handler);
+  },
 
   // Remove listeners
   removeAllListeners: (channel: string) => ipcRenderer.removeAllListeners(channel),
+
+  // Notify main process of language change (to rebuild native menu)
+  notifyLanguageChanged: (lang: string) => ipcRenderer.send('app:language-changed', lang),
 });
 
 // Type declarations for the renderer

@@ -131,10 +131,11 @@
       .kiosk-view {
         position: fixed;
         inset: 0;
-        padding: 2.5rem 2.5rem 1.5rem;
+        padding: 1.25rem 1rem 0.5rem;
         overflow: hidden;
         display: none;
         flex-direction: column;
+        background: #0f172a;
       }
 
       .kiosk-view.active {
@@ -146,12 +147,12 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 1.5rem;
+        margin-bottom: 0.6rem;
         flex-shrink: 0;
       }
 
       .view-title {
-        font-size: 1.75rem;
+        font-size: 1.2rem;
         font-weight: 800;
         background: linear-gradient(90deg, #fbbf24, #f59e0b);
         -webkit-background-clip: text;
@@ -177,10 +178,12 @@
       /* Vue Poules */
       #view-poules .pools-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-        gap: 1rem;
+        grid-template-columns: repeat(auto-fill, minmax(275px, 1fr));
+        gap: 0.5rem;
         overflow-y: auto;
         flex: 1;
+        align-items: start;
+        align-content: start;
       }
 
       .pool-card {
@@ -191,7 +194,7 @@
       }
 
       .pool-card-header {
-        padding: 0.75rem 1rem;
+        padding: 0.35rem 0.7rem;
         background: rgba(59, 130, 246, 0.15);
         display: flex;
         justify-content: space-between;
@@ -228,7 +231,7 @@
       }
 
       .pool-table th {
-        padding: 0.5rem 0.75rem;
+        padding: 0.25rem 0.5rem;
         text-align: left;
         font-size: 0.7rem;
         font-weight: 600;
@@ -238,7 +241,7 @@
       }
 
       .pool-table td {
-        padding: 0.5rem 0.75rem;
+        padding: 0.25rem 0.5rem;
         border-bottom: 1px solid rgba(255, 255, 255, 0.04);
       }
 
@@ -252,7 +255,13 @@
       .rank-3 { color: #b45309; }
 
       .fencer-name { font-weight: 500; }
-      .fencer-club { font-size: 0.7rem; color: #64748b; }
+      .fencer-club {
+        font-size: 0.62rem;
+        color: #64748b;
+        display: inline;
+        margin-left: 0.35em;
+      }
+      .fencer-club::before { content: '· '; }
 
       td.victories { text-align: center; color: #10b981; font-weight: 600; }
       td.ind { text-align: center; color: #60a5fa; }
@@ -324,6 +333,7 @@
         gap: 1.25rem;
         flex: 1;
         overflow-y: auto;
+        align-content: start;
       }
 
       .arena-card {
@@ -439,12 +449,156 @@
       ::-webkit-scrollbar { width: 4px; height: 4px; }
       ::-webkit-scrollbar-track { background: transparent; }
       ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+      /* ── Animations de score ────────────────────────────────────────────── */
+
+      /* inline-block requis pour que transform fonctionne sur les <span> */
+      .arena-score { display: inline-block; }
+
+      /* Option A — Flash doré + micro-bounce (principal) */
+      @keyframes score-pop-flash {
+        0%   { transform: scale(1);    color: inherit; filter: none; }
+        25%  { transform: scale(1.35); color: #fbbf24; filter: drop-shadow(0 0 10px rgba(251,191,36,0.9)); }
+        65%  { transform: scale(1.1);  color: #f59e0b; filter: drop-shadow(0 0 4px rgba(251,191,36,0.4)); }
+        100% { transform: scale(1);    color: inherit; filter: none; }
+      }
+
+      .score-updated {
+        animation: score-pop-flash 0.65s ease-out forwards;
+      }
+
+      /* Option C — Épéiste slash (fun 🤺) */
+      /* Déclenché quand le score augmente d'un coup important (≥3 pts) */
+      @keyframes epee-slash {
+        0%   { left: -1.8em; opacity: 1;   transform: translateY(-55%) rotate(-15deg); }
+        70%  {               opacity: 1; }
+        100% { left: 115%;   opacity: 0;   transform: translateY(-55%) rotate(-15deg); }
+      }
+
+      .score-slash {
+        position: relative;
+      }
+
+      .score-slash::after {
+        content: '🤺';
+        position: absolute;
+        top: 50%;
+        transform: translateY(-55%) rotate(-15deg);
+        font-size: 0.85rem;
+        pointer-events: none;
+        animation: epee-slash 0.55s ease-in forwards;
+      }
+
+      /* ── Bouton & panneau de configuration des vues ─────────────────────── */
+      .settings-btn {
+        padding: 0.4rem 0.75rem;
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 0.5rem;
+        background: rgba(255,255,255,0.05);
+        color: white;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .settings-btn:hover { background: #374151; }
+
+      .settings-panel {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        right: 0;
+        background: #1e293b;
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 0.75rem;
+        padding: 0.75rem 1rem;
+        min-width: 180px;
+        z-index: 200;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      }
+
+      .settings-panel.hidden { display: none; }
+
+      .settings-title {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+      }
+
+      .settings-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.35rem 0;
+        font-size: 0.875rem;
+        cursor: pointer;
+        color: #e2e8f0;
+        user-select: none;
+      }
+
+      .settings-item input[type="checkbox"] {
+        accent-color: #3b82f6;
+        width: 14px;
+        height: 14px;
+        cursor: pointer;
+      }
+    /* ─── Overlay note d'organisation ── */
+    #org-note-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 10500;
+      background: rgba(2, 6, 23, 0.88);
+      backdrop-filter: blur(6px);
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 4rem;
+    }
+    #org-note-overlay.visible { display: flex; }
+    #org-note-label {
+      font-size: clamp(0.9rem, 2.5vw, 1.4rem);
+      color: #64748b;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+    #org-note-time {
+      font-size: clamp(2rem, 5.5vw, 3.5rem);
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 0.5rem;
+    }
+    #org-note-countdown {
+      font-size: clamp(1.5rem, 4vw, 2.5rem);
+      font-weight: 800;
+      color: #3b82f6;
+      margin-bottom: 2rem;
+      font-variant-numeric: tabular-nums;
+    }
+    #org-note-message {
+      font-size: clamp(1.1rem, 3vw, 1.8rem);
+      color: #94a3b8;
+      font-style: italic;
+      max-width: 70ch;
+    }
     </style>
   </head>
   <body>
     <!-- Barre de progression rotation -->
     <div id="progress-bar-container">
       <div id="progress-bar"></div>
+    </div>
+
+    <!-- Overlay note d'organisation -->
+    <div id="org-note-overlay">
+      <div id="org-note-label">⏸ Pause</div>
+      <div id="org-note-time"></div>
+      <div id="org-note-countdown"></div>
+      <div id="org-note-message"></div>
     </div>
 
     <!-- Menu escamotable -->
@@ -457,6 +611,21 @@
         <button id="btn-poules" class="active" onclick="switchView('poules')">Poules</button>
         <button id="btn-classement" onclick="switchView('classement')">Classement</button>
         <button id="btn-direct" onclick="switchView('direct')">Matchs en direct</button>
+      </div>
+      <div style="position:relative;margin-left:0.5rem">
+        <button id="btn-settings" class="settings-btn" title="Configurer les vues">⚙</button>
+        <div id="settings-panel" class="settings-panel hidden">
+          <div class="settings-title">Vues affichées</div>
+          <label class="settings-item">
+            <input type="checkbox" id="cb-poules" checked> Poules
+          </label>
+          <label class="settings-item">
+            <input type="checkbox" id="cb-classement" checked> Classement
+          </label>
+          <label class="settings-item">
+            <input type="checkbox" id="cb-direct" checked> Matchs en cours
+          </label>
+        </div>
       </div>
       <div class="menu-status">
         <div id="status-dot" class="status-dot"></div>
@@ -534,6 +703,8 @@
 
     <script>
       // ─── État ────────────────────────────────────────────────────────────────
+      const ALL_VIEWS = ['poules', 'classement', 'direct'];
+
       const state = {
         currentView: 'poules',
         views: ['poules', 'classement', 'direct'],
@@ -547,7 +718,50 @@
         arenasData: [],  // arènes
         overallRanking: [],
         lastUpdate: null,
+        prevArenaScores: {},  // { [arenaId]: { scoreA, scoreB } }
       };
+
+      // ─── Note d'organisation ─────────────────────────────────────────────────
+      let _orgNoteInterval = null;
+      let _currentOrgNote = null;
+
+      function renderOrgNote(note) {
+        clearInterval(_orgNoteInterval);
+        _orgNoteInterval = null;
+        _currentOrgNote = note;
+        const overlay = document.getElementById('org-note-overlay');
+        if (!note) { overlay.classList.remove('visible'); return; }
+
+        document.getElementById('org-note-message').innerHTML = note.message
+          ? '\u00ab\u00a0' + escHtml(note.message) + '\u00a0\u00bb'
+          : '';
+
+        if (note.type === 'target_time' && note.targetTime) {
+          const [hh, mm] = note.targetTime.split(':').map(Number);
+          const fmtTime = String(hh).padStart(2, '0') + 'h' + String(mm).padStart(2, '0');
+          document.getElementById('org-note-time').textContent = 'Reprise à ' + fmtTime;
+
+          const computeCountdown = () => {
+            const now = new Date();
+            const target = new Date(now);
+            target.setHours(hh, mm, 0, 0);
+            if (target <= now) target.setDate(target.getDate() + 1);
+            const diffSec = Math.max(0, Math.floor((target.getTime() - now.getTime()) / 1000));
+            const m = Math.floor(diffSec / 60);
+            const s = diffSec % 60;
+            document.getElementById('org-note-countdown').textContent =
+              'dans ' + m + ' min ' + String(s).padStart(2, '0') + ' s';
+            if (diffSec === 0) { clearInterval(_orgNoteInterval); overlay.classList.remove('visible'); }
+          };
+          computeCountdown();
+          _orgNoteInterval = setInterval(computeCountdown, 1000);
+        } else {
+          document.getElementById('org-note-time').textContent = '';
+          document.getElementById('org-note-countdown').textContent = '';
+        }
+
+        overlay.classList.add('visible');
+      }
 
       // ─── Rotation automatique ────────────────────────────────────────────────
       function startRotation() {
@@ -571,7 +785,7 @@
       function switchView(name) {
         state.currentView = name;
 
-        state.views.forEach(v => {
+        ALL_VIEWS.forEach(v => {
           document.getElementById('view-' + v).classList.toggle('active', v === name);
           const btn = document.getElementById('btn-' + v);
           if (btn) btn.classList.toggle('active', v === name);
@@ -639,6 +853,63 @@
         }
       });
 
+      // ─── Configuration locale des vues ───────────────────────────────────────
+      function saveLocalViews() {
+        const v = {};
+        ALL_VIEWS.forEach(n => { v[n] = document.getElementById('cb-' + n).checked; });
+        localStorage.setItem('kioskViewsLocal', JSON.stringify(v));
+      }
+
+      function loadLocalViews() {
+        try {
+          const stored = localStorage.getItem('kioskViewsLocal');
+          if (stored) return JSON.parse(stored);
+        } catch {}
+        return null;
+      }
+
+      function applyLocalViews() {
+        const enabled = ALL_VIEWS.filter(v => document.getElementById('cb-' + v).checked);
+        state.views = enabled.length > 0 ? enabled : ALL_VIEWS.slice();
+        ALL_VIEWS.forEach(v => {
+          const btn = document.getElementById('btn-' + v);
+          if (btn) btn.style.display = state.views.includes(v) ? '' : 'none';
+        });
+        if (!state.views.includes(state.currentView)) switchView(state.views[0]);
+      }
+
+      // Bouton ⚙ – toggle panneau
+      document.getElementById('btn-settings').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const panel = document.getElementById('settings-panel');
+        panel.classList.toggle('hidden');
+        // Prolonger le timer menu tant que le panneau est ouvert
+        if (!panel.classList.contains('hidden')) {
+          clearTimeout(state.menuTimer);
+        } else {
+          showMenu(); // relance le timer d'auto-masquage
+        }
+      });
+
+      // Fermer le panneau au clic à l'extérieur
+      document.addEventListener('click', (e) => {
+        const panel = document.getElementById('settings-panel');
+        const btn = document.getElementById('btn-settings');
+        if (!panel.classList.contains('hidden') && !panel.contains(e.target) && e.target !== btn) {
+          panel.classList.add('hidden');
+          showMenu();
+        }
+      });
+
+      // Changement d'une checkbox
+      ALL_VIEWS.forEach(v => {
+        document.getElementById('cb-' + v).addEventListener('change', () => {
+          saveLocalViews();
+          applyLocalViews();
+          clearTimeout(state.menuTimer); // garder le menu visible pendant la config
+        });
+      });
+
       // ─── Statut connexion ────────────────────────────────────────────────────
       function setStatus(ok, text) {
         const dot = document.getElementById('status-dot');
@@ -660,6 +931,27 @@
 
           document.getElementById('menu-competition-name').textContent =
             state.session.competitionName || '';
+
+          // Note d'organisation
+          renderOrgNote(state.session.orgNote || null);
+
+          // Appliquer les vues kiosk : localStorage en priorité, sinon config serveur
+          const localViews = loadLocalViews();
+          if (localViews) {
+            // Restaurer l'état des checkboxes depuis localStorage
+            ALL_VIEWS.forEach(v => {
+              const cb = document.getElementById('cb-' + v);
+              if (cb) cb.checked = localViews[v] !== false;
+            });
+          } else if (state.session.kioskViews) {
+            // Initialiser les checkboxes depuis la config serveur (premier chargement)
+            const kv = state.session.kioskViews;
+            ALL_VIEWS.forEach(v => {
+              const cb = document.getElementById('cb-' + v);
+              if (cb) cb.checked = kv[v] !== false;
+            });
+          }
+          applyLocalViews();
 
           // 2. Données poules + classements
           const poolsRes = await fetch('/api/competitions/' + competitionId + '/results-data');
@@ -731,8 +1023,7 @@
             return `<tr>
               <td class="rank-col${rankClass}">${i + 1}</td>
               <td>
-                <div class="fencer-name">${escHtml(r.lastName)} ${escHtml(r.firstName || '')}</div>
-                <div class="fencer-club">${escHtml(r.club || '')}</div>
+                <span class="fencer-name">${escHtml(r.lastName)} ${escHtml(r.firstName || '')}</span><span class="fencer-club">${escHtml(r.club || '')}</span>
               </td>
               <td style="text-align:center;color:#94a3b8">${r.matchesPlayed || 0}</td>
               <td class="victories">${r.victories || 0}</td>
@@ -803,14 +1094,41 @@
           return;
         }
 
+        // ── Détecter les changements de score avant de reconstruire le DOM ───
+        const changedScores = [];   // ids des éléments à animer
+        const slashScores = [];     // ids pour l'animation épéiste (≥3 pts d'un coup)
+        for (const arena of arenas) {
+          const aid = arena.id || arena.arenaId;
+          const m = arena.currentMatch;
+          if (!m || !aid) continue;
+          const prev = state.prevArenaScores[aid];
+          if (prev) {
+            const newA = m.scoreA ?? null;
+            const newB = m.scoreB ?? null;
+            if (prev.scoreA !== newA) {
+              changedScores.push('sa-' + aid);
+              if (typeof newA === 'number' && typeof prev.scoreA === 'number' && newA - prev.scoreA >= 3) {
+                slashScores.push('sa-' + aid);
+              }
+            }
+            if (prev.scoreB !== newB) {
+              changedScores.push('sb-' + aid);
+              if (typeof newB === 'number' && typeof prev.scoreB === 'number' && newB - prev.scoreB >= 3) {
+                slashScores.push('sb-' + aid);
+              }
+            }
+          }
+        }
+
         container.innerHTML = arenas.map(arena => {
+          const aid = arena.id || arena.arenaId || '?';
           const m = arena.currentMatch;
           const isActive = arena.status === 'in_progress' && m;
 
           if (!m) {
             return `<div class="arena-card">
               <div class="arena-card-header">
-                <span class="arena-name">Piste ${arena.id || arena.arenaId || '?'}</span>
+                <span class="arena-name">Piste ${aid}</span>
                 <span class="arena-status-pill">En attente</span>
               </div>
               <div class="arena-idle">Aucun match assigné</div>
@@ -826,7 +1144,7 @@
 
           return `<div class="arena-card ${isActive ? 'match-active' : ''}">
             <div class="arena-card-header">
-              <span class="arena-name">Piste ${arena.id || arena.arenaId || '?'}</span>
+              <span class="arena-name">Piste ${aid}</span>
               <span class="arena-status-pill ${isActive ? 'in-progress' : ''}">${isActive ? 'En cours' : 'Assigné'}</span>
             </div>
             <div class="arena-matchup">
@@ -835,9 +1153,9 @@
                 <div class="fclub">${escHtml(clubA)}</div>
               </div>
               <div class="arena-scores">
-                <span class="arena-score score-a">${scoreA}</span>
+                <span class="arena-score score-a" id="sa-${aid}">${scoreA}</span>
                 <span class="arena-vs">-</span>
-                <span class="arena-score score-b">${scoreB}</span>
+                <span class="arena-score score-b" id="sb-${aid}">${scoreB}</span>
               </div>
               <div class="arena-fencer">
                 <div class="fname">${escHtml(nameB)}</div>
@@ -846,6 +1164,30 @@
             </div>
           </div>`;
         }).join('');
+
+        // ── Appliquer les animations après reconstruction du DOM ─────────────
+        for (const elemId of changedScores) {
+          const el = document.getElementById(elemId);
+          if (!el) continue;
+          el.classList.remove('score-updated', 'score-slash');
+          void el.offsetWidth;  // force reflow pour relancer l'animation
+          el.classList.add('score-updated');
+          if (slashScores.includes(elemId)) el.classList.add('score-slash');
+          el.addEventListener('animationend', () => {
+            el.classList.remove('score-updated', 'score-slash');
+          }, { once: true });
+        }
+
+        // ── Persister les scores courants pour la prochaine comparaison ───────
+        for (const arena of arenas) {
+          const aid = arena.id || arena.arenaId;
+          if (!aid) continue;
+          const m = arena.currentMatch;
+          state.prevArenaScores[aid] = {
+            scoreA: m ? (m.scoreA ?? null) : null,
+            scoreB: m ? (m.scoreB ?? null) : null,
+          };
+        }
       }
 
       // ─── Helpers ─────────────────────────────────────────────────────────────
@@ -860,12 +1202,14 @@
         setInterval(fetchData, 15000);
         startRotation();
 
-        // Plein écran automatique au clic
+        // Plein écran automatique au premier clic seulement
+        let _fsRequested = false;
         document.addEventListener('click', () => {
-          if (!document.fullscreenElement) {
+          if (!_fsRequested && !document.fullscreenElement) {
+            _fsRequested = true;
             document.documentElement.requestFullscreen().catch(() => {});
           }
-        });
+        }, { capture: true });
       });
     </script>
   </body>

@@ -29,7 +29,12 @@ export const PresentationMode: React.FC<PresentationModeProps> = ({
         await document.documentElement.requestFullscreen();
         setIsFullscreen(true);
       } catch (error) {
-        logger.warn(LogCategory.UI, "Impossible d'activer le plein écran", undefined, error as Error);
+        logger.warn(
+          LogCategory.UI,
+          "Impossible d'activer le plein écran",
+          undefined,
+          error as Error
+        );
       }
     };
 

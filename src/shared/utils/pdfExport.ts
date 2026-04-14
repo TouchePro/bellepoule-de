@@ -1,7 +1,6 @@
 /**
  * BellePoule Modern - PDF Export Service
- * Export des poules avec grille de scores et matches restants
- * Utilise l'impression navigateur pour éviter les problèmes jsPDF/Electron
+ * Génération PDF via Electron printToPDF (sans menus ni chrome applicatif)
  * Licensed under GPL-3.0
  */
 
@@ -9,14 +8,13 @@ import { Pool, Match, MatchStatus, Fencer } from '../types';
 
 interface PoolExportOptions {
   title?: string;
-  includeFinishedMatches?: boolean;
-  includePendingMatches?: boolean;
-  includePoolStats?: boolean;
+  competitionName?: string;
+  weapon?: string;
+  category?: string;
 }
 
-/**
- * Calcule le score d'un tireur contre un autre dans la poule
- */
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 function getScoreForCell(
   fencer: Fencer,
   opponent: Fencer,
@@ -27,336 +25,411 @@ function getScoreForCell(
       (m.fencerA?.id === fencer.id && m.fencerB?.id === opponent.id) ||
       (m.fencerB?.id === fencer.id && m.fencerA?.id === opponent.id)
   );
-
-  if (!match || match.status !== MatchStatus.FINISHED) {
-    return null;
-  }
-
+  if (!match || match.status !== MatchStatus.FINISHED) return null;
   const isFencerA = match.fencerA?.id === fencer.id;
   const score = isFencerA ? match.scoreA : match.scoreB;
-
   if (!score) return null;
-
   return {
     display: `${score.isVictory ? 'V' : ''}${score.value ?? 0}`,
     isVictory: score.isVictory,
   };
 }
 
-/**
- * Calcule les statistiques d'un tireur
- */
 function calculateFencerStats(
   fencer: Fencer,
   matches: Match[]
 ): { v: number; d: number; td: number; tr: number; ind: number; ratio: number } {
-  let v = 0,
-    d = 0,
-    td = 0,
-    tr = 0;
-
+  let v = 0, d = 0, td = 0, tr = 0;
   for (const match of matches) {
     if (match.status !== MatchStatus.FINISHED) continue;
-
     const isFencerA = match.fencerA?.id === fencer.id;
     const isFencerB = match.fencerB?.id === fencer.id;
-
     if (!isFencerA && !isFencerB) continue;
-
     const myScore = isFencerA ? match.scoreA : match.scoreB;
     const oppScore = isFencerA ? match.scoreB : match.scoreA;
-
     if (!myScore || !oppScore) continue;
-
     td += myScore.value ?? 0;
     tr += oppScore.value ?? 0;
-
-    if (myScore.isVictory) {
-      v++;
-    } else {
-      d++;
-    }
+    if (myScore.isVictory) v++; else d++;
   }
-
   const played = v + d;
-  const ratio = played > 0 ? v / played : 0;
-  const ind = td - tr;
-
-  return { v, d, td, tr, ind, ratio };
+  return { v, d, td, tr, ind: td - tr, ratio: played > 0 ? v / played : 0 };
 }
 
-/**
- * Génère le contenu HTML pour la poule
- */
-function generatePoolHTML(pool: Pool, title: string): string {
-  const fencers = pool.fencers;
-  const matches = pool.matches;
-  const finishedCount = matches.filter(m => m.status === MatchStatus.FINISHED).length;
+/** Sauvegarde PDF via Electron IPC, avec dialogue de fichier. */
+async function savePDF(html: string, defaultName: string): Promise<void> {
+  const api = (window as any).electronAPI;
+  if (!api?.dialog?.saveFile || !api?.file?.printHtmlToPDF) {
+    throw new Error('API Electron non disponible');
+  }
 
-  // Calculer le classement
+  const result = await api.dialog.saveFile({
+    title: 'Enregistrer le PDF',
+    defaultPath: defaultName,
+    filters: [{ name: 'PDF', extensions: ['pdf'] }],
+  });
+
+  if (!result || result.canceled || !result.filePath) return;
+
+  const res = await api.file.printHtmlToPDF(html, result.filePath);
+  if (!res.success) {
+    throw new Error(res.error ?? 'Échec de la génération PDF');
+  }
+}
+
+// ─── CSS commun ───────────────────────────────────────────────────────────────
+
+const BASE_CSS = `
+  @page { size: A4; margin: 12mm 10mm; }
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy:        #1a2e4a;
+    --navy-light:  #2c4a73;
+    --gold:        #c9a227;
+    --gold-light:  #f5e6a3;
+    --gold-bg:     #fffbeb;
+    --green:       #166534;
+    --green-bg:    #dcfce7;
+    --gray-dark:   #475569;
+    --gray-mid:    #94a3b8;
+    --gray-light:  #e2e8f0;
+    --gray-xlight: #f8fafc;
+    --border:      #cbd5e1;
+    --text:        #1e293b;
+    --white:       #ffffff;
+  }
+  body {
+    font-family: 'Segoe UI', -apple-system, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 9.5pt;
+    color: var(--text);
+    background: var(--white);
+  }
+  /* ── Header ── */
+  .doc-header {
+    background: var(--navy);
+    color: var(--white);
+    padding: 5mm 6mm;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0;
+  }
+  .doc-header-left h1 {
+    font-size: 15pt;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    line-height: 1.2;
+  }
+  .doc-header-left .subtitle {
+    font-size: 8.5pt;
+    color: var(--gold-light);
+    margin-top: 1.5mm;
+    letter-spacing: 0.5px;
+  }
+  .doc-header-badge {
+    background: var(--gold);
+    color: var(--navy);
+    font-weight: 900;
+    font-size: 18pt;
+    min-width: 16mm;
+    height: 16mm;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .gold-bar {
+    height: 3px;
+    background: linear-gradient(90deg, var(--navy) 0%, var(--gold) 50%, var(--navy) 100%);
+    margin-bottom: 4mm;
+  }
+  /* ── Meta chips ── */
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2mm;
+    margin-bottom: 4mm;
+    align-items: center;
+  }
+  .chip {
+    background: var(--gray-xlight);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.8mm 3mm;
+    font-size: 8pt;
+    color: var(--gray-dark);
+  }
+  .chip strong { color: var(--navy); }
+  .chip.gold { background: var(--gold-bg); border-color: var(--gold); }
+  .chip.gold strong { color: #92400e; }
+  /* ── Section titre ── */
+  .section-label {
+    font-size: 7.5pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--navy);
+    display: flex;
+    align-items: center;
+    gap: 2mm;
+    margin-bottom: 2mm;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+  /* ── Footer ── */
+  .doc-footer {
+    margin-top: 5mm;
+    padding-top: 2mm;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    font-size: 7pt;
+    color: var(--gray-mid);
+  }
+`;
+
+// ─── HTML Poule ───────────────────────────────────────────────────────────────
+
+function generatePoolHTML(pool: Pool, options: PoolExportOptions): string {
+  const { title = `Poule ${pool.number}`, competitionName = '', weapon = '', category = '' } = options;
+  const fencers = pool.fencers ?? [];
+  const matches = pool.matches ?? [];
+  const finishedCount = matches.filter(m => m.status === MatchStatus.FINISHED).length;
+  const now = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+
+  // Classement
   const rankings = fencers.map(f => ({
     fencer: f,
     stats: calculateFencerStats(f, matches),
     rank: 0,
   }));
-
   rankings.sort((a, b) => {
     if (a.stats.ratio !== b.stats.ratio) return b.stats.ratio - a.stats.ratio;
     if (a.stats.ind !== b.stats.ind) return b.stats.ind - a.stats.ind;
     return b.stats.td - a.stats.td;
   });
-
-  rankings.forEach((r, idx) => {
-    r.rank = idx + 1;
-  });
+  rankings.forEach((r, i) => { r.rank = i + 1; });
   const rankMap = new Map(rankings.map(r => [r.fencer.id, r]));
 
-  // Générer le HTML de la grille
-  let gridHTML =
-    '<table class="score-grid"><thead><tr><th class="name-col">Nom</th><th class="num-col">#</th>';
-  for (let i = 0; i < fencers.length; i++) {
-    gridHTML += `<th class="score-col">${i + 1}</th>`;
-  }
-  gridHTML +=
-    '<th class="stat-col">V</th><th class="stat-col">V/M</th><th class="stat-col">TD</th><th class="stat-col">TR</th><th class="stat-col">Ind</th><th class="stat-col rank-col">Rg</th></tr></thead><tbody>';
+  // Grille scores
+  const colHeaders = fencers.map((_, i) => `<th class="num-header">${i + 1}</th>`).join('');
+  const rows = fencers.map((fencer, row) => {
+    const data = rankMap.get(fencer.id)!;
+    const { v, td, tr, ind, ratio } = data.stats;
+    const indStr = ind >= 0 ? `+${ind}` : `${ind}`;
+    const cells = fencers.map((opponent, col) => {
+      if (row === col) return '<td class="diagonal"></td>';
+      const s = getScoreForCell(fencer, opponent, matches);
+      if (!s) return '<td class="cell-pending"></td>';
+      return `<td class="${s.isVictory ? 'cell-victory' : 'cell-defeat'}">${s.display}</td>`;
+    }).join('');
+    return `
+      <tr>
+        <td class="num-cell">${row + 1}</td>
+        <td class="name-cell">${fencer.lastName.toUpperCase()} ${fencer.firstName?.charAt(0) ?? ''}.</td>
+        ${cells}
+        <td class="stat-cell">${v}</td>
+        <td class="stat-cell">${ratio.toFixed(2)}</td>
+        <td class="stat-cell">${td}</td>
+        <td class="stat-cell">${tr}</td>
+        <td class="stat-cell">${indStr}</td>
+        <td class="rank-cell">${data.rank}</td>
+      </tr>`;
+  }).join('');
 
-  for (let row = 0; row < fencers.length; row++) {
-    const fencer = fencers[row];
-    const fencerData = rankMap.get(fencer.id)!;
-    const stats = fencerData.stats;
+  // Matchs restants
+  const pending = matches.filter(m => m.status !== MatchStatus.FINISHED);
+  const pendingHTML = pending.length === 0 ? '' : `
+    <div class="section-label">Matchs à jouer (${pending.length})</div>
+    <div class="match-grid">
+      ${pending.map((m, i) => {
+        const idx = matches.indexOf(m) + 1;
+        return `<div class="match-item match-pending">${idx}. ${m.fencerA?.lastName ?? '?'} — ${m.fencerB?.lastName ?? '?'}</div>`;
+      }).join('')}
+    </div>`;
 
-    gridHTML += `<tr><td class="name-cell">${fencer.lastName} ${fencer.firstName?.charAt(0) || ''}.</td><td class="num-cell">${row + 1}</td>`;
+  // Matchs terminés
+  const finished = matches.filter(m => m.status === MatchStatus.FINISHED);
+  const finishedHTML = finished.length === 0 ? '' : `
+    <div class="section-label" style="margin-top:4mm">Résultats (${finished.length})</div>
+    <div class="match-grid match-grid-2col">
+      ${finished.map(m => {
+        const idx = matches.indexOf(m) + 1;
+        const sA = m.scoreA?.isVictory ? `V${m.scoreA.value}` : `${m.scoreA?.value ?? 0}`;
+        const sB = m.scoreB?.isVictory ? `V${m.scoreB.value}` : `${m.scoreB?.value ?? 0}`;
+        return `<div class="match-item match-done">${idx}. ${m.fencerA?.lastName ?? '?'} <b>${sA}–${sB}</b> ${m.fencerB?.lastName ?? '?'}</div>`;
+      }).join('')}
+    </div>`;
 
-    for (let col = 0; col < fencers.length; col++) {
-      if (row === col) {
-        gridHTML += '<td class="diagonal"></td>';
-      } else {
-        const opponent = fencers[col];
-        const scoreData = getScoreForCell(fencer, opponent, matches);
-        if (scoreData) {
-          const cellClass = scoreData.isVictory ? 'victory' : 'defeat';
-          gridHTML += `<td class="${cellClass}">${scoreData.display}</td>`;
-        } else {
-          gridHTML += '<td class="pending"></td>';
-        }
-      }
-    }
-
-    const indStr = stats.ind >= 0 ? `+${stats.ind}` : `${stats.ind}`;
-    gridHTML += `<td class="stat-cell">${stats.v}</td>`;
-    gridHTML += `<td class="stat-cell">${stats.ratio.toFixed(2)}</td>`;
-    gridHTML += `<td class="stat-cell">${stats.td}</td>`;
-    gridHTML += `<td class="stat-cell">${stats.tr}</td>`;
-    gridHTML += `<td class="stat-cell">${indStr}</td>`;
-    gridHTML += `<td class="stat-cell rank-cell">${fencerData.rank}</td></tr>`;
-  }
-  gridHTML += '</tbody></table>';
-
-  // Matches restants
-  const pendingMatches = matches.filter(m => m.status !== MatchStatus.FINISHED);
-  let pendingHTML = '';
-  if (pendingMatches.length > 0) {
-    pendingHTML = `<div class="section"><h3>⚔️ Matchs restants (${pendingMatches.length})</h3><div class="matches-grid">`;
-    pendingMatches.forEach(match => {
-      const matchIndex = matches.indexOf(match) + 1;
-      const fencerA = match.fencerA?.lastName || '?';
-      const fencerB = match.fencerB?.lastName || '?';
-      pendingHTML += `<div class="match pending-match">${matchIndex}. ${fencerA} - ${fencerB}</div>`;
-    });
-    pendingHTML += '</div></div>';
-  }
-
-  // Matches terminés
-  const finishedMatches = matches.filter(m => m.status === MatchStatus.FINISHED);
-  let finishedHTML = '';
-  if (finishedMatches.length > 0) {
-    finishedHTML = `<div class="section"><h3>✅ Matchs terminés (${finishedMatches.length})</h3><div class="matches-grid finished-grid">`;
-    finishedMatches.forEach(match => {
-      const matchIndex = matches.indexOf(match) + 1;
-      const fencerA = match.fencerA?.lastName || '?';
-      const fencerB = match.fencerB?.lastName || '?';
-      const scoreA = match.scoreA?.isVictory
-        ? `V${match.scoreA.value}`
-        : `${match.scoreA?.value || 0}`;
-      const scoreB = match.scoreB?.isVictory
-        ? `V${match.scoreB.value}`
-        : `${match.scoreB?.value || 0}`;
-      finishedHTML += `<div class="match finished-match">${matchIndex}. ${fencerA} <strong>${scoreA}-${scoreB}</strong> ${fencerB}</div>`;
-    });
-    finishedHTML += '</div></div>';
-  }
+  const weaponLabel = weapon ? `<span class="chip"><strong>Arme</strong> ${weapon}</span>` : '';
+  const catLabel = category ? `<span class="chip"><strong>Catégorie</strong> ${category}</span>` : '';
+  const compLabel = competitionName ? `<span class="chip gold"><strong>${competitionName}</strong></span>` : '';
 
   return `<!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
   <title>${title}</title>
   <style>
-    @page { 
-      size: A4 portrait; 
-      margin: 8mm; 
+    ${BASE_CSS}
+
+    /* Grille scores */
+    .score-grid {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 8.5pt;
+      margin-bottom: 5mm;
     }
-    @media print { 
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } 
-      .no-print { display: none; }
+    .score-grid thead tr th {
+      background: var(--navy);
+      color: var(--white);
+      font-weight: 600;
+      padding: 2mm 1.5mm;
+      text-align: center;
+      border: 1px solid var(--navy-light);
+      font-size: 8pt;
     }
-    * { box-sizing: border-box; }
-    body { 
-      font-family: 'Segoe UI', Arial, sans-serif; 
-      font-size: 9pt; 
-      margin: 0; 
-      padding: 10px; 
-      color: #333;
+    .score-grid thead .name-header { text-align: left; padding-left: 3mm; min-width: 28mm; }
+    .score-grid thead .num-header { min-width: 8mm; }
+    .score-grid thead .stat-header { min-width: 10mm; background: #243858; }
+    .score-grid thead .rank-header { min-width: 10mm; background: var(--gold); color: var(--navy); }
+    .score-grid tbody tr:nth-child(odd)  td { background: var(--white); }
+    .score-grid tbody tr:nth-child(even) td { background: var(--gray-xlight); }
+    .score-grid tbody td {
+      border: 1px solid var(--border);
+      padding: 1.8mm 1.5mm;
+      text-align: center;
+      vertical-align: middle;
     }
-    h1 { 
-      text-align: center; 
-      font-size: 18pt; 
-      margin: 0 0 5px 0; 
-      color: #1a365d;
+    .score-grid .num-cell {
+      font-weight: 700;
+      color: var(--gold);
+      background: var(--navy) !important;
+      font-size: 8pt;
     }
-    h2 { 
-      text-align: center; 
-      font-size: 10pt; 
-      font-weight: normal; 
-      color: #666; 
-      margin: 0 0 12px 0; 
+    .score-grid .name-cell {
+      text-align: left;
+      padding-left: 3mm;
+      font-weight: 600;
+      white-space: nowrap;
+      font-size: 9pt;
     }
-    h3 { 
-      font-size: 10pt; 
-      margin: 10px 0 6px 0; 
-      color: #2d3748;
-      border-bottom: 2px solid #e2e8f0;
-      padding-bottom: 3px;
+    .score-grid .diagonal { background: var(--navy) !important; }
+    .score-grid .cell-victory {
+      background: var(--green-bg) !important;
+      color: var(--green);
+      font-weight: 700;
     }
-    
-    /* Grille des scores */
-    .score-grid { 
-      border-collapse: collapse; 
-      width: 100%; 
-      font-size: 8pt; 
-      margin-bottom: 8px; 
+    .score-grid .cell-defeat { color: var(--gray-dark); }
+    .score-grid .cell-pending { background: var(--gold-bg) !important; }
+    .score-grid .stat-cell {
+      background: #f0f4f8 !important;
+      font-weight: 500;
+      font-size: 8.5pt;
     }
-    .score-grid th, .score-grid td { 
-      border: 1px solid #cbd5e0; 
-      padding: 3px 2px; 
-      text-align: center; 
+    .score-grid .rank-cell {
+      background: var(--gold) !important;
+      color: var(--navy);
+      font-weight: 900;
+      font-size: 10pt;
     }
-    .score-grid th { 
-      background: #edf2f7; 
-      font-weight: 600; 
-      color: #2d3748;
+
+    /* Matchs */
+    .match-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5mm 4mm;
+      margin-bottom: 3mm;
     }
-    .score-grid .name-col { width: 90px; text-align: left; }
-    .score-grid .num-col { width: 18px; }
-    .score-grid .score-col { width: 22px; }
-    .score-grid .stat-col { width: 26px; }
-    .score-grid .rank-col { background: #ebf8ff; }
-    
-    .score-grid .name-cell { text-align: left; font-weight: 500; white-space: nowrap; overflow: hidden; }
-    .score-grid .num-cell { font-weight: 600; background: #f7fafc; }
-    .score-grid .stat-cell { background: #f7fafc; }
-    .score-grid .rank-cell { font-weight: 700; background: #ebf8ff; color: #2b6cb0; }
-    
-    .score-grid .diagonal { background: #a0aec0; }
-    .score-grid .victory { background: #c6f6d5; font-weight: 600; color: #22543d; }
-    .score-grid .defeat { background: #fff; color: #718096; }
-    .score-grid .pending { background: #fefcbf; color: #975a16; }
-    
-    /* Sections */
-    .section { margin-top: 8px; }
-    
-    /* Grille des matchs */
-    .matches-grid { 
-      display: grid; 
-      grid-template-columns: repeat(3, 1fr); 
-      gap: 2px 12px; 
-      font-size: 8pt; 
-    }
-    .finished-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-    .match { 
-      padding: 2px 4px; 
-      white-space: nowrap; 
-      overflow: hidden; 
+    .match-grid-2col { grid-template-columns: repeat(2, 1fr); }
+    .match-item {
+      font-size: 7.5pt;
+      padding: 1mm 2.5mm;
+      border-radius: 3px;
+      overflow: hidden;
       text-overflow: ellipsis;
-      border-radius: 2px;
+      white-space: nowrap;
     }
-    .pending-match { background: #fef3c7; }
-    .finished-match { background: #d1fae5; }
-    
-    /* Bouton imprimer */
-    .print-btn {
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      padding: 8px 16px;
-      background: #3182ce;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 12pt;
-    }
-    .print-btn:hover { background: #2c5282; }
+    .match-pending { background: var(--gold-bg); color: #92400e; border-left: 2px solid var(--gold); }
+    .match-done    { background: var(--green-bg); color: var(--green); border-left: 2px solid #4ade80; }
   </style>
 </head>
 <body>
-  <button class="print-btn no-print" onclick="window.print()">🖨️ Imprimer / PDF</button>
-  <h1>${title}</h1>
-  <h2>${fencers.length} tireurs • ${finishedCount}/${matches.length} matchs joués</h2>
-  ${gridHTML}
+  <div class="doc-header">
+    <div class="doc-header-left">
+      <h1>${title}</h1>
+      <div class="subtitle">Grille de poule • ${finishedCount}/${matches.length} matchs joués</div>
+    </div>
+    <div class="doc-header-badge">P${pool.number}</div>
+  </div>
+  <div class="gold-bar"></div>
+
+  <div class="meta-row">
+    ${compLabel}
+    ${weaponLabel}
+    ${catLabel}
+    <span class="chip"><strong>Tireurs</strong> ${fencers.length}</span>
+    <span class="chip"><strong>Matchs</strong> ${finishedCount}/${matches.length}</span>
+  </div>
+
+  <div class="section-label">Grille des scores</div>
+  <table class="score-grid">
+    <thead>
+      <tr>
+        <th class="num-header">#</th>
+        <th class="name-header">Tireur</th>
+        ${colHeaders}
+        <th class="stat-header">V</th>
+        <th class="stat-header">V/M</th>
+        <th class="stat-header">TD</th>
+        <th class="stat-header">TR</th>
+        <th class="stat-header">Ind</th>
+        <th class="rank-header">Rg</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>
+
   ${pendingHTML}
   ${finishedHTML}
+
+  <div class="doc-footer">
+    <span>BellePoule Modern</span>
+    <span>${now}</span>
+  </div>
 </body>
 </html>`;
 }
 
-/**
- * Exporte une poule en PDF via impression navigateur
- */
+// ─── Export Poule ─────────────────────────────────────────────────────────────
+
 export async function exportPoolToPDF(pool: Pool, options: PoolExportOptions = {}): Promise<void> {
-  const { title = `Poule ${pool.number}` } = options;
+  if (!pool.fencers || pool.fencers.length === 0) throw new Error('La poule ne contient aucun tireur');
+  if (!pool.matches || pool.matches.length === 0) throw new Error('La poule ne contient aucun match');
 
-  if (!pool.fencers || pool.fencers.length === 0) {
-    throw new Error('La poule ne contient aucun tireur');
-  }
-
-  if (!pool.matches || pool.matches.length === 0) {
-    throw new Error('La poule ne contient aucun match');
-  }
-
-  const html = generatePoolHTML(pool, title);
-
-  // Ouvrir dans une nouvelle fenêtre pour impression
-  const printWindow = window.open('', '_blank', 'width=900,height=700');
-  if (printWindow) {
-    printWindow.document.write(html);
-    printWindow.document.close();
-  } else {
-    throw new Error(
-      "Impossible d'ouvrir la fenêtre d'impression. Vérifiez que les popups sont autorisés."
-    );
-  }
+  const title = options.title ?? `Poule ${pool.number}`;
+  const html = generatePoolHTML(pool, { ...options, title });
+  await savePDF(html, `poule-${pool.number}.pdf`);
 }
 
-/**
- * Exporte plusieurs poules
- */
 export async function exportMultiplePoolsToPDF(
   pools: Pool[],
   title: string = 'Export des Poules'
 ): Promise<void> {
-  if (pools.length === 0) {
-    throw new Error('Aucune poule à exporter');
-  }
-
+  if (pools.length === 0) throw new Error('Aucune poule à exporter');
   for (const pool of pools) {
     await exportPoolToPDF(pool, { title: `${title} - Poule ${pool.number}` });
   }
 }
 
-// Alias pour compatibilité
 export const exportOptimizedPoolToPDF = exportPoolToPDF;
 
 // ─── Export Tableau Élimination Directe ──────────────────────────────────────
@@ -373,19 +446,20 @@ export interface TableauMatchForPDF {
   isBye: boolean;
 }
 
-/** Nombre maximum de matchs par feuille A4 (marges 8mm, carte ~52mm/match) */
 export const MAX_MATCHES_PER_PAGE_TABLEAU = 5;
 
 function getTableauRoundName(round: number): string {
-  if (round === 2) return 'Finale';
-  if (round === 3) return 'Petite finale';
-  if (round === 4) return 'Demi-finales';
-  if (round === 8) return 'Quarts de finale';
-  if (round === 16) return 'Tableau de 16';
-  if (round === 32) return 'Tableau de 32';
-  if (round === 64) return 'Tableau de 64';
-  if (round === 128) return 'Tableau de 128';
-  return `Tableau de ${round}`;
+  const names: Record<number, string> = {
+    2: 'Finale',
+    3: 'Petite finale',
+    4: 'Demi-finales',
+    8: 'Quarts de finale',
+    16: 'Tableau de 16',
+    32: 'Tableau de 32',
+    64: 'Tableau de 64',
+    128: 'Tableau de 128',
+  };
+  return names[round] ?? `Tableau de ${round}`;
 }
 
 function generateTableauHTML(
@@ -393,115 +467,190 @@ function generateTableauHTML(
   matchesPerPage: number,
   title: string
 ): string {
-  const realMatches = matches.filter(m => !m.isBye && m.fencerA && m.fencerB);
-  const sorted = [...realMatches].sort((a, b) => b.round - a.round || a.position - b.position);
+  const real = matches.filter(m => !m.isBye && m.fencerA && m.fencerB);
+  const sorted = [...real].sort((a, b) => b.round - a.round || a.position - b.position);
+  const now = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
 
   const pages: TableauMatchForPDF[][] = [];
   for (let i = 0; i < sorted.length; i += matchesPerPage) {
     pages.push(sorted.slice(i, i + matchesPerPage));
   }
 
-  const pagesHTML = pages
-    .map((pageMatches, pageIdx) => {
-      const isLast = pageIdx === pages.length - 1;
-      const cards = pageMatches
-        .map((match, matchIdx) => {
-          const roundName = getTableauRoundName(match.round);
-          const f = match.fencerA!;
-          const g = match.fencerB!;
-          const nameA = `${f.lastName} ${f.firstName || ''}`.trim();
-          const nameB = `${g.lastName} ${g.firstName || ''}`.trim();
-          const num = pageIdx * matchesPerPage + matchIdx + 1;
-          return `
+  const pagesHTML = pages.map((pageMatches, pageIdx) => {
+    const cards = pageMatches.map((match, matchIdx) => {
+      const roundName = getTableauRoundName(match.round);
+      const nameA = `${match.fencerA!.lastName.toUpperCase()} ${match.fencerA!.firstName ?? ''}`.trim();
+      const nameB = `${match.fencerB!.lastName.toUpperCase()} ${match.fencerB!.firstName ?? ''}`.trim();
+      const num = pageIdx * matchesPerPage + matchIdx + 1;
+      return `
 <div class="match-card">
-  <div class="match-header">
-    <span class="match-round">${roundName}</span>
-    <span class="match-num">Match ${num}</span>
+  <div class="match-card-header">
+    <span class="round-label">${roundName}</span>
+    <span class="match-num">N° ${num}</span>
   </div>
   <table class="match-table">
     <colgroup>
+      <col class="col-rank">
       <col class="col-name">
       <col class="col-score">
       <col class="col-sig">
     </colgroup>
-    <thead><tr>
-      <th>Tireur</th>
-      <th>Score</th>
-      <th>Signature</th>
-    </tr></thead>
+    <thead>
+      <tr>
+        <th></th>
+        <th style="text-align:left">Tireur</th>
+        <th>Score</th>
+        <th>Signature</th>
+      </tr>
+    </thead>
     <tbody>
-      <tr><td class="fencer-name">${nameA}</td><td class="score-box"></td><td class="sig-box"></td></tr>
-      <tr><td class="fencer-name">${nameB}</td><td class="score-box"></td><td class="sig-box"></td></tr>
+      <tr class="row-a">
+        <td class="row-letter">A</td>
+        <td class="fencer-name">${nameA}</td>
+        <td class="score-box"></td>
+        <td class="sig-box"></td>
+      </tr>
+      <tr class="row-b">
+        <td class="row-letter">B</td>
+        <td class="fencer-name">${nameB}</td>
+        <td class="score-box"></td>
+        <td class="sig-box"></td>
+      </tr>
     </tbody>
   </table>
+  <div class="match-card-footer">
+    <span>Piste ___</span>
+    <span>Arbitre ________________________________</span>
+    <span>Heure ___:___</span>
+  </div>
 </div>`;
-        })
-        .join('');
-      return `<div class="page${isLast ? '' : ' page-break'}">${cards}</div>`;
-    })
-    .join('');
+    }).join('');
+
+    const isLast = pageIdx === pages.length - 1;
+    return `<div class="page${isLast ? '' : ' page-break'}">${cards}</div>`;
+  }).join('');
 
   return `<!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
   <title>${title}</title>
   <style>
-    @page { size: A4 portrait; margin: 8mm; }
-    @media print {
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .no-print { display: none; }
-      .page-break { page-break-after: always; }
+    ${BASE_CSS}
+    @page { size: A4; margin: 12mm 10mm; }
+
+    .page-title {
+      text-align: center;
+      font-size: 13pt;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 5mm;
+      padding-bottom: 3mm;
+      border-bottom: 2px solid var(--gold);
     }
-    * { box-sizing: border-box; }
-    body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10pt; margin: 0; padding: 10px; color: #333; }
-    h1 { text-align: center; font-size: 16pt; margin: 0 0 6mm 0; color: #1a365d; }
-    .page { padding-top: 0; }
     .page-break { page-break-after: always; }
-    .match-card { border: 2px solid #2d3748; border-radius: 4px; margin-bottom: 7mm; overflow: hidden; }
-    .match-header {
-      background: #2d3748; color: white; padding: 2.5mm 4mm;
-      display: flex; justify-content: space-between; align-items: center;
+
+    .match-card {
+      border: 2px solid var(--navy);
+      border-radius: 5px;
+      margin-bottom: 5mm;
+      overflow: hidden;
     }
-    .match-round { font-weight: 700; font-size: 11pt; }
-    .match-num { font-size: 9pt; opacity: 0.75; }
-    .match-table { width: 100%; border-collapse: collapse; }
-    col.col-name  { width: 55%; }
-    col.col-score { width: 15%; }
-    col.col-sig   { width: 30%; }
+    .match-card-header {
+      background: var(--navy);
+      color: var(--white);
+      padding: 2.5mm 4mm;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .round-label {
+      font-weight: 700;
+      font-size: 11pt;
+      letter-spacing: 0.3px;
+    }
+    .match-num {
+      font-size: 8.5pt;
+      color: var(--gold-light);
+      font-weight: 600;
+    }
+    .match-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    col.col-rank  { width: 8mm; }
+    col.col-name  { width: auto; }
+    col.col-score { width: 18mm; }
+    col.col-sig   { width: 38mm; }
     .match-table thead th {
-      background: #edf2f7; font-size: 8pt; font-weight: 600;
-      padding: 1.5mm 3mm; border-bottom: 1px solid #cbd5e0;
-      text-align: left; color: #4a5568;
+      background: var(--gray-xlight);
+      font-size: 7.5pt;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 1.5mm 3mm;
+      border-bottom: 1px solid var(--border);
+      color: var(--gray-dark);
+      text-align: center;
     }
-    .match-table thead th:nth-child(2) { text-align: center; }
-    .match-table tbody tr:first-child td { border-bottom: 1px solid #e2e8f0; }
-    .fencer-name { padding: 3mm 3mm; font-size: 12pt; font-weight: 600; vertical-align: middle; }
+    .match-table tbody tr { border-bottom: 1px solid var(--gray-light); }
+    .match-table tbody tr:last-child { border-bottom: none; }
+    .row-a { background: #f0f7ff; }
+    .row-b { background: var(--white); }
+    .row-letter {
+      text-align: center;
+      font-weight: 900;
+      font-size: 10pt;
+      color: var(--gray-mid);
+      padding: 3mm 2mm;
+    }
+    .row-a .row-letter { color: var(--navy); }
+    .fencer-name {
+      padding: 3.5mm 3mm;
+      font-size: 12pt;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      vertical-align: middle;
+    }
     .score-box {
-      border-left: 1px solid #cbd5e0; border-right: 1px solid #cbd5e0;
-      height: 18mm; vertical-align: middle; text-align: center;
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      height: 16mm;
+      vertical-align: middle;
+      text-align: center;
     }
-    .sig-box { height: 18mm; }
-    .print-btn {
-      position: fixed; top: 10px; right: 10px;
-      padding: 8px 16px; background: #3182ce; color: white;
-      border: none; border-radius: 4px; cursor: pointer; font-size: 12pt;
+    .sig-box { height: 16mm; vertical-align: middle; }
+    .match-card-footer {
+      background: var(--gray-xlight);
+      border-top: 1px solid var(--border);
+      padding: 1.5mm 4mm;
+      display: flex;
+      justify-content: space-between;
+      font-size: 7.5pt;
+      color: var(--gray-dark);
     }
-    .print-btn:hover { background: #2c5282; }
   </style>
 </head>
 <body>
-  <button class="print-btn no-print" onclick="window.print()">🖨️ Imprimer / PDF</button>
-  <h1>${title}</h1>
+  <div class="doc-header">
+    <div class="doc-header-left">
+      <h1>${title}</h1>
+      <div class="subtitle">Feuilles d'arbitrage — Élimination directe</div>
+    </div>
+    <div class="doc-header-badge" style="font-size:11pt">ED</div>
+  </div>
+  <div class="gold-bar"></div>
+
   ${pagesHTML}
+
+  <div class="doc-footer">
+    <span>BellePoule Modern</span>
+    <span>${now}</span>
+  </div>
 </body>
 </html>`;
 }
 
-/**
- * Exporte le tableau d'élimination directe en feuilles d'arbitrage imprimables.
- * Chaque fiche contient : noms des combattants, case score, case signature.
- */
 export async function exportTableauToPDF(
   matches: TableauMatchForPDF[],
   matchesPerPage: number,
@@ -513,13 +662,5 @@ export async function exportTableauToPDF(
   }
 
   const html = generateTableauHTML(matches, matchesPerPage, title);
-  const printWindow = window.open('', '_blank', 'width=900,height=700');
-  if (printWindow) {
-    printWindow.document.write(html);
-    printWindow.document.close();
-  } else {
-    throw new Error(
-      "Impossible d'ouvrir la fenêtre d'impression. Vérifiez que les popups sont autorisés."
-    );
-  }
+  await savePDF(html, `tableau-elimination.pdf`);
 }

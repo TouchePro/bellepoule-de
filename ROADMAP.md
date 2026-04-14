@@ -23,8 +23,8 @@ Détail dans `.planning/roadmap.md`.
 ```
 Phase 1 : Core Sabre Laser          ████████████████████ 100% ✅
 Phase 2 : Tests unitaires           ████████████████████ 100% ✅
-Phase 3 : Saisie distante + PWA     ████████████░░░░░░░░  ~55% 🔜  ← ACTUELLE
-Phase 4 : Dashboard Live            ░░░░░░░░░░░░░░░░░░░░   0% 📋
+Phase 3 : Saisie distante + PWA     ████████████████████ 100% ✅
+Phase 4 : Dashboard Live            ░░░░░░░░░░░░░░░░░░░░   0% 📋  ← ACTUELLE
 Phase 5 : Formule ASL               ░░░░░░░░░░░░░░░░░░░░   0% 📋
 ```
 
@@ -39,11 +39,13 @@ Tâches clés :
 - [x] `remote-5` Sortie d'arène (+3 pts adversaire) ✅
 - [x] `remote-6` Chronomètre synchronisé (start/pause/reset + alertes) ✅
 - [x] `remote-7` Undo + historique (10 actions) ✅
-- [ ] `remote-8` UI optimisée tactile (boutons ≥48px, paysage)
-- [ ] `remote-9` Sélection match avancée
-- [ ] `offline-1` IndexedDB côté referee
-- [ ] `offline-2` Service Worker PWA
-- [ ] `offline-3` Queue de sync + indicateurs UI
+- [x] `remote-8` UI optimisée tactile (boutons ≥48px, media query paysage) ✅
+- [x] `remote-9` Sélection match avancée (recherche, badges statuts) ✅
+- [x] `offline-1` IndexedDB inline (`OfflineQueueInline`) ✅
+- [x] `offline-2` Intégration dans `referee.html` + `saveScore()` offline-aware ✅
+- [x] `offline-3` Service Worker PWA enregistré ✅
+- [x] `offline-4` Queue de sync + endpoint `POST /api/sync` ✅
+- [x] `offline-5` Indicateurs UI hors-ligne (badge, compteur, spinner) ✅
 
 ---
 

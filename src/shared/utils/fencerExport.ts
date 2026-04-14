@@ -59,7 +59,7 @@ export function exportFencersToFFF(fencers: Fencer[]): string {
     // Section 2: Licence,Ligue,Club,Classement,Nationalité?,?
     const section2 = [
       fencer.license || '',
-      fencer.league || '',
+      fencer.region || '',
       fencer.club || '',
       fencer.ranking != null ? String(fencer.ranking) : '',
       '', // Nationalité (doublon)

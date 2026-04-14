@@ -124,7 +124,9 @@ export class OfflineSyncManager {
         result.synced++;
         logger.debug(LogCategory.NETWORK, `[Sync] Successfully processed action: ${action.type}`);
       } catch (error) {
-        logger.error(LogCategory.NETWORK, `[Sync] Failed to process action`, error as Error, { action });
+        logger.error(LogCategory.NETWORK, `[Sync] Failed to process action`, error as Error, {
+          action,
+        });
 
         if (error instanceof ConflictError) {
           await this.handleConflict(action, error.conflictData);
@@ -142,7 +144,10 @@ export class OfflineSyncManager {
     // Update last sync timestamp
     await offlineStorage.updateLastSync();
 
-    logger.debug(LogCategory.NETWORK, `[Sync] Sync completed: ${result.synced} synced, ${result.failed} failed, ${result.conflicts} conflicts`);
+    logger.debug(
+      LogCategory.NETWORK,
+      `[Sync] Sync completed: ${result.synced} synced, ${result.failed} failed, ${result.conflicts} conflicts`
+    );
     return result;
   }
 
@@ -271,7 +276,9 @@ export class OfflineSyncManager {
     }
 
     try {
-      logger.debug(LogCategory.NETWORK, '[Sync] Refreshing cache for competition', { competitionId });
+      logger.debug(LogCategory.NETWORK, '[Sync] Refreshing cache for competition', {
+        competitionId,
+      });
 
       // Fetch latest data
       const [competition, fencers, pools, matches] = await Promise.all([
@@ -371,9 +378,16 @@ export class OfflineSyncManager {
       }
 
       await offlineStorage.resolveConflict(conflictId, resolution);
-      logger.debug(LogCategory.NETWORK, `[Sync] Conflict ${conflictId} resolved with ${resolution} version`);
+      logger.debug(
+        LogCategory.NETWORK,
+        `[Sync] Conflict ${conflictId} resolved with ${resolution} version`
+      );
     } catch (error) {
-      logger.error(LogCategory.NETWORK, `[Sync] Failed to resolve conflict ${conflictId}`, error as Error);
+      logger.error(
+        LogCategory.NETWORK,
+        `[Sync] Failed to resolve conflict ${conflictId}`,
+        error as Error
+      );
       throw error;
     }
   }
@@ -411,7 +425,10 @@ export class OfflineSyncManager {
   private async acceptRemoteVersion(conflict: SyncConflict): Promise<void> {
     // Update local cache with remote version
     // Implementation depends on what needs to be updated
-    logger.debug(LogCategory.NETWORK, `[Sync] Accepting remote version for ${conflict.entityType} ${conflict.entityId}`);
+    logger.debug(
+      LogCategory.NETWORK,
+      `[Sync] Accepting remote version for ${conflict.entityType} ${conflict.entityId}`
+    );
   }
 }
 

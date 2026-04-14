@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import QRCode from 'qrcode';
 import { Competition, Pool } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
@@ -57,9 +57,17 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const [arenaPasswords, setArenaPasswords] = useState<Record<string, string>>({});
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [showPhotos, setShowPhotos] = useState(false);
+  const [kioskViews, setKioskViews] = useState({ poules: true, classement: true, direct: true });
+  const [orgNoteType, setOrgNoteType] = useState<'free' | 'target_time'>('free');
+  const [orgNoteMessage, setOrgNoteMessage] = useState('');
+  const [orgNoteTime, setOrgNoteTime] = useState('');
+  const [orgNoteActive, setOrgNoteActive] = useState(false);
 
   useEffect(() => {
-    if (!activeQR) { setQrDataUrl(null); return; }
+    if (!activeQR) {
+      setQrDataUrl(null);
+      return;
+    }
     QRCode.toDataURL(activeQR.url, { width: 220, margin: 1 })
       .then(setQrDataUrl)
       .catch(() => setQrDataUrl(null));
@@ -76,6 +84,23 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const effectivePending = pendingCount ?? pools.length ?? 1;
   const effectiveCommitted = committedCount ?? pools.length ?? 1;
   const hasPendingChanges = effectivePending !== effectiveCommitted;
+
+  // Synchroniser le cache poolFencersCache du serveur distant quand les poules changent
+  // (interversion de combattants entre poules pendant une session active).
+  const sessionPoolsFingerprintRef = useRef<string>('');
+  useEffect(() => {
+    const fingerprint = pools
+      .map(p => `${p.id}:${(p.fencers ?? []).map((f: any) => f.id).join(',')}`)
+      .join('|');
+    if (!isRemoteActive || !session) {
+      sessionPoolsFingerprintRef.current = fingerprint;
+      return;
+    }
+    if (fingerprint === sessionPoolsFingerprintRef.current) return;
+    sessionPoolsFingerprintRef.current = fingerprint;
+    const updates = pools.map(pool => ({ poolId: pool.id, fencers: pool.fencers ?? [] }));
+    window.electronAPI.remote.updatePoolFencers(updates).catch(() => {});
+  }, [pools, isRemoteActive, session]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -129,12 +154,16 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         .filter(m => m.winner === null && m.fencerA && m.fencerB)
         .map(m => ({ ...m, isTableau: true }));
       const allMatches = [...poolMatches, ...deMatches];
-      logger.debug(LogCategory.UI, '[RemoteScoreManager] Passing matches to server', { pool: poolMatches.length, de: deMatches.length });
+      logger.debug(LogCategory.UI, '[RemoteScoreManager] Passing matches to server', {
+        pool: poolMatches.length,
+        de: deMatches.length,
+      });
       const result = await window.electronAPI.remote.startSession(
         competition.id,
         count,
         allMatches,
-        showPhotos
+        showPhotos,
+        kioskViews
       );
       if (result.success && result.session) {
         setSession(result.session);
@@ -277,7 +306,15 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             <span>Pistes :</span>
             {stripCountControls}
           </div>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.5rem 0', cursor: 'pointer' }}>
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              margin: '0.5rem 0',
+              cursor: 'pointer',
+            }}
+          >
             <input
               type="checkbox"
               checked={showPhotos}
@@ -285,6 +322,30 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             />
             Afficher les photos des combattants avant le combat
           </label>
+          <div style={{ margin: '0.5rem 0' }}>
+            <div style={{ fontSize: '0.875rem', marginBottom: '0.25rem', color: 'inherit' }}>
+              Vues kiosk :
+            </div>
+            {(
+              [
+                { key: 'poules', label: 'Poules' },
+                { key: 'classement', label: 'Classement' },
+                { key: 'direct', label: 'Matchs en direct' },
+              ] as const
+            ).map(({ key, label }) => (
+              <label
+                key={key}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
+              >
+                <input
+                  type="checkbox"
+                  checked={kioskViews[key]}
+                  onChange={e => setKioskViews(v => ({ ...v, [key]: e.target.checked }))}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
           <button className="btn-primary" onClick={onStartRemote}>
             ⚡ Démarrer la saisie distante
           </button>
@@ -314,7 +375,15 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           <h4 style={{ margin: 0 }}>Pistes ({arenaCount})</h4>
           {stripCountControls}
         </div>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.5rem 0', cursor: 'pointer' }}>
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            margin: '0.5rem 0',
+            cursor: 'pointer',
+          }}
+        >
           <input
             type="checkbox"
             checked={showPhotos}
@@ -325,6 +394,110 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           />
           Afficher les photos des combattants avant le combat
         </label>
+        <div style={{ margin: '0.5rem 0' }}>
+          <div style={{ fontSize: '0.875rem', marginBottom: '0.25rem', color: 'inherit' }}>
+            Vues kiosk :
+          </div>
+          {(
+            [
+              { key: 'poules', label: 'Poules' },
+              { key: 'classement', label: 'Classement' },
+              { key: 'direct', label: 'Matchs en direct' },
+            ] as const
+          ).map(({ key, label }) => (
+            <label
+              key={key}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
+            >
+              <input
+                type="checkbox"
+                checked={kioskViews[key]}
+                onChange={async e => {
+                  const next = { ...kioskViews, [key]: e.target.checked };
+                  setKioskViews(next);
+                  await window.electronAPI.remote.updateKioskViews(next);
+                }}
+              />
+              {label}
+            </label>
+          ))}
+        </div>
+
+        {/* Note d'organisation */}
+        <div style={{ margin: '0.75rem 0', padding: '0.75rem', border: '1px solid #334155', borderRadius: '0.5rem', background: '#1e293b' }}>
+          <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem', color: '#94a3b8' }}>
+            Note d'organisation (kiosk)
+          </div>
+          <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.5rem' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+              <input
+                type="radio"
+                name="orgNoteType"
+                checked={orgNoteType === 'free'}
+                onChange={() => setOrgNoteType('free')}
+              />
+              Message libre
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+              <input
+                type="radio"
+                name="orgNoteType"
+                checked={orgNoteType === 'target_time'}
+                onChange={() => setOrgNoteType('target_time')}
+              />
+              Heure de reprise
+            </label>
+          </div>
+          <input
+            type="text"
+            placeholder="Message (ex: Déjeuner des arbitres)"
+            value={orgNoteMessage}
+            onChange={e => setOrgNoteMessage(e.target.value)}
+            style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#0f172a', color: 'inherit', boxSizing: 'border-box', marginBottom: '0.4rem' }}
+          />
+          {orgNoteType === 'target_time' && (
+            <input
+              type="time"
+              value={orgNoteTime}
+              onChange={e => setOrgNoteTime(e.target.value)}
+              style={{ padding: '0.4rem 0.6rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#0f172a', color: 'inherit', marginBottom: '0.4rem' }}
+            />
+          )}
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+            <button
+              disabled={!orgNoteMessage.trim() || (orgNoteType === 'target_time' && !orgNoteTime)}
+              onClick={async () => {
+                const note = {
+                  type: orgNoteType,
+                  message: orgNoteMessage.trim(),
+                  ...(orgNoteType === 'target_time' ? { targetTime: orgNoteTime } : {}),
+                  createdAt: new Date().toISOString(),
+                };
+                await window.electronAPI.remote.setOrgNote(note);
+                setOrgNoteActive(true);
+              }}
+              style={{ flex: 1, padding: '0.4rem', borderRadius: '0.3rem', border: 'none', background: orgNoteActive ? '#1d4ed8' : '#2563eb', color: '#fff', cursor: 'pointer', fontWeight: 500 }}
+            >
+              {orgNoteActive ? '↻ Mettre à jour' : '▶ Afficher'}
+            </button>
+            {orgNoteActive && (
+              <button
+                onClick={async () => {
+                  await window.electronAPI.remote.clearOrgNote();
+                  setOrgNoteActive(false);
+                }}
+                style={{ padding: '0.4rem 0.75rem', borderRadius: '0.3rem', border: 'none', background: '#475569', color: '#fff', cursor: 'pointer' }}
+              >
+                ✕ Masquer
+              </button>
+            )}
+          </div>
+          {orgNoteActive && (
+            <div style={{ fontSize: '0.75rem', color: '#22c55e', marginTop: '0.4rem' }}>
+              ● Note visible sur le kiosk
+            </div>
+          )}
+        </div>
 
         <div className="arena-url-grid">
           {arenaUrls.map(arena => (
@@ -526,7 +699,15 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             {qrDataUrl ? (
               <img src={qrDataUrl} alt="QR code" width={220} height={220} />
             ) : (
-              <div style={{ width: 220, height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div
+                style={{
+                  width: 220,
+                  height: 220,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
                 Génération…
               </div>
             )}

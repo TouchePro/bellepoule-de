@@ -20,21 +20,25 @@ import { useColumnVisibility, RANKING_COLUMNS, ColumnId } from '../hooks/useColu
 interface PoolRankingViewProps {
   pools: Pool[];
   weapon?: Weapon;
+  ranking?: PoolRanking[];
   onGoToTableau?: () => void;
   onGoToResults?: () => void;
   hasDirectElimination?: boolean;
   onExport?: (format: 'csv' | 'xml' | 'pdf') => void;
   onPoolsChange?: (pools: Pool[], rankingChanged: boolean) => void;
+  onRankingChange?: (ranking: PoolRanking[]) => void;
 }
 
 const PoolRankingView: React.FC<PoolRankingViewProps> = ({
   pools,
   weapon,
+  ranking: externalRanking,
   onGoToTableau,
   onGoToResults,
   hasDirectElimination = true,
   onExport,
   onPoolsChange,
+  onRankingChange,
 }) => {
   const { showToast } = useToast();
   const { isColumnVisible, toggleColumn } = useColumnVisibility();
@@ -44,13 +48,17 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
   const [editedRanking, setEditedRanking] = useState<PoolRanking[]>([]);
   const [showColumnMenu, setShowColumnMenu] = useState(false);
   const columnMenuRef = useRef<HTMLDivElement>(null);
+  const justSaved = useRef(false);
 
   // Calculer le classement général selon le type d'arme
-  const overallRanking = useMemo(() => {
+  const computedRanking = useMemo(() => {
     // Utiliser recalcKey pour forcer le recalcul
     const _ = recalcKey;
     return isLaserSabre ? calculateOverallRankingQuest(pools) : calculateOverallRanking(pools);
   }, [pools, isLaserSabre, recalcKey]);
+
+  // Utiliser le classement fourni par le parent s'il existe, sinon le calculé
+  const overallRanking = externalRanking?.length ? externalRanking : computedRanking;
 
   // Recalculer les classements de toutes les poules
   const handleRecalculate = useCallback(() => {
@@ -74,10 +82,11 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
       JSON.stringify(overallRanking.map(r => r.fencer.id)) !==
       JSON.stringify(newOverallRanking.map(r => r.fencer.id));
 
-    // Mettre à jour les pools si callback fourni
+    // Mettre à jour les pools et le classement global dans le parent
     if (onPoolsChange) {
       onPoolsChange(updatedPools, rankingChanged);
     }
+    onRankingChange?.(newOverallRanking);
 
     // Forcer le recalcul du classement général
     setRecalcKey(prev => prev + 1);
@@ -87,11 +96,15 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
     } else {
       showToast('Classement recalculé avec succès !', 'success');
     }
-  }, [pools, isLaserSabre, onPoolsChange, showToast, overallRanking]);
+  }, [pools, isLaserSabre, onPoolsChange, onRankingChange, showToast, overallRanking]);
 
   // Initialiser le classement édité quand le classement global change
   useEffect(() => {
     if (!isEditing) {
+      if (justSaved.current) {
+        justSaved.current = false;
+        return;
+      }
       setEditedRanking(overallRanking);
     }
   }, [overallRanking, isEditing]);
@@ -139,7 +152,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
   };
 
   const handlePrint = () => {
-    window.print();
+    window.electronAPI.print();
   };
 
   // Déplacer un tireur vers le haut
@@ -169,23 +182,22 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
       JSON.stringify(editedRanking.map(r => r.fencer.id));
 
     if (onPoolsChange) {
-      if (rankingChanged) {
-        // Propager les rangs globaux manuels dans chaque pool pour que le bracket
-        // puisse utiliser le bon ordre de qualification
-        const fencerToGlobalRank = new Map(editedRanking.map(r => [r.fencer.id, r.rank]));
-        const updatedPools = pools.map(pool => ({
-          ...pool,
-          ranking: pool.ranking.map(pr => ({
-            ...pr,
-            rank: fencerToGlobalRank.get(pr.fencer.id) ?? pr.rank,
-          })),
-        }));
-        onPoolsChange(updatedPools, true);
-      } else {
-        onPoolsChange(pools, false);
-      }
+      // Propager rang ET questPoints dans chaque pool (les deux peuvent avoir changé)
+      const fencerToGlobalRank = new Map(editedRanking.map(r => [r.fencer.id, r.rank]));
+      const fencerToQuestPoints = new Map(editedRanking.map(r => [r.fencer.id, r.questPoints]));
+      const updatedPools = pools.map(pool => ({
+        ...pool,
+        ranking: pool.ranking.map(pr => ({
+          ...pr,
+          rank: fencerToGlobalRank.get(pr.fencer.id) ?? pr.rank,
+          questPoints: fencerToQuestPoints.get(pr.fencer.id) ?? pr.questPoints,
+        })),
+      }));
+      onPoolsChange(updatedPools, rankingChanged);
     }
 
+    onRankingChange?.(editedRanking);
+    justSaved.current = true;
     setIsEditing(false);
     showToast(
       rankingChanged
@@ -271,7 +283,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
           </button>
           <button
             className="btn btn-secondary"
-            onClick={() => setIsEditing(!isEditing)}
+            onClick={() => (isEditing ? saveChanges() : setIsEditing(true))}
             title={isEditing ? 'Terminer la modification' : 'Modifier le classement'}
           >
             {isEditing ? '✓ Terminer' : '✏️ Modifier'}
@@ -433,7 +445,22 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
                 )}
                 {isVisible('quest') && isLaserSabre && (
                   <td style={{ textAlign: 'center', fontWeight: '600', color: '#7c3aed' }}>
-                    {ranking.questPoints || 0}
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        min="0"
+                        value={ranking.questPoints ?? 0}
+                        onChange={e => {
+                          const val = Math.max(0, parseInt(e.target.value) || 0);
+                          setEditedRanking(prev =>
+                            prev.map((r, i) => (i === index ? { ...r, questPoints: val } : r))
+                          );
+                        }}
+                        style={{ width: '52px', textAlign: 'center', padding: '1px 4px' }}
+                      />
+                    ) : (
+                      ranking.questPoints ?? 0
+                    )}
                   </td>
                 )}
                 {isVisible('index') && (

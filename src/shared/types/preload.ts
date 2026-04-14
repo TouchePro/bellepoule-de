@@ -48,7 +48,7 @@ export interface FencerCreateData {
   birthDate?: Date;
   gender: string;
   nationality: string;
-  league?: string;
+  region?: string;
   club?: string;
   license?: string;
   ranking?: number;
@@ -62,7 +62,7 @@ export interface FencerUpdateData {
   birthDate?: Date;
   gender?: string;
   nationality?: string;
-  league?: string;
+  region?: string;
   club?: string;
   license?: string;
   ranking?: number;
@@ -133,8 +133,8 @@ export interface MatchCardData {
 export interface MatchTimingData {
   matchId: string;
   startTime: string | null; // ISO 8601
-  endTime: string | null;   // ISO 8601
-  duration: number | null;  // secondes
+  endTime: string | null; // ISO 8601
+  duration: number | null; // secondes
 }
 
 export interface FencerMatchRecord {
@@ -174,6 +174,35 @@ export interface FencerMatchRecord {
 
 export interface FencerHistory {
   matches: FencerMatchRecord[];
+}
+
+export interface MatchSnapshot {
+  matchId: string;
+  status: string;
+  scoreA: {
+    value: number | null;
+    isVictory: boolean;
+    isAbstention: boolean;
+    isExclusion: boolean;
+    isForfait: boolean;
+  } | null;
+  scoreB: {
+    value: number | null;
+    isVictory: boolean;
+    isAbstention: boolean;
+    isExclusion: boolean;
+    isForfait: boolean;
+  } | null;
+}
+
+export interface AbandonSnapshot {
+  id: string;
+  fencerId: string;
+  competitionId: string;
+  previousStatus: string;
+  abandonType: 'abandon' | 'forfait' | 'exclusion';
+  matchSnapshots: MatchSnapshot[];
+  createdAt: string;
 }
 
 export interface SessionState {
@@ -300,7 +329,8 @@ export interface RemoteServerAPI {
     competitionId: string,
     strips: number,
     matches?: any[],
-    showPhotos?: boolean
+    showPhotos?: boolean,
+    kioskViews?: Record<string, boolean>
   ) => Promise<{ success: boolean; session?: any; error?: string }>;
   stopSession: () => Promise<{ success: boolean; error?: string }>;
   getSession: () => Promise<{ success: boolean; session?: any; error?: string }>;
@@ -314,7 +344,18 @@ export interface RemoteServerAPI {
     fencerA?: Fencer | null,
     fencerB?: Fencer | null
   ) => Promise<{ success: boolean; error?: string }>;
-  setArenaPassword: (arenaId: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  updatePoolFencers: (
+    updates: Array<{ poolId: string; fencers: any[] }>
+  ) => Promise<{ success: boolean; error?: string }>;
+  setArenaPassword: (
+    arenaId: string,
+    password: string
+  ) => Promise<{ success: boolean; error?: string }>;
+  updateKioskViews: (
+    views: Record<string, boolean>
+  ) => Promise<{ success: boolean; error?: string }>;
+  setOrgNote: (note: import('../types/remote').OrgNote) => Promise<{ success: boolean; error?: string }>;
+  clearOrgNote: () => Promise<{ success: boolean; error?: string }>;
 }
 
 // ============================================================================
@@ -359,16 +400,32 @@ export interface DatabaseAPI {
   saveCard: (card: MatchCardData) => Promise<void>;
   updateMatchTiming: (timing: MatchTimingData) => Promise<void>;
   getFencerHistory: (fencerId: string) => Promise<FencerHistory>;
+  saveAbandonSnapshot: (
+    fencerId: string,
+    competitionId: string,
+    previousStatus: string,
+    abandonType: string,
+    matchSnapshots: MatchSnapshot[]
+  ) => Promise<void>;
+  getAbandonSnapshot: (fencerId: string) => Promise<AbandonSnapshot | null>;
+  deleteAbandonSnapshot: (fencerId: string) => Promise<void>;
 }
 
 export interface FileAPI {
   export: (filepath: string) => Promise<FileSaveResult>;
   import: (filepath: string) => Promise<FileOpenResult>;
   writeContent: (filepath: string, content: string) => Promise<void>;
+  printHtmlToPDF: (html: string, outputPath: string) => Promise<{ success: boolean; path?: string; error?: string }>;
   exportPhotos: (competitionId: string, filepath: string) => Promise<{ count: number }>;
-  importPhotos: (competitionId: string, filepath: string) => Promise<{ matched: number; total: number }>;
+  importPhotos: (
+    competitionId: string,
+    filepath: string
+  ) => Promise<{ matched: number; total: number }>;
   exportFencersArchive: (competitionId: string, filepath: string) => Promise<{ count: number }>;
-  importFencersArchive: (competitionId: string, filepath: string) => Promise<{ added: number; updated: number }>;
+  importFencersArchive: (
+    competitionId: string,
+    filepath: string
+  ) => Promise<{ added: number; updated: number }>;
 }
 
 export interface DialogAPI {
@@ -393,6 +450,7 @@ export interface MenuAPI {
 }
 
 export interface UtilityAPI {
+  print: () => Promise<void>;
   openExternal: (url: string) => Promise<void>;
   getVersionInfo: () => Promise<VersionInfo>;
   removeAllListeners: (channel: string) => void;
@@ -406,4 +464,7 @@ export interface ElectronAPI extends MenuAPI, UtilityAPI {
   remote: RemoteServerAPI;
   onRemoteArenaUpdate: (callback: (data: any) => void) => void;
   onRemoteMatchFinished: (callback: (data: any) => void) => void;
+  onKioskNoteUpdate: (callback: (note: import('../types/remote').OrgNote | null) => void) => () => void;
+  notifyLanguageChanged: (lang: string) => void;
 }
+
