@@ -430,7 +430,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             Note d'organisation (kiosk)
           </div>
           <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.5rem' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', color: '#e2e8f0' }}>
               <input
                 type="radio"
                 name="orgNoteType"
@@ -439,7 +439,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
               />
               Message libre
             </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', color: '#e2e8f0' }}>
               <input
                 type="radio"
                 name="orgNoteType"
@@ -449,12 +449,12 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
               Heure de reprise
             </label>
           </div>
-          <input
-            type="text"
+          <textarea
             placeholder="Message (ex: Déjeuner des arbitres)"
             value={orgNoteMessage}
             onChange={e => setOrgNoteMessage(e.target.value)}
-            style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#0f172a', color: '#e2e8f0', boxSizing: 'border-box', marginBottom: '0.4rem' }}
+            rows={3}
+            style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#0f172a', color: '#e2e8f0', boxSizing: 'border-box', marginBottom: '0.4rem', resize: 'vertical', fontFamily: 'inherit', fontSize: 'inherit' }}
           />
           {orgNoteType === 'target_time' && (
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.4rem' }}>
