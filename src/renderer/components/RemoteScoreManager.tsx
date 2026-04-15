@@ -463,7 +463,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                 onChange={e => setOrgNotePrefix(e.target.value)}
                 style={{ padding: '0.4rem 0.6rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#0f172a', color: '#e2e8f0', cursor: 'pointer' }}
               >
-                {['Reprise', 'Début', 'Fin', 'Pause', 'Déjeuner', 'Dîner', 'Cérémonie'].map(p => (
+                {['Reprise', 'Début', 'Fin', 'Pause', 'Déjeuner', 'Cérémonie'].map(p => (
                   <option key={p} value={p}>{p}</option>
                 ))}
               </select>
