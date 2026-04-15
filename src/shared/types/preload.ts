@@ -322,7 +322,7 @@ export interface RemoteServerInfo {
 }
 
 export interface RemoteServerAPI {
-  startServer: () => Promise<{ success: boolean; serverInfo?: RemoteServerInfo; error?: string }>;
+  startServer: (port?: number) => Promise<{ success: boolean; serverInfo?: RemoteServerInfo; error?: string }>;
   stopServer: () => Promise<{ success: boolean; error?: string }>;
   getServerInfo: () => Promise<{ success: boolean; serverInfo?: RemoteServerInfo; error?: string }>;
   startSession: (

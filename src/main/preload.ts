@@ -371,7 +371,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Remote score server functions
   remote: {
-    startServer: () => ipcRenderer.invoke('remote:startServer'),
+    startServer: (port?: number) => ipcRenderer.invoke('remote:startServer', port),
     stopServer: () => ipcRenderer.invoke('remote:stopServer'),
     getServerInfo: () => ipcRenderer.invoke('remote:getServerInfo'),
     startSession: (
