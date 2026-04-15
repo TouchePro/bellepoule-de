@@ -14,7 +14,7 @@
       }
 
       body {
-        font-family: Impact, 'Arial Black', sans-serif;
+        font-family: 'Arial', 'Helvetica Neue', Helvetica, sans-serif;
         background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
         height: 100vh;
         overflow: hidden;
@@ -311,12 +311,14 @@
       }
 
       .score-big {
-        font-family: Impact, 'Arial Black', sans-serif;
+        font-family: 'Arial', 'Helvetica Neue', Helvetica, sans-serif;
         font-size: clamp(8rem, 26vw, 50vh);
         font-weight: 900;
         line-height: 1;
-        letter-spacing: -0.02em;
-        -webkit-text-stroke: 2px currentColor;
+        letter-spacing: 0.01em;
+        font-variant-numeric: tabular-nums;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
 
       .score-big.red {
