@@ -18,6 +18,7 @@ const db = new DatabaseManager();
 
 // Remote score server
 let remoteScoreServer: any = null;
+let remoteScoreServerPort: number = 8066;
 
 // Auto updater
 let autoUpdater: AutoUpdater | null = null;
@@ -487,7 +488,7 @@ function createMenu(language?: string): void {
 // Remote Score Server
 // ============================================================================
 
-function startRemoteScoreServer(): void {
+function startRemoteScoreServer(port: number = 8066): void {
   if (remoteScoreServer) {
     dialog.showMessageBox(mainWindow!, {
       type: 'info',
@@ -499,7 +500,8 @@ function startRemoteScoreServer(): void {
   }
 
   try {
-    remoteScoreServer = new RemoteScoreServer(db, 8066);
+    remoteScoreServer = new RemoteScoreServer(db, port);
+    remoteScoreServerPort = port;
     remoteScoreServer.start();
 
     const serverUrl = remoteScoreServer.getServerUrl();
@@ -507,7 +509,7 @@ function startRemoteScoreServer(): void {
       type: 'info',
       title: 'Saisie distante démarrée',
       message: `Les arbitres peuvent maintenant se connecter`,
-      detail: `Arène 1: ${serverUrl}/arene1/arbitre\nArène 2: ${serverUrl}/arene2/arbitre\nArène 3: ${serverUrl}/arene3/arbitre\nArène 4: ${serverUrl}/arene4/arbitre\n\nAffichage kiosk (grand écran public): ${serverUrl}/kiosk\nClassement en direct: ${serverUrl}/\n\nPartagez ces URLs avec les arbitres munis de tablettes.\nAssurez-vous que le pare-feu Windows autorise les connexions sur le port 8066.`,
+      detail: `Arène 1: ${serverUrl}/arene1/arbitre\nArène 2: ${serverUrl}/arene2/arbitre\nArène 3: ${serverUrl}/arene3/arbitre\nArène 4: ${serverUrl}/arene4/arbitre\n\nAffichage kiosk (grand écran public): ${serverUrl}/kiosk\nClassement en direct: ${serverUrl}/\n\nPartagez ces URLs avec les arbitres munis de tablettes.\nAssurez-vous que le pare-feu Windows autorise les connexions sur le port ${port}.`,
       buttons: ['OK'],
     });
 
@@ -1008,20 +1010,22 @@ ipcMain.handle('shell:openExternal', async (_, url: string) => {
 });
 
 // Remote score server handlers
-ipcMain.handle('remote:startServer', async () => {
+ipcMain.handle('remote:startServer', async (_event, port?: number) => {
   try {
     if (remoteScoreServer) {
       return { success: false, error: 'Le serveur est déjà démarré' };
     }
 
-    remoteScoreServer = new RemoteScoreServer(db, 8066);
+    const effectivePort = port ?? 8066;
+    remoteScoreServer = new RemoteScoreServer(db, effectivePort);
+    remoteScoreServerPort = effectivePort;
     remoteScoreServer.start();
 
     const serverUrl = remoteScoreServer.getServerUrl();
     const serverInfo = {
       url: serverUrl,
       ip: remoteScoreServer.getLocalIPAddress(),
-      port: 8066,
+      port: effectivePort,
     };
 
     // Stocker la référence globale pour le serveur distant
@@ -1060,7 +1064,7 @@ ipcMain.handle('remote:getServerInfo', async () => {
     serverInfo: {
       url: remoteScoreServer.getServerUrl(),
       ip: remoteScoreServer.getLocalIPAddress(),
-      port: 8066,
+      port: remoteScoreServerPort,
     },
   };
 });

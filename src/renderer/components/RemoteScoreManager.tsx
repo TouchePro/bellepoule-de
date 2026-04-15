@@ -47,7 +47,11 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const { showToast } = useToast();
   const [session, setSession] = useState<RemoteSession | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [serverUrl, setServerUrl] = useState<string>('http://localhost:8066');
+  const [serverUrl, setServerUrl] = useState<string>('');
+  const [remotePort, setRemotePort] = useState<number>(() => {
+    const saved = localStorage.getItem('bellepoule-remote-port');
+    return saved ? parseInt(saved, 10) : 8066;
+  });
   // pendingCount : valeur affichée (modifiée par +/−, non encore appliquée)
   const [pendingCount, setPendingCount] = useState<number | null>(null);
   // committedCount : valeur appliquée au serveur ou confirmée par l'utilisateur
@@ -126,7 +130,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const startRemoteServer = async () => {
     try {
       setIsLoading(true);
-      const result = await window.electronAPI.remote.startServer();
+      const result = await window.electronAPI.remote.startServer(remotePort);
 
       if (result.success && result.serverInfo) {
         setServerUrl(result.serverInfo.url);
@@ -204,6 +208,12 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       onArenaCountChange?.(newCount);
       showToast('Préférence sauvegardée', 'success');
     }
+  };
+
+  const handlePortChange = (value: number) => {
+    const port = Math.max(1024, Math.min(65535, value || 8066));
+    setRemotePort(port);
+    localStorage.setItem('bellepoule-remote-port', String(port));
   };
 
   const handleStopRemote = async () => {
@@ -346,6 +356,20 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                 {label}
               </label>
             ))}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.75rem 0' }}>
+            <label htmlFor="remote-port" style={{ whiteSpace: 'nowrap' }}>Port :</label>
+            <input
+              id="remote-port"
+              type="number"
+              min={1024}
+              max={65535}
+              value={remotePort}
+              onChange={e => handlePortChange(parseInt(e.target.value, 10))}
+              style={{ width: '80px' }}
+              disabled={isLoading}
+            />
+            <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>1024–65535, défaut 8066</span>
           </div>
           <button className="btn-primary" onClick={onStartRemote}>
             ⚡ Démarrer la saisie distante
