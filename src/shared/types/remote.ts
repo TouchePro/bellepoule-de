@@ -151,7 +151,8 @@ export interface RefereeControl {
 
 export interface OrgNote {
   type: 'target_time' | 'free';
-  message: string;      // texte libre affiché sous le titre
-  targetTime?: string;  // "HH:MM" uniquement pour type target_time
-  createdAt: string;    // ISO timestamp
+  message: string;           // texte libre affiché sous le titre
+  targetTime?: string;       // "HH:MM" uniquement pour type target_time
+  countdownPrefix?: string;  // mot affiché avant l'heure (ex: "Reprise", "Début")
+  createdAt: string;         // ISO timestamp
 }
