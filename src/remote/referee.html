@@ -1420,15 +1420,17 @@
           }
 
           this.updateScores();
-          this.broadcastUpdate();
-          this.saveScore();
 
           // Mode Challenger : mort subite si les DEUX combattants ≥ 10 pts (Laser Sabre uniquement)
+          // Vérifier AVANT broadcastUpdate pour que le serveur reçoive l'état correct
           if (this.isLaserSabre && !this.isSuddenDeath) {
             if (this.scoreA >= 10 && this.scoreB >= 10) {
               this.triggerSuddenDeathChallenger();
             }
           }
+
+          this.broadcastUpdate();
+          this.saveScore();
         }
 
         addCard(fencer, cardType) {
@@ -1561,6 +1563,14 @@
             this.scoreB = Math.max(0, this.scoreB - points);
           }
 
+          // Ré-évaluer la mort subite : si un score repasse sous 10, on quitte la mort subite
+          if (this.isSuddenDeath && this.isLaserSabre) {
+            if (!(this.scoreA >= 10 && this.scoreB >= 10)) {
+              this.isSuddenDeath = false;
+              this.updateSuddenDeathUI();
+            }
+          }
+
           this.updateScores();
           this.broadcastUpdate();
           this.saveScore();
@@ -1594,6 +1604,14 @@
             this.scoreB = Math.max(0, this.scoreB - 5);
           } else if (cardType === 'red' && fencer === 'B') {
             this.scoreA = Math.max(0, this.scoreA - 5);
+          }
+
+          // Ré-évaluer la mort subite : si un score repasse sous 10, on quitte la mort subite
+          if (this.isSuddenDeath && this.isLaserSabre) {
+            if (!(this.scoreA >= 10 && this.scoreB >= 10)) {
+              this.isSuddenDeath = false;
+              this.updateSuddenDeathUI();
+            }
           }
 
           this.updateScores();
