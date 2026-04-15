@@ -61,6 +61,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const [orgNoteType, setOrgNoteType] = useState<'free' | 'target_time'>('free');
   const [orgNoteMessage, setOrgNoteMessage] = useState('');
   const [orgNoteTime, setOrgNoteTime] = useState('');
+  const [orgNotePrefix, setOrgNotePrefix] = useState('Reprise');
   const [orgNoteActive, setOrgNoteActive] = useState(false);
 
   useEffect(() => {
@@ -453,15 +454,26 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             placeholder="Message (ex: Déjeuner des arbitres)"
             value={orgNoteMessage}
             onChange={e => setOrgNoteMessage(e.target.value)}
-            style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#0f172a', color: 'inherit', boxSizing: 'border-box', marginBottom: '0.4rem' }}
+            style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#0f172a', color: '#e2e8f0', boxSizing: 'border-box', marginBottom: '0.4rem' }}
           />
           {orgNoteType === 'target_time' && (
-            <input
-              type="time"
-              value={orgNoteTime}
-              onChange={e => setOrgNoteTime(e.target.value)}
-              style={{ padding: '0.4rem 0.6rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#0f172a', color: 'inherit', marginBottom: '0.4rem' }}
-            />
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.4rem' }}>
+              <select
+                value={orgNotePrefix}
+                onChange={e => setOrgNotePrefix(e.target.value)}
+                style={{ padding: '0.4rem 0.6rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#0f172a', color: '#e2e8f0', cursor: 'pointer' }}
+              >
+                {['Reprise', 'Début', 'Fin', 'Pause', 'Déjeuner', 'Cérémonie'].map(p => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+              <input
+                type="time"
+                value={orgNoteTime}
+                onChange={e => setOrgNoteTime(e.target.value)}
+                style={{ padding: '0.4rem 0.6rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#0f172a', color: '#e2e8f0' }}
+              />
+            </div>
           )}
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
             <button
@@ -470,7 +482,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                 const note = {
                   type: orgNoteType,
                   message: orgNoteMessage.trim(),
-                  ...(orgNoteType === 'target_time' ? { targetTime: orgNoteTime } : {}),
+                  ...(orgNoteType === 'target_time' ? { targetTime: orgNoteTime, countdownPrefix: orgNotePrefix } : {}),
                   createdAt: new Date().toISOString(),
                 };
                 await window.electronAPI.remote.setOrgNote(note);

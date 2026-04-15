@@ -739,7 +739,7 @@
         if (note.type === 'target_time' && note.targetTime) {
           const [hh, mm] = note.targetTime.split(':').map(Number);
           const fmtTime = String(hh).padStart(2, '0') + 'h' + String(mm).padStart(2, '0');
-          document.getElementById('org-note-time').textContent = 'Reprise à ' + fmtTime;
+          document.getElementById('org-note-time').textContent = (note.countdownPrefix || 'Reprise') + ' à ' + fmtTime;
 
           const computeCountdown = () => {
             const now = new Date();
