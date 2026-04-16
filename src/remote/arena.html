@@ -51,6 +51,8 @@
       --waiting-color: white;
       --idle-number-color: rgba(255, 255, 255, 0.9);
       --idle-label-color: rgba(255, 255, 255, 0.5);
+      --vs-color: #ef4444;
+      --vs-font-family: system-ui, sans-serif;
     }
 
     /* ── Thème Light ── */
@@ -80,6 +82,8 @@
       --waiting-color: #1a2340;
       --idle-number-color: rgba(26, 35, 64, 0.85);
       --idle-label-color: rgba(26, 35, 64, 0.45);
+      --vs-color: #dc2626;
+      --vs-font-family: system-ui, sans-serif;
     }
 
     /* ── Thème Neon ── */
@@ -109,6 +113,8 @@
       --waiting-color: #e0e0e0;
       --idle-number-color: rgba(255, 255, 255, 0.9);
       --idle-label-color: rgba(255, 255, 255, 0.35);
+      --vs-color: #ff2244;
+      --vs-font-family: system-ui, sans-serif;
     }
 
     /* ── Thème Custom (variables injectées dynamiquement par JS) ── */
@@ -139,6 +145,8 @@
       --waiting-color: white;
       --idle-number-color: rgba(255, 255, 255, 0.9);
       --idle-label-color: rgba(255, 255, 255, 0.5);
+      --vs-color: #ef4444;
+      --vs-font-family: system-ui, sans-serif;
       /* Variables de disposition (override tailles) */
       --score-font-size: clamp(7rem, 23vw, 44vh);
       --timer-font-size: clamp(3.5rem, 11vw, 18vh);
@@ -477,8 +485,9 @@
       .vs-divider {
         font-size: clamp(1.5rem, 3vw, 5vh);
         font-weight: 900;
-        color: #ef4444;
-        text-shadow: 2px 2px 4px rgba(239, 68, 68, 0.3);
+        color: var(--vs-color);
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        font-family: var(--vs-font-family);
         display: flex;
         align-items: center;
       }
@@ -673,8 +682,8 @@
       .vs-center {
         font-size: clamp(3rem, 7vw, 12vh);
         font-weight: 900;
-        color: #f59e0b;
-        text-shadow: 0 0 30px rgba(245, 158, 11, 0.7);
+        color: var(--vs-color, #f59e0b);
+        text-shadow: 0 0 30px rgba(0, 0, 0, 0.4);
         padding: 0 1rem;
         flex-shrink: 0;
       }
