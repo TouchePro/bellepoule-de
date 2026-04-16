@@ -20,6 +20,7 @@ import {
   ArenaUpdate,
   OrgNote,
   DisplayTheme,
+  CustomTheme,
 } from '../shared/types/remote';
 import { Competition, Match, Fencer, MatchStatus, Score } from '../shared/types';
 import { DatabaseManager } from '../database';
@@ -40,7 +41,8 @@ export class RemoteScoreServer {
   private poolFencersCache: Map<string, any[]> = new Map(); // Tireurs par poolId (depuis le renderer)
   private sessionMatchScores: Map<string, { scoreA: any; scoreB: any; status: string }> = new Map(); // Scores en mémoire
   private sessionShowPhotos: boolean = false; // Afficher les photos des combattants avant le combat
-  private sessionTheme: DisplayTheme = 'dark'; // Thème visuel de l'affichage distant
+  private sessionTheme: DisplayTheme = 'dark'; // Thème visuel de l'affichage distant (global)
+  private arenaThemeOverrides: Map<string, { theme: DisplayTheme; customTheme?: CustomTheme }> = new Map();
   private orgNote: OrgNote | null = null; // Note d'organisation affichée sur le kiosk
   private sessionKioskViews: { poules: boolean; classement: boolean; direct: boolean } = {
     poules: true,
@@ -2093,11 +2095,13 @@ export class RemoteScoreServer {
   }
 
   private broadcastArenaUpdate(arenaId: string, update: ArenaUpdate): void {
-    // Injecter le réglage showPhotos et theme dans chaque mise à jour
+    // Injecter showPhotos + thème (par arène si override, sinon thème global de session)
+    const override = this.arenaThemeOverrides.get(arenaId);
     const updateWithPhotos: ArenaUpdate = {
       ...update,
       showPhotos: this.sessionShowPhotos,
-      theme: this.sessionTheme,
+      theme: override?.theme ?? this.sessionTheme,
+      customTheme: override?.customTheme,
     };
     // Envoyer via Socket.IO aux clients connectés aux arènes
     this.io.emit(`arena:${arenaId}:update`, updateWithPhotos);
@@ -2536,6 +2540,24 @@ export class RemoteScoreServer {
     for (const [arenaId, arena] of this.arenas.entries()) {
       this.broadcastArenaUpdate(arenaId, {
         arenaId,
+        match: arena.currentMatch,
+        scoreA: arena.currentMatch?.scoreA,
+        scoreB: arena.currentMatch?.scoreB,
+        status: arena.status,
+        fencerA: arena.currentMatch?.fencerA,
+        fencerB: arena.currentMatch?.fencerB,
+      });
+    }
+  }
+
+  public updateArenaTheme(arenaId: string, theme: DisplayTheme, customTheme?: CustomTheme): void {
+    if (!this.session) throw new Error('Aucune session active');
+    const fullId = arenaId.startsWith('arena') ? arenaId : `arena${arenaId}`;
+    this.arenaThemeOverrides.set(fullId, { theme, customTheme });
+    const arena = this.arenas.get(fullId);
+    if (arena) {
+      this.broadcastArenaUpdate(fullId, {
+        arenaId: fullId,
         match: arena.currentMatch,
         scoreA: arena.currentMatch?.scoreA,
         scoreB: arena.currentMatch?.scoreB,

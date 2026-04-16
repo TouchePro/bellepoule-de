@@ -356,6 +356,11 @@ export interface RemoteServerAPI {
   ) => Promise<{ success: boolean; error?: string }>;
   setOrgNote: (note: import('../types/remote').OrgNote) => Promise<{ success: boolean; error?: string }>;
   clearOrgNote: () => Promise<{ success: boolean; error?: string }>;
+  updateArenaTheme: (
+    arenaId: string,
+    theme: import('../types/remote').DisplayTheme,
+    customTheme?: import('../types/remote').CustomTheme
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 // ============================================================================

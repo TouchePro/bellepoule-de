@@ -405,6 +405,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('remote:setArenaPassword', arenaId, password),
     setOrgNote: (note: any) => ipcRenderer.invoke('remote:setOrgNote', note),
     clearOrgNote: () => ipcRenderer.invoke('remote:clearOrgNote'),
+    updateArenaTheme: (arenaId: string, theme: string, customTheme?: any) =>
+      ipcRenderer.invoke('remote:updateArenaTheme', arenaId, theme, customTheme),
   },
 
   // Remote event listeners (for real-time updates)
