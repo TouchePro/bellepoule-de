@@ -39,6 +39,11 @@ const DARK_DEFAULTS: Record<string, string> = {
   '--score-font-size': 'clamp(7rem, 23vw, 44vh)',
   '--timer-font-size': 'clamp(3.5rem, 11vw, 18vh)',
   '--fencer-name-font-size': 'clamp(1rem, 3.5vw, 5vh)',
+  '--score-font-family': 'monospace',
+  '--timer-font-family': 'monospace',
+  '--fencer-name-font-family': 'system-ui, sans-serif',
+  '--vs-color': '#ef4444',
+  '--vs-font-family': 'system-ui, sans-serif',
 };
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -47,8 +52,8 @@ const DARK_DEFAULTS: Record<string, string> = {
 interface VarDef {
   key: string;
   label: string;
-  /** color → color-picker + text; text → texte libre; size → presets de taille */
-  type: 'color' | 'text' | 'size';
+  /** color → color-picker + text; text → texte libre; size → presets de taille; font → menu déroulant police */
+  type: 'color' | 'text' | 'size' | 'font';
 }
 
 interface VarGroup {
@@ -113,6 +118,11 @@ const VAR_GROUPS: VarGroup[] = [
       { key: '--score-font-size',       label: 'Taille scores',     type: 'size' },
       { key: '--timer-font-size',       label: 'Taille chrono',     type: 'size' },
       { key: '--fencer-name-font-size', label: 'Taille noms',       type: 'size' },
+      { key: '--score-font-family',       label: 'Police scores',   type: 'font' },
+      { key: '--timer-font-family',       label: 'Police chrono',   type: 'font' },
+      { key: '--fencer-name-font-family', label: 'Police noms',     type: 'font' },
+      { key: '--vs-color',                label: 'Couleur VS',      type: 'color' },
+      { key: '--vs-font-family',          label: 'Police VS',       type: 'font' },
     ],
   },
 ];
@@ -137,6 +147,18 @@ const SIZE_PRESETS: Record<string, Record<string, string>> = {
     'Très grand': 'clamp(1.8rem, 6.5vw, 9vh)',
   },
 };
+
+const FONT_OPTIONS: { label: string; value: string }[] = [
+  { label: 'Monospace (défaut)',    value: 'monospace' },
+  { label: 'Courier New',          value: '"Courier New", monospace' },
+  { label: 'System UI',            value: 'system-ui, sans-serif' },
+  { label: 'Arial',                value: 'Arial, sans-serif' },
+  { label: 'Verdana',              value: 'Verdana, sans-serif' },
+  { label: 'Impact',               value: 'Impact, fantasy' },
+  { label: 'Georgia',              value: 'Georgia, serif' },
+  { label: 'Trebuchet MS',         value: '"Trebuchet MS", sans-serif' },
+  { label: 'Lucida Console',       value: '"Lucida Console", monospace' },
+];
 
 // Canvas virtuel pour le preview scalé (résolution de référence 16:9)
 const VIRTUAL_W = 1280;
@@ -498,14 +520,14 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
                       overflow: 'hidden',
                     }}>
                       <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#22c55e,#16a34a)', flexShrink: 0 }} />
-                      <div style={{ fontSize: 'var(--fencer-name-font-size)', fontWeight: 800, color: 'var(--fencer-name-color)', textAlign: 'center', lineHeight: 1.1 }}>
+                      <div style={{ fontSize: 'var(--fencer-name-font-size)', fontFamily: 'var(--fencer-name-font-family)', fontWeight: 800, color: 'var(--fencer-name-color)', textAlign: 'center', lineHeight: 1.1 }}>
                         DUPONT A.
                       </div>
                       <div style={{ fontSize: '22px', color: 'var(--fencer-club-color)' }}>
                         Escrime Paris
                       </div>
                       <div style={{
-                        fontFamily: 'monospace',
+                        fontFamily: 'var(--score-font-family)',
                         fontSize: 'var(--score-font-size)',
                         fontWeight: 'bold',
                         color: 'var(--score-green)',
@@ -520,7 +542,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
                     </div>
 
                     {/* VS */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '36px', fontWeight: 900, color: '#ef4444' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '36px', fontWeight: 900, color: 'var(--vs-color)', fontFamily: 'var(--vs-font-family)' }}>
                       VS
                     </div>
 
@@ -538,14 +560,14 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
                       overflow: 'hidden',
                     }}>
                       <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#ef4444,#dc2626)', flexShrink: 0 }} />
-                      <div style={{ fontSize: 'var(--fencer-name-font-size)', fontWeight: 800, color: 'var(--fencer-name-color)', textAlign: 'center', lineHeight: 1.1 }}>
+                      <div style={{ fontSize: 'var(--fencer-name-font-size)', fontFamily: 'var(--fencer-name-font-family)', fontWeight: 800, color: 'var(--fencer-name-color)', textAlign: 'center', lineHeight: 1.1 }}>
                         MARTIN B.
                       </div>
                       <div style={{ fontSize: '22px', color: 'var(--fencer-club-color)' }}>
                         CE Orléans
                       </div>
                       <div style={{
-                        fontFamily: 'monospace',
+                        fontFamily: 'var(--score-font-family)',
                         fontSize: 'var(--score-font-size)',
                         fontWeight: 'bold',
                         color: 'var(--score-red)',
@@ -567,7 +589,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
                     borderRadius: '10px',
                     padding: '10px',
                     textAlign: 'center',
-                    fontFamily: 'monospace',
+                    fontFamily: 'var(--timer-font-family)',
                     fontSize: 'var(--timer-font-size)',
                     fontWeight: 'bold',
                     color: 'var(--timer-run-color)',
@@ -612,7 +634,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
 interface VarRowProps {
   varKey: string;
   label: string;
-  type: 'color' | 'text' | 'size';
+  type: 'color' | 'text' | 'size' | 'font';
   value: string;
   onChange: (v: string) => void;
 }
@@ -658,6 +680,31 @@ const VarRow: React.FC<VarRowProps> = ({ varKey, label, type, value, onChange })
               </span>
             ))}
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (type === 'font') {
+    return (
+      <div className="var-row">
+        <label className="var-label">{label}</label>
+        <div className="var-control">
+          <select
+            value={value}
+            onChange={e => onChange(e.target.value)}
+            style={{
+              flex: 1, padding: '0.35rem 0.5rem', borderRadius: '0.3rem',
+              border: '1px solid #475569', background: '#0f172a', color: '#e2e8f0',
+              fontSize: '0.85rem', cursor: 'pointer', fontFamily: value,
+            }}
+          >
+            {FONT_OPTIONS.map(opt => (
+              <option key={opt.value} value={opt.value} style={{ fontFamily: opt.value }}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
     );
