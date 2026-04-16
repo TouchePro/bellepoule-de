@@ -3,7 +3,7 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Fencer, FencerStatus } from '../../shared/types';
 import EditFencerModal from './EditFencerModal';
 import { useTranslation } from '../hooks/useTranslation';
@@ -56,6 +56,18 @@ const FencerListComponent: React.FC<FencerListProps> = ({
   const [sortBy, setSortBy] = useState<'name' | 'club' | 'ranking' | 'age'>('ranking');
   const [photoMessage, setPhotoMessage] = useState<string | null>(null);
   const [editingFencer, setEditingFencer] = useState<Fencer | null>(null);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setExportMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
   const filteredFencers = fencers
     .filter(f => {
       const search = searchTerm.toLowerCase();
@@ -284,20 +296,44 @@ const FencerListComponent: React.FC<FencerListProps> = ({
               📥 Importer
             </button>
           )}
-          <button
-            className="btn btn-secondary"
-            onClick={() => handleExportFencers('txt')}
-            title="Exporter en TXT"
-          >
-            TXT
-          </button>
-          <button
-            className="btn btn-secondary"
-            onClick={() => handleExportFencers('fff')}
-            title="Exporter en FFF"
-          >
-            FFF
-          </button>
+          <div ref={exportMenuRef} style={{ position: 'relative', display: 'inline-block' }}>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setExportMenuOpen(o => !o)}
+              title="Exporter"
+            >
+              📤 Exporter ▾
+            </button>
+            {exportMenuOpen && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                right: 0,
+                zIndex: 1000,
+                background: 'var(--bg-secondary, #2a2a3e)',
+                border: '1px solid var(--border-color, #444)',
+                borderRadius: '6px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                minWidth: '160px',
+                padding: '4px 0',
+              }}>
+                <button
+                  className="btn btn-ghost"
+                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 16px', borderRadius: 0 }}
+                  onClick={() => { handleExportFencers('txt'); setExportMenuOpen(false); }}
+                >
+                  Exporter TXT
+                </button>
+                <button
+                  className="btn btn-ghost"
+                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 16px', borderRadius: 0 }}
+                  onClick={() => { handleExportFencers('fff'); setExportMenuOpen(false); }}
+                >
+                  Exporter FFF
+                </button>
+              </div>
+            )}
+          </div>
           {competitionId && (
             <>
               <button
