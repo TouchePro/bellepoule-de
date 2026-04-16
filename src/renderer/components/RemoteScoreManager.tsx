@@ -10,6 +10,8 @@ import { Competition, Pool } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
 import { TableauMatch } from './TableauView';
 import { useToast } from './Toast';
+import ThemeEditor from './ThemeEditor';
+import { CustomTheme, DisplayTheme } from '../../shared/types/remote';
 
 interface RemoteScoreManagerProps {
   competition: Competition;
@@ -68,6 +70,10 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const [orgNoteTime, setOrgNoteTime] = useState('');
   const [orgNotePrefix, setOrgNotePrefix] = useState('Reprise');
   const [orgNoteActive, setOrgNoteActive] = useState(false);
+  // Thèmes par arène : arenaId → { theme, customTheme? }
+  const [arenaThemes, setArenaThemes] = useState<Record<string, { theme: DisplayTheme; customTheme?: CustomTheme }>>({});
+  // Éditeur de thème
+  const [themeEditorTarget, setThemeEditorTarget] = useState<string | null>(null);
 
   useEffect(() => {
     if (!activeQR) {
@@ -254,6 +260,14 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       setTimeout(() => setCopiedIndex(null), 2000);
     }
   }, []);
+
+  // Appliquer un thème (prédéfini ou custom) à une arène
+  const handleArenaThemeChange = useCallback(async (arenaId: string, theme: DisplayTheme, customTheme?: CustomTheme) => {
+    setArenaThemes(prev => ({ ...prev, [arenaId]: { theme, customTheme } }));
+    if (session) {
+      await window.electronAPI.remote.updateArenaTheme(arenaId, theme, customTheme);
+    }
+  }, [session]);
 
   // La grille d'URLs reflète l'état réel du serveur (committedCount) ou la session active
   const arenaCount = session ? session.strips.length : effectiveCommitted;
@@ -573,10 +587,39 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         </div>
 
         <div className="arena-url-grid">
-          {arenaUrls.map(arena => (
+          {arenaUrls.map(arena => {
+            const arenaId = `arena${arena.number}`;
+            const arenaTheme = arenaThemes[arenaId];
+            return (
             <div key={arena.number} className="arena-url-card">
               <div className="arena-url-header">
                 <strong>Piste {arena.number}</strong>
+                {/* Sélecteur de thème par arène */}
+                <div className="arena-theme-picker">
+                  {(
+                    [
+                      { value: 'dark'  as const, icon: '🌙', title: 'Sombre'  },
+                      { value: 'light' as const, icon: '☀️', title: 'Clair'   },
+                      { value: 'neon'  as const, icon: '⚡', title: 'Néon'    },
+                    ]
+                  ).map(({ value, icon, title }) => (
+                    <button
+                      key={value}
+                      title={title}
+                      className={`arena-theme-btn ${arenaTheme?.theme === value ? 'active' : ''}`}
+                      onClick={() => handleArenaThemeChange(arenaId, value)}
+                    >
+                      {icon}
+                    </button>
+                  ))}
+                  <button
+                    title="Thème personnalisé"
+                    className={`arena-theme-btn ${arenaTheme?.theme === 'custom' ? 'active' : ''}`}
+                    onClick={() => setThemeEditorTarget(arenaId)}
+                  >
+                    ✏️
+                  </button>
+                </div>
               </div>
               <div className="arena-url-row">
                 <span className="arena-url-label">Arbitre</span>
@@ -725,7 +768,8 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                 </button>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="arena-url-card" style={{ marginTop: '1rem' }}>
@@ -764,6 +808,19 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           <li>Cliquer sur "Match suivant" pour passer au match suivant</li>
         </ol>
       </div>
+
+      {themeEditorTarget && (
+        <ThemeEditor
+          targetArenaId={themeEditorTarget}
+          initialTheme={arenaThemes[themeEditorTarget]?.customTheme}
+          onApply={async (arenaId, theme) => {
+            await handleArenaThemeChange(arenaId, 'custom', theme);
+            setThemeEditorTarget(null);
+            showToast('Thème personnalisé appliqué', 'success');
+          }}
+          onClose={() => setThemeEditorTarget(null)}
+        />
+      )}
 
       {activeQR && (
         <div className="qr-popup-overlay" onClick={() => setActiveQR(null)}>

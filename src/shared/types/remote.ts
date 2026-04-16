@@ -103,7 +103,15 @@ export interface Arena {
   password?: string;
 }
 
-export type DisplayTheme = 'dark' | 'light' | 'neon';
+export type DisplayTheme = 'dark' | 'light' | 'neon' | 'custom';
+
+/** Variables CSS personnalisées pour un thème d'arène */
+export interface CustomTheme {
+  id: string;
+  name: string;
+  /** Valeurs des variables CSS (ex: { '--bg': '#000', '--score-green': '#0f0' }) */
+  variables: Record<string, string>;
+}
 
 export interface ArenaSettings {
   matchDuration: number; // in seconds
@@ -111,6 +119,7 @@ export interface ArenaSettings {
   autoAdvance: boolean; // automatically load next match
   showPhotos?: boolean; // afficher les photos avant le combat
   theme?: DisplayTheme; // thème visuel de l'affichage distant
+  customTheme?: CustomTheme; // thème personnalisé (si theme === 'custom')
 }
 
 export interface ArenaMatch {
@@ -142,6 +151,7 @@ export interface ArenaUpdate {
   suddenDeath?: boolean;
   showPhotos?: boolean; // afficher les photos avant le combat
   theme?: DisplayTheme; // thème visuel de l'affichage distant
+  customTheme?: CustomTheme; // thème personnalisé (si theme === 'custom')
 }
 
 export interface RefereeControl {

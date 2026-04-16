@@ -1205,6 +1205,19 @@ ipcMain.handle('remote:updateTheme', async (_, theme: string) => {
   }
 });
 
+ipcMain.handle('remote:updateArenaTheme', async (_, arenaId: string, theme: string, customTheme?: any) => {
+  try {
+    if (!remoteScoreServer) {
+      return { success: false, error: 'Le serveur distant n est pas démarré' };
+    }
+    remoteScoreServer.updateArenaTheme(arenaId, theme as any, customTheme);
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating arena theme:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
 ipcMain.handle(
   'remote:updateKioskViews',
   async (_, views: { poules: boolean; classement: boolean; direct: boolean }) => {
