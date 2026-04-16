@@ -297,6 +297,15 @@ function createWindow(): void {
       // Fallback to default language
     }
     createMenu(currentMenuLanguage);
+
+    // Restore persisted logo and sync to renderer localStorage if not already set
+    try {
+      const logoPath = path.join(app.getPath('userData'), 'logo.dat');
+      if (fs.existsSync(logoPath)) {
+        const logo = fs.readFileSync(logoPath, 'utf-8');
+        if (logo) mainWindow!.webContents.send('app:logoLoaded', logo);
+      }
+    } catch { /* logo optionnel */ }
   });
 }
 
@@ -1273,6 +1282,26 @@ ipcMain.handle('remote:clearOrgNote', async () => {
     console.error('Error clearing org note:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
   }
+});
+
+ipcMain.handle('remote:updateLogo', async (_, logo: string | null) => {
+  try {
+    const logoPath = path.join(app.getPath('userData'), 'logo.dat');
+    if (logo) {
+      fs.writeFileSync(logoPath, logo, 'utf-8');
+    } else {
+      try { fs.unlinkSync(logoPath); } catch { /* déjà absent */ }
+    }
+    if (remoteScoreServer) remoteScoreServer.setLogo(logo);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
+ipcMain.handle('app:getLogo', async () => {
+  const logoPath = path.join(app.getPath('userData'), 'logo.dat');
+  try { return fs.readFileSync(logoPath, 'utf-8'); } catch { return null; }
 });
 
 // App info handlers

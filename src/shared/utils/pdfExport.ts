@@ -14,6 +14,7 @@ interface PoolExportOptions {
   includeFinishedMatches?: boolean;
   includePendingMatches?: boolean;
   includePoolStats?: boolean;
+  logoBase64?: string;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -120,6 +121,13 @@ const BASE_CSS = `
     justify-content: space-between;
     margin-bottom: 0;
   }
+  .doc-header-logo {
+    max-height: 10mm;
+    max-width: 35mm;
+    object-fit: contain;
+    margin-right: 4mm;
+    flex-shrink: 0;
+  }
   .doc-header-left h1 {
     font-size: 15pt;
     font-weight: 700;
@@ -202,7 +210,7 @@ const BASE_CSS = `
 // ─── HTML Poule ───────────────────────────────────────────────────────────────
 
 function generatePoolHTML(pool: Pool, options: PoolExportOptions): string {
-  const { title = `Poule ${pool.number}`, competitionName = '', weapon = '', category = '' } = options;
+  const { title = `Poule ${pool.number}`, competitionName = '', weapon = '', category = '', logoBase64 } = options;
   const fencers = pool.fencers ?? [];
   const matches = pool.matches ?? [];
   const finishedCount = matches.filter(m => m.status === MatchStatus.FINISHED).length;
@@ -367,6 +375,7 @@ function generatePoolHTML(pool: Pool, options: PoolExportOptions): string {
 </head>
 <body>
   <div class="doc-header">
+    ${logoBase64 ? `<img class="doc-header-logo" src="${logoBase64}" alt="Logo" />` : ''}
     <div class="doc-header-left">
       <h1>${title}</h1>
       <div class="subtitle">Grille de poule • ${finishedCount}/${matches.length} matchs joués</div>
@@ -425,11 +434,12 @@ export async function exportPoolToPDF(pool: Pool, options: PoolExportOptions = {
 
 export async function exportMultiplePoolsToPDF(
   pools: Pool[],
-  title: string = 'Export des Poules'
+  title: string = 'Export des Poules',
+  logoBase64?: string
 ): Promise<void> {
   if (pools.length === 0) throw new Error('Aucune poule à exporter');
   for (const pool of pools) {
-    await exportPoolToPDF(pool, { title: `${title} - Poule ${pool.number}` });
+    await exportPoolToPDF(pool, { title: `${title} - Poule ${pool.number}`, logoBase64 });
   }
 }
 
@@ -468,7 +478,8 @@ function getTableauRoundName(round: number): string {
 function generateTableauHTML(
   matches: TableauMatchForPDF[],
   matchesPerPage: number,
-  title: string
+  title: string,
+  logoBase64?: string
 ): string {
   const real = matches.filter(m => !m.isBye && m.fencerA && m.fencerB);
   const sorted = [...real].sort((a, b) => b.round - a.round || a.position - b.position);
@@ -636,6 +647,7 @@ function generateTableauHTML(
 </head>
 <body>
   <div class="doc-header">
+    ${logoBase64 ? `<img class="doc-header-logo" src="${logoBase64}" alt="Logo" />` : ''}
     <div class="doc-header-left">
       <h1>${title}</h1>
       <div class="subtitle">Feuilles d'arbitrage — Élimination directe</div>
@@ -657,14 +669,15 @@ function generateTableauHTML(
 export async function exportTableauToPDF(
   matches: TableauMatchForPDF[],
   matchesPerPage: number,
-  title: string = 'Tableau Élimination Directe'
+  title: string = 'Tableau Élimination Directe',
+  logoBase64?: string
 ): Promise<void> {
   const real = matches.filter(m => !m.isBye && m.fencerA && m.fencerB);
   if (real.length === 0) {
     throw new Error('Aucun match à exporter (tous sont des exempts ou sans tireurs assignés)');
   }
 
-  const html = generateTableauHTML(matches, matchesPerPage, title);
+  const html = generateTableauHTML(matches, matchesPerPage, title, logoBase64);
   await savePDF(html, `tableau-elimination.pdf`);
 }
 

@@ -44,6 +44,7 @@ export class RemoteScoreServer {
   private sessionTheme: DisplayTheme = 'dark'; // Thème visuel de l'affichage distant (global)
   private arenaThemeOverrides: Map<string, { theme: DisplayTheme; customTheme?: CustomTheme }> = new Map();
   private orgNote: OrgNote | null = null; // Note d'organisation affichée sur le kiosk
+  private sessionLogo: string | null = null; // Logo organisateur (base64) pour kiosk et affichages publics
   private sessionKioskViews: { poules: boolean; classement: boolean; direct: boolean } = {
     poules: true,
     classement: true,
@@ -420,6 +421,11 @@ export class RemoteScoreServer {
     this.app.post('/api/session/stop', (req, res) => {
       this.session = null;
       res.json({ success: true });
+    });
+
+    // Logo organisateur
+    this.app.get('/api/logo', (req, res) => {
+      res.json({ logo: this.sessionLogo });
     });
 
     // Arena routes
@@ -2615,6 +2621,11 @@ export class RemoteScoreServer {
   public clearOrgNote(): void {
     this.orgNote = null;
     this.io.emit('kiosk:note', null);
+  }
+
+  public setLogo(logo: string | null): void {
+    this.sessionLogo = logo;
+    this.io.emit('logo:update', { logo });
   }
 
   public setArenaPassword(arenaId: string, password: string): void {

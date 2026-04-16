@@ -211,9 +211,11 @@ export const useExport = ({ competition, showToast }: UseExportProps) => {
   const exportPoolsPDF = useCallback(
     async (pools: Pool[], currentPoolRound: number) => {
       try {
+        const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
         await exportMultiplePoolsToPDF(
           pools,
-          `Toutes les Poules - ${competition.title} - Tour ${currentPoolRound}`
+          `Toutes les Poules - ${competition.title} - Tour ${currentPoolRound}`,
+          logo
         );
         showToast(`Export PDF de ${pools.length} poules généré avec succès`, 'success');
       } catch (error) {

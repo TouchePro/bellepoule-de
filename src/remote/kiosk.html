@@ -600,6 +600,7 @@
     <!-- Menu escamotable -->
     <div id="kiosk-menu">
       <div style="display:flex;align-items:center">
+        <img id="org-logo" src="" alt="Logo" style="max-height:36px;max-width:120px;object-fit:contain;display:none;margin-right:10px;border-radius:3px;" />
         <span class="menu-title">🏆 BellePoule</span>
         <span class="menu-competition" id="menu-competition-name">—</span>
       </div>
@@ -1186,6 +1187,29 @@
         }
       }
 
+      // ─── Logo organisateur ───────────────────────────────────────────────────
+      function applyLogo(logo) {
+        const el = document.getElementById('org-logo');
+        if (!el) return;
+        if (logo) {
+          el.src = logo;
+          el.style.display = 'block';
+        } else {
+          el.style.display = 'none';
+          el.src = '';
+        }
+      }
+
+      async function fetchLogo() {
+        try {
+          const res = await fetch('/api/logo');
+          if (res.ok) {
+            const { logo } = await res.json();
+            applyLogo(logo || null);
+          }
+        } catch { /* logo optionnel */ }
+      }
+
       // ─── Helpers ─────────────────────────────────────────────────────────────
       function escHtml(s) {
         if (!s) return '';
@@ -1195,7 +1219,9 @@
       // ─── Init ─────────────────────────────────────────────────────────────────
       window.addEventListener('DOMContentLoaded', () => {
         fetchData();
+        fetchLogo();
         setInterval(fetchData, 15000);
+        setInterval(fetchLogo, 30000);
         startRotation();
 
         // Plein écran automatique au premier clic seulement
