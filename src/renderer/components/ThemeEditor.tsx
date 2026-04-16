@@ -138,6 +138,10 @@ const SIZE_PRESETS: Record<string, Record<string, string>> = {
   },
 };
 
+// Canvas virtuel pour le preview scalé (résolution de référence 16:9)
+const VIRTUAL_W = 1280;
+const VIRTUAL_H = 720;
+
 const STORAGE_KEY = 'bellepoule-custom-themes';
 
 function loadSavedThemes(): CustomTheme[] {
@@ -187,8 +191,9 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
   const [importError, setImportError] = useState('');
   const previewStyleId = `theme-preview-${instanceId.replace(/:/g, '')}`;
 
-  // Injecter les variables CSS dans un <style> pour le preview
-  const previewRef = useRef<HTMLDivElement>(null);
+  // Canvas virtuel scalé pour le preview
+  const previewOuterRef = useRef<HTMLDivElement>(null);
+  const [previewScale, setPreviewScale] = useState(0.3);
 
   const updatePreviewStyle = useCallback((variables: Record<string, string>) => {
     let styleEl = document.getElementById(previewStyleId);
@@ -209,6 +214,16 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
       document.getElementById(previewStyleId)?.remove();
     };
   }, [vars, updatePreviewStyle, previewStyleId]);
+
+  useEffect(() => {
+    const el = previewOuterRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => {
+      setPreviewScale(entry.contentRect.width / VIRTUAL_W);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const setVar = (key: string, value: string) => {
     setVars(prev => ({ ...prev, [key]: value }));
@@ -407,172 +422,167 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
             <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.5rem', fontWeight: 600, textAlign: 'center' }}>
               Aperçu en direct
             </div>
+            {/* Conteneur externe : clips + ratio 16:9 fixe */}
             <div
-              ref={previewRef}
-              className={`theme-preview-scope-${previewStyleId}`}
+              ref={previewOuterRef}
               style={{
-                background: vars['--bg'] ?? DARK_DEFAULTS['--bg'],
-                borderRadius: '0.5rem',
+                position: 'relative',
+                width: '100%',
+                aspectRatio: `${VIRTUAL_W} / ${VIRTUAL_H}`,
                 overflow: 'hidden',
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                minHeight: 0,
-                padding: '0.4rem',
-                gap: '0.3rem',
+                borderRadius: '0.5rem',
+                background: '#000',
+                flexShrink: 0,
               }}
             >
-              {/* Faux en-tête arène */}
-              <div style={{
-                background: vars['--header-bg'] ?? DARK_DEFAULTS['--header-bg'],
-                borderRadius: '0.3rem',
-                padding: '0.3rem 0.6rem',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                fontSize: '0.7rem',
-                color: vars['--text'] ?? DARK_DEFAULTS['--text'],
-              }}>
-                <span style={{ fontWeight: 700 }}>⚔️ Arène 1</span>
-                <span style={{ background: '#22c55e', borderRadius: '999px', padding: '0.1rem 0.5rem', fontSize: '0.65rem', fontWeight: 700, color: '#fff' }}>
-                  EN COURS
-                </span>
-              </div>
-
-              {/* Corps du match */}
-              <div style={{
-                background: vars['--match-bg'] ?? DARK_DEFAULTS['--match-bg'],
-                borderRadius: '0.4rem',
-                flex: 1,
-                padding: '0.4rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.3rem',
-                minHeight: 0,
-              }}>
-                {/* Combattants + scores */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '0.3rem', flex: 1 }}>
-                  {/* Côté vert */}
-                  <div style={{
-                    background: vars['--green-side-bg'] ?? DARK_DEFAULTS['--green-side-bg'],
-                    border: `3px solid ${vars['--green-side-border'] ?? DARK_DEFAULTS['--green-side-border']}`,
-                    borderRadius: '0.35rem',
-                    padding: '0.3rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.15rem',
-                  }}>
-                    <div style={{
-                      width: 12, height: 12, borderRadius: '50%',
-                      background: 'linear-gradient(135deg,#22c55e,#16a34a)',
-                    }} />
-                    <div style={{
-                      fontSize: '0.6rem', fontWeight: 800,
-                      color: vars['--fencer-name-color'] ?? DARK_DEFAULTS['--fencer-name-color'],
-                    }}>
-                      DUPONT A.
-                    </div>
-                    <div style={{
-                      fontSize: '0.5rem',
-                      color: vars['--fencer-club-color'] ?? DARK_DEFAULTS['--fencer-club-color'],
-                    }}>
-                      Escrime Paris
-                    </div>
-                    <div style={{
-                      fontFamily: 'monospace',
-                      fontSize: '1.4rem',
-                      fontWeight: 'bold',
-                      color: vars['--score-green'] ?? DARK_DEFAULTS['--score-green'],
-                      background: vars['--score-bg'] ?? DARK_DEFAULTS['--score-bg'],
-                      padding: '0.05em 0.2em',
-                      borderRadius: '0.15em',
-                    }}>
-                      5
-                    </div>
-                  </div>
-
-                  {/* VS */}
-                  <div style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '0.65rem', fontWeight: 900, color: '#ef4444',
-                  }}>
-                    VS
-                  </div>
-
-                  {/* Côté rouge */}
-                  <div style={{
-                    background: vars['--red-side-bg'] ?? DARK_DEFAULTS['--red-side-bg'],
-                    border: `3px solid ${vars['--red-side-border'] ?? DARK_DEFAULTS['--red-side-border']}`,
-                    borderRadius: '0.35rem',
-                    padding: '0.3rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.15rem',
-                  }}>
-                    <div style={{
-                      width: 12, height: 12, borderRadius: '50%',
-                      background: 'linear-gradient(135deg,#ef4444,#dc2626)',
-                    }} />
-                    <div style={{
-                      fontSize: '0.6rem', fontWeight: 800,
-                      color: vars['--fencer-name-color'] ?? DARK_DEFAULTS['--fencer-name-color'],
-                    }}>
-                      MARTIN B.
-                    </div>
-                    <div style={{
-                      fontSize: '0.5rem',
-                      color: vars['--fencer-club-color'] ?? DARK_DEFAULTS['--fencer-club-color'],
-                    }}>
-                      CE Orléans
-                    </div>
-                    <div style={{
-                      fontFamily: 'monospace',
-                      fontSize: '1.4rem',
-                      fontWeight: 'bold',
-                      color: vars['--score-red'] ?? DARK_DEFAULTS['--score-red'],
-                      background: vars['--score-bg'] ?? DARK_DEFAULTS['--score-bg'],
-                      padding: '0.05em 0.2em',
-                      borderRadius: '0.15em',
-                    }}>
-                      3
-                    </div>
-                  </div>
-                </div>
-
-                {/* Chronomètre */}
+              {/* Canvas virtuel 1280×720 — toutes les CSS vars sont résolues ici */}
+              <div
+                className={`theme-preview-scope-${previewStyleId}`}
+                style={{
+                  position: 'absolute',
+                  top: 0, left: 0,
+                  width: `${VIRTUAL_W}px`,
+                  height: `${VIRTUAL_H}px`,
+                  transformOrigin: 'top left',
+                  transform: `scale(${previewScale})`,
+                  background: 'var(--bg)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  padding: '20px',
+                  gap: '14px',
+                  boxSizing: 'border-box',
+                }}
+              >
+                {/* En-tête arène */}
                 <div style={{
-                  background: vars['--timer-bg'] ?? DARK_DEFAULTS['--timer-bg'],
-                  border: `2px solid ${vars['--timer-run-border'] ?? DARK_DEFAULTS['--timer-run-border']}`,
-                  borderRadius: '0.3rem',
-                  padding: '0.2rem',
-                  textAlign: 'center',
-                  fontFamily: 'monospace',
-                  fontSize: '1rem',
-                  fontWeight: 'bold',
-                  color: vars['--timer-run-color'] ?? DARK_DEFAULTS['--timer-run-color'],
+                  background: 'var(--header-bg)',
+                  borderRadius: '10px',
+                  padding: '14px 28px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: '26px',
+                  color: 'var(--text)',
+                  flexShrink: 0,
                 }}>
-                  02:30
+                  <span style={{ fontWeight: 700 }}>⚔ Arène 1</span>
+                  <span style={{ background: '#22c55e', borderRadius: '999px', padding: '4px 18px', fontSize: '20px', fontWeight: 700, color: '#fff' }}>
+                    EN COURS
+                  </span>
                 </div>
-              </div>
 
-              {/* Écran attente */}
-              <div style={{
-                textAlign: 'center',
-                padding: '0.3rem',
-                fontSize: '0.65rem',
-                color: vars['--idle-label-color'] ?? DARK_DEFAULTS['--idle-label-color'],
-                borderRadius: '0.3rem',
-              }}>
-                <span style={{
-                  fontSize: '0.9rem',
-                  fontWeight: 900,
-                  color: vars['--idle-number-color'] ?? DARK_DEFAULTS['--idle-number-color'],
-                }}>2</span>
-                {' '}— Arène en attente
+                {/* Corps du match */}
+                <div style={{
+                  background: 'var(--match-bg)',
+                  borderRadius: '14px',
+                  flex: 1,
+                  padding: '18px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '14px',
+                  minHeight: 0,
+                }}>
+                  {/* Grille combattants */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 1fr', gap: '14px', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+                    {/* Côté vert */}
+                    <div style={{
+                      background: 'var(--green-side-bg)',
+                      border: '6px solid var(--green-side-border)',
+                      borderRadius: '12px',
+                      padding: '14px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      overflow: 'hidden',
+                    }}>
+                      <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#22c55e,#16a34a)', flexShrink: 0 }} />
+                      <div style={{ fontSize: 'var(--fencer-name-font-size)', fontWeight: 800, color: 'var(--fencer-name-color)', textAlign: 'center', lineHeight: 1.1 }}>
+                        DUPONT A.
+                      </div>
+                      <div style={{ fontSize: '22px', color: 'var(--fencer-club-color)' }}>
+                        Escrime Paris
+                      </div>
+                      <div style={{
+                        fontFamily: 'monospace',
+                        fontSize: 'var(--score-font-size)',
+                        fontWeight: 'bold',
+                        color: 'var(--score-green)',
+                        background: 'var(--score-bg)',
+                        padding: '0.05em 0.2em',
+                        borderRadius: '8px',
+                        lineHeight: 1,
+                        flexShrink: 0,
+                      }}>
+                        5
+                      </div>
+                    </div>
+
+                    {/* VS */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '36px', fontWeight: 900, color: '#ef4444' }}>
+                      VS
+                    </div>
+
+                    {/* Côté rouge */}
+                    <div style={{
+                      background: 'var(--red-side-bg)',
+                      border: '6px solid var(--red-side-border)',
+                      borderRadius: '12px',
+                      padding: '14px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      overflow: 'hidden',
+                    }}>
+                      <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#ef4444,#dc2626)', flexShrink: 0 }} />
+                      <div style={{ fontSize: 'var(--fencer-name-font-size)', fontWeight: 800, color: 'var(--fencer-name-color)', textAlign: 'center', lineHeight: 1.1 }}>
+                        MARTIN B.
+                      </div>
+                      <div style={{ fontSize: '22px', color: 'var(--fencer-club-color)' }}>
+                        CE Orléans
+                      </div>
+                      <div style={{
+                        fontFamily: 'monospace',
+                        fontSize: 'var(--score-font-size)',
+                        fontWeight: 'bold',
+                        color: 'var(--score-red)',
+                        background: 'var(--score-bg)',
+                        padding: '0.05em 0.2em',
+                        borderRadius: '8px',
+                        lineHeight: 1,
+                        flexShrink: 0,
+                      }}>
+                        3
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Chronomètre */}
+                  <div style={{
+                    background: 'var(--timer-bg)',
+                    border: '4px solid var(--timer-run-border)',
+                    borderRadius: '10px',
+                    padding: '10px',
+                    textAlign: 'center',
+                    fontFamily: 'monospace',
+                    fontSize: 'var(--timer-font-size)',
+                    fontWeight: 'bold',
+                    color: 'var(--timer-run-color)',
+                    flexShrink: 0,
+                    lineHeight: 1,
+                  }}>
+                    02:30
+                  </div>
+                </div>
+
+                {/* Écran attente */}
+                <div style={{ textAlign: 'center', fontSize: '22px', color: 'var(--idle-label-color)', flexShrink: 0 }}>
+                  <span style={{ fontSize: '36px', fontWeight: 900, color: 'var(--idle-number-color)' }}>2</span>
+                  {' '}— Arène en attente
+                </div>
               </div>
             </div>
           </div>
@@ -612,37 +622,42 @@ const VarRow: React.FC<VarRowProps> = ({ varKey, label, type, value, onChange })
 
   if (type === 'size') {
     const presets = SIZE_PRESETS[varKey] ?? {};
-    const activePreset = Object.entries(presets).find(([, v]) => v === value)?.[0];
+    const entries = Object.entries(presets);
+    const currentIdx = entries.findIndex(([, v]) => v === value);
+    const sliderIdx = currentIdx >= 0 ? currentIdx : 1;
+
     return (
       <div className="var-row">
         <label className="var-label">{label}</label>
         <div className="var-control" style={{ flexDirection: 'column', gap: '0.3rem' }}>
-          <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
-            {Object.entries(presets).map(([name, val]) => (
-              <button
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '0.65rem', color: '#94a3b8', userSelect: 'none', width: 14, textAlign: 'center' }}>A</span>
+            <input
+              type="range"
+              min={0}
+              max={entries.length - 1}
+              step={1}
+              value={sliderIdx}
+              onChange={e => onChange(entries[Number(e.target.value)][1])}
+              style={{ flex: 1, accentColor: '#3b82f6', cursor: 'pointer' }}
+            />
+            <span style={{ fontSize: '1.1rem', color: '#94a3b8', userSelect: 'none', width: 14, textAlign: 'center', fontWeight: 700 }}>A</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 2px' }}>
+            {entries.map(([name], i) => (
+              <span
                 key={name}
-                onClick={() => onChange(val)}
+                onClick={() => onChange(entries[i][1])}
                 style={{
-                  padding: '0.2rem 0.5rem',
-                  borderRadius: '0.25rem',
-                  border: `1px solid ${activePreset === name ? '#3b82f6' : '#475569'}`,
-                  background: activePreset === name ? '#1d4ed8' : 'transparent',
-                  color: '#e2e8f0',
+                  fontSize: '0.62rem',
+                  color: i === sliderIdx ? '#60a5fa' : '#64748b',
                   cursor: 'pointer',
-                  fontSize: '0.75rem',
                 }}
               >
                 {name}
-              </button>
+              </span>
             ))}
           </div>
-          <input
-            type="text"
-            value={value}
-            onChange={e => onChange(e.target.value)}
-            className="var-text-input"
-            placeholder="Valeur CSS personnalisée"
-          />
         </div>
       </div>
     );
