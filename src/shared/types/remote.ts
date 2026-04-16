@@ -103,11 +103,14 @@ export interface Arena {
   password?: string;
 }
 
+export type DisplayTheme = 'dark' | 'light' | 'neon';
+
 export interface ArenaSettings {
   matchDuration: number; // in seconds
   breakDuration: number; // between matches
   autoAdvance: boolean; // automatically load next match
   showPhotos?: boolean; // afficher les photos avant le combat
+  theme?: DisplayTheme; // thème visuel de l'affichage distant
 }
 
 export interface ArenaMatch {
@@ -138,6 +141,7 @@ export interface ArenaUpdate {
   cardsB?: string[];
   suddenDeath?: boolean;
   showPhotos?: boolean; // afficher les photos avant le combat
+  theme?: DisplayTheme; // thème visuel de l'affichage distant
 }
 
 export interface RefereeControl {

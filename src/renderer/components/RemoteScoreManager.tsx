@@ -61,6 +61,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const [arenaPasswords, setArenaPasswords] = useState<Record<string, string>>({});
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [showPhotos, setShowPhotos] = useState(false);
+  const [displayTheme, setDisplayTheme] = useState<'dark' | 'light' | 'neon'>('dark');
   const [kioskViews, setKioskViews] = useState({ poules: true, classement: true, direct: true });
   const [orgNoteType, setOrgNoteType] = useState<'free' | 'target_time'>('free');
   const [orgNoteMessage, setOrgNoteMessage] = useState('');
@@ -419,6 +420,42 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           />
           Afficher les photos des combattants avant le combat
         </label>
+        <div style={{ margin: '0.5rem 0' }}>
+          <div style={{ fontSize: '0.875rem', marginBottom: '0.4rem', color: 'inherit' }}>
+            Thème de l'affichage :
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            {(
+              [
+                { value: 'dark', label: 'Sombre', icon: '🌙' },
+                { value: 'light', label: 'Clair', icon: '☀️' },
+                { value: 'neon', label: 'Néon', icon: '⚡' },
+              ] as const
+            ).map(({ value, label, icon }) => (
+              <button
+                key={value}
+                onClick={async () => {
+                  setDisplayTheme(value);
+                  await window.electronAPI.remote.updateTheme(value);
+                }}
+                style={{
+                  flex: 1,
+                  padding: '0.35rem 0.5rem',
+                  borderRadius: '0.375rem',
+                  border: `2px solid ${displayTheme === value ? '#3b82f6' : '#475569'}`,
+                  background: displayTheme === value ? '#1d4ed8' : 'transparent',
+                  color: '#e2e8f0',
+                  cursor: 'pointer',
+                  fontWeight: displayTheme === value ? 700 : 400,
+                  fontSize: '0.8rem',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {icon} {label}
+              </button>
+            ))}
+          </div>
+        </div>
         <div style={{ margin: '0.5rem 0' }}>
           <div style={{ fontSize: '0.875rem', marginBottom: '0.25rem', color: 'inherit' }}>
             Vues kiosk :

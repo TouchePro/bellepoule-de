@@ -23,6 +23,94 @@
         font-display: block;
       }
 
+    /* ── Thème Dark (défaut) ── */
+    :root,
+    [data-theme="dark"] {
+      --bg: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      --text: #fff;
+      --header-bg: rgba(0, 0, 0, 0.4);
+      --match-bg: rgba(255, 255, 255, 0.95);
+      --fencer-name-color: #1f2937;
+      --fencer-club-color: #6b7280;
+      --green-side-bg: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+      --green-side-border: #16a34a;
+      --red-side-bg: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+      --red-side-border: #dc2626;
+      --score-bg: #0c0c09;
+      --score-green: #00e640;
+      --score-green-glow: rgba(0, 230, 64, 0.65), rgba(0, 230, 64, 0.3);
+      --score-red: #ff2200;
+      --score-red-glow: rgba(255, 34, 0, 0.65), rgba(255, 34, 0, 0.3);
+      --timer-bg: #0a0800;
+      --timer-color: #ffaa00;
+      --timer-glow: rgba(255, 170, 0, 0.9), rgba(255, 170, 0, 0.45);
+      --timer-border: rgba(255, 170, 0, 0.18);
+      --timer-run-color: #00e640;
+      --timer-run-glow: rgba(0, 230, 64, 0.95), rgba(0, 230, 64, 0.5);
+      --timer-run-border: rgba(0, 230, 64, 0.5);
+      --waiting-color: white;
+      --idle-number-color: rgba(255, 255, 255, 0.9);
+      --idle-label-color: rgba(255, 255, 255, 0.5);
+    }
+
+    /* ── Thème Light ── */
+    [data-theme="light"] {
+      --bg: linear-gradient(135deg, #e8edf5 0%, #c8d8f0 100%);
+      --text: #1a2340;
+      --header-bg: rgba(255, 255, 255, 0.75);
+      --match-bg: #ffffff;
+      --fencer-name-color: #111827;
+      --fencer-club-color: #374151;
+      --green-side-bg: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+      --green-side-border: #059669;
+      --red-side-bg: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+      --red-side-border: #b91c1c;
+      --score-bg: #f1f5f9;
+      --score-green: #059669;
+      --score-green-glow: rgba(5, 150, 105, 0.4), rgba(5, 150, 105, 0.15);
+      --score-red: #dc2626;
+      --score-red-glow: rgba(220, 38, 38, 0.4), rgba(220, 38, 38, 0.15);
+      --timer-bg: #f8fafc;
+      --timer-color: #d97706;
+      --timer-glow: rgba(217, 119, 6, 0.7), rgba(217, 119, 6, 0.3);
+      --timer-border: rgba(217, 119, 6, 0.3);
+      --timer-run-color: #059669;
+      --timer-run-glow: rgba(5, 150, 105, 0.8), rgba(5, 150, 105, 0.35);
+      --timer-run-border: rgba(5, 150, 105, 0.4);
+      --waiting-color: #1a2340;
+      --idle-number-color: rgba(26, 35, 64, 0.85);
+      --idle-label-color: rgba(26, 35, 64, 0.45);
+    }
+
+    /* ── Thème Neon ── */
+    [data-theme="neon"] {
+      --bg: #0a0a0a;
+      --text: #e0e0e0;
+      --header-bg: rgba(0, 0, 0, 0.8);
+      --match-bg: #111111;
+      --fencer-name-color: #f0f0f0;
+      --fencer-club-color: #a0a0a0;
+      --green-side-bg: linear-gradient(135deg, #001a0d 0%, #002e15 100%);
+      --green-side-border: #00ff88;
+      --red-side-bg: linear-gradient(135deg, #1a0000 0%, #2e0000 100%);
+      --red-side-border: #ff2244;
+      --score-bg: #050505;
+      --score-green: #00ff88;
+      --score-green-glow: rgba(0, 255, 136, 0.9), rgba(0, 255, 136, 0.5);
+      --score-red: #ff2244;
+      --score-red-glow: rgba(255, 34, 68, 0.9), rgba(255, 34, 68, 0.5);
+      --timer-bg: #030303;
+      --timer-color: #ff9900;
+      --timer-glow: rgba(255, 153, 0, 0.95), rgba(255, 153, 0, 0.5);
+      --timer-border: rgba(255, 153, 0, 0.3);
+      --timer-run-color: #00ff88;
+      --timer-run-glow: rgba(0, 255, 136, 1), rgba(0, 255, 136, 0.6);
+      --timer-run-border: rgba(0, 255, 136, 0.6);
+      --waiting-color: #e0e0e0;
+      --idle-number-color: rgba(255, 255, 255, 0.9);
+      --idle-label-color: rgba(255, 255, 255, 0.35);
+    }
+
     * {
         margin: 0;
         padding: 0;
@@ -31,17 +119,17 @@
 
       body {
         font-family: 'Arial', 'Helvetica Neue', Helvetica, sans-serif;
-        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        background: var(--bg);
         height: 100vh;
         overflow: hidden;
-        color: #fff;
+        color: var(--text);
         display: flex;
         flex-direction: column;
         padding-top: 52px;
       }
 
       .header {
-        background: rgba(0, 0, 0, 0.4);
+        background: var(--header-bg);
         padding: 0.4rem 1rem;
         display: flex;
         justify-content: space-between;
@@ -192,7 +280,7 @@
 
       /* Affichage du match */
       .match-display {
-        background: rgba(255, 255, 255, 0.95);
+        background: var(--match-bg);
         border-radius: 0.5rem;
         padding: 0.5rem;
         width: 100%;
@@ -236,13 +324,13 @@
       }
 
       .fencer-display.red-side {
-        background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-        border-color: #dc2626;
+        background: var(--red-side-bg);
+        border-color: var(--red-side-border);
       }
 
       .fencer-display.green-side {
-        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-        border-color: #16a34a;
+        background: var(--green-side-bg);
+        border-color: var(--green-side-border);
       }
 
       .color-badge {
@@ -264,13 +352,13 @@
       .fencer-name {
         font-size: clamp(1rem, 3.5vw, 5vh);
         font-weight: 800;
-        color: #1f2937;
+        color: var(--fencer-name-color);
         margin-bottom: 0.15rem;
       }
 
       .fencer-club {
         font-size: clamp(0.7rem, 2vw, 3vh);
-        color: #6b7280;
+        color: var(--fencer-club-color);
         margin-bottom: 0.4rem;
         font-weight: 500;
       }
@@ -333,24 +421,23 @@
         line-height: 1.1;
         letter-spacing: 0.02em;
         display: inline-block;
-        background: #0c0c09;
+        background: var(--score-bg);
         padding: 0.04em 0.14em;
         border-radius: 0.06em;
         box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.85);
+        transition: color 0.4s, background 0.4s;
       }
 
       .score-big.red {
-        color: #ff2200;
+        color: var(--score-red);
         text-shadow: 0 0 6px rgba(255, 34, 0, 0.95),
-                     0 0 18px rgba(255, 34, 0, 0.65),
-                     0 0 50px rgba(255, 34, 0, 0.3);
+                     0 0 18px var(--score-red-glow);
       }
 
       .score-big.green {
-        color: #00e640;
+        color: var(--score-green);
         text-shadow: 0 0 6px rgba(0, 230, 64, 0.95),
-                     0 0 18px rgba(0, 230, 64, 0.65),
-                     0 0 50px rgba(0, 230, 64, 0.3);
+                     0 0 18px var(--score-green-glow);
       }
 
       .vs-divider {
@@ -371,36 +458,33 @@
 
       .timer-display {
         display: block;
-        background: #0a0800;
+        background: var(--timer-bg);
         padding: 0.4rem 1rem;
         border-radius: 0.5rem;
         font-size: clamp(3.5rem, 11vw, 18vh);
         font-weight: bold;
         font-family: 'DSEG7Classic', monospace;
-        color: #ffaa00;
-        text-shadow: 0 0 8px rgba(255, 170, 0, 0.9),
-                     0 0 28px rgba(255, 170, 0, 0.45);
+        color: var(--timer-color);
+        text-shadow: 0 0 8px var(--timer-glow);
         letter-spacing: 0.05em;
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5),
                     inset 0 0 22px rgba(0, 0, 0, 0.7);
-        border: 3px solid rgba(255, 170, 0, 0.18);
+        border: 3px solid var(--timer-border);
         transition: all 0.3s;
         width: 100%;
         line-height: 1.1;
       }
 
       .timer-display.running {
-        border-color: rgba(0, 230, 64, 0.5);
-        color: #00e640;
-        text-shadow: 0 0 8px rgba(0, 230, 64, 0.95),
-                     0 0 28px rgba(0, 230, 64, 0.5);
+        border-color: var(--timer-run-border);
+        color: var(--timer-run-color);
+        text-shadow: 0 0 8px var(--timer-run-glow);
       }
 
       .timer-display.paused {
-        border-color: rgba(255, 170, 0, 0.5);
-        color: #ffaa00;
-        text-shadow: 0 0 8px rgba(255, 170, 0, 0.9),
-                     0 0 28px rgba(255, 170, 0, 0.45);
+        border-color: var(--timer-border);
+        color: var(--timer-color);
+        text-shadow: 0 0 8px var(--timer-glow);
       }
 
       .timer-display.warning {
@@ -451,7 +535,7 @@
       /* Écran d'attente */
       .waiting-screen {
         text-align: center;
-        color: white;
+        color: var(--waiting-color);
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -466,7 +550,7 @@
         font-size: 20vw;
         font-weight: 900;
         line-height: 1;
-        color: rgba(255, 255, 255, 0.9);
+        color: var(--idle-number-color);
         text-shadow: 0 4px 40px rgba(0, 0, 0, 0.5);
       }
 
@@ -475,7 +559,7 @@
         font-weight: 300;
         letter-spacing: 0.5em;
         text-transform: uppercase;
-        color: rgba(255, 255, 255, 0.5);
+        color: var(--idle-label-color);
         margin-top: 0.5rem;
       }
 
@@ -705,6 +789,7 @@
           this.isSuddenDeath = false;
           this.inversionEnabled = localStorage.getItem('inversionEnabled') === 'true';
           this.showPhotos = false;
+          this.theme = localStorage.getItem('displayTheme') || 'dark';
 
           this.init();
         }
@@ -724,8 +809,16 @@
           document.getElementById('arena-idle-number').textContent = this.arenaNumber;
           this.setupInversionToggle();
           this.applyInversionState();
+          this.applyTheme(this.theme);
           this.setupHeaderAutoHide();
           this.setupSocketListeners();
+        }
+
+        applyTheme(theme) {
+          const valid = ['dark', 'light', 'neon'];
+          this.theme = valid.includes(theme) ? theme : 'dark';
+          document.documentElement.setAttribute('data-theme', this.theme);
+          localStorage.setItem('displayTheme', this.theme);
         }
 
         setupHeaderAutoHide() {
@@ -796,6 +889,11 @@
         }
 
         handleArenaUpdate(data) {
+          // Mise à jour du thème visuel
+          if (data.theme && data.theme !== this.theme) {
+            this.applyTheme(data.theme);
+          }
+
           // Mise à jour du réglage photos
           if (data.showPhotos !== undefined) {
             this.showPhotos = data.showPhotos;

@@ -19,6 +19,7 @@ import {
   ArenaSettings,
   ArenaUpdate,
   OrgNote,
+  DisplayTheme,
 } from '../shared/types/remote';
 import { Competition, Match, Fencer, MatchStatus, Score } from '../shared/types';
 import { DatabaseManager } from '../database';
@@ -39,6 +40,7 @@ export class RemoteScoreServer {
   private poolFencersCache: Map<string, any[]> = new Map(); // Tireurs par poolId (depuis le renderer)
   private sessionMatchScores: Map<string, { scoreA: any; scoreB: any; status: string }> = new Map(); // Scores en mémoire
   private sessionShowPhotos: boolean = false; // Afficher les photos des combattants avant le combat
+  private sessionTheme: DisplayTheme = 'dark'; // Thème visuel de l'affichage distant
   private orgNote: OrgNote | null = null; // Note d'organisation affichée sur le kiosk
   private sessionKioskViews: { poules: boolean; classement: boolean; direct: boolean } = {
     poules: true,
@@ -2091,8 +2093,12 @@ export class RemoteScoreServer {
   }
 
   private broadcastArenaUpdate(arenaId: string, update: ArenaUpdate): void {
-    // Injecter le réglage showPhotos dans chaque mise à jour
-    const updateWithPhotos: ArenaUpdate = { ...update, showPhotos: this.sessionShowPhotos };
+    // Injecter le réglage showPhotos et theme dans chaque mise à jour
+    const updateWithPhotos: ArenaUpdate = {
+      ...update,
+      showPhotos: this.sessionShowPhotos,
+      theme: this.sessionTheme,
+    };
     // Envoyer via Socket.IO aux clients connectés aux arènes
     this.io.emit(`arena:${arenaId}:update`, updateWithPhotos);
 
@@ -2511,6 +2517,22 @@ export class RemoteScoreServer {
     if (!this.session) throw new Error('Aucune session active');
     this.sessionShowPhotos = value;
     // Re-broadcast à toutes les pistes pour propager le nouveau réglage
+    for (const [arenaId, arena] of this.arenas.entries()) {
+      this.broadcastArenaUpdate(arenaId, {
+        arenaId,
+        match: arena.currentMatch,
+        scoreA: arena.currentMatch?.scoreA,
+        scoreB: arena.currentMatch?.scoreB,
+        status: arena.status,
+        fencerA: arena.currentMatch?.fencerA,
+        fencerB: arena.currentMatch?.fencerB,
+      });
+    }
+  }
+
+  public updateTheme(theme: DisplayTheme): void {
+    if (!this.session) throw new Error('Aucune session active');
+    this.sessionTheme = theme;
     for (const [arenaId, arena] of this.arenas.entries()) {
       this.broadcastArenaUpdate(arenaId, {
         arenaId,

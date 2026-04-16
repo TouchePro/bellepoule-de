@@ -1192,6 +1192,19 @@ ipcMain.handle('remote:updateShowPhotos', async (_, value: boolean) => {
   }
 });
 
+ipcMain.handle('remote:updateTheme', async (_, theme: string) => {
+  try {
+    if (!remoteScoreServer) {
+      return { success: false, error: 'Le serveur distant n est pas démarré' };
+    }
+    remoteScoreServer.updateTheme(theme as any);
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating theme:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
 ipcMain.handle(
   'remote:updateKioskViews',
   async (_, views: { poules: boolean; classement: boolean; direct: boolean }) => {
