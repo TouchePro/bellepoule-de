@@ -1206,26 +1206,26 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            justifyContent: 'center',
+            justifyContent: 'space-evenly',
             textAlign: 'center',
-            padding: '4rem',
+            padding: '3rem',
           }}
         >
-          <div style={{ fontSize: 'clamp(1rem, 3vw, 1.5rem)', color: '#64748b', fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: '1.5rem' }}>
+          <div style={{ fontSize: 'clamp(2rem, 5vw, 4rem)', color: '#64748b', fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase' }}>
             ⏸ Pause
           </div>
           {orgNote.type === 'target_time' && orgNote.targetTime && (
             <>
-              <div style={{ fontSize: 'clamp(2rem, 6vw, 4rem)', fontWeight: 700, color: '#f1f5f9', marginBottom: '0.5rem' }}>
+              <div style={{ fontSize: 'clamp(4rem, 14vw, 12rem)', fontWeight: 700, color: '#f1f5f9' }}>
                 Reprise à {orgNote.targetTime.replace(':', 'h')}
               </div>
-              <div style={{ fontSize: 'clamp(1.5rem, 4vw, 2.5rem)', fontWeight: 800, color: '#3b82f6', marginBottom: '2rem', fontVariantNumeric: 'tabular-nums' }}>
+              <div style={{ fontSize: 'clamp(3rem, 10vw, 8rem)', fontWeight: 800, color: '#3b82f6', fontVariantNumeric: 'tabular-nums' }}>
                 dans {orgNoteCountdown}
               </div>
             </>
           )}
           {orgNote.message && (
-            <div style={{ fontSize: 'clamp(1.2rem, 3.5vw, 2rem)', color: '#94a3b8', fontStyle: 'italic', maxWidth: '70ch' }}>
+            <div style={{ fontSize: 'clamp(2rem, 7vw, 6rem)', color: '#94a3b8', fontStyle: 'italic' }}>
               «&nbsp;{orgNote.message}&nbsp;»
             </div>
           )}
