@@ -21,6 +21,7 @@ interface PoolRankingViewProps {
   pools: Pool[];
   weapon?: Weapon;
   ranking?: PoolRanking[];
+  isInitialRanking?: boolean;
   onGoToTableau?: () => void;
   onGoToResults?: () => void;
   hasDirectElimination?: boolean;
@@ -33,6 +34,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
   pools,
   weapon,
   ranking: externalRanking,
+  isInitialRanking = false,
   onGoToTableau,
   onGoToResults,
   hasDirectElimination = true,
@@ -256,21 +258,26 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
         }}
       >
         <div>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>Classement après poules</h2>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>
+            {isInitialRanking ? 'Classement initial' : 'Classement après poules'}
+          </h2>
           <p className="text-sm text-muted">
-            {pools.length} poule{pools.length > 1 ? 's' : ''} • {editedRanking.length} tireur
-            {editedRanking.length > 1 ? 's' : ''}
+            {isInitialRanking
+              ? `${editedRanking.length} tireur${editedRanking.length > 1 ? 's' : ''} • Classement de départ`
+              : `${pools.length} poule${pools.length > 1 ? 's' : ''} • ${editedRanking.length} tireur${editedRanking.length > 1 ? 's' : ''}`}
             {isEditing && ' (mode édition)'}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button
-            className="btn btn-secondary"
-            onClick={handleRecalculate}
-            title="Recalculer le classement"
-          >
-            🔄 Recalculer
-          </button>
+          {!isInitialRanking && (
+            <button
+              className="btn btn-secondary"
+              onClick={handleRecalculate}
+              title="Recalculer le classement"
+            >
+              🔄 Recalculer
+            </button>
+          )}
           <button
             className="btn btn-secondary"
             onClick={() => handleExport('csv')}

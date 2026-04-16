@@ -1053,3 +1053,19 @@ export function calculateOverallRanking(pools: Pool[]): PoolRanking[] {
 
   return allRankings;
 }
+
+// Génère un classement initial depuis la liste des tireurs (sans données de poules)
+export function generateInitialRanking(fencers: Fencer[]): PoolRanking[] {
+  return fencers.map((fencer, index) => ({
+    fencer,
+    rank: index + 1,
+    victories: 0,
+    defeats: 0,
+    matchesPlayed: 0,
+    touchesScored: 0,
+    touchesReceived: 0,
+    index: 0,
+    ratio: 0,
+    questPoints: 0,
+  }));
+}
