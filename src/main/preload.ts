@@ -407,6 +407,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     clearOrgNote: () => ipcRenderer.invoke('remote:clearOrgNote'),
     updateArenaTheme: (arenaId: string, theme: string, customTheme?: any) =>
       ipcRenderer.invoke('remote:updateArenaTheme', arenaId, theme, customTheme),
+    updateLogo: (logo: string | null) => ipcRenderer.invoke('remote:updateLogo', logo),
   },
 
   // Remote event listeners (for real-time updates)
@@ -420,6 +421,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const handler = (_: any, note: any) => callback(note);
     ipcRenderer.on('kiosk:note', handler);
     return () => ipcRenderer.removeListener('kiosk:note', handler);
+  },
+
+  getLogo: () => ipcRenderer.invoke('app:getLogo'),
+  onLogoLoaded: (callback: (logo: string | null) => void) => {
+    const handler = (_: any, logo: string | null) => callback(logo);
+    ipcRenderer.on('app:logoLoaded', handler);
+    return () => ipcRenderer.removeListener('app:logoLoaded', handler);
   },
 
   // Remove listeners

@@ -324,11 +324,13 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   // Export PDF function
   const handleExportPDF = async () => {
     try {
+      const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
       await exportPoolToPDF(pool, {
         title: `Poule ${pool.number} - ${pool.fencers.length} tireurs`,
         includeFinishedMatches: true,
         includePendingMatches: true,
         includePoolStats: true,
+        logoBase64: logo,
       });
       showToast(`Export PDF de la poule ${pool.number} généré avec succès`, 'success');
     } catch (error) {
