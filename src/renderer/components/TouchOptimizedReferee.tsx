@@ -159,7 +159,8 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
       onScoreUpdate(newScore, scoreB);
 
       if (newScore >= maxScore) {
-        handleMatchEnd();
+        // Pause le chronomètre pour permettre une correction d'arbitrage
+        setIsRunning(false);
       }
     } else {
       const newScore = Math.min(scoreB + points, maxScore);
@@ -167,7 +168,8 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
       onScoreUpdate(scoreA, newScore);
 
       if (newScore >= maxScore) {
-        handleMatchEnd();
+        // Pause le chronomètre pour permettre une correction d'arbitrage
+        setIsRunning(false);
       }
     }
   };
