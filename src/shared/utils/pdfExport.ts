@@ -263,6 +263,7 @@ function generatePoolHTML(pool: Pool, options: PoolExportOptions): string {
         <td class="name-cell">${fencer.lastName.toUpperCase()} ${fencer.firstName?.charAt(0) ?? ''}.</td>
         ${cells}
         ${statCells}
+        <td class="sig-cell"></td>
       </tr>`;
   }).join('');
 
@@ -362,6 +363,15 @@ function generatePoolHTML(pool: Pool, options: PoolExportOptions): string {
       font-weight: 900;
       font-size: 10pt;
     }
+    .score-grid .sig-cell {
+      min-width: 32mm;
+      border-left: 2px solid var(--border) !important;
+    }
+    .score-grid thead .sig-header {
+      min-width: 32mm;
+      background: #1f3a5a;
+      border-left: 2px solid var(--navy-light) !important;
+    }
 
     /* Matchs */
     .match-grid {
@@ -410,6 +420,7 @@ function generatePoolHTML(pool: Pool, options: PoolExportOptions): string {
         <th class="name-header">Tireur</th>
         ${colHeaders}
         ${activeCols.map(c => `<th class="${c.cls === 'rank-cell' ? 'rank-header' : 'stat-header'}">${c.header}</th>`).join('')}
+        <th class="sig-header">Signature</th>
       </tr>
     </thead>
     <tbody>${rows}</tbody>
