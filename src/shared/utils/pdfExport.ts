@@ -15,6 +15,7 @@ interface PoolExportOptions {
   includePendingMatches?: boolean;
   includePoolStats?: boolean;
   logoBase64?: string;
+  visibleColumns?: string[];
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -209,12 +210,27 @@ const BASE_CSS = `
 
 // ─── HTML Poule ───────────────────────────────────────────────────────────────
 
+type RankData = { fencer: Fencer; stats: ReturnType<typeof calculateFencerStats>; rank: number };
+
+const STAT_COLS: { id: string; header: string; cls: string; render: (d: RankData) => string }[] = [
+  { id: 'victories', header: 'V',   cls: 'stat-cell', render: d => `${d.stats.v}` },
+  { id: 'ratio',     header: 'V/M', cls: 'stat-cell', render: d => d.stats.ratio.toFixed(2) },
+  { id: 'td',        header: 'TD',  cls: 'stat-cell', render: d => `${d.stats.td}` },
+  { id: 'tr',        header: 'TR',  cls: 'stat-cell', render: d => `${d.stats.tr}` },
+  { id: 'index',     header: 'Ind', cls: 'stat-cell', render: d => d.stats.ind >= 0 ? `+${d.stats.ind}` : `${d.stats.ind}` },
+  { id: 'rank',      header: 'Rg',  cls: 'rank-cell', render: d => `${d.rank}` },
+];
+
 function generatePoolHTML(pool: Pool, options: PoolExportOptions): string {
   const { title = `Poule ${pool.number}`, competitionName = '', weapon = '', category = '', logoBase64 } = options;
   const fencers = pool.fencers ?? [];
   const matches = pool.matches ?? [];
   const finishedCount = matches.filter(m => m.status === MatchStatus.FINISHED).length;
   const now = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+
+  const activeCols = options.visibleColumns
+    ? STAT_COLS.filter(c => options.visibleColumns!.includes(c.id))
+    : STAT_COLS;
 
   // Classement
   const rankings = fencers.map(f => ({
@@ -234,25 +250,19 @@ function generatePoolHTML(pool: Pool, options: PoolExportOptions): string {
   const colHeaders = fencers.map((_, i) => `<th class="num-header">${i + 1}</th>`).join('');
   const rows = fencers.map((fencer, row) => {
     const data = rankMap.get(fencer.id)!;
-    const { v, td, tr, ind, ratio } = data.stats;
-    const indStr = ind >= 0 ? `+${ind}` : `${ind}`;
     const cells = fencers.map((opponent, col) => {
       if (row === col) return '<td class="diagonal"></td>';
       const s = getScoreForCell(fencer, opponent, matches);
       if (!s) return '<td class="cell-pending"></td>';
       return `<td class="${s.isVictory ? 'cell-victory' : 'cell-defeat'}">${s.display}</td>`;
     }).join('');
+    const statCells = activeCols.map(c => `<td class="${c.cls}">${c.render(data)}</td>`).join('');
     return `
       <tr>
         <td class="num-cell">${row + 1}</td>
         <td class="name-cell">${fencer.lastName.toUpperCase()} ${fencer.firstName?.charAt(0) ?? ''}.</td>
         ${cells}
-        <td class="stat-cell">${v}</td>
-        <td class="stat-cell">${ratio.toFixed(2)}</td>
-        <td class="stat-cell">${td}</td>
-        <td class="stat-cell">${tr}</td>
-        <td class="stat-cell">${indStr}</td>
-        <td class="rank-cell">${data.rank}</td>
+        ${statCells}
       </tr>`;
   }).join('');
 
@@ -399,12 +409,7 @@ function generatePoolHTML(pool: Pool, options: PoolExportOptions): string {
         <th class="num-header">#</th>
         <th class="name-header">Tireur</th>
         ${colHeaders}
-        <th class="stat-header">V</th>
-        <th class="stat-header">V/M</th>
-        <th class="stat-header">TD</th>
-        <th class="stat-header">TR</th>
-        <th class="stat-header">Ind</th>
-        <th class="rank-header">Rg</th>
+        ${activeCols.map(c => `<th class="${c.cls === 'rank-cell' ? 'rank-header' : 'stat-header'}">${c.header}</th>`).join('')}
       </tr>
     </thead>
     <tbody>${rows}</tbody>
