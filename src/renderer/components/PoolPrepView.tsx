@@ -19,6 +19,7 @@ interface PoolPrepViewProps {
   minFencersPerPool?: number;
   maxFencersPerPool?: number;
   onPoolsConfirm: (pools: Pool[]) => void;
+  onSkipPools?: () => void;
   onSettingsChange?: (min: number, max: number) => void;
 }
 
@@ -37,6 +38,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
   minFencersPerPool: initialMin = 5,
   maxFencersPerPool: initialMax = 7,
   onPoolsConfirm,
+  onSkipPools,
   onSettingsChange,
 }) => {
   const [poolCount, setPoolCount] = useState<number>(0);
@@ -232,9 +234,10 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
   };
 
   const handlePoolCountChange = (newCount: number) => {
-    if (newCount >= 1 && newCount <= Math.ceil(fencers.length / 3)) {
+    if (newCount >= 0 && newCount <= Math.ceil(fencers.length / 3)) {
       saveToHistory();
       setPoolCount(newCount);
+      if (newCount === 0) setPools([]);
     }
   };
 
@@ -419,7 +422,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
             <button
               className="btn btn-secondary"
               onClick={() => handlePoolCountChange(poolCount - 1)}
-              disabled={poolCount <= 1}
+              disabled={poolCount <= 0}
               style={{ padding: '0.25rem 0.75rem' }}
             >
               -
@@ -540,12 +543,31 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
         style={{
           flex: 1,
           overflowY: 'auto',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+          display: poolCount === 0 ? 'flex' : 'grid',
+          gridTemplateColumns: poolCount === 0 ? undefined : 'repeat(auto-fill, minmax(280px, 1fr))',
+          alignItems: poolCount === 0 ? 'center' : undefined,
+          justifyContent: poolCount === 0 ? 'center' : undefined,
           gap: '1rem',
           padding: '0.5rem',
         }}
       >
+        {poolCount === 0 ? (
+          <div
+            style={{
+              textAlign: 'center',
+              padding: '3rem',
+              color: '#6b7280',
+            }}
+          >
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⏭</div>
+            <div style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+              Aucune poule
+            </div>
+            <div style={{ fontSize: '0.9rem' }}>
+              Passage direct au classement initial des tireurs
+            </div>
+          </div>
+        ) : null}
         {pools.map((pool, poolIndex) => (
           <div
             key={pool.id}
@@ -769,11 +791,11 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
 
         <button
           className="btn btn-primary"
-          onClick={() => onPoolsConfirm(pools)}
-          disabled={pools.length === 0 || pools.some(p => p.fencers.length < 3)}
+          onClick={() => (poolCount === 0 ? onSkipPools?.() : onPoolsConfirm(pools))}
+          disabled={poolCount > 0 && (pools.length === 0 || pools.some(p => p.fencers.length < 3))}
           style={{ fontSize: '1rem', padding: '0.75rem 2rem' }}
         >
-          Lancer les poules →
+          {poolCount === 0 ? 'Passer au classement initial →' : 'Lancer les poules →'}
         </button>
       </div>
     </div>
