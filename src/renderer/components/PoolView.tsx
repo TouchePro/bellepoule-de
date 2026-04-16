@@ -331,6 +331,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         includePendingMatches: true,
         includePoolStats: true,
         logoBase64: logo,
+        visibleColumns: getVisibleColumns('pool'),
       });
       showToast(`Export PDF de la poule ${pool.number} généré avec succès`, 'success');
     } catch (error) {
