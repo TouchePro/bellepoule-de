@@ -2746,6 +2746,70 @@ export class RemoteScoreServer {
     }
   }
 
+  public refreshDeMatches(matchesFromRenderer: any[]): void {
+    if (!this.session) throw new Error('Aucune session active');
+
+    const strips = this.session.strips.length;
+
+    // Collect IDs of matches currently assigned to an arena (must not be disturbed)
+    const activeMatchIds = new Set<string>();
+    for (const arena of this.arenas.values()) {
+      if (arena.currentMatch) activeMatchIds.add(arena.currentMatch.id);
+    }
+
+    // Build the new DE match list, excluding already-active matches
+    const deMatches = matchesFromRenderer
+      .filter(m => !m.__poolFencers && m.isTableau && m.fencerA && m.fencerB)
+      .sort((a: any, b: any) => (a.round || 0) - (b.round || 0));
+
+    // Replace DE entries in sessionMatches (keep pool matches intact)
+    this.sessionMatches = this.sessionMatches.filter((m: any) => !m.isTableau);
+    for (const m of deMatches) this.sessionMatches.push(m);
+
+    // Rebuild DE queues (preserve any non-DE entries already queued)
+    for (const [arenaId, queue] of this.arenaMatchQueue.entries()) {
+      this.arenaMatchQueue.set(arenaId, queue.filter((m: ArenaMatch) => !m.isTableau));
+    }
+
+    const pending = deMatches.filter(m => !activeMatchIds.has(m.id));
+    let rrIndex = 0;
+    const queuesByArena = new Map<string, ArenaMatch[]>();
+    for (let i = 1; i <= strips; i++) queuesByArena.set(`arena${i}`, []);
+
+    for (const match of pending) {
+      const preferred = match.arena ? `arena${match.arena}` : `arena${(rrIndex % strips) + 1}`;
+      const targetId = this.arenas.has(preferred) ? preferred : `arena${(rrIndex % strips) + 1}`;
+      queuesByArena.get(targetId)!.push({
+        id: match.id,
+        fencerA: match.fencerA,
+        fencerB: match.fencerB,
+        scoreA: 0,
+        scoreB: 0,
+        status: 'not_started',
+        startTime: null,
+        endTime: null,
+        isTableau: true,
+      });
+      rrIndex++;
+    }
+
+    for (const [arenaId, queue] of queuesByArena) {
+      const arena = this.arenas.get(arenaId);
+      if (!arena) continue;
+      const existing = this.arenaMatchQueue.get(arenaId) || [];
+      if (!arena.currentMatch && queue.length > 0) {
+        this.assignMatchToArena(arenaId, queue[0]);
+        this.arenaMatchQueue.set(arenaId, [...existing, ...queue.slice(1)]);
+      } else {
+        this.arenaMatchQueue.set(arenaId, [...existing, ...queue]);
+      }
+    }
+
+    console.log(
+      `[RemoteScoreServer] refreshDeMatches: ${deMatches.length} matchs DE, ${pending.length} distribués`
+    );
+  }
+
   public getSession(): RemoteSession | null {
     return this.session;
   }

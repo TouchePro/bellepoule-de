@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import QRCode from 'qrcode';
 import { Competition, Pool } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
@@ -113,6 +113,24 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     const updates = pools.map(pool => ({ poolId: pool.id, fencers: pool.fencers ?? [] }));
     window.electronAPI.remote.updatePoolFencers(updates).catch(() => {});
   }, [pools, isRemoteActive, session]);
+
+  // Quand les matchs tableau changent pendant une session active, mettre à jour le serveur
+  // sans avoir à arrêter/relancer la saisie distante (transition poules → tableau).
+  const prevDeMatchesKeyRef = useRef<string>('');
+  const pendingDeMatches = useMemo(
+    () =>
+      (tableauMatches || [])
+        .filter(m => m.winner === null && m.fencerA && m.fencerB)
+        .map(m => ({ ...m, isTableau: true })),
+    [tableauMatches]
+  );
+  useEffect(() => {
+    const key = pendingDeMatches.map(m => m.id).join(',');
+    if (key === prevDeMatchesKeyRef.current) return;
+    prevDeMatchesKeyRef.current = key;
+    if (!isRemoteActive || !session || pendingDeMatches.length === 0) return;
+    window.electronAPI.remote.refreshDeMatches(pendingDeMatches).catch(() => {});
+  }, [pendingDeMatches, isRemoteActive, session]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
