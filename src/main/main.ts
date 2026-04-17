@@ -1139,7 +1139,7 @@ ipcMain.handle(
     strips: number,
     matches?: any[],
     showPhotos?: boolean,
-    kioskViews?: { poules: boolean; classement: boolean; direct: boolean }
+    kioskViews?: { poules: boolean; classement: boolean; direct: boolean; suivants: boolean }
   ) => {
     try {
       if (!remoteScoreServer) {

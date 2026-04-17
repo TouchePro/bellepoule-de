@@ -430,6 +430,96 @@
         font-size: 0.875rem;
       }
 
+      /* Vue Matchs suivants */
+      #view-suivants .suivants-list {
+        flex: 1;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        border-radius: 0.75rem;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .suivants-pool-header {
+        padding: 0.35rem 1rem;
+        background: rgba(59, 130, 246, 0.12);
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #93c5fd;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        border-bottom: 1px solid rgba(59, 130, 246, 0.15);
+        position: sticky;
+        top: 0;
+        z-index: 1;
+      }
+
+      .suivants-row {
+        display: grid;
+        grid-template-columns: 2.5rem 1fr auto 1fr auto;
+        align-items: center;
+        padding: 0.55rem 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        transition: background 0.15s;
+      }
+
+      .suivants-row:last-child {
+        border-bottom: none;
+      }
+
+      .suivants-row.ongoing {
+        background: rgba(16, 185, 129, 0.06);
+        border-left: 3px solid #10b981;
+      }
+
+      .suivants-num {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #475569;
+        text-align: center;
+      }
+
+      .suivants-fencer {
+        font-weight: 500;
+        color: #e2e8f0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .suivants-fencer .fclub {
+        font-size: 0.68rem;
+        color: #64748b;
+        margin-left: 0.3em;
+      }
+
+      .suivants-vs {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #475569;
+        flex-shrink: 0;
+      }
+
+      .suivants-status {
+        font-size: 0.65rem;
+        padding: 0.15rem 0.5rem;
+        border-radius: 1rem;
+        background: rgba(100, 116, 139, 0.2);
+        color: #94a3b8;
+        white-space: nowrap;
+        justify-self: end;
+      }
+
+      .suivants-status.en-cours {
+        background: rgba(16, 185, 129, 0.2);
+        color: #10b981;
+        animation: blink 1.5s ease infinite;
+      }
+
       /* No data */
       .no-data {
         display: flex;
@@ -608,6 +698,7 @@
         <button id="btn-poules" class="active" onclick="switchView('poules')">Poules</button>
         <button id="btn-classement" onclick="switchView('classement')">Classement</button>
         <button id="btn-direct" onclick="switchView('direct')">Matchs en direct</button>
+        <button id="btn-suivants" onclick="switchView('suivants')">Matchs suivants</button>
       </div>
       <div style="position:relative;margin-left:0.5rem">
         <button id="btn-settings" class="settings-btn" title="Configurer les vues">⚙</button>
@@ -621,6 +712,9 @@
           </label>
           <label class="settings-item">
             <input type="checkbox" id="cb-direct" checked> Matchs en cours
+          </label>
+          <label class="settings-item">
+            <input type="checkbox" id="cb-suivants" checked> Matchs suivants
           </label>
         </div>
       </div>
@@ -680,6 +774,24 @@
       </div>
     </div>
 
+    <!-- Vue Matchs suivants -->
+    <div id="view-suivants" class="kiosk-view">
+      <div class="view-header">
+        <div>
+          <div class="view-title">Matchs Suivants</div>
+          <div class="view-subtitle">Ordre de passage</div>
+        </div>
+        <div class="view-badge" id="suivants-badge">—</div>
+      </div>
+      <div class="suivants-list" id="suivants-container">
+        <div class="no-data">
+          <div class="no-data-icon">📋</div>
+          <h3>Aucun match à venir</h3>
+          <p>Les matchs suivants apparaîtront ici</p>
+        </div>
+      </div>
+    </div>
+
     <!-- Vue Matchs en direct -->
     <div id="view-direct" class="kiosk-view">
       <div class="view-header">
@@ -700,19 +812,20 @@
 
     <script>
       // ─── État ────────────────────────────────────────────────────────────────
-      const ALL_VIEWS = ['poules', 'classement', 'direct'];
+      const ALL_VIEWS = ['poules', 'classement', 'direct', 'suivants'];
 
       const state = {
         currentView: 'poules',
-        views: ['poules', 'classement', 'direct'],
+        views: ['poules', 'classement', 'direct', 'suivants'],
         rotationMs: 15000,
         rotationTimer: null,
         progressTimer: null,
         progressStart: null,
         menuTimer: null,
         session: null,
-        poolsData: [],   // pools avec rankings
-        arenasData: [],  // arènes
+        poolsData: [],    // pools avec rankings
+        arenasData: [],   // arènes
+        upcomingData: [], // matchs suivants
         overallRanking: [],
         lastUpdate: null,
         prevArenaScores: {},  // { [arenaId]: { scoreA, scoreB } }
@@ -967,6 +1080,14 @@
             renderArenas();
           }
 
+          // 4. Matchs suivants
+          const suivantsRes = await fetch('/api/session/upcoming-matches');
+          if (suivantsRes.ok) {
+            const suivantsData = await suivantsRes.json();
+            state.upcomingData = suivantsData.upcoming || [];
+            renderSuivants();
+          }
+
           state.lastUpdate = new Date();
           setStatus(true, 'Mis à jour ' + state.lastUpdate.toLocaleTimeString('fr-FR'));
         } catch (err) {
@@ -1076,6 +1197,56 @@
             <td style="text-align:center;color:#94a3b8">${r.touchesFor || 0}</td>
           </tr>`;
         }).join('');
+      }
+
+      // ─── Rendu Matchs suivants ───────────────────────────────────────────────
+      function renderSuivants() {
+        const container = document.getElementById('suivants-container');
+        const matches = state.upcomingData;
+
+        const pending = matches.filter(m => m.status !== 'finished');
+        document.getElementById('suivants-badge').textContent =
+          pending.length + ' match' + (pending.length > 1 ? 's' : '');
+
+        if (!matches || matches.length === 0) {
+          container.innerHTML = '<div class="no-data"><div class="no-data-icon">📋</div><h3>Aucun match à venir</h3><p>Tous les matchs sont terminés ou aucune session active</p></div>';
+          return;
+        }
+
+        // Grouper par pool
+        const byPool = new Map();
+        for (const m of matches) {
+          const key = m.poolName || 'Sans poule';
+          if (!byPool.has(key)) byPool.set(key, []);
+          byPool.get(key).push(m);
+        }
+
+        let html = '';
+        for (const [poolName, poolMatches] of byPool) {
+          html += `<div class="suivants-pool-header">${escHtml(poolName)}</div>`;
+          for (const m of poolMatches) {
+            const nameA = m.fencerA
+              ? escHtml(m.fencerA.lastName) + (m.fencerA.firstName ? ' ' + escHtml(m.fencerA.firstName[0]) + '.' : '')
+              : '?';
+            const clubA = m.fencerA?.club ? `<span class="fclub">${escHtml(m.fencerA.club)}</span>` : '';
+            const nameB = m.fencerB
+              ? escHtml(m.fencerB.lastName) + (m.fencerB.firstName ? ' ' + escHtml(m.fencerB.firstName[0]) + '.' : '')
+              : '?';
+            const clubB = m.fencerB?.club ? `<span class="fclub">${escHtml(m.fencerB.club)}</span>` : '';
+            const isOngoing = m.status === 'in_progress';
+            const statusLabel = isOngoing
+              ? (m.arenaName ? escHtml(m.arenaName) : 'En cours')
+              : 'À venir';
+            html += `<div class="suivants-row${isOngoing ? ' ongoing' : ''}">
+              <span class="suivants-num">${m.number || ''}</span>
+              <span class="suivants-fencer">${nameA}${clubA}</span>
+              <span class="suivants-vs">vs</span>
+              <span class="suivants-fencer">${nameB}${clubB}</span>
+              <span class="suivants-status${isOngoing ? ' en-cours' : ''}">${statusLabel}</span>
+            </div>`;
+          }
+        }
+        container.innerHTML = html;
       }
 
       // ─── Rendu Arènes ────────────────────────────────────────────────────────
