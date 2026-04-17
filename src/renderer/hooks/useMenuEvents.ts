@@ -17,6 +17,7 @@ interface UseMenuEventsProps {
   onShowAddFencer: () => void;
   onExportFencers: (format: 'txt' | 'fff') => void;
   onExportFencersBpf: () => void;
+  onExportPhotos: () => void;
   onExportRanking: (format: 'csv' | 'json') => void;
   onExportResults: (format: 'csv' | 'json') => void;
   onImport: (format: string, filepath: string, content: string) => void;
@@ -35,6 +36,7 @@ export const useMenuEvents = ({
   onShowAddFencer,
   onExportFencers,
   onExportFencersBpf,
+  onExportPhotos,
   onExportRanking,
   onExportResults,
   onImport,
@@ -60,6 +62,10 @@ export const useMenuEvents = ({
       }
       if (format === 'fencers-bpf') {
         onExportFencersBpf();
+        return;
+      }
+      if (format === 'photos') {
+        onExportPhotos();
         return;
       }
 
@@ -95,6 +101,7 @@ export const useMenuEvents = ({
       finalResults,
       onExportFencers,
       onExportFencersBpf,
+      onExportPhotos,
       onExportRanking,
       onExportResults,
     ]
