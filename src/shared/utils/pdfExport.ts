@@ -724,8 +724,10 @@ function generateRankingHTML(
   ranking: PoolRanking[],
   title: string,
   isLaserSabre: boolean,
+  visibleColumns: string[],
   logoBase64?: string
 ): string {
+  const vis = (col: string) => visibleColumns.includes(col);
   const now = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
 
   const rows = ranking.map(r => {
@@ -733,25 +735,36 @@ function generateRankingHTML(
     const idx = r.index >= 0 ? `+${r.index}` : `${r.index}`;
     const abandoned = (r.fencer as any).status === 'ABANDONED'
       ? ' <span style="color:#ef4444;font-size:8pt">(A)</span>' : '';
-    const questCol = isLaserSabre
-      ? `<td style="text-align:center;color:#7c3aed;font-weight:600">${r.questPoints ?? 0}</td>` : '';
     return `
 <tr>
-  <td style="text-align:center;font-weight:700;color:var(--navy)">${r.rank}</td>
-  <td style="font-weight:600">${r.fencer.lastName.toUpperCase()}${abandoned}</td>
-  <td>${r.fencer.firstName ?? ''}</td>
-  <td style="color:var(--gray-dark)">${r.fencer.club ?? ''}</td>
-  <td style="text-align:center">${r.victories}</td>
-  <td style="text-align:center">${r.matchesPlayed > 0 ? ratio : '-'}</td>
-  <td style="text-align:center">${r.touchesScored}</td>
-  <td style="text-align:center">${r.touchesReceived}</td>
-  ${questCol}
-  <td style="text-align:center;font-weight:600;color:${r.index >= 0 ? 'var(--green)' : '#dc2626'}">${idx}</td>
+  ${vis('rank') ? `<td style="text-align:center;font-weight:700;color:var(--navy)">${r.rank}</td>` : ''}
+  ${vis('lastName') ? `<td style="font-weight:600">${r.fencer.lastName.toUpperCase()}${abandoned}</td>` : ''}
+  ${vis('firstName') ? `<td>${r.fencer.firstName ?? ''}</td>` : ''}
+  ${vis('club') ? `<td style="color:var(--gray-dark)">${r.fencer.club ?? ''}</td>` : ''}
+  ${vis('victories') ? `<td style="text-align:center">${r.victories}</td>` : ''}
+  ${vis('ratio') ? `<td style="text-align:center">${r.matchesPlayed > 0 ? ratio : '-'}</td>` : ''}
+  ${vis('td') ? `<td style="text-align:center">${r.touchesScored}</td>` : ''}
+  ${vis('tr') ? `<td style="text-align:center">${r.touchesReceived}</td>` : ''}
+  ${vis('quest') && isLaserSabre ? `<td style="text-align:center;color:#7c3aed;font-weight:600">${r.questPoints ?? 0}</td>` : ''}
+  ${vis('index') ? `<td style="text-align:center;font-weight:600;color:${r.index >= 0 ? 'var(--green)' : '#dc2626'}">${idx}</td>` : ''}
 </tr>`;
   }).join('');
 
-  const questHeader = isLaserSabre
-    ? '<th style="text-align:center;color:var(--white)">Quest</th>' : '';
+  const th = (col: string, label: string, style = '') =>
+    vis(col) ? `<th style="${style}">${label}</th>` : '';
+
+  const headers = [
+    th('rank', 'Rg', 'width:10mm'),
+    th('lastName', 'Nom', 'text-align:left'),
+    th('firstName', 'Prénom', 'text-align:left'),
+    th('club', 'Club', 'text-align:left'),
+    th('victories', 'V'),
+    th('ratio', 'V/M'),
+    th('td', 'TD'),
+    th('tr', 'TR'),
+    vis('quest') && isLaserSabre ? '<th style="color:var(--white)">Quest</th>' : '',
+    th('index', 'Indice'),
+  ].join('');
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -766,7 +779,6 @@ function generateRankingHTML(
       font-size: 8pt; font-weight: 700; text-transform: uppercase;
       letter-spacing: 0.8px; padding: 2.5mm 3mm; text-align: center;
     }
-    th:nth-child(2), th:nth-child(3), th:nth-child(4) { text-align: left; }
     td { padding: 2mm 3mm; border-bottom: 1px solid var(--gray-light); vertical-align: middle; }
     tr:nth-child(even) td { background: var(--gray-xlight); }
     tr:nth-child(1) td, tr:nth-child(2) td, tr:nth-child(3) td { font-size: 9.5pt; }
@@ -786,17 +798,7 @@ function generateRankingHTML(
   </div>
   <div class="gold-bar"></div>
   <table>
-    <thead>
-      <tr>
-        <th style="width:10mm">Rg</th>
-        <th style="text-align:left">Nom</th>
-        <th style="text-align:left">Prénom</th>
-        <th style="text-align:left">Club</th>
-        <th>V</th><th>V/M</th><th>TD</th><th>TR</th>
-        ${questHeader}
-        <th>Indice</th>
-      </tr>
-    </thead>
+    <thead><tr>${headers}</tr></thead>
     <tbody>${rows}</tbody>
   </table>
   <div class="doc-footer">
@@ -811,11 +813,13 @@ export async function exportRankingToPDF(
   ranking: PoolRanking[],
   title: string = 'Classement Général',
   weapon?: Weapon,
+  visibleColumns?: string[],
   logoBase64?: string
 ): Promise<void> {
   if (ranking.length === 0) throw new Error('Aucun tireur dans le classement');
   const isLaserSabre = weapon === 'L' || weapon === ('LASER' as any);
-  const html = generateRankingHTML(ranking, title, isLaserSabre, logoBase64);
+  const cols = visibleColumns ?? ['rank', 'lastName', 'firstName', 'club', 'victories', 'ratio', 'td', 'tr', 'quest', 'index'];
+  const html = generateRankingHTML(ranking, title, isLaserSabre, cols, logoBase64);
   await savePDF(html, 'classement-general.pdf');
 }
 

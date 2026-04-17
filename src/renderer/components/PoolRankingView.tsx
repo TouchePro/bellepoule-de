@@ -44,7 +44,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
   onRankingChange,
 }) => {
   const { showToast } = useToast();
-  const { isColumnVisible, toggleColumn } = useColumnVisibility();
+  const { isColumnVisible, toggleColumn, getVisibleColumns } = useColumnVisibility();
   const isLaserSabre = weapon === 'L';
   const [recalcKey, setRecalcKey] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
@@ -170,7 +170,8 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
   const handleExportPDF = async () => {
     try {
       const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
-      await exportRankingToPDF(overallRanking, 'Classement Général', weapon, logo);
+      const cols = getVisibleColumns('ranking').filter(col => col !== 'quest' || isLaserSabre);
+      await exportRankingToPDF(overallRanking, 'Classement Général', weapon, cols, logo);
     } catch (e) {
       showToast((e as Error).message, 'error');
     }
