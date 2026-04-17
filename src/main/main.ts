@@ -964,6 +964,42 @@ ipcMain.handle('window:print', () => {
   });
 });
 
+// Print via hidden BrowserWindow — opens system print dialog on clean HTML
+ipcMain.handle('file:printHtml', async (_, html: string) => {
+  return new Promise<{ success: boolean; error?: string }>((resolve) => {
+    const tmpFile = path.join(os.tmpdir(), `bp-print-${Date.now()}.html`);
+    try {
+      fs.writeFileSync(tmpFile, html, 'utf-8');
+    } catch (e) {
+      resolve({ success: false, error: `Impossible de créer le fichier temporaire: ${e}` });
+      return;
+    }
+
+    const printWin = new BrowserWindow({
+      show: false,
+      width: 1200,
+      height: 1600,
+      webPreferences: { contextIsolation: true, nodeIntegration: false, javascript: false },
+    });
+    printWin.setMenu(null);
+    printWin.loadFile(tmpFile);
+
+    printWin.webContents.once('did-finish-load', () => {
+      printWin.webContents.print({ silent: false, printBackground: true }, (success) => {
+        try { fs.unlinkSync(tmpFile); } catch { /* ignore */ }
+        printWin.destroy();
+        resolve({ success });
+      });
+    });
+
+    printWin.webContents.once('did-fail-load', () => {
+      try { fs.unlinkSync(tmpFile); } catch { /* ignore */ }
+      printWin.destroy();
+      resolve({ success: false, error: 'Chargement HTML échoué' });
+    });
+  });
+});
+
 // PDF generation via hidden BrowserWindow (propre, sans menus d'application)
 ipcMain.handle('file:printHtmlToPDF', async (_, html: string, outputPath: string) => {
   return new Promise<{ success: boolean; path?: string; error?: string }>((resolve) => {

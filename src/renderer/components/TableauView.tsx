@@ -9,7 +9,7 @@ import { Fencer, PoolRanking } from '../../shared/types';
 import { useToast } from './Toast';
 import { useModalResize } from '../hooks/useModalResize';
 import Bracket from './Bracket';
-import { exportTableauToPDF, MAX_MATCHES_PER_PAGE_TABLEAU } from '../../shared/utils/pdfExport';
+import { exportTableauToPDF, printTableauHTML, MAX_MATCHES_PER_PAGE_TABLEAU } from '../../shared/utils/pdfExport';
 
 interface BracketMatch {
   id: string;
@@ -167,6 +167,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   const [selectedMatchForArena, setSelectedMatchForArena] = useState<string | null>(null);
   const [pyramidViewMode, setPyramidViewMode] = useState<boolean>(false);
   const [showPdfModal, setShowPdfModal] = useState(false);
+  const [pdfMode, setPdfMode] = useState<'print' | 'pdf'>('pdf');
   const [pdfMatchesPerPage, setPdfMatchesPerPage] = useState<number>(MAX_MATCHES_PER_PAGE_TABLEAU);
   const isUnlimitedScore = maxScore === 999;
 
@@ -491,9 +492,13 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   const handleExportPDF = async () => {
     const perPage = Math.max(1, Math.min(pdfMatchesPerPage, MAX_MATCHES_PER_PAGE_TABLEAU));
     const title = `Tableau de ${tableauSize}`;
+    const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
     try {
-      const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
-      await exportTableauToPDF(matches, perPage, title, logo);
+      if (pdfMode === 'print') {
+        await printTableauHTML(matches, perPage, title, logo);
+      } else {
+        await exportTableauToPDF(matches, perPage, title, logo);
+      }
       setShowPdfModal(false);
     } catch (e) {
       showToast((e as Error).message, 'error');
@@ -1129,7 +1134,26 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
             {pyramidViewMode ? '🔲 Tableau' : '🔺 Pyramide'}
           </button>
           <button
-            onClick={() => setShowPdfModal(true)}
+            onClick={() => { setPdfMode('print'); setShowPdfModal(true); }}
+            style={{
+              background: '#6366f1',
+              color: 'white',
+              border: 'none',
+              padding: '0.5rem 0.75rem',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+            }}
+            title="Imprimer les feuilles de match"
+          >
+            🖨️ Imprimer
+          </button>
+          <button
+            onClick={() => { setPdfMode('pdf'); setShowPdfModal(true); }}
             style={{
               background: '#10b981',
               color: 'white',
@@ -1527,7 +1551,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         <div className="modal-overlay" onClick={() => setShowPdfModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
             <div className="modal-header">
-              <h3 className="modal-title">Export PDF – Feuilles de match</h3>
+              <h3 className="modal-title">{pdfMode === 'print' ? 'Imprimer' : 'Export PDF'} – Feuilles de match</h3>
               <button className="btn-close" onClick={() => setShowPdfModal(false)}>
                 &times;
               </button>
@@ -1585,7 +1609,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                 Annuler
               </button>
               <button className="btn btn-primary" onClick={handleExportPDF}>
-                Générer PDF
+                {pdfMode === 'print' ? '🖨️ Imprimer' : '📄 Générer PDF'}
               </button>
             </div>
           </div>

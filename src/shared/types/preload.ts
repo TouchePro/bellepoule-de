@@ -423,6 +423,7 @@ export interface FileAPI {
   export: (filepath: string) => Promise<FileSaveResult>;
   import: (filepath: string) => Promise<FileOpenResult>;
   writeContent: (filepath: string, content: string) => Promise<void>;
+  printHtml: (html: string) => Promise<{ success: boolean; error?: string }>;
   printHtmlToPDF: (html: string, outputPath: string) => Promise<{ success: boolean; path?: string; error?: string }>;
   exportPhotos: (competitionId: string, filepath: string) => Promise<{ count: number }>;
   importPhotos: (
