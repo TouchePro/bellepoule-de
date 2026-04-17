@@ -264,6 +264,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }
       return ipcRenderer.invoke('file:writeContent', filepath, content);
     },
+    printHtml: (html: string) => {
+      if (!html || typeof html !== 'string') {
+        throw new Error('HTML content is required');
+      }
+      return ipcRenderer.invoke('file:printHtml', html);
+    },
     printHtmlToPDF: (html: string, outputPath: string) => {
       if (!html || typeof html !== 'string') {
         throw new Error('HTML content is required');

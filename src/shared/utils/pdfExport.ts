@@ -692,8 +692,28 @@ export async function exportTableauToPDF(
   if (real.length === 0) {
     throw new Error('Aucun match à exporter (tous sont des exempts ou sans tireurs assignés)');
   }
-
   const html = generateTableauHTML(matches, matchesPerPage, title, logoBase64);
   await savePDF(html, `tableau-elimination.pdf`);
+}
+
+export async function printTableauHTML(
+  matches: TableauMatchForPDF[],
+  matchesPerPage: number,
+  title: string = 'Tableau Élimination Directe',
+  logoBase64?: string
+): Promise<void> {
+  const real = matches.filter(m => !m.isBye && m.fencerA && m.fencerB);
+  if (real.length === 0) {
+    throw new Error('Aucun match à imprimer (tous sont des exempts ou sans tireurs assignés)');
+  }
+  const html = generateTableauHTML(matches, matchesPerPage, title, logoBase64);
+  const api = (window as any).electronAPI;
+  if (!api?.file?.printHtml) {
+    throw new Error('API Electron non disponible');
+  }
+  const res = await api.file.printHtml(html);
+  if (!res?.success) {
+    throw new Error(res?.error ?? "Échec de l'impression");
+  }
 }
 
