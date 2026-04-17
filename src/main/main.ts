@@ -49,6 +49,7 @@ const MENU_LABELS: Record<MenuLang, Record<string, string>> = {
     exportFencersTxt: 'Exporter tireurs (.txt)',
     exportFencersFff: 'Exporter tireurs (.fff)',
     exportFencersBpf: 'Exporter tireurs + photos (.bpf)',
+    exportPhotos: 'Exporter photos (.zip)',
     import: 'Importer',
     importXml: 'Importer XML (BellePoule)',
     importFff: 'Importer liste FFE (.fff)',
@@ -362,6 +363,7 @@ function createMenu(language?: string): void {
             { label: L.exportFencersTxt, click: () => handleExport('fencers-txt') },
             { label: L.exportFencersFff, click: () => handleExport('fencers-fff') },
             { label: L.exportFencersBpf, click: () => handleExport('fencers-bpf') },
+            { label: L.exportPhotos, click: () => handleExport('photos') },
           ],
         },
         {

@@ -338,24 +338,10 @@ const FencerListComponent: React.FC<FencerListProps> = ({
             <>
               <button
                 className="btn btn-secondary"
-                onClick={handleExportPhotos}
-                title="Exporter les photos des tireurs (.zip)"
-              >
-                📤 Export Photos
-              </button>
-              <button
-                className="btn btn-secondary"
                 onClick={handleImportPhotos}
                 title="Importer des photos depuis un .zip (matching par licence)"
               >
                 📥 Import Photos
-              </button>
-              <button
-                className="btn btn-secondary"
-                onClick={handleExportFencersArchive}
-                title="Exporter tireurs + photos dans un fichier .bpf"
-              >
-                💾 .bpf
               </button>
               <button
                 className="btn btn-secondary"
