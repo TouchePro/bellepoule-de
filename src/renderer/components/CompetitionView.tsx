@@ -315,13 +315,25 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     setImportData(null);
   };
 
-  const handleOpenImportDialog = async () => {
+  const handleOpenImportDialog = async (type: 'xml' | 'fff' | 'ranking' = 'fff') => {
+    const configs = {
+      xml: {
+        title: 'Importer un fichier XML BellePoule',
+        filters: [{ name: 'XML BellePoule', extensions: ['xml', 'cotcot'] }],
+      },
+      fff: {
+        title: 'Importer une liste FFE',
+        filters: [{ name: 'Fichiers FFE', extensions: ['fff', 'csv', 'txt'] }],
+      },
+      ranking: {
+        title: 'Importer un classement FFE',
+        filters: [{ name: 'Fichier classement', extensions: ['fff', 'csv', 'txt', 'xlsx'] }],
+      },
+    };
+    const cfg = configs[type];
     const result = await window.electronAPI.dialog.openFile({
-      title: 'Importer des tireurs',
-      filters: [
-        { name: 'Fichiers FFE', extensions: ['fff', 'csv', 'txt'] },
-        { name: 'Tous les fichiers', extensions: ['*'] },
-      ],
+      title: cfg.title,
+      filters: [...cfg.filters, { name: 'Tous les fichiers', extensions: ['*'] }],
       properties: ['openFile'],
     });
 
@@ -330,8 +342,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       const content = result.content || '';
       const extension = filepath.split('.').pop()?.toLowerCase();
 
-      let format = 'fff';
-      if (extension === 'csv' || extension === 'txt') {
+      let format: string = type;
+      if (type === 'fff' && (extension === 'csv' || extension === 'txt')) {
         format = 'txt';
       }
 
@@ -767,7 +779,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             onDeleteAllFencers={deleteAllFencers}
             onCheckInAll={checkInAll}
             onUncheckAll={uncheckAll}
-            onImport={handleOpenImportDialog}
+            onImport={(type) => handleOpenImportDialog(type)}
             onFencersImported={loadFencers}
             onSetFencerStatus={(id, status) => {
               // Si forfait, abandon ou exclusion, mettre à jour tous les matchs du tireur
