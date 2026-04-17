@@ -49,6 +49,7 @@ const MENU_LABELS: Record<MenuLang, Record<string, string>> = {
     exportFencersTxt: 'Exporter tireurs (.txt)',
     exportFencersFff: 'Exporter tireurs (.fff)',
     exportFencersBpf: 'Exporter tireurs + photos (.bpf)',
+    exportPhotos: 'Exporter photos (.zip)',
     import: 'Importer',
     importXml: 'Importer XML (BellePoule)',
     importFff: 'Importer liste FFE (.fff)',
@@ -250,6 +251,19 @@ function createWindow(): void {
     icon: path.join(__dirname, '../../resources/icons/icon.png'),
   });
 
+  // Allow camera access for webcam photo capture
+  mainWindow.webContents.session.setPermissionRequestHandler((_webContents, permission, callback) => {
+    if (permission === 'media') {
+      callback(true);
+    } else {
+      callback(false);
+    }
+  });
+
+  mainWindow.webContents.session.setPermissionCheckHandler((_webContents, permission) => {
+    return permission === 'media';
+  });
+
   // Security: Set CSP headers for all requests
   mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
     callback({
@@ -261,6 +275,7 @@ function createWindow(): void {
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
             "font-src 'self' https://fonts.gstatic.com; " +
             "img-src 'self' data: blob:; " +
+            "media-src 'self' blob:; " +
             "connect-src 'self' http://localhost:* https://api.github.com; " +
             "frame-ancestors 'none';",
         ],
@@ -362,6 +377,7 @@ function createMenu(language?: string): void {
             { label: L.exportFencersTxt, click: () => handleExport('fencers-txt') },
             { label: L.exportFencersFff, click: () => handleExport('fencers-fff') },
             { label: L.exportFencersBpf, click: () => handleExport('fencers-bpf') },
+            { label: L.exportPhotos, click: () => handleExport('photos') },
           ],
         },
         {
