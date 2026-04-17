@@ -21,7 +21,7 @@ interface FencerListProps {
   onCheckInAll?: () => void;
   onUncheckAll?: () => void;
   onSetFencerStatus?: (id: string, status: FencerStatus) => void;
-  onImport?: () => void;
+  onImport?: (type: 'xml' | 'fff' | 'ranking') => void;
   onFencersImported?: () => void;
 }
 
@@ -58,11 +58,16 @@ const FencerListComponent: React.FC<FencerListProps> = ({
   const [editingFencer, setEditingFencer] = useState<Fencer | null>(null);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
+  const [importMenuOpen, setImportMenuOpen] = useState(false);
+  const importMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
         setExportMenuOpen(false);
+      }
+      if (importMenuRef.current && !importMenuRef.current.contains(e.target as Node)) {
+        setImportMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -121,9 +126,9 @@ const FencerListComponent: React.FC<FencerListProps> = ({
     }
   };
 
-  const handleImportFencers = () => {
+  const handleImportFencers = (type: 'xml' | 'fff' | 'ranking') => {
     if (onImport) {
-      onImport();
+      onImport(type);
     }
   };
 
@@ -288,13 +293,69 @@ const FencerListComponent: React.FC<FencerListProps> = ({
             </button>
           )}
           {onImport && (
-            <button
-              className="btn btn-secondary"
-              onClick={handleImportFencers}
-              title="Importer depuis un fichier (.ffe, .csv, .txt)"
-            >
-              📥 Importer
-            </button>
+            <div ref={importMenuRef} style={{ position: 'relative', display: 'inline-block' }}>
+              <button
+                className="btn btn-secondary"
+                onClick={() => setImportMenuOpen(o => !o)}
+                title="Importer"
+              >
+                📥 Importer ▾
+              </button>
+              {importMenuOpen && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  zIndex: 1000,
+                  background: 'var(--bg-secondary, #2a2a3e)',
+                  border: '1px solid var(--border-color, #444)',
+                  borderRadius: '6px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                  minWidth: '230px',
+                  padding: '4px 0',
+                }}>
+                  <button
+                    className="btn btn-ghost"
+                    style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 16px', borderRadius: 0 }}
+                    onClick={() => { handleImportFencers('xml'); setImportMenuOpen(false); }}
+                  >
+                    Importer XML (BellePoule)
+                  </button>
+                  <button
+                    className="btn btn-ghost"
+                    style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 16px', borderRadius: 0 }}
+                    onClick={() => { handleImportFencers('fff'); setImportMenuOpen(false); }}
+                  >
+                    Importer liste FFE (.fff)
+                  </button>
+                  <button
+                    className="btn btn-ghost"
+                    style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 16px', borderRadius: 0 }}
+                    onClick={() => { handleImportFencers('ranking'); setImportMenuOpen(false); }}
+                  >
+                    Importer classement FFE
+                  </button>
+                  {competitionId && (
+                    <>
+                      <button
+                        className="btn btn-ghost"
+                        style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 16px', borderRadius: 0 }}
+                        onClick={() => { handleImportFencersArchive(); setImportMenuOpen(false); }}
+                      >
+                        Importer tireurs + photos (.bpf)
+                      </button>
+                      <button
+                        className="btn btn-ghost"
+                        style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 16px', borderRadius: 0 }}
+                        onClick={() => { handleImportPhotos(); setImportMenuOpen(false); }}
+                      >
+                        Importer photos (.zip)
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
           )}
           <div ref={exportMenuRef} style={{ position: 'relative', display: 'inline-block' }}>
             <button
@@ -334,24 +395,6 @@ const FencerListComponent: React.FC<FencerListProps> = ({
               </div>
             )}
           </div>
-          {competitionId && (
-            <>
-              <button
-                className="btn btn-secondary"
-                onClick={handleImportPhotos}
-                title="Importer des photos depuis un .zip (matching par licence)"
-              >
-                📥 Import Photos
-              </button>
-              <button
-                className="btn btn-secondary"
-                onClick={handleImportFencersArchive}
-                title="Importer tireurs + photos depuis un fichier .bpf"
-              >
-                📦 .bpf
-              </button>
-            </>
-          )}
           <button className="btn btn-primary" onClick={onAddFencer}>
             + {t('fencer.add')}
           </button>
