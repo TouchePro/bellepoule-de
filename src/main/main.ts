@@ -251,6 +251,19 @@ function createWindow(): void {
     icon: path.join(__dirname, '../../resources/icons/icon.png'),
   });
 
+  // Allow camera access for webcam photo capture
+  mainWindow.webContents.session.setPermissionRequestHandler((_webContents, permission, callback) => {
+    if (permission === 'media') {
+      callback(true);
+    } else {
+      callback(false);
+    }
+  });
+
+  mainWindow.webContents.session.setPermissionCheckHandler((_webContents, permission) => {
+    return permission === 'media';
+  });
+
   // Security: Set CSP headers for all requests
   mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
     callback({
@@ -262,6 +275,7 @@ function createWindow(): void {
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
             "font-src 'self' https://fonts.gstatic.com; " +
             "img-src 'self' data: blob:; " +
+            "media-src 'self' blob:; " +
             "connect-src 'self' http://localhost:* https://api.github.com; " +
             "frame-ancestors 'none';",
         ],
