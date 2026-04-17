@@ -24,6 +24,9 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
   useEffect(() => {
     if (isCapturing && videoRef.current && streamRef.current) {
       videoRef.current.srcObject = streamRef.current;
+      videoRef.current.play().catch(err => {
+        logger.error(LogCategory.UI, 'Error playing video stream', err as Error);
+      });
     }
   }, [isCapturing]);
 
@@ -35,6 +38,14 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
     };
   }, []);
 
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setIsCapturing(false);
+  }, []);
+
   const startCamera = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -43,23 +54,61 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
       });
 
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
       setIsCapturing(true);
     } catch (err) {
       logger.error(LogCategory.UI, 'Error accessing camera', err as Error);
-      alert("Impossible d'accéder à la caméra");
+      alert("Impossible d'accéder à la caméra. Vérifiez que la webcam est connectée et que les permissions sont accordées.");
     }
   }, []);
 
-  const stopCamera = useCallback(() => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
+  // Ref so capturePhoto closure always calls the latest takePhoto
+  const takePhotoRef = useRef<() => void>(() => {});
+
+  const takePhoto = useCallback(() => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas) return;
+
+    if (video.readyState < 2 || video.videoWidth === 0 || video.videoHeight === 0) {
+      alert("La caméra n'est pas encore prête, veuillez réessayer.");
+      return;
     }
-    setIsCapturing(false);
-  }, []);
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    try {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      // Mirror to match selfie preview
+      ctx.save();
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0);
+      ctx.restore();
+
+      // Resize to 300×300 with centered square crop
+      const outputCanvas = document.createElement('canvas');
+      outputCanvas.width = 300;
+      outputCanvas.height = 300;
+      const outCtx = outputCanvas.getContext('2d');
+      if (outCtx) {
+        const side = Math.min(canvas.width, canvas.height);
+        const sx = (canvas.width - side) / 2;
+        const sy = (canvas.height - side) / 2;
+        outCtx.drawImage(canvas, sx, sy, side, side, 0, 0, 300, 300);
+        const photoData = outputCanvas.toDataURL('image/jpeg', 0.8);
+        setPhoto(photoData);
+        stopCamera();
+      }
+    } catch (err) {
+      logger.error(LogCategory.UI, 'Error capturing photo', err as Error);
+      alert('Erreur lors de la capture de la photo.');
+    }
+  }, [stopCamera]);
+
+  takePhotoRef.current = takePhoto;
 
   const capturePhoto = useCallback(() => {
     let count = 3;
@@ -70,45 +119,10 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
       if (count <= 0) {
         clearInterval(intervalRef.current!);
         intervalRef.current = null;
-        takePhoto();
+        takePhotoRef.current();
       }
     }, 1000);
   }, []);
-
-  const takePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-
-      if (ctx) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-
-        // Mirror the capture to match the selfie preview
-        ctx.save();
-        ctx.translate(canvas.width, 0);
-        ctx.scale(-1, 1);
-        ctx.drawImage(video, 0, 0);
-        ctx.restore();
-
-        // Resize to 300x300 with centered square crop
-        const outputCanvas = document.createElement('canvas');
-        outputCanvas.width = 300;
-        outputCanvas.height = 300;
-        const outCtx = outputCanvas.getContext('2d');
-        if (outCtx) {
-          const side = Math.min(canvas.width, canvas.height);
-          const sx = (canvas.width - side) / 2;
-          const sy = (canvas.height - side) / 2;
-          outCtx.drawImage(canvas, sx, sy, side, side, 0, 0, 300, 300);
-          const photoData = outputCanvas.toDataURL('image/jpeg', 0.8);
-          setPhoto(photoData);
-          stopCamera();
-        }
-      }
-    }
-  };
 
   const retake = () => {
     setPhoto(null);
@@ -151,6 +165,7 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
             ref={videoRef}
             autoPlay
             playsInline
+            muted
             style={{
               width: '100%',
               borderRadius: '8px',
