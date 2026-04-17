@@ -1971,9 +1971,22 @@ export class RemoteScoreServer {
       );
     }
 
-    this.updateArena(arenaId, {
+    const nextMatch = this.peekNextMatch(arenaId);
+
+    // Mettre à jour l'état en mémoire sans broadcaster (on fait le broadcast manuellement
+    // pour pouvoir inclure nextMatch, absent de Arena)
+    const arenaRef = this.arenas.get(arenaId)!;
+    Object.assign(arenaRef, { status: 'finished', currentMatch: arena.currentMatch });
+
+    this.broadcastArenaUpdate(arenaId, {
+      arenaId,
+      match: arena.currentMatch,
+      scoreA: arena.currentMatch?.scoreA,
+      scoreB: arena.currentMatch?.scoreB,
       status: 'finished',
-      currentMatch: arena.currentMatch,
+      fencerA: arena.currentMatch?.fencerA,
+      fencerB: arena.currentMatch?.fencerB,
+      nextMatch,
     });
 
     // Émettre l'event pour le renderer (pour sauvegarder le score dans les pools)
@@ -1999,6 +2012,48 @@ export class RemoteScoreServer {
         this.loadNextMatch(arenaId);
       }
     }, 3000);
+  }
+
+  private peekNextMatch(arenaId: string): ArenaMatch | null {
+    const arena = this.arenas.get(arenaId);
+    if (!arena || !this.session) return null;
+
+    const currentMatchId = arena.currentMatch?.id;
+    const currentPoolId = arena.currentMatch?.poolId;
+
+    if (currentPoolId && this.sessionMatches.length > 0) {
+      const rawPoolMatches = this.sessionMatches
+        .filter((m: any) => {
+          const matchPoolId = m.poolId || m.pool?.id || `pool-${m.poolNumber || m.number}`;
+          return matchPoolId === currentPoolId;
+        })
+        .map((m: any) => {
+          const scoreUpdate = this.sessionMatchScores.get(m.id);
+          return scoreUpdate ? { ...m, ...scoreUpdate } : m;
+        });
+      const poolMatches = this.applySmartMatchOrder(rawPoolMatches as Match[]).filter(
+        m => m.status !== MatchStatus.FINISHED
+      );
+      const nextMatch = poolMatches.find(m => m.id !== currentMatchId);
+      if (nextMatch) {
+        return {
+          id: nextMatch.id,
+          poolId: currentPoolId,
+          fencerA: nextMatch.fencerA!,
+          fencerB: nextMatch.fencerB!,
+          scoreA: 0,
+          scoreB: 0,
+          status: 'not_started',
+          startTime: null,
+          endTime: null,
+        };
+      }
+    }
+
+    const deQueue = this.arenaMatchQueue.get(arenaId) || [];
+    if (deQueue.length > 0) return deQueue[0];
+
+    return null;
   }
 
   private loadNextMatch(arenaId: string): void {
