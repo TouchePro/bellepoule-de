@@ -1331,9 +1331,10 @@ export class RemoteScoreServer {
         }
         socket.join(`arena:${data.arenaId}`);
 
-        // Envoyer l'état actuel de l'arène
+        // Envoyer l'état actuel de l'arène (thème inclus pour éviter le flash dark au chargement)
         const arena = this.getArena(data.arenaId);
         if (arena) {
+          const override = this.arenaThemeOverrides.get(data.arenaId);
           socket.emit(`arena:${data.arenaId}:update`, {
             arenaId: data.arenaId,
             match: arena.currentMatch,
@@ -1341,6 +1342,8 @@ export class RemoteScoreServer {
             scoreB: arena.currentMatch?.scoreB,
             status: arena.status,
             showPhotos: this.sessionShowPhotos,
+            theme: override?.theme ?? this.sessionTheme,
+            customTheme: override?.customTheme,
             fencerA: arena.currentMatch?.fencerA,
             fencerB: arena.currentMatch?.fencerB,
           });
