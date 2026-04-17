@@ -1343,7 +1343,6 @@ export class RemoteScoreServer {
             showPhotos: this.sessionShowPhotos,
             fencerA: arena.currentMatch?.fencerA,
             fencerB: arena.currentMatch?.fencerB,
-            showPhotos: this.sessionShowPhotos,
           });
         }
       });
