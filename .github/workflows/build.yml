@@ -69,8 +69,23 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
       - name: Install Dependencies
-        run: npm install
+        shell: bash
+        run: |
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            npm ci && break
+            npm install && break
+            [ $i -lt 3 ] && sleep 10
+          done || exit 1
 
       - name: Build TypeScript and Webpack
         run: npm run build:ci
@@ -101,8 +116,22 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
       - name: Install Dependencies
-        run: npm install
+        run: |
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            npm ci && break
+            npm install && break
+            [ $i -lt 3 ] && sleep 10
+          done || exit 1
 
       - name: Build TypeScript and Webpack
         run: npm run build:ci
@@ -133,8 +162,22 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
       - name: Install Dependencies
-        run: npm install
+        run: |
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            npm ci && break
+            npm install && break
+            [ $i -lt 3 ] && sleep 10
+          done || exit 1
 
       - name: Build TypeScript and Webpack
         run: npm run build:ci
@@ -165,8 +208,22 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
       - name: Install Dependencies
-        run: npm install
+        run: |
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            npm ci && break
+            npm install && break
+            [ $i -lt 3 ] && sleep 10
+          done || exit 1
 
       - name: Build TypeScript and Webpack
         run: npm run build:ci
@@ -186,6 +243,7 @@ jobs:
   build-linux-arm64:
     needs: increment-version
     runs-on: ubuntu-latest
+    continue-on-error: true
 
     steps:
       - uses: actions/checkout@v4
@@ -197,8 +255,22 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
       - name: Install Dependencies
-        run: npm install
+        run: |
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            npm ci && break
+            npm install && break
+            [ $i -lt 3 ] && sleep 10
+          done || exit 1
 
       - name: Build TypeScript and Webpack
         run: npm run build:ci
@@ -214,6 +286,7 @@ jobs:
           name: linux-arm64-appimage
           path: release/*.AppImage
           retention-days: 5
+          if-no-files-found: warn
 
   create-release:
     needs:

@@ -7,6 +7,7 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useModalResize } from '../hooks/useModalResize';
 import { Pool, Fencer, Match, MatchStatus, Score, Weapon, FencerStatus } from '../../shared/types';
+import { logger, LogCategory } from '@shared/services/logger';
 import { formatRatio, formatIndex } from '../../shared/utils/poolCalculations';
 import { useToast } from './Toast';
 import { useConfirm } from './ConfirmDialog';
@@ -323,15 +324,18 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   // Export PDF function
   const handleExportPDF = async () => {
     try {
+      const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
       await exportPoolToPDF(pool, {
         title: `Poule ${pool.number} - ${pool.fencers.length} tireurs`,
         includeFinishedMatches: true,
         includePendingMatches: true,
         includePoolStats: true,
+        logoBase64: logo,
+        visibleColumns: getVisibleColumns('pool'),
       });
       showToast(`Export PDF de la poule ${pool.number} généré avec succès`, 'success');
     } catch (error) {
-      console.error("Erreur lors de l'export PDF:", error);
+      logger.error(LogCategory.UI, "Erreur lors de l'export PDF", error as Error);
       showToast(
         `Erreur lors de la génération du PDF: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
         'error'
@@ -479,18 +483,28 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                   fontSize: '3rem',
                   padding: '0.75rem',
                   borderColor:
-                    (parseInt(editScoreA, 10) || 0) > ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) || maxScore || 999)
+                    (parseInt(editScoreA, 10) || 0) >
+                    ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) ||
+                      maxScore ||
+                      999)
                       ? '#ef4444'
                       : undefined,
                   borderWidth:
-                    (parseInt(editScoreA, 10) || 0) > ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) || maxScore || 999)
+                    (parseInt(editScoreA, 10) || 0) >
+                    ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) ||
+                      maxScore ||
+                      999)
                       ? '2px'
                       : undefined,
                 }}
                 value={editScoreA}
                 onChange={e => setEditScoreA(e.target.value)}
                 min="0"
-                max={(editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) || maxScore || undefined}
+                max={
+                  (editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) ||
+                  maxScore ||
+                  undefined
+                }
                 autoFocus
                 onKeyDown={e => {
                   if (e.key === 'Enter') {
@@ -524,18 +538,28 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                   fontSize: '3rem',
                   padding: '0.75rem',
                   borderColor:
-                    (parseInt(editScoreB, 10) || 0) > ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) || maxScore || 999)
+                    (parseInt(editScoreB, 10) || 0) >
+                    ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) ||
+                      maxScore ||
+                      999)
                       ? '#ef4444'
                       : undefined,
                   borderWidth:
-                    (parseInt(editScoreB, 10) || 0) > ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) || maxScore || 999)
+                    (parseInt(editScoreB, 10) || 0) >
+                    ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) ||
+                      maxScore ||
+                      999)
                       ? '2px'
                       : undefined,
                 }}
                 value={editScoreB}
                 onChange={e => setEditScoreB(e.target.value)}
                 min="0"
-                max={(editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) || maxScore || undefined}
+                max={
+                  (editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) ||
+                  maxScore ||
+                  undefined
+                }
                 onKeyDown={e => {
                   if (e.key === 'Enter') {
                     e.preventDefault();

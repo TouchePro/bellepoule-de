@@ -3,7 +3,7 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Fencer, FencerStatus } from '../../shared/types';
 import EditFencerModal from './EditFencerModal';
 import { useTranslation } from '../hooks/useTranslation';
@@ -56,6 +56,18 @@ const FencerListComponent: React.FC<FencerListProps> = ({
   const [sortBy, setSortBy] = useState<'name' | 'club' | 'ranking' | 'age'>('ranking');
   const [photoMessage, setPhotoMessage] = useState<string | null>(null);
   const [editingFencer, setEditingFencer] = useState<Fencer | null>(null);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setExportMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
   const filteredFencers = fencers
     .filter(f => {
       const search = searchTerm.toLowerCase();
@@ -129,10 +141,15 @@ const FencerListComponent: React.FC<FencerListProps> = ({
     });
     if (result && !result.canceled && result.filePath) {
       try {
-        const { count } = await window.electronAPI.file.exportPhotos(competitionId, result.filePath);
-        showPhotoMessage(`${count} photo${count !== 1 ? 's' : ''} exportée${count !== 1 ? 's' : ''}`);
+        const { count } = await window.electronAPI.file.exportPhotos(
+          competitionId,
+          result.filePath
+        );
+        showPhotoMessage(
+          `${count} photo${count !== 1 ? 's' : ''} exportée${count !== 1 ? 's' : ''}`
+        );
       } catch {
-        showPhotoMessage('Erreur lors de l\'export');
+        showPhotoMessage("Erreur lors de l'export");
       }
     }
   };
@@ -145,10 +162,15 @@ const FencerListComponent: React.FC<FencerListProps> = ({
     });
     if (result && result.filePath) {
       try {
-        const { matched, total } = await window.electronAPI.file.importPhotos(competitionId, result.filePath);
-        showPhotoMessage(`${matched}/${total} photo${total !== 1 ? 's' : ''} importée${total !== 1 ? 's' : ''}`);
+        const { matched, total } = await window.electronAPI.file.importPhotos(
+          competitionId,
+          result.filePath
+        );
+        showPhotoMessage(
+          `${matched}/${total} photo${total !== 1 ? 's' : ''} importée${total !== 1 ? 's' : ''}`
+        );
       } catch {
-        showPhotoMessage('Erreur lors de l\'import');
+        showPhotoMessage("Erreur lors de l'import");
       }
     }
   };
@@ -162,10 +184,15 @@ const FencerListComponent: React.FC<FencerListProps> = ({
     });
     if (result && !result.canceled && result.filePath) {
       try {
-        const { count } = await window.electronAPI.file.exportFencersArchive(competitionId, result.filePath);
-        showPhotoMessage(`${count} tireur${count !== 1 ? 's' : ''} exporté${count !== 1 ? 's' : ''} (.bpf)`);
+        const { count } = await window.electronAPI.file.exportFencersArchive(
+          competitionId,
+          result.filePath
+        );
+        showPhotoMessage(
+          `${count} tireur${count !== 1 ? 's' : ''} exporté${count !== 1 ? 's' : ''} (.bpf)`
+        );
       } catch {
-        showPhotoMessage('Erreur lors de l\'export .bpf');
+        showPhotoMessage("Erreur lors de l'export .bpf");
       }
     }
   };
@@ -178,11 +205,14 @@ const FencerListComponent: React.FC<FencerListProps> = ({
     });
     if (result && result.filePath) {
       try {
-        const { added, updated } = await window.electronAPI.file.importFencersArchive(competitionId, result.filePath);
+        const { added, updated } = await window.electronAPI.file.importFencersArchive(
+          competitionId,
+          result.filePath
+        );
         showPhotoMessage(`${added} ajouté${added !== 1 ? 's' : ''}, ${updated} mis à jour (.bpf)`);
         if (onFencersImported) onFencersImported();
       } catch {
-        showPhotoMessage('Erreur lors de l\'import .bpf');
+        showPhotoMessage("Erreur lors de l'import .bpf");
       }
     }
   };
@@ -266,20 +296,44 @@ const FencerListComponent: React.FC<FencerListProps> = ({
               📥 Importer
             </button>
           )}
-          <button
-            className="btn btn-secondary"
-            onClick={() => handleExportFencers('txt')}
-            title="Exporter en TXT"
-          >
-            TXT
-          </button>
-          <button
-            className="btn btn-secondary"
-            onClick={() => handleExportFencers('fff')}
-            title="Exporter en FFF"
-          >
-            FFF
-          </button>
+          <div ref={exportMenuRef} style={{ position: 'relative', display: 'inline-block' }}>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setExportMenuOpen(o => !o)}
+              title="Exporter"
+            >
+              📤 Exporter ▾
+            </button>
+            {exportMenuOpen && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                right: 0,
+                zIndex: 1000,
+                background: 'var(--bg-secondary, #2a2a3e)',
+                border: '1px solid var(--border-color, #444)',
+                borderRadius: '6px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                minWidth: '160px',
+                padding: '4px 0',
+              }}>
+                <button
+                  className="btn btn-ghost"
+                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 16px', borderRadius: 0 }}
+                  onClick={() => { handleExportFencers('txt'); setExportMenuOpen(false); }}
+                >
+                  Exporter TXT
+                </button>
+                <button
+                  className="btn btn-ghost"
+                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 16px', borderRadius: 0 }}
+                  onClick={() => { handleExportFencers('fff'); setExportMenuOpen(false); }}
+                >
+                  Exporter FFF
+                </button>
+              </div>
+            )}
+          </div>
           {competitionId && (
             <>
               <button
@@ -287,14 +341,14 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                 onClick={handleExportPhotos}
                 title="Exporter les photos des tireurs (.zip)"
               >
-                📷 Photos
+                📤 Export Photos
               </button>
               <button
                 className="btn btn-secondary"
                 onClick={handleImportPhotos}
                 title="Importer des photos depuis un .zip (matching par licence)"
               >
-                📂 Photos
+                📥 Import Photos
               </button>
               <button
                 className="btn btn-secondary"
@@ -319,7 +373,10 @@ const FencerListComponent: React.FC<FencerListProps> = ({
       </div>
 
       {photoMessage && (
-        <div className="alert alert-success mb-4" style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}>
+        <div
+          className="alert alert-success mb-4"
+          style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
+        >
           {photoMessage}
         </div>
       )}

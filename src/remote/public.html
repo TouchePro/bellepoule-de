@@ -1,0 +1,942 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vue Publique – BellePoule</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+@font-face {
+      font-family: 'ArmadaBold';
+      src: url('data:font/woff;base64,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') format('woff');
+      font-weight: normal;
+      font-style: normal;
+      font-display: block;
+    }
+
+          * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'ArmadaBold', sans-serif;
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        height: 100vh;
+        overflow: hidden;
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .header {
+        background: rgba(0, 0, 0, 0.4);
+        padding: 0.4rem 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        backdrop-filter: blur(10px);
+        flex-shrink: 0;
+      }
+
+      .arena-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .arena-title span {
+        font-size: 1.4rem;
+      }
+
+      .status-section {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+      }
+
+      .inversion-toggle {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        padding: 0.25rem 0.75rem;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 0.5rem;
+        transition: background 0.2s;
+      }
+
+      .inversion-toggle:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      .inversion-toggle input {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+      }
+
+      .inversion-toggle label {
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .match-status-badge {
+        padding: 0.3rem 0.9rem;
+        border-radius: 2rem;
+        font-weight: 700;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .status-waiting {
+        background: #6b7280;
+      }
+      .status-progress {
+        background: #22c55e;
+        animation: pulse-status 2s infinite;
+      }
+      .status-finished {
+        background: #f59e0b;
+      }
+
+      @keyframes pulse-status {
+        0%,
+        100% {
+          opacity: 1;
+          box-shadow: 0 0 20px rgba(34, 197, 94, 0.5);
+        }
+        50% {
+          opacity: 0.8;
+          box-shadow: 0 0 40px rgba(34, 197, 94, 0.8);
+        }
+      }
+
+      .connection-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        opacity: 0.8;
+      }
+
+      .connection-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #ef4444;
+        animation: pulse 2s infinite;
+      }
+
+      .connection-dot.connected {
+        background: #22c55e;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      .main-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: stretch;
+        padding: 0.4rem;
+        gap: 0.4rem;
+        overflow: hidden;
+      }
+
+      /* Affichage du match */
+      .match-display {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 0.5rem;
+        padding: 0.5rem;
+        width: 100%;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        display: none;
+        flex: 1;
+        flex-direction: column;
+      }
+
+      .match-display.active {
+        display: flex;
+      }
+
+      .fencers-row {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 0.5rem;
+        align-items: stretch;
+        flex: 1;
+      }
+
+      .fencers-row.reversed {
+        grid-template-columns: 1fr auto 1fr;
+        direction: rtl;
+      }
+
+      .fencers-row.reversed > * {
+        direction: ltr;
+      }
+
+      .fencer-display {
+        text-align: center;
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+        border: 4px solid transparent;
+        transition: all 0.3s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .fencer-display.red-side {
+        background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+        border-color: #dc2626;
+      }
+
+      .fencer-display.green-side {
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        border-color: #16a34a;
+      }
+
+      .color-badge {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        margin: 0 auto 0.3rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      }
+
+      .color-badge.red {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+      }
+
+      .color-badge.green {
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+      }
+
+      .fencer-name {
+        font-size: clamp(1rem, 3.5vw, 5vh);
+        font-weight: 800;
+        color: #1f2937;
+        margin-bottom: 0.15rem;
+      }
+
+      .fencer-club {
+        font-size: clamp(0.7rem, 2vw, 3vh);
+        color: #6b7280;
+        margin-bottom: 0.4rem;
+        font-weight: 500;
+      }
+
+      /* Cartons */
+      .cards-container {
+        display: flex;
+        justify-content: center;
+        gap: 0.35rem;
+        margin-bottom: 0.4rem;
+        min-height: 30px;
+      }
+
+      .card {
+        width: 22px;
+        height: 30px;
+        border-radius: 3px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 0.75rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        animation: card-appear 0.3s ease-out;
+      }
+
+      @keyframes card-appear {
+        from {
+          transform: scale(0) rotate(-10deg);
+          opacity: 0;
+        }
+        to {
+          transform: scale(1) rotate(0);
+          opacity: 1;
+        }
+      }
+
+      .card-white {
+        background: #f3f4f6;
+        color: #374151;
+        border: 2px solid #9ca3af;
+      }
+
+      .card-yellow {
+        background: #fbbf24;
+        color: #92400e;
+        border: 2px solid #d97706;
+      }
+
+      .card-red {
+        background: #ef4444;
+        color: white;
+        border: 2px solid #dc2626;
+      }
+
+      .score-big {
+        font-family: Impact, 'Arial Black', 'Haettenschweiler', sans-serif;
+        font-size: clamp(8rem, 22vw, 38vh);
+        font-weight: 900;
+        line-height: 1;
+        letter-spacing: 0.03em;
+        font-variant-numeric: tabular-nums;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      .score-big.red {
+        color: #dc2626;
+        text-shadow: 0 0 10px rgba(220, 38, 38, 0.7),
+                     0 0 40px rgba(220, 38, 38, 0.4),
+                     0 0 80px rgba(220, 38, 38, 0.15);
+      }
+
+      .score-big.green {
+        color: #16a34a;
+        text-shadow: 0 0 10px rgba(22, 163, 74, 0.7),
+                     0 0 40px rgba(22, 163, 74, 0.4),
+                     0 0 80px rgba(22, 163, 74, 0.15);
+      }
+
+      .vs-divider {
+        font-size: clamp(1.5rem, 3vw, 5vh);
+        font-weight: 900;
+        color: #ef4444;
+        text-shadow: 2px 2px 4px rgba(239, 68, 68, 0.3);
+        display: flex;
+        align-items: center;
+      }
+
+      /* Chronomètre */
+      .timer-section {
+        margin-top: 0.4rem;
+        text-align: center;
+        flex-shrink: 0;
+      }
+
+      .timer-display {
+        display: block;
+        background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+        padding: 0.4rem 1rem;
+        border-radius: 0.5rem;
+        font-size: clamp(4rem, 13vw, 22vh);
+        font-weight: 900;
+        font-family: 'ArmadaBold', 'Courier New', monospace;
+        color: #fff;
+        text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+        letter-spacing: 0.15em;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        border: 4px solid transparent;
+        transition: all 0.3s;
+        width: 100%;
+        line-height: 1.1;
+      }
+
+      .timer-display.running {
+        border-color: #22c55e;
+        color: #22c55e;
+        text-shadow: 0 0 40px rgba(34, 197, 94, 0.6);
+      }
+
+      .timer-display.paused {
+        border-color: #fbbf24;
+        color: #fbbf24;
+        text-shadow: 0 0 40px rgba(251, 191, 36, 0.6);
+      }
+
+      .timer-display.warning {
+        color: #fbbf24;
+        animation: timer-pulse 1s infinite;
+      }
+
+      .timer-display.danger {
+        color: #ef4444;
+        animation: timer-pulse 0.5s infinite;
+      }
+
+      @keyframes timer-pulse {
+        0%,
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.7;
+          transform: scale(1.02);
+        }
+      }
+
+      .sudden-death-banner {
+        margin-top: 0.3rem;
+        padding: 0.3rem 1rem;
+        background: linear-gradient(135deg, #dc2626, #ef4444);
+        color: #fff;
+        font-size: clamp(1.5rem, 4vw, 6vh);
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        border-radius: 0.5rem;
+        text-align: center;
+        animation: timer-pulse 0.8s infinite;
+        display: none;
+      }
+
+      .sudden-death-banner.active {
+        display: block;
+      }
+
+      .timer-label {
+        display: none;
+      }
+
+      /* Écran d'attente */
+      .waiting-screen {
+        text-align: center;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.5rem;
+      }
+
+      .waiting-screen.hidden {
+        display: none;
+      }
+
+      .arena-idle-number {
+        font-size: 20vw;
+        font-weight: 900;
+        line-height: 1;
+        color: rgba(255, 255, 255, 0.9);
+        text-shadow: 0 4px 40px rgba(0, 0, 0, 0.5);
+      }
+
+      .arena-idle-label {
+        font-size: 4vw;
+        font-weight: 300;
+        letter-spacing: 0.5em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.5);
+        margin-top: 0.5rem;
+      }
+
+      /* Écran d'intro photo */
+      .photo-intro {
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        width: 100%;
+        flex: 1;
+        padding: 0.5rem;
+        animation: fadeInScale 0.5s ease-out;
+      }
+
+      .photo-intro.hidden {
+        display: none;
+      }
+
+      @keyframes fadeInScale {
+        from { opacity: 0; transform: scale(0.95); }
+        to   { opacity: 1; transform: scale(1); }
+      }
+
+      .photo-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+        flex: 1;
+      }
+
+      .photo-card-a { color: #22c55e; }
+      .photo-card-b { color: #ef4444; }
+
+      .photo-circle {
+        width: min(30vw, 42vh);
+        height: min(30vw, 42vh);
+        border-radius: 50%;
+        overflow: hidden;
+        border: 6px solid currentColor;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.3);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+      }
+
+      .photo-circle img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: none;
+      }
+
+      .photo-circle .default-icon {
+        width: 65%;
+        height: 65%;
+        fill: currentColor;
+        opacity: 0.7;
+        display: block;
+      }
+
+      .intro-fencer-name {
+        font-size: clamp(1.5rem, 4vw, 7vh);
+        font-weight: 800;
+        text-align: center;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+      }
+
+      .intro-fencer-club {
+        font-size: clamp(0.9rem, 2vw, 3.5vh);
+        opacity: 0.75;
+        text-align: center;
+        font-weight: 500;
+      }
+
+      .vs-center {
+        font-size: clamp(3rem, 7vw, 12vh);
+        font-weight: 900;
+        color: #f59e0b;
+        text-shadow: 0 0 30px rgba(245, 158, 11, 0.7);
+        padding: 0 1rem;
+        flex-shrink: 0;
+      }
+
+      /* Responsive portrait/mobile */
+      @media (max-width: 768px) {
+        .fencers-row {
+          grid-template-columns: 1fr;
+          gap: 0.3rem;
+        }
+
+        .vs-divider {
+          transform: rotate(0deg);
+          margin: 0.2rem 0;
+        }
+
+        .photo-intro {
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .photo-circle {
+          width: min(50vw, 25vh);
+          height: min(50vw, 25vh);
+        }
+
+        .vs-center {
+          padding: 0;
+        }
+
+        .intro-fencer-name {
+          font-size: clamp(1.2rem, 4vw, 5vh);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div class="arena-title">
+        <span>⚔️</span>
+        <span>Arène <span id="arena-number">1</span></span>
+      </div>
+      <div class="status-section">
+        <div class="inversion-toggle">
+          <input type="checkbox" id="inversion-checkbox" />
+          <label for="inversion-checkbox">⇄ Inverser</label>
+        </div>
+        <div class="match-status-badge status-waiting" id="match-status">En attente</div>
+        <div class="connection-indicator">
+          <div id="connection-dot" class="connection-dot"></div>
+          <span id="connection-text">Connexion...</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <!-- Écran d'attente -->
+      <div class="waiting-screen" id="waiting-screen">
+        <div class="arena-idle-number" id="arena-idle-number">1</div>
+        <div class="arena-idle-label">Arène</div>
+      </div>
+
+      <!-- Écran d'intro photo (affiché quand showPhotos=true et statut ready) -->
+      <div class="photo-intro hidden" id="photo-intro">
+        <!-- Tireur A (Vert) -->
+        <div class="photo-card photo-card-a">
+          <div class="photo-circle">
+            <img id="photo-a" src="" alt="" />
+            <svg id="default-icon-a" class="default-icon" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="50" cy="18" r="15"/>
+              <rect x="37" y="10" width="26" height="13" rx="3" opacity="0.35" fill="#000"/>
+              <path d="M33 38 Q50 34 67 38 L70 82 Q50 78 30 82 Z"/>
+              <line x1="67" y1="47" x2="92" y2="31" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
+              <line x1="92" y1="31" x2="100" y2="9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="86" y1="35" x2="97" y2="27" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M36 82 L28 118 M64 82 L72 118" stroke="currentColor" stroke-width="9" stroke-linecap="round" fill="none"/>
+            </svg>
+          </div>
+          <div class="intro-fencer-name" id="intro-name-a">-</div>
+          <div class="intro-fencer-club" id="intro-club-a"></div>
+        </div>
+
+        <!-- VS -->
+        <div class="vs-center">VS</div>
+
+        <!-- Tireur B (Rouge) -->
+        <div class="photo-card photo-card-b">
+          <div class="photo-circle">
+            <img id="photo-b" src="" alt="" />
+            <svg id="default-icon-b" class="default-icon" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="50" cy="18" r="15"/>
+              <rect x="37" y="10" width="26" height="13" rx="3" opacity="0.35" fill="#000"/>
+              <path d="M33 38 Q50 34 67 38 L70 82 Q50 78 30 82 Z"/>
+              <line x1="67" y1="47" x2="92" y2="31" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
+              <line x1="92" y1="31" x2="100" y2="9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="86" y1="35" x2="97" y2="27" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M36 82 L28 118 M64 82 L72 118" stroke="currentColor" stroke-width="9" stroke-linecap="round" fill="none"/>
+            </svg>
+          </div>
+          <div class="intro-fencer-name" id="intro-name-b">-</div>
+          <div class="intro-fencer-club" id="intro-club-b"></div>
+        </div>
+      </div>
+
+      <!-- Affichage du match -->
+      <div class="match-display" id="match-display">
+        <div class="fencers-row">
+          <!-- Tireur A (Vert) -->
+          <div class="fencer-display green-side">
+            <div class="color-badge green"></div>
+            <div class="fencer-name" id="fencer-a-name">-</div>
+            <div class="fencer-club" id="fencer-a-club">-</div>
+            <div class="cards-container" id="fencer-a-cards"></div>
+            <div class="score-big green" id="score-a">0</div>
+          </div>
+
+          <!-- VS -->
+          <div class="vs-divider">VS</div>
+
+          <!-- Tireur B (Rouge) -->
+          <div class="fencer-display red-side">
+            <div class="color-badge red"></div>
+            <div class="fencer-name" id="fencer-b-name">-</div>
+            <div class="fencer-club" id="fencer-b-club">-</div>
+            <div class="cards-container" id="fencer-b-cards"></div>
+            <div class="score-big red" id="score-b">0</div>
+          </div>
+        </div>
+
+        <!-- Chronomètre -->
+        <div class="timer-section">
+          <div class="timer-display" id="timer-display">03:00</div>
+          <div class="sudden-death-banner" id="sudden-death-banner">⚡ MORT SUBITE</div>
+          <div class="timer-label">Temps restant</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      class PublicDisplay {
+        constructor() {
+          this.socket = io();
+          this.arenaId = this.getArenaId();
+          this.arenaNumber = this.arenaNumberFromId();
+          this.currentMatch = null;
+          this.timerSeconds = 180;
+          this.matchStatus = 'idle';
+          this.cardsA = [];
+          this.cardsB = [];
+          this.isSuddenDeath = false;
+          // Clé localStorage indépendante des autres écrans
+          this.inversionEnabled = localStorage.getItem('publicInversionEnabled') === 'true';
+          this.showPhotos = false;
+
+          this.init();
+        }
+
+        getArenaId() {
+          const path = window.location.pathname;
+          const match = path.match(/arene(\d+)/i) || path.match(/arena(\d+)/i);
+          return match ? `arena${match[1]}` : 'arena1';
+        }
+
+        arenaNumberFromId() {
+          return this.arenaId.replace('arena', '');
+        }
+
+        init() {
+          document.getElementById('arena-number').textContent = this.arenaNumber;
+          document.getElementById('arena-idle-number').textContent = this.arenaNumber;
+          this.setupInversionToggle();
+          this.applyInversionState();
+          this.setupSocketListeners();
+        }
+
+        setupInversionToggle() {
+          const checkbox = document.getElementById('inversion-checkbox');
+          checkbox.checked = this.inversionEnabled;
+          checkbox.addEventListener('change', () => {
+            this.inversionEnabled = checkbox.checked;
+            // Clé indépendante de celle de l'écran arène
+            localStorage.setItem('publicInversionEnabled', this.inversionEnabled);
+            this.applyInversionState();
+          });
+        }
+
+        applyInversionState() {
+          const fencersRow = document.querySelector('.fencers-row');
+          if (this.inversionEnabled) {
+            fencersRow.classList.add('reversed');
+          } else {
+            fencersRow.classList.remove('reversed');
+          }
+        }
+
+        setupSocketListeners() {
+          this.socket.on('connect', () => {
+            this.updateConnectionStatus(true);
+            this.socket.emit('join_arena', { arenaId: this.arenaId, role: 'public' });
+          });
+
+          this.socket.on('disconnect', () => {
+            this.updateConnectionStatus(false);
+          });
+
+          this.socket.on(`arena:${this.arenaId}:update`, data => {
+            this.handleArenaUpdate(data);
+          });
+        }
+
+        updateConnectionStatus(connected) {
+          const dot = document.getElementById('connection-dot');
+          const text = document.getElementById('connection-text');
+
+          if (connected) {
+            dot.classList.add('connected');
+            text.textContent = 'Connecté';
+          } else {
+            dot.classList.remove('connected');
+            text.textContent = 'Déconnecté';
+          }
+        }
+
+        handleArenaUpdate(data) {
+          if (data.showPhotos !== undefined) {
+            this.showPhotos = data.showPhotos;
+          }
+
+          if (data.status) {
+            this.matchStatus = data.status;
+            this.updateStatusBadge();
+          }
+
+          if (data.match) {
+            this.currentMatch = data.match;
+            this.updateMatchDisplay();
+            if (this.matchStatus === 'ready' && this.showPhotos) {
+              this.updatePhotoIntro();
+            }
+          }
+
+          if (data.scoreA !== undefined) {
+            document.getElementById('score-a').textContent = data.scoreA;
+          }
+          if (data.scoreB !== undefined) {
+            document.getElementById('score-b').textContent = data.scoreB;
+          }
+
+          if (data.cardsA) {
+            this.cardsA = data.cardsA;
+            this.updateCardsDisplay();
+          }
+          if (data.cardsB) {
+            this.cardsB = data.cardsB;
+            this.updateCardsDisplay();
+          }
+
+          if (data.time !== undefined) {
+            this.timerSeconds = data.time;
+            this.updateTimerDisplay(data.timerStatus);
+          }
+
+          if (data.suddenDeath !== undefined) {
+            this.isSuddenDeath = data.suddenDeath;
+            this.updateSuddenDeathBanner();
+          }
+
+          this.updateVisibility();
+        }
+
+        updateStatusBadge() {
+          const badge = document.getElementById('match-status');
+          badge.className = 'match-status-badge';
+
+          switch (this.matchStatus) {
+            case 'idle':
+            case 'not_started':
+              badge.textContent = 'En attente';
+              badge.classList.add('status-waiting');
+              break;
+            case 'ready':
+            case 'in_progress':
+              badge.textContent = 'En cours';
+              badge.classList.add('status-progress');
+              break;
+            case 'finished':
+              badge.textContent = 'Terminé';
+              badge.classList.add('status-finished');
+              break;
+          }
+        }
+
+        updateMatchDisplay() {
+          if (!this.currentMatch) return;
+
+          const fencerA = this.currentMatch.fencerA || {};
+          const fencerB = this.currentMatch.fencerB || {};
+
+          document.getElementById('fencer-a-name').textContent =
+            `${fencerA.lastName || ''} ${fencerA.firstName || ''}`.trim() || '-';
+          document.getElementById('fencer-a-club').textContent = fencerA.club || '';
+
+          document.getElementById('fencer-b-name').textContent =
+            `${fencerB.lastName || ''} ${fencerB.firstName || ''}`.trim() || '-';
+          document.getElementById('fencer-b-club').textContent = fencerB.club || '';
+
+          const sA = this.currentMatch.scoreA;
+          const sB = this.currentMatch.scoreB;
+          document.getElementById('score-a').textContent =
+            (typeof sA === 'object' ? (sA?.value ?? 0) : sA) ?? 0;
+          document.getElementById('score-b').textContent =
+            (typeof sB === 'object' ? (sB?.value ?? 0) : sB) ?? 0;
+        }
+
+        updateCardsDisplay() {
+          const renderCards = cards =>
+            cards
+              .map(
+                card =>
+                  `<div class="card card-${card}">${card === 'white' ? 'B' : card === 'yellow' ? 'J' : 'R'}</div>`
+              )
+              .join('');
+
+          document.getElementById('fencer-a-cards').innerHTML = renderCards(this.cardsA);
+          document.getElementById('fencer-b-cards').innerHTML = renderCards(this.cardsB);
+        }
+
+        updateTimerDisplay(timerStatus) {
+          const minutes = Math.floor(this.timerSeconds / 60);
+          const seconds = this.timerSeconds % 60;
+          const display = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+          const timerEl = document.getElementById('timer-display');
+          timerEl.textContent = display;
+
+          timerEl.className = 'timer-display';
+
+          if (timerStatus === 'running') {
+            timerEl.classList.add('running');
+          } else if (timerStatus === 'paused') {
+            timerEl.classList.add('paused');
+          }
+
+          if (this.timerSeconds <= 10) {
+            timerEl.classList.add('danger');
+          } else if (this.timerSeconds <= 30) {
+            timerEl.classList.add('warning');
+          }
+        }
+
+        updateSuddenDeathBanner() {
+          const banner = document.getElementById('sudden-death-banner');
+          if (!banner) return;
+          if (this.isSuddenDeath) {
+            banner.classList.add('active');
+          } else {
+            banner.classList.remove('active');
+          }
+        }
+
+        updateVisibility() {
+          const waitingScreen = document.getElementById('waiting-screen');
+          const matchDisplay = document.getElementById('match-display');
+          const photoIntro = document.getElementById('photo-intro');
+
+          if (this.matchStatus === 'idle' || this.matchStatus === 'not_started') {
+            waitingScreen.classList.remove('hidden');
+            matchDisplay.classList.remove('active');
+            photoIntro.classList.add('hidden');
+            this.isSuddenDeath = false;
+            this.updateSuddenDeathBanner();
+          } else if (this.matchStatus === 'ready' && this.showPhotos && this.currentMatch) {
+            waitingScreen.classList.add('hidden');
+            matchDisplay.classList.remove('active');
+            photoIntro.classList.remove('hidden');
+            this.updatePhotoIntro();
+          } else {
+            waitingScreen.classList.add('hidden');
+            photoIntro.classList.add('hidden');
+            matchDisplay.classList.add('active');
+          }
+        }
+
+        updatePhotoIntro() {
+          if (!this.currentMatch) return;
+          const fA = this.currentMatch.fencerA || {};
+          const fB = this.currentMatch.fencerB || {};
+
+          document.getElementById('intro-name-a').textContent =
+            `${fA.lastName || ''} ${fA.firstName || ''}`.trim() || '-';
+          document.getElementById('intro-club-a').textContent = fA.club || '';
+
+          document.getElementById('intro-name-b').textContent =
+            `${fB.lastName || ''} ${fB.firstName || ''}`.trim() || '-';
+          document.getElementById('intro-club-b').textContent = fB.club || '';
+
+          this.setFencerPhoto('a', fA.photo);
+          this.setFencerPhoto('b', fB.photo);
+        }
+
+        setFencerPhoto(side, photoBase64) {
+          const img = document.getElementById(`photo-${side}`);
+          const icon = document.getElementById(`default-icon-${side}`);
+          if (photoBase64) {
+            img.src = photoBase64.startsWith('data:') ? photoBase64 : `data:image/jpeg;base64,${photoBase64}`;
+            img.style.display = 'block';
+            icon.style.display = 'none';
+          } else {
+            img.style.display = 'none';
+            icon.style.display = 'block';
+          }
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        new PublicDisplay();
+      });
+    </script>
+  </body>
+</html>

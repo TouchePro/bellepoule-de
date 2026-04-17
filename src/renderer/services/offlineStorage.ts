@@ -5,6 +5,7 @@
  */
 
 import { Competition, Fencer, Pool, Match } from '../../shared/types';
+import { logger, LogCategory } from '@shared/services/logger';
 
 export interface PendingAction {
   id: string;
@@ -34,13 +35,17 @@ export class OfflineStorageManager {
       const request = indexedDB.open(this.dbName, this.dbVersion);
 
       request.onerror = () => {
-        console.error('[OfflineStorage] Failed to open database:', request.error);
+        logger.error(
+          LogCategory.DATABASE,
+          '[OfflineStorage] Failed to open database',
+          request.error as Error
+        );
         reject(request.error);
       };
 
       request.onsuccess = () => {
         this.db = request.result;
-        console.log('[OfflineStorage] Database initialized');
+        logger.debug(LogCategory.DATABASE, '[OfflineStorage] Database initialized');
         resolve();
       };
 
@@ -144,7 +149,10 @@ export class OfflineStorageManager {
     };
 
     await this.store('pendingActions', pendingAction);
-    console.log('[OfflineStorage] Added pending action:', pendingAction);
+    logger.debug(LogCategory.DATABASE, '[OfflineStorage] Added pending action', {
+      id: pendingAction.id,
+      type: pendingAction.type,
+    });
     return pendingAction.id;
   }
 

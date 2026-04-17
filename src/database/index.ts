@@ -158,7 +158,7 @@ export class DatabaseManager {
         id TEXT PRIMARY KEY, competition_id TEXT NOT NULL,
         ref INTEGER NOT NULL, last_name TEXT NOT NULL, first_name TEXT NOT NULL,
         birth_date TEXT, gender TEXT NOT NULL, nationality TEXT DEFAULT 'FRA',
-        league TEXT, club TEXT, license TEXT, ranking INTEGER,
+        region TEXT, club TEXT, license TEXT, ranking INTEGER,
         status TEXT DEFAULT 'N', seed_number INTEGER, final_ranking INTEGER,
         pool_stats TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
       )
@@ -232,21 +232,49 @@ export class DatabaseManager {
       )
     `);
 
+    // Table pour les snapshots d'abandon (annulation d'abandon)
+    this.db.run(`
+      CREATE TABLE IF NOT EXISTS fencer_abandons (
+        id TEXT PRIMARY KEY,
+        fencer_id TEXT NOT NULL,
+        competition_id TEXT NOT NULL,
+        previous_status TEXT NOT NULL,
+        abandon_type TEXT NOT NULL,
+        match_snapshots TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      )
+    `);
+
     // Colonnes de timing sur les matchs (migration idempotente)
     try {
       this.db.run(`ALTER TABLE matches ADD COLUMN start_time TEXT`);
-    } catch { /* colonne déjà présente */ }
+    } catch {
+      /* colonne déjà présente */
+    }
     try {
       this.db.run(`ALTER TABLE matches ADD COLUMN end_time TEXT`);
-    } catch { /* colonne déjà présente */ }
+    } catch {
+      /* colonne déjà présente */
+    }
     try {
       this.db.run(`ALTER TABLE matches ADD COLUMN duration INTEGER`);
-    } catch { /* colonne déjà présente */ }
+    } catch {
+      /* colonne déjà présente */
+    }
 
     // Photo des tireurs (migration idempotente)
     try {
       this.db.run(`ALTER TABLE fencers ADD COLUMN photo TEXT`);
-    } catch { /* colonne déjà présente */ }
+    } catch {
+      /* colonne déjà présente */
+    }
+
+    // Renommage league → region (migration idempotente)
+    try {
+      this.db.run(`ALTER TABLE fencers RENAME COLUMN league TO region`);
+    } catch {
+      /* colonne déjà renommée */
+    }
 
     // Création des index pour optimiser les performances
     this.createIndexes();
@@ -553,7 +581,7 @@ export class DatabaseManager {
     try {
       this.db.run(
         `
-        INSERT INTO fencers (id, competition_id, ref, last_name, first_name, birth_date, gender, nationality, club, league, license, ranking, status, photo, created_at, updated_at)
+        INSERT INTO fencers (id, competition_id, ref, last_name, first_name, birth_date, gender, nationality, club, region, license, ranking, status, photo, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
         [
@@ -566,7 +594,7 @@ export class DatabaseManager {
           fencer.gender || 'M',
           fencer.nationality || 'FRA',
           fencer.club || null,
-          fencer.league || null,
+          fencer.region || null,
           fencer.license || null,
           fencer.ranking || null,
           fencer.status || 'N',
@@ -618,7 +646,7 @@ export class DatabaseManager {
         birthDate: row.birth_date ? new Date(row.birth_date as string) : undefined,
         gender: row.gender as Gender,
         nationality: row.nationality as string,
-        league: row.league as string,
+        region: row.region as string,
         club: row.club as string,
         license: row.license as string,
         ranking: row.ranking as number,
@@ -755,7 +783,7 @@ export class DatabaseManager {
       gender: 'gender',
       nationality: 'nationality',
       club: 'club',
-      league: 'league',
+      region: 'region',
       license: 'license',
       ranking: 'ranking',
       status: 'status',
@@ -840,73 +868,32 @@ export class DatabaseManager {
     }
   }
 
-  public deleteAllFencers(competitionId: string): void {
-    if (!this.db) throw new Error('Database not open');
-
-    try {
-      // Supprimer les associations pool_fencers des tireurs de cette compétition
-      this.db.run(
-        `DELETE FROM pool_fencers WHERE fencer_id IN (SELECT id FROM fencers WHERE competition_id = ?)`,
-        [competitionId]
-      );
-      // Supprimer les matchs des tireurs de cette compétition
-      this.db.run(
-        `DELETE FROM matches WHERE fencer_a_id IN (SELECT id FROM fencers WHERE competition_id = ?) OR fencer_b_id IN (SELECT id FROM fencers WHERE competition_id = ?)`,
-        [competitionId, competitionId]
-      );
-      // Supprimer tous les tireurs
-      this.db.run('DELETE FROM fencers WHERE competition_id = ?', [competitionId]);
-
-      this.save();
-      console.log(`Tous les tireurs de la compétition ${competitionId} supprimés`);
-    } catch (error) {
-      console.error('Erreur lors de la suppression de tous les tireurs:', error);
-      throw error;
-    }
-  }
-
-  public deleteAllFencers(): void {
+  public deleteAllFencers(competitionId?: string): void {
     if (!this.db) throw new Error('Database not open');
     
-    console.log('Tentative de suppression de tous les tireurs');
-    
     try {
-      // Compter les tireurs avant suppression
-      const countStmt = this.db.prepare('SELECT COUNT(*) as count FROM fencers');
-      countStmt.bind([]);
-      const countRow = countStmt.getAsObject();
-      countStmt.step();
-      countStmt.free();
-      const fencerCount = countRow?.count || 0;
-      
-      if (fencerCount === 0) {
-        console.log('Aucun tireur à supprimer');
-        return;
+      if (competitionId) {
+        // Suppression filtrée par compétition
+        this.db.run(
+          `DELETE FROM pool_fencers WHERE fencer_id IN (SELECT id FROM fencers WHERE competition_id = ?)`,
+          [competitionId]
+        );
+        this.db.run(
+          `DELETE FROM matches WHERE fencer_a_id IN (SELECT id FROM fencers WHERE competition_id = ?) OR fencer_b_id IN (SELECT id FROM fencers WHERE competition_id = ?)`,
+          [competitionId, competitionId]
+        );
+        this.db.run('DELETE FROM fencers WHERE competition_id = ?', [competitionId]);
+        console.log(`Tous les tireurs de la compétition ${competitionId} supprimés`);
+      } else {
+        // Suppression de tous les tireurs
+        this.db.run('DELETE FROM pool_fencers');
+        this.db.run('DELETE FROM matches');
+        this.db.run('DELETE FROM fencers');
+        console.log('Tous les tireurs supprimés');
       }
-      
-      console.log(`${fencerCount} tireurs à supprimer`);
-      
-      // Supprimer d'abord toutes les associations pool_fencers
-      const poolFencerResult = this.db.run('DELETE FROM pool_fencers');
-      console.log('Associations pool_fencers supprimées:', poolFencerResult.changes);
-      
-      // Supprimer tous les matchs
-      const matchResult = this.db.run('DELETE FROM matches');
-      console.log('Matchs supprimés:', matchResult.changes);
-      
-      // Supprimer tous les tireurs
-      const result = this.db.run('DELETE FROM fencers');
-      console.log('Tireurs supprimés:', result.changes);
-      
-      // Vérifier que la suppression a réussi
-      if (result.changes !== fencerCount) {
-        console.warn(`Attention: ${result.changes} tireurs supprimés sur ${fencerCount} attendus`);
-      }
-      
       this.save();
-      console.log('Suppression de tous les tireurs terminée avec succès');
     } catch (error) {
-      console.error('Erreur lors de la suppression de tous les tireurs:', error);
+      console.error('Erreur lors de la suppression des tireurs:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
       throw new Error(`Erreur de base de données lors de la suppression des tireurs: ${errorMessage}`);
     }
@@ -1550,11 +1537,14 @@ export class DatabaseManager {
     }
     matchStmt.free();
 
-    const matches = matchRows.map((row) => {
+    const matches = matchRows.map(row => {
       const side: 'A' | 'B' = row.fencer_a_id === fencerId ? 'A' : 'B';
-      const opponentId = side === 'A' ? (row.fencer_b_id as string | null) : (row.fencer_a_id as string | null);
-      const opponentLastName = side === 'A' ? (row.opp_b_last as string | null) : (row.opp_a_last as string | null);
-      const opponentFirstName = side === 'A' ? (row.opp_b_first as string | null) : (row.opp_a_first as string | null);
+      const opponentId =
+        side === 'A' ? (row.fencer_b_id as string | null) : (row.fencer_a_id as string | null);
+      const opponentLastName =
+        side === 'A' ? (row.opp_b_last as string | null) : (row.opp_a_last as string | null);
+      const opponentFirstName =
+        side === 'A' ? (row.opp_b_first as string | null) : (row.opp_a_first as string | null);
 
       // Touches de ce combattant dans ce match
       const touches: any[] = [];
@@ -1625,6 +1615,72 @@ export class DatabaseManager {
     return { matches };
   }
 
+  // ─── Abandon snapshots ──────────────────────────────────────────────────────
+
+  public saveAbandonSnapshot(
+    fencerId: string,
+    competitionId: string,
+    previousStatus: string,
+    abandonType: string,
+    matchSnapshots: { matchId: string; status: string; scoreA: unknown; scoreB: unknown }[]
+  ): void {
+    if (!this.db) throw new Error('Database not open');
+    const now = new Date().toISOString();
+    // Supprime un éventuel snapshot existant pour ce tireur
+    this.db.run('DELETE FROM fencer_abandons WHERE fencer_id = ?', [fencerId]);
+    this.db.run(
+      `INSERT INTO fencer_abandons (id, fencer_id, competition_id, previous_status, abandon_type, match_snapshots, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        `abandon-${fencerId}-${Date.now()}`,
+        fencerId,
+        competitionId,
+        previousStatus,
+        abandonType,
+        JSON.stringify(matchSnapshots),
+        now,
+      ]
+    );
+    this.save();
+  }
+
+  public getAbandonSnapshot(fencerId: string): {
+    id: string;
+    fencerId: string;
+    competitionId: string;
+    previousStatus: string;
+    abandonType: string;
+    matchSnapshots: { matchId: string; status: string; scoreA: unknown; scoreB: unknown }[];
+    createdAt: string;
+  } | null {
+    if (!this.db) return null;
+    const stmt = this.db.prepare(
+      'SELECT * FROM fencer_abandons WHERE fencer_id = ? ORDER BY created_at DESC LIMIT 1'
+    );
+    stmt.bind([fencerId]);
+    if (!stmt.step()) {
+      stmt.free();
+      return null;
+    }
+    const row = stmt.getAsObject();
+    stmt.free();
+    return {
+      id: row.id as string,
+      fencerId: row.fencer_id as string,
+      competitionId: row.competition_id as string,
+      previousStatus: row.previous_status as string,
+      abandonType: row.abandon_type as string,
+      matchSnapshots: JSON.parse(row.match_snapshots as string),
+      createdAt: row.created_at as string,
+    };
+  }
+
+  public deleteAbandonSnapshot(fencerId: string): void {
+    if (!this.db) return;
+    this.db.run('DELETE FROM fencer_abandons WHERE fencer_id = ?', [fencerId]);
+    this.save();
+  }
+
   // Export/Import
   public exportToFile(filepath: string): void {
     if (!this.db) throw new Error('Database not open');
@@ -1657,3 +1713,4 @@ export class DatabaseManager {
 }
 
 export const db = new DatabaseManager();
+

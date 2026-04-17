@@ -182,6 +182,30 @@ describe('calculateFencerPoolStats', () => {
     expect(stats.matchesPlayed).toBe(0);
     expect(stats.victoryRatio).toBe(0);
   });
+
+  it("devrait annuler les matchs déjà disputés contre un tireur déclaré forfait", () => {
+    // Règle : si un adversaire est FORFAIT, les points acquis lors de TOUS
+    // ses matchs (même déjà joués) sont annulés pour les deux parties.
+    const forfaitFencer = createMockFencer('ff', 99, 'Forfait');
+    forfaitFencer.status = FencerStatus.FORFAIT;
+
+    // Match already played before forfeit was declared — statut FORFAIT
+    // maintenant propagé dans la référence fencer du match (comme handleFencerForfeit le fait)
+    const matchVsFF: Match = {
+      ...createMockMatch('m_ff', fencer1, forfaitFencer, 5, 2),
+      fencerB: forfaitFencer, // statut FORFAIT dans la référence
+    };
+
+    const otherMatch = createMockMatch('m2', fencer1, fencer2, 5, 3);
+
+    const stats = calculateFencerPoolStats(fencer1, [matchVsFF, otherMatch]);
+
+    // Seul le match contre fencer2 doit compter
+    expect(stats.matchesPlayed).toBe(1);
+    expect(stats.victories).toBe(1);
+    expect(stats.touchesScored).toBe(5);
+    expect(stats.touchesReceived).toBe(3);
+  });
 });
 
 // ============================================================================
@@ -216,7 +240,48 @@ describe('calculatePoolRanking', () => {
     expect(ranking[1].victories).toBe(0);
   });
 
-  it('should exclude excluded, forfeit and abandoned fencers', () => {
+  it('should rank by ratio, not absolute victories — same wins but different match counts', () => {
+    // fencerA: 2 wins / 3 matches → ratio 0.667
+    // fencerB: 2 wins / 2 matches → ratio 1.000
+    // Same absolute victories, fencerB must rank first
+    const fencerA = createMockFencer('fA', 1, 'TwoThree');
+    const fencerB = createMockFencer('fB', 2, 'TwoTwo');
+    const fencerC = createMockFencer('fC', 3, 'Helper1');
+    const fencerD = createMockFencer('fD', 4, 'Helper2');
+
+    // fencerA: beats C (m1), beats D (m2), loses to C (m3) → 2W/3M
+    // fencerB: beats C (m4), beats D (m5)                  → 2W/2M
+    const matches: Match[] = [
+      createMockMatch('m1', fencerA, fencerC, 5, 2), // A beats C
+      createMockMatch('m2', fencerA, fencerD, 5, 2), // A beats D
+      createMockMatch('m3', fencerC, fencerA, 5, 2), // C beats A
+      createMockMatch('m4', fencerB, fencerC, 5, 2), // B beats C
+      createMockMatch('m5', fencerB, fencerD, 5, 2), // B beats D
+    ];
+
+    const pool: Pool = {
+      id: 'p1',
+      number: 1,
+      phaseId: 'ph1',
+      fencers: [fencerA, fencerB, fencerC, fencerD],
+      matches,
+      referees: [],
+      isComplete: true,
+      hasError: false,
+      ranking: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const ranking = calculatePoolRanking(pool);
+
+    expect(ranking[0].fencer.id).toBe(fencerB.id); // ratio 1.000 (2V/2M)
+    expect(ranking[0].ratio).toBeCloseTo(1.0);
+    expect(ranking[1].fencer.id).toBe(fencerA.id); // ratio 0.667 (2V/3M)
+    expect(ranking[1].ratio).toBeCloseTo(2 / 3);
+  });
+
+  it('should rank active fencer first and append excluded/forfeit/abandoned at the end', () => {
     const fencer1 = createMockFencer('f1', 1, 'Active');
     const fencer2 = createMockFencer('f2', 2, 'Excluded');
     const fencer3 = createMockFencer('f3', 3, 'Forfeit');
@@ -242,8 +307,11 @@ describe('calculatePoolRanking', () => {
 
     const ranking = calculatePoolRanking(pool);
 
-    expect(ranking).toHaveLength(1);
-    expect(ranking[0].fencer.id).toBe(fencer1.id);
+    expect(ranking).toHaveLength(4);
+    expect(ranking[0].fencer.id).toBe(fencer1.id); // tireur actif → rang 1
+    expect(ranking.find(r => r.fencer.id === fencer2.id)).toBeDefined(); // exclu présent
+    expect(ranking.find(r => r.fencer.id === fencer3.id)).toBeDefined(); // forfait présent
+    expect(ranking.find(r => r.fencer.id === fencer4.id)).toBeDefined(); // abandon présent
   });
 });
 

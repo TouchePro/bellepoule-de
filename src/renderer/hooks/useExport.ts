@@ -6,6 +6,7 @@
 
 import { useCallback } from 'react';
 import { Competition, Fencer, Pool, PoolRanking, FencerStatus } from '../../shared/types';
+import { logger, LogCategory } from '@shared/services/logger';
 import { FinalResult } from '../components/TableauView';
 import { exportFencersToTXT, exportFencersToFFF } from '../../shared/utils/fencerExport';
 import { exportMultiplePoolsToPDF } from '../../shared/utils/pdfExport';
@@ -61,7 +62,7 @@ export const useExport = ({ competition, showToast }: UseExportProps) => {
           showToast(`Export ${extension.toUpperCase()} des tireurs réussi`, 'success');
         }
       } catch (error) {
-        console.error('Export fencers failed:', error);
+        logger.error(LogCategory.UI, 'Export fencers failed', error as Error);
         showToast('Export des tireurs échoué', 'error');
       }
     },
@@ -147,7 +148,7 @@ export const useExport = ({ competition, showToast }: UseExportProps) => {
         downloadFile(content, filename, mimeType);
         showToast(`Export ${format.toUpperCase()} du classement réussi`, 'success');
       } catch (error) {
-        console.error('Export ranking failed:', error);
+        logger.error(LogCategory.UI, 'Export ranking failed', error as Error);
         showToast(`Export ${format.toUpperCase()} échoué`, 'error');
       }
     },
@@ -199,7 +200,7 @@ export const useExport = ({ competition, showToast }: UseExportProps) => {
         downloadFile(content, filename, mimeType);
         showToast(`Export ${format.toUpperCase()} des résultats réussi`, 'success');
       } catch (error) {
-        console.error('Export results failed:', error);
+        logger.error(LogCategory.UI, 'Export results failed', error as Error);
         showToast(`Export ${format.toUpperCase()} échoué`, 'error');
       }
     },
@@ -210,13 +211,15 @@ export const useExport = ({ competition, showToast }: UseExportProps) => {
   const exportPoolsPDF = useCallback(
     async (pools: Pool[], currentPoolRound: number) => {
       try {
+        const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
         await exportMultiplePoolsToPDF(
           pools,
-          `Toutes les Poules - ${competition.title} - Tour ${currentPoolRound}`
+          `Toutes les Poules - ${competition.title} - Tour ${currentPoolRound}`,
+          logo
         );
         showToast(`Export PDF de ${pools.length} poules généré avec succès`, 'success');
       } catch (error) {
-        console.error("Erreur lors de l'export PDF des poules:", error);
+        logger.error(LogCategory.UI, "Erreur lors de l'export PDF des poules", error as Error);
         showToast(
           `Erreur lors de la génération du PDF: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
           'error'
@@ -235,7 +238,7 @@ export const useExport = ({ competition, showToast }: UseExportProps) => {
         downloadFile(content, filename, 'text/html');
         showToast('Export HTML des résultats réussi', 'success');
       } catch (error) {
-        console.error('Export HTML failed:', error);
+        logger.error(LogCategory.UI, 'Export HTML failed', error as Error);
         showToast('Export HTML échoué', 'error');
       }
     },
@@ -251,7 +254,7 @@ export const useExport = ({ competition, showToast }: UseExportProps) => {
         downloadFile(content, filename, 'text/csv');
         showToast('Export CSV Excel réussi', 'success');
       } catch (error) {
-        console.error('Export CSV Excel failed:', error);
+        logger.error(LogCategory.UI, 'Export CSV Excel failed', error as Error);
         showToast('Export CSV Excel échoué', 'error');
       }
     },
@@ -267,7 +270,7 @@ export const useExport = ({ competition, showToast }: UseExportProps) => {
         downloadFile(content, filename, 'application/xml');
         showToast('Export XML FFE réussi', 'success');
       } catch (error) {
-        console.error('Export XML failed:', error);
+        logger.error(LogCategory.UI, 'Export XML failed', error as Error);
         showToast('Export XML échoué', 'error');
       }
     },
@@ -283,7 +286,7 @@ export const useExport = ({ competition, showToast }: UseExportProps) => {
         downloadFile(content, filename, 'text/csv');
         showToast('Export statistiques détaillées réussi', 'success');
       } catch (error) {
-        console.error('Export stats failed:', error);
+        logger.error(LogCategory.UI, 'Export stats failed', error as Error);
         showToast('Export statistiques échoué', 'error');
       }
     },

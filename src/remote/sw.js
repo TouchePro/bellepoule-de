@@ -5,7 +5,8 @@
  */
 
 const CACHE_NAME = 'bellepoule-referee-v1';
-const ASSETS = ['/', '/referee.html', '/arena.html', '/styles.css', '/app.js'];
+// Seuls les fichiers réellement servis (pas de /styles.css ni /app.js qui sont inline)
+const ASSETS = ['/', '/referee.html', '/arena.html'];
 
 const OFFLINE_QUEUE_DB = 'bellepoule-offline-queue';
 const ACTIONS_STORE = 'actions';

@@ -132,4 +132,3 @@ export function isFencerExcluded(fencerId: string, matchCards: Card[]): boolean 
   const fencerCards = getCardsForFencer(fencerId, matchCards);
   return fencerCards.some(card => card.resultingExclusion);
 }
-

@@ -20,21 +20,27 @@ import { useColumnVisibility, RANKING_COLUMNS, ColumnId } from '../hooks/useColu
 interface PoolRankingViewProps {
   pools: Pool[];
   weapon?: Weapon;
+  ranking?: PoolRanking[];
+  isInitialRanking?: boolean;
   onGoToTableau?: () => void;
   onGoToResults?: () => void;
   hasDirectElimination?: boolean;
   onExport?: (format: 'csv' | 'xml' | 'pdf') => void;
   onPoolsChange?: (pools: Pool[], rankingChanged: boolean) => void;
+  onRankingChange?: (ranking: PoolRanking[]) => void;
 }
 
 const PoolRankingView: React.FC<PoolRankingViewProps> = ({
   pools,
   weapon,
+  ranking: externalRanking,
+  isInitialRanking = false,
   onGoToTableau,
   onGoToResults,
   hasDirectElimination = true,
   onExport,
   onPoolsChange,
+  onRankingChange,
 }) => {
   const { showToast } = useToast();
   const { isColumnVisible, toggleColumn } = useColumnVisibility();
@@ -42,15 +48,20 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
   const [recalcKey, setRecalcKey] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const [editedRanking, setEditedRanking] = useState<PoolRanking[]>([]);
+  const [rankDrafts, setRankDrafts] = useState<Record<string, string>>({});
   const [showColumnMenu, setShowColumnMenu] = useState(false);
   const columnMenuRef = useRef<HTMLDivElement>(null);
+  const justSaved = useRef(false);
 
   // Calculer le classement général selon le type d'arme
-  const overallRanking = useMemo(() => {
+  const computedRanking = useMemo(() => {
     // Utiliser recalcKey pour forcer le recalcul
     const _ = recalcKey;
     return isLaserSabre ? calculateOverallRankingQuest(pools) : calculateOverallRanking(pools);
   }, [pools, isLaserSabre, recalcKey]);
+
+  // Utiliser le classement fourni par le parent s'il existe, sinon le calculé
+  const overallRanking = externalRanking?.length ? externalRanking : computedRanking;
 
   // Recalculer les classements de toutes les poules
   const handleRecalculate = useCallback(() => {
@@ -74,10 +85,11 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
       JSON.stringify(overallRanking.map(r => r.fencer.id)) !==
       JSON.stringify(newOverallRanking.map(r => r.fencer.id));
 
-    // Mettre à jour les pools si callback fourni
+    // Mettre à jour les pools et le classement global dans le parent
     if (onPoolsChange) {
       onPoolsChange(updatedPools, rankingChanged);
     }
+    onRankingChange?.(newOverallRanking);
 
     // Forcer le recalcul du classement général
     setRecalcKey(prev => prev + 1);
@@ -87,11 +99,15 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
     } else {
       showToast('Classement recalculé avec succès !', 'success');
     }
-  }, [pools, isLaserSabre, onPoolsChange, showToast, overallRanking]);
+  }, [pools, isLaserSabre, onPoolsChange, onRankingChange, showToast, overallRanking]);
 
   // Initialiser le classement édité quand le classement global change
   useEffect(() => {
     if (!isEditing) {
+      if (justSaved.current) {
+        justSaved.current = false;
+        return;
+      }
       setEditedRanking(overallRanking);
     }
   }, [overallRanking, isEditing]);
@@ -118,6 +134,14 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
     };
   }, [showColumnMenu]);
 
+  useEffect(() => {
+    if (isEditing) {
+      setRankDrafts(
+        Object.fromEntries(editedRanking.map(r => [r.fencer.id, String(r.rank)]))
+      );
+    }
+  }, [editedRanking, isEditing]);
+
   const handleExport = (format: 'csv' | 'xml' | 'pdf') => {
     if (onExport) {
       onExport(format);
@@ -139,7 +163,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
   };
 
   const handlePrint = () => {
-    window.print();
+    window.electronAPI.print();
   };
 
   // Déplacer un tireur vers le haut
@@ -162,11 +186,47 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
     setEditedRanking(newRanking);
   };
 
-  // Sauvegarder les modifications
+  // Déplacer un tireur directement à un rang cible (saisie clavier)
+  const moveToRank = (fromIndex: number, newRank: number) => {
+    const toIndex = Math.max(0, Math.min(editedRanking.length - 1, newRank - 1));
+    if (toIndex === fromIndex) return;
+    const newRanking = [...editedRanking];
+    const [moved] = newRanking.splice(fromIndex, 1);
+    newRanking.splice(toIndex, 0, moved);
+    newRanking.forEach((r, i) => (r.rank = i + 1));
+    setEditedRanking(newRanking);
+  };
+
+  // Sauvegarder les modifications et propager vers le parent
   const saveChanges = () => {
-    // TODO: Propager les changements vers les pools si nécessaire
+    const rankingChanged =
+      JSON.stringify(overallRanking.map(r => r.fencer.id)) !==
+      JSON.stringify(editedRanking.map(r => r.fencer.id));
+
+    if (onPoolsChange) {
+      // Propager rang ET questPoints dans chaque pool (les deux peuvent avoir changé)
+      const fencerToGlobalRank = new Map(editedRanking.map(r => [r.fencer.id, r.rank]));
+      const fencerToQuestPoints = new Map(editedRanking.map(r => [r.fencer.id, r.questPoints]));
+      const updatedPools = pools.map(pool => ({
+        ...pool,
+        ranking: pool.ranking.map(pr => ({
+          ...pr,
+          rank: fencerToGlobalRank.get(pr.fencer.id) ?? pr.rank,
+          questPoints: fencerToQuestPoints.get(pr.fencer.id) ?? pr.questPoints,
+        })),
+      }));
+      onPoolsChange(updatedPools, rankingChanged);
+    }
+
+    onRankingChange?.(editedRanking);
+    justSaved.current = true;
     setIsEditing(false);
-    showToast('Classement modifié avec succès !', 'success');
+    showToast(
+      rankingChanged
+        ? 'Classement modifié — le tableau sera régénéré avec le nouvel ordre.'
+        : 'Classement sauvegardé (inchangé).',
+      rankingChanged ? 'warning' : 'success'
+    );
   };
 
   const generateCSV = () => {
@@ -218,21 +278,26 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
         }}
       >
         <div>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>Classement après poules</h2>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>
+            {isInitialRanking ? 'Classement initial' : 'Classement après poules'}
+          </h2>
           <p className="text-sm text-muted">
-            {pools.length} poule{pools.length > 1 ? 's' : ''} • {editedRanking.length} tireur
-            {editedRanking.length > 1 ? 's' : ''}
+            {isInitialRanking
+              ? `${editedRanking.length} tireur${editedRanking.length > 1 ? 's' : ''} • Classement de départ`
+              : `${pools.length} poule${pools.length > 1 ? 's' : ''} • ${editedRanking.length} tireur${editedRanking.length > 1 ? 's' : ''}`}
             {isEditing && ' (mode édition)'}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button
-            className="btn btn-secondary"
-            onClick={handleRecalculate}
-            title="Recalculer le classement"
-          >
-            🔄 Recalculer
-          </button>
+          {!isInitialRanking && (
+            <button
+              className="btn btn-secondary"
+              onClick={handleRecalculate}
+              title="Recalculer le classement"
+            >
+              🔄 Recalculer
+            </button>
+          )}
           <button
             className="btn btn-secondary"
             onClick={() => handleExport('csv')}
@@ -245,7 +310,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
           </button>
           <button
             className="btn btn-secondary"
-            onClick={() => setIsEditing(!isEditing)}
+            onClick={() => (isEditing ? saveChanges() : setIsEditing(true))}
             title={isEditing ? 'Terminer la modification' : 'Modifier le classement'}
           >
             {isEditing ? '✓ Terminer' : '✏️ Modifier'}
@@ -347,34 +412,74 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
               <tr key={ranking.fencer.id}>
                 {isVisible('rank') && (
                   <td style={{ fontWeight: '600' }}>
-                    {ranking.rank}
-                    {isEditing && (
-                      <div style={{ display: 'flex', flexDirection: 'column', marginLeft: '4px' }}>
-                        <button
-                          onClick={() => moveUp(index)}
-                          disabled={index === 0}
-                          style={{
-                            padding: '0 2px',
-                            fontSize: '10px',
-                            cursor: index === 0 ? 'not-allowed' : 'pointer',
-                            opacity: index === 0 ? 0.3 : 1,
+                    {isEditing ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                        <input
+                          type="number"
+                          min={1}
+                          max={editedRanking.length}
+                          value={rankDrafts[ranking.fencer.id] ?? String(ranking.rank)}
+                          onChange={e =>
+                            setRankDrafts(prev => ({ ...prev, [ranking.fencer.id]: e.target.value }))
+                          }
+                          onBlur={e => {
+                            const val = parseInt(e.target.value);
+                            if (!isNaN(val) && val >= 1 && val <= editedRanking.length) {
+                              moveToRank(index, val);
+                            } else {
+                              setRankDrafts(prev => ({
+                                ...prev,
+                                [ranking.fencer.id]: String(ranking.rank),
+                              }));
+                            }
                           }}
-                        >
-                          ▲
-                        </button>
-                        <button
-                          onClick={() => moveDown(index)}
-                          disabled={index === editedRanking.length - 1}
-                          style={{
-                            padding: '0 2px',
-                            fontSize: '10px',
-                            cursor: index === editedRanking.length - 1 ? 'not-allowed' : 'pointer',
-                            opacity: index === editedRanking.length - 1 ? 0.3 : 1,
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                            if (e.key === 'Escape') {
+                              setRankDrafts(prev => ({
+                                ...prev,
+                                [ranking.fencer.id]: String(ranking.rank),
+                              }));
+                              (e.target as HTMLInputElement).blur();
+                            }
                           }}
-                        >
-                          ▼
-                        </button>
+                          style={{
+                            width: '44px',
+                            textAlign: 'center',
+                            padding: '1px 4px',
+                            fontWeight: '600',
+                          }}
+                        />
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <button
+                            onClick={() => moveUp(index)}
+                            disabled={index === 0}
+                            style={{
+                              padding: '0 2px',
+                              fontSize: '10px',
+                              cursor: index === 0 ? 'not-allowed' : 'pointer',
+                              opacity: index === 0 ? 0.3 : 1,
+                            }}
+                          >
+                            ▲
+                          </button>
+                          <button
+                            onClick={() => moveDown(index)}
+                            disabled={index === editedRanking.length - 1}
+                            style={{
+                              padding: '0 2px',
+                              fontSize: '10px',
+                              cursor:
+                                index === editedRanking.length - 1 ? 'not-allowed' : 'pointer',
+                              opacity: index === editedRanking.length - 1 ? 0.3 : 1,
+                            }}
+                          >
+                            ▼
+                          </button>
+                        </div>
                       </div>
+                    ) : (
+                      ranking.rank
                     )}
                   </td>
                 )}
@@ -407,7 +512,22 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
                 )}
                 {isVisible('quest') && isLaserSabre && (
                   <td style={{ textAlign: 'center', fontWeight: '600', color: '#7c3aed' }}>
-                    {ranking.questPoints || 0}
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        min="0"
+                        value={ranking.questPoints ?? 0}
+                        onChange={e => {
+                          const val = Math.max(0, parseInt(e.target.value) || 0);
+                          setEditedRanking(prev =>
+                            prev.map((r, i) => (i === index ? { ...r, questPoints: val } : r))
+                          );
+                        }}
+                        style={{ width: '52px', textAlign: 'center', padding: '1px 4px' }}
+                      />
+                    ) : (
+                      ranking.questPoints ?? 0
+                    )}
                   </td>
                 )}
                 {isVisible('index') && (

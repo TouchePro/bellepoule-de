@@ -5,6 +5,7 @@
  */
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { logger, LogCategory } from '@shared/services/logger';
 
 export type Language = 'fr' | 'en' | 'br' | 'ca' | 'de' | 'es' | 'zh-HK';
 export type TranslationKey = string;
@@ -106,7 +107,7 @@ const loadTranslations = async (language: Language): Promise<Translations> => {
       return await response.json();
     }
   } catch {
-    console.warn(`Failed to load translations for ${language}`);
+    logger.warn(LogCategory.UI, `Failed to load translations for ${language}`);
   }
   return getFallbackTranslations(language);
 };
@@ -135,8 +136,10 @@ export const TranslationProvider: React.FC<TranslationProviderProps> = ({ childr
       setLanguage(newLanguage);
       setTranslations(loadedTranslations);
       localStorage.setItem('bellepoule-language', newLanguage);
+      // Rebuild native Electron menu in the new language
+      window.electronAPI?.notifyLanguageChanged?.(newLanguage);
     } catch (error) {
-      console.error('Failed to change language:', error);
+      logger.error(LogCategory.UI, 'Failed to change language', error as Error);
     } finally {
       setIsLoading(false);
     }

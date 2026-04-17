@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { logger, LogCategory } from '@shared/services/logger';
 
 const STORAGE_KEY = 'bellepoule_column_visibility';
 
@@ -66,7 +67,7 @@ const loadFromStorage = (): VisibilityState => {
       };
     }
   } catch (e) {
-    console.error('Failed to load column visibility:', e);
+    logger.error(LogCategory.UI, 'Failed to load column visibility', e as Error);
   }
   return DEFAULT_VISIBILITY;
 };
@@ -75,7 +76,7 @@ const saveToStorage = (state: VisibilityState): void => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch (e) {
-    console.error('Failed to save column visibility:', e);
+    logger.error(LogCategory.UI, 'Failed to save column visibility', e as Error);
   }
 };
 

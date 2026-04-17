@@ -174,7 +174,7 @@ export interface Fencer extends BaseEntity {
   birthDate?: Date; // Date de naissance
   gender: Gender; // Sexe
   nationality: string; // Nation (code ISO)
-  league?: string; // Ligue/Région
+  region?: string; // Région
   club?: string; // Club
   license?: string; // Numéro de licence
   ranking?: number; // Classement
@@ -217,7 +217,7 @@ export interface Referee extends BaseEntity {
   birthDate?: Date;
   gender: Gender;
   nationality: string;
-  league?: string;
+  region?: string;
   club?: string; // Club d'affiliation pour éviter les conflits d'intérêts
   license?: string;
   category?: string; // Niveau d'arbitrage (Régional, National, International)
@@ -327,7 +327,7 @@ export interface PoolPhaseConfig {
   seeding: 'serpentine' | 'sequential' | 'random'; // Méthode de répartition
   separation: {
     byClub: boolean; // Séparer par club
-    byLeague: boolean; // Séparer par ligue
+    byRegion: boolean; // Séparer par région
     byNation: boolean; // Séparer par nation
   };
 }
@@ -484,7 +484,7 @@ export interface AppState {
 }
 
 export interface UISettings {
-  language: 'fr' | 'en' | 'de' | 'es' | 'nl';
+  language: 'fr' | 'en' | 'de' | 'es' | 'br' | 'ca' | 'zh-HK';
   theme: 'light' | 'dark' | 'system';
   fontSize: 'small' | 'medium' | 'large';
   showTips: boolean;

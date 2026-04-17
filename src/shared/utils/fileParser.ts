@@ -752,7 +752,7 @@ function parseFFELine(
 
   // Nettoyer les autres champs en fonction du format
   let nationality: string;
-  let league: string | undefined;
+  let region: string | undefined;
   let club: string | undefined;
   let license: string | undefined;
   let ranking: number | undefined;
@@ -766,7 +766,7 @@ function parseFFELine(
       // Champs inconnus (indices 5, 6, 7) - ignorés pour l'instant
       // Section club (indices 8-13): Licence,Ligue,Club,Classement,Nationalité?,?
       license = (parts[8] || '').trim() || undefined;
-      league = (parts[9] || '').trim() || undefined;
+      region = (parts[9] || '').trim() || undefined;
       club = (parts[10] || '').trim() || undefined;
 
       // La position finale est dans la section positionInfo (indice 14)
@@ -795,7 +795,7 @@ function parseFFELine(
       nationality = (parts[4] || '').trim() || 'FRA';
 
       license = (parts[8] || '').trim() || undefined;
-      league = (parts[9] || '').trim() || undefined;
+      region = (parts[9] || '').trim() || undefined;
       club = (parts[10] || '').trim() || undefined;
 
       // Chercher le classement à l'index 10 (4ème position dans section 2: Licence,Ligue,Club,Classement,?,?)
@@ -812,7 +812,7 @@ function parseFFELine(
 
       // Essayer d'extraire les infos club des champs disponibles
       license = (parts[7] || '').trim() || undefined;
-      league = (parts[8] || '').trim() || undefined;
+      region = (parts[8] || '').trim() || undefined;
       club = (parts[9] || '').trim() || undefined;
 
       // Chercher le classement dans les derniers champs (avant le ? final)
@@ -833,7 +833,7 @@ function parseFFELine(
   } else {
     // Format standard: NOM, PRENOM, SEXE, DATE, NATION, LIGUE, CLUB, LICENCE
     nationality = (parts[4] || '').trim() || 'FRA';
-    league = (parts[5] || '').trim() || undefined;
+    region = (parts[5] || '').trim() || undefined;
     club = (parts[6] || '').trim() || undefined;
     license = (parts[7] || '').trim() || undefined;
   }
@@ -859,7 +859,7 @@ function parseFFELine(
     gender,
     birthDate,
     nationality,
-    league,
+    region,
     club,
     license,
     ranking,
@@ -904,7 +904,7 @@ export function parseXMLFile(content: string): ImportResult {
           firstName,
           gender,
           nationality: getName('Nation') || 'FRA',
-          league: getName('Ligue') || undefined,
+          region: getName('Ligue') || undefined,
           club: getName('Club') || undefined,
           license: getName('Licence') || undefined,
           ranking: parseInt(getName('Classement')) || undefined,

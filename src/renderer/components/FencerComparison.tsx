@@ -79,7 +79,7 @@ export const FencerComparison: React.FC<FencerComparisonProps> = ({
 
     // Chercher les matchs de poule
     pools.forEach(pool => {
-      pool.matches.forEach(match => {
+      (pool.matches ?? []).forEach(match => {
         const matchFencerAId = match.fencerA?.id;
         const matchFencerBId = match.fencerB?.id;
 

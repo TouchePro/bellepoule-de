@@ -6,6 +6,7 @@
 
 import { useEffect, useCallback } from 'react';
 import { PoolRanking } from '../../shared/types';
+import { logger, LogCategory } from '@shared/services/logger';
 import { FinalResult } from '../components/TableauView';
 
 type Phase = 'checkin' | 'poolprep' | 'pools' | 'ranking' | 'tableau' | 'results' | 'remote';
@@ -84,7 +85,7 @@ export const useMenuEvents = ({
           }
           break;
         default:
-          console.warn(`Export ${format} non disponible en phase ${currentPhase}`);
+          logger.warn(LogCategory.UI, `Export ${format} non disponible en phase ${currentPhase}`);
       }
     },
     [
@@ -123,7 +124,7 @@ export const useMenuEvents = ({
 
     if (window.electronAPI.onFileOpened) {
       window.electronAPI.onFileOpened(async (filepath: string) => {
-        console.log('Fichier ouvert:', filepath);
+        logger.debug(LogCategory.UI, 'Fichier ouvert', { filepath });
         await loadFencers();
       });
     }

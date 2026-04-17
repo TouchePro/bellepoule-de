@@ -135,9 +135,9 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
   const processVoiceCommand = (command: string) => {
     // Simple voice commands
     if (command.includes('point') || command.includes('touche')) {
-      if (command.includes('rouge') || command.includes('a')) {
+      if (command.includes('vert') || command.includes('a')) {
         handleScoreIncrement('A');
-      } else if (command.includes('vert') || command.includes('b')) {
+      } else if (command.includes('rouge') || command.includes('b')) {
         handleScoreIncrement('B');
       }
     } else if (command.includes('annuler')) {
@@ -159,7 +159,8 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
       onScoreUpdate(newScore, scoreB);
 
       if (newScore >= maxScore) {
-        handleMatchEnd();
+        // Pause le chronomètre pour permettre une correction d'arbitrage
+        setIsRunning(false);
       }
     } else {
       const newScore = Math.min(scoreB + points, maxScore);
@@ -167,7 +168,8 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
       onScoreUpdate(scoreA, newScore);
 
       if (newScore >= maxScore) {
-        handleMatchEnd();
+        // Pause le chronomètre pour permettre une correction d'arbitrage
+        setIsRunning(false);
       }
     }
   };
@@ -235,14 +237,14 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
           <div className="grid grid-cols-2 gap-8 mb-8">
             {/* Fencer A */}
             <div className={`text-center ${getSwipeAnimation()}`}>
-              <div className="bg-red-500 text-white rounded-lg p-6 mb-4">
+              <div className="bg-green-500 text-white rounded-lg p-6 mb-4">
                 <div className="text-lg font-medium">
                   {fencerA.firstName} {fencerA.lastName}
                 </div>
                 <div className="text-sm opacity-75">N°{fencerA.ref}</div>
               </div>
               <div className="bg-white rounded-lg shadow-lg p-8">
-                <div className="text-6xl font-bold text-gray-800 mb-4">{scoreA}</div>
+                <div className="text-6xl font-digital font-bold text-gray-800 mb-4">{scoreA}</div>
                 {/* Zone buttons for Sabre Laser */}
                 <div className="grid grid-cols-3 gap-2 mb-4">
                   {ZONES.map(({ zone, points, label, desc, color }) => (
@@ -287,14 +289,14 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
 
             {/* Fencer B */}
             <div className={`text-center ${getSwipeAnimation()}`}>
-              <div className="bg-green-500 text-white rounded-lg p-6 mb-4">
+              <div className="bg-red-500 text-white rounded-lg p-6 mb-4">
                 <div className="text-lg font-medium">
                   {fencerB.firstName} {fencerB.lastName}
                 </div>
                 <div className="text-sm opacity-75">N°{fencerB.ref}</div>
               </div>
               <div className="bg-white rounded-lg shadow-lg p-8">
-                <div className="text-6xl font-bold text-gray-800 mb-4">{scoreB}</div>
+                <div className="text-6xl font-digital font-bold text-gray-800 mb-4">{scoreB}</div>
                 {/* Zone buttons for Sabre Laser */}
                 <div className="grid grid-cols-3 gap-2 mb-4">
                   {ZONES.map(({ zone, points, label, desc, color }) => (

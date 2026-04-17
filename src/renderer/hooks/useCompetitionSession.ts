@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Pool, PoolRanking } from '../../shared/types';
+import { logger, LogCategory } from '@shared/services/logger';
 import { TableauMatch, FinalResult } from '../components/TableauView';
 
 export type Phase = 'checkin' | 'poolprep' | 'pools' | 'ranking' | 'tableau' | 'results' | 'remote';
@@ -18,6 +19,7 @@ interface SessionState {
   tableauMatches: TableauMatch[];
   finalResults: FinalResult[];
   currentPoolRound: number;
+  skipPoolPhase: boolean;
   poolPrepParams: {
     poolCount: number;
     minFencersPerPool: number;
@@ -39,6 +41,7 @@ interface UseCompetitionSessionProps {
   overallRanking: PoolRanking[];
   tableauMatches: TableauMatch[];
   finalResults: FinalResult[];
+  skipPoolPhase: boolean;
   poolPrepParams: {
     poolCount: number;
     minFencersPerPool: number;
@@ -83,6 +86,7 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
       tableauMatches: props.tableauMatches,
       finalResults: props.finalResults,
       currentPoolRound: props.currentPoolRound,
+      skipPoolPhase: props.skipPoolPhase,
       poolPrepParams: {
         poolCount: props.poolPrepParams?.poolCount || 0,
         minFencersPerPool: props.poolPrepParams?.minFencersPerPool || 5,
@@ -98,7 +102,7 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
     try {
       await window.electronAPI.db.saveSessionState(props.competitionId, state);
     } catch (e) {
-      console.error('Failed to save session state:', e);
+      logger.error(LogCategory.UI, 'Failed to save session state', e as Error);
     }
   }, [props, isLoaded]);
 
@@ -123,6 +127,7 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
           tableauMatches: typedState.tableauMatches || [],
           finalResults: typedState.finalResults || [],
           currentPoolRound: typedState.uiState?.currentPoolRound || 1,
+          skipPoolPhase: typedState.skipPoolPhase ?? false,
           poolPrepParams: typedState.poolPrepParams || {
             poolCount: 0,
             minFencersPerPool: 5,
@@ -130,10 +135,10 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
           },
         });
 
-        console.log('Session state restored');
+        logger.debug(LogCategory.UI, 'Session state restored');
       }
     } catch (e) {
-      console.error('Failed to restore session state:', e);
+      logger.error(LogCategory.UI, 'Failed to restore session state', e as Error);
     }
     setIsLoaded(true);
   }, [props.competitionId]);

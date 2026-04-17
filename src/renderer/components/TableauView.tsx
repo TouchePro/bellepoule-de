@@ -9,10 +9,7 @@ import { Fencer, PoolRanking } from '../../shared/types';
 import { useToast } from './Toast';
 import { useModalResize } from '../hooks/useModalResize';
 import Bracket from './Bracket';
-import {
-  exportTableauToPDF,
-  MAX_MATCHES_PER_PAGE_TABLEAU,
-} from '../../shared/utils/pdfExport';
+import { exportTableauToPDF, MAX_MATCHES_PER_PAGE_TABLEAU } from '../../shared/utils/pdfExport';
 
 interface BracketMatch {
   id: string;
@@ -43,7 +40,6 @@ export interface FinalResult {
   rank: number;
   fencer: Fencer;
   eliminatedAt: string;
-  questPoints?: number; // Total points Quest (Sabre Laser)
   poolTouches?: number; // Touches marquées en poules
   tableTouches?: number; // Touches marquées en tableau
   totalTouches?: number; // Total pour départage (poules + tableau)
@@ -496,7 +492,8 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     const perPage = Math.max(1, Math.min(pdfMatchesPerPage, MAX_MATCHES_PER_PAGE_TABLEAU));
     const title = `Tableau de ${tableauSize}`;
     try {
-      await exportTableauToPDF(matches, perPage, title);
+      const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
+      await exportTableauToPDF(matches, perPage, title, logo);
       setShowPdfModal(false);
     } catch (e) {
       showToast((e as Error).message, 'error');
@@ -555,12 +552,6 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     return touches;
   };
 
-  // Helper: récupérer les points Quest d'un tireur depuis le ranking des poules
-  const getPoolQuestPoints = (fencerId: string): number => {
-    const poolRank = ranking.find(r => r.fencer.id === fencerId);
-    return poolRank?.questPoints ?? 0;
-  };
-
   // Helper: récupérer les touches marquées en poules
   const getPoolTouches = (fencerId: string): number => {
     const poolRank = ranking.find(r => r.fencer.id === fencerId);
@@ -584,7 +575,6 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         rank: 1,
         fencer: finalMatch.winner,
         eliminatedAt: 'Vainqueur',
-        questPoints: winnerPoolData?.questPoints,
         poolTouches: winnerPoolData?.touchesScored,
         tableTouches: getTableTouches(finalMatch.winner.id, matchList),
         totalTouches:
@@ -601,7 +591,6 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           rank: 2,
           fencer: loser,
           eliminatedAt: 'Finale',
-          questPoints: loserPoolData?.questPoints,
           poolTouches: loserPoolData?.touchesScored,
           tableTouches: getTableTouches(loser.id, matchList),
           totalTouches: (loserPoolData?.touchesScored ?? 0) + getTableTouches(loser.id, matchList),
@@ -621,7 +610,6 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         rank: 3,
         fencer: thirdPlaceMatch.winner,
         eliminatedAt: 'Petite Finale',
-        questPoints: winnerPoolData?.questPoints,
         poolTouches: winnerPoolData?.touchesScored,
         tableTouches: getTableTouches(thirdPlaceMatch.winner.id, matchList),
         totalTouches:
@@ -642,7 +630,6 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           rank: 4,
           fencer: fourthPlace,
           eliminatedAt: 'Petite Finale',
-          questPoints: fourthPoolData?.questPoints,
           poolTouches: fourthPoolData?.touchesScored,
           tableTouches: getTableTouches(fourthPlace.id, matchList),
           totalTouches:
@@ -667,45 +654,32 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
       const roundMatches = matchList.filter(m => m.round === round && m.winner);
       const losersData: Array<{
         fencer: Fencer;
-        poolQuestPoints: number;
+        poolRank: number;
         poolTouches: number;
         tableTouches: number;
-        totalQuest: number;
         totalTouches: number;
       }> = [];
-
-      // DEBUG: console.log(`Round ${round}: ${roundMatches.length} matchs avec gagnant`);
 
       for (const match of roundMatches) {
         const loser = match.fencerA?.id === match.winner?.id ? match.fencerB : match.fencerA;
         if (loser && !processed.has(loser.id)) {
-          const poolQuest = getPoolQuestPoints(loser.id);
+          const poolRankEntry = ranking.find(r => r.fencer.id === loser.id);
           const poolTou = getPoolTouches(loser.id);
           const tableTou = getTableTouches(loser.id, matchList);
 
           losersData.push({
             fencer: loser,
-            poolQuestPoints: poolQuest,
+            poolRank: poolRankEntry?.rank ?? 9999,
             poolTouches: poolTou,
             tableTouches: tableTou,
-            totalQuest: poolQuest + tableTou, // Points Quest totaux pour départage
             totalTouches: poolTou + tableTou,
           });
           processed.add(loser.id);
-          // DEBUG: console.log(`  Perdant: ${loser.lastName} - Points Quest poules: ${poolQuest}, Tableau touches: ${tableTou}, Total: ${poolQuest + tableTou}`);
         }
       }
 
-      // Issue #59: Trier les perdants par points Quest décroissants (poules + tableau)
-      // En cas d'égalité, utiliser les touches marquées
-      losersData.sort((a, b) => {
-        // D'abord par points Quest totaux (décroissant)
-        if (b.totalQuest !== a.totalQuest) {
-          return b.totalQuest - a.totalQuest;
-        }
-        // En cas d'égalité, par touches totales (décroissant)
-        return b.totalTouches - a.totalTouches;
-      });
+      // Trier par classement de poules (croissant — meilleur classé en poules = meilleur rang final)
+      losersData.sort((a, b) => a.poolRank - b.poolRank);
 
       // Issue #60: Assigner des rangs distincts (pas le même rang pour tous)
       for (const loserData of losersData) {
@@ -713,12 +687,10 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           rank: currentRank,
           fencer: loserData.fencer,
           eliminatedAt: getRoundName(round),
-          questPoints: loserData.totalQuest,
           poolTouches: loserData.poolTouches,
           tableTouches: loserData.tableTouches,
           totalTouches: loserData.totalTouches,
         });
-        // DEBUG: console.log(`  Rang ${currentRank}: ${loserData.fencer.lastName} (${loserData.totalQuest} pts Quest)`);
         currentRank++;
       }
     }
@@ -1639,7 +1611,8 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                 <button
                   className={`btn ${!matches.find(m => m.id === selectedMatchForArena)?.arena ? 'btn-primary' : 'btn-secondary'}`}
                   onClick={() => {
-                    const oldArena = matches.find(m => m.id === selectedMatchForArena)?.arena ?? null;
+                    const oldArena =
+                      matches.find(m => m.id === selectedMatchForArena)?.arena ?? null;
                     const updatedMatches = matches.map(m =>
                       m.id === selectedMatchForArena ? { ...m, arena: null } : m
                     );
@@ -1661,7 +1634,8 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                       key={arenaNum}
                       className={`btn ${matches.find(m => m.id === selectedMatchForArena)?.arena === arenaNum ? 'btn-primary' : 'btn-secondary'}`}
                       onClick={() => {
-                        const oldArena = matches.find(m => m.id === selectedMatchForArena)?.arena ?? null;
+                        const oldArena =
+                          matches.find(m => m.id === selectedMatchForArena)?.arena ?? null;
                         const updatedMatches = matches.map(m =>
                           m.id === selectedMatchForArena ? { ...m, arena: arenaNum } : m
                         );
@@ -1674,7 +1648,9 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                     >
                       Piste {arenaNum}
                       {queueCount > 0 && (
-                        <span style={{ fontSize: '0.7rem', marginLeft: '0.3rem', color: '#6b7280' }}>
+                        <span
+                          style={{ fontSize: '0.7rem', marginLeft: '0.3rem', color: '#6b7280' }}
+                        >
                           (+{queueCount})
                         </span>
                       )}

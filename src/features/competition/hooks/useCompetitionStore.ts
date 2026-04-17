@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
+import { useShallow } from 'zustand/shallow';
 import {
   CompetitionState,
   CompetitionActions,
@@ -131,3 +132,21 @@ export const useCompetitionStore = create<CompetitionState & CompetitionActions>
     { name: 'CompetitionStore' }
   )
 );
+
+// ── Selector hooks ───────────────────────────────────────────────────────────
+export const useCompetitions = () => useCompetitionStore(useShallow(s => s.competitions));
+export const useCurrentCompetition = () => useCompetitionStore(s => s.currentCompetition);
+export const useCompetitionLoading = () => useCompetitionStore(s => s.isLoading);
+export const useCompetitionError = () => useCompetitionStore(s => s.error);
+export const useCompetitionActions = () =>
+  useCompetitionStore(
+    useShallow(s => ({
+      loadCompetitions: s.loadCompetitions,
+      selectCompetition: s.selectCompetition,
+      createCompetition: s.createCompetition,
+      updateCompetition: s.updateCompetition,
+      deleteCompetition: s.deleteCompetition,
+      setCurrentCompetition: s.setCurrentCompetition,
+      clearError: s.clearError,
+    }))
+  );

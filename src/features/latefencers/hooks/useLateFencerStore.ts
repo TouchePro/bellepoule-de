@@ -7,6 +7,7 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
+import { useShallow } from 'zustand/shallow';
 import { Fencer } from '../../shared/types';
 
 export interface LateFencer {
@@ -260,5 +261,22 @@ export const useLateFencerStore = create<LateFencerState & LateFencerActions>()(
     { name: 'LateFencerStore' }
   )
 );
+
+// ── Selector hooks ───────────────────────────────────────────────────────────
+export const useLateFencers = () => useLateFencerStore(useShallow(s => s.lateFencers));
+export const useLateFencerConfig = () => useLateFencerStore(s => s.config);
+export const useIsMonitoring = () => useLateFencerStore(s => s.isMonitoring);
+export const useLateFencerActions = () =>
+  useLateFencerStore(
+    useShallow(s => ({
+      registerFencer: s.registerFencer,
+      markAsPresent: s.markAsPresent,
+      startMonitoring: s.startMonitoring,
+      stopMonitoring: s.stopMonitoring,
+      sendWarning: s.sendWarning,
+      markAsForfeit: s.markAsForfeit,
+      updateConfig: s.updateConfig,
+    }))
+  );
 
 export default useLateFencerStore;

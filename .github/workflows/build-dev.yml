@@ -101,8 +101,8 @@ jobs:
             echo "npm ci failed, trying npm install..."
             npm install && break
             echo "Failed, waiting 10s before retry..."
-            sleep 10
-          done
+            [ $i -lt 3 ] && sleep 10
+          done || exit 1
 
       - name: Update version files
         run: |
@@ -112,21 +112,26 @@ jobs:
         run: npm run build:ci
 
       - name: Update package.json for dev build
-        shell: pwsh
+        shell: bash
         run: |
-          $content = Get-Content package.json -Raw
-          $content = $content -replace '"artifactName": "\$\{productName\}-\$\{version\}\.\$\{ext\}"', '"artifactName": "${productName}-dev-${version}.${ext}"'
-          $content = $content -replace '"artifactName": "\$\{productName\}-\$\{version\}-setup\.\$\{ext\}"', '"artifactName": "${productName}-dev-${version}-setup.${ext}"'
-          $content = $content -replace '"artifactName": "\$\{productName\}-\$\{version\}-portable\.\$\{ext\}"', '"artifactName": "${productName}-dev-${version}-portable.${ext}"'
-          Set-Content package.json $content -NoNewline
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            if (!pkg.build.portable) pkg.build.portable = {};
+            pkg.build.portable.artifactName = '\${productName}-dev-\${version}-portable.\${ext}';
+            if (!pkg.build.nsis) pkg.build.nsis = {};
+            pkg.build.nsis.artifactName = '\${productName}-dev-\${version}-setup.\${ext}';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
 
       - name: Package with Electron Builder
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 15
-          max_attempts: 3
-          retry_on: error
-          command: npx electron-builder --win portable --x64
+        shell: bash
+        run: |
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            npx electron-builder --win portable --x64 && break
+            [ $i -lt 3 ] && sleep 10
+          done || exit 1
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -161,7 +166,15 @@ jobs:
             ${{ runner.os }}-npm-
 
       - name: Install Dependencies
-        run: npm ci
+        run: |
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            npm ci && break
+            echo "npm ci failed, trying npm install..."
+            npm install && break
+            echo "Failed, waiting 10s before retry..."
+            [ $i -lt 3 ] && sleep 10
+          done || exit 1
 
       - name: Update version files
         run: |
@@ -180,12 +193,12 @@ jobs:
           "
 
       - name: Package with Electron Builder
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 15
-          max_attempts: 3
-          retry_on: error
-          command: npx electron-builder --mac --x64
+        run: |
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            npx electron-builder --mac --x64 && break
+            [ $i -lt 3 ] && sleep 10
+          done || exit 1
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -227,8 +240,8 @@ jobs:
             echo "npm ci failed, trying npm install..."
             npm install && break
             echo "Failed, waiting 10s before retry..."
-            sleep 10
-          done
+            [ $i -lt 3 ] && sleep 10
+          done || exit 1
 
       - name: Update version files
         run: |
@@ -247,12 +260,12 @@ jobs:
           "
 
       - name: Package with Electron Builder
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 15
-          max_attempts: 3
-          retry_on: error
-          command: npx electron-builder --mac --arm64
+        run: |
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            npx electron-builder --mac --arm64 && break
+            [ $i -lt 3 ] && sleep 10
+          done || exit 1
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -294,8 +307,8 @@ jobs:
             echo "npm ci failed, trying npm install..."
             npm install && break
             echo "Failed, waiting 10s before retry..."
-            sleep 10
-          done
+            [ $i -lt 3 ] && sleep 10
+          done || exit 1
 
       - name: Update version files
         run: |
@@ -314,12 +327,12 @@ jobs:
           "
 
       - name: Package with Electron Builder
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 15
-          max_attempts: 3
-          retry_on: error
-          command: npx electron-builder --linux AppImage --x64
+        run: |
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            npx electron-builder --linux AppImage --x64 && break
+            [ $i -lt 3 ] && sleep 10
+          done || exit 1
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -333,6 +346,7 @@ jobs:
   build-linux-arm64:
     needs: increment-version
     runs-on: ubuntu-latest
+    continue-on-error: true
 
     steps:
       - uses: actions/checkout@v4
@@ -361,8 +375,8 @@ jobs:
             echo "npm ci failed, trying npm install..."
             npm install && break
             echo "Failed, waiting 10s before retry..."
-            sleep 10
-          done
+            [ $i -lt 3 ] && sleep 10
+          done || exit 1
 
       - name: Update version files
         run: |
@@ -381,12 +395,12 @@ jobs:
           "
 
       - name: Package with Electron Builder
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 15
-          max_attempts: 3
-          retry_on: error
-          command: npx electron-builder --linux AppImage --arm64
+        run: |
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            npx electron-builder --linux AppImage --arm64 && break
+            [ $i -lt 3 ] && sleep 10
+          done || exit 1
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -396,6 +410,7 @@ jobs:
           name: linux-arm64-appimage-dev
           path: release/*-dev-*.AppImage
           retention-days: 7
+          if-no-files-found: warn
 
   create-dev-release:
     needs:

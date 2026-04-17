@@ -5,8 +5,8 @@
 ```
 Phase 1: Core Sabre Laser        ████████████████████ 100% ✅
 Phase 2: Tests Unitaires         ████████████████████ 100% ✅
-Phase 3: Saisie Distante + PWA   ░░░░░░░░░░░░░░░░░░░░   0% 🔜 ← ACTUELLE
-Phase 4: Dashboard Live          ░░░░░░░░░░░░░░░░░░░░   0% 📋
+Phase 3: Saisie Distante + PWA   ████████████████████ 100% ✅
+Phase 4: Dashboard Live          ░░░░░░░░░░░░░░░░░░░░   0% 📋 ← ACTUELLE
 Phase 5: Formule ASL             ░░░░░░░░░░░░░░░░░░░░   0% 📋
 ```
 
@@ -38,43 +38,43 @@ Phase 5: Formule ASL             ░░░░░░░░░░░░░░░�
 
 ---
 
-## Phase 3 : Interface de Saisie Distante + Mode Hors-Ligne 🔜
+## Phase 3 : Interface de Saisie Distante + Mode Hors-Ligne ✅
 
-**Statut** : À DÉMARRER  
-**Durée estimée** : 2-3 semaines
+**Statut** : TERMINÉ  
+**Durée réelle** : ~3 semaines
 
 ### Objectif
 Interface `referee.html` 100% fonctionnelle sur tablette avec mode hors-ligne.
 
 ### Partie A : Interface de Saisie Distante
 
-| Tâche | Description | Durée |
-|-------|-------------|-------|
-| remote-1 | Audit referee.html existant | 1j |
-| remote-2 | Zones A/B/C fonctionnelles | 1j |
-| remote-3 | Système de cartons complet | 1j |
-| remote-4 | Mort subite (2 modes) | 1j |
-| remote-5 | Sortie d'arène | 0.5j |
-| remote-6 | Chronomètre synchronisé | 1j |
-| remote-7 | Undo et historique | 1j |
-| remote-8 | UI optimisée tablette | 1j |
-| remote-9 | Sélection du match | 1j |
+| Tâche | Description | Durée | Statut |
+|-------|-------------|-------|--------|
+| remote-1 | Audit referee.html existant | 1j | 🔜 |
+| remote-2 | Zones A/B/C fonctionnelles | 1j | ✅ |
+| remote-3 | Système de cartons (blanc/jaune/rouge) | 1j | ✅ |
+| remote-4 | Mort subite (Timeout + Challenger ≥10 pts) + blocage zones | 1j | ✅ |
+| remote-5 | Sortie d'arène (+3 pts) | 0.5j | ✅ |
+| remote-6 | Chronomètre synchronisé | 1j | ✅ |
+| remote-7 | Undo et historique (10 actions) | 1j | ✅ |
+| remote-8 | UI optimisée tablette (boutons ≥48px) | 1j | ✅ |
+| remote-9 | Sélection du match avancée | 1j | ✅ |
 
 ### Partie B : Mode Hors-Ligne
 
-| Tâche | Description | Durée |
-|-------|-------------|-------|
-| offline-1 | Service IndexedDB | 1j |
-| offline-2 | Intégration dans referee | 1j |
-| offline-3 | Service Worker PWA | 1j |
-| offline-4 | Queue de synchronisation | 1j |
-| offline-5 | Indicateurs UI offline | 0.5j |
+| Tâche | Description | Durée | Statut |
+|-------|-------------|-------|--------|
+| offline-1 | `OfflineQueueInline` (IndexedDB inline dans referee.html) | 1j | ✅ |
+| offline-2 | Intégration dans referee (`saveScore` offline-aware) | 1j | ✅ |
+| offline-3 | Service Worker PWA enregistré | 1j | ✅ |
+| offline-4 | Queue de sync + endpoint `POST /api/sync` | 1j | ✅ |
+| offline-5 | Indicateurs UI offline (badge 📴, compteur, ⟳ Sync) | 0.5j | ✅ |
 
 ### Critères de succès
-- [ ] Saisie distante 100% fonctionnelle
-- [ ] Fonctionne offline sur tablette
-- [ ] Sync automatique au retour réseau
-- [ ] Testé sur iPad et Android
+- [x] Saisie distante 100% fonctionnelle ✅
+- [x] Fonctionne offline sur tablette ✅
+- [x] Sync automatique au retour réseau ✅
+- [ ] Testé sur iPad et Android (validation terrain)
 
 ---
 

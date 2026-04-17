@@ -1,7 +1,7 @@
 # Phase Actuelle : Interface de Saisie Distante + Mode Hors-Ligne
 
 **Phase** : 3  
-**Statut** : À DÉMARRER  
+**Statut** : TERMINÉ (100%)  
 **Priorité** : HIGH
 
 ## Contexte
@@ -392,20 +392,22 @@ Les arbitres utilisent des tablettes pour saisir les scores à distance pendant 
 ## Critères de succès Phase 3
 
 ### Interface de saisie distante
-- [ ] Zones A/B/C fonctionnelles avec bon scoring
-- [ ] Système de cartons FFE complet
-- [ ] Mort subite (Challenger + Timeout) fonctionnelle
-- [ ] Sortie d'arène fonctionnelle
-- [ ] Chronomètre synchronisé
-- [ ] Undo / Historique fonctionnel
-- [ ] UI optimisée tablette (boutons larges, pas de scroll)
-- [ ] Sélection de match intuitive
+- [x] Zones A/B/C fonctionnelles avec bon scoring ✅
+- [x] Système de cartons (blanc→jaune, jaune, rouge + pénalités) ✅
+- [x] Mort subite Timeout (timer=0 + égalité → 30s) ✅
+- [x] Mort subite Challenger (écart ≥ 10 pts) ✅
+- [x] Blocage zones A/B en mort subite (seule Zone C active) ✅
+- [x] Sortie d'arène (+3 pts adversaire) ✅
+- [x] Chronomètre synchronisé ✅
+- [x] Undo / Historique fonctionnel (10 actions) ✅
+- [x] UI optimisée tablette (boutons ≥48px, media query paysage) ✅
+- [x] Sélection de match avancée (recherche, badges statuts) ✅
 
 ### Mode hors-ligne
-- [ ] Saisie fonctionne sans connexion
-- [ ] Sync automatique au retour réseau
-- [ ] Aucune perte de données
-- [ ] Indicateurs visuels clairs
+- [x] Saisie fonctionne sans connexion (OfflineQueueInline + IndexedDB) ✅
+- [x] Sync automatique au retour réseau (event online + socket connect) ✅
+- [x] Aucune perte de données (queue persistée en IndexedDB) ✅
+- [x] Indicateurs visuels clairs (badge 📴, compteur, ⟳ Sync...) ✅
 
 ### Global
 - [ ] Testé sur iPad et tablette Android

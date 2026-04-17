@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
+import { logger, LogCategory } from '@shared/services/logger';
 import { Competition } from '../../shared/types';
 
 interface QRCodeShareProps {
@@ -20,7 +21,8 @@ export const QRCodeShare: React.FC<QRCodeShareProps> = ({ competition, onClose }
 
   useEffect(() => {
     generateQRCode();
-  }, [competition]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [competition.id]);
 
   const generateQRCode = async () => {
     setIsGenerating(true);
@@ -30,7 +32,7 @@ export const QRCodeShare: React.FC<QRCodeShareProps> = ({ competition, onClose }
       const info = await window.electronAPI.remote.getServerInfo();
       if (!info.success || !info.serverInfo) {
         setError(
-          'Le serveur distant doit être démarré pour partager les résultats.\nActivez la saisie distante depuis l\'onglet correspondant.'
+          "Le serveur distant doit être démarré pour partager les résultats.\nActivez la saisie distante depuis l'onglet correspondant."
         );
         setIsGenerating(false);
         return;
@@ -42,7 +44,7 @@ export const QRCodeShare: React.FC<QRCodeShareProps> = ({ competition, onClose }
       const dataUrl = await QRCode.toDataURL(url, { width: 300, margin: 1 });
       setQrCodeUrl(dataUrl);
     } catch (err) {
-      console.error('Erreur génération QR:', err);
+      logger.error(LogCategory.UI, 'Erreur génération QR', err as Error);
       setError('Erreur lors de la génération du QR code');
     } finally {
       setIsGenerating(false);
@@ -94,7 +96,13 @@ export const QRCodeShare: React.FC<QRCodeShareProps> = ({ competition, onClose }
                   {error}
                 </div>
               ) : (
-                <img src={qrCodeUrl} alt="QR Code" className="qrcode__canvas" width={300} height={300} />
+                <img
+                  src={qrCodeUrl}
+                  alt="QR Code"
+                  className="qrcode__canvas"
+                  width={300}
+                  height={300}
+                />
               )}
             </div>
 
