@@ -48,6 +48,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
   const [recalcKey, setRecalcKey] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const [editedRanking, setEditedRanking] = useState<PoolRanking[]>([]);
+  const [rankDrafts, setRankDrafts] = useState<Record<string, string>>({});
   const [showColumnMenu, setShowColumnMenu] = useState(false);
   const columnMenuRef = useRef<HTMLDivElement>(null);
   const justSaved = useRef(false);
@@ -133,6 +134,14 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
     };
   }, [showColumnMenu]);
 
+  useEffect(() => {
+    if (isEditing) {
+      setRankDrafts(
+        Object.fromEntries(editedRanking.map(r => [r.fencer.id, String(r.rank)]))
+      );
+    }
+  }, [editedRanking, isEditing]);
+
   const handleExport = (format: 'csv' | 'xml' | 'pdf') => {
     if (onExport) {
       onExport(format);
@@ -173,6 +182,17 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
     const newRanking = [...editedRanking];
     [newRanking[index], newRanking[index + 1]] = [newRanking[index + 1], newRanking[index]];
     // Mettre à jour les rangs
+    newRanking.forEach((r, i) => (r.rank = i + 1));
+    setEditedRanking(newRanking);
+  };
+
+  // Déplacer un tireur directement à un rang cible (saisie clavier)
+  const moveToRank = (fromIndex: number, newRank: number) => {
+    const toIndex = Math.max(0, Math.min(editedRanking.length - 1, newRank - 1));
+    if (toIndex === fromIndex) return;
+    const newRanking = [...editedRanking];
+    const [moved] = newRanking.splice(fromIndex, 1);
+    newRanking.splice(toIndex, 0, moved);
     newRanking.forEach((r, i) => (r.rank = i + 1));
     setEditedRanking(newRanking);
   };
@@ -392,34 +412,74 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
               <tr key={ranking.fencer.id}>
                 {isVisible('rank') && (
                   <td style={{ fontWeight: '600' }}>
-                    {ranking.rank}
-                    {isEditing && (
-                      <div style={{ display: 'flex', flexDirection: 'column', marginLeft: '4px' }}>
-                        <button
-                          onClick={() => moveUp(index)}
-                          disabled={index === 0}
-                          style={{
-                            padding: '0 2px',
-                            fontSize: '10px',
-                            cursor: index === 0 ? 'not-allowed' : 'pointer',
-                            opacity: index === 0 ? 0.3 : 1,
+                    {isEditing ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                        <input
+                          type="number"
+                          min={1}
+                          max={editedRanking.length}
+                          value={rankDrafts[ranking.fencer.id] ?? String(ranking.rank)}
+                          onChange={e =>
+                            setRankDrafts(prev => ({ ...prev, [ranking.fencer.id]: e.target.value }))
+                          }
+                          onBlur={e => {
+                            const val = parseInt(e.target.value);
+                            if (!isNaN(val) && val >= 1 && val <= editedRanking.length) {
+                              moveToRank(index, val);
+                            } else {
+                              setRankDrafts(prev => ({
+                                ...prev,
+                                [ranking.fencer.id]: String(ranking.rank),
+                              }));
+                            }
                           }}
-                        >
-                          ▲
-                        </button>
-                        <button
-                          onClick={() => moveDown(index)}
-                          disabled={index === editedRanking.length - 1}
-                          style={{
-                            padding: '0 2px',
-                            fontSize: '10px',
-                            cursor: index === editedRanking.length - 1 ? 'not-allowed' : 'pointer',
-                            opacity: index === editedRanking.length - 1 ? 0.3 : 1,
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                            if (e.key === 'Escape') {
+                              setRankDrafts(prev => ({
+                                ...prev,
+                                [ranking.fencer.id]: String(ranking.rank),
+                              }));
+                              (e.target as HTMLInputElement).blur();
+                            }
                           }}
-                        >
-                          ▼
-                        </button>
+                          style={{
+                            width: '44px',
+                            textAlign: 'center',
+                            padding: '1px 4px',
+                            fontWeight: '600',
+                          }}
+                        />
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <button
+                            onClick={() => moveUp(index)}
+                            disabled={index === 0}
+                            style={{
+                              padding: '0 2px',
+                              fontSize: '10px',
+                              cursor: index === 0 ? 'not-allowed' : 'pointer',
+                              opacity: index === 0 ? 0.3 : 1,
+                            }}
+                          >
+                            ▲
+                          </button>
+                          <button
+                            onClick={() => moveDown(index)}
+                            disabled={index === editedRanking.length - 1}
+                            style={{
+                              padding: '0 2px',
+                              fontSize: '10px',
+                              cursor:
+                                index === editedRanking.length - 1 ? 'not-allowed' : 'pointer',
+                              opacity: index === editedRanking.length - 1 ? 0.3 : 1,
+                            }}
+                          >
+                            ▼
+                          </button>
+                        </div>
                       </div>
+                    ) : (
+                      ranking.rank
                     )}
                   </td>
                 )}
