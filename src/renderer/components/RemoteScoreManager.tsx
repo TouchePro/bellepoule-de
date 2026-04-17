@@ -64,7 +64,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [showPhotos, setShowPhotos] = useState(false);
   const [displayTheme, setDisplayTheme] = useState<'dark' | 'light' | 'neon'>('dark');
-  const [kioskViews, setKioskViews] = useState({ poules: true, classement: true, direct: true });
+  const [kioskViews, setKioskViews] = useState({ poules: true, classement: true, direct: true, suivants: true });
   const [orgNoteType, setOrgNoteType] = useState<'free' | 'target_time'>('free');
   const [orgNoteMessage, setOrgNoteMessage] = useState('');
   const [orgNoteTime, setOrgNoteTime] = useState('');
@@ -357,6 +357,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                 { key: 'poules', label: 'Poules' },
                 { key: 'classement', label: 'Classement' },
                 { key: 'direct', label: 'Matchs en direct' },
+                { key: 'suivants', label: 'Matchs suivants' },
               ] as const
             ).map(({ key, label }) => (
               <label

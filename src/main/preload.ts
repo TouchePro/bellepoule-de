@@ -385,7 +385,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       strips: number,
       matches?: any[],
       showPhotos?: boolean,
-      kioskViews?: { poules: boolean; classement: boolean; direct: boolean }
+      kioskViews?: { poules: boolean; classement: boolean; direct: boolean; suivants: boolean }
     ) =>
       ipcRenderer.invoke(
         'remote:startSession',
@@ -401,7 +401,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     updateStripCount: (count: number) => ipcRenderer.invoke('remote:updateStripCount', count),
     updateShowPhotos: (value: boolean) => ipcRenderer.invoke('remote:updateShowPhotos', value),
     updateTheme: (theme: string) => ipcRenderer.invoke('remote:updateTheme', theme),
-    updateKioskViews: (views: { poules: boolean; classement: boolean; direct: boolean }) =>
+    updateKioskViews: (views: { poules: boolean; classement: boolean; direct: boolean; suivants: boolean }) =>
       ipcRenderer.invoke('remote:updateKioskViews', views),
     updateMatchArena: (matchId: string, fromArena: number | null, toArena: number | null) =>
       ipcRenderer.invoke('remote:updateMatchArena', matchId, fromArena, toArena),
