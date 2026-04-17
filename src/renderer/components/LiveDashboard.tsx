@@ -330,11 +330,11 @@ const LiveMatchCard: React.FC<{ match: Match; index: number }> = ({ match, index
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0 1.5rem' }}>
-          <span style={{ fontSize: '3rem', fontWeight: '700', color: '#dc2626' }}>
+          <span style={{ fontSize: '3rem', fontWeight: '700', color: '#dc2626', fontFamily: 'var(--font-digital)' }}>
             {match.scoreA?.value || 0}
           </span>
           <span style={{ fontSize: '1.5rem', color: '#9ca3af' }}>:</span>
-          <span style={{ fontSize: '3rem', fontWeight: '700', color: '#16a34a' }}>
+          <span style={{ fontSize: '3rem', fontWeight: '700', color: '#16a34a', fontFamily: 'var(--font-digital)' }}>
             {match.scoreB?.value || 0}
           </span>
         </div>

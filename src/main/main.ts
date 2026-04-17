@@ -18,6 +18,7 @@ const db = new DatabaseManager();
 
 // Remote score server
 let remoteScoreServer: any = null;
+let remoteScoreServerPort: number = 8066;
 
 // Auto updater
 let autoUpdater: AutoUpdater | null = null;
@@ -296,6 +297,15 @@ function createWindow(): void {
       // Fallback to default language
     }
     createMenu(currentMenuLanguage);
+
+    // Restore persisted logo and sync to renderer localStorage if not already set
+    try {
+      const logoPath = path.join(app.getPath('userData'), 'logo.dat');
+      if (fs.existsSync(logoPath)) {
+        const logo = fs.readFileSync(logoPath, 'utf-8');
+        if (logo) mainWindow!.webContents.send('app:logoLoaded', logo);
+      }
+    } catch { /* logo optionnel */ }
   });
 }
 
@@ -487,7 +497,7 @@ function createMenu(language?: string): void {
 // Remote Score Server
 // ============================================================================
 
-function startRemoteScoreServer(): void {
+function startRemoteScoreServer(port: number = 8066): void {
   if (remoteScoreServer) {
     dialog.showMessageBox(mainWindow!, {
       type: 'info',
@@ -499,7 +509,8 @@ function startRemoteScoreServer(): void {
   }
 
   try {
-    remoteScoreServer = new RemoteScoreServer(db, 8066);
+    remoteScoreServer = new RemoteScoreServer(db, port);
+    remoteScoreServerPort = port;
     remoteScoreServer.start();
 
     const serverUrl = remoteScoreServer.getServerUrl();
@@ -507,7 +518,7 @@ function startRemoteScoreServer(): void {
       type: 'info',
       title: 'Saisie distante démarrée',
       message: `Les arbitres peuvent maintenant se connecter`,
-      detail: `Arène 1: ${serverUrl}/arene1/arbitre\nArène 2: ${serverUrl}/arene2/arbitre\nArène 3: ${serverUrl}/arene3/arbitre\nArène 4: ${serverUrl}/arene4/arbitre\n\nAffichage kiosk (grand écran public): ${serverUrl}/kiosk\nClassement en direct: ${serverUrl}/\n\nPartagez ces URLs avec les arbitres munis de tablettes.\nAssurez-vous que le pare-feu Windows autorise les connexions sur le port 8066.`,
+      detail: `Arène 1: ${serverUrl}/arene1/arbitre\nArène 2: ${serverUrl}/arene2/arbitre\nArène 3: ${serverUrl}/arene3/arbitre\nArène 4: ${serverUrl}/arene4/arbitre\n\nAffichage kiosk (grand écran public): ${serverUrl}/kiosk\nClassement en direct: ${serverUrl}/\n\nPartagez ces URLs avec les arbitres munis de tablettes.\nAssurez-vous que le pare-feu Windows autorise les connexions sur le port ${port}.`,
       buttons: ['OK'],
     });
 
@@ -1008,20 +1019,22 @@ ipcMain.handle('shell:openExternal', async (_, url: string) => {
 });
 
 // Remote score server handlers
-ipcMain.handle('remote:startServer', async () => {
+ipcMain.handle('remote:startServer', async (_event, port?: number) => {
   try {
     if (remoteScoreServer) {
       return { success: false, error: 'Le serveur est déjà démarré' };
     }
 
-    remoteScoreServer = new RemoteScoreServer(db, 8066);
+    const effectivePort = port ?? 8066;
+    remoteScoreServer = new RemoteScoreServer(db, effectivePort);
+    remoteScoreServerPort = effectivePort;
     remoteScoreServer.start();
 
     const serverUrl = remoteScoreServer.getServerUrl();
     const serverInfo = {
       url: serverUrl,
       ip: remoteScoreServer.getLocalIPAddress(),
-      port: 8066,
+      port: effectivePort,
     };
 
     // Stocker la référence globale pour le serveur distant
@@ -1060,7 +1073,7 @@ ipcMain.handle('remote:getServerInfo', async () => {
     serverInfo: {
       url: remoteScoreServer.getServerUrl(),
       ip: remoteScoreServer.getLocalIPAddress(),
-      port: 8066,
+      port: remoteScoreServerPort,
     },
   };
 });
@@ -1188,6 +1201,32 @@ ipcMain.handle('remote:updateShowPhotos', async (_, value: boolean) => {
   }
 });
 
+ipcMain.handle('remote:updateTheme', async (_, theme: string) => {
+  try {
+    if (!remoteScoreServer) {
+      return { success: false, error: 'Le serveur distant n est pas démarré' };
+    }
+    remoteScoreServer.updateTheme(theme as any);
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating theme:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
+ipcMain.handle('remote:updateArenaTheme', async (_, arenaId: string, theme: string, customTheme?: any) => {
+  try {
+    if (!remoteScoreServer) {
+      return { success: false, error: 'Le serveur distant n est pas démarré' };
+    }
+    remoteScoreServer.updateArenaTheme(arenaId, theme as any, customTheme);
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating arena theme:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
 ipcMain.handle(
   'remote:updateKioskViews',
   async (_, views: { poules: boolean; classement: boolean; direct: boolean }) => {
@@ -1243,6 +1282,26 @@ ipcMain.handle('remote:clearOrgNote', async () => {
     console.error('Error clearing org note:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
   }
+});
+
+ipcMain.handle('remote:updateLogo', async (_, logo: string | null) => {
+  try {
+    const logoPath = path.join(app.getPath('userData'), 'logo.dat');
+    if (logo) {
+      fs.writeFileSync(logoPath, logo, 'utf-8');
+    } else {
+      try { fs.unlinkSync(logoPath); } catch { /* déjà absent */ }
+    }
+    if (remoteScoreServer) remoteScoreServer.setLogo(logo);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
+ipcMain.handle('app:getLogo', async () => {
+  const logoPath = path.join(app.getPath('userData'), 'logo.dat');
+  try { return fs.readFileSync(logoPath, 'utf-8'); } catch { return null; }
 });
 
 // App info handlers

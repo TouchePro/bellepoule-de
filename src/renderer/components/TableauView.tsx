@@ -492,7 +492,8 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     const perPage = Math.max(1, Math.min(pdfMatchesPerPage, MAX_MATCHES_PER_PAGE_TABLEAU));
     const title = `Tableau de ${tableauSize}`;
     try {
-      await exportTableauToPDF(matches, perPage, title);
+      const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
+      await exportTableauToPDF(matches, perPage, title, logo);
       setShowPdfModal(false);
     } catch (e) {
       showToast((e as Error).message, 'error');

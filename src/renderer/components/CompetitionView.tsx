@@ -28,6 +28,7 @@ import {
   calculateOptimalPoolCount,
   distributeFencersToPoolsSerpentine,
   generatePoolMatchOrder,
+  generateInitialRanking,
 } from '../../shared/utils/poolCalculations';
 import { FencerComparison } from './FencerComparison';
 import { AnalyticsDashboard } from './AnalyticsDashboard';
@@ -86,6 +87,9 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   // Flag pour indiquer si le classement a été validé (débloque l'onglet Tableau)
   const [rankingValidated, setRankingValidated] = useState(false);
 
+  // Flag pour indiquer que la phase de poules est sautée (0 poules configurées)
+  const [skipPoolPhase, setSkipPoolPhase] = useState(false);
+
   // Hooks personnalisés
   const {
     fencers,
@@ -139,6 +143,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     overallRanking,
     tableauMatches,
     finalResults,
+    skipPoolPhase,
     poolPrepParams: {
       poolCount: pools.length,
       minFencersPerPool,
@@ -173,6 +178,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         setMinFencersPerPool(restoredState.poolPrepParams.minFencersPerPool);
         setMaxFencersPerPool(restoredState.poolPrepParams.maxFencersPerPool);
       }
+      if (restoredState.skipPoolPhase) setSkipPoolPhase(restoredState.skipPoolPhase);
     }
   }, [restoredState, isLoaded]);
 
@@ -348,6 +354,16 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     setCurrentPhase('ranking');
   };
 
+  const handleSkipToRanking = () => {
+    const checkedIn = getCheckedInFencers();
+    const initialRanking = generateInitialRanking(checkedIn);
+    setOverallRanking(initialRanking);
+    setSkipPoolPhase(true);
+    setPools([]);
+    setRankingValidated(false);
+    setCurrentPhase('ranking');
+  };
+
   const handleGoToTableau = () => {
     setRankingValidated(true);
     // Ne pas recalculer : overallRanking est déjà à jour
@@ -431,6 +447,10 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   };
 
   const handleGoBack = () => {
+    if (skipPoolPhase && currentPhase === 'ranking') {
+      setCurrentPhase('poolprep');
+      return;
+    }
     const phaseOrder: Phase[] = ['checkin', 'poolprep', 'pools', 'ranking', 'tableau', 'results'];
     const currentIndex = phaseOrder.indexOf(currentPhase);
     if (currentIndex > 0) {
@@ -439,7 +459,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   };
 
   // Phases dynamiques
-  const canAdvanceFromPools = pools.length > 0 && areAllPoolsComplete();
+  const canAdvanceFromPools = skipPoolPhase || (pools.length > 0 && areAllPoolsComplete());
   const isLastPoolRound = currentPoolRound >= poolRounds;
   const isResultsLocked = hasDirectElimination && finalResults.length === 0;
   const isTableauUnlocked = canAdvanceFromPools && rankingValidated;
@@ -468,10 +488,10 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     },
     {
       id: 'pools',
-      label: poolRounds > 1 ? `Poules (${currentPoolRound}/${poolRounds})` : 'Poules',
-      icon: '🎯',
-      disabled: false,
-      title: undefined as string | undefined,
+      label: skipPoolPhase ? 'Poules (saut)' : poolRounds > 1 ? `Poules (${currentPoolRound}/${poolRounds})` : 'Poules',
+      icon: skipPoolPhase ? '⏭' : '🎯',
+      disabled: skipPoolPhase,
+      title: skipPoolPhase ? 'Phase de poules ignorée (0 poules)' : (undefined as string | undefined),
     },
     {
       id: 'ranking',
@@ -770,8 +790,10 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             maxFencersPerPool={maxFencersPerPool}
             onPoolsConfirm={confirmedPools => {
               setPools(confirmedPools);
+              setSkipPoolPhase(false);
               setCurrentPhase('pools');
             }}
+            onSkipPools={handleSkipToRanking}
             onSettingsChange={(min, max) => {
               setMinFencersPerPool(min);
               setMaxFencersPerPool(max);
@@ -841,6 +863,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             ranking={overallRanking}
             weapon={competition.weapon}
             hasDirectElimination={hasDirectElimination}
+            isInitialRanking={skipPoolPhase}
             onGoToTableau={handleGoToTableau}
             onGoToResults={() => setCurrentPhase('results')}
             onPoolsChange={(updatedPools, hasRankingChanged) => {

@@ -322,7 +322,7 @@ export interface RemoteServerInfo {
 }
 
 export interface RemoteServerAPI {
-  startServer: () => Promise<{ success: boolean; serverInfo?: RemoteServerInfo; error?: string }>;
+  startServer: (port?: number) => Promise<{ success: boolean; serverInfo?: RemoteServerInfo; error?: string }>;
   stopServer: () => Promise<{ success: boolean; error?: string }>;
   getServerInfo: () => Promise<{ success: boolean; serverInfo?: RemoteServerInfo; error?: string }>;
   startSession: (
@@ -356,6 +356,14 @@ export interface RemoteServerAPI {
   ) => Promise<{ success: boolean; error?: string }>;
   setOrgNote: (note: import('../types/remote').OrgNote) => Promise<{ success: boolean; error?: string }>;
   clearOrgNote: () => Promise<{ success: boolean; error?: string }>;
+  updateTheme: (
+    theme: import('../types/remote').DisplayTheme
+  ) => Promise<{ success: boolean; error?: string }>;
+  updateArenaTheme: (
+    arenaId: string,
+    theme: import('../types/remote').DisplayTheme,
+    customTheme?: import('../types/remote').CustomTheme
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 // ============================================================================
@@ -467,4 +475,5 @@ export interface ElectronAPI extends MenuAPI, UtilityAPI {
   onKioskNoteUpdate: (callback: (note: import('../types/remote').OrgNote | null) => void) => () => void;
   notifyLanguageChanged: (lang: string) => void;
 }
+
 

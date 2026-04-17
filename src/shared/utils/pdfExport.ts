@@ -11,6 +11,11 @@ interface PoolExportOptions {
   competitionName?: string;
   weapon?: string;
   category?: string;
+  includeFinishedMatches?: boolean;
+  includePendingMatches?: boolean;
+  includePoolStats?: boolean;
+  logoBase64?: string;
+  visibleColumns?: string[];
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -117,6 +122,13 @@ const BASE_CSS = `
     justify-content: space-between;
     margin-bottom: 0;
   }
+  .doc-header-logo {
+    max-height: 10mm;
+    max-width: 35mm;
+    object-fit: contain;
+    margin-right: 4mm;
+    flex-shrink: 0;
+  }
   .doc-header-left h1 {
     font-size: 15pt;
     font-weight: 700;
@@ -198,12 +210,27 @@ const BASE_CSS = `
 
 // ─── HTML Poule ───────────────────────────────────────────────────────────────
 
+type RankData = { fencer: Fencer; stats: ReturnType<typeof calculateFencerStats>; rank: number };
+
+const STAT_COLS: { id: string; header: string; cls: string; render: (d: RankData) => string }[] = [
+  { id: 'victories', header: 'V',   cls: 'stat-cell', render: d => `${d.stats.v}` },
+  { id: 'ratio',     header: 'V/M', cls: 'stat-cell', render: d => d.stats.ratio.toFixed(2) },
+  { id: 'td',        header: 'TD',  cls: 'stat-cell', render: d => `${d.stats.td}` },
+  { id: 'tr',        header: 'TR',  cls: 'stat-cell', render: d => `${d.stats.tr}` },
+  { id: 'index',     header: 'Ind', cls: 'stat-cell', render: d => d.stats.ind >= 0 ? `+${d.stats.ind}` : `${d.stats.ind}` },
+  { id: 'rank',      header: 'Rg',  cls: 'rank-cell', render: d => `${d.rank}` },
+];
+
 function generatePoolHTML(pool: Pool, options: PoolExportOptions): string {
-  const { title = `Poule ${pool.number}`, competitionName = '', weapon = '', category = '' } = options;
+  const { title = `Poule ${pool.number}`, competitionName = '', weapon = '', category = '', logoBase64 } = options;
   const fencers = pool.fencers ?? [];
   const matches = pool.matches ?? [];
   const finishedCount = matches.filter(m => m.status === MatchStatus.FINISHED).length;
   const now = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+
+  const activeCols = options.visibleColumns
+    ? STAT_COLS.filter(c => options.visibleColumns!.includes(c.id))
+    : STAT_COLS;
 
   // Classement
   const rankings = fencers.map(f => ({
@@ -223,25 +250,20 @@ function generatePoolHTML(pool: Pool, options: PoolExportOptions): string {
   const colHeaders = fencers.map((_, i) => `<th class="num-header">${i + 1}</th>`).join('');
   const rows = fencers.map((fencer, row) => {
     const data = rankMap.get(fencer.id)!;
-    const { v, td, tr, ind, ratio } = data.stats;
-    const indStr = ind >= 0 ? `+${ind}` : `${ind}`;
     const cells = fencers.map((opponent, col) => {
       if (row === col) return '<td class="diagonal"></td>';
       const s = getScoreForCell(fencer, opponent, matches);
       if (!s) return '<td class="cell-pending"></td>';
       return `<td class="${s.isVictory ? 'cell-victory' : 'cell-defeat'}">${s.display}</td>`;
     }).join('');
+    const statCells = activeCols.map(c => `<td class="${c.cls}">${c.render(data)}</td>`).join('');
     return `
       <tr>
         <td class="num-cell">${row + 1}</td>
         <td class="name-cell">${fencer.lastName.toUpperCase()} ${fencer.firstName?.charAt(0) ?? ''}.</td>
         ${cells}
-        <td class="stat-cell">${v}</td>
-        <td class="stat-cell">${ratio.toFixed(2)}</td>
-        <td class="stat-cell">${td}</td>
-        <td class="stat-cell">${tr}</td>
-        <td class="stat-cell">${indStr}</td>
-        <td class="rank-cell">${data.rank}</td>
+        ${statCells}
+        <td class="sig-cell"></td>
       </tr>`;
   }).join('');
 
@@ -341,6 +363,15 @@ function generatePoolHTML(pool: Pool, options: PoolExportOptions): string {
       font-weight: 900;
       font-size: 10pt;
     }
+    .score-grid .sig-cell {
+      min-width: 32mm;
+      border-left: 2px solid var(--border) !important;
+    }
+    .score-grid thead .sig-header {
+      min-width: 32mm;
+      background: #1f3a5a;
+      border-left: 2px solid var(--navy-light) !important;
+    }
 
     /* Matchs */
     .match-grid {
@@ -364,6 +395,7 @@ function generatePoolHTML(pool: Pool, options: PoolExportOptions): string {
 </head>
 <body>
   <div class="doc-header">
+    ${logoBase64 ? `<img class="doc-header-logo" src="${logoBase64}" alt="Logo" />` : ''}
     <div class="doc-header-left">
       <h1>${title}</h1>
       <div class="subtitle">Grille de poule • ${finishedCount}/${matches.length} matchs joués</div>
@@ -387,12 +419,8 @@ function generatePoolHTML(pool: Pool, options: PoolExportOptions): string {
         <th class="num-header">#</th>
         <th class="name-header">Tireur</th>
         ${colHeaders}
-        <th class="stat-header">V</th>
-        <th class="stat-header">V/M</th>
-        <th class="stat-header">TD</th>
-        <th class="stat-header">TR</th>
-        <th class="stat-header">Ind</th>
-        <th class="rank-header">Rg</th>
+        ${activeCols.map(c => `<th class="${c.cls === 'rank-cell' ? 'rank-header' : 'stat-header'}">${c.header}</th>`).join('')}
+        <th class="sig-header">Signature</th>
       </tr>
     </thead>
     <tbody>${rows}</tbody>
@@ -422,11 +450,12 @@ export async function exportPoolToPDF(pool: Pool, options: PoolExportOptions = {
 
 export async function exportMultiplePoolsToPDF(
   pools: Pool[],
-  title: string = 'Export des Poules'
+  title: string = 'Export des Poules',
+  logoBase64?: string
 ): Promise<void> {
   if (pools.length === 0) throw new Error('Aucune poule à exporter');
   for (const pool of pools) {
-    await exportPoolToPDF(pool, { title: `${title} - Poule ${pool.number}` });
+    await exportPoolToPDF(pool, { title: `${title} - Poule ${pool.number}`, logoBase64 });
   }
 }
 
@@ -465,7 +494,8 @@ function getTableauRoundName(round: number): string {
 function generateTableauHTML(
   matches: TableauMatchForPDF[],
   matchesPerPage: number,
-  title: string
+  title: string,
+  logoBase64?: string
 ): string {
   const real = matches.filter(m => !m.isBye && m.fencerA && m.fencerB);
   const sorted = [...real].sort((a, b) => b.round - a.round || a.position - b.position);
@@ -633,6 +663,7 @@ function generateTableauHTML(
 </head>
 <body>
   <div class="doc-header">
+    ${logoBase64 ? `<img class="doc-header-logo" src="${logoBase64}" alt="Logo" />` : ''}
     <div class="doc-header-left">
       <h1>${title}</h1>
       <div class="subtitle">Feuilles d'arbitrage — Élimination directe</div>
@@ -654,13 +685,15 @@ function generateTableauHTML(
 export async function exportTableauToPDF(
   matches: TableauMatchForPDF[],
   matchesPerPage: number,
-  title: string = 'Tableau Élimination Directe'
+  title: string = 'Tableau Élimination Directe',
+  logoBase64?: string
 ): Promise<void> {
   const real = matches.filter(m => !m.isBye && m.fencerA && m.fencerB);
   if (real.length === 0) {
     throw new Error('Aucun match à exporter (tous sont des exempts ou sans tireurs assignés)');
   }
 
-  const html = generateTableauHTML(matches, matchesPerPage, title);
+  const html = generateTableauHTML(matches, matchesPerPage, title, logoBase64);
   await savePDF(html, `tableau-elimination.pdf`);
 }
+

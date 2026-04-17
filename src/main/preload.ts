@@ -371,7 +371,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Remote score server functions
   remote: {
-    startServer: () => ipcRenderer.invoke('remote:startServer'),
+    startServer: (port?: number) => ipcRenderer.invoke('remote:startServer', port),
     stopServer: () => ipcRenderer.invoke('remote:stopServer'),
     getServerInfo: () => ipcRenderer.invoke('remote:getServerInfo'),
     startSession: (
@@ -394,6 +394,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getArenas: () => ipcRenderer.invoke('remote:getArenas'),
     updateStripCount: (count: number) => ipcRenderer.invoke('remote:updateStripCount', count),
     updateShowPhotos: (value: boolean) => ipcRenderer.invoke('remote:updateShowPhotos', value),
+    updateTheme: (theme: string) => ipcRenderer.invoke('remote:updateTheme', theme),
     updateKioskViews: (views: { poules: boolean; classement: boolean; direct: boolean }) =>
       ipcRenderer.invoke('remote:updateKioskViews', views),
     updateMatchArena: (matchId: string, fromArena: number | null, toArena: number | null) =>
@@ -404,6 +405,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('remote:setArenaPassword', arenaId, password),
     setOrgNote: (note: any) => ipcRenderer.invoke('remote:setOrgNote', note),
     clearOrgNote: () => ipcRenderer.invoke('remote:clearOrgNote'),
+    updateArenaTheme: (arenaId: string, theme: string, customTheme?: any) =>
+      ipcRenderer.invoke('remote:updateArenaTheme', arenaId, theme, customTheme),
+    updateLogo: (logo: string | null) => ipcRenderer.invoke('remote:updateLogo', logo),
   },
 
   // Remote event listeners (for real-time updates)
@@ -417,6 +421,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const handler = (_: any, note: any) => callback(note);
     ipcRenderer.on('kiosk:note', handler);
     return () => ipcRenderer.removeListener('kiosk:note', handler);
+  },
+
+  getLogo: () => ipcRenderer.invoke('app:getLogo'),
+  onLogoLoaded: (callback: (logo: string | null) => void) => {
+    const handler = (_: any, logo: string | null) => callback(logo);
+    ipcRenderer.on('app:logoLoaded', handler);
+    return () => ipcRenderer.removeListener('app:logoLoaded', handler);
   },
 
   // Remove listeners

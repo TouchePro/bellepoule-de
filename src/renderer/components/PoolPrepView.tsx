@@ -19,6 +19,7 @@ interface PoolPrepViewProps {
   minFencersPerPool?: number;
   maxFencersPerPool?: number;
   onPoolsConfirm: (pools: Pool[]) => void;
+  onSkipPools?: () => void;
   onSettingsChange?: (min: number, max: number) => void;
 }
 
@@ -37,6 +38,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
   minFencersPerPool: initialMin = 5,
   maxFencersPerPool: initialMax = 7,
   onPoolsConfirm,
+  onSkipPools,
   onSettingsChange,
 }) => {
   const [poolCount, setPoolCount] = useState<number>(0);
@@ -53,14 +55,17 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
     byNation: false,
   });
 
-  // Flag pour éviter la régénération des poules quand poolCount est défini depuis initialPools
-  const skipNextPoolGeneration = useRef(false);
+  // Empêche la réinitialisation si initialPools arrive en retard (async restore)
+  const hasInitialized = useRef(false);
+
+  // Initialisation de l'historique au premier setPools non vide
+  const historyInitialized = useRef(false);
 
   // Historique des modifications pour la fonction restore
   const [history, setHistory] = useState<PoolStateHistory[]>([]);
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState<number>(-1);
   const [timeSinceLastChange, setTimeSinceLastChange] = useState<number>(0);
-  const RESTORE_WINDOW_MINUTES = 5; // Fenêtre de 5 minutes pour restaurer
+  const RESTORE_WINDOW_MINUTES = 5;
 
   // Timer pour mettre à jour le temps écoulé
   useEffect(() => {
@@ -74,6 +79,22 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
     return () => clearInterval(interval);
   }, [history, currentHistoryIndex]);
 
+  // Initialisation de l'historique à la première génération de poules
+  useEffect(() => {
+    if (pools.length > 0 && !historyInitialized.current) {
+      historyInitialized.current = true;
+      const initialState: PoolStateHistory = {
+        pools: JSON.parse(JSON.stringify(pools)),
+        poolCount,
+        minFencersPerPool,
+        maxFencersPerPool,
+        timestamp: Date.now(),
+      };
+      setHistory([initialState]);
+      setCurrentHistoryIndex(0);
+    }
+  }, [pools]);
+
   // Sauvegarder l'état actuel dans l'historique
   const saveToHistory = () => {
     const now = Date.now();
@@ -85,17 +106,12 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
       timestamp: now,
     };
 
-    // Supprimer les états futurs si on est en plein milieu de l'historique
     const newHistory = history.slice(0, currentHistoryIndex + 1);
-
-    // Ajouter le nouvel état
     newHistory.push(newState);
 
-    // Nettoyer les états trop vieux (plus de RESTORE_WINDOW_MINUTES minutes)
     const cutoffTime = now - RESTORE_WINDOW_MINUTES * 60 * 1000;
     const filteredHistory = newHistory.filter(state => state.timestamp >= cutoffTime);
 
-    // Limiter à 20 états maximum
     if (filteredHistory.length > 20) {
       filteredHistory.shift();
     }
@@ -118,7 +134,6 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
     }
   };
 
-  // Vérifier si on peut restaurer (état précédent existe et dans la fenêtre de temps)
   const canRestore = (): boolean => {
     if (currentHistoryIndex <= 0) return false;
 
@@ -129,7 +144,6 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
     return elapsed <= RESTORE_WINDOW_MINUTES * 60 * 1000;
   };
 
-  // Formater le temps écoulé
   const formatElapsedTime = (seconds: number): string => {
     if (seconds < 60) return `${seconds}s`;
     const minutes = Math.floor(seconds / 60);
@@ -137,52 +151,11 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
     return `${minutes}m ${secs}s`;
   };
 
-  // Initialize pools from initialPools when component mounts or initialPools changes
-  useEffect(() => {
-    if (initialPools && initialPools.length > 0) {
-      skipNextPoolGeneration.current = true;
-      setPools(initialPools);
-      setPoolCount(initialPools.length);
-      // Initialize history with the loaded state
-      const initialState: PoolStateHistory = {
-        pools: JSON.parse(JSON.stringify(initialPools)),
-        poolCount: initialPools.length,
-        minFencersPerPool,
-        maxFencersPerPool,
-        timestamp: Date.now(),
-      };
-      setHistory([initialState]);
-      setCurrentHistoryIndex(0);
-    } else if (fencers.length > 0 && pools.length === 0) {
-      const optimalCount = calculateOptimalPoolCount(
-        fencers.length,
-        minFencersPerPool,
-        maxFencersPerPool
-      );
-      setPoolCount(optimalCount);
-      generatePools(optimalCount);
-    }
-  }, [fencers.length, initialPools]);
+  // Génère les poules avec la config passée explicitement (évite les closures périmées)
+  const generatePools = (count: number, config: typeof separationConfig) => {
+    if (fencers.length === 0 || count <= 0) return;
 
-  // Regenerate pools when count or min/max fencers per pool changes
-  // Note: on ne recalcule pas le nombre optimal de poules ici pour respecter le choix manuel de l'utilisateur
-  useEffect(() => {
-    // Ignorer si poolCount vient d'être défini depuis initialPools (restauration de session)
-    // — sans cette garde, les poules restaurées seraient écrasées sur Linux où les tireurs
-    // se chargent plus vite que sur Windows (pas d'antivirus, FS natif).
-    if (skipNextPoolGeneration.current) {
-      skipNextPoolGeneration.current = false;
-      return;
-    }
-    if (poolCount > 0 && fencers.length > 0) {
-      generatePools(poolCount);
-    }
-  }, [poolCount, minFencersPerPool, maxFencersPerPool, separationConfig]);
-
-  const generatePools = (count: number) => {
-    if (fencers.length === 0) return;
-
-    const distribution = distributeFencersToPoolsSerpentine(fencers, count, separationConfig);
+    const distribution = distributeFencersToPoolsSerpentine(fencers, count, config);
 
     const generatedPools: Pool[] = distribution.map((poolFencers, index) => {
       const matchOrder = generatePoolMatchOrder(poolFencers.length);
@@ -218,23 +191,46 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
     });
 
     setPools(generatedPools);
-
-    // Sauvegarder l'état initial dans l'historique
-    const initialState: PoolStateHistory = {
-      pools: JSON.parse(JSON.stringify(generatedPools)),
-      poolCount: count,
-      minFencersPerPool,
-      maxFencersPerPool,
-      timestamp: Date.now(),
-    };
-    setHistory([initialState]);
-    setCurrentHistoryIndex(0);
   };
 
+  // Initialisation unique : depuis initialPools (session restaurée) ou calcul optimal
+  // Le ref hasInitialized empêche la réinitialisation si initialPools arrive en retard (async DB)
+  useEffect(() => {
+    if (initialPools && initialPools.length > 0 && !hasInitialized.current) {
+      hasInitialized.current = true;
+      historyInitialized.current = true;
+      setPools(initialPools);
+      setPoolCount(initialPools.length);
+      const initialState: PoolStateHistory = {
+        pools: JSON.parse(JSON.stringify(initialPools)),
+        poolCount: initialPools.length,
+        minFencersPerPool,
+        maxFencersPerPool,
+        timestamp: Date.now(),
+      };
+      setHistory([initialState]);
+      setCurrentHistoryIndex(0);
+    } else if (fencers.length > 0 && pools.length === 0 && !hasInitialized.current) {
+      hasInitialized.current = true;
+      const optimalCount = calculateOptimalPoolCount(
+        fencers.length,
+        minFencersPerPool,
+        maxFencersPerPool
+      );
+      setPoolCount(optimalCount);
+      generatePools(optimalCount, separationConfig);
+    }
+  }, [fencers.length, initialPools]);
+
   const handlePoolCountChange = (newCount: number) => {
-    if (newCount >= 1 && newCount <= Math.ceil(fencers.length / 3)) {
+    if (newCount >= 0 && newCount <= Math.ceil(fencers.length / 3)) {
       saveToHistory();
       setPoolCount(newCount);
+      if (newCount === 0) {
+        setPools([]);
+      } else {
+        generatePools(newCount, separationConfig);
+      }
     }
   };
 
@@ -303,13 +299,9 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
     const fromPool = updatedPools[draggedFencer.poolIndex];
     const toPool = updatedPools[targetPoolIndex];
 
-    // Remove fencer from source pool
     fromPool.fencers = fromPool.fencers.filter(f => f.id !== draggedFencer.fencer.id);
-
-    // Add fencer to target pool
     toPool.fencers.push(draggedFencer.fencer);
 
-    // Regenerate matches for both pools
     updatedPools[draggedFencer.poolIndex] = regenerateMatches(fromPool);
     updatedPools[targetPoolIndex] = regenerateMatches(toPool);
 
@@ -347,7 +339,6 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
     const updatedPools = [...pools];
     const pool = updatedPools[poolIndex];
 
-    // Échanger avec le tireur précédent
     const temp = pool.fencers[fencerIndex];
     pool.fencers[fencerIndex] = pool.fencers[fencerIndex - 1];
     pool.fencers[fencerIndex - 1] = temp;
@@ -366,7 +357,6 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
     const updatedPools = [...pools];
     const updatedPool = updatedPools[poolIndex];
 
-    // Échanger avec le tireur suivant
     const temp = updatedPool.fencers[fencerIndex];
     updatedPool.fencers[fencerIndex] = updatedPool.fencers[fencerIndex + 1];
     updatedPool.fencers[fencerIndex + 1] = temp;
@@ -419,7 +409,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
             <button
               className="btn btn-secondary"
               onClick={() => handlePoolCountChange(poolCount - 1)}
-              disabled={poolCount <= 1}
+              disabled={poolCount <= 0}
               style={{ padding: '0.25rem 0.75rem' }}
             >
               -
@@ -518,7 +508,11 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
               <input
                 type="checkbox"
                 checked={separationConfig[key]}
-                onChange={e => setSeparationConfig(prev => ({ ...prev, [key]: e.target.checked }))}
+                onChange={e => {
+                  const newConfig = { ...separationConfig, [key]: e.target.checked };
+                  setSeparationConfig(newConfig);
+                  if (poolCount > 0) generatePools(poolCount, newConfig);
+                }}
               />
               {label}
             </label>
@@ -540,12 +534,31 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
         style={{
           flex: 1,
           overflowY: 'auto',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+          display: poolCount === 0 ? 'flex' : 'grid',
+          gridTemplateColumns: poolCount === 0 ? undefined : 'repeat(auto-fill, minmax(280px, 1fr))',
+          alignItems: poolCount === 0 ? 'center' : undefined,
+          justifyContent: poolCount === 0 ? 'center' : undefined,
           gap: '1rem',
           padding: '0.5rem',
         }}
       >
+        {poolCount === 0 ? (
+          <div
+            style={{
+              textAlign: 'center',
+              padding: '3rem',
+              color: '#6b7280',
+            }}
+          >
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⏭</div>
+            <div style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+              Aucune poule
+            </div>
+            <div style={{ fontSize: '0.9rem' }}>
+              Passage direct au classement initial des tireurs
+            </div>
+          </div>
+        ) : null}
         {pools.map((pool, poolIndex) => (
           <div
             key={pool.id}
@@ -624,9 +637,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
                     {fencer.club ? ` (${fencer.club})` : ''}
                   </span>
 
-                  {/* Move buttons */}
                   <div style={{ display: 'flex', gap: '0.25rem' }}>
-                    {/* Monter dans l'ordre */}
                     {fencerIndex > 0 && (
                       <button
                         onClick={() => handleMoveFencerUp(poolIndex, fencerIndex)}
@@ -643,7 +654,6 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
                         ↑
                       </button>
                     )}
-                    {/* Descendre dans l'ordre */}
                     {fencerIndex < pool.fencers.length - 1 && (
                       <button
                         onClick={() => handleMoveFencerDown(poolIndex, fencerIndex)}
@@ -740,7 +750,6 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
           borderTop: '1px solid #e5e7eb',
         }}
       >
-        {/* Bouton Annuler / Restore */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <button
             className="btn btn-secondary"
@@ -769,11 +778,11 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
 
         <button
           className="btn btn-primary"
-          onClick={() => onPoolsConfirm(pools)}
-          disabled={pools.length === 0 || pools.some(p => p.fencers.length < 3)}
+          onClick={() => (poolCount === 0 ? onSkipPools?.() : onPoolsConfirm(pools))}
+          disabled={poolCount > 0 && (pools.length === 0 || pools.some(p => p.fencers.length < 3))}
           style={{ fontSize: '1rem', padding: '0.75rem 2rem' }}
         >
-          Lancer les poules →
+          {poolCount === 0 ? 'Passer au classement initial →' : 'Lancer les poules →'}
         </button>
       </div>
     </div>

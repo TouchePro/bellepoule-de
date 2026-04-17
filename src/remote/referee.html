@@ -173,10 +173,12 @@
 
       /* Score principal */
       .score-display {
-        font-family: Impact, 'Arial Black', sans-serif;
+        font-family: 'Arial', 'Helvetica Neue', Helvetica, sans-serif;
         font-size: 4.5rem;
         font-weight: 900;
         margin-bottom: 0.3rem;
+        font-variant-numeric: tabular-nums;
+        -webkit-font-smoothing: antialiased;
       }
 
       .score-display.red-score {
@@ -381,8 +383,16 @@
         margin-top: 0.5rem;
       }
 
-      .btn-arena-exit {
-        background: linear-gradient(135deg, #f97316, #ea580c);
+      .btn-arena-exit-red {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: white;
+        font-size: 0.8rem;
+        padding: 0.65rem 0.4rem;
+        min-height: 48px;
+      }
+
+      .btn-arena-exit-green {
+        background: linear-gradient(135deg, #22c55e, #16a34a);
         color: white;
         font-size: 0.8rem;
         padding: 0.65rem 0.4rem;
@@ -826,11 +836,11 @@
         <!-- Boutons secondaires : sortie d'arène + annuler -->
         <div class="control-buttons-extra">
           <button
-            class="control-btn btn-arena-exit"
+            class="control-btn btn-arena-exit-red"
             id="btn-exit-a"
             onclick="refereeApp.arenaExit('A')"
           >
-            🚪 Sortie A
+            🚪 Sortie rouge
           </button>
           <button
             class="control-btn btn-undo"
@@ -841,11 +851,11 @@
             ↩ Annuler
           </button>
           <button
-            class="control-btn btn-arena-exit"
+            class="control-btn btn-arena-exit-green"
             id="btn-exit-b"
             onclick="refereeApp.arenaExit('B')"
           >
-            🚪 Sortie B
+            🚪 Sortie verte
           </button>
         </div>
       </div>
@@ -1418,15 +1428,17 @@
           }
 
           this.updateScores();
-          this.broadcastUpdate();
-          this.saveScore();
 
           // Mode Challenger : mort subite si les DEUX combattants ≥ 10 pts (Laser Sabre uniquement)
+          // Vérifier AVANT broadcastUpdate pour que le serveur reçoive l'état correct
           if (this.isLaserSabre && !this.isSuddenDeath) {
             if (this.scoreA >= 10 && this.scoreB >= 10) {
               this.triggerSuddenDeathChallenger();
             }
           }
+
+          this.broadcastUpdate();
+          this.saveScore();
         }
 
         addCard(fencer, cardType) {
@@ -1559,6 +1571,14 @@
             this.scoreB = Math.max(0, this.scoreB - points);
           }
 
+          // Ré-évaluer la mort subite : si un score repasse sous 10, on quitte la mort subite
+          if (this.isSuddenDeath && this.isLaserSabre) {
+            if (!(this.scoreA >= 10 && this.scoreB >= 10)) {
+              this.isSuddenDeath = false;
+              this.updateSuddenDeathUI();
+            }
+          }
+
           this.updateScores();
           this.broadcastUpdate();
           this.saveScore();
@@ -1592,6 +1612,14 @@
             this.scoreB = Math.max(0, this.scoreB - 5);
           } else if (cardType === 'red' && fencer === 'B') {
             this.scoreA = Math.max(0, this.scoreA - 5);
+          }
+
+          // Ré-évaluer la mort subite : si un score repasse sous 10, on quitte la mort subite
+          if (this.isSuddenDeath && this.isLaserSabre) {
+            if (!(this.scoreA >= 10 && this.scoreB >= 10)) {
+              this.isSuddenDeath = false;
+              this.updateSuddenDeathUI();
+            }
           }
 
           this.updateScores();

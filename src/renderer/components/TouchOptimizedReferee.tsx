@@ -159,7 +159,8 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
       onScoreUpdate(newScore, scoreB);
 
       if (newScore >= maxScore) {
-        handleMatchEnd();
+        // Pause le chronomètre pour permettre une correction d'arbitrage
+        setIsRunning(false);
       }
     } else {
       const newScore = Math.min(scoreB + points, maxScore);
@@ -167,7 +168,8 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
       onScoreUpdate(scoreA, newScore);
 
       if (newScore >= maxScore) {
-        handleMatchEnd();
+        // Pause le chronomètre pour permettre une correction d'arbitrage
+        setIsRunning(false);
       }
     }
   };
@@ -242,7 +244,7 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
                 <div className="text-sm opacity-75">N°{fencerA.ref}</div>
               </div>
               <div className="bg-white rounded-lg shadow-lg p-8">
-                <div className="text-6xl font-bold text-gray-800 mb-4">{scoreA}</div>
+                <div className="text-6xl font-digital font-bold text-gray-800 mb-4">{scoreA}</div>
                 {/* Zone buttons for Sabre Laser */}
                 <div className="grid grid-cols-3 gap-2 mb-4">
                   {ZONES.map(({ zone, points, label, desc, color }) => (
@@ -294,7 +296,7 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
                 <div className="text-sm opacity-75">N°{fencerB.ref}</div>
               </div>
               <div className="bg-white rounded-lg shadow-lg p-8">
-                <div className="text-6xl font-bold text-gray-800 mb-4">{scoreB}</div>
+                <div className="text-6xl font-digital font-bold text-gray-800 mb-4">{scoreB}</div>
                 {/* Zone buttons for Sabre Laser */}
                 <div className="grid grid-cols-3 gap-2 mb-4">
                   {ZONES.map(({ zone, points, label, desc, color }) => (

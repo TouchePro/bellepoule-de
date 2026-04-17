@@ -296,25 +296,28 @@
       }
 
       .score-big {
+        font-family: Impact, 'Arial Black', 'Haettenschweiler', sans-serif;
         font-size: clamp(8rem, 22vw, 38vh);
         font-weight: 900;
         line-height: 1;
-        letter-spacing: -0.02em;
-        -webkit-text-stroke: 2px currentColor;
+        letter-spacing: 0.03em;
+        font-variant-numeric: tabular-nums;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
 
       .score-big.red {
         color: #dc2626;
-        text-shadow: 0 0 20px rgba(220, 38, 38, 0.9),
-                     0 0 50px rgba(220, 38, 38, 0.5),
-                     0 0 80px rgba(220, 38, 38, 0.2);
+        text-shadow: 0 0 10px rgba(220, 38, 38, 0.7),
+                     0 0 40px rgba(220, 38, 38, 0.4),
+                     0 0 80px rgba(220, 38, 38, 0.15);
       }
 
       .score-big.green {
         color: #16a34a;
-        text-shadow: 0 0 20px rgba(22, 163, 74, 0.9),
-                     0 0 50px rgba(22, 163, 74, 0.5),
-                     0 0 80px rgba(22, 163, 74, 0.2);
+        text-shadow: 0 0 10px rgba(22, 163, 74, 0.7),
+                     0 0 40px rgba(22, 163, 74, 0.4),
+                     0 0 80px rgba(22, 163, 74, 0.15);
       }
 
       .vs-divider {

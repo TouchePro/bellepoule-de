@@ -10,6 +10,8 @@ import { Competition, Pool } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
 import { TableauMatch } from './TableauView';
 import { useToast } from './Toast';
+import ThemeEditor from './ThemeEditor';
+import { CustomTheme, DisplayTheme } from '../../shared/types/remote';
 
 interface RemoteScoreManagerProps {
   competition: Competition;
@@ -47,7 +49,11 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const { showToast } = useToast();
   const [session, setSession] = useState<RemoteSession | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [serverUrl, setServerUrl] = useState<string>('http://localhost:8066');
+  const [serverUrl, setServerUrl] = useState<string>('');
+  const [remotePort, setRemotePort] = useState<number>(() => {
+    const saved = localStorage.getItem('bellepoule-remote-port');
+    return saved ? parseInt(saved, 10) : 8066;
+  });
   // pendingCount : valeur affichée (modifiée par +/−, non encore appliquée)
   const [pendingCount, setPendingCount] = useState<number | null>(null);
   // committedCount : valeur appliquée au serveur ou confirmée par l'utilisateur
@@ -57,11 +63,17 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const [arenaPasswords, setArenaPasswords] = useState<Record<string, string>>({});
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [showPhotos, setShowPhotos] = useState(false);
+  const [displayTheme, setDisplayTheme] = useState<'dark' | 'light' | 'neon'>('dark');
   const [kioskViews, setKioskViews] = useState({ poules: true, classement: true, direct: true });
   const [orgNoteType, setOrgNoteType] = useState<'free' | 'target_time'>('free');
   const [orgNoteMessage, setOrgNoteMessage] = useState('');
   const [orgNoteTime, setOrgNoteTime] = useState('');
+  const [orgNotePrefix, setOrgNotePrefix] = useState('Reprise');
   const [orgNoteActive, setOrgNoteActive] = useState(false);
+  // Thèmes par arène : arenaId → { theme, customTheme? }
+  const [arenaThemes, setArenaThemes] = useState<Record<string, { theme: DisplayTheme; customTheme?: CustomTheme }>>({});
+  // Éditeur de thème
+  const [themeEditorTarget, setThemeEditorTarget] = useState<string | null>(null);
 
   useEffect(() => {
     if (!activeQR) {
@@ -125,7 +137,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const startRemoteServer = async () => {
     try {
       setIsLoading(true);
-      const result = await window.electronAPI.remote.startServer();
+      const result = await window.electronAPI.remote.startServer(remotePort);
 
       if (result.success && result.serverInfo) {
         setServerUrl(result.serverInfo.url);
@@ -205,6 +217,12 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     }
   };
 
+  const handlePortChange = (value: number) => {
+    const port = Math.max(1024, Math.min(65535, value || 8066));
+    setRemotePort(port);
+    localStorage.setItem('bellepoule-remote-port', String(port));
+  };
+
   const handleStopRemote = async () => {
     setIsLoading(true);
     try {
@@ -242,6 +260,14 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       setTimeout(() => setCopiedIndex(null), 2000);
     }
   }, []);
+
+  // Appliquer un thème (prédéfini ou custom) à une arène
+  const handleArenaThemeChange = useCallback(async (arenaId: string, theme: DisplayTheme, customTheme?: CustomTheme) => {
+    setArenaThemes(prev => ({ ...prev, [arenaId]: { theme, customTheme } }));
+    if (session) {
+      await window.electronAPI.remote.updateArenaTheme(arenaId, theme, customTheme);
+    }
+  }, [session]);
 
   // La grille d'URLs reflète l'état réel du serveur (committedCount) ou la session active
   const arenaCount = session ? session.strips.length : effectiveCommitted;
@@ -346,6 +372,20 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
               </label>
             ))}
           </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.75rem 0' }}>
+            <label htmlFor="remote-port" style={{ whiteSpace: 'nowrap' }}>Port :</label>
+            <input
+              id="remote-port"
+              type="number"
+              min={1024}
+              max={65535}
+              value={remotePort}
+              onChange={e => handlePortChange(parseInt(e.target.value, 10))}
+              style={{ width: '80px' }}
+              disabled={isLoading}
+            />
+            <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>1024–65535, défaut 8066</span>
+          </div>
           <button className="btn-primary" onClick={onStartRemote}>
             ⚡ Démarrer la saisie distante
           </button>
@@ -395,6 +435,42 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           Afficher les photos des combattants avant le combat
         </label>
         <div style={{ margin: '0.5rem 0' }}>
+          <div style={{ fontSize: '0.875rem', marginBottom: '0.4rem', color: 'inherit' }}>
+            Thème de l'affichage :
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            {(
+              [
+                { value: 'dark', label: 'Sombre', icon: '🌙' },
+                { value: 'light', label: 'Clair', icon: '☀️' },
+                { value: 'neon', label: 'Néon', icon: '⚡' },
+              ] as const
+            ).map(({ value, label, icon }) => (
+              <button
+                key={value}
+                onClick={async () => {
+                  setDisplayTheme(value);
+                  await window.electronAPI.remote.updateTheme(value);
+                }}
+                style={{
+                  flex: 1,
+                  padding: '0.35rem 0.5rem',
+                  borderRadius: '0.375rem',
+                  border: `2px solid ${displayTheme === value ? '#3b82f6' : '#475569'}`,
+                  background: displayTheme === value ? '#1d4ed8' : 'transparent',
+                  color: '#e2e8f0',
+                  cursor: 'pointer',
+                  fontWeight: displayTheme === value ? 700 : 400,
+                  fontSize: '0.8rem',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {icon} {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div style={{ margin: '0.5rem 0' }}>
           <div style={{ fontSize: '0.875rem', marginBottom: '0.25rem', color: 'inherit' }}>
             Vues kiosk :
           </div>
@@ -429,7 +505,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             Note d'organisation (kiosk)
           </div>
           <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.5rem' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', color: '#e2e8f0' }}>
               <input
                 type="radio"
                 name="orgNoteType"
@@ -438,7 +514,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
               />
               Message libre
             </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', color: '#e2e8f0' }}>
               <input
                 type="radio"
                 name="orgNoteType"
@@ -448,20 +524,31 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
               Heure de reprise
             </label>
           </div>
-          <input
-            type="text"
+          <textarea
             placeholder="Message (ex: Déjeuner des arbitres)"
             value={orgNoteMessage}
             onChange={e => setOrgNoteMessage(e.target.value)}
-            style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#0f172a', color: 'inherit', boxSizing: 'border-box', marginBottom: '0.4rem' }}
+            rows={3}
+            style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#0f172a', color: '#e2e8f0', boxSizing: 'border-box', marginBottom: '0.4rem', resize: 'vertical', fontFamily: 'inherit', fontSize: 'inherit' }}
           />
           {orgNoteType === 'target_time' && (
-            <input
-              type="time"
-              value={orgNoteTime}
-              onChange={e => setOrgNoteTime(e.target.value)}
-              style={{ padding: '0.4rem 0.6rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#0f172a', color: 'inherit', marginBottom: '0.4rem' }}
-            />
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.4rem' }}>
+              <select
+                value={orgNotePrefix}
+                onChange={e => setOrgNotePrefix(e.target.value)}
+                style={{ padding: '0.4rem 0.6rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#0f172a', color: '#e2e8f0', cursor: 'pointer' }}
+              >
+                {['Reprise', 'Début', 'Fin', 'Pause', 'Déjeuner', 'Cérémonie'].map(p => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+              <input
+                type="time"
+                value={orgNoteTime}
+                onChange={e => setOrgNoteTime(e.target.value)}
+                style={{ padding: '0.4rem 0.6rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#0f172a', color: '#e2e8f0' }}
+              />
+            </div>
           )}
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
             <button
@@ -470,7 +557,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                 const note = {
                   type: orgNoteType,
                   message: orgNoteMessage.trim(),
-                  ...(orgNoteType === 'target_time' ? { targetTime: orgNoteTime } : {}),
+                  ...(orgNoteType === 'target_time' ? { targetTime: orgNoteTime, countdownPrefix: orgNotePrefix } : {}),
                   createdAt: new Date().toISOString(),
                 };
                 await window.electronAPI.remote.setOrgNote(note);
@@ -500,10 +587,39 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         </div>
 
         <div className="arena-url-grid">
-          {arenaUrls.map(arena => (
+          {arenaUrls.map(arena => {
+            const arenaId = `arena${arena.number}`;
+            const arenaTheme = arenaThemes[arenaId];
+            return (
             <div key={arena.number} className="arena-url-card">
               <div className="arena-url-header">
                 <strong>Piste {arena.number}</strong>
+                {/* Sélecteur de thème par arène */}
+                <div className="arena-theme-picker">
+                  {(
+                    [
+                      { value: 'dark'  as const, icon: '🌙', title: 'Sombre'  },
+                      { value: 'light' as const, icon: '☀️', title: 'Clair'   },
+                      { value: 'neon'  as const, icon: '⚡', title: 'Néon'    },
+                    ]
+                  ).map(({ value, icon, title }) => (
+                    <button
+                      key={value}
+                      title={title}
+                      className={`arena-theme-btn ${arenaTheme?.theme === value ? 'active' : ''}`}
+                      onClick={() => handleArenaThemeChange(arenaId, value)}
+                    >
+                      {icon}
+                    </button>
+                  ))}
+                  <button
+                    title="Thème personnalisé"
+                    className={`arena-theme-btn ${arenaTheme?.theme === 'custom' ? 'active' : ''}`}
+                    onClick={() => setThemeEditorTarget(arenaId)}
+                  >
+                    ✏️
+                  </button>
+                </div>
               </div>
               <div className="arena-url-row">
                 <span className="arena-url-label">Arbitre</span>
@@ -652,7 +768,8 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                 </button>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="arena-url-card" style={{ marginTop: '1rem' }}>
@@ -691,6 +808,19 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           <li>Cliquer sur "Match suivant" pour passer au match suivant</li>
         </ol>
       </div>
+
+      {themeEditorTarget && (
+        <ThemeEditor
+          targetArenaId={themeEditorTarget}
+          initialTheme={arenaThemes[themeEditorTarget]?.customTheme}
+          onApply={async (arenaId, theme) => {
+            await handleArenaThemeChange(arenaId, 'custom', theme);
+            setThemeEditorTarget(null);
+            showToast('Thème personnalisé appliqué', 'success');
+          }}
+          onClose={() => setThemeEditorTarget(null)}
+        />
+      )}
 
       {activeQR && (
         <div className="qr-popup-overlay" onClick={() => setActiveQR(null)}>

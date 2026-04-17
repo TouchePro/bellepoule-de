@@ -3,6 +3,26 @@
  * Licensed under GPL-3.0
  */
 
+/* Police 7 segments — style afficheur LCD */
+@font-face {
+  font-family: 'DSEG7Classic';
+  src: url('../assets/fonts/DSEG7Classic-Bold.woff2') format('woff2');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'DSEG7Classic';
+  src: url('../assets/fonts/DSEG7Classic-Regular.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+.font-digital {
+  font-family: 'DSEG7Classic', monospace;
+}
+
 /* Reset and Base */
 *,
 *::before,
@@ -52,6 +72,7 @@
   --font-sans:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+  --font-digital: 'DSEG7Classic', monospace;
 }
 
 body {
@@ -1584,4 +1605,237 @@ body {
   flex-direction: column;
   gap: 0.25rem;
   font-size: 0.9rem;
+}
+
+/* ── Sélecteur de thème par arène ─────────────────────────────────────────── */
+
+.arena-url-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-surface-raised, #1e293b);
+  border-bottom: 1px solid var(--color-border);
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
+}
+
+.arena-theme-picker {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.arena-theme-btn {
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.25rem;
+  border: 1px solid #475569;
+  background: transparent;
+  color: #e2e8f0;
+  cursor: pointer;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.arena-theme-btn:hover {
+  border-color: #64748b;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.arena-theme-btn.active {
+  border-color: #3b82f6;
+  background: #1d4ed8;
+}
+
+/* ── Éditeur de thème ─────────────────────────────────────────────────────── */
+
+.theme-editor-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.theme-editor-modal {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 0.75rem;
+  width: min(1100px, 100%);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+}
+
+.theme-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid #334155;
+  background: #1e293b;
+  flex-shrink: 0;
+  color: #e2e8f0;
+}
+
+.theme-editor-body {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.theme-editor-left {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  border-right: 1px solid #334155;
+  overflow: hidden;
+  min-height: 0;
+  gap: 0;
+}
+
+.theme-editor-right {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  overflow: hidden;
+  min-height: 0;
+  background: #0a0f1e;
+}
+
+.theme-editor-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.theme-editor-tab {
+  padding: 0.25rem 0.6rem;
+  border-radius: 0.25rem;
+  border: 1px solid #475569;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: all 0.12s;
+}
+
+.theme-editor-tab:hover {
+  color: #e2e8f0;
+  border-color: #64748b;
+}
+
+.theme-editor-tab.active {
+  border-color: #3b82f6;
+  background: #1e3a8a;
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+.theme-editor-vars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  overflow-y: auto;
+  flex: 1;
+  padding-right: 0.25rem;
+}
+
+.var-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.var-label {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  min-width: 110px;
+  flex-shrink: 0;
+  padding-top: 0.35rem;
+  line-height: 1.3;
+}
+
+.var-control {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.var-text-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.3rem 0.5rem;
+  border-radius: 0.25rem;
+  border: 1px solid #475569;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-size: 0.78rem;
+  font-family: 'Consolas', 'Monaco', monospace;
+}
+
+.var-text-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.theme-editor-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid #334155;
+  background: #1e293b;
+  flex-shrink: 0;
+}
+
+.theme-editor-btn {
+  padding: 0.45rem 1rem;
+  border-radius: 0.375rem;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+
+.theme-editor-btn.primary {
+  background: #2563eb;
+  color: #fff;
+}
+
+.theme-editor-btn.primary:hover {
+  background: #1d4ed8;
+}
+
+.theme-editor-btn.secondary {
+  background: #334155;
+  color: #e2e8f0;
+}
+
+.theme-editor-btn.secondary:hover {
+  background: #475569;
+}
+
+.theme-editor-btn.close {
+  background: transparent;
+  border: 1px solid #475569;
+  color: #94a3b8;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.9rem;
+}
+
+.theme-editor-btn.close:hover {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
 }

@@ -19,6 +19,7 @@ interface SessionState {
   tableauMatches: TableauMatch[];
   finalResults: FinalResult[];
   currentPoolRound: number;
+  skipPoolPhase: boolean;
   poolPrepParams: {
     poolCount: number;
     minFencersPerPool: number;
@@ -40,6 +41,7 @@ interface UseCompetitionSessionProps {
   overallRanking: PoolRanking[];
   tableauMatches: TableauMatch[];
   finalResults: FinalResult[];
+  skipPoolPhase: boolean;
   poolPrepParams: {
     poolCount: number;
     minFencersPerPool: number;
@@ -84,6 +86,7 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
       tableauMatches: props.tableauMatches,
       finalResults: props.finalResults,
       currentPoolRound: props.currentPoolRound,
+      skipPoolPhase: props.skipPoolPhase,
       poolPrepParams: {
         poolCount: props.poolPrepParams?.poolCount || 0,
         minFencersPerPool: props.poolPrepParams?.minFencersPerPool || 5,
@@ -124,6 +127,7 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
           tableauMatches: typedState.tableauMatches || [],
           finalResults: typedState.finalResults || [],
           currentPoolRound: typedState.uiState?.currentPoolRound || 1,
+          skipPoolPhase: typedState.skipPoolPhase ?? false,
           poolPrepParams: typedState.poolPrepParams || {
             poolCount: 0,
             minFencersPerPool: 5,

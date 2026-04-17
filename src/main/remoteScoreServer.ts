@@ -19,6 +19,8 @@ import {
   ArenaSettings,
   ArenaUpdate,
   OrgNote,
+  DisplayTheme,
+  CustomTheme,
 } from '../shared/types/remote';
 import { Competition, Match, Fencer, MatchStatus, Score } from '../shared/types';
 import { DatabaseManager } from '../database';
@@ -39,7 +41,10 @@ export class RemoteScoreServer {
   private poolFencersCache: Map<string, any[]> = new Map(); // Tireurs par poolId (depuis le renderer)
   private sessionMatchScores: Map<string, { scoreA: any; scoreB: any; status: string }> = new Map(); // Scores en mémoire
   private sessionShowPhotos: boolean = false; // Afficher les photos des combattants avant le combat
+  private sessionTheme: DisplayTheme = 'dark'; // Thème visuel de l'affichage distant (global)
+  private arenaThemeOverrides: Map<string, { theme: DisplayTheme; customTheme?: CustomTheme }> = new Map();
   private orgNote: OrgNote | null = null; // Note d'organisation affichée sur le kiosk
+  private sessionLogo: string | null = null; // Logo organisateur (base64) pour kiosk et affichages publics
   private sessionKioskViews: { poules: boolean; classement: boolean; direct: boolean } = {
     poules: true,
     classement: true,
@@ -416,6 +421,11 @@ export class RemoteScoreServer {
     this.app.post('/api/session/stop', (req, res) => {
       this.session = null;
       res.json({ success: true });
+    });
+
+    // Logo organisateur
+    this.app.get('/api/logo', (req, res) => {
+      res.json({ logo: this.sessionLogo });
     });
 
     // Arena routes
@@ -2091,8 +2101,14 @@ export class RemoteScoreServer {
   }
 
   private broadcastArenaUpdate(arenaId: string, update: ArenaUpdate): void {
-    // Injecter le réglage showPhotos dans chaque mise à jour
-    const updateWithPhotos: ArenaUpdate = { ...update, showPhotos: this.sessionShowPhotos };
+    // Injecter showPhotos + thème (par arène si override, sinon thème global de session)
+    const override = this.arenaThemeOverrides.get(arenaId);
+    const updateWithPhotos: ArenaUpdate = {
+      ...update,
+      showPhotos: this.sessionShowPhotos,
+      theme: override?.theme ?? this.sessionTheme,
+      customTheme: override?.customTheme,
+    };
     // Envoyer via Socket.IO aux clients connectés aux arènes
     this.io.emit(`arena:${arenaId}:update`, updateWithPhotos);
 
@@ -2524,6 +2540,40 @@ export class RemoteScoreServer {
     }
   }
 
+  public updateTheme(theme: DisplayTheme): void {
+    if (!this.session) throw new Error('Aucune session active');
+    this.sessionTheme = theme;
+    for (const [arenaId, arena] of this.arenas.entries()) {
+      this.broadcastArenaUpdate(arenaId, {
+        arenaId,
+        match: arena.currentMatch,
+        scoreA: arena.currentMatch?.scoreA,
+        scoreB: arena.currentMatch?.scoreB,
+        status: arena.status,
+        fencerA: arena.currentMatch?.fencerA,
+        fencerB: arena.currentMatch?.fencerB,
+      });
+    }
+  }
+
+  public updateArenaTheme(arenaId: string, theme: DisplayTheme, customTheme?: CustomTheme): void {
+    if (!this.session) throw new Error('Aucune session active');
+    const fullId = arenaId.startsWith('arena') ? arenaId : `arena${arenaId}`;
+    this.arenaThemeOverrides.set(fullId, { theme, customTheme });
+    const arena = this.arenas.get(fullId);
+    if (arena) {
+      this.broadcastArenaUpdate(fullId, {
+        arenaId: fullId,
+        match: arena.currentMatch,
+        scoreA: arena.currentMatch?.scoreA,
+        scoreB: arena.currentMatch?.scoreB,
+        status: arena.status,
+        fencerA: arena.currentMatch?.fencerA,
+        fencerB: arena.currentMatch?.fencerB,
+      });
+    }
+  }
+
   public updateKioskViews(views: { poules: boolean; classement: boolean; direct: boolean }): void {
     if (!this.session) throw new Error('Aucune session active');
     this.sessionKioskViews = views;
@@ -2571,6 +2621,11 @@ export class RemoteScoreServer {
   public clearOrgNote(): void {
     this.orgNote = null;
     this.io.emit('kiosk:note', null);
+  }
+
+  public setLogo(logo: string | null): void {
+    this.sessionLogo = logo;
+    this.io.emit('logo:update', { logo });
   }
 
   public setArenaPassword(arenaId: string, password: string): void {
