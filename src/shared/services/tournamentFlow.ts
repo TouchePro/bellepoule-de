@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-import { Competition, Pool, Match, Fencer, MatchStatus } from '../types';
+import { Competition, Pool, Match, MatchStatus } from '../types';
 
 export interface Arena {
   id: string;
@@ -42,6 +42,7 @@ export interface FlowOptimizationResult {
 export class TournamentFlowManager {
   private config: ArenaSettings;
   private historicalData: Map<string, number> = new Map(); // fencerId -> average match duration
+  private fencerAvailability: Map<string, Date> = new Map(); // fencerId -> earliest next match time
 
   constructor(config: ArenaSettings) {
     this.config = config;
@@ -226,9 +227,16 @@ export class TournamentFlowManager {
    * Get earliest start time respecting fencer rest periods
    */
   private getEarliestStartAfterRest(match: Match, availableFrom: Date): Date {
-    // This would track fencer availability
-    // For now, return availableFrom
-    return new Date(availableFrom);
+    let earliest = availableFrom.getTime();
+    if (match.fencerA?.id) {
+      const avail = this.fencerAvailability.get(match.fencerA.id);
+      if (avail && avail.getTime() > earliest) earliest = avail.getTime();
+    }
+    if (match.fencerB?.id) {
+      const avail = this.fencerAvailability.get(match.fencerB.id);
+      if (avail && avail.getTime() > earliest) earliest = avail.getTime();
+    }
+    return new Date(earliest);
   }
 
   /**
@@ -270,11 +278,12 @@ export class TournamentFlowManager {
   }
 
   /**
-   * Update fencer availability tracking
+   * Update fencer availability tracking (rest time after a match ends)
    */
   private updateFencerAvailability(match: Match, endTime: Date): void {
-    // Track when fencers will be available again
-    // This would be used for rest time calculations
+    const restEnd = new Date(endTime.getTime() + this.config.minRestTime * 60_000);
+    if (match.fencerA?.id) this.fencerAvailability.set(match.fencerA.id, restEnd);
+    if (match.fencerB?.id) this.fencerAvailability.set(match.fencerB.id, restEnd);
   }
 
   /**
