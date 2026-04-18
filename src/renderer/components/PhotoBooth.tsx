@@ -191,10 +191,10 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
             📷
           </div>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-            <button className="btn btn-secondary" onClick={onClose}>
+            <button type="button" className="btn btn-secondary" onClick={onClose}>
               Annuler
             </button>
-            <button className="btn btn-primary" onClick={startCamera}>
+            <button type="button" className="btn btn-primary" onClick={startCamera}>
               Démarrer la caméra
             </button>
           </div>
@@ -234,6 +234,7 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
 
           <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
             <button
+              type="button"
               onClick={capturePhoto}
               disabled={countdown > 0}
               className="btn btn-primary"
@@ -242,6 +243,7 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
               {countdown > 0 ? `${countdown}…` : '📸 Capturer'}
             </button>
             <button
+              type="button"
               onClick={() => { stopCamera(); onClose(); }}
               className="btn btn-secondary"
             >
@@ -263,10 +265,10 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
             }}
           />
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-            <button onClick={retake} className="btn btn-secondary">
+            <button type="button" onClick={retake} className="btn btn-secondary">
               Recommencer
             </button>
-            <button onClick={() => onConfirm(photo)} className="btn btn-primary">
+            <button type="button" onClick={() => onConfirm(photo)} className="btn btn-primary">
               Utiliser cette photo
             </button>
           </div>
