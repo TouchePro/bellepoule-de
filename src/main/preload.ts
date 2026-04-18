@@ -188,6 +188,31 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }
       return ipcRenderer.invoke('db:updatePool', pool);
     },
+    getPoolsByPhase: (phaseId: string) => ipcRenderer.invoke('db:getPoolsByPhase', phaseId),
+
+    // Phases
+    createPhase: (competitionId: string, type: string, order: number, name: string) =>
+      ipcRenderer.invoke('db:createPhase', competitionId, type, order, name),
+    getPhase: (id: string) => ipcRenderer.invoke('db:getPhase', id),
+    getPhasesByCompetition: (competitionId: string) =>
+      ipcRenderer.invoke('db:getPhasesByCompetition', competitionId),
+    updatePhase: (id: string, updates: { name?: string; isComplete?: boolean }) =>
+      ipcRenderer.invoke('db:updatePhase', id, updates),
+    deletePhase: (id: string) => ipcRenderer.invoke('db:deletePhase', id),
+
+    // Referees
+    createReferee: (competitionId: string, data: { name: string; gender?: string; nationality?: string; club?: string; license?: string; category?: string }) =>
+      ipcRenderer.invoke('db:createReferee', competitionId, data),
+    getReferee: (id: string) => ipcRenderer.invoke('db:getReferee', id),
+    getRefereesByCompetition: (competitionId: string) =>
+      ipcRenderer.invoke('db:getRefereesByCompetition', competitionId),
+    updateReferee: (id: string, updates: Record<string, string | undefined>) =>
+      ipcRenderer.invoke('db:updateReferee', id, updates),
+    deleteReferee: (id: string) => ipcRenderer.invoke('db:deleteReferee', id),
+
+    // Touch / Card read
+    getTouches: (matchId: string) => ipcRenderer.invoke('db:getTouches', matchId),
+    getCards: (matchId: string) => ipcRenderer.invoke('db:getCards', matchId),
 
     // Session State
     saveSessionState: (competitionId: string, state: SessionState) => {

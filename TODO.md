@@ -8,27 +8,15 @@
 ## 🔴 CRITIQUE — Services stubs & fonctionnalités manquantes
 
 ### Services qui retournent des tableaux vides / valeurs hardcodées
-- [ ] **`poolService.generatePools()`** — retourne `[]`, aucune logique réelle (`src/features/pools/services/poolService.ts`)
-- [ ] **`poolCalculator.calculateRankings()`** — retourne `[]` placeholder (`src/features/pools/services/poolCalculator.ts:50`)
-- [ ] **`bracketService.generateBracket()`** — placeholder vide (`src/features/bracket/services/bracketService.ts:23`)
-- [ ] **`bracketService.updateMatchResult()`** — méthode vide (`src/features/bracket/services/bracketService.ts:54`)
-- [ ] **`analyticsService.getCompetitionStats()`** — retourne des zéros hardcodés (`src/features/analytics/services/analyticsService.ts:27`)
 - [ ] **`cloudSyncService` providers** — `uploadToDropbox/GoogleDrive/OneDrive/Custom()` tous stubs non implémentés
-- [ ] **Double élimination** — `advanceWinner()` et `advanceLoser()` dans `useDEBracketStore.ts:182/198` → logique incomplète
 - [ ] **Late fencers** — `updateDelays()` sort prématurément à la ligne 150, logique auto-forfeit absente
 
 ### Base de données
-- [ ] **CRUD Referee** — zéro opération DB malgré le type `Referee` défini dans `src/shared/types/index.ts` (`src/database/index.ts`)
-- [ ] **CRUD Phase** — `createPhase`, `getPhase`, `updatePhase`, `deletePhase`, `getPhasesByCompetition` absents ; config de phase non persistée
 - [ ] **DirectElimination en DB** — types `DirectEliminationTable`, `TableNode` définis mais aucune table SQL ni opération DB
-- [ ] **`getTouches` / `getCards`** — `saveTouch()` et `saveCard()` existent sans méthode de lecture ; historique et recalcul de score impossibles
 - [ ] **Système de migrations DB** — actuellement `ALTER TABLE` avec try-catch ad-hoc ; implémenter migrations versionnées dans `src/database/migrations/`
-- [ ] **Index manquants** — `match_cards.fencer_id`, `match_touches.fencer_id`, `matches.pool_id`, `pools.phase_id`
 
 ### Génération de tableau
-- [ ] **Bracket d'élimination directe** — `useBracketStore` existe mais seeding + byes automatiques absents
 - [ ] **Match pour 3e place** — aucune gestion DB ni frontend (`TableauView.tsx`)
-- [ ] **Double élimination complète** — `useDEBracketStore` dans `src/features/doubleelimination/` incomplet
 
 ### Arbitres
 - [ ] **Attribution automatique** — `refereeManager.ts` existe sans connexion DB ni store

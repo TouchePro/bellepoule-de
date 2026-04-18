@@ -183,15 +183,23 @@ export const useDEBracketStore = create<DEBracketState & DEBracketActions>()(
         set(state => {
           if (!state.bracket) return;
 
-          const node =
-            state.bracket.winnersBracket.find(n => n.id === nodeId) ||
-            state.bracket.losersBracket.find(n => n.id === nodeId) ||
-            state.bracket.final.find(n => n.id === nodeId);
-
+          const allNodes = [
+            ...state.bracket.winnersBracket,
+            ...state.bracket.losersBracket,
+            ...state.bracket.final,
+          ];
+          const node = allNodes.find(n => n.id === nodeId);
           if (!node || !node.winnerId || !node.isComplete) return;
 
-          // Logic to advance winner to next round
-          // Would need to map node relationships
+          // Find the next node that lists this node as a source
+          const nextNode = allNodes.find(n => n.winnerFromNodes?.includes(nodeId));
+          if (!nextNode) return;
+
+          if (!nextNode.fencerAId) {
+            nextNode.fencerAId = node.winnerId;
+          } else if (!nextNode.fencerBId) {
+            nextNode.fencerBId = node.winnerId;
+          }
         });
       },
 
@@ -199,21 +207,26 @@ export const useDEBracketStore = create<DEBracketState & DEBracketActions>()(
         set(state => {
           if (!state.bracket) return;
 
+          // Losers can only come from the winners bracket
           const node = state.bracket.winnersBracket.find(n => n.id === nodeId);
-          if (!node || !node.isComplete) return;
+          if (!node || !node.isComplete || !node.winnerId) return;
 
           const loserId = node.winnerId === node.fencerAId ? node.fencerBId : node.fencerAId;
+          if (!loserId || !node.loserToNodeId) return;
 
-          if (loserId && node.loserToNodeId) {
-            // Send loser to losers bracket
-            const loserNode = state.bracket.losersBracket.find(n => n.id === node.loserToNodeId);
-            if (loserNode) {
-              if (!loserNode.fencerAId) {
-                loserNode.fencerAId = loserId;
-              } else if (!loserNode.fencerBId) {
-                loserNode.fencerBId = loserId;
-              }
-            }
+          const loserNode = state.bracket.losersBracket.find(n => n.id === node.loserToNodeId);
+          if (!loserNode) return;
+
+          if (!loserNode.fencerAId) {
+            loserNode.fencerAId = loserId;
+          } else if (!loserNode.fencerBId) {
+            loserNode.fencerBId = loserId;
+          }
+
+          // Mark fencer as in losers bracket
+          const fencerRecord = state.fencers.find(f => f.id === loserId);
+          if (fencerRecord) {
+            fencerRecord.eliminationRound = node.round;
           }
         });
       },
