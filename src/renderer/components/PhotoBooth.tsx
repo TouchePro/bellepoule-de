@@ -16,19 +16,20 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
   const [isCapturing, setIsCapturing] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [photo, setPhoto] = useState<string | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    if (isCapturing && videoRef.current && streamRef.current) {
-      videoRef.current.srcObject = streamRef.current;
-      videoRef.current.play().catch(err => {
+  const videoCallbackRef = useCallback((video: HTMLVideoElement | null) => {
+    videoRef.current = video;
+    if (video && streamRef.current) {
+      video.srcObject = streamRef.current;
+      video.play().catch(err => {
         logger.error(LogCategory.UI, 'Error playing video stream', err as Error);
       });
     }
-  }, [isCapturing]);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -47,6 +48,10 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
   }, []);
 
   const startCamera = useCallback(async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      alert("L'accès à la webcam n'est pas disponible dans ce contexte.");
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: 640, height: 480 },
@@ -57,7 +62,14 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
       setIsCapturing(true);
     } catch (err) {
       logger.error(LogCategory.UI, 'Error accessing camera', err as Error);
-      alert("Impossible d'accéder à la caméra. Vérifiez que la webcam est connectée et que les permissions sont accordées.");
+      const domErr = err as DOMException;
+      const msg =
+        domErr.name === 'NotAllowedError'
+          ? "Permission refusée. Vérifiez que l'application a accès à la caméra dans les paramètres système."
+          : domErr.name === 'NotFoundError'
+            ? 'Aucune caméra détectée. Vérifiez que la webcam est connectée.'
+            : `Impossible d'accéder à la caméra : ${domErr.message || String(err)}`;
+      alert(msg);
     }
   }, []);
 
@@ -162,7 +174,7 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
       {isCapturing && (
         <div style={{ position: 'relative' }}>
           <video
-            ref={videoRef}
+            ref={videoCallbackRef}
             autoPlay
             playsInline
             muted
