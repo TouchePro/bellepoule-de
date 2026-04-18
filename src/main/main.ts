@@ -252,16 +252,13 @@ function createWindow(): void {
   });
 
   // Allow camera access for webcam photo capture
+  const cameraPermissions = new Set(['media', 'camera', 'microphone']);
   mainWindow.webContents.session.setPermissionRequestHandler((_webContents, permission, callback) => {
-    if (permission === 'media') {
-      callback(true);
-    } else {
-      callback(false);
-    }
+    callback(cameraPermissions.has(permission));
   });
 
   mainWindow.webContents.session.setPermissionCheckHandler((_webContents, permission) => {
-    return permission === 'media';
+    return cameraPermissions.has(permission);
   });
 
   // Security: Set CSP headers for all requests
