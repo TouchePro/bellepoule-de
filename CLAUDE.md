@@ -9,7 +9,7 @@
 
 ## Mise à jour documentation – mode activé par défaut
 Quand on te demande (ou implique) de mettre à jour la doc :
-1. Lis en priorité : README.md, docs/*.md, src/, .env.example
+1. Lis en priorité : README.md, docs/*.md, src/
 2. Identifie uniquement les écarts réels code ↔ doc
 3. Supprime ce qui est promis mais non implémenté
 4. Corrige signatures, exemples, endpoints, variables d'environnement
@@ -42,7 +42,9 @@ npm run package:win     # Windows (NSIS installer)
 npm run package:mac     # macOS (DMG, x64)
 npm run package:mac-arm # macOS (DMG, arm64)
 npm run package:linux   # Linux (AppImage)
-npm test                # Run Vitest unit tests
+npm test                # Run Vitest unit tests (watch mode)
+npm run test:run        # Vitest single run (CI)
+npm run test:coverage   # Vitest with coverage report
 npm run lint            # ESLint check
 npm run lint:fix        # ESLint auto-fix
 npm run format          # Prettier format
@@ -61,7 +63,7 @@ Main Process (src/main/)
 └── autoUpdater.ts       # Auto-update functionality
 
 Renderer Process (src/renderer/)
-├── App.tsx              # Root React component (~1900 lines)
+├── App.tsx              # Root React component (~520 lines)
 ├── components/          # 47+ React components
 ├── hooks/               # 14+ custom hooks
 ├── contexts/            # TranslationContext (i18n)
@@ -102,7 +104,20 @@ Shared (src/shared/)
     ├── touchSystem.ts         # Sabre Laser touch zones (A=1pt, B=3pt, C=5pt)
     ├── fencerStatsCalculator.ts
     ├── bulkImport.ts          # Bulk fencer import
-    └── fileParser.ts          # XML / FFE / CSV parsing
+    ├── fileParser.ts          # XML / FFE / CSV parsing
+    ├── conflictResolution.ts  # Merge conflict resolution for cloud sync
+    ├── errorLogger.ts         # Structured error logging
+    ├── fencerExport.ts        # Fencer data export helpers
+    ├── multiFormatExport.ts   # Multi-format export (CSV, JSON, XML)
+    └── tournamentTemplates.ts # Predefined tournament configuration templates
+
+Remote Assets (src/remote/)
+├── app.js               # Express + Socket.IO application
+├── arena.html / referee.html / dashboard.html / kiosk.html
+├── login.html / pool.html / public.html
+├── styles.css
+├── sw.js                # Service worker for offline tablet support
+└── offlineQueue.ts      # Offline action queue for tablets
 
 Database (src/database/)
 ├── index.ts             # DatabaseManager class (sql.js - pure JS SQLite)
@@ -163,6 +178,10 @@ enum PhaseType { CHECKIN, POOL, DIRECT_ELIMINATION, CLASSIFICATION }
 enum TargetZone { ZONE_A, ZONE_B, ZONE_C }  // Laser Sabre: 1pt, 3pt, 5pt
 
 enum CardGroup { GROUP_1, GROUP_2, GROUP_3, GROUP_4 }  // Laser Sabre penalty groups
+
+enum CardReason { /* yellow/red/black card reasons */ }
+
+enum PenaltyType { /* penalty classification for Laser Sabre */ }
 ```
 
 Core interfaces: `Fencer`, `Referee`, `Competition`, `Pool`, `Match`, `PoolRanking`
