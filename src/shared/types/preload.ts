@@ -397,7 +397,26 @@ export interface DatabaseAPI {
   createPool: (phaseId: string, number: number) => Promise<Pool>;
   addFencerToPool: (poolId: string, fencerId: string, position: number) => Promise<void>;
   getPoolFencers: (poolId: string) => Promise<Fencer[]>;
+  getPoolsByPhase: (phaseId: string) => Promise<Pool[]>;
   updatePool: (pool: Pool) => Promise<void>;
+
+  // Phases
+  createPhase: (competitionId: string, type: string, order: number, name: string) => Promise<Phase>;
+  getPhase: (id: string) => Promise<Phase | null>;
+  getPhasesByCompetition: (competitionId: string) => Promise<Phase[]>;
+  updatePhase: (id: string, updates: { name?: string; isComplete?: boolean }) => Promise<void>;
+  deletePhase: (id: string) => Promise<void>;
+
+  // Referees
+  createReferee: (competitionId: string, data: { name: string; gender?: string; nationality?: string; club?: string; license?: string; category?: string }) => Promise<Referee>;
+  getReferee: (id: string) => Promise<Referee | null>;
+  getRefereesByCompetition: (competitionId: string) => Promise<Referee[]>;
+  updateReferee: (id: string, updates: Record<string, string | undefined>) => Promise<void>;
+  deleteReferee: (id: string) => Promise<void>;
+
+  // Touch / Card read
+  getTouches: (matchId: string) => Promise<Array<{ id: string; fencerId: string; zone: string; points: number; timestamp: string; isValidInSuddenDeath: boolean; isReversed: boolean }>>;
+  getCards: (matchId: string) => Promise<Array<{ id: string; fencerId: string; cardType: string; reason: string; cardGroup: number; timestamp: string; pointsAwarded: number; resultingExclusion: boolean }>>;
 
   // Session State
   saveSessionState: (competitionId: string, state: SessionState) => Promise<void>;
