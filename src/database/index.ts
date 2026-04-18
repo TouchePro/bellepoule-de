@@ -782,7 +782,7 @@ export class DatabaseManager {
 
       if (existing) {
         const updates = { ...fencer };
-        if (existing.photo) delete updates.photo;
+        if (existing.photo && !updates.photo) delete updates.photo;
         this.updateFencer(existing.id, updates);
         updated++;
       } else {
