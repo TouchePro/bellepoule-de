@@ -196,6 +196,7 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
 
       {editable && photo && (
         <button
+          type="button"
           onClick={e => {
             e.stopPropagation();
             handleRemovePhoto();
@@ -209,6 +210,7 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
 
       {editable && (
         <button
+          type="button"
           onClick={e => {
             e.stopPropagation();
             setShowWebcam(true);
@@ -273,6 +275,7 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
                 Prendre une photo
               </h3>
               <button
+                type="button"
                 className="btn btn-icon btn-secondary"
                 onClick={() => setShowWebcam(false)}
                 style={{ padding: '0.25rem' }}
