@@ -170,6 +170,34 @@
         padding-top: 52px;
       }
 
+      /* ── Bandeau numéro d'arène permanent ── */
+      .arena-number-strip {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 52px;
+        z-index: 200;
+        background: rgba(0, 0, 0, 0.65);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.6rem;
+        font-weight: 900;
+        letter-spacing: 0.12em;
+        color: #fff;
+        text-transform: uppercase;
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        pointer-events: none;
+      }
+
+      [data-theme="light"] .arena-number-strip {
+        background: rgba(255, 255, 255, 0.85);
+        color: #1a2340;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+      }
+
       .header {
         background: var(--header-bg);
         padding: 0.4rem 1rem;
@@ -179,7 +207,7 @@
         backdrop-filter: blur(10px);
         flex-shrink: 0;
         position: fixed;
-        top: 0;
+        top: 52px;
         left: 0;
         right: 0;
         z-index: 100;
@@ -688,6 +716,37 @@
         flex-shrink: 0;
       }
 
+      /* Aperçu prochain combat (écran d'attente idle) */
+      .next-idle-preview {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        flex: 1;
+        padding: 0.5rem;
+        animation: fadeInScale 0.5s ease-out;
+      }
+
+      .next-idle-preview.hidden { display: none; }
+
+      .next-idle-label {
+        font-size: clamp(1rem, 2.5vw, 1.5rem);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        color: #f59e0b;
+        margin-bottom: 0.75rem;
+        flex-shrink: 0;
+      }
+
+      .next-idle-fighters {
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        width: 100%;
+        flex: 1;
+      }
+
       /* Panneau prochain combat */
       .next-match-panel {
         border-top: 2px solid rgba(245, 158, 11, 0.35);
@@ -807,6 +866,10 @@
     </style>
   </head>
   <body>
+    <div class="arena-number-strip">
+      Arène <span id="arena-strip-number">1</span>
+    </div>
+
     <div class="header">
       <div class="arena-title">
         <span>⚔️</span>
@@ -828,6 +891,49 @@
     <div class="main-content">
       <!-- Écran d'attente -->
       <div class="waiting-screen" id="waiting-screen">
+        <!-- Aperçu prochain combat (visible quand nextMatch disponible) -->
+        <div class="next-idle-preview hidden" id="next-idle-preview">
+          <div class="next-idle-label">⚔ Prochain combat</div>
+          <div class="next-idle-fighters">
+            <!-- Tireur A (Vert) -->
+            <div class="photo-card photo-card-a">
+              <div class="photo-circle">
+                <img id="idle-photo-a" src="" alt="" />
+                <svg id="idle-icon-a" class="default-icon" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="50" cy="18" r="15"/>
+                  <rect x="37" y="10" width="26" height="13" rx="3" opacity="0.35" fill="#000"/>
+                  <path d="M33 38 Q50 34 67 38 L70 82 Q50 78 30 82 Z"/>
+                  <line x1="67" y1="47" x2="92" y2="31" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
+                  <line x1="92" y1="31" x2="100" y2="9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                  <line x1="86" y1="35" x2="97" y2="27" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M36 82 L28 118 M64 82 L72 118" stroke="currentColor" stroke-width="9" stroke-linecap="round" fill="none"/>
+                </svg>
+              </div>
+              <div class="intro-fencer-name" id="idle-name-a">-</div>
+              <div class="intro-fencer-club" id="idle-club-a"></div>
+            </div>
+            <!-- VS -->
+            <div class="vs-center">VS</div>
+            <!-- Tireur B (Rouge) -->
+            <div class="photo-card photo-card-b">
+              <div class="photo-circle">
+                <img id="idle-photo-b" src="" alt="" />
+                <svg id="idle-icon-b" class="default-icon" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="50" cy="18" r="15"/>
+                  <rect x="37" y="10" width="26" height="13" rx="3" opacity="0.35" fill="#000"/>
+                  <path d="M33 38 Q50 34 67 38 L70 82 Q50 78 30 82 Z"/>
+                  <line x1="67" y1="47" x2="92" y2="31" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
+                  <line x1="92" y1="31" x2="100" y2="9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                  <line x1="86" y1="35" x2="97" y2="27" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M36 82 L28 118 M64 82 L72 118" stroke="currentColor" stroke-width="9" stroke-linecap="round" fill="none"/>
+                </svg>
+              </div>
+              <div class="intro-fencer-name" id="idle-name-b">-</div>
+              <div class="intro-fencer-club" id="idle-club-b"></div>
+            </div>
+          </div>
+        </div>
+        <!-- Grand numéro (visible quand pas de nextMatch) -->
         <div class="arena-idle-number" id="arena-idle-number">1</div>
         <div class="arena-idle-label">Arène</div>
       </div>
@@ -972,6 +1078,7 @@
         init() {
           document.getElementById('arena-number').textContent = this.arenaNumber;
           document.getElementById('arena-idle-number').textContent = this.arenaNumber;
+          document.getElementById('arena-strip-number').textContent = this.arenaNumber;
           this.setupInversionToggle();
           this.applyInversionState();
           this.applyTheme(this.theme);
@@ -1110,6 +1217,10 @@
           // Prochain combat
           if ('nextMatch' in data) {
             this.nextMatch = data.nextMatch || null;
+            if (this.matchStatus === 'idle' || this.matchStatus === 'not_started' ||
+                (this.matchStatus === 'ready' && !this.showPhotos)) {
+              this.updateIdleNextMatchDisplay();
+            }
           }
 
           // Mise à jour des scores
@@ -1255,6 +1366,7 @@
             nextPanel.classList.add('hidden');
             this.isSuddenDeath = false;
             this.updateSuddenDeathBanner();
+            this.updateIdleNextMatchDisplay();
           } else if (this.matchStatus === 'ready' && this.showPhotos && this.currentMatch) {
             waitingScreen.classList.add('hidden');
             matchDisplay.classList.remove('active');
@@ -1282,6 +1394,7 @@
             matchDisplay.classList.remove('active');
             photoIntro.classList.add('hidden');
             nextPanel.classList.add('hidden');
+            this.updateIdleNextMatchDisplay();
           }
         }
 
@@ -1332,6 +1445,44 @@
         setFencerPhoto(side, photoBase64) {
           const img = document.getElementById(`photo-${side}`);
           const icon = document.getElementById(`default-icon-${side}`);
+          if (photoBase64) {
+            img.src = photoBase64.startsWith('data:') ? photoBase64 : `data:image/jpeg;base64,${photoBase64}`;
+            img.style.display = 'block';
+            icon.style.display = 'none';
+          } else {
+            img.style.display = 'none';
+            icon.style.display = 'block';
+          }
+        }
+
+        updateIdleNextMatchDisplay() {
+          const preview = document.getElementById('next-idle-preview');
+          const idleNumber = document.getElementById('arena-idle-number');
+          const idleLabel = document.querySelector('.arena-idle-label');
+          if (this.nextMatch) {
+            const fA = this.nextMatch.fencerA || {};
+            const fB = this.nextMatch.fencerB || {};
+            document.getElementById('idle-name-a').textContent =
+              `${fA.lastName || ''} ${fA.firstName || ''}`.trim() || '-';
+            document.getElementById('idle-club-a').textContent = fA.club || '';
+            document.getElementById('idle-name-b').textContent =
+              `${fB.lastName || ''} ${fB.firstName || ''}`.trim() || '-';
+            document.getElementById('idle-club-b').textContent = fB.club || '';
+            this.setIdleFencerPhoto('a', fA.photo);
+            this.setIdleFencerPhoto('b', fB.photo);
+            preview.classList.remove('hidden');
+            idleNumber.style.display = 'none';
+            if (idleLabel) idleLabel.style.display = 'none';
+          } else {
+            preview.classList.add('hidden');
+            idleNumber.style.display = '';
+            if (idleLabel) idleLabel.style.display = '';
+          }
+        }
+
+        setIdleFencerPhoto(side, photoBase64) {
+          const img = document.getElementById(`idle-photo-${side}`);
+          const icon = document.getElementById(`idle-icon-${side}`);
           if (photoBase64) {
             img.src = photoBase64.startsWith('data:') ? photoBase64 : `data:image/jpeg;base64,${photoBase64}`;
             img.style.display = 'block';
