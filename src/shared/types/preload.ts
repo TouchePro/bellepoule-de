@@ -476,6 +476,8 @@ export interface ElectronAPI extends MenuAPI, UtilityAPI {
   onRemoteMatchFinished: (callback: (data: any) => void) => void;
   onKioskNoteUpdate: (callback: (note: import('../types/remote').OrgNote | null) => void) => () => void;
   notifyLanguageChanged: (lang: string) => void;
+  getLogo: () => Promise<string | null>;
+  onLogoLoaded: (callback: (logo: string | null) => void) => () => void;
 }
 
 
