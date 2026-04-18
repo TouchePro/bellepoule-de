@@ -5,6 +5,7 @@
  */
 
 import { Competition, Fencer, Match } from '../types';
+import { detectConflicts, mergeActionsById } from '../utils/conflictResolution';
 
 export interface CloudSyncConfig {
   provider: 'dropbox' | 'gdrive' | 'onedrive' | 'custom';
@@ -42,8 +43,15 @@ export interface CloudBackup {
   fencers: number;
 }
 
+export type LocalUpdateHandler = (data: {
+  competitions: Competition[];
+  fencers: Fencer[];
+  matches: Match[];
+}) => Promise<void>;
+
 export class CloudSyncService {
   private config: CloudSyncConfig;
+  private onLocalUpdate?: LocalUpdateHandler;
   private syncStatus: SyncStatus = {
     lastSync: null,
     isSyncing: false,
@@ -54,8 +62,9 @@ export class CloudSyncService {
   private syncIntervalId?: number;
   private encryptionKey?: CryptoKey;
 
-  constructor(config: CloudSyncConfig) {
+  constructor(config: CloudSyncConfig, onLocalUpdate?: LocalUpdateHandler) {
     this.config = config;
+    this.onLocalUpdate = onLocalUpdate;
     if (config.encryptData) {
       this.initializeEncryption();
     }
@@ -361,28 +370,56 @@ export class CloudSyncService {
   }
 
   /**
-   * Resolve conflicts between local and remote data
+   * Resolve conflicts between local and remote data using last-write-wins per entity
    */
   private resolveConflicts(
-    localData: unknown,
-    remoteData: unknown
-  ): { mergedData: unknown; conflicts: SyncConflict[] } {
-    const conflicts: SyncConflict[] = [];
+    localData: { competitions: Competition[]; fencers: Fencer[]; matches: Match[] },
+    remoteData: { competitions: Competition[]; fencers: Fencer[]; matches: Match[]; timestamp: Date }
+  ): { mergedData: { competitions: Competition[]; fencers: Fencer[]; matches: Match[] }; conflicts: SyncConflict[] } {
+    const compConflicts = detectConflicts(localData.competitions, remoteData.competitions);
+    const fencerConflicts = detectConflicts(localData.fencers, remoteData.fencers);
+    const matchConflicts = detectConflicts(localData.matches, remoteData.matches);
 
-    // Simple last-write-wins strategy
-    // In production, you'd want more sophisticated conflict resolution
-    const mergedData = localData;
+    const conflicts: SyncConflict[] = [
+      ...compConflicts.conflicted.map(c => ({
+        id: c.local.id,
+        type: 'competition' as const,
+        localData: c.local,
+        remoteData: c.remote,
+        timestamp: new Date(),
+      })),
+      ...fencerConflicts.conflicted.map(c => ({
+        id: c.local.id,
+        type: 'fencer' as const,
+        localData: c.local,
+        remoteData: c.remote,
+        timestamp: new Date(),
+      })),
+      ...matchConflicts.conflicted.map(c => ({
+        id: c.local.id,
+        type: 'match' as const,
+        localData: c.local,
+        remoteData: c.remote,
+        timestamp: new Date(),
+      })),
+    ];
+
+    const mergedData = {
+      competitions: mergeActionsById(localData.competitions, remoteData.competitions),
+      fencers: mergeActionsById(localData.fencers, remoteData.fencers),
+      matches: mergeActionsById(localData.matches, remoteData.matches),
+    };
 
     return { mergedData, conflicts };
   }
 
   /**
-   * Update local database with synced data
+   * Update local database with synced data via the registered handler
    */
-  private async updateLocalData(data: unknown): Promise<void> {
-    // Update local database
-    // This would interface with your local storage/DB
-    console.log('Updating local data...');
+  private async updateLocalData(data: { competitions: Competition[]; fencers: Fencer[]; matches: Match[] }): Promise<void> {
+    if (this.onLocalUpdate) {
+      await this.onLocalUpdate(data);
+    }
   }
 
   /**
@@ -432,7 +469,7 @@ export class CloudSyncService {
 
       // Decrypt and decompress
       const decrypted = await this.decryptData(backupData);
-      const data = JSON.parse(decrypted);
+      const data = JSON.parse(decrypted) as { competitions: Competition[]; fencers: Fencer[]; matches: Match[] };
 
       // Restore to local database
       await this.updateLocalData(data);

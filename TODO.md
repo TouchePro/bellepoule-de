@@ -7,10 +7,10 @@
 
 ## 🚨 BUGS CRITIQUES — À corriger immédiatement
 
-- [ ] **`refereeManager.ts:45` — `this.` manquant** — `getMatchPriority(b)` au lieu de `this.getMatchPriority(b)` → crash runtime à chaque attribution d'arbitre
-- [ ] **`refereeManager.ts:156` — `findMatchById()` non définie** — méthode appelée mais jamais implémentée dans la classe → crash garanti
-- [ ] **`cloudSyncService.ts` — méthodes manquantes** — `resolveConflicts()` et `updateLocalData()` sont appelées mais non définies (synchronisation cloud totalement cassée)
-- [ ] **`tournamentFlow.ts` — méthodes fantômes** — `estimateMatchDuration()`, `updateFencerAvailability()`, `getEarliestStartAfterRest()`, `evaluateSlotQuality()` appelées mais non implémentées
+- [x] **`refereeManager.ts:45` — `this.` manquant** — `getMatchPriority(b)` au lieu de `this.getMatchPriority(b)` → crash runtime à chaque attribution d'arbitre
+- [x] **`refereeManager.ts:156` — `findMatchById()` non définie** — méthode appelée mais jamais implémentée dans la classe → crash garanti
+- [x] **`cloudSyncService.ts` — méthodes manquantes** — `resolveConflicts()` et `updateLocalData()` sont appelées mais non définies (synchronisation cloud totalement cassée)
+- [x] **`tournamentFlow.ts` — méthodes fantômes** — `estimateMatchDuration()`, `updateFencerAvailability()`, `getEarliestStartAfterRest()`, `evaluateSlotQuality()` appelées mais non implémentées
 
 ---
 
