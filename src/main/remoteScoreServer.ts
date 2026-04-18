@@ -989,6 +989,22 @@ export class RemoteScoreServer {
             scoreB: scoreBObj,
             status: MatchStatus.FINISHED,
           });
+          // Synchroniser sessionMatchScores pour que peekNextMatch/loadNextMatch
+          // puisse filtrer ce match comme terminé (sinon il réapparaît comme "prochain")
+          this.sessionMatchScores.set(matchId, {
+            scoreA: scoreAObj,
+            scoreB: scoreBObj,
+            status: MatchStatus.FINISHED,
+          });
+          // Mettre à jour le score en mémoire de l'arène pour que le broadcast
+          // finishArenaMatch envoie le vrai score (pas 0-0) à l'affichage
+          for (const [, arena] of this.arenas) {
+            if (arena.currentMatch && arena.currentMatch.id === matchId) {
+              arena.currentMatch.scoreA = sA;
+              arena.currentMatch.scoreB = sB;
+              break;
+            }
+          }
         } else {
           // Match en mémoire uniquement (poule non persistée)
           // Synchroniser les scores dans l'arène et déclencher l'IPC vers le renderer
@@ -1425,6 +1441,9 @@ export class RemoteScoreServer {
             customTheme: override?.customTheme,
             fencerA: arena.currentMatch?.fencerA,
             fencerB: arena.currentMatch?.fencerB,
+            ...(arena.status === 'finished' && {
+              nextMatch: this.peekNextMatch(data.arenaId),
+            }),
           });
         }
       });
