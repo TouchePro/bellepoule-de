@@ -84,6 +84,21 @@ const AppContent: React.FC = () => {
     };
   }, []);
 
+  // Sync logo from disk to localStorage so PDF exports always find it
+  useEffect(() => {
+    const api = (window as any).electronAPI;
+    if (!api) return;
+    api.getLogo?.().then((logo: string | null) => {
+      if (logo) localStorage.setItem('bellepoule-logo', logo);
+      else localStorage.removeItem('bellepoule-logo');
+    }).catch(() => {});
+    const unsub = api.onLogoLoaded?.((logo: string | null) => {
+      if (logo) localStorage.setItem('bellepoule-logo', logo);
+      else localStorage.removeItem('bellepoule-logo');
+    });
+    return () => { if (typeof unsub === 'function') unsub(); };
+  }, []);
+
   const loadCompetitions = useCallback(async () => {
     setIsLoading(true);
     try {
