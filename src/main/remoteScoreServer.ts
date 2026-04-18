@@ -1000,8 +1000,8 @@ export class RemoteScoreServer {
           // finishArenaMatch envoie le vrai score (pas 0-0) à l'affichage
           for (const [, arena] of this.arenas) {
             if (arena.currentMatch && arena.currentMatch.id === matchId) {
-              arena.currentMatch.scoreA = sA;
-              arena.currentMatch.scoreB = sB;
+              arena.currentMatch.scoreA = scoreA;
+              arena.currentMatch.scoreB = scoreB;
               break;
             }
           }
