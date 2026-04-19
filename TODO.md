@@ -9,7 +9,7 @@
 
 ### Services qui retournent des tableaux vides / valeurs hardcodées
 - [ ] **`cloudSyncService` providers** — `uploadToDropbox/GoogleDrive/OneDrive/Custom()` tous stubs non implémentés
-- [ ] **Late fencers** — `updateDelays()` sort prématurément à la ligne 150, logique auto-forfeit absente
+- [x] **Late fencers** — `updateDelays()` sort prématurément à la ligne 150, logique auto-forfeit absente
 
 ### Base de données
 - [ ] **DirectElimination en DB** — types `DirectEliminationTable`, `TableNode` définis mais aucune table SQL ni opération DB
