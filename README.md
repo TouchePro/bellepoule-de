@@ -435,7 +435,7 @@ Ce logiciel est distribué sous **GPL-3.0 License**.
 
 ## 🏆 **Crédits**
 
-- **Développement principal** : Yann Kervella & contributeurs
+- **Développement principal** : Yann Deboeuf & contributeurs
 - **Inspiration** : BellePoule original par Cyprien Piriou
 - **Technologies** : Electron, React, TypeScript, SQLite
 - **Hébergement** : GitHub (builds automatiques)
@@ -453,7 +453,7 @@ Les contributions sont bienvenues ! Voir [CONTRIBUTING.md](./CONTRIBUTING.md) po
 
 ---
 
-📄 **Développé par** : Yann Kervella & communauté  
+📄 **Développé par** : Yann Deboeuf & communauté  
 📄 **Licence** : GPL-3.0  
 📄 **Dernière mise à jour** : 11 mars 2026  
 📄 **Version actuelle** : v1.0.2 Build #546

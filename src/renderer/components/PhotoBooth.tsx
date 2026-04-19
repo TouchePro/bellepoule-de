@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { logger, LogCategory } from '@shared/services/logger';
 
 interface PhotoBoothProps {
@@ -16,26 +16,33 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
   const [isCapturing, setIsCapturing] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [photo, setPhoto] = useState<string | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const [error, setError] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const startCamera = useCallback(async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480 },
-        audio: false,
-      });
-
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-      setIsCapturing(true);
-    } catch (err) {
-      logger.error(LogCategory.UI, 'Error accessing camera', err as Error);
-      alert("Impossible d'accéder à la caméra");
+  const videoCallbackRef = useCallback((video: HTMLVideoElement | null) => {
+    videoRef.current = video;
+    console.log('[PhotoBooth] video ref mounted, stream available:', !!streamRef.current);
+    if (video && streamRef.current) {
+      video.srcObject = streamRef.current;
+      video.play()
+        .then(() => console.log('[PhotoBooth] video.play() resolved'))
+        .catch(err => {
+          console.error('[PhotoBooth] video.play() rejected:', err);
+          logger.error(LogCategory.UI, 'Error playing video stream', err as Error);
+          setError(`Erreur lecture vidéo : ${(err as Error).message}`);
+        });
     }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
   }, []);
 
   const stopCamera = useCallback(() => {
@@ -46,55 +53,101 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
     setIsCapturing(false);
   }, []);
 
-  const capturePhoto = useCallback(() => {
-    setCountdown(3);
-
-    const countdownInterval = setInterval(() => {
-      setCountdown(prev => {
-        if (prev <= 1) {
-          clearInterval(countdownInterval);
-          takePhoto();
-          return 0;
-        }
-        return prev - 1;
+  const startCamera = useCallback(async () => {
+    setError(null);
+    console.log('[PhotoBooth] startCamera — navigator.mediaDevices:', !!navigator.mediaDevices?.getUserMedia);
+    if (!navigator.mediaDevices?.getUserMedia) {
+      const msg = "L'accès à la webcam n'est pas disponible dans ce contexte (mediaDevices absent).";
+      setError(msg);
+      return;
+    }
+    try {
+      console.log('[PhotoBooth] calling getUserMedia...');
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 640, height: 480 },
+        audio: false,
       });
-    }, 1000);
+      console.log('[PhotoBooth] getUserMedia OK, tracks:', stream.getVideoTracks().length);
+      streamRef.current = stream;
+      setIsCapturing(true);
+    } catch (err) {
+      console.error('[PhotoBooth] getUserMedia error:', err);
+      logger.error(LogCategory.UI, 'Error accessing camera', err as Error);
+      const domErr = err as DOMException;
+      const msg =
+        domErr.name === 'NotAllowedError'
+          ? `Permission refusée [${domErr.name}]. Vérifiez que l'application a accès à la caméra dans les paramètres système.`
+          : domErr.name === 'NotFoundError'
+            ? `Aucune caméra détectée [${domErr.name}]. Vérifiez que la webcam est connectée.`
+            : `Impossible d'accéder à la caméra [${domErr.name}] : ${domErr.message || String(err)}`;
+      setError(msg);
+    }
   }, []);
 
-  const takePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
+  // Ref so capturePhoto closure always calls the latest takePhoto
+  const takePhotoRef = useRef<() => void>(() => {});
 
-      if (ctx) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+  const takePhoto = useCallback(() => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas) return;
 
-        // Mirror the capture to match the selfie preview
-        ctx.save();
-        ctx.translate(canvas.width, 0);
-        ctx.scale(-1, 1);
-        ctx.drawImage(video, 0, 0);
-        ctx.restore();
-
-        // Resize to 300x300 with centered square crop
-        const outputCanvas = document.createElement('canvas');
-        outputCanvas.width = 300;
-        outputCanvas.height = 300;
-        const outCtx = outputCanvas.getContext('2d');
-        if (outCtx) {
-          const side = Math.min(canvas.width, canvas.height);
-          const sx = (canvas.width - side) / 2;
-          const sy = (canvas.height - side) / 2;
-          outCtx.drawImage(canvas, sx, sy, side, side, 0, 0, 300, 300);
-          const photoData = outputCanvas.toDataURL('image/jpeg', 0.8);
-          setPhoto(photoData);
-          stopCamera();
-        }
-      }
+    console.log('[PhotoBooth] takePhoto — readyState:', video.readyState, 'size:', video.videoWidth, 'x', video.videoHeight);
+    if (video.readyState < 2 || video.videoWidth === 0 || video.videoHeight === 0) {
+      setError(`Caméra pas encore prête (readyState=${video.readyState}, ${video.videoWidth}×${video.videoHeight}). Réessayez.`);
+      return;
     }
-  };
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    try {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      // Mirror to match selfie preview
+      ctx.save();
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0);
+      ctx.restore();
+
+      // Resize to 300×300 with centered square crop
+      const outputCanvas = document.createElement('canvas');
+      outputCanvas.width = 300;
+      outputCanvas.height = 300;
+      const outCtx = outputCanvas.getContext('2d');
+      if (outCtx) {
+        const side = Math.min(canvas.width, canvas.height);
+        const sx = (canvas.width - side) / 2;
+        const sy = (canvas.height - side) / 2;
+        outCtx.drawImage(canvas, sx, sy, side, side, 0, 0, 300, 300);
+        const photoData = outputCanvas.toDataURL('image/jpeg', 0.8);
+        setPhoto(photoData);
+        stopCamera();
+      }
+    } catch (err) {
+      console.error('[PhotoBooth] capture error:', err);
+      logger.error(LogCategory.UI, 'Error capturing photo', err as Error);
+      setError(`Erreur capture : ${(err as Error).message || String(err)}`);
+    }
+  }, [stopCamera]);
+
+  takePhotoRef.current = takePhoto;
+
+  const capturePhoto = useCallback(() => {
+    let count = 3;
+    setCountdown(count);
+    intervalRef.current = setInterval(() => {
+      count -= 1;
+      setCountdown(count);
+      if (count <= 0) {
+        clearInterval(intervalRef.current!);
+        intervalRef.current = null;
+        takePhotoRef.current();
+      }
+    }, 1000);
+  }, []);
 
   const retake = () => {
     setPhoto(null);
@@ -103,6 +156,23 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
 
   return (
     <div>
+      {error && (
+        <div
+          style={{
+            background: '#fef2f2',
+            border: '1px solid #fca5a5',
+            borderRadius: '6px',
+            color: '#b91c1c',
+            padding: '10px 14px',
+            marginBottom: '12px',
+            fontSize: '13px',
+            wordBreak: 'break-word',
+          }}
+        >
+          <strong>Erreur webcam :</strong> {error}
+        </div>
+      )}
+
       {!isCapturing && !photo && (
         <div style={{ textAlign: 'center' }}>
           <div
@@ -121,10 +191,10 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
             📷
           </div>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-            <button className="btn btn-secondary" onClick={onClose}>
+            <button type="button" className="btn btn-secondary" onClick={onClose}>
               Annuler
             </button>
-            <button className="btn btn-primary" onClick={startCamera}>
+            <button type="button" className="btn btn-primary" onClick={startCamera}>
               Démarrer la caméra
             </button>
           </div>
@@ -134,9 +204,10 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
       {isCapturing && (
         <div style={{ position: 'relative' }}>
           <video
-            ref={videoRef}
+            ref={videoCallbackRef}
             autoPlay
             playsInline
+            muted
             style={{
               width: '100%',
               borderRadius: '8px',
@@ -163,6 +234,7 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
 
           <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
             <button
+              type="button"
               onClick={capturePhoto}
               disabled={countdown > 0}
               className="btn btn-primary"
@@ -171,6 +243,7 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
               {countdown > 0 ? `${countdown}…` : '📸 Capturer'}
             </button>
             <button
+              type="button"
               onClick={() => { stopCamera(); onClose(); }}
               className="btn btn-secondary"
             >
@@ -192,10 +265,10 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
             }}
           />
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-            <button onClick={retake} className="btn btn-secondary">
+            <button type="button" onClick={retake} className="btn btn-secondary">
               Recommencer
             </button>
-            <button onClick={() => onConfirm(photo)} className="btn btn-primary">
+            <button type="button" onClick={() => onConfirm(photo)} className="btn btn-primary">
               Utiliser cette photo
             </button>
           </div>

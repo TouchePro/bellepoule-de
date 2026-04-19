@@ -252,16 +252,13 @@ function createWindow(): void {
   });
 
   // Allow camera access for webcam photo capture
+  const cameraPermissions = new Set(['media', 'camera', 'microphone']);
   mainWindow.webContents.session.setPermissionRequestHandler((_webContents, permission, callback) => {
-    if (permission === 'media') {
-      callback(true);
-    } else {
-      callback(false);
-    }
+    callback(cameraPermissions.has(permission));
   });
 
   mainWindow.webContents.session.setPermissionCheckHandler((_webContents, permission) => {
-    return permission === 'media';
+    return cameraPermissions.has(permission);
   });
 
   // Security: Set CSP headers for all requests
@@ -779,15 +776,60 @@ ipcMain.handle('db:clearSessionState', async (_, competitionId) => {
 ipcMain.handle('db:updatePool', async (_, pool) => {
   return db.updatePool(pool);
 });
-// ipcMain.handle('db:createPool', async (_, phaseId, number) => {
-//   return db.createPool(phaseId, number);
-// });
-// ipcMain.handle('db:addFencerToPool', async (_, poolId, fencerId, position) => {
-//   return db.addFencerToPool(poolId, fencerId, position);
-// });
-// ipcMain.handle('db:getPoolFencers', async (_, poolId) => {
-//   return db.getPoolFencers(poolId);
-// });
+ipcMain.handle('db:createPool', async (_, phaseId, number) => {
+  return db.createPool(phaseId, number);
+});
+ipcMain.handle('db:addFencerToPool', async (_, poolId, fencerId, position) => {
+  return db.addFencerToPool(poolId, fencerId, position);
+});
+ipcMain.handle('db:getPoolFencers', async (_, poolId) => {
+  return db.getPoolFencers(poolId);
+});
+ipcMain.handle('db:getPoolsByPhase', async (_, phaseId) => {
+  return db.getPoolsByPhase(phaseId);
+});
+
+// Phase handlers
+ipcMain.handle('db:createPhase', async (_, competitionId, type, order, name) => {
+  return db.createPhase(competitionId, type, order, name);
+});
+ipcMain.handle('db:getPhase', async (_, id) => {
+  return db.getPhase(id);
+});
+ipcMain.handle('db:getPhasesByCompetition', async (_, competitionId) => {
+  return db.getPhasesByCompetition(competitionId);
+});
+ipcMain.handle('db:updatePhase', async (_, id, updates) => {
+  return db.updatePhase(id, updates);
+});
+ipcMain.handle('db:deletePhase', async (_, id) => {
+  return db.deletePhase(id);
+});
+
+// Referee handlers
+ipcMain.handle('db:createReferee', async (_, competitionId, data) => {
+  return db.createReferee(competitionId, data);
+});
+ipcMain.handle('db:getReferee', async (_, id) => {
+  return db.getReferee(id);
+});
+ipcMain.handle('db:getRefereesByCompetition', async (_, competitionId) => {
+  return db.getRefereesByCompetition(competitionId);
+});
+ipcMain.handle('db:updateReferee', async (_, id, updates) => {
+  return db.updateReferee(id, updates);
+});
+ipcMain.handle('db:deleteReferee', async (_, id) => {
+  return db.deleteReferee(id);
+});
+
+// Touch / Card read handlers
+ipcMain.handle('db:getTouches', async (_, matchId) => {
+  return db.getTouches(matchId);
+});
+ipcMain.handle('db:getCards', async (_, matchId) => {
+  return db.getCards(matchId);
+});
 
 // Statistiques combattants
 ipcMain.handle('db:saveTouch', async (_, touch) => {
@@ -964,6 +1006,42 @@ ipcMain.handle('window:print', () => {
   });
 });
 
+// Print via hidden BrowserWindow — opens system print dialog on clean HTML
+ipcMain.handle('file:printHtml', async (_, html: string) => {
+  return new Promise<{ success: boolean; error?: string }>((resolve) => {
+    const tmpFile = path.join(os.tmpdir(), `bp-print-${Date.now()}.html`);
+    try {
+      fs.writeFileSync(tmpFile, html, 'utf-8');
+    } catch (e) {
+      resolve({ success: false, error: `Impossible de créer le fichier temporaire: ${e}` });
+      return;
+    }
+
+    const printWin = new BrowserWindow({
+      show: false,
+      width: 1200,
+      height: 1600,
+      webPreferences: { contextIsolation: true, nodeIntegration: false, javascript: false },
+    });
+    printWin.setMenu(null);
+    printWin.loadFile(tmpFile);
+
+    printWin.webContents.once('did-finish-load', () => {
+      printWin.webContents.print({ silent: false, printBackground: true }, (success) => {
+        try { fs.unlinkSync(tmpFile); } catch { /* ignore */ }
+        printWin.destroy();
+        resolve({ success });
+      });
+    });
+
+    printWin.webContents.once('did-fail-load', () => {
+      try { fs.unlinkSync(tmpFile); } catch { /* ignore */ }
+      printWin.destroy();
+      resolve({ success: false, error: 'Chargement HTML échoué' });
+    });
+  });
+});
+
 // PDF generation via hidden BrowserWindow (propre, sans menus d'application)
 ipcMain.handle('file:printHtmlToPDF', async (_, html: string, outputPath: string) => {
   return new Promise<{ success: boolean; path?: string; error?: string }>((resolve) => {
@@ -1103,7 +1181,7 @@ ipcMain.handle(
     strips: number,
     matches?: any[],
     showPhotos?: boolean,
-    kioskViews?: { poules: boolean; classement: boolean; direct: boolean }
+    kioskViews?: { poules: boolean; classement: boolean; direct: boolean; suivants: boolean }
   ) => {
     try {
       if (!remoteScoreServer) {
@@ -1159,6 +1237,16 @@ ipcMain.handle(
     }
   }
 );
+
+ipcMain.handle('remote:refreshDeMatches', async (_, matches: any[]) => {
+  try {
+    if (!remoteScoreServer) return { success: false, error: 'Serveur non démarré' };
+    remoteScoreServer.refreshDeMatches(matches);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur' };
+  }
+});
 
 ipcMain.handle('remote:stopSession', async () => {
   try {

@@ -196,6 +196,7 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
 
       {editable && photo && (
         <button
+          type="button"
           onClick={e => {
             e.stopPropagation();
             handleRemovePhoto();
@@ -209,13 +210,14 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
 
       {editable && (
         <button
+          type="button"
           onClick={e => {
             e.stopPropagation();
             setShowWebcam(true);
           }}
-          className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors shadow-md"
+          className="absolute -bottom-1 -right-1 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors shadow-md"
           title="Prendre une photo avec la webcam"
-          style={{ fontSize: '10px' }}
+          style={{ fontSize: '16px' }}
         >
           📷
         </button>
@@ -273,6 +275,7 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
                 Prendre une photo
               </h3>
               <button
+                type="button"
                 className="btn btn-icon btn-secondary"
                 onClick={() => setShowWebcam(false)}
                 style={{ padding: '0.25rem' }}

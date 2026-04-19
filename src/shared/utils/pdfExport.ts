@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-import { Pool, Match, MatchStatus, Fencer } from '../types';
+import { Pool, Match, MatchStatus, Fencer, PoolRanking, Weapon } from '../types';
 
 interface PoolExportOptions {
   title?: string;
@@ -695,5 +695,131 @@ export async function exportTableauToPDF(
 
   const html = generateTableauHTML(matches, matchesPerPage, title, logoBase64);
   await savePDF(html, `tableau-elimination.pdf`);
+}
+
+export async function printTableauHTML(
+  matches: TableauMatchForPDF[],
+  matchesPerPage: number,
+  title: string = 'Tableau Élimination Directe',
+  logoBase64?: string
+): Promise<void> {
+  const real = matches.filter(m => !m.isBye && m.fencerA && m.fencerB);
+  if (real.length === 0) {
+    throw new Error('Aucun match à imprimer (tous sont des exempts ou sans tireurs assignés)');
+  }
+  const html = generateTableauHTML(matches, matchesPerPage, title, logoBase64);
+  const api = (window as any).electronAPI;
+  if (!api?.file?.printHtml) {
+    throw new Error('API Electron non disponible');
+  }
+  const res = await api.file.printHtml(html);
+  if (!res?.success) {
+    throw new Error(res?.error ?? "Échec de l'impression");
+  }
+}
+
+// ─── Export Classement Général ───────────────────────────────────────────────
+
+function generateRankingHTML(
+  ranking: PoolRanking[],
+  title: string,
+  isLaserSabre: boolean,
+  visibleColumns: string[],
+  logoBase64?: string
+): string {
+  const vis = (col: string) => visibleColumns.includes(col);
+  const now = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+
+  const rows = ranking.map(r => {
+    const ratio = r.matchesPlayed > 0 ? (r.victories / r.matchesPlayed).toFixed(2) : '0.00';
+    const idx = r.index >= 0 ? `+${r.index}` : `${r.index}`;
+    const abandoned = (r.fencer as any).status === 'ABANDONED'
+      ? ' <span style="color:#ef4444;font-size:8pt">(A)</span>' : '';
+    return `
+<tr>
+  ${vis('rank') ? `<td style="text-align:center;font-weight:700;color:var(--navy)">${r.rank}</td>` : ''}
+  ${vis('lastName') ? `<td style="font-weight:600">${r.fencer.lastName.toUpperCase()}${abandoned}</td>` : ''}
+  ${vis('firstName') ? `<td>${r.fencer.firstName ?? ''}</td>` : ''}
+  ${vis('club') ? `<td style="color:var(--gray-dark)">${r.fencer.club ?? ''}</td>` : ''}
+  ${vis('victories') ? `<td style="text-align:center">${r.victories}</td>` : ''}
+  ${vis('ratio') ? `<td style="text-align:center">${r.matchesPlayed > 0 ? ratio : '-'}</td>` : ''}
+  ${vis('td') ? `<td style="text-align:center">${r.touchesScored}</td>` : ''}
+  ${vis('tr') ? `<td style="text-align:center">${r.touchesReceived}</td>` : ''}
+  ${vis('quest') && isLaserSabre ? `<td style="text-align:center;color:#7c3aed;font-weight:600">${r.questPoints ?? 0}</td>` : ''}
+  ${vis('index') ? `<td style="text-align:center;font-weight:600;color:${r.index >= 0 ? 'var(--green)' : '#dc2626'}">${idx}</td>` : ''}
+</tr>`;
+  }).join('');
+
+  const th = (col: string, label: string, style = '') =>
+    vis(col) ? `<th style="${style}">${label}</th>` : '';
+
+  const headers = [
+    th('rank', 'Rg', 'width:10mm'),
+    th('lastName', 'Nom', 'text-align:left'),
+    th('firstName', 'Prénom', 'text-align:left'),
+    th('club', 'Club', 'text-align:left'),
+    th('victories', 'V'),
+    th('ratio', 'V/M'),
+    th('td', 'TD'),
+    th('tr', 'TR'),
+    vis('quest') && isLaserSabre ? '<th style="color:var(--white)">Quest</th>' : '',
+    th('index', 'Indice'),
+  ].join('');
+
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>${title}</title>
+  <style>
+    ${BASE_CSS}
+    table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+    th {
+      background: var(--navy); color: var(--white);
+      font-size: 8pt; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.8px; padding: 2.5mm 3mm; text-align: center;
+    }
+    td { padding: 2mm 3mm; border-bottom: 1px solid var(--gray-light); vertical-align: middle; }
+    tr:nth-child(even) td { background: var(--gray-xlight); }
+    tr:nth-child(1) td, tr:nth-child(2) td, tr:nth-child(3) td { font-size: 9.5pt; }
+    tr:nth-child(1) td:first-child { color: #d97706; font-size: 11pt; }
+    tr:nth-child(2) td:first-child { color: #6b7280; font-size: 11pt; }
+    tr:nth-child(3) td:first-child { color: #92400e; font-size: 11pt; }
+  </style>
+</head>
+<body>
+  <div class="doc-header">
+    ${logoBase64 ? `<img class="doc-header-logo" src="${logoBase64}" alt="Logo" />` : ''}
+    <div class="doc-header-left">
+      <h1>${title}</h1>
+      <div class="subtitle">Classement général — ${ranking.length} tireur${ranking.length > 1 ? 's' : ''}</div>
+    </div>
+    <div class="doc-header-badge" style="font-size:11pt">RG</div>
+  </div>
+  <div class="gold-bar"></div>
+  <table>
+    <thead><tr>${headers}</tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <div class="doc-footer">
+    <span>BellePoule Modern</span>
+    <span>${now}</span>
+  </div>
+</body>
+</html>`;
+}
+
+export async function exportRankingToPDF(
+  ranking: PoolRanking[],
+  title: string = 'Classement Général',
+  weapon?: Weapon,
+  visibleColumns?: string[],
+  logoBase64?: string
+): Promise<void> {
+  if (ranking.length === 0) throw new Error('Aucun tireur dans le classement');
+  const isLaserSabre = weapon === 'L' || weapon === ('LASER' as any);
+  const cols = visibleColumns ?? ['rank', 'lastName', 'firstName', 'club', 'victories', 'ratio', 'td', 'tr', 'quest', 'index'];
+  const html = generateRankingHTML(ranking, title, isLaserSabre, cols, logoBase64);
+  await savePDF(html, 'classement-general.pdf');
 }
 

@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-import { Referee, Match, Pool, Fencer } from '../types';
+import { Referee, Match, Pool } from '../types';
 
 export interface RefereeAssignment {
   referee: Referee;
@@ -24,6 +24,7 @@ export class RefereeManager {
   private referees: Referee[];
   private assignments: Map<string, RefereeAssignment[]> = new Map();
   private config: RefereeRotationConfig;
+  private currentMatches: Match[] = [];
 
   constructor(referees: Referee[], config: Partial<RefereeRotationConfig> = {}) {
     this.referees = referees.filter(r => r.status !== 'unavailable');
@@ -42,7 +43,8 @@ export class RefereeManager {
    */
   assignRefereesToMatches(matches: Match[], pools: Pool[]): Map<string, Referee> {
     const assignments = new Map<string, Referee>();
-    const matchQueue = [...matches].sort((a, b) => this.getMatchPriority(a) - getMatchPriority(b));
+    this.currentMatches = matches;
+    const matchQueue = [...matches].sort((a, b) => this.getMatchPriority(a) - this.getMatchPriority(b));
 
     for (const match of matchQueue) {
       const bestReferee = this.findBestRefereeForMatch(match, pools, assignments);
@@ -262,8 +264,7 @@ export class RefereeManager {
   }
 
   private findMatchById(matchId: string): Match | undefined {
-    // This would need access to all matches - simplified for now
-    return undefined;
+    return this.currentMatches.find(m => m.id === matchId);
   }
 
   private getMatchPriority(match: Match): number {
@@ -273,14 +274,6 @@ export class RefereeManager {
     }
     return 999;
   }
-}
-
-// Helper function for sorting
-function getMatchPriority(match: Match): number {
-  if (match.round) {
-    return match.round;
-  }
-  return 999;
 }
 
 export default RefereeManager;
