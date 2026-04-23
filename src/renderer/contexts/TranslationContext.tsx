@@ -6,6 +6,13 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { logger, LogCategory } from '@shared/services/logger';
+import frTranslations from '../locales/fr.json';
+import enTranslations from '../locales/en.json';
+import deTranslations from '../locales/de.json';
+import esTranslations from '../locales/es.json';
+import brTranslations from '../locales/br.json';
+import caTranslations from '../locales/ca.json';
+import zhHKTranslations from '../locales/zh-HK.json';
 
 export type Language = 'fr' | 'en' | 'br' | 'ca' | 'de' | 'es' | 'zh-HK';
 export type TranslationKey = string;
@@ -100,16 +107,18 @@ const getFallbackTranslations = (language: Language): Translations => {
   return fallbackTranslations[language] || fallbackTranslations.fr;
 };
 
-const loadTranslations = async (language: Language): Promise<Translations> => {
-  try {
-    const response = await fetch(`./locales/${language}.json`);
-    if (response.ok) {
-      return await response.json();
-    }
-  } catch {
-    logger.warn(LogCategory.UI, `Failed to load translations for ${language}`);
-  }
-  return getFallbackTranslations(language);
+const bundledTranslations: Record<Language, Translations> = {
+  fr: frTranslations as Translations,
+  en: enTranslations as Translations,
+  de: deTranslations as Translations,
+  es: esTranslations as Translations,
+  br: brTranslations as Translations,
+  ca: caTranslations as Translations,
+  'zh-HK': zhHKTranslations as Translations,
+};
+
+const loadTranslations = (language: Language): Translations => {
+  return bundledTranslations[language] || getFallbackTranslations(language);
 };
 
 const applyTheme = (theme: Theme): void => {
@@ -131,18 +140,12 @@ export const TranslationProvider: React.FC<TranslationProviderProps> = ({ childr
 
   const changeLanguage = useCallback(async (newLanguage: Language) => {
     setIsLoading(true);
-    try {
-      const loadedTranslations = await loadTranslations(newLanguage);
-      setLanguage(newLanguage);
-      setTranslations(loadedTranslations);
-      localStorage.setItem('bellepoule-language', newLanguage);
-      // Rebuild native Electron menu in the new language
-      window.electronAPI?.notifyLanguageChanged?.(newLanguage);
-    } catch (error) {
-      logger.error(LogCategory.UI, 'Failed to change language', error as Error);
-    } finally {
-      setIsLoading(false);
-    }
+    const loadedTranslations = loadTranslations(newLanguage);
+    setLanguage(newLanguage);
+    setTranslations(loadedTranslations);
+    localStorage.setItem('bellepoule-language', newLanguage);
+    window.electronAPI?.notifyLanguageChanged?.(newLanguage);
+    setIsLoading(false);
   }, []);
 
   const changeTheme = useCallback((newTheme: Theme) => {
@@ -157,7 +160,7 @@ export const TranslationProvider: React.FC<TranslationProviderProps> = ({ childr
       const savedTheme = (localStorage.getItem('bellepoule-theme') as Theme) || 'default';
 
       applyTheme(savedTheme);
-      const loadedTranslations = await loadTranslations(savedLanguage);
+      const loadedTranslations = loadTranslations(savedLanguage);
 
       setLanguage(savedLanguage);
       setTheme(savedTheme);
