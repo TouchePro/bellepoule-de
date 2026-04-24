@@ -9,8 +9,6 @@
 
 ### Services qui retournent des tableaux vides / valeurs hardcodées
 - [ ] **`cloudSyncService` providers** — `uploadToDropbox/GoogleDrive/OneDrive/Custom()` tous stubs non implémentés
-- [x] **Late fencers** — `updateDelays()` sort prématurément à la ligne 150, logique auto-forfeit absente
-
 ### Base de données
 - [ ] **DirectElimination en DB** — types `DirectEliminationTable`, `TableNode` définis mais aucune table SQL ni opération DB
 - [ ] **Système de migrations DB** — actuellement `ALTER TABLE` avec try-catch ad-hoc ; implémenter migrations versionnées dans `src/database/migrations/`
@@ -102,9 +100,7 @@
 - [ ] **Voice scoring i18n** — `VoiceScoreController.tsx` : vérifier support multilingue Web Speech API
 
 ### Infrastructure
-- [ ] **`npm run type-check`** — `tsc --noEmit` pour validation CI sans compilation
 - [ ] **`npm run analyze`** — bundle Webpack avec webpack-bundle-analyzer
-- [ ] **`npm run test:e2e`** et **`npm run e2e:debug`** — scripts Playwright manquants dans `package.json`
 - [ ] **`npm run db:migrate`** — une fois le système de migration implémenté
 - [ ] **Documentation API IPC** — TypeDoc ou manuel des handlers IPC
 - [ ] **i18n complète** — vérifier que les 7 locales (fr/en/br/ca/de/es/zh-HK) couvrent tous les nouveaux textes
