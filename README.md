@@ -2,6 +2,16 @@
 
 🤺 **Logiciel moderne de gestion de compétitions d'escrime** avec interface multilingue et temps réel
 
+---
+
+☕ **Ce projet est gratuit et open source.** Si BellePoule Modern vous est utile, vous pouvez soutenir son développement :
+
+**[👉 Buy Me a Coffee — klinnex](https://buymeacoffee.com/klinnex)**
+
+Merci pour votre soutien ! / Thank you for your support!
+
+---
+
 ### 📚 **Documentation**
 
 - 📖 **[Guide PDF Export Utilisateur](docs/USER_GUIDE_PDF_EXPORT.md)** - Guide complet d'utilisation
