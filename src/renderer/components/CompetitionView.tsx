@@ -233,6 +233,27 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     };
   }, [updateMatchFromRemote]);
 
+  // Sync matchs tableau vers DB (persistence individuelle, inclut la 3e place)
+  useEffect(() => {
+    if (!competition?.id || tableauMatches.length === 0) return;
+    const maxScore = competition.settings?.defaultTableMaxScore ?? 15;
+    tableauMatches.forEach(m => {
+      window.electronAPI.db.upsertTableauMatch({
+        competitionId: competition.id,
+        matchId: m.id,
+        round: m.round,
+        position: m.position,
+        fencerAId: m.fencerA?.id ?? null,
+        fencerBId: m.fencerB?.id ?? null,
+        scoreA: m.scoreA != null ? { value: m.scoreA, isVictory: m.winner?.id === m.fencerA?.id } : null,
+        scoreB: m.scoreB != null ? { value: m.scoreB, isVictory: m.winner?.id === m.fencerB?.id } : null,
+        status: m.winner ? 'finished' : m.isBye ? 'finished' : 'not_started',
+        maxScore,
+        isBye: m.isBye,
+      }).catch(() => {});
+    });
+  }, [tableauMatches, competition?.id]);
+
   // Menu events
   useMenuEvents({
     currentPhase,

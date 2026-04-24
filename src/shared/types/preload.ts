@@ -101,6 +101,7 @@ export interface MatchUpdateData {
   startTime?: Date;
   endTime?: Date;
   duration?: number;
+  refereeId?: string;
 }
 
 // ============================================================================
@@ -392,6 +393,19 @@ export interface DatabaseAPI {
   getMatch: (id: string) => Promise<Match | null>;
   getMatchesByPool: (poolId: string) => Promise<Match[]>;
   updateMatch: (id: string, updates: MatchUpdateData) => Promise<void>;
+  upsertTableauMatch: (params: {
+    competitionId: string;
+    matchId: string;
+    round: number;
+    position: number;
+    fencerAId?: string | null;
+    fencerBId?: string | null;
+    scoreA?: any | null;
+    scoreB?: any | null;
+    status?: string;
+    maxScore?: number;
+    isBye?: boolean;
+  }) => Promise<void>;
 
   // Pools
   createPool: (phaseId: string, number: number) => Promise<Pool>;

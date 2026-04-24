@@ -759,6 +759,10 @@ ipcMain.handle('db:updateMatch', async (_, id, updates) => {
   return db.updateMatch(id, updates);
 });
 
+ipcMain.handle('db:upsertTableauMatch', async (_, params) => {
+  return db.upsertTableauMatch(params);
+});
+
 // Session State handlers
 ipcMain.handle('db:saveSessionState', async (_, competitionId, state) => {
   return db.saveSessionState(competitionId, state);
