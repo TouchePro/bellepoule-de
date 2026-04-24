@@ -1069,7 +1069,7 @@ export class DatabaseManager {
     return count;
   }
 
-  public updateMatch(id: string, updates: Partial<Match>): void {
+  public updateMatch(id: string, updates: Partial<Match> & { refereeId?: string }): void {
     if (!this.db) throw new Error('Database not open');
     const now = new Date().toISOString();
     if (updates.scoreA !== undefined)
