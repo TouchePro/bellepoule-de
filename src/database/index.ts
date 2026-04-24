@@ -25,6 +25,8 @@ import {
   Referee,
 } from '../shared/types';
 import { validateId, validateSessionState, sanitizeId } from './validation';
+import { MigrationManager } from './migrations';
+import { ALL_MIGRATIONS } from './migrations/migrations';
 
 let SQL: any = null;
 
@@ -57,7 +59,7 @@ export class DatabaseManager {
       this.db = new SQL.Database();
     }
 
-    this.initializeTables();
+    this.runMigrations();
     this.save();
   }
 
@@ -127,223 +129,9 @@ export class DatabaseManager {
     return this.db !== null;
   }
 
-  private initializeTables(): void {
+  private runMigrations(): void {
     if (!this.db) throw new Error('Database not open');
-
-    this.db.run(`
-      CREATE TABLE IF NOT EXISTS competitions (
-        id TEXT PRIMARY KEY, title TEXT NOT NULL, short_title TEXT,
-        date TEXT NOT NULL, location TEXT, organizer TEXT,
-        weapon TEXT NOT NULL, gender TEXT NOT NULL, category TEXT NOT NULL,
-        championship TEXT, color TEXT DEFAULT '#3B82F6',
-        current_phase_index INTEGER DEFAULT 0, is_team_event INTEGER DEFAULT 0,
-        status TEXT DEFAULT 'draft', settings TEXT,
-        created_at TEXT NOT NULL, updated_at TEXT NOT NULL
-      )
-    `);
-
-    this.db.run(`
-      CREATE TABLE IF NOT EXISTS phases (
-        id TEXT PRIMARY KEY,
-        competition_id TEXT NOT NULL,
-        name TEXT NOT NULL,
-        type TEXT NOT NULL,
-        order_index INTEGER NOT NULL,
-        status TEXT DEFAULT 'pending',
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        FOREIGN KEY (competition_id) REFERENCES competitions(id) ON DELETE CASCADE
-      )
-    `);
-
-    this.db.run(`
-      CREATE TABLE IF NOT EXISTS fencers (
-        id TEXT PRIMARY KEY, competition_id TEXT NOT NULL,
-        ref INTEGER NOT NULL, last_name TEXT NOT NULL, first_name TEXT NOT NULL,
-        birth_date TEXT, gender TEXT NOT NULL, nationality TEXT DEFAULT 'FRA',
-        region TEXT, club TEXT, license TEXT, ranking INTEGER,
-        status TEXT DEFAULT 'N', seed_number INTEGER, final_ranking INTEGER,
-        pool_stats TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
-      )
-    `);
-
-    this.db.run(`
-      CREATE TABLE IF NOT EXISTS matches (
-        id TEXT PRIMARY KEY, number INTEGER NOT NULL,
-        pool_id TEXT, table_id TEXT,
-        fencer_a_id TEXT, fencer_b_id TEXT,
-        score_a TEXT, score_b TEXT, max_score INTEGER NOT NULL,
-        status TEXT DEFAULT 'not_started', referee_id TEXT,
-        strip INTEGER, round INTEGER, position INTEGER,
-        created_at TEXT NOT NULL, updated_at TEXT NOT NULL
-      )
-    `);
-
-    this.db.run(`
-      CREATE TABLE IF NOT EXISTS pools (
-        id TEXT PRIMARY KEY, phase_id TEXT NOT NULL,
-        number INTEGER NOT NULL, strip INTEGER, start_time TEXT,
-        is_complete INTEGER DEFAULT 0, has_error INTEGER DEFAULT 0,
-        created_at TEXT NOT NULL, updated_at TEXT NOT NULL
-      )
-    `);
-
-    this.db.run(`
-      CREATE TABLE IF NOT EXISTS pool_fencers (
-        pool_id TEXT NOT NULL, fencer_id TEXT NOT NULL, position INTEGER NOT NULL,
-        PRIMARY KEY (pool_id, fencer_id)
-      )
-    `);
-
-    // Table pour stocker l'état de session (persistance au refresh)
-    this.db.run(`
-      CREATE TABLE IF NOT EXISTS session_state (
-        competition_id TEXT PRIMARY KEY,
-        state_json TEXT NOT NULL,
-        updated_at TEXT NOT NULL
-      )
-    `);
-
-    // Table pour les touches (points marqués avec horodatage)
-    this.db.run(`
-      CREATE TABLE IF NOT EXISTS match_touches (
-        id TEXT PRIMARY KEY,
-        match_id TEXT NOT NULL,
-        fencer_id TEXT NOT NULL,
-        zone TEXT NOT NULL,
-        points INTEGER NOT NULL,
-        timestamp TEXT NOT NULL,
-        is_valid_in_sudden_death INTEGER DEFAULT 0,
-        is_reversed INTEGER DEFAULT 0,
-        FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE
-      )
-    `);
-
-    // Table pour les cartons (avec horodatage)
-    this.db.run(`
-      CREATE TABLE IF NOT EXISTS match_cards (
-        id TEXT PRIMARY KEY,
-        match_id TEXT NOT NULL,
-        fencer_id TEXT NOT NULL,
-        card_type TEXT NOT NULL,
-        reason TEXT NOT NULL,
-        card_group INTEGER NOT NULL DEFAULT 1,
-        timestamp TEXT NOT NULL,
-        points_awarded INTEGER NOT NULL DEFAULT 0,
-        resulting_exclusion INTEGER DEFAULT 0,
-        FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE
-      )
-    `);
-
-    // Table des arbitres
-    this.db.run(`
-      CREATE TABLE IF NOT EXISTS referees (
-        id TEXT PRIMARY KEY,
-        competition_id TEXT NOT NULL,
-        ref INTEGER NOT NULL,
-        name TEXT NOT NULL,
-        gender TEXT,
-        nationality TEXT DEFAULT 'FRA',
-        club TEXT,
-        license TEXT,
-        category TEXT,
-        status TEXT DEFAULT 'active',
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        FOREIGN KEY (competition_id) REFERENCES competitions(id) ON DELETE CASCADE
-      )
-    `);
-
-    // Table pour les snapshots d'abandon (annulation d'abandon)
-    this.db.run(`
-      CREATE TABLE IF NOT EXISTS fencer_abandons (
-        id TEXT PRIMARY KEY,
-        fencer_id TEXT NOT NULL,
-        competition_id TEXT NOT NULL,
-        previous_status TEXT NOT NULL,
-        abandon_type TEXT NOT NULL,
-        match_snapshots TEXT NOT NULL,
-        created_at TEXT NOT NULL
-      )
-    `);
-
-    // Colonnes de timing sur les matchs (migration idempotente)
-    try {
-      this.db.run(`ALTER TABLE matches ADD COLUMN start_time TEXT`);
-    } catch {
-      /* colonne déjà présente */
-    }
-    try {
-      this.db.run(`ALTER TABLE matches ADD COLUMN end_time TEXT`);
-    } catch {
-      /* colonne déjà présente */
-    }
-    try {
-      this.db.run(`ALTER TABLE matches ADD COLUMN duration INTEGER`);
-    } catch {
-      /* colonne déjà présente */
-    }
-
-    // Photo des tireurs (migration idempotente)
-    try {
-      this.db.run(`ALTER TABLE fencers ADD COLUMN photo TEXT`);
-    } catch {
-      /* colonne déjà présente */
-    }
-
-    // Renommage league → region (migration idempotente)
-    try {
-      this.db.run(`ALTER TABLE fencers RENAME COLUMN league TO region`);
-    } catch {
-      /* colonne déjà renommée */
-    }
-
-    // Création des index pour optimiser les performances
-    this.createIndexes();
-  }
-
-  private createIndexes(): void {
-    if (!this.db) return;
-
-    // Index pour les recherches par date de compétition
-    this.db.run(`CREATE INDEX IF NOT EXISTS idx_competitions_date ON competitions(date)`);
-
-    // Index pour les recherches par statut
-    this.db.run(`CREATE INDEX IF NOT EXISTS idx_competitions_status ON competitions(status)`);
-
-    // Index pour les phases par compétition
-    this.db.run(`CREATE INDEX IF NOT EXISTS idx_phases_competition ON phases(competition_id)`);
-
-    // Index pour les tireurs par compétition (très fréquemment utilisé)
-    this.db.run(`CREATE INDEX IF NOT EXISTS idx_fencers_competition ON fencers(competition_id)`);
-
-    // Index pour les recherches de tireurs par nom
-    this.db.run(`CREATE INDEX IF NOT EXISTS idx_fencers_name ON fencers(last_name, first_name)`);
-
-    // Index pour les recherches par club
-    this.db.run(`CREATE INDEX IF NOT EXISTS idx_fencers_club ON fencers(club)`);
-
-    // Index pour les matchs par pool
-    this.db.run(`CREATE INDEX IF NOT EXISTS idx_matches_pool ON matches(pool_id)`);
-
-    // Index pour les matchs par tableau
-    this.db.run(`CREATE INDEX IF NOT EXISTS idx_matches_table ON matches(table_id)`);
-
-    // Index pour les matchs par statut
-    this.db.run(`CREATE INDEX IF NOT EXISTS idx_matches_status ON matches(status)`);
-
-    // Index pour les poules par phase
-    this.db.run(`CREATE INDEX IF NOT EXISTS idx_pools_phase ON pools(phase_id)`);
-
-    // Index pour les associations pool/tireur
-    this.db.run(`CREATE INDEX IF NOT EXISTS idx_pool_fencers_pool ON pool_fencers(pool_id)`);
-    this.db.run(`CREATE INDEX IF NOT EXISTS idx_pool_fencers_fencer ON pool_fencers(fencer_id)`);
-
-    // Index pour les statistiques par combattant
-    this.db.run(`CREATE INDEX IF NOT EXISTS idx_touches_match ON match_touches(match_id)`);
-    this.db.run(`CREATE INDEX IF NOT EXISTS idx_touches_fencer ON match_touches(fencer_id)`);
-    this.db.run(`CREATE INDEX IF NOT EXISTS idx_cards_match ON match_cards(match_id)`);
-    this.db.run(`CREATE INDEX IF NOT EXISTS idx_cards_fencer ON match_cards(fencer_id)`);
+    new MigrationManager(this.db).run(ALL_MIGRATIONS);
   }
 
   // Session State Management
@@ -926,6 +714,61 @@ export class DatabaseManager {
     return this.getMatch(id)!;
   }
 
+  public upsertTableauMatch(params: {
+    competitionId: string;
+    matchId: string; // ex: '3-0', '2-0', '4-1'
+    round: number;
+    position: number;
+    fencerAId?: string | null;
+    fencerBId?: string | null;
+    scoreA?: any | null;
+    scoreB?: any | null;
+    status?: string;
+    maxScore?: number;
+    isBye?: boolean;
+  }): void {
+    if (!this.db) throw new Error('Database not open');
+    const now = new Date().toISOString();
+    const dbId = `${params.competitionId}-${params.matchId}`;
+    const status = params.status ?? 'not_started';
+    const exists = !!this.getMatch(dbId);
+    if (!exists) {
+      this.db.run(
+        `INSERT INTO matches (id, number, table_id, fencer_a_id, fencer_b_id, max_score, status, round, position, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          dbId,
+          parseInt(params.matchId.replace('-', '')) || 0,
+          params.competitionId,
+          params.fencerAId ?? null,
+          params.fencerBId ?? null,
+          params.maxScore ?? 15,
+          status,
+          params.round,
+          params.position,
+          now,
+          now,
+        ]
+      );
+    } else {
+      this.db.run(
+        `UPDATE matches SET fencer_a_id=?, fencer_b_id=?, score_a=?, score_b=?, status=?, round=?, position=?, updated_at=? WHERE id=?`,
+        [
+          params.fencerAId ?? null,
+          params.fencerBId ?? null,
+          params.scoreA != null ? JSON.stringify(params.scoreA) : null,
+          params.scoreB != null ? JSON.stringify(params.scoreB) : null,
+          status,
+          params.round,
+          params.position,
+          now,
+          dbId,
+        ]
+      );
+    }
+    this.save();
+  }
+
   public getMatch(id: string): Match | null {
     if (!this.db) throw new Error('Database not open');
     const stmt = this.db.prepare('SELECT * FROM matches WHERE id = ?');
@@ -1244,6 +1087,12 @@ export class DatabaseManager {
     if (updates.status !== undefined)
       this.db.run('UPDATE matches SET status = ?, updated_at = ? WHERE id = ?', [
         updates.status,
+        now,
+        id,
+      ]);
+    if (updates.refereeId !== undefined)
+      this.db.run('UPDATE matches SET referee_id = ?, updated_at = ? WHERE id = ?', [
+        updates.refereeId,
         now,
         id,
       ]);
@@ -1899,6 +1748,190 @@ export class DatabaseManager {
     this.close();
     this.dbPath = filepath;
     await this.open();
+  }
+
+  // ─── Bracket nodes (élimination directe) ────────────────────────────────────
+
+  public upsertBracketNode(node: {
+    id: string;
+    competitionId: string;
+    phaseId: string;
+    round: number;
+    position: number;
+    fencerId?: string | null;
+    matchId?: string | null;
+    isBye?: boolean;
+    isThirdPlace?: boolean;
+    parentNodeId?: string | null;
+  }): void {
+    if (!this.db) throw new Error('Database not open');
+    const now = new Date().toISOString();
+    this.db.run(
+      `INSERT OR REPLACE INTO bracket_nodes
+        (id, competition_id, phase_id, round, position, fencer_id, match_id, is_bye, is_third_place, parent_node_id, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM bracket_nodes WHERE id=?), ?), ?)`,
+      [
+        node.id, node.competitionId, node.phaseId, node.round, node.position,
+        node.fencerId ?? null, node.matchId ?? null,
+        node.isBye ? 1 : 0, node.isThirdPlace ? 1 : 0, node.parentNodeId ?? null,
+        node.id, now, now,
+      ]
+    );
+    this.save();
+  }
+
+  public getBracketNodes(competitionId: string, phaseId: string): any[] {
+    if (!this.db) throw new Error('Database not open');
+    const stmt = this.db.prepare(
+      `SELECT * FROM bracket_nodes WHERE competition_id=? AND phase_id=? ORDER BY round, position`
+    );
+    stmt.bind([competitionId, phaseId]);
+    const rows: any[] = [];
+    while (stmt.step()) rows.push(stmt.getAsObject());
+    stmt.free();
+    return rows.map(r => ({
+      ...r,
+      isBye: r.is_bye === 1,
+      isThirdPlace: r.is_third_place === 1,
+    }));
+  }
+
+  public clearBracket(competitionId: string, phaseId: string): void {
+    if (!this.db) throw new Error('Database not open');
+    this.db.run(
+      `DELETE FROM bracket_nodes WHERE competition_id=? AND phase_id=?`,
+      [competitionId, phaseId]
+    );
+    this.save();
+  }
+
+  // ─── Score audit log ─────────────────────────────────────────────────────────
+
+  public logScoreChange(entry: {
+    matchId: string;
+    arenaId?: string;
+    previousScoreA?: any;
+    previousScoreB?: any;
+    newScoreA: any;
+    newScoreB: any;
+    changedBy: string;
+    reason?: string;
+  }): void {
+    if (!this.db) throw new Error('Database not open');
+    const { v4: uuidv4gen } = require('uuid');
+    this.db.run(
+      `INSERT INTO score_audit_log
+        (id, match_id, arena_id, previous_score_a, previous_score_b, new_score_a, new_score_b, changed_by, changed_at, reason)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        uuidv4gen(),
+        entry.matchId,
+        entry.arenaId ?? null,
+        entry.previousScoreA != null ? JSON.stringify(entry.previousScoreA) : null,
+        entry.previousScoreB != null ? JSON.stringify(entry.previousScoreB) : null,
+        JSON.stringify(entry.newScoreA),
+        JSON.stringify(entry.newScoreB),
+        entry.changedBy,
+        new Date().toISOString(),
+        entry.reason ?? null,
+      ]
+    );
+    this.save();
+  }
+
+  public getScoreAuditLog(matchId: string): any[] {
+    if (!this.db) throw new Error('Database not open');
+    const stmt = this.db.prepare(
+      `SELECT * FROM score_audit_log WHERE match_id=? ORDER BY changed_at ASC`
+    );
+    stmt.bind([matchId]);
+    const rows: any[] = [];
+    while (stmt.step()) {
+      const r = stmt.getAsObject();
+      rows.push({
+        id: r.id,
+        matchId: r.match_id,
+        arenaId: r.arena_id,
+        previousScoreA: r.previous_score_a ? JSON.parse(r.previous_score_a as string) : null,
+        previousScoreB: r.previous_score_b ? JSON.parse(r.previous_score_b as string) : null,
+        newScoreA: JSON.parse(r.new_score_a as string),
+        newScoreB: JSON.parse(r.new_score_b as string),
+        changedBy: r.changed_by,
+        changedAt: r.changed_at,
+        reason: r.reason,
+      });
+    }
+    stmt.free();
+    return rows;
+  }
+
+  // ─── Arena state persistence ─────────────────────────────────────────────────
+
+  public saveArenaState(arenaId: string, state: {
+    competitionId: string;
+    currentMatch: any | null;
+    matchQueue: any[];
+    settings: any;
+    status: string;
+  }): void {
+    if (!this.db) throw new Error('Database not open');
+    this.db.run(
+      `INSERT OR REPLACE INTO arena_state
+        (arena_id, competition_id, current_match, match_queue, settings, status, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        arenaId,
+        state.competitionId,
+        state.currentMatch != null ? JSON.stringify(state.currentMatch) : null,
+        JSON.stringify(state.matchQueue),
+        state.settings != null ? JSON.stringify(state.settings) : null,
+        state.status,
+        new Date().toISOString(),
+      ]
+    );
+    this.save();
+  }
+
+  public getArenaState(arenaId: string): {
+    arenaId: string;
+    competitionId: string;
+    currentMatch: any | null;
+    matchQueue: any[];
+    settings: any | null;
+    status: string;
+    updatedAt: string;
+  } | null {
+    if (!this.db) throw new Error('Database not open');
+    const stmt = this.db.prepare(`SELECT * FROM arena_state WHERE arena_id=?`);
+    stmt.bind([arenaId]);
+    if (!stmt.step()) { stmt.free(); return null; }
+    const r = stmt.getAsObject();
+    stmt.free();
+    return {
+      arenaId: r.arena_id as string,
+      competitionId: r.competition_id as string,
+      currentMatch: r.current_match ? JSON.parse(r.current_match as string) : null,
+      matchQueue: r.match_queue ? JSON.parse(r.match_queue as string) : [],
+      settings: r.settings ? JSON.parse(r.settings as string) : null,
+      status: r.status as string,
+      updatedAt: r.updated_at as string,
+    };
+  }
+
+  public getArenaStatesByCompetition(competitionId: string): ReturnType<DatabaseManager['getArenaState']>[] {
+    if (!this.db) throw new Error('Database not open');
+    const stmt = this.db.prepare(`SELECT arena_id FROM arena_state WHERE competition_id=?`);
+    stmt.bind([competitionId]);
+    const ids: string[] = [];
+    while (stmt.step()) ids.push(stmt.getAsObject().arena_id as string);
+    stmt.free();
+    return ids.map(id => this.getArenaState(id)).filter(Boolean) as any;
+  }
+
+  public clearArenaStates(competitionId: string): void {
+    if (!this.db) throw new Error('Database not open');
+    this.db.run(`DELETE FROM arena_state WHERE competition_id=?`, [competitionId]);
+    this.save();
   }
 }
 

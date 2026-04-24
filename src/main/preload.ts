@@ -154,6 +154,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
       return ipcRenderer.invoke('db:updateMatch', id, updates);
     },
 
+    upsertTableauMatch: (params: any) =>
+      ipcRenderer.invoke('db:upsertTableauMatch', params),
+
     // Pools
     createPool: (phaseId: string, number: number) => {
       if (!phaseId || typeof phaseId !== 'string') {
