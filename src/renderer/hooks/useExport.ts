@@ -10,6 +10,7 @@ import { logger, LogCategory } from '@shared/services/logger';
 import { FinalResult } from '../components/TableauView';
 import { exportFencersToTXT, exportFencersToFFF } from '../../shared/utils/fencerExport';
 import { exportMultiplePoolsToPDF } from '../../shared/utils/pdfExport';
+import { usePdfTemplateStore } from '../../features/pdfTemplates/hooks/usePdfTemplateStore';
 import { useToast } from '../components/Toast';
 import {
   exportResultsHTML,
@@ -24,6 +25,8 @@ interface UseExportProps {
 }
 
 export const useExport = ({ competition, showToast }: UseExportProps) => {
+  const poolTemplate = usePdfTemplateStore(s => s.templates.pool);
+
   // Helper pour télécharger un fichier
   const downloadFile = useCallback((content: string, filename: string, mimeType: string) => {
     const blob = new Blob([content], { type: mimeType });
@@ -215,7 +218,8 @@ export const useExport = ({ competition, showToast }: UseExportProps) => {
         await exportMultiplePoolsToPDF(
           pools,
           `Toutes les Poules - ${competition.title} - Tour ${currentPoolRound}`,
-          logo
+          logo,
+          poolTemplate
         );
         showToast(`Export PDF de ${pools.length} poules généré avec succès`, 'success');
       } catch (error) {
@@ -226,7 +230,7 @@ export const useExport = ({ competition, showToast }: UseExportProps) => {
         );
       }
     },
-    [competition.title, showToast]
+    [competition.title, showToast, poolTemplate]
   );
 
   // Export HTML des résultats

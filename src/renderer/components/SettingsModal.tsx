@@ -7,6 +7,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from '../hooks/useTranslation';
 import type { Language } from '../contexts/TranslationContext';
 import LanguageSelector from './LanguageSelector';
+import PdfTemplateModal from './PdfTemplateModal';
 
 const LOGO_STORAGE_KEY = 'bellepoule-logo';
 const WEBHOOK_STORAGE_KEY = 'bellepoule-webhook-url';
@@ -65,6 +66,7 @@ interface SettingsModalProps {
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
   const { t, language, theme, changeLanguage, changeTheme } = useTranslation();
+  const [showPdfEditor, setShowPdfEditor] = useState(false);
   const [settings, setSettings] = useState({
     language: language,
     theme: theme,
@@ -199,6 +201,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
   };
 
   return (
+    <>
+    {showPdfEditor && <PdfTemplateModal onClose={() => setShowPdfEditor(false)} />}
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
         <div className="modal-header">
@@ -283,6 +287,21 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
               </button>
             )}
           </div>
+          {/* PDF Templates */}
+          <div className="form-group" style={{ marginTop: '1rem', borderTop: '1px solid var(--border, #e5e7eb)', paddingTop: '1rem' }}>
+            <label style={{ fontWeight: 600 }}>Exports PDF</label>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted, #6b7280)', marginBottom: '0.5rem' }}>
+              Personnalisez l'apparence de chaque type d'export PDF.
+            </p>
+            <button
+              className="btn btn-secondary"
+              style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}
+              onClick={() => setShowPdfEditor(true)}
+            >
+              {t('pdfTemplate.openButton')}
+            </button>
+          </div>
+
           {/* Notifications webhook */}
           <div className="form-group" style={{ marginTop: '1rem', borderTop: '1px solid var(--border, #e5e7eb)', paddingTop: '1rem' }}>
             <label style={{ fontWeight: 600 }}>Notifications webhook</label>
@@ -338,6 +357,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

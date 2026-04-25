@@ -10,6 +10,7 @@ import { useToast } from './Toast';
 import { useModalResize } from '../hooks/useModalResize';
 import Bracket from './Bracket';
 import { exportTableauToPDF, printTableauHTML, MAX_MATCHES_PER_PAGE_TABLEAU } from '../../shared/utils/pdfExport';
+import { usePdfTemplateStore } from '../../features/pdfTemplates/hooks/usePdfTemplateStore';
 
 interface BracketMatch {
   id: string;
@@ -153,6 +154,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   onMatchArenaChange,
 }) => {
   const { showToast } = useToast();
+  const tableauTemplate = usePdfTemplateStore(s => s.templates.tableau);
   const [tableauSize, setTableauSize] = useState<number>(0);
   const [editingMatch, setEditingMatch] = useState<string | null>(null);
   const [showScoreModal, setShowScoreModal] = useState(false);
@@ -495,9 +497,9 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
     try {
       if (pdfMode === 'print') {
-        await printTableauHTML(matches, perPage, title, logo);
+        await printTableauHTML(matches, perPage, title, logo, tableauTemplate);
       } else {
-        await exportTableauToPDF(matches, perPage, title, logo);
+        await exportTableauToPDF(matches, perPage, title, logo, tableauTemplate);
       }
       setShowPdfModal(false);
     } catch (e) {

@@ -211,5 +211,20 @@
     "seconds": "eil",
     "hours": "eurvezh",
     "days": "deiz"
+  },
+  "pdfTemplate": {
+    "modalTitle": "Personelañ ezporzhioù PDF",
+    "openButton": "Personelañ PDF",
+    "docType": { "pool": "Poelloù", "tableau": "Taolenn", "ranking": "Renk" },
+    "customTitle": "Titl personelaet",
+    "customTitlePlaceholder": "Lezel goullo evit titl emgefreek",
+    "colors": { "navy": "Liv pennañ", "gold": "Liv mouezh", "green": "Liv trechañ" },
+    "elements": {
+      "header": "Penn-bann", "gold-bar": "Barenn aour", "meta-chips": "Chips titouroù",
+      "score-grid": "Reizh poentoù", "pending-matches": "Emgavioù o vont",
+      "finished-matches": "Disoc'hoù", "match-cards": "Kartennoù emgav",
+      "ranking-table": "Taolenn renk", "footer": "Troad-pajenn"
+    },
+    "reset": "Adderaouiñ", "exportJson": "Ezporzhiañ JSON", "importJson": "Enporzhiañ JSON", "importError": "Restr JSON fall"
   }
 }

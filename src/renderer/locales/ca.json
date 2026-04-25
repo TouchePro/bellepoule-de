@@ -211,5 +211,20 @@
     "seconds": "segons",
     "hours": "hores",
     "days": "dies"
+  },
+  "pdfTemplate": {
+    "modalTitle": "Personalitzar exportacions PDF",
+    "openButton": "Personalitzar PDFs",
+    "docType": { "pool": "Grups", "tableau": "Quadre", "ranking": "Classificació" },
+    "customTitle": "Títol personalitzat",
+    "customTitlePlaceholder": "Deixar buit per al títol automàtic",
+    "colors": { "navy": "Color principal", "gold": "Color d'accent", "green": "Color de victòria" },
+    "elements": {
+      "header": "Capçalera", "gold-bar": "Separador daurat", "meta-chips": "Xips d'info",
+      "score-grid": "Quadrícula de puntuació", "pending-matches": "Combats pendents",
+      "finished-matches": "Resultats", "match-cards": "Fitxes de combat",
+      "ranking-table": "Taula de classificació", "footer": "Peu de pàgina"
+    },
+    "reset": "Restablir", "exportJson": "Exportar JSON", "importJson": "Importar JSON", "importError": "Fitxer JSON no vàlid"
   }
 }

@@ -13,6 +13,7 @@ import { useToast } from './Toast';
 import { useConfirm } from './ConfirmDialog';
 import { exportPoolToPDF } from '../../shared/utils/pdfExport';
 import { useColumnVisibility, POOL_COLUMNS, ColumnId } from '../hooks/useColumnVisibility';
+import { usePdfTemplateStore } from '../../features/pdfTemplates/hooks/usePdfTemplateStore';
 import { useHistory } from '../hooks/useHistory';
 
 interface PoolViewProps {
@@ -43,6 +44,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   const { showToast } = useToast();
   const { confirm } = useConfirm();
   const { isColumnVisible, toggleColumn, getVisibleColumns } = useColumnVisibility();
+  const poolTemplate = usePdfTemplateStore(s => s.templates.pool);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [editingMatch, setEditingMatch] = useState<number | null>(null);
   const [showColumnMenu, setShowColumnMenu] = useState(false);
@@ -353,7 +355,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         includePoolStats: true,
         logoBase64: logo,
         visibleColumns: getVisibleColumns('pool'),
-      });
+      }, poolTemplate);
       showToast(`Export PDF de la poule ${pool.number} généré avec succès`, 'success');
     } catch (error) {
       logger.error(LogCategory.UI, "Erreur lors de l'export PDF", error as Error);

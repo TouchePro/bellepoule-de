@@ -211,5 +211,36 @@
     "seconds": "secondes",
     "hours": "heures",
     "days": "jours"
+  },
+  "pdfTemplate": {
+    "modalTitle": "Personnaliser les exports PDF",
+    "openButton": "Personnaliser les PDF",
+    "docType": {
+      "pool": "Poules",
+      "tableau": "Tableau",
+      "ranking": "Classement"
+    },
+    "customTitle": "Titre personnalisé",
+    "customTitlePlaceholder": "Laisser vide pour le titre automatique",
+    "colors": {
+      "navy": "Couleur principale",
+      "gold": "Couleur accent",
+      "green": "Couleur victoire"
+    },
+    "elements": {
+      "header": "En-tête",
+      "gold-bar": "Séparateur doré",
+      "meta-chips": "Puces d'info",
+      "score-grid": "Grille des scores",
+      "pending-matches": "Matchs à jouer",
+      "finished-matches": "Résultats",
+      "match-cards": "Fiches de matchs",
+      "ranking-table": "Tableau du classement",
+      "footer": "Pied de page"
+    },
+    "reset": "Réinitialiser",
+    "exportJson": "Exporter JSON",
+    "importJson": "Importer JSON",
+    "importError": "Fichier JSON invalide"
   }
 }
