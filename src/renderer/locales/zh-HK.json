@@ -211,5 +211,20 @@
     "seconds": "秒",
     "hours": "小時",
     "days": "天"
+  },
+  "pdfTemplate": {
+    "modalTitle": "自訂PDF匯出",
+    "openButton": "自訂PDF",
+    "docType": { "pool": "分組", "tableau": "淘汰賽", "ranking": "排名" },
+    "customTitle": "自訂標題",
+    "customTitlePlaceholder": "留空使用自動標題",
+    "colors": { "navy": "主色", "gold": "強調色", "green": "勝利色" },
+    "elements": {
+      "header": "頁首", "gold-bar": "金色分隔線", "meta-chips": "資訊標籤",
+      "score-grid": "分數表格", "pending-matches": "待打比賽",
+      "finished-matches": "結果", "match-cards": "比賽卡片",
+      "ranking-table": "排名表", "footer": "頁尾"
+    },
+    "reset": "重設", "exportJson": "匯出JSON", "importJson": "匯入JSON", "importError": "JSON檔案無效"
   }
 }

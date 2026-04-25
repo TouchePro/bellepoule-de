@@ -211,5 +211,20 @@
     "seconds": "seconds",
     "hours": "hours",
     "days": "days"
+  },
+  "pdfTemplate": {
+    "modalTitle": "Customize PDF Exports",
+    "openButton": "Customize PDFs",
+    "docType": { "pool": "Pools", "tableau": "Tableau", "ranking": "Ranking" },
+    "customTitle": "Custom title",
+    "customTitlePlaceholder": "Leave empty for automatic title",
+    "colors": { "navy": "Primary color", "gold": "Accent color", "green": "Victory color" },
+    "elements": {
+      "header": "Header", "gold-bar": "Gold separator", "meta-chips": "Info chips",
+      "score-grid": "Score grid", "pending-matches": "Pending matches",
+      "finished-matches": "Results", "match-cards": "Match cards",
+      "ranking-table": "Ranking table", "footer": "Footer"
+    },
+    "reset": "Reset", "exportJson": "Export JSON", "importJson": "Import JSON", "importError": "Invalid JSON file"
   }
 }

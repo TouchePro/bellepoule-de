@@ -211,5 +211,20 @@
     "seconds": "segundos",
     "hours": "horas",
     "days": "días"
+  },
+  "pdfTemplate": {
+    "modalTitle": "Personalizar exportaciones PDF",
+    "openButton": "Personalizar PDFs",
+    "docType": { "pool": "Grupos", "tableau": "Cuadro", "ranking": "Clasificación" },
+    "customTitle": "Título personalizado",
+    "customTitlePlaceholder": "Dejar vacío para título automático",
+    "colors": { "navy": "Color principal", "gold": "Color de acento", "green": "Color de victoria" },
+    "elements": {
+      "header": "Encabezado", "gold-bar": "Separador dorado", "meta-chips": "Chips de info",
+      "score-grid": "Cuadrícula de puntuación", "pending-matches": "Combates pendientes",
+      "finished-matches": "Resultados", "match-cards": "Fichas de combate",
+      "ranking-table": "Tabla de clasificación", "footer": "Pie de página"
+    },
+    "reset": "Restablecer", "exportJson": "Exportar JSON", "importJson": "Importar JSON", "importError": "Archivo JSON inválido"
   }
 }

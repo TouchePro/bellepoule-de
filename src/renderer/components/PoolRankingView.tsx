@@ -7,6 +7,7 @@
 import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { PoolRanking, Pool, Weapon, FencerStatus } from '../../shared/types';
 import { exportRankingToPDF } from '../../shared/utils/pdfExport';
+import { usePdfTemplateStore } from '../../features/pdfTemplates/hooks/usePdfTemplateStore';
 import {
   formatRatio,
   formatIndex,
@@ -45,6 +46,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
 }) => {
   const { showToast } = useToast();
   const { isColumnVisible, toggleColumn, getVisibleColumns } = useColumnVisibility();
+  const rankingTemplate = usePdfTemplateStore(s => s.templates.ranking);
   const isLaserSabre = weapon === 'L';
   const [recalcKey, setRecalcKey] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
@@ -171,7 +173,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
     try {
       const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
       const cols = getVisibleColumns('ranking').filter(col => col !== 'quest' || isLaserSabre);
-      await exportRankingToPDF(overallRanking, 'Classement Général', weapon, cols, logo);
+      await exportRankingToPDF(overallRanking, 'Classement Général', weapon, cols, logo, rankingTemplate);
     } catch (e) {
       showToast((e as Error).message, 'error');
     }
