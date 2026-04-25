@@ -33,7 +33,7 @@ let currentMenuLanguage = 'fr';
 // Menu Translations
 // ============================================================================
 
-type MenuLang = 'fr' | 'en' | 'de';
+type MenuLang = 'fr' | 'en' | 'de' | 'zh-HK';
 
 const MENU_LABELS: Record<MenuLang, Record<string, string>> = {
   fr: {
@@ -99,6 +99,7 @@ const MENU_LABELS: Record<MenuLang, Record<string, string>> = {
     exportFencersTxt: 'Export fencers (.txt)',
     exportFencersFff: 'Export fencers (.fff)',
     exportFencersBpf: 'Export fencers + photos (.bpf)',
+    exportPhotos: 'Export photos (.zip)',
     import: 'Import',
     importXml: 'Import XML (BellePoule)',
     importFff: 'Import FFE list (.fff)',
@@ -148,6 +149,7 @@ const MENU_LABELS: Record<MenuLang, Record<string, string>> = {
     exportFencersTxt: 'Fechter exportieren (.txt)',
     exportFencersFff: 'Fechter exportieren (.fff)',
     exportFencersBpf: 'Fechter + Fotos exportieren (.bpf)',
+    exportPhotos: 'Fotos exportieren (.zip)',
     import: 'Importieren',
     importXml: 'XML importieren (BellePoule)',
     importFff: 'FFE-Liste importieren (.fff)',
@@ -183,6 +185,56 @@ const MENU_LABELS: Record<MenuLang, Record<string, string>> = {
     updatesTitle: 'Updates',
     docs: 'Dokumentation',
     reportBug: '📝 Bug melden / Vorschlag',
+  },
+  'zh-HK': {
+    file: '檔案',
+    newCompetition: '新建比賽',
+    open: '開啟...',
+    save: '儲存',
+    saveAs: '另存為...',
+    export: '匯出',
+    exportXml: '匯出 XML (BellePoule)',
+    exportCsv: '匯出 CSV',
+    exportPdf: '匯出 PDF',
+    exportFencersTxt: '匯出劍手 (.txt)',
+    exportFencersFff: '匯出劍手 (.fff)',
+    exportFencersBpf: '匯出劍手 + 照片 (.bpf)',
+    exportPhotos: '匯出照片 (.zip)',
+    import: '匯入',
+    importXml: '匯入 XML (BellePoule)',
+    importFff: '匯入 FFE 名單 (.fff)',
+    importRanking: '匯入 FFE 排名',
+    importFencersBpf: '匯入劍手 + 照片 (.bpf)',
+    quit: '退出',
+    edit: '編輯',
+    undo: '復原',
+    redo: '重做',
+    cut: '剪切',
+    copy: '複製',
+    paste: '貼上',
+    selectAll: '全選',
+    competition: '比賽',
+    properties: '屬性',
+    addFencer: '新增劍手',
+    addReferee: '新增裁判',
+    startRemote: '⚡ 啟動遠程計分',
+    stopRemote: '🛑 停止遠程計分',
+    nextPhase: '下一輪',
+    view: '顯示',
+    reload: '重新載入',
+    forceReload: '強制重新載入',
+    devTools: '開發者工具',
+    resetZoom: '重置縮放',
+    zoomIn: '放大',
+    zoomOut: '縮小',
+    fullscreen: '切換全螢幕',
+    help: '說明',
+    about: '關於 BellePoule Modern',
+    updates: '🔄 檢查更新...',
+    updatesUnavailable: '更新系統不可用',
+    updatesTitle: '更新',
+    docs: '文件',
+    reportBug: '📝 回報錯誤 / 建議',
   },
 };
 
@@ -1365,6 +1417,7 @@ ipcMain.handle('app:getVersionInfo', async () => {
 ipcMain.on('app:language-changed', (_, lang: string) => {
   currentMenuLanguage = lang;
   createMenu(lang);
+  if (remoteScoreServer) remoteScoreServer.setLanguage(lang);
 });
 
 // AutoUpdater handlers

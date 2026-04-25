@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Accès protégé - BellePoule</title>
+    <script src="/i18n.js"></script>
     <style>
       * {
         margin: 0;
@@ -124,28 +125,30 @@
   <body>
     <div class="login-card">
       <div class="lock-icon">🔒</div>
-      <h1 id="title">Accès protégé</h1>
+      <h1 id="title" data-i18n="login.title">Accès protégé</h1>
       <p class="subtitle" id="subtitle">Piste —</p>
-      <label for="password">Mot de passe</label>
-      <input type="password" id="password" placeholder="Saisir le mot de passe" autofocus />
-      <button id="submit-btn" onclick="doLogin()">Valider</button>
-      <div class="error-msg" id="error-msg">Mot de passe incorrect</div>
+      <label for="password" data-i18n="login.password_label">Mot de passe</label>
+      <input type="password" id="password" data-i18n-placeholder="login.password_placeholder" placeholder="Saisir le mot de passe" autofocus />
+      <button id="submit-btn" onclick="doLogin()" data-i18n="login.submit">Valider</button>
+      <div class="error-msg" id="error-msg" data-i18n="login.error_incorrect">Mot de passe incorrect</div>
     </div>
 
     <script>
-      (function () {
+      (async function () {
+        await window.initRemoteI18n();
+
         const params = new URLSearchParams(window.location.search);
         const arenaParam = params.get('arena') || '';
         const returnPath = params.get('return') || '/';
 
-        // Extraire le numéro de piste pour l'affichage
         const arenaNum = arenaParam.replace(/^arena/, '');
         if (arenaNum) {
-          document.getElementById('subtitle').textContent = 'Piste ' + arenaNum;
-          document.title = 'Piste ' + arenaNum + ' – Accès protégé';
+          document.getElementById('subtitle').textContent = window.T('login.arena_prefix') + ' ' + arenaNum;
+          document.title = window.T('login.arena_prefix') + ' ' + arenaNum + ' – ' + window.T('login.title');
+        } else {
+          document.title = window.T('login.page_title');
         }
 
-        // Permettre validation par Entrée
         document.getElementById('password').addEventListener('keydown', function (e) {
           if (e.key === 'Enter') doLogin();
         });
@@ -170,13 +173,13 @@
             if (data.success) {
               window.location.href = returnPath;
             } else {
-              errEl.textContent = data.error || 'Mot de passe incorrect';
+              errEl.textContent = data.error || window.T('login.error_incorrect');
               errEl.classList.add('visible');
               document.getElementById('password').value = '';
               document.getElementById('password').focus();
             }
           } catch (e) {
-            errEl.textContent = 'Erreur de connexion au serveur';
+            errEl.textContent = window.T('login.error_connection');
             errEl.classList.add('visible');
           } finally {
             btn.disabled = false;
