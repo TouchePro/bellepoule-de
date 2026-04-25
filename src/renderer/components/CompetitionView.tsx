@@ -1070,7 +1070,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         <AnalyticsDashboard
           competition={competition}
           pools={pools}
-          matches={pools.flatMap(p => p.matches)}
+          matches={pools.flatMap(p => p.matches ?? [])}
           fencers={fencers}
           onClose={() => setShowAnalytics(false)}
         />
