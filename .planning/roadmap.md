@@ -6,7 +6,7 @@
 Phase 1: Core Sabre Laser        ████████████████████ 100% ✅
 Phase 2: Tests Unitaires         ████████████████████ 100% ✅
 Phase 3: Saisie Distante + PWA   ████████████████████ 100% ✅
-Phase 4: Dashboard Live          ░░░░░░░░░░░░░░░░░░░░   0% 📋 ← ACTUELLE
+Phase 4: Dashboard Live          ██████████░░░░░░░░░░  50% 🔄 ← ACTUELLE
 Phase 5: Formule ASL             ░░░░░░░░░░░░░░░░░░░░   0% 📋
 ```
 
@@ -78,19 +78,28 @@ Interface `referee.html` 100% fonctionnelle sur tablette avec mode hors-ligne.
 
 ---
 
-## Phase 4 : Dashboard Live 📋
+## Phase 4 : Dashboard Live 🔄
 
-**Statut** : PLANIFIÉ  
+**Statut** : EN COURS (~50%)  
 **Durée estimée** : 2 semaines
 
 ### Objectif
 Affichage temps réel pour spectateurs et organisateurs.
 
-### Tâches prévues
-- WebSocket server temps réel
-- Vue classement live
-- Vue pistes en cours
-- Notifications push
+### Tâches livrées
+- ✅ WebSocket server temps réel (`remoteScoreServer.ts` — Socket.IO)
+- ✅ `dashboard.html` — rendu backend live (`pools:update`, `matches:update`)
+- ✅ `KioskDisplay.tsx` — rotation pools 10s, auto-scroll, mode podium
+- ✅ `arena.html` — prochain combat avec noms/clubs
+- ✅ Persistance état arène en DB (migration v4 `arena_state`)
+- ✅ Trail d'audit scores (`score_audit_log` migration v3)
+- ✅ Protection PIN arènes (`login.html`)
+- ✅ Reconnexion WebSocket + replay (buffer 5 min)
+- ✅ Queue matchs par arène
+
+### Tâches restantes
+- Vue classement live inter-poules (temps réel)
+- Notifications push spectateurs
 
 ---
 

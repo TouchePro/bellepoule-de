@@ -28,7 +28,8 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\"",
     "type-check": "tsc --noEmit",
     "test:e2e": "playwright test",
-    "e2e:debug": "playwright test --debug"
+    "e2e:debug": "playwright test --debug",
+    "analyze": "webpack --config webpack.renderer.config.js --env analyze"
   },
   "keywords": [
     "fencing",
@@ -168,6 +169,7 @@
     "vitest": "^4.0.18",
     "wait-on": "^8.0.3",
     "webpack": "^5.99.7",
+    "webpack-bundle-analyzer": "^4.10.1",
     "webpack-cli": "^6.0.1",
     "webpack-dev-server": "^5.2.3"
   }

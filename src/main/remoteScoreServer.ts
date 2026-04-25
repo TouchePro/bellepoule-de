@@ -1521,8 +1521,10 @@ export class RemoteScoreServer {
 
   // Stockage des cartons par arène
   private arenaCards: Map<string, { cardsA: string[]; cardsB: string[] }> = new Map();
-  // Stockage de l'état mort subite par arène
   private arenaSuddenDeath: Map<string, boolean> = new Map();
+  // Debounce par socket pour update_score : clé = socketId:arenaId, valeur = timestamp dernier envoi
+  private scoreUpdateDebounce: Map<string, number> = new Map();
+  private readonly SCORE_UPDATE_DEBOUNCE_MS = 200;
 
   private handleArenaControl(
     socket: any,
@@ -1583,7 +1585,11 @@ export class RemoteScoreServer {
         // Réinitialiser les cartons
         this.arenaCards.set(data.arenaId, { cardsA: [], cardsB: [] });
         break;
-      case 'update_score':
+      case 'update_score': {
+        const debounceKey = `${socket.id}:${data.arenaId}`;
+        const lastUpdate = this.scoreUpdateDebounce.get(debounceKey) ?? 0;
+        if (Date.now() - lastUpdate < this.SCORE_UPDATE_DEBOUNCE_MS) break;
+        this.scoreUpdateDebounce.set(debounceKey, Date.now());
         if (data.scoreA !== undefined && data.scoreB !== undefined) {
           if (data.suddenDeath !== undefined) {
             this.arenaSuddenDeath.set(data.arenaId, data.suddenDeath);
@@ -1608,6 +1614,7 @@ export class RemoteScoreServer {
           });
         }
         break;
+      }
       case 'add_card':
         // Gestion des cartons
         if (data.fencer && data.cardType) {

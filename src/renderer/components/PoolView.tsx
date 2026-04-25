@@ -13,6 +13,7 @@ import { useToast } from './Toast';
 import { useConfirm } from './ConfirmDialog';
 import { exportPoolToPDF } from '../../shared/utils/pdfExport';
 import { useColumnVisibility, POOL_COLUMNS, ColumnId } from '../hooks/useColumnVisibility';
+import { useHistory } from '../hooks/useHistory';
 
 interface PoolViewProps {
   pool: Pool;
@@ -51,6 +52,8 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   const [victoryA, setVictoryA] = useState(false);
   const [victoryB, setVictoryB] = useState(false);
   const [matchesUpdateTrigger, setMatchesUpdateTrigger] = useState(0);
+
+  const { addAction, undo, redo, canUndo, canRedo } = useHistory();
 
   const isLaserSabre = weapon === Weapon.LASER;
   const fencers = pool.fencers;
@@ -218,10 +221,22 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     const actualScoreA = editingFromRowA ? scoreA : scoreB;
     const actualScoreB = editingFromRowA ? scoreB : scoreA;
 
+    // Capturer l'ancien score pour l'historique
+    const match = pool.matches[editingMatch];
+    const prevScoreA = typeof match?.scoreA === 'number' ? match.scoreA : (match?.scoreA as any)?.value ?? null;
+    const prevScoreB = typeof match?.scoreB === 'number' ? match.scoreB : (match?.scoreB as any)?.value ?? null;
+    const matchIdx = editingMatch;
+
     if (actualScoreA === actualScoreB) {
       if (isLaserSabre && (victoryA || victoryB)) {
         // Déterminer qui gagne selon la perspective
         const winner = editingFromRowA ? (victoryA ? 'A' : 'B') : victoryB ? 'A' : 'B';
+        addAction({
+          type: 'UPDATE_SCORE',
+          description: `Score poule ${pool.number} match ${matchIdx + 1}`,
+          undo: () => { if (prevScoreA !== null && prevScoreB !== null) onScoreUpdate(matchIdx, prevScoreA, prevScoreB); },
+          redo: () => { onScoreUpdate(matchIdx, actualScoreA, actualScoreB, winner); },
+        });
         onScoreUpdate(editingMatch, actualScoreA, actualScoreB, winner);
       } else if (isLaserSabre) {
         showToast('Match nul : cliquez sur V pour attribuer la victoire', 'warning');
@@ -231,6 +246,12 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         return;
       }
     } else {
+      addAction({
+        type: 'UPDATE_SCORE',
+        description: `Score poule ${pool.number} match ${matchIdx + 1}`,
+        undo: () => { if (prevScoreA !== null && prevScoreB !== null) onScoreUpdate(matchIdx, prevScoreA, prevScoreB); },
+        redo: () => { onScoreUpdate(matchIdx, actualScoreA, actualScoreB); },
+      });
       onScoreUpdate(editingMatch, actualScoreA, actualScoreB);
     }
 
@@ -1390,6 +1411,38 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           </span>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button
+            onClick={undo}
+            disabled={!canUndo}
+            style={{
+              padding: '0.375rem 0.6rem',
+              fontSize: '0.8rem',
+              background: canUndo ? '#6b7280' : '#e5e7eb',
+              color: canUndo ? 'white' : '#9ca3af',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: canUndo ? 'pointer' : 'not-allowed',
+            }}
+            title="Annuler (Ctrl+Z)"
+          >
+            ↩
+          </button>
+          <button
+            onClick={redo}
+            disabled={!canRedo}
+            style={{
+              padding: '0.375rem 0.6rem',
+              fontSize: '0.8rem',
+              background: canRedo ? '#6b7280' : '#e5e7eb',
+              color: canRedo ? 'white' : '#9ca3af',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: canRedo ? 'pointer' : 'not-allowed',
+            }}
+            title="Rétablir (Ctrl+Y)"
+          >
+            ↪
+          </button>
           <button
             onClick={handleAutoFillScores}
             style={{
