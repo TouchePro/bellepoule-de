@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Arène BellePoule</title>
+    <script src="/i18n.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <style>
 
@@ -878,12 +879,12 @@
       <div class="status-section">
         <div class="inversion-toggle">
           <input type="checkbox" id="inversion-checkbox" />
-          <label for="inversion-checkbox">⇄ Inverser</label>
+          <label for="inversion-checkbox" data-i18n="arena.invert">⇄ Inverser</label>
         </div>
-        <div class="match-status-badge status-waiting" id="match-status">En attente</div>
+        <div class="match-status-badge status-waiting" id="match-status" data-i18n="arena.waiting">En attente</div>
         <div class="connection-indicator">
           <div id="connection-dot" class="connection-dot"></div>
-          <span id="connection-text">Connexion...</span>
+          <span id="connection-text" data-i18n="remote.connecting">Connexion...</span>
         </div>
       </div>
     </div>
@@ -935,7 +936,7 @@
         </div>
         <!-- Grand numéro (visible quand pas de nextMatch) -->
         <div class="arena-idle-number" id="arena-idle-number">1</div>
-        <div class="arena-idle-label">Arène</div>
+        <div class="arena-idle-label" data-i18n="remote.arena">Arène</div>
       </div>
 
       <!-- Écran d'intro photo (affiché quand showPhotos=true et statut ready) -->
@@ -1176,10 +1177,10 @@
 
           if (connected) {
             dot.classList.add('connected');
-            text.textContent = 'Connecté';
+            text.textContent = window.T('remote.connected');
           } else {
             dot.classList.remove('connected');
-            text.textContent = 'Déconnecté';
+            text.textContent = window.T('remote.disconnected');
           }
         }
 
@@ -1264,19 +1265,19 @@
           switch (this.matchStatus) {
             case 'idle':
             case 'not_started':
-              badge.textContent = 'En attente';
+              badge.textContent = window.T('arena.status_waiting');
               badge.classList.add('status-waiting');
               break;
             case 'ready':
-              badge.textContent = 'Prochain';
+              badge.textContent = window.T('arena.status_next');
               badge.classList.add('status-waiting');
               break;
             case 'in_progress':
-              badge.textContent = 'En cours';
+              badge.textContent = window.T('arena.status_in_progress');
               badge.classList.add('status-progress');
               break;
             case 'finished':
-              badge.textContent = 'Terminé';
+              badge.textContent = window.T('arena.status_finished');
               badge.classList.add('status-finished');
               break;
           }
@@ -1495,7 +1496,9 @@
       }
 
       // Démarrer l'affichage
-      document.addEventListener('DOMContentLoaded', () => {
+      document.addEventListener('DOMContentLoaded', async () => {
+        await window.initRemoteI18n();
+        document.title = window.T('arena.title');
         new ArenaDisplay();
       });
     </script>

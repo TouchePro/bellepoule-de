@@ -7,6 +7,7 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
     <title>Arbitrage - Arène BellePoule</title>
+    <script src="/i18n.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <style>
 
@@ -688,11 +689,11 @@
       </h1>
       <div class="connection-status">
         <div id="status-dot" class="status-dot"></div>
-        <span id="connection-text">Connexion...</span>
+        <span id="connection-text" data-i18n="remote.connecting">Connexion...</span>
         <span id="offline-badge" style="display:none; background:#ef4444; padding:0.15rem 0.45rem; border-radius:1rem; font-size:0.7rem; margin-left:0.4rem;">
           📴 <span id="pending-count">0</span>
         </span>
-        <span id="sync-indicator" style="display:none; font-size:0.7rem; margin-left:0.4rem; opacity:0.85;">
+        <span id="sync-indicator" style="display:none; font-size:0.7rem; margin-left:0.4rem; opacity:0.85;" data-i18n="remote.syncing">
           ⟳ Sync...
         </span>
       </div>
@@ -732,21 +733,21 @@
               <button
                 id="btn-card-white-a"
                 class="card-btn card-btn-white"
-                title="Carton blanc"
+                data-i18n-title="referee.card_white" title="Carton blanc"
               >
                 B
               </button>
               <button
                 id="btn-card-yellow-a"
                 class="card-btn card-btn-yellow"
-                title="Carton jaune (+3 adv)"
+                data-i18n-title="referee.card_yellow" title="Carton jaune (+3 adv)"
               >
                 J
               </button>
               <button
                 id="btn-card-red-a"
                 class="card-btn card-btn-red"
-                title="Carton rouge (+5 adv)"
+                data-i18n-title="referee.card_red" title="Carton rouge (+5 adv)"
               >
                 R
               </button>
@@ -786,21 +787,21 @@
               <button
                 id="btn-card-white-b"
                 class="card-btn card-btn-white"
-                title="Carton blanc"
+                data-i18n-title="referee.card_white" title="Carton blanc"
               >
                 B
               </button>
               <button
                 id="btn-card-yellow-b"
                 class="card-btn card-btn-yellow"
-                title="Carton jaune (+3 adv)"
+                data-i18n-title="referee.card_yellow" title="Carton jaune (+3 adv)"
               >
                 J
               </button>
               <button
                 id="btn-card-red-b"
                 class="card-btn card-btn-red"
-                title="Carton rouge (+5 adv)"
+                data-i18n-title="referee.card_red" title="Carton rouge (+5 adv)"
               >
                 R
               </button>
@@ -811,8 +812,8 @@
         <!-- Chronomètre -->
         <div class="timer-section">
           <div class="timer-display" id="timer-display">03:00</div>
-          <div id="sudden-death-label" style="display:none; color:#ef4444; font-weight:900; font-size:1.5rem; text-align:center; margin-top:0.5rem; letter-spacing:0.1em; animation: pulse-timer 0.8s infinite;">⚡ MORT SUBITE</div>
-          <div class="timer-hint">Tapez pour démarrer/pause - Appui long pour reset</div>
+          <div id="sudden-death-label" data-i18n="referee.sudden_death" style="display:none; color:#ef4444; font-weight:900; font-size:1.5rem; text-align:center; margin-top:0.5rem; letter-spacing:0.1em; animation: pulse-timer 0.8s infinite;">⚡ MORT SUBITE</div>
+          <div class="timer-hint" data-i18n="referee.timer_hint">Tapez pour démarrer/pause - Appui long pour reset</div>
         </div>
 
         <!-- Boutons de contrôle -->
@@ -822,7 +823,7 @@
             id="btn-start"
             onclick="refereeApp.handleStartPauseClick()"
           >
-            ▶️ Démarrer
+            <span data-i18n="referee.start">▶️ Démarrer</span>
           </button>
           <button
             class="control-btn btn-finish"
@@ -830,7 +831,7 @@
             onclick="refereeApp.showFinishModal()"
             disabled
           >
-            🏁 Terminer
+            <span data-i18n="referee.finish">🏁 Terminer</span>
           </button>
         </div>
         <!-- Boutons secondaires : sortie d'arène + annuler -->
@@ -840,7 +841,7 @@
             id="btn-exit-a"
             onclick="refereeApp.arenaExit('A')"
           >
-            🚪 Sortie rouge
+            <span data-i18n="referee.exit_red">🚪 Sortie rouge</span>
           </button>
           <button
             class="control-btn btn-undo"
@@ -848,14 +849,14 @@
             onclick="refereeApp.undoLastAction()"
             disabled
           >
-            ↩ Annuler
+            <span data-i18n="referee.undo">↩ Annuler</span>
           </button>
           <button
             class="control-btn btn-arena-exit-green"
             id="btn-exit-b"
             onclick="refereeApp.arenaExit('B')"
           >
-            🚪 Sortie verte
+            <span data-i18n="referee.exit_green">🚪 Sortie verte</span>
           </button>
         </div>
       </div>
@@ -866,12 +867,13 @@
         <input
           type="search"
           id="match-search"
+          data-i18n-placeholder="referee.search_placeholder"
           placeholder="🔍 Rechercher un tireur..."
           oninput="refereeApp.filterMatches(this.value)"
           style="width:100%; padding:0.75rem; border-radius:0.5rem; border:none; margin-bottom:1rem; font-size:1rem; background:rgba(255,255,255,0.15); color:white; outline:none;"
         />
         <div id="next-matches-list">
-          <div class="next-matches-empty">Chargement...</div>
+          <div class="next-matches-empty" data-i18n="remote.loading">Chargement...</div>
         </div>
       </div>
     </div>
@@ -879,20 +881,20 @@
     <!-- Modal de confirmation -->
     <div class="modal-overlay" id="finish-modal">
       <div class="modal-content">
-        <div class="modal-title">🏁 Fin de match</div>
+        <div class="modal-title" data-i18n="referee.modal_title">🏁 Fin de match</div>
         <div class="modal-body">
-          <p>Confirmez-vous la fin de ce match ?</p>
+          <p data-i18n="referee.modal_confirm_text">Confirmez-vous la fin de ce match ?</p>
           <div class="final-score" id="final-score-display">0 - 0</div>
-          <p style="font-size: 0.875rem; color: #6b7280">
+          <p style="font-size: 0.875rem; color: #6b7280" data-i18n="referee.modal_note">
             Le score sera enregistré dans le tableau de poules.
           </p>
         </div>
         <div class="modal-buttons">
           <button class="modal-btn modal-btn-cancel" onclick="refereeApp.hideFinishModal()">
-            Annuler
+            <span data-i18n="referee.cancel">Annuler</span>
           </button>
           <button class="modal-btn modal-btn-confirm" onclick="refereeApp.confirmFinish()">
-            Confirmer
+            <span data-i18n="referee.confirm">Confirmer</span>
           </button>
         </div>
       </div>
@@ -1084,11 +1086,11 @@
           const badge = document.getElementById('offline-badge');
           if (online) {
             if (dot) dot.classList.add('connected');
-            if (text) text.textContent = 'Connecté';
+            if (text) text.textContent = window.T('remote.connected');
             if (badge) badge.style.display = 'none';
           } else {
             if (dot) dot.classList.remove('connected');
-            if (text) text.textContent = 'Hors-ligne';
+            if (text) text.textContent = window.T('remote.offline');
             if (badge) badge.style.display = 'inline';
             this.updateOfflineBadge();
           }
@@ -1352,10 +1354,10 @@
 
           if (connected) {
             dot.classList.add('connected');
-            text.textContent = 'En ligne';
+            text.textContent = window.T('remote.online');
           } else {
             dot.classList.remove('connected');
-            text.textContent = 'Hors ligne';
+            text.textContent = window.T('remote.offline');
           }
         }
 
@@ -1556,7 +1558,7 @@
           this.broadcastUpdate();
           this.saveScore();
           const label = fencer === 'A' ? 'Rouge' : 'Vert';
-          this.showNotification(`🚪 Sortie d'arène ${label} — +${points} pts adversaire`);
+          this.showNotification(window.T('referee.arena_exit_notif', { label, points }));
         }
 
         // Retirer des points (appui long)
@@ -1878,7 +1880,7 @@
             }, 2000);
           } catch (error) {
             console.error('Erreur fin de match:', error);
-            this.showNotification("❌ Erreur lors de l'enregistrement", true);
+            this.showNotification(window.T('referee.error_save'), true);
           }
         }
 
@@ -1895,20 +1897,20 @@
 
           if (this.matchStatus === 'not_started') {
             startBtn.disabled = !this.currentMatch;
-            startBtn.textContent = '▶️ Démarrer';
+            startBtn.textContent = window.T('referee.start');
             startBtn.className = 'control-btn btn-start';
           } else if (this.matchStatus === 'in_progress') {
             startBtn.disabled = false;
             if (this.timerRunning) {
-              startBtn.textContent = '⏸ Pause';
+              startBtn.textContent = window.T('referee.pause');
               startBtn.className = 'control-btn btn-pause';
             } else {
-              startBtn.textContent = '▶️ Reprendre';
+              startBtn.textContent = window.T('referee.resume');
               startBtn.className = 'control-btn btn-resume';
             }
           } else {
             startBtn.disabled = true;
-            startBtn.textContent = '▶️ Démarrer';
+            startBtn.textContent = window.T('referee.start');
           }
 
           finishBtn.disabled = this.matchStatus !== 'in_progress';
@@ -1928,11 +1930,11 @@
           if (this.timerRunning) {
             this.pauseTimer();
             this.updateControlButtons();
-            this.showNotification('⏸ Combat en pause');
+            this.showNotification(window.T('referee.match_paused'));
           } else {
             this.startTimer();
             this.updateControlButtons();
-            this.showNotification('▶️ Combat repris');
+            this.showNotification(window.T('referee.match_resumed'));
           }
         }
 
@@ -1982,7 +1984,7 @@
 
         async loadNextMatches() {
           const container = document.getElementById('next-matches-list');
-          container.innerHTML = '<div class="next-matches-empty">Chargement...</div>';
+          container.innerHTML = `<div class="next-matches-empty">${window.T('remote.loading')}</div>`;
           try {
             const response = await fetch(`/api/arenas/${this.arenaId}/matches`);
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -2003,7 +2005,7 @@
             this.renderNextMatchesList(pending);
           } catch (error) {
             console.error('Erreur chargement prochains matchs:', error);
-            container.innerHTML = '<div class="next-matches-empty">Erreur de connexion</div>';
+            container.innerHTML = `<div class="next-matches-empty">${window.T('remote.error_connection')}</div>`;
           }
         }
 
@@ -2078,7 +2080,9 @@
 
       // Initialisation
       let refereeApp;
-      document.addEventListener('DOMContentLoaded', () => {
+      document.addEventListener('DOMContentLoaded', async () => {
+        await window.initRemoteI18n();
+        document.title = window.T('referee.title');
         refereeApp = new RefereeApp();
       });
     </script>

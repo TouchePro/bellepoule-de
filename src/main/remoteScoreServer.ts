@@ -45,6 +45,7 @@ export class RemoteScoreServer {
   private arenaThemeOverrides: Map<string, { theme: DisplayTheme; customTheme?: CustomTheme }> = new Map();
   private orgNote: OrgNote | null = null; // Note d'organisation affichée sur le kiosk
   private sessionLogo: string | null = null; // Logo organisateur (base64) pour kiosk et affichages publics
+  private currentLang: string = 'fr'; // Langue courante de l'interface (fr, en, zh-HK, ...)
   private sessionKioskViews: { poules: boolean; classement: boolean; direct: boolean; suivants: boolean } = {
     poules: true,
     classement: true,
@@ -368,6 +369,10 @@ export class RemoteScoreServer {
     });
 
     // API endpoints
+    this.app.get('/api/config', (req, res) => {
+      res.json({ lang: this.currentLang });
+    });
+
     this.app.get('/api/server-info', (req, res) => {
       res.json({
         url: this.getServerUrl(),
@@ -1862,6 +1867,10 @@ export class RemoteScoreServer {
   }
 
   // Méthode publique pour mettre à jour le nombre d'arènes
+  public setLanguage(lang: string): void {
+    this.currentLang = lang;
+  }
+
   public setArenaCount(count: number): void {
     console.log(`[RemoteScoreServer] Mise à jour du nombre d'arènes: ${count}`);
     this.initializeArenas(count);
