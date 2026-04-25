@@ -2,8 +2,26 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { useShallow } from 'zustand/shallow';
-import { AnalyticsState, AnalyticsActions } from '../types/analytics.types';
 import { AnalyticsService } from '../services/analyticsService';
+
+interface FencerStats { [key: string]: unknown }
+interface CompetitionMetrics { [key: string]: unknown }
+interface PredictionResult { [key: string]: unknown }
+
+interface AnalyticsState {
+  fencerStats: FencerStats[];
+  competitionMetrics: CompetitionMetrics | null;
+  predictions: PredictionResult[];
+  isLoading: boolean;
+  error: string | null;
+}
+
+interface AnalyticsActions {
+  loadFencerStats: (competitionId: string) => Promise<void>;
+  loadCompetitionMetrics: (competitionId: string) => Promise<void>;
+  predictMatch: (fencerAId: string, fencerBId: string) => Promise<PredictionResult>;
+  clearError: () => void;
+}
 
 const service = new AnalyticsService();
 
