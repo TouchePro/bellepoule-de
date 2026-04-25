@@ -202,7 +202,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
 
   return (
     <>
-    {showPdfEditor && <PdfTemplateModal onClose={() => setShowPdfEditor(false)} />}
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
         <div className="modal-header">
@@ -357,6 +356,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
         </div>
       </div>
     </div>
+    {showPdfEditor && <PdfTemplateModal onClose={() => setShowPdfEditor(false)} />}
     </>
   );
 };
