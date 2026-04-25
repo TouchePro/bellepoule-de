@@ -1,6 +1,12 @@
 {
   "app": {
-    "title": "BellePoule Modern"
+    "title": "BellePoule Modern",
+    "home": "主頁",
+    "back_to_list": "返回比賽列表",
+    "close_tab": "關閉標籤",
+    "load_error_title": "載入錯誤",
+    "load_error_message": "載入比賽列表時發生錯誤。",
+    "reload": "重新載入應用程式"
   },
   "menu": {
     "new_competition": "新增比賽",
@@ -215,7 +221,8 @@
     "warning": "警告",
     "info": "資訊",
     "connection_lost": "連線中斷",
-    "connection_restored": "連線已恢復"
+    "connection_restored": "連線已恢復",
+    "name_required": "姓和名為必填欄位"
   },
   "time": {
     "minutes": "分鐘",
@@ -237,5 +244,30 @@
       "ranking-table": "排名表", "footer": "頁尾"
     },
     "reset": "重設", "exportJson": "匯出JSON", "importJson": "匯入JSON", "importError": "JSON檔案無效"
+  },
+  "shortcuts": {
+    "title": "鍵盤快捷鍵",
+    "subtitle": "像專業人士一樣掌握 BellePoule",
+    "footer": "隨時按 ? 顯示此說明",
+    "category_all": "全部",
+    "category_global": "全域",
+    "category_navigation": "導航",
+    "category_actions": "操作",
+    "category_competition": "比賽",
+    "show_help": "顯示快捷鍵說明",
+    "quick_search": "快速搜尋",
+    "close_modal": "關閉視窗 / 取消",
+    "go_pools": "前往分組賽",
+    "go_tableau": "前往淘汰賽",
+    "go_results": "前往成績",
+    "nav_fields": "欄位間導航",
+    "save": "儲存",
+    "undo": "復原",
+    "redo": "重做",
+    "new_competition": "新增比賽",
+    "refresh_data": "重新整理資料",
+    "timer": "開始/暫停計時器",
+    "nav_list": "在列表中導航",
+    "validate": "確認 / 開啟"
   }
 }

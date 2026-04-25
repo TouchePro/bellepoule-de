@@ -1,6 +1,12 @@
 {
   "app": {
-    "title": "BellePoule Modern"
+    "title": "BellePoule Modern",
+    "home": "General",
+    "back_to_list": "Volver a la lista de competiciones",
+    "close_tab": "Cerrar pestaña",
+    "load_error_title": "Error de carga",
+    "load_error_message": "Ocurrió un error al cargar la lista de competiciones.",
+    "reload": "Recargar la aplicación"
   },
   "menu": {
     "new_competition": "Nueva Competición",
@@ -215,7 +221,8 @@
     "warning": "Advertencia",
     "info": "Información",
     "connection_lost": "Conexión perdida",
-    "connection_restored": "Conexión restaurada"
+    "connection_restored": "Conexión restaurada",
+    "name_required": "El apellido y el nombre son obligatorios"
   },
   "time": {
     "minutes": "minutos",
@@ -237,5 +244,30 @@
       "ranking-table": "Tabla de clasificación", "footer": "Pie de página"
     },
     "reset": "Restablecer", "exportJson": "Exportar JSON", "importJson": "Importar JSON", "importError": "Archivo JSON inválido"
+  },
+  "shortcuts": {
+    "title": "Atajos de Teclado",
+    "subtitle": "Domina BellePoule como un profesional",
+    "footer": "Presiona ? para mostrar esta ayuda en cualquier momento",
+    "category_all": "Todos",
+    "category_global": "Global",
+    "category_navigation": "Navegación",
+    "category_actions": "Acciones",
+    "category_competition": "Competición",
+    "show_help": "Mostrar ayuda de atajos",
+    "quick_search": "Búsqueda rápida",
+    "close_modal": "Cerrar modal / Cancelar",
+    "go_pools": "Ir a grupos",
+    "go_tableau": "Ir al cuadro",
+    "go_results": "Ir a resultados",
+    "nav_fields": "Navegar entre campos",
+    "save": "Guardar",
+    "undo": "Deshacer",
+    "redo": "Rehacer",
+    "new_competition": "Nueva competición",
+    "refresh_data": "Actualizar datos",
+    "timer": "Iniciar/Pausar cronómetro",
+    "nav_list": "Navegar en la lista",
+    "validate": "Validar / Abrir"
   }
 }
