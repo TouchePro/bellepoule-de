@@ -304,16 +304,13 @@ function createWindow(): void {
   });
 
   // Allow camera access for webcam photo capture
+  const cameraPermissions = new Set(['media', 'camera', 'microphone']);
   mainWindow.webContents.session.setPermissionRequestHandler((_webContents, permission, callback) => {
-    if (permission === 'media') {
-      callback(true);
-    } else {
-      callback(false);
-    }
+    callback(cameraPermissions.has(permission));
   });
 
   mainWindow.webContents.session.setPermissionCheckHandler((_webContents, permission) => {
-    return permission === 'media';
+    return cameraPermissions.has(permission);
   });
 
   // Security: Set CSP headers for all requests
@@ -814,6 +811,10 @@ ipcMain.handle('db:updateMatch', async (_, id, updates) => {
   return db.updateMatch(id, updates);
 });
 
+ipcMain.handle('db:upsertTableauMatch', async (_, params) => {
+  return db.upsertTableauMatch(params);
+});
+
 // Session State handlers
 ipcMain.handle('db:saveSessionState', async (_, competitionId, state) => {
   return db.saveSessionState(competitionId, state);
@@ -831,15 +832,60 @@ ipcMain.handle('db:clearSessionState', async (_, competitionId) => {
 ipcMain.handle('db:updatePool', async (_, pool) => {
   return db.updatePool(pool);
 });
-// ipcMain.handle('db:createPool', async (_, phaseId, number) => {
-//   return db.createPool(phaseId, number);
-// });
-// ipcMain.handle('db:addFencerToPool', async (_, poolId, fencerId, position) => {
-//   return db.addFencerToPool(poolId, fencerId, position);
-// });
-// ipcMain.handle('db:getPoolFencers', async (_, poolId) => {
-//   return db.getPoolFencers(poolId);
-// });
+ipcMain.handle('db:createPool', async (_, phaseId, number) => {
+  return db.createPool(phaseId, number);
+});
+ipcMain.handle('db:addFencerToPool', async (_, poolId, fencerId, position) => {
+  return db.addFencerToPool(poolId, fencerId, position);
+});
+ipcMain.handle('db:getPoolFencers', async (_, poolId) => {
+  return db.getPoolFencers(poolId);
+});
+ipcMain.handle('db:getPoolsByPhase', async (_, phaseId) => {
+  return db.getPoolsByPhase(phaseId);
+});
+
+// Phase handlers
+ipcMain.handle('db:createPhase', async (_, competitionId, type, order, name) => {
+  return db.createPhase(competitionId, type, order, name);
+});
+ipcMain.handle('db:getPhase', async (_, id) => {
+  return db.getPhase(id);
+});
+ipcMain.handle('db:getPhasesByCompetition', async (_, competitionId) => {
+  return db.getPhasesByCompetition(competitionId);
+});
+ipcMain.handle('db:updatePhase', async (_, id, updates) => {
+  return db.updatePhase(id, updates);
+});
+ipcMain.handle('db:deletePhase', async (_, id) => {
+  return db.deletePhase(id);
+});
+
+// Referee handlers
+ipcMain.handle('db:createReferee', async (_, competitionId, data) => {
+  return db.createReferee(competitionId, data);
+});
+ipcMain.handle('db:getReferee', async (_, id) => {
+  return db.getReferee(id);
+});
+ipcMain.handle('db:getRefereesByCompetition', async (_, competitionId) => {
+  return db.getRefereesByCompetition(competitionId);
+});
+ipcMain.handle('db:updateReferee', async (_, id, updates) => {
+  return db.updateReferee(id, updates);
+});
+ipcMain.handle('db:deleteReferee', async (_, id) => {
+  return db.deleteReferee(id);
+});
+
+// Touch / Card read handlers
+ipcMain.handle('db:getTouches', async (_, matchId) => {
+  return db.getTouches(matchId);
+});
+ipcMain.handle('db:getCards', async (_, matchId) => {
+  return db.getCards(matchId);
+});
 
 // Statistiques combattants
 ipcMain.handle('db:saveTouch', async (_, touch) => {
@@ -1191,7 +1237,7 @@ ipcMain.handle(
     strips: number,
     matches?: any[],
     showPhotos?: boolean,
-    kioskViews?: { poules: boolean; classement: boolean; direct: boolean }
+    kioskViews?: { poules: boolean; classement: boolean; direct: boolean; suivants: boolean }
   ) => {
     try {
       if (!remoteScoreServer) {
@@ -1247,6 +1293,16 @@ ipcMain.handle(
     }
   }
 );
+
+ipcMain.handle('remote:refreshDeMatches', async (_, matches: any[]) => {
+  try {
+    if (!remoteScoreServer) return { success: false, error: 'Serveur non démarré' };
+    remoteScoreServer.refreshDeMatches(matches);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur' };
+  }
+});
 
 ipcMain.handle('remote:stopSession', async () => {
   try {

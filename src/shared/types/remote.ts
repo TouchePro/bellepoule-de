@@ -152,6 +152,7 @@ export interface ArenaUpdate {
   showPhotos?: boolean; // afficher les photos avant le combat
   theme?: DisplayTheme; // thème visuel de l'affichage distant
   customTheme?: CustomTheme; // thème personnalisé (si theme === 'custom')
+  nextMatch?: ArenaMatch | null; // prochain combat (affiché quand status=finished)
 }
 
 export interface RefereeControl {

@@ -3,7 +3,7 @@
 
 **Version** : 1.2  
 **Date** : 21 février 2026  
-**Auteur** : Yann Kervella  
+**Auteur** : Yann Deboeuf  
 **Statut** : Draft  
 
 ---
@@ -667,7 +667,7 @@ Q1 2026                    Q2 2026                    Q3 2026
 
 | Rôle | Nom | Date | Signature |
 |------|-----|------|-----------|
-| Product Owner | Yann Kervella | ___ | ___ |
+| Product Owner | Yann Deboeuf | ___ | ___ |
 | Tech Lead | ___ | ___ | ___ |
 | Arbitre FFE | ___ | ___ | ___ |
 | Représentant Clubs | ___ | ___ | ___ |

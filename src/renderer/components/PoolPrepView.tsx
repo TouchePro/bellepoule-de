@@ -295,15 +295,20 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
 
     saveToHistory();
 
-    const updatedPools = [...pools];
-    const fromPool = updatedPools[draggedFencer.poolIndex];
-    const toPool = updatedPools[targetPoolIndex];
+    const movedFencer = draggedFencer.fencer;
+    const fromPoolIndex = draggedFencer.poolIndex;
 
-    fromPool.fencers = fromPool.fencers.filter(f => f.id !== draggedFencer.fencer.id);
-    toPool.fencers.push(draggedFencer.fencer);
-
-    updatedPools[draggedFencer.poolIndex] = regenerateMatches(fromPool);
-    updatedPools[targetPoolIndex] = regenerateMatches(toPool);
+    const updatedPools = pools.map((pool, index) => {
+      if (index === fromPoolIndex) {
+        const newFencers = pool.fencers.filter(f => f.id !== movedFencer.id);
+        return regenerateMatches({ ...pool, fencers: newFencers });
+      }
+      if (index === targetPoolIndex) {
+        const newFencers = [...pool.fencers, movedFencer];
+        return regenerateMatches({ ...pool, fencers: newFencers });
+      }
+      return pool;
+    });
 
     setPools(updatedPools);
     setDraggedFencer(null);
@@ -312,21 +317,22 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
   const handleMoveFencer = (fencerId: string, fromPoolIndex: number, toPoolIndex: number) => {
     if (fromPoolIndex === toPoolIndex) return;
 
+    const movedFencer = pools[fromPoolIndex].fencers.find(f => f.id === fencerId);
+    if (!movedFencer) return;
+
     saveToHistory();
 
-    const updatedPools = [...pools];
-    const fromPool = updatedPools[fromPoolIndex];
-    const toPool = updatedPools[toPoolIndex];
-
-    const fencerIndex = fromPool.fencers.findIndex(f => f.id === fencerId);
-    if (fencerIndex === -1) return;
-
-    const fencer = fromPool.fencers[fencerIndex];
-    fromPool.fencers.splice(fencerIndex, 1);
-    toPool.fencers.push(fencer);
-
-    updatedPools[fromPoolIndex] = regenerateMatches(fromPool);
-    updatedPools[toPoolIndex] = regenerateMatches(toPool);
+    const updatedPools = pools.map((pool, index) => {
+      if (index === fromPoolIndex) {
+        const newFencers = pool.fencers.filter(f => f.id !== fencerId);
+        return regenerateMatches({ ...pool, fencers: newFencers });
+      }
+      if (index === toPoolIndex) {
+        const newFencers = [...pool.fencers, movedFencer];
+        return regenerateMatches({ ...pool, fencers: newFencers });
+      }
+      return pool;
+    });
 
     setPools(updatedPools);
   };
@@ -336,14 +342,16 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
 
     saveToHistory();
 
-    const updatedPools = [...pools];
-    const pool = updatedPools[poolIndex];
+    const pool = pools[poolIndex];
+    const newFencers = [...pool.fencers];
+    [newFencers[fencerIndex - 1], newFencers[fencerIndex]] = [
+      newFencers[fencerIndex],
+      newFencers[fencerIndex - 1],
+    ];
 
-    const temp = pool.fencers[fencerIndex];
-    pool.fencers[fencerIndex] = pool.fencers[fencerIndex - 1];
-    pool.fencers[fencerIndex - 1] = temp;
-
-    updatedPools[poolIndex] = regenerateMatches(pool);
+    const updatedPools = pools.map((p, i) =>
+      i === poolIndex ? regenerateMatches({ ...p, fencers: newFencers }) : p
+    );
 
     setPools(updatedPools);
   };
@@ -354,14 +362,15 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
 
     saveToHistory();
 
-    const updatedPools = [...pools];
-    const updatedPool = updatedPools[poolIndex];
+    const newFencers = [...pool.fencers];
+    [newFencers[fencerIndex], newFencers[fencerIndex + 1]] = [
+      newFencers[fencerIndex + 1],
+      newFencers[fencerIndex],
+    ];
 
-    const temp = updatedPool.fencers[fencerIndex];
-    updatedPool.fencers[fencerIndex] = updatedPool.fencers[fencerIndex + 1];
-    updatedPool.fencers[fencerIndex + 1] = temp;
-
-    updatedPools[poolIndex] = regenerateMatches(updatedPool);
+    const updatedPools = pools.map((p, i) =>
+      i === poolIndex ? regenerateMatches({ ...p, fencers: newFencers }) : p
+    );
 
     setPools(updatedPools);
   };

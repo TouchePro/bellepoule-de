@@ -101,6 +101,7 @@ export interface MatchUpdateData {
   startTime?: Date;
   endTime?: Date;
   duration?: number;
+  refereeId?: string;
 }
 
 // ============================================================================
@@ -347,6 +348,7 @@ export interface RemoteServerAPI {
   updatePoolFencers: (
     updates: Array<{ poolId: string; fencers: any[] }>
   ) => Promise<{ success: boolean; error?: string }>;
+  refreshDeMatches: (matches: any[]) => Promise<{ success: boolean; error?: string }>;
   setArenaPassword: (
     arenaId: string,
     password: string
@@ -391,12 +393,44 @@ export interface DatabaseAPI {
   getMatch: (id: string) => Promise<Match | null>;
   getMatchesByPool: (poolId: string) => Promise<Match[]>;
   updateMatch: (id: string, updates: MatchUpdateData) => Promise<void>;
+  upsertTableauMatch: (params: {
+    competitionId: string;
+    matchId: string;
+    round: number;
+    position: number;
+    fencerAId?: string | null;
+    fencerBId?: string | null;
+    scoreA?: any | null;
+    scoreB?: any | null;
+    status?: string;
+    maxScore?: number;
+    isBye?: boolean;
+  }) => Promise<void>;
 
   // Pools
   createPool: (phaseId: string, number: number) => Promise<Pool>;
   addFencerToPool: (poolId: string, fencerId: string, position: number) => Promise<void>;
   getPoolFencers: (poolId: string) => Promise<Fencer[]>;
+  getPoolsByPhase: (phaseId: string) => Promise<Pool[]>;
   updatePool: (pool: Pool) => Promise<void>;
+
+  // Phases
+  createPhase: (competitionId: string, type: string, order: number, name: string) => Promise<Phase>;
+  getPhase: (id: string) => Promise<Phase | null>;
+  getPhasesByCompetition: (competitionId: string) => Promise<Phase[]>;
+  updatePhase: (id: string, updates: { name?: string; isComplete?: boolean }) => Promise<void>;
+  deletePhase: (id: string) => Promise<void>;
+
+  // Referees
+  createReferee: (competitionId: string, data: { name: string; gender?: string; nationality?: string; club?: string; license?: string; category?: string }) => Promise<Referee>;
+  getReferee: (id: string) => Promise<Referee | null>;
+  getRefereesByCompetition: (competitionId: string) => Promise<Referee[]>;
+  updateReferee: (id: string, updates: Record<string, string | undefined>) => Promise<void>;
+  deleteReferee: (id: string) => Promise<void>;
+
+  // Touch / Card read
+  getTouches: (matchId: string) => Promise<Array<{ id: string; fencerId: string; zone: string; points: number; timestamp: string; isValidInSuddenDeath: boolean; isReversed: boolean }>>;
+  getCards: (matchId: string) => Promise<Array<{ id: string; fencerId: string; cardType: string; reason: string; cardGroup: number; timestamp: string; pointsAwarded: number; resultingExclusion: boolean }>>;
 
   // Session State
   saveSessionState: (competitionId: string, state: SessionState) => Promise<void>;
@@ -475,6 +509,8 @@ export interface ElectronAPI extends MenuAPI, UtilityAPI {
   onRemoteMatchFinished: (callback: (data: any) => void) => void;
   onKioskNoteUpdate: (callback: (note: import('../types/remote').OrgNote | null) => void) => () => void;
   notifyLanguageChanged: (lang: string) => void;
+  getLogo: () => Promise<string | null>;
+  onLogoLoaded: (callback: (logo: string | null) => void) => () => void;
 }
 
 

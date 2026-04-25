@@ -154,6 +154,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
       return ipcRenderer.invoke('db:updateMatch', id, updates);
     },
 
+    upsertTableauMatch: (params: any) =>
+      ipcRenderer.invoke('db:upsertTableauMatch', params),
+
     // Pools
     createPool: (phaseId: string, number: number) => {
       if (!phaseId || typeof phaseId !== 'string') {
@@ -188,6 +191,31 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }
       return ipcRenderer.invoke('db:updatePool', pool);
     },
+    getPoolsByPhase: (phaseId: string) => ipcRenderer.invoke('db:getPoolsByPhase', phaseId),
+
+    // Phases
+    createPhase: (competitionId: string, type: string, order: number, name: string) =>
+      ipcRenderer.invoke('db:createPhase', competitionId, type, order, name),
+    getPhase: (id: string) => ipcRenderer.invoke('db:getPhase', id),
+    getPhasesByCompetition: (competitionId: string) =>
+      ipcRenderer.invoke('db:getPhasesByCompetition', competitionId),
+    updatePhase: (id: string, updates: { name?: string; isComplete?: boolean }) =>
+      ipcRenderer.invoke('db:updatePhase', id, updates),
+    deletePhase: (id: string) => ipcRenderer.invoke('db:deletePhase', id),
+
+    // Referees
+    createReferee: (competitionId: string, data: { name: string; gender?: string; nationality?: string; club?: string; license?: string; category?: string }) =>
+      ipcRenderer.invoke('db:createReferee', competitionId, data),
+    getReferee: (id: string) => ipcRenderer.invoke('db:getReferee', id),
+    getRefereesByCompetition: (competitionId: string) =>
+      ipcRenderer.invoke('db:getRefereesByCompetition', competitionId),
+    updateReferee: (id: string, updates: Record<string, string | undefined>) =>
+      ipcRenderer.invoke('db:updateReferee', id, updates),
+    deleteReferee: (id: string) => ipcRenderer.invoke('db:deleteReferee', id),
+
+    // Touch / Card read
+    getTouches: (matchId: string) => ipcRenderer.invoke('db:getTouches', matchId),
+    getCards: (matchId: string) => ipcRenderer.invoke('db:getCards', matchId),
 
     // Session State
     saveSessionState: (competitionId: string, state: SessionState) => {
@@ -385,7 +413,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       strips: number,
       matches?: any[],
       showPhotos?: boolean,
-      kioskViews?: { poules: boolean; classement: boolean; direct: boolean }
+      kioskViews?: { poules: boolean; classement: boolean; direct: boolean; suivants: boolean }
     ) =>
       ipcRenderer.invoke(
         'remote:startSession',
@@ -401,12 +429,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     updateStripCount: (count: number) => ipcRenderer.invoke('remote:updateStripCount', count),
     updateShowPhotos: (value: boolean) => ipcRenderer.invoke('remote:updateShowPhotos', value),
     updateTheme: (theme: string) => ipcRenderer.invoke('remote:updateTheme', theme),
-    updateKioskViews: (views: { poules: boolean; classement: boolean; direct: boolean }) =>
+    updateKioskViews: (views: { poules: boolean; classement: boolean; direct: boolean; suivants: boolean }) =>
       ipcRenderer.invoke('remote:updateKioskViews', views),
     updateMatchArena: (matchId: string, fromArena: number | null, toArena: number | null) =>
       ipcRenderer.invoke('remote:updateMatchArena', matchId, fromArena, toArena),
     updatePoolFencers: (updates: Array<{ poolId: string; fencers: any[] }>) =>
       ipcRenderer.invoke('remote:updatePoolFencers', updates),
+    refreshDeMatches: (matches: any[]) =>
+      ipcRenderer.invoke('remote:refreshDeMatches', matches),
     setArenaPassword: (arenaId: string, password: string) =>
       ipcRenderer.invoke('remote:setArenaPassword', arenaId, password),
     setOrgNote: (note: any) => ipcRenderer.invoke('remote:setOrgNote', note),
