@@ -8,6 +8,8 @@ import React from 'react';
 import { Fencer, PoolRanking, Competition, FencerStatus } from '../../shared/types';
 import { useToast } from './Toast';
 import { exportResultsXMLFFE } from '../../shared/utils/multiFormatExport';
+import { exportResultsToPDF } from '../../shared/utils/pdfExport';
+import { usePdfTemplateStore } from '../../features/pdfTemplates/hooks/usePdfTemplateStore';
 
 interface FinalResult {
   rank: number;
@@ -23,6 +25,7 @@ interface ResultsViewProps {
 
 const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, finalResults }) => {
   const { showToast } = useToast();
+  const rankingTemplate = usePdfTemplateStore(s => s.templates.ranking);
 
   const getMedalEmoji = (rank: number): string => {
     if (rank === 1) return '🥇';
@@ -83,6 +86,21 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
     link.download = `resultats_${competition.title.replace(/[^a-z0-9]/gi, '_')}.csv`;
     link.click();
     showToast('Export CSV réussi !', 'success');
+  };
+
+  // Export PDF
+  const exportPDF = async () => {
+    try {
+      const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
+      await exportResultsToPDF(
+        resultsToDisplay,
+        `Résultats — ${competition.title}`,
+        logo,
+        rankingTemplate
+      );
+    } catch (e) {
+      showToast((e as Error).message, 'error');
+    }
   };
 
   // Export XML
@@ -361,6 +379,23 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
           }}
         >
           📝 XML
+        </button>
+        <button
+          onClick={exportPDF}
+          style={{
+            padding: '0.75rem 1.5rem',
+            background: '#ef4444',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '0.875rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+          }}
+        >
+          📄 PDF
         </button>
       </div>
 
