@@ -24,7 +24,9 @@
     "third_place_match_ok": "點擊確定以加入銅牌賽",
     "third_place_match_cancel": "點擊取消以於半準決賽後結束",
     "third_place_match_label": "銅牌賽（季軍賽）",
-    "third_place_match_description": "為兩位落敗半準決賽選手安排額外比賽，以決定第三及第四名"
+    "third_place_match_description": "為兩位落敗半準決賽選手安排額外比賽，以決定第三及第四名",
+    "comparisons": "比較",
+    "analytics": "分析"
   },
   "weapons": {
     "epee": "重劍",
@@ -63,7 +65,9 @@
     "abandon": "棄賽",
     "forfait": "放棄資格",
     "reactivate": "重新啟用",
-    "points": "分數"
+    "points": "分數",
+    "label": "劍手",
+    "present_label": "已報到"
   },
   "status": {
     "checked_in": "已報到",
@@ -79,7 +83,12 @@
   },
   "phases": {
     "checkin": "報到",
+    "poolprep": "準備",
     "pools": "分組賽",
+    "pools_skip": "分組賽（跳過）",
+    "pools_round": "分組賽（{{current}}/{{total}}）",
+    "pools_skip_tooltip": "分組賽階段已跳過（0 組）",
+    "tableau_locked_tooltip": "完成所有分組賽並驗證排名後方可進入淘汰賽",
     "ranking": "排名",
     "tableau": "淘汰賽",
     "results": "成績",
@@ -98,7 +107,9 @@
     "no_pools": "無分組",
     "return_to_checkin": "返回報到",
     "pool_number": "分組",
-    "change_pool": "更改分組"
+    "change_pool": "更改分組",
+    "next_round_n": "第 {{n}} 輪分組賽 →",
+    "view_ranking_action": "查看排名 →"
   },
   "ranking": {
     "rank": "排名",

@@ -24,7 +24,9 @@
     "third_place_match_ok": "Feu clic a D'acord per afegir la petita final",
     "third_place_match_cancel": "Feu clic a Cancel·lar per acabar després de les semifinals",
     "third_place_match_label": "Petita final (combat pel 3r lloc)",
-    "third_place_match_description": "Organitza un combat addicional entre els dos semifinalistes perdedors per determinar el 3r i 4t lloc"
+    "third_place_match_description": "Organitza un combat addicional entre els dos semifinalistes perdedors per determinar el 3r i 4t lloc",
+    "comparisons": "Comparacions",
+    "analytics": "Analytics"
   },
   "weapons": {
     "epee": "Espasa",
@@ -63,7 +65,9 @@
     "abandon": "Abandonar",
     "forfait": "No Presentar-se",
     "reactivate": "Reactivar",
-    "points": "Punts"
+    "points": "Punts",
+    "label": "tiradors",
+    "present_label": "registrats"
   },
   "status": {
     "checked_in": "Registrat",
@@ -79,7 +83,12 @@
   },
   "phases": {
     "checkin": "Registre",
+    "poolprep": "Preparació",
     "pools": "Poules",
+    "pools_skip": "Poules (saltades)",
+    "pools_round": "Poules ({{current}}/{{total}})",
+    "pools_skip_tooltip": "Fase de poules ignorada (0 poules)",
+    "tableau_locked_tooltip": "Completeu totes les poules i valideu la classificació per accedir al quadre",
     "ranking": "Classificació",
     "tableau": "Quadre",
     "results": "Resultats",
@@ -98,7 +107,9 @@
     "no_pools": "Sense Poules",
     "return_to_checkin": "Tornar al Registre",
     "pool_number": "Poule",
-    "change_pool": "Canviar de Poule"
+    "change_pool": "Canviar de Poule",
+    "next_round_n": "Ronda {{n}} →",
+    "view_ranking_action": "Veure classificació →"
   },
   "ranking": {
     "rank": "Pos",

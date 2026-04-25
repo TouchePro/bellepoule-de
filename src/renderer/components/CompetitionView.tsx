@@ -45,7 +45,7 @@ interface CompetitionViewProps {
 
 const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate }) => {
   const { showToast } = useToast();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   // Settings avec valeurs par défaut
   const poolRounds = competition.settings?.poolRounds ?? 1;
@@ -519,28 +519,32 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const phases = [
     {
       id: 'checkin',
-      label: 'Appel',
+      label: t('phases.checkin'),
       icon: '📋',
       disabled: false,
       title: undefined as string | undefined,
     },
     {
       id: 'poolprep',
-      label: 'Préparation',
+      label: t('phases.poolprep'),
       icon: '⚙️',
       disabled: false,
       title: undefined as string | undefined,
     },
     {
       id: 'pools',
-      label: skipPoolPhase ? 'Poules (saut)' : poolRounds > 1 ? `Poules (${currentPoolRound}/${poolRounds})` : 'Poules',
+      label: skipPoolPhase
+        ? t('phases.pools_skip')
+        : poolRounds > 1
+          ? t('phases.pools_round', { current: currentPoolRound, total: poolRounds })
+          : t('phases.pools'),
       icon: skipPoolPhase ? '⏭' : '🎯',
       disabled: skipPoolPhase,
-      title: skipPoolPhase ? 'Phase de poules ignorée (0 poules)' : (undefined as string | undefined),
+      title: skipPoolPhase ? t('phases.pools_skip_tooltip') : (undefined as string | undefined),
     },
     {
       id: 'ranking',
-      label: 'Classement',
+      label: t('phases.ranking'),
       icon: '📊',
       disabled: false,
       title: undefined as string | undefined,
@@ -549,25 +553,25 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       ? [
           {
             id: 'tableau',
-            label: 'Tableau',
+            label: t('phases.tableau'),
             icon: '🏆',
             disabled: !isTableauUnlocked,
             title: !isTableauUnlocked
-              ? 'Terminez toutes les poules et validez le classement pour accéder au tableau'
+              ? t('phases.tableau_locked_tooltip')
               : (undefined as string | undefined),
           },
         ]
       : []),
     {
       id: 'results',
-      label: 'Résultats',
+      label: t('phases.results'),
       icon: '🏁',
       disabled: isResultsLocked,
       title: undefined as string | undefined,
     },
     {
       id: 'remote',
-      label: '📡 Saisie distante',
+      label: `📡 ${t('phases.remote')}`,
       icon: '📡',
       disabled: false,
       title: undefined as string | undefined,
@@ -579,13 +583,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
     if (!isLastPoolRound) {
       return {
-        label: `Tour ${currentPoolRound + 1} de poules →`,
+        label: t('pools.next_round_n', { n: currentPoolRound + 1 }),
         action: handleNextPoolRound,
       };
     }
 
     return {
-      label: 'Voir le classement →',
+      label: t('pools.view_ranking_action'),
       action: handleGoToRanking,
     };
   };
@@ -610,7 +614,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             {competition.title}
           </h1>
           <p style={{ opacity: 0.9, fontSize: '0.875rem' }}>
-            {new Date(competition.date).toLocaleDateString('fr-FR', {
+            {new Date(competition.date).toLocaleDateString(language === 'zh-HK' ? 'zh-HK' : language, {
               weekday: 'long',
               day: 'numeric',
               month: 'long',
@@ -621,10 +625,10 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <span className="badge" style={{ background: 'rgba(255,255,255,0.2)' }}>
-            {fencers.length} tireurs
+            {fencers.length} {t('fencer.label')}
           </span>
           <span className="badge" style={{ background: 'rgba(255,255,255,0.2)' }}>
-            {getCheckedInFencers().length} pointés
+            {getCheckedInFencers().length} {t('fencer.present_label')}
           </span>
           <button
             onClick={() => setCurrentPhase('remote')}
@@ -638,7 +642,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               fontSize: '0.875rem',
             }}
           >
-            📡 Saisie distante
+            📡 {t('phases.remote')}
           </button>
           <button
             onClick={() => setShowFencerComparison(true)}
@@ -652,7 +656,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               fontSize: '0.875rem',
             }}
           >
-            ⚔️ Comparaisons
+            ⚔️ {t('competition.comparisons')}
           </button>
           <button
             onClick={() => setShowAnalytics(true)}
@@ -666,7 +670,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               fontSize: '0.875rem',
             }}
           >
-            📊 Analytics
+            📊 {t('competition.analytics')}
           </button>
           <button
             onClick={() => setShowQRCode(true)}

@@ -24,7 +24,9 @@
     "third_place_match_ok": "Click OK to add the bronze medal match",
     "third_place_match_cancel": "Click Cancel to finish after the semi-finals",
     "third_place_match_label": "Bronze medal match (3rd place match)",
-    "third_place_match_description": "Organizes an additional match between the two losing semi-finalists to determine 3rd and 4th place"
+    "third_place_match_description": "Organizes an additional match between the two losing semi-finalists to determine 3rd and 4th place",
+    "comparisons": "Comparisons",
+    "analytics": "Analytics"
   },
   "weapons": {
     "epee": "Epee",
@@ -63,7 +65,9 @@
     "abandon": "Abandon",
     "forfait": "Withdraw",
     "reactivate": "Reactivate",
-    "points": "Points"
+    "points": "Points",
+    "label": "fencers",
+    "present_label": "checked in"
   },
   "status": {
     "checked_in": "Present",
@@ -79,7 +83,12 @@
   },
   "phases": {
     "checkin": "Check-in",
+    "poolprep": "Preparation",
     "pools": "Pools",
+    "pools_skip": "Pools (skipped)",
+    "pools_round": "Pools ({{current}}/{{total}})",
+    "pools_skip_tooltip": "Pool phase skipped (0 pools)",
+    "tableau_locked_tooltip": "Complete all pools and validate ranking to access the table",
     "ranking": "Ranking",
     "tableau": "Table",
     "results": "Results",
@@ -98,7 +107,9 @@
     "no_pools": "No Pools",
     "return_to_checkin": "Return to Check-in",
     "pool_number": "Pool",
-    "change_pool": "Change Pool"
+    "change_pool": "Change Pool",
+    "next_round_n": "Pool round {{n}} →",
+    "view_ranking_action": "View ranking →"
   },
   "ranking": {
     "rank": "Rank",

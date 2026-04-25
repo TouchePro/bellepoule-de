@@ -24,7 +24,9 @@
     "third_place_match_ok": "Cliquez sur OK pour ajouter la petite finale",
     "third_place_match_cancel": "Cliquez sur Annuler pour terminer après les demi-finales",
     "third_place_match_label": "Petite finale (match pour la 3ème place)",
-    "third_place_match_description": "Organise un match supplémentaire entre les deux demi-finalistes perdants pour déterminer la 3ème et 4ème place"
+    "third_place_match_description": "Organise un match supplémentaire entre les deux demi-finalistes perdants pour déterminer la 3ème et 4ème place",
+    "comparisons": "Comparaisons",
+    "analytics": "Analytics"
   },
   "weapons": {
     "epee": "Épée",
@@ -63,7 +65,9 @@
     "abandon": "Abandonner",
     "forfait": "Forfait",
     "reactivate": "Réactiver",
-    "points": "Points"
+    "points": "Points",
+    "label": "tireurs",
+    "present_label": "pointés"
   },
   "status": {
     "checked_in": "Présent",
@@ -79,7 +83,12 @@
   },
   "phases": {
     "checkin": "Appel",
+    "poolprep": "Préparation",
     "pools": "Poules",
+    "pools_skip": "Poules (saut)",
+    "pools_round": "Poules ({{current}}/{{total}})",
+    "pools_skip_tooltip": "Phase de poules ignorée (0 poules)",
+    "tableau_locked_tooltip": "Terminez toutes les poules et validez le classement pour accéder au tableau",
     "ranking": "Classement",
     "tableau": "Tableau",
     "results": "Résultats",
@@ -98,7 +107,9 @@
     "no_pools": "Pas de poules",
     "return_to_checkin": "Retour à l'appel",
     "pool_number": "Poule",
-    "change_pool": "Changer de poule"
+    "change_pool": "Changer de poule",
+    "next_round_n": "Tour {{n}} de poules →",
+    "view_ranking_action": "Voir le classement →"
   },
   "ranking": {
     "rank": "Rg",

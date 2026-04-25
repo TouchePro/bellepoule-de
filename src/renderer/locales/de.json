@@ -24,7 +24,9 @@
     "third_place_match_ok": "Klicken Sie auf OK, um das kleine Finale hinzuzufügen",
     "third_place_match_cancel": "Klicken Sie auf Abbrechen, um nach den Halbfinals zu beenden",
     "third_place_match_label": "Kleines Finale (Spiel um den 3. Platz)",
-    "third_place_match_description": "Organisiert ein zusätzliches Spiel zwischen den beiden verlierenden Halbfinalisten, um den 3. und 4. Platz zu bestimmen"
+    "third_place_match_description": "Organisiert ein zusätzliches Spiel zwischen den beiden verlierenden Halbfinalisten, um den 3. und 4. Platz zu bestimmen",
+    "comparisons": "Vergleiche",
+    "analytics": "Analytics"
   },
   "weapons": {
     "epee": "Degen",
@@ -63,7 +65,9 @@
     "abandon": "Aufgeben",
     "forfait": "Nicht Antreten",
     "reactivate": "Reaktivieren",
-    "points": "Punkte"
+    "points": "Punkte",
+    "label": "Fechter",
+    "present_label": "angemeldet"
   },
   "status": {
     "checked_in": "Eingecheckt",
@@ -79,7 +83,12 @@
   },
   "phases": {
     "checkin": "Anmeldung",
+    "poolprep": "Vorbereitung",
     "pools": "Pools",
+    "pools_skip": "Pools (übersprungen)",
+    "pools_round": "Pools ({{current}}/{{total}})",
+    "pools_skip_tooltip": "Poolphase übersprungen (0 Pools)",
+    "tableau_locked_tooltip": "Beenden Sie alle Pools und validieren Sie das Ranking, um auf die Tabelle zuzugreifen",
     "ranking": "Rangliste",
     "tableau": "Tabelle",
     "results": "Ergebnisse",
@@ -98,7 +107,9 @@
     "no_pools": "Keine Pools",
     "return_to_checkin": "Zurück zur Anmeldung",
     "pool_number": "Pool",
-    "change_pool": "Pool Wechseln"
+    "change_pool": "Pool Wechseln",
+    "next_round_n": "Runde {{n}} →",
+    "view_ranking_action": "Rangliste anzeigen →"
   },
   "ranking": {
     "rank": "Rg",
