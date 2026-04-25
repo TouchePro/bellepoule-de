@@ -85,6 +85,38 @@ const MENU_LABELS: Record<MenuLang, Record<string, string>> = {
     updatesTitle: 'Mises à jour',
     docs: 'Documentation',
     reportBug: '📝 Signaler un bug / Suggestion',
+    remoteTitle: 'Saisie distante',
+    remoteAlreadyStarted: 'Le serveur de saisie distante est déjà démarré',
+    remoteStartedTitle: 'Saisie distante démarrée',
+    remoteStartedMsg: 'Les arbitres peuvent maintenant se connecter',
+    remoteDetailTemplate: 'Arène 1: {url}/arene1/arbitre\nArène 2: {url}/arene2/arbitre\nArène 3: {url}/arene3/arbitre\nArène 4: {url}/arene4/arbitre\n\nAffichage kiosk (grand écran public): {url}/kiosk\nClassement en direct: {url}/\n\nPartagez ces URLs avec les arbitres munis de tablettes.\nAssurez-vous que le pare-feu Windows autorise les connexions sur le port {port}.',
+    remoteNotStarted: "Le serveur de saisie distante n'est pas démarré",
+    remoteStoppedTitle: 'Saisie distante arrêtée',
+    remoteStoppedMsg: 'Le serveur de saisie distante a été arrêté',
+    errTitle: 'Erreur',
+    remoteErrStart: 'Impossible de démarrer le serveur distant:',
+    remoteErrStop: "Impossible d'arrêter le serveur distant:",
+    openTitle: 'Ouvrir une compétition',
+    filterBpm: 'BellePoule Modern',
+    filterClassic: 'BellePoule Classic',
+    filterAll: 'Tous les fichiers',
+    openErr: "Impossible d'ouvrir le fichier:",
+    saveTitle: 'Enregistrer la compétition',
+    saveErr: "Impossible d'enregistrer:",
+    importTitle: 'Importer',
+    importXmlTitle: 'Importer un fichier XML BellePoule',
+    importFffTitle: 'Importer une liste FFE',
+    importRankingTitle: 'Importer un classement FFE',
+    importBpfTitle: 'Importer tireurs + photos (.bpf)',
+    filterXmlBP: 'XML BellePoule',
+    filterFfe: 'Fichier FFE',
+    filterRanking: 'Fichier classement',
+    importReadErr: 'Impossible de lire le fichier:',
+    importErrTitle: "Erreur d'import",
+    aboutTitle: 'À propos de BellePoule Modern',
+    aboutSoftware: "Logiciel de gestion de compétitions d'escrime.",
+    aboutRewrite: 'Réécriture moderne du logiciel BellePoule original créé par Yann Deboeuf.',
+    aboutBugHint: 'Pour signaler un bug, mentionnez:',
   },
   en: {
     file: 'File',
@@ -135,6 +167,38 @@ const MENU_LABELS: Record<MenuLang, Record<string, string>> = {
     updatesTitle: 'Updates',
     docs: 'Documentation',
     reportBug: '📝 Report a Bug / Suggestion',
+    remoteTitle: 'Remote Scoring',
+    remoteAlreadyStarted: 'The remote scoring server is already started',
+    remoteStartedTitle: 'Remote scoring started',
+    remoteStartedMsg: 'Referees can now connect',
+    remoteDetailTemplate: 'Arena 1: {url}/arene1/arbitre\nArena 2: {url}/arene2/arbitre\nArena 3: {url}/arene3/arbitre\nArena 4: {url}/arene4/arbitre\n\nKiosk display (public screen): {url}/kiosk\nLive ranking: {url}/\n\nShare these URLs with referees using tablets.\nMake sure Windows firewall allows connections on port {port}.',
+    remoteNotStarted: 'The remote scoring server is not started',
+    remoteStoppedTitle: 'Remote scoring stopped',
+    remoteStoppedMsg: 'The remote scoring server has been stopped',
+    errTitle: 'Error',
+    remoteErrStart: 'Unable to start the remote server:',
+    remoteErrStop: 'Unable to stop the remote server:',
+    openTitle: 'Open Competition',
+    filterBpm: 'BellePoule Modern',
+    filterClassic: 'BellePoule Classic',
+    filterAll: 'All Files',
+    openErr: 'Unable to open file:',
+    saveTitle: 'Save Competition',
+    saveErr: 'Unable to save:',
+    importTitle: 'Import',
+    importXmlTitle: 'Import BellePoule XML file',
+    importFffTitle: 'Import FFE list',
+    importRankingTitle: 'Import FFE ranking',
+    importBpfTitle: 'Import fencers + photos (.bpf)',
+    filterXmlBP: 'XML BellePoule',
+    filterFfe: 'FFE File',
+    filterRanking: 'Ranking file',
+    importReadErr: 'Unable to read file:',
+    importErrTitle: 'Import Error',
+    aboutTitle: 'About BellePoule Modern',
+    aboutSoftware: 'Fencing competition management software.',
+    aboutRewrite: 'Modern rewrite of the original BellePoule software created by Yann Deboeuf.',
+    aboutBugHint: 'To report a bug, mention:',
   },
   de: {
     file: 'Datei',
@@ -185,6 +249,38 @@ const MENU_LABELS: Record<MenuLang, Record<string, string>> = {
     updatesTitle: 'Updates',
     docs: 'Dokumentation',
     reportBug: '📝 Bug melden / Vorschlag',
+    remoteTitle: 'Fernpunkteingabe',
+    remoteAlreadyStarted: 'Der Fernpunkteingabe-Server ist bereits gestartet',
+    remoteStartedTitle: 'Fernpunkteingabe gestartet',
+    remoteStartedMsg: 'Schiedsrichter können sich jetzt verbinden',
+    remoteDetailTemplate: 'Arena 1: {url}/arene1/arbitre\nArena 2: {url}/arene2/arbitre\nArena 3: {url}/arene3/arbitre\nArena 4: {url}/arene4/arbitre\n\nKiosk-Anzeige (öffentlicher Bildschirm): {url}/kiosk\nLive-Rangliste: {url}/\n\nTeilen Sie diese URLs mit Schiedsrichtern mit Tablets.\nStellen Sie sicher, dass die Windows-Firewall Verbindungen auf Port {port} zulässt.',
+    remoteNotStarted: 'Der Fernpunkteingabe-Server ist nicht gestartet',
+    remoteStoppedTitle: 'Fernpunkteingabe gestoppt',
+    remoteStoppedMsg: 'Der Fernpunkteingabe-Server wurde gestoppt',
+    errTitle: 'Fehler',
+    remoteErrStart: 'Fernserver konnte nicht gestartet werden:',
+    remoteErrStop: 'Fernserver konnte nicht gestoppt werden:',
+    openTitle: 'Wettkampf öffnen',
+    filterBpm: 'BellePoule Modern',
+    filterClassic: 'BellePoule Classic',
+    filterAll: 'Alle Dateien',
+    openErr: 'Datei konnte nicht geöffnet werden:',
+    saveTitle: 'Wettkampf speichern',
+    saveErr: 'Speichern nicht möglich:',
+    importTitle: 'Importieren',
+    importXmlTitle: 'BellePoule XML-Datei importieren',
+    importFffTitle: 'FFE-Liste importieren',
+    importRankingTitle: 'FFE-Rangliste importieren',
+    importBpfTitle: 'Fechter + Fotos importieren (.bpf)',
+    filterXmlBP: 'XML BellePoule',
+    filterFfe: 'FFE-Datei',
+    filterRanking: 'Ranglistendatei',
+    importReadErr: 'Datei konnte nicht gelesen werden:',
+    importErrTitle: 'Importfehler',
+    aboutTitle: 'Über BellePoule Modern',
+    aboutSoftware: 'Fechtwettkampf-Verwaltungssoftware.',
+    aboutRewrite: 'Moderne Neuentwicklung der originalen BellePoule-Software erstellt von Yann Deboeuf.',
+    aboutBugHint: 'Zum Melden eines Fehlers bitte angeben:',
   },
   'zh-HK': {
     file: '檔案',
@@ -235,8 +331,49 @@ const MENU_LABELS: Record<MenuLang, Record<string, string>> = {
     updatesTitle: '更新',
     docs: '文件',
     reportBug: '📝 回報錯誤 / 建議',
+    remoteTitle: '遠程計分',
+    remoteAlreadyStarted: '遠程計分伺服器已啟動',
+    remoteStartedTitle: '遠程計分已啟動',
+    remoteStartedMsg: '裁判現在可以連線',
+    remoteDetailTemplate: '賽場 1: {url}/arene1/arbitre\n賽場 2: {url}/arene2/arbitre\n賽場 3: {url}/arene3/arbitre\n賽場 4: {url}/arene4/arbitre\n\nKiosk 顯示（公開大螢幕）: {url}/kiosk\n即時排名: {url}/\n\n請將這些網址分享給使用平板電腦的裁判。\n請確保 Windows 防火牆允許連接埠 {port} 上的連線。',
+    remoteNotStarted: '遠程計分伺服器尚未啟動',
+    remoteStoppedTitle: '遠程計分已停止',
+    remoteStoppedMsg: '遠程計分伺服器已停止',
+    errTitle: '錯誤',
+    remoteErrStart: '無法啟動遠程伺服器:',
+    remoteErrStop: '無法停止遠程伺服器:',
+    openTitle: '開啟比賽',
+    filterBpm: 'BellePoule Modern',
+    filterClassic: 'BellePoule Classic',
+    filterAll: '所有檔案',
+    openErr: '無法開啟檔案:',
+    saveTitle: '儲存比賽',
+    saveErr: '無法儲存:',
+    importTitle: '匯入',
+    importXmlTitle: '匯入 BellePoule XML 檔案',
+    importFffTitle: '匯入 FFE 名單',
+    importRankingTitle: '匯入 FFE 排名',
+    importBpfTitle: '匯入劍手 + 照片 (.bpf)',
+    filterXmlBP: 'XML BellePoule',
+    filterFfe: 'FFE 檔案',
+    filterRanking: '排名檔案',
+    importReadErr: '無法讀取檔案:',
+    importErrTitle: '匯入錯誤',
+    aboutTitle: '關於 BellePoule Modern',
+    aboutSoftware: '劍擊比賽管理軟件。',
+    aboutRewrite: '由 Yann Deboeuf 創建的 BellePoule 原版軟件的現代重寫版本。',
+    aboutBugHint: '回報錯誤時請提及:',
   },
 };
+
+// ============================================================================
+// Localized Label Helper
+// ============================================================================
+
+function getL(): Record<string, string> {
+  const lang = (MENU_LABELS[currentMenuLanguage as MenuLang] ? currentMenuLanguage : 'fr') as MenuLang;
+  return MENU_LABELS[lang];
+}
 
 // ============================================================================
 // Version Information
@@ -563,11 +700,12 @@ function createMenu(language?: string): void {
 // ============================================================================
 
 function startRemoteScoreServer(port: number = 8066): void {
+  const L = getL();
   if (remoteScoreServer) {
     dialog.showMessageBox(mainWindow!, {
       type: 'info',
-      title: 'Saisie distante',
-      message: 'Le serveur de saisie distante est déjà démarré',
+      title: L.remoteTitle,
+      message: L.remoteAlreadyStarted,
       buttons: ['OK'],
     });
     return;
@@ -579,27 +717,31 @@ function startRemoteScoreServer(port: number = 8066): void {
     remoteScoreServer.start();
 
     const serverUrl = remoteScoreServer.getServerUrl();
+    const detail = L.remoteDetailTemplate
+      .replace(/{url}/g, serverUrl)
+      .replace('{port}', String(port));
     dialog.showMessageBox(mainWindow!, {
       type: 'info',
-      title: 'Saisie distante démarrée',
-      message: `Les arbitres peuvent maintenant se connecter`,
-      detail: `Arène 1: ${serverUrl}/arene1/arbitre\nArène 2: ${serverUrl}/arene2/arbitre\nArène 3: ${serverUrl}/arene3/arbitre\nArène 4: ${serverUrl}/arene4/arbitre\n\nAffichage kiosk (grand écran public): ${serverUrl}/kiosk\nClassement en direct: ${serverUrl}/\n\nPartagez ces URLs avec les arbitres munis de tablettes.\nAssurez-vous que le pare-feu Windows autorise les connexions sur le port ${port}.`,
+      title: L.remoteStartedTitle,
+      message: L.remoteStartedMsg,
+      detail,
       buttons: ['OK'],
     });
 
     // Stocker la référence globale pour le serveur distant
     (global as any).mainWindow = mainWindow;
   } catch (error) {
-    dialog.showErrorBox('Erreur', `Impossible de démarrer le serveur distant: ${error}`);
+    dialog.showErrorBox(L.errTitle, `${L.remoteErrStart} ${error}`);
   }
 }
 
 function stopRemoteScoreServer(): void {
+  const L = getL();
   if (!remoteScoreServer) {
     dialog.showMessageBox(mainWindow!, {
       type: 'info',
-      title: 'Saisie distante',
-      message: "Le serveur de saisie distante n'est pas démarré",
+      title: L.remoteTitle,
+      message: L.remoteNotStarted,
       buttons: ['OK'],
     });
     return;
@@ -611,12 +753,12 @@ function stopRemoteScoreServer(): void {
 
     dialog.showMessageBox(mainWindow!, {
       type: 'info',
-      title: 'Saisie distante arrêtée',
-      message: 'Le serveur de saisie distante a été arrêté',
+      title: L.remoteStoppedTitle,
+      message: L.remoteStoppedMsg,
       buttons: ['OK'],
     });
   } catch (error) {
-    dialog.showErrorBox('Erreur', `Impossible d'arrêter le serveur distant: ${error}`);
+    dialog.showErrorBox(L.errTitle, `${L.remoteErrStop} ${error}`);
   }
 }
 
@@ -625,12 +767,13 @@ function stopRemoteScoreServer(): void {
 // ============================================================================
 
 async function handleOpenFile(): Promise<void> {
+  const L = getL();
   const result = await dialog.showOpenDialog(mainWindow!, {
-    title: 'Ouvrir une compétition',
+    title: L.openTitle,
     filters: [
-      { name: 'BellePoule Modern', extensions: ['bpm', 'db'] },
-      { name: 'BellePoule Classic', extensions: ['cotcot', 'cocot'] },
-      { name: 'Tous les fichiers', extensions: ['*'] },
+      { name: L.filterBpm, extensions: ['bpm', 'db'] },
+      { name: L.filterClassic, extensions: ['cotcot', 'cocot'] },
+      { name: L.filterAll, extensions: ['*'] },
     ],
     properties: ['openFile'],
   });
@@ -641,16 +784,17 @@ async function handleOpenFile(): Promise<void> {
       db.importFromFile(filepath);
       mainWindow?.webContents.send('file:opened', filepath);
     } catch (error) {
-      dialog.showErrorBox('Erreur', `Impossible d'ouvrir le fichier: ${error}`);
+      dialog.showErrorBox(L.errTitle, `${L.openErr} ${error}`);
     }
   }
 }
 
 async function handleSaveAs(): Promise<void> {
+  const L = getL();
   const result = await dialog.showSaveDialog(mainWindow!, {
-    title: 'Enregistrer la compétition',
+    title: L.saveTitle,
     defaultPath: 'competition.bpm',
-    filters: [{ name: 'BellePoule Modern', extensions: ['bpm'] }],
+    filters: [{ name: L.filterBpm, extensions: ['bpm'] }],
   });
 
   if (!result.canceled && result.filePath) {
@@ -658,7 +802,7 @@ async function handleSaveAs(): Promise<void> {
       db.exportToFile(result.filePath);
       mainWindow?.webContents.send('file:saved', result.filePath);
     } catch (error) {
-      dialog.showErrorBox('Erreur', `Impossible d'enregistrer: ${error}`);
+      dialog.showErrorBox(L.errTitle, `${L.saveErr} ${error}`);
     }
   }
 }
@@ -668,28 +812,29 @@ async function handleExport(format: string): Promise<void> {
 }
 
 async function handleImport(format: string): Promise<void> {
+  const L = getL();
   let filters: Electron.FileFilter[] = [];
-  let title = 'Importer';
+  let title = L.importTitle;
 
   switch (format) {
     case 'xml':
-      title = 'Importer un fichier XML BellePoule';
-      filters = [{ name: 'XML BellePoule', extensions: ['xml', 'cotcot'] }];
+      title = L.importXmlTitle;
+      filters = [{ name: L.filterXmlBP, extensions: ['xml', 'cotcot'] }];
       break;
     case 'fff':
-      title = 'Importer une liste FFE';
-      filters = [{ name: 'Fichier FFE', extensions: ['fff', 'csv', 'txt'] }];
+      title = L.importFffTitle;
+      filters = [{ name: L.filterFfe, extensions: ['fff', 'csv', 'txt'] }];
       break;
     case 'ranking':
-      title = 'Importer un classement FFE';
-      filters = [{ name: 'Fichier classement', extensions: ['fff', 'csv', 'txt', 'xlsx'] }];
+      title = L.importRankingTitle;
+      filters = [{ name: L.filterRanking, extensions: ['fff', 'csv', 'txt', 'xlsx'] }];
       break;
     case 'fencers-bpf':
-      title = 'Importer tireurs + photos (.bpf)';
+      title = L.importBpfTitle;
       filters = [{ name: 'BellePoule Fencers', extensions: ['bpf'] }];
       break;
     default:
-      filters = [{ name: 'Tous les fichiers', extensions: ['*'] }];
+      filters = [{ name: L.filterAll, extensions: ['*'] }];
   }
 
   const result = await dialog.showOpenDialog(mainWindow!, {
@@ -709,14 +854,16 @@ async function handleImport(format: string): Promise<void> {
         mainWindow?.webContents.send('menu:import', format, filepath, content);
       }
     } catch (error) {
-      dialog.showErrorBox("Erreur d'import", `Impossible de lire le fichier: ${error}`);
+      dialog.showErrorBox(L.importErrTitle, `${L.importReadErr} ${error}`);
     }
   }
 }
 
 function showAbout(): void {
+  const L = getL();
   const versionInfo = getVersionInfo();
-  const buildDate = new Date(versionInfo.date).toLocaleDateString('fr-FR', {
+  const locale = currentMenuLanguage === 'zh-HK' ? 'zh-HK' : currentMenuLanguage === 'de' ? 'de-DE' : currentMenuLanguage === 'en' ? 'en-GB' : 'fr-FR';
+  const buildDate = new Date(versionInfo.date).toLocaleDateString(locale, {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -726,19 +873,19 @@ function showAbout(): void {
 
   dialog.showMessageBox(mainWindow!, {
     type: 'info',
-    title: 'À propos de BellePoule Modern',
+    title: L.aboutTitle,
     message: `BellePoule Modern v${versionInfo.version}`,
     detail: `Build #${versionInfo.build}
 Date: ${buildDate}
 
-Logiciel de gestion de compétitions d'escrime.
+${L.aboutSoftware}
 
-Réécriture moderne du logiciel BellePoule original créé par Yann Deboeuf.
+${L.aboutRewrite}
 
 Licence: GPL-3.0
 © 2024-2026 BellePoule Modern Contributors
 
-Pour signaler un bug, mentionnez:
+${L.aboutBugHint}
   Version: ${versionInfo.version}
   Build: #${versionInfo.build}`,
   });

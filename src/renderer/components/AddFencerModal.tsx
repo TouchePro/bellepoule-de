@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { Fencer, Gender, FencerStatus } from '../../shared/types';
 import { useToast } from './Toast';
 import FencerPhoto from './FencerPhoto';
+import { useTranslation } from '../contexts/TranslationContext';
 
 interface AddFencerModalProps {
   onClose: () => void;
@@ -15,6 +16,7 @@ interface AddFencerModalProps {
 
 const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
   const { showToast } = useToast();
+  const { t } = useTranslation();
   const [lastName, setLastName] = useState('');
   const [firstName, setFirstName] = useState('');
   const [club, setClub] = useState('');
@@ -29,7 +31,7 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
     e.preventDefault();
 
     if (!lastName.trim() || !firstName.trim()) {
-      showToast('Le nom et le prénom sont obligatoires', 'warning');
+      showToast(t('messages.name_required'), 'warning');
       return;
     }
 
@@ -51,7 +53,7 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2 className="modal-title">Ajouter un tireur</h2>
+          <h2 className="modal-title">{t('fencer.add')}</h2>
           <button
             className="btn btn-icon btn-secondary"
             onClick={onClose}
@@ -76,7 +78,7 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div className="form-group">
-                <label className="form-label">Nom *</label>
+                <label className="form-label">{t('fencer.last_name')} *</label>
                 <input
                   type="text"
                   className="form-input"
@@ -88,7 +90,7 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">Prénom *</label>
+                <label className="form-label">{t('fencer.first_name')} *</label>
                 <input
                   type="text"
                   className="form-input"
@@ -102,18 +104,18 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div className="form-group">
-                <label className="form-label">Sexe</label>
+                <label className="form-label">{t('fencer.gender')}</label>
                 <select
                   className="form-input form-select"
                   value={gender}
                   onChange={e => setGender(e.target.value as Gender)}
                 >
-                  <option value={Gender.MALE}>Masculin</option>
-                  <option value={Gender.FEMALE}>Féminin</option>
+                  <option value={Gender.MALE}>{t('genders.male')}</option>
+                  <option value={Gender.FEMALE}>{t('genders.female')}</option>
                 </select>
               </div>
               <div className="form-group">
-                <label className="form-label">Nationalité</label>
+                <label className="form-label">{t('fencer.nationality')}</label>
                 <input
                   type="text"
                   className="form-input"
@@ -126,7 +128,7 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Club</label>
+              <label className="form-label">{t('fencer.club')}</label>
               <input
                 type="text"
                 className="form-input"
@@ -138,7 +140,7 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div className="form-group">
-                <label className="form-label">Région</label>
+                <label className="form-label">{t('fencer.league')}</label>
                 <input
                   type="text"
                   className="form-input"
@@ -148,7 +150,7 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">Licence</label>
+                <label className="form-label">{t('fencer.license')}</label>
                 <input
                   type="text"
                   className="form-input"
@@ -160,7 +162,7 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Classement</label>
+              <label className="form-label">{t('fencer.ranking')}</label>
               <input
                 type="number"
                 className="form-input"
@@ -174,10 +176,10 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
 
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary" onClick={onClose}>
-              Annuler
+              {t('actions.cancel')}
             </button>
             <button type="submit" className="btn btn-primary">
-              Ajouter le tireur
+              {t('fencer.add')}
             </button>
           </div>
         </form>

@@ -1,6 +1,12 @@
 {
   "app": {
-    "title": "BellePoule Modern"
+    "title": "BellePoule Modern",
+    "home": "Broadel",
+    "back_to_list": "Distro d'al roll kenstrivadegoù",
+    "close_tab": "Serriñ an ivinell",
+    "load_error_title": "Fazi kargañ",
+    "load_error_message": "Ur fazi zo chegnet en ur gargañ al roll kenstrivadegoù.",
+    "reload": "Adkargañ an arlivañ"
   },
   "menu": {
     "new_competition": "Nevezompetañ",
@@ -215,7 +221,8 @@
     "warning": "Diwallit",
     "info": "Stlenn",
     "connection_lost": "Kevreadur kolletet",
-    "connection_restored": "Kevreadur az adsavet"
+    "connection_restored": "Kevreadur az adsavet",
+    "name_required": "Ret eo an anv-tiezh hag an anv-bihan"
   },
   "time": {
     "minutes": "munutennoù",
@@ -237,5 +244,30 @@
       "ranking-table": "Taolenn renk", "footer": "Troad-pajenn"
     },
     "reset": "Adderaouiñ", "exportJson": "Ezporzhiañ JSON", "importJson": "Enporzhiañ JSON", "importError": "Restr JSON fall"
+  },
+  "shortcuts": {
+    "title": "Birvikerezh Klavier",
+    "subtitle": "Mestrañ BellePoule evel ur prof",
+    "footer": "Stailhit ? evit diskouez an sikour-mañ",
+    "category_all": "Holl",
+    "category_global": "Hollvedel",
+    "category_navigation": "Levenez",
+    "category_actions": "Oberoù",
+    "category_competition": "Kenstrivadeg",
+    "show_help": "Diskouez sikour birvikerezh",
+    "quick_search": "Klask tost",
+    "close_modal": "Serriñ / Nullañ",
+    "go_pools": "Mont d'ar poellou",
+    "go_tableau": "Mont d'an daolenn",
+    "go_results": "Mont d'an disoc'hoù",
+    "nav_fields": "Levenez etre maezioù",
+    "save": "Enrollañ",
+    "undo": "Diret",
+    "redo": "Adober",
+    "new_competition": "Kenstrivadeg nevez",
+    "refresh_data": "Hizivaat roadennoù",
+    "timer": "Krogañ/Paouez kronometr",
+    "nav_list": "Levenez en rol",
+    "validate": "Gwiriañ / Digeriñ"
   }
 }

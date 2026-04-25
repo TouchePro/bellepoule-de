@@ -1,6 +1,12 @@
 {
   "app": {
-    "title": "BellePoule Modern"
+    "title": "BellePoule Modern",
+    "home": "Allgemein",
+    "back_to_list": "Zurück zur Wettbewerbliste",
+    "close_tab": "Tab schließen",
+    "load_error_title": "Ladefehler",
+    "load_error_message": "Beim Laden der Wettbewerbliste ist ein Fehler aufgetreten.",
+    "reload": "Anwendung neu laden"
   },
   "menu": {
     "new_competition": "Neuer Wettbewerb",
@@ -215,7 +221,8 @@
     "warning": "Warnung",
     "info": "Information",
     "connection_lost": "Verbindung verloren",
-    "connection_restored": "Verbindung wiederhergestellt"
+    "connection_restored": "Verbindung wiederhergestellt",
+    "name_required": "Nachname und Vorname sind erforderlich"
   },
   "time": {
     "minutes": "Minuten",
@@ -237,5 +244,30 @@
       "ranking-table": "Rangtabelle", "footer": "Fußzeile"
     },
     "reset": "Zurücksetzen", "exportJson": "JSON exportieren", "importJson": "JSON importieren", "importError": "Ungültige JSON-Datei"
+  },
+  "shortcuts": {
+    "title": "Tastaturkürzel",
+    "subtitle": "BellePoule wie ein Profi meistern",
+    "footer": "Drücken Sie ? um diese Hilfe jederzeit anzuzeigen",
+    "category_all": "Alle",
+    "category_global": "Global",
+    "category_navigation": "Navigation",
+    "category_actions": "Aktionen",
+    "category_competition": "Wettkampf",
+    "show_help": "Hilfe für Tastaturkürzel anzeigen",
+    "quick_search": "Schnellsuche",
+    "close_modal": "Modal schließen / Abbrechen",
+    "go_pools": "Zu den Poules",
+    "go_tableau": "Zum Tableau",
+    "go_results": "Zu den Ergebnissen",
+    "nav_fields": "Zwischen Feldern navigieren",
+    "save": "Speichern",
+    "undo": "Rückgängig",
+    "redo": "Wiederholen",
+    "new_competition": "Neuer Wettkampf",
+    "refresh_data": "Daten aktualisieren",
+    "timer": "Stoppuhr starten/pausieren",
+    "nav_list": "In der Liste navigieren",
+    "validate": "Bestätigen / Öffnen"
   }
 }

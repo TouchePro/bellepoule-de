@@ -1,6 +1,12 @@
 {
   "app": {
-    "title": "BellePoule Modern"
+    "title": "BellePoule Modern",
+    "home": "General",
+    "back_to_list": "Back to competition list",
+    "close_tab": "Close tab",
+    "load_error_title": "Loading Error",
+    "load_error_message": "An error occurred while loading the competition list.",
+    "reload": "Reload Application"
   },
   "menu": {
     "new_competition": "New Competition",
@@ -215,7 +221,8 @@
     "warning": "Warning",
     "info": "Information",
     "connection_lost": "Connection lost",
-    "connection_restored": "Connection restored"
+    "connection_restored": "Connection restored",
+    "name_required": "Last name and first name are required"
   },
   "time": {
     "minutes": "minutes",
@@ -237,5 +244,30 @@
       "ranking-table": "Ranking table", "footer": "Footer"
     },
     "reset": "Reset", "exportJson": "Export JSON", "importJson": "Import JSON", "importError": "Invalid JSON file"
+  },
+  "shortcuts": {
+    "title": "Keyboard Shortcuts",
+    "subtitle": "Master BellePoule like a pro",
+    "footer": "Press ? to show this help at any time",
+    "category_all": "All",
+    "category_global": "Global",
+    "category_navigation": "Navigation",
+    "category_actions": "Actions",
+    "category_competition": "Competition",
+    "show_help": "Show shortcuts help",
+    "quick_search": "Quick search",
+    "close_modal": "Close modal / Cancel",
+    "go_pools": "Go to pools",
+    "go_tableau": "Go to tableau",
+    "go_results": "Go to results",
+    "nav_fields": "Navigate between fields",
+    "save": "Save",
+    "undo": "Undo",
+    "redo": "Redo",
+    "new_competition": "New competition",
+    "refresh_data": "Refresh data",
+    "timer": "Start/Pause timer",
+    "nav_list": "Navigate in list",
+    "validate": "Validate / Open"
   }
 }

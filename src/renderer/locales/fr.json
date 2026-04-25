@@ -1,6 +1,12 @@
 {
   "app": {
-    "title": "BellePoule Modern"
+    "title": "BellePoule Modern",
+    "home": "Général",
+    "back_to_list": "Revenir à la liste des compétitions",
+    "close_tab": "Fermer l'onglet",
+    "load_error_title": "Erreur de chargement",
+    "load_error_message": "Une erreur est survenue lors du chargement de la liste des compétitions.",
+    "reload": "Recharger l'application"
   },
   "menu": {
     "new_competition": "Nouvelle compétition",
@@ -215,7 +221,8 @@
     "warning": "Avertissement",
     "info": "Information",
     "connection_lost": "Connexion perdue",
-    "connection_restored": "Connexion rétablie"
+    "connection_restored": "Connexion rétablie",
+    "name_required": "Le nom et le prénom sont obligatoires"
   },
   "time": {
     "minutes": "minutes",
@@ -253,5 +260,30 @@
     "exportJson": "Exporter JSON",
     "importJson": "Importer JSON",
     "importError": "Fichier JSON invalide"
+  },
+  "shortcuts": {
+    "title": "Raccourcis Clavier",
+    "subtitle": "Maîtrisez BellePoule comme un pro",
+    "footer": "Appuyez sur ? pour afficher cette aide à tout moment",
+    "category_all": "Tous",
+    "category_global": "Globaux",
+    "category_navigation": "Navigation",
+    "category_actions": "Actions",
+    "category_competition": "Compétition",
+    "show_help": "Afficher l'aide des raccourcis",
+    "quick_search": "Recherche rapide",
+    "close_modal": "Fermer la modale / Annuler",
+    "go_pools": "Aller aux poules",
+    "go_tableau": "Aller au tableau",
+    "go_results": "Aller aux résultats",
+    "nav_fields": "Navigation entre champs",
+    "save": "Sauvegarder",
+    "undo": "Annuler (Undo)",
+    "redo": "Refaire (Redo)",
+    "new_competition": "Nouvelle compétition",
+    "refresh_data": "Rafraîchir les données",
+    "timer": "Démarrer/Pause le chronomètre",
+    "nav_list": "Naviguer dans la liste",
+    "validate": "Valider / Ouvrir"
   }
 }
