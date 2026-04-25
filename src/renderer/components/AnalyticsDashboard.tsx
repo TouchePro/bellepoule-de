@@ -289,7 +289,8 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   }, [autoRefresh, selectedTimeframe]);
 
   return (
-    <div className={`analytics-dashboard bg-white rounded-lg shadow-lg p-6 ${className}`}>
+    <div className="modal-overlay" onClick={onClose}>
+    <div className={`modal modal--lg analytics-dashboard ${className}`} onClick={e => e.stopPropagation()}>
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
@@ -432,6 +433,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 };
