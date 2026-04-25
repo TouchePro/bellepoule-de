@@ -24,7 +24,9 @@
     "third_place_match_ok": "Klikit war OK evit ouzhpennañ ar bras bihan",
     "third_place_match_cancel": "Klikit war Nullañ evit echuiñ goude an hanter gourfenn",
     "third_place_match_label": "Bras bihan (match evit an 3de plas)",
-    "third_place_match_description": "Aoz ur match ouzhpenn etre an daou c'hoarzer a yaouank en hanter gourfenn evit derminiñ an 3de ha 4de plas"
+    "third_place_match_description": "Aoz ur match ouzhpenn etre an daou c'hoarzer a yaouank en hanter gourfenn evit derminiñ an 3de ha 4de plas",
+    "comparisons": "Kenstrivañ",
+    "analytics": "Analiz"
   },
   "weapons": {
     "epee": "Spes",
@@ -63,7 +65,9 @@
     "abandon": "Dilez",
     "forfait": "Dilez",
     "reactivate": "Adilhañ",
-    "points": "Poentoù"
+    "points": "Poentoù",
+    "label": "klezeourion",
+    "present_label": "enrollet"
   },
   "status": {
     "checked_in": "Enrollañet",
@@ -79,7 +83,12 @@
   },
   "phases": {
     "checkin": "Enrollañ",
+    "poolprep": "Hentez",
     "pools": "Poullou",
+    "pools_skip": "Poullou (treuzet)",
+    "pools_round": "Poullou ({{current}}/{{total}})",
+    "pools_skip_tooltip": "Talbenn poulloù trespasset (0 poullou)",
+    "tableau_locked_tooltip": "Echuiit an holl poullou ha validait ar renk evit mont d'ar daolenn",
     "ranking": "Renk",
     "tableau": "Taolenn",
     "results": "Disoc'hoùezioù",
@@ -98,7 +107,9 @@
     "no_pools": "Poull ebet ebet",
     "return_to_checkin": "Distro d'an enrollañ",
     "pool_number": "Poull",
-    "change_pool": "Kemmañ ar poullou"
+    "change_pool": "Kemmañ ar poullou",
+    "next_round_n": "Tro {{n}} →",
+    "view_ranking_action": "Gwelet ar renk →"
   },
   "ranking": {
     "rank": "Renk",

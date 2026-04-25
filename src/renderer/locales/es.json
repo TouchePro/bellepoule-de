@@ -24,7 +24,9 @@
     "third_place_match_ok": "Haga clic en OK para agregar la pequeña final",
     "third_place_match_cancel": "Haga clic en Cancelar para terminar después de las semifinales",
     "third_place_match_label": "Pequeña final (partido por el 3er lugar)",
-    "third_place_match_description": "Organiza un partido adicional entre los dos semifinalistas perdedores para determinar el 3er y 4to lugar"
+    "third_place_match_description": "Organiza un partido adicional entre los dos semifinalistas perdedores para determinar el 3er y 4to lugar",
+    "comparisons": "Comparaciones",
+    "analytics": "Analytics"
   },
   "weapons": {
     "epee": "Espada",
@@ -63,7 +65,9 @@
     "abandon": "Abandonar",
     "forfait": "No Presentarse",
     "reactivate": "Reactivar",
-    "points": "Puntos"
+    "points": "Puntos",
+    "label": "tiradores",
+    "present_label": "registrados"
   },
   "status": {
     "checked_in": "Registrado",
@@ -79,7 +83,12 @@
   },
   "phases": {
     "checkin": "Registro",
+    "poolprep": "Preparación",
     "pools": "Poules",
+    "pools_skip": "Poules (saltadas)",
+    "pools_round": "Poules ({{current}}/{{total}})",
+    "pools_skip_tooltip": "Fase de poules ignorada (0 poules)",
+    "tableau_locked_tooltip": "Complete todas las poules y valide la clasificación para acceder al cuadro",
     "ranking": "Clasificación",
     "tableau": "Cuadro",
     "results": "Resultados",
@@ -98,7 +107,9 @@
     "no_pools": "Sin Poules",
     "return_to_checkin": "Volver al Registro",
     "pool_number": "Poule",
-    "change_pool": "Cambiar Poule"
+    "change_pool": "Cambiar Poule",
+    "next_round_n": "Ronda {{n}} →",
+    "view_ranking_action": "Ver clasificación →"
   },
   "ranking": {
     "rank": "Pos",
