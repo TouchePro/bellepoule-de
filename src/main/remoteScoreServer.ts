@@ -2615,6 +2615,7 @@ export class RemoteScoreServer {
 
     // Utiliser les matches passés depuis le renderer si disponibles, sinon chercher dans la DB
     let allMatches: any[] = [];
+    const poolNumberMap = new Map<string, number>();
     if (matchesFromRenderer && matchesFromRenderer.length > 0) {
       console.log(`[RemoteScoreServer] ${matchesFromRenderer.length} matchs reçus du renderer`);
 
@@ -2626,6 +2627,7 @@ export class RemoteScoreServer {
       for (const m of matchesFromRenderer) {
         if ((m as any).__poolFencers) {
           fencerOrderMap.set(m.poolId, m.fencers);
+          if ((m as any).poolNumber != null) poolNumberMap.set(m.poolId, (m as any).poolNumber);
         } else {
           realMatches.push(m);
         }
@@ -2713,8 +2715,17 @@ export class RemoteScoreServer {
     // Assigner les matchs aux arènes par pool (Pool 1 -> Arena 1, Pool 2 -> Arena 2, etc.)
     console.log(`[RemoteScoreServer] Assignation des matches par pool aux ${strips} arènes`);
 
+    // Trier les poules par numéro pour garantir Poule 1 → Arène 1, Poule 2 → Arène 2, etc.
+    // poolNumberMap est peuplé par les marqueurs __poolFencers du renderer ;
+    // le fallback extrait les chiffres du poolId (ex: "pool-0" → 0, "pool-1" → 1).
+    const sortedPoolEntries = Array.from(matchesByPool.entries()).sort((a, b) => {
+      const numA = poolNumberMap.get(a[0]) ?? parseInt(a[0].replace(/\D/g, '') || '999', 10);
+      const numB = poolNumberMap.get(b[0]) ?? parseInt(b[0].replace(/\D/g, '') || '999', 10);
+      return numA - numB;
+    });
+
     let poolIndex = 0;
-    for (const [poolId, poolMatches] of matchesByPool) {
+    for (const [poolId, poolMatches] of sortedPoolEntries) {
       if (poolIndex >= strips) break;
 
       const arenaId = `arena${poolIndex + 1}`;

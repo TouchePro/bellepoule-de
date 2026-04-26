@@ -176,8 +176,9 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       // Prepend fencer-order markers so the server can rebuild poolFencersCache correctly.
       // The FIE match order for 4-fencer pools starts with [1,4] not [1,2], so naively
       // extracting fencers from match pairs produces the wrong order.
-      const poolMatches = pools.flatMap(pool => [
-        { __poolFencers: true, poolId: pool.id, fencers: pool.fencers || [] },
+      const sortedPools = [...pools].sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
+      const poolMatches = sortedPools.flatMap(pool => [
+        { __poolFencers: true, poolId: pool.id, poolNumber: pool.number, fencers: pool.fencers || [] },
         ...(pool.matches || []),
       ]);
       const deMatches = (tableauMatches || [])
