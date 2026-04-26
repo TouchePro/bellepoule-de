@@ -775,17 +775,20 @@
           const banner = document.getElementById('card-announcement-banner');
           if (!banner) return;
 
-          let msg;
+          const typeLabel = ann.cardType === 'white' ? 'BLANC' : ann.cardType === 'yellow' ? 'JAUNE' : ann.cardType === 'red' ? 'ROUGE' : 'NOIR';
+          let line1, line2;
+
           if (ann.isRevalorisation) {
             const fromLabel = ann.fromCard === 'white' ? 'blanc' : ann.fromCard === 'yellow' ? 'jaune' : ann.fromCard;
-            const toLabel = ann.toCard === 'yellow' ? 'JAUNE' : ann.toCard === 'red' ? 'ROUGE' : ann.toCard.toUpperCase();
-            msg = `⚠️ Revalorisation — 2ème ${fromLabel} → ${toLabel} · ${ann.fencerName}`;
+            line1 = `⚠️ Revalorisation 2ème ${fromLabel} → ${typeLabel} — ${ann.fencerName}`;
           } else {
-            const typeLabel = ann.cardType === 'white' ? 'BLANC' : ann.cardType === 'yellow' ? 'JAUNE' : ann.cardType === 'red' ? 'ROUGE' : 'NOIR';
-            msg = `Carton ${typeLabel} · ${ann.fencerName}`;
+            line1 = `Carton ${typeLabel} — ${ann.fencerName}`;
           }
+          line2 = ann.reason || null;
 
-          banner.textContent = msg;
+          banner.innerHTML = line2
+            ? `<div>${line1}</div><div style="font-size:0.65em; font-weight:600; margin-top:0.25em; opacity:0.9;">${line2}</div>`
+            : `<div>${line1}</div>`;
           banner.className = `card-announcement-banner visible card-${ann.cardType}`;
 
           if (this._cardAnnouncementTimer) clearTimeout(this._cardAnnouncementTimer);

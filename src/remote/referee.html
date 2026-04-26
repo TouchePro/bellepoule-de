@@ -301,6 +301,95 @@
         color: #ef4444;
       }
 
+      /* ── Modal sélecteur de raison ── */
+      .reason-selector-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        background: rgba(0,0,0,0.85);
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .reason-selector-overlay.open {
+        display: flex;
+      }
+      .reason-selector-header {
+        padding: 1rem 1.25rem 0.75rem;
+        background: #1f2937;
+        border-bottom: 2px solid #374151;
+        flex-shrink: 0;
+      }
+      .reason-selector-header h2 {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: #f9fafb;
+        margin-bottom: 0.15rem;
+      }
+      .reason-card-preview {
+        font-size: 0.85rem;
+        font-weight: 600;
+        padding: 0.2rem 0.6rem;
+        border-radius: 0.25rem;
+        display: inline-block;
+      }
+      .reason-card-preview.card-white  { background: #e5e7eb; color: #111827; }
+      .reason-card-preview.card-yellow { background: #fbbf24; color: #1c1917; }
+      .reason-card-preview.card-red    { background: #dc2626; color: #fff; }
+      .reason-selector-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0.75rem 1rem;
+      }
+      .reason-group-title {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #9ca3af;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin: 0.75rem 0 0.4rem;
+      }
+      .reason-group-title:first-child { margin-top: 0; }
+      .reason-btn {
+        display: block;
+        width: 100%;
+        text-align: left;
+        padding: 0.65rem 0.85rem;
+        margin-bottom: 0.35rem;
+        border-radius: 0.4rem;
+        border: 1px solid #374151;
+        background: #111827;
+        color: #e5e7eb;
+        font-size: 0.88rem;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s;
+        touch-action: manipulation;
+      }
+      .reason-btn:hover, .reason-btn:active {
+        background: #1e3a5f;
+        border-color: #3b82f6;
+        color: #fff;
+      }
+      .reason-selector-footer {
+        padding: 0.75rem 1rem;
+        background: #1f2937;
+        border-top: 1px solid #374151;
+        flex-shrink: 0;
+      }
+      .reason-cancel-btn {
+        width: 100%;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        border: 2px solid #6b7280;
+        background: transparent;
+        color: #d1d5db;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+      .reason-cancel-btn:hover { background: #374151; }
+
       /* Toggle annonce carton */
       .card-announce-bar {
         display: flex;
@@ -1056,6 +1145,52 @@
       }
       // ────────────────────────────────────────────────────────────────────────
 
+      const FAULT_REASONS = [
+        {
+          group: 1,
+          label: 'Groupe 1 — Blanc → Jaune → Rouge',
+          faults: [
+            'Abandon de l\'aire de combat sans autorisation',
+            'Contre-attaque',
+            'Corps à corps pour éviter une touche',
+            'Couverture ou substitution de cible',
+            'Touche lourde',
+            'Interruption abusive du combat',
+            'Matériel non conforme',
+            'Non-présentation sur l\'aire de combat',
+            'Réclamation injustifiée',
+            'Bousculade / jeu désordonné / enlèvement du masque avant « Cessez ! »',
+            'Commencer avant le « Combattez ! »',
+            'Poursuivre après le « Cessez ! »',
+          ],
+        },
+        {
+          group: 2,
+          label: 'Groupe 2 — Rouge direct',
+          faults: [
+            'Acte violent, vindicatif ou dangereux',
+            'Refus d\'obéissance',
+            'Demande d\'arrêt pour traumatisme non reconnu',
+            'Touche d\'estoc',
+            'Touche portée très brutalement',
+            'Touche pendant / après une chute ou déplacement non maîtrisé',
+            'Sortie volontaire de l\'arène pour éviter une touche',
+            'Utilisation du bras ou de la main non armée',
+            'Absence de marque de contrôle sur le matériel',
+          ],
+        },
+        {
+          group: 3,
+          label: 'Groupe 3 — Rouge direct',
+          faults: [
+            'Combat non loyal',
+            'Combattant troublant l\'ordre sur l\'arène',
+            'Toute personne troublant l\'ordre hors de l\'arène',
+            'Comportement antisportif',
+          ],
+        },
+      ];
+
       class RefereeApp {
         constructor() {
           this.socket = io();
@@ -1069,6 +1204,8 @@
           this.scoreB = 0;
           this.cardsA = [];
           this.cardsB = [];
+          this.faultHistoryA = { 1: 0, 2: 0, 3: 0 };
+          this.faultHistoryB = { 1: 0, 2: 0, 3: 0 };
           this.matchStatus = 'not_started';
           this.timerSeconds = 180; // 3 minutes
           this.timerInterval = null;
@@ -1271,7 +1408,7 @@
                 // Appui court : ajouter le carton
                 clearTimeout(longPressTimer);
                 longPressTimer = null;
-                this.addCard(config.fencer, config.cardType);
+                this.handleCardButtonPress(config.fencer, config.cardType);
               }
               btn.classList.remove('long-press-active');
             });
@@ -1301,7 +1438,7 @@
                 // Appui court : ajouter le carton
                 clearTimeout(longPressTimer);
                 longPressTimer = null;
-                this.addCard(config.fencer, config.cardType);
+                this.handleCardButtonPress(config.fencer, config.cardType);
               }
               btn.classList.remove('long-press-active');
             });
@@ -1414,7 +1551,8 @@
           this.scoreB = match.scoreB?.value || 0;
           this.cardsA = [];
           this.cardsB = [];
-          this.matchStatus = match.status;
+          this.faultHistoryA = { 1: 0, 2: 0, 3: 0 };
+          this.faultHistoryB = { 1: 0, 2: 0, 3: 0 };
           this.timerSeconds = 180;
           this.isSuddenDeath = false;
           this.actionHistory = [];
@@ -1491,19 +1629,11 @@
           this.pushHistory('card');
 
           const cards = fencer === 'A' ? this.cardsA : this.cardsB;
-          const otherFencer = fencer === 'A' ? 'B' : 'A';
 
-          // Détecter la revalorisation avant conversion
-          let isRevalorisation = false;
-          let fromCard = null;
-
-          // Logique des cartons
+          // Conversion 2ème blanc → jaune (chemin sans sélecteur de raison)
           if (cardType === 'white') {
             const whiteCount = cards.filter(c => c === 'white').length;
             if (whiteCount >= 1) {
-              // Deuxième blanc = jaune automatique
-              isRevalorisation = true;
-              fromCard = 'white';
               cardType = 'yellow';
               this.showNotification('⚠️ 2ème blanc = Jaune automatique');
             }
@@ -1511,22 +1641,13 @@
 
           cards.push(cardType);
 
-          // Application des pénalités
           if (cardType === 'yellow') {
-            // Jaune = +3 pour l'adversaire
-            if (fencer === 'A') {
-              this.scoreB += 3;
-            } else {
-              this.scoreA += 3;
-            }
+            if (fencer === 'A') this.scoreB += 3;
+            else this.scoreA += 3;
             this.showNotification("🟨 +3 points pour l'adversaire");
           } else if (cardType === 'red') {
-            // Rouge = +5 pour l'adversaire
-            if (fencer === 'A') {
-              this.scoreB += 5;
-            } else {
-              this.scoreA += 5;
-            }
+            if (fencer === 'A') this.scoreB += 5;
+            else this.scoreA += 5;
             this.showNotification("🟥 +5 points pour l'adversaire");
           }
 
@@ -1534,24 +1655,101 @@
           this.updateCardsDisplay();
           this.broadcastUpdate();
           this.saveScore();
+        }
 
-          // Annonce carton si case cochée
+        // ── Gestion carton avec sélecteur de raison ──────────────────────────
+
+        handleCardButtonPress(fencer, cardType) {
           const toggle = document.getElementById('carton-avancer-toggle');
           if (toggle && toggle.checked) {
-            const nameEl = document.getElementById(`fencer-${fencer.toLowerCase()}-name`);
-            const fencerName = nameEl ? nameEl.textContent.trim() : `Tireur ${fencer}`;
-            this.socket.emit('arena_control', {
-              arenaId: this.arenaId,
-              action: 'card_announcement',
-              announcement: {
-                fencer,
-                fencerName,
-                cardType,
-                isRevalorisation,
-                fromCard: isRevalorisation ? fromCard : null,
-                toCard: isRevalorisation ? cardType : null,
-              },
+            this.openReasonSelector(fencer, cardType);
+          } else {
+            this.addCard(fencer, cardType);
+          }
+        }
+
+        determineCardFromGroup(group, fencer) {
+          const history = fencer === 'A' ? this.faultHistoryA : this.faultHistoryB;
+          const count = history[group] || 0;
+          if (group === 1) {
+            if (count === 0) return 'white';
+            if (count === 1) return 'yellow';
+            return 'red';
+          }
+          return 'red'; // Groupes 2 et 3 : rouge direct
+        }
+
+        openReasonSelector(fencer, originalCardType) {
+          this._reasonSelectorFencer = fencer;
+          this._reasonSelectorOriginalType = originalCardType;
+
+          const nameEl = document.getElementById(`fencer-${fencer.toLowerCase()}-name`);
+          const fencerName = nameEl ? nameEl.textContent.trim() : `Tireur ${fencer}`;
+          document.getElementById('reason-selector-title').textContent =
+            `Raison du carton — ${fencerName}`;
+
+          // Construire la liste des raisons
+          const body = document.getElementById('reason-selector-body');
+          body.innerHTML = '';
+          FAULT_REASONS.forEach(({ group, label, faults }) => {
+            const preview = this.determineCardFromGroup(group, fencer);
+            const previewLabel = preview === 'white' ? 'Blanc' : preview === 'yellow' ? 'Jaune' : 'Rouge';
+            const titleEl = document.createElement('div');
+            titleEl.className = 'reason-group-title';
+            titleEl.textContent = `${label} → ${previewLabel}`;
+            body.appendChild(titleEl);
+
+            faults.forEach(fault => {
+              const btn = document.createElement('button');
+              btn.className = 'reason-btn';
+              btn.textContent = fault;
+              btn.addEventListener('click', () => {
+                this.confirmReasonSelector(fault, group, fencer);
+              });
+              body.appendChild(btn);
             });
+          });
+
+          document.getElementById('reason-selector-overlay').classList.add('open');
+        }
+
+        confirmReasonSelector(reason, group, fencer) {
+          const cardType = this.determineCardFromGroup(group, fencer);
+          const history = fencer === 'A' ? this.faultHistoryA : this.faultHistoryB;
+          const prevCount = history[group] || 0;
+
+          const isRevalorisation = (group === 1 && prevCount === 1);
+          history[group] = prevCount + 1;
+
+          document.getElementById('reason-selector-overlay').classList.remove('open');
+
+          this.addCard(fencer, cardType);
+
+          // Annonce avec raison
+          const nameEl = document.getElementById(`fencer-${fencer.toLowerCase()}-name`);
+          const fencerName = nameEl ? nameEl.textContent.trim() : `Tireur ${fencer}`;
+          this.socket.emit('arena_control', {
+            arenaId: this.arenaId,
+            action: 'card_announcement',
+            announcement: {
+              fencer,
+              fencerName,
+              cardType,
+              isRevalorisation,
+              fromCard: isRevalorisation ? 'white' : null,
+              toCard: isRevalorisation ? 'yellow' : null,
+              reason,
+              group,
+            },
+          });
+        }
+
+        cancelReasonSelector() {
+          const fencer = this._reasonSelectorFencer;
+          const originalType = this._reasonSelectorOriginalType;
+          document.getElementById('reason-selector-overlay').classList.remove('open');
+          if (fencer && originalType) {
+            this.addCard(fencer, originalType);
           }
         }
 
@@ -1937,6 +2135,8 @@
               this.scoreB = 0;
               this.cardsA = [];
               this.cardsB = [];
+              this.faultHistoryA = { 1: 0, 2: 0, 3: 0 };
+              this.faultHistoryB = { 1: 0, 2: 0, 3: 0 };
               this.matchStatus = 'not_started';
               this.timerSeconds = 180;
               this.isSuddenDeath = false;
@@ -2152,5 +2352,19 @@
         refereeApp = new RefereeApp();
       });
     </script>
+
+    <!-- Modal sélecteur de raison de carton -->
+    <div id="reason-selector-overlay" class="reason-selector-overlay">
+      <div class="reason-selector-header">
+        <h2 id="reason-selector-title">Raison du carton</h2>
+        <span id="reason-card-preview" class="reason-card-preview"></span>
+      </div>
+      <div class="reason-selector-body" id="reason-selector-body"></div>
+      <div class="reason-selector-footer">
+        <button class="reason-cancel-btn" onclick="refereeApp.cancelReasonSelector()">
+          ✕ Annuler — carton donné sans annonce
+        </button>
+      </div>
+    </div>
   </body>
 </html>
