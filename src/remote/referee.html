@@ -1789,6 +1789,15 @@
           this.saveScore();
           const label = fencer === 'A' ? 'Rouge' : 'Vert';
           this.showNotification(window.T('referee.arena_exit_notif', { label, points }));
+          if (this.cardAnnounceEnabled) {
+            const nameEl = document.getElementById(`fencer-${fencer.toLowerCase()}-name`);
+            const fencerName = nameEl ? nameEl.textContent.trim() : label;
+            this.socket.emit('arena_control', {
+              arenaId: this.arenaId,
+              action: 'exit_announcement',
+              announcement: { fencer, fencerName, points },
+            });
+          }
         }
 
         // Retirer des points (appui long)

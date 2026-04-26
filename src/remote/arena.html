@@ -210,6 +210,11 @@
         color: #f9fafb;
         border-bottom: 4px solid #374151;
       }
+      .card-announcement-banner.card-exit {
+        background: #ea580c;
+        color: #fff;
+        border-bottom: 4px solid #9a3412;
+      }
       @keyframes banner-slide-in {
         from { transform: translateY(-100%); opacity: 0; }
         to   { transform: translateY(0);    opacity: 1; }
@@ -1219,6 +1224,23 @@
           this.socket.on(`arena:${this.arenaId}:card_announcement`, ann => {
             this.showCardAnnouncement(ann);
           });
+
+          this.socket.on(`arena:${this.arenaId}:exit_announcement`, ann => {
+            this.showExitAnnouncement(ann);
+          });
+        }
+
+        showExitAnnouncement(ann) {
+          const banner = document.getElementById('card-announcement-banner');
+          if (!banner) return;
+          const line1 = `🚪 Sortie d'arène — ${ann.fencerName}`;
+          const line2 = `+${ann.points} pts pour l'adversaire`;
+          banner.innerHTML = `<div>${line1}</div><div style="font-size:0.65em;font-weight:600;margin-top:0.25em;opacity:0.9;">${line2}</div>`;
+          banner.className = 'card-announcement-banner visible card-exit';
+          if (this._cardAnnouncementTimer) clearTimeout(this._cardAnnouncementTimer);
+          this._cardAnnouncementTimer = setTimeout(() => {
+            banner.className = 'card-announcement-banner';
+          }, 5000);
         }
 
         showCardAnnouncement(ann) {
