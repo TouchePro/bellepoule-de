@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { CardReason, Fencer } from '../../shared/types';
+import { CardReason, Card, Fencer } from '../../shared/types';
 import { CardType } from '../../features/penalties/types/penalty.types';
 import {
   determineCardType,
