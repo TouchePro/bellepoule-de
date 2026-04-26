@@ -1648,10 +1648,16 @@
           document.getElementById('reason-selector-title').textContent =
             `Raison du carton — ${fencerName}`;
 
-          // Construire la liste des raisons
+          // Construire la liste des raisons filtrée selon le carton cliqué
           const body = document.getElementById('reason-selector-body');
           body.innerHTML = '';
-          FAULT_REASONS.forEach(({ group, label, faults }) => {
+          const filteredReasons = FAULT_REASONS.filter(({ group }) => {
+            if (originalCardType === 'white')  return group === 1;
+            if (originalCardType === 'yellow') return group === 2;
+            if (originalCardType === 'red')    return group === 3;
+            return true;
+          });
+          filteredReasons.forEach(({ group, label, faults }) => {
             const preview = this.determineCardFromGroup(group, fencer);
             const previewLabel = preview === 'white' ? 'Blanc' : preview === 'yellow' ? 'Jaune' : 'Rouge';
             const titleEl = document.createElement('div');
