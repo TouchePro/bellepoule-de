@@ -1673,6 +1673,14 @@ export class RemoteScoreServer {
           );
         }
         break;
+      case 'exit_announcement':
+        if (data.announcement && this.sessionCardAnnounce) {
+          this.io.to(`arena:${data.arenaId}`).emit(
+            `arena:${data.arenaId}:exit_announcement`,
+            data.announcement
+          );
+        }
+        break;
       case 'update_timer':
       case 'pause_timer':
       case 'reset_timer':
