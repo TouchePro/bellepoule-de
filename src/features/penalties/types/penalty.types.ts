@@ -7,6 +7,7 @@
 import { Fencer, Match } from '../../../shared/types';
 
 export enum CardType {
+  WHITE = 'WHITE',
   YELLOW = 'YELLOW',
   RED = 'RED',
   BLACK = 'BLACK',
@@ -41,6 +42,7 @@ export interface Penalty {
 export interface PenaltyHistory {
   fencer: Fencer;
   penalties: Penalty[];
+  whiteCards: number;
   yellowCards: number;
   redCards: number;
   blackCards: number;
@@ -71,6 +73,7 @@ export interface CreatePenaltyDTO {
 }
 
 export interface PenaltyConfig {
+  whiteCardTouches: number; // Touches to deduct for white (warning, 0)
   yellowCardTouches: number; // Touches to deduct for yellow
   redCardTouches: number; // Touches to deduct for red
   blackCardTouches: number; // Touches to deduct for black (usually match loss)
@@ -79,7 +82,8 @@ export interface PenaltyConfig {
 }
 
 export const DEFAULT_PENALTY_CONFIG: PenaltyConfig = {
-  yellowCardTouches: 0, // Yellow is warning only
+  whiteCardTouches: 0, // White is warning only
+  yellowCardTouches: 1, // Yellow = +1 touch for opponent
   redCardTouches: 1, // Red = -1 touch
   blackCardTouches: 999, // Black = match lost
   maxYellowBeforeRed: 2, // 2nd yellow = red

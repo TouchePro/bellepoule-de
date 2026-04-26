@@ -5,10 +5,11 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { CardReason, CardGroup, Card, Fencer } from '../../shared/types';
+import { CardReason, Fencer } from '../../shared/types';
 import { CardType } from '../../features/penalties/types/penalty.types';
 import {
   determineCardType,
+  createCard,
   getReasonsByGroup,
   CARD_REASON_LABELS,
   CARD_GROUP_LABELS,
@@ -44,17 +45,7 @@ export const CardModal: React.FC<CardModalProps> = ({
 
   const handleConfirm = () => {
     if (selectedReason && preview) {
-      const card: Card = {
-        id: crypto.randomUUID(),
-        matchId: '',
-        fencerId: fencer.id,
-        type: preview.type,
-        reason: selectedReason,
-        group: CardGroup.GROUP_1,
-        timestamp: new Date(),
-        pointsAwarded: preview.points,
-        resultingExclusion: preview.shouldExclude,
-      };
+      const card = createCard('', fencer.id, selectedReason, previousCards);
       onConfirm(selectedReason, card);
       setSelectedReason(null);
       onClose();
@@ -64,6 +55,8 @@ export const CardModal: React.FC<CardModalProps> = ({
   const getCardBgColor = (cardType: CardType | undefined) => {
     if (!cardType) return 'bg-gray-100';
     switch (cardType) {
+      case CardType.WHITE:
+        return 'bg-white border-gray-400';
       case CardType.YELLOW:
         return 'bg-yellow-100 border-yellow-400';
       case CardType.RED:
@@ -78,6 +71,8 @@ export const CardModal: React.FC<CardModalProps> = ({
   const getButtonColor = (cardType: CardType | undefined) => {
     if (!cardType) return 'bg-gray-300';
     switch (cardType) {
+      case CardType.WHITE:
+        return 'bg-gray-400 hover:bg-gray-500';
       case CardType.YELLOW:
         return 'bg-yellow-500 hover:bg-yellow-600';
       case CardType.RED:
@@ -104,14 +99,22 @@ export const CardModal: React.FC<CardModalProps> = ({
                 <span
                   key={card.id}
                   className={`px-2 py-1 rounded text-xs font-bold ${
-                    card.type === CardType.YELLOW
-                      ? 'bg-yellow-400 text-black'
-                      : card.type === CardType.RED
-                        ? 'bg-red-500 text-white'
-                        : 'bg-black text-white'
+                    card.type === CardType.WHITE
+                      ? 'bg-white border border-gray-400 text-black'
+                      : card.type === CardType.YELLOW
+                        ? 'bg-yellow-400 text-black'
+                        : card.type === CardType.RED
+                          ? 'bg-red-500 text-white'
+                          : 'bg-black text-white'
                   }`}
                 >
-                  {card.type === CardType.YELLOW ? 'J' : card.type === CardType.RED ? 'R' : 'N'}
+                  {card.type === CardType.WHITE
+                    ? 'B'
+                    : card.type === CardType.YELLOW
+                      ? 'J'
+                      : card.type === CardType.RED
+                        ? 'R'
+                        : 'N'}
                 </span>
               ))}
             </div>
@@ -146,11 +149,13 @@ export const CardModal: React.FC<CardModalProps> = ({
         {preview && (
           <div className={`mt-4 p-4 rounded-lg border-2 ${getCardBgColor(preview.type)}`}>
             <p className="font-bold text-lg">
-              {preview.type === CardType.YELLOW
-                ? '🟨 CARTON JAUNE'
-                : preview.type === CardType.RED
-                  ? '🟥 CARTON ROUGE'
-                  : '⬛ CARTON NOIR'}
+              {preview.type === CardType.WHITE
+                ? '⬜ CARTON BLANC'
+                : preview.type === CardType.YELLOW
+                  ? '🟨 CARTON JAUNE'
+                  : preview.type === CardType.RED
+                    ? '🟥 CARTON ROUGE'
+                    : '⬛ CARTON NOIR'}
             </p>
             {preview.points > 0 && (
               <p className="text-sm mt-1">
