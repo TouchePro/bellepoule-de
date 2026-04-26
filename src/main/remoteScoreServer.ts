@@ -41,6 +41,7 @@ export class RemoteScoreServer {
   private poolFencersCache: Map<string, any[]> = new Map(); // Tireurs par poolId (depuis le renderer)
   private sessionMatchScores: Map<string, { scoreA: any; scoreB: any; status: string }> = new Map(); // Scores en mémoire
   private sessionShowPhotos: boolean = false; // Afficher les photos des combattants avant le combat
+  private sessionCardAnnounce: boolean = false; // Annoncer les cartons avec raison sur les affichages
   private sessionTheme: DisplayTheme = 'dark'; // Thème visuel de l'affichage distant (global)
   private arenaThemeOverrides: Map<string, { theme: DisplayTheme; customTheme?: CustomTheme }> = new Map();
   private orgNote: OrgNote | null = null; // Note d'organisation affichée sur le kiosk
@@ -2438,6 +2439,7 @@ export class RemoteScoreServer {
     const updateWithPhotos: ArenaUpdate = {
       ...update,
       showPhotos: this.sessionShowPhotos,
+      cardAnnounce: this.sessionCardAnnounce,
       theme: override?.theme ?? this.sessionTheme,
       customTheme: override?.customTheme,
     };
@@ -2570,7 +2572,8 @@ export class RemoteScoreServer {
     strips: number,
     matchesFromRenderer?: any[],
     showPhotos?: boolean,
-    kioskViews?: { poules: boolean; classement: boolean; direct: boolean; suivants: boolean }
+    kioskViews?: { poules: boolean; classement: boolean; direct: boolean; suivants: boolean },
+    cardAnnounce?: boolean
   ): Promise<RemoteSession> {
     if (this.session) {
       throw new Error('Session déjà active');
@@ -2583,6 +2586,9 @@ export class RemoteScoreServer {
 
     // Stocker le réglage d'affichage des photos
     this.sessionShowPhotos = showPhotos ?? false;
+
+    // Stocker le réglage d'annonce de carton
+    this.sessionCardAnnounce = cardAnnounce ?? false;
 
     // Stocker les vues kiosk activées
     this.sessionKioskViews = kioskViews ?? { poules: true, classement: true, direct: true, suivants: true };
@@ -2904,6 +2910,20 @@ export class RemoteScoreServer {
         status: arena.status,
         fencerA: arena.currentMatch?.fencerA,
         fencerB: arena.currentMatch?.fencerB,
+      });
+    }
+  }
+
+  public updateCardAnnounce(value: boolean): void {
+    if (!this.session) throw new Error('Aucune session active');
+    this.sessionCardAnnounce = value;
+    for (const [arenaId, arena] of this.arenas.entries()) {
+      this.broadcastArenaUpdate(arenaId, {
+        arenaId,
+        match: arena.currentMatch,
+        scoreA: arena.currentMatch?.scoreA,
+        scoreB: arena.currentMatch?.scoreB,
+        status: arena.status,
       });
     }
   }

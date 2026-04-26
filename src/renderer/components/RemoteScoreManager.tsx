@@ -63,6 +63,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const [arenaPasswords, setArenaPasswords] = useState<Record<string, string>>({});
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [showPhotos, setShowPhotos] = useState(false);
+  const [cardAnnounce, setCardAnnounce] = useState(false);
   const [displayTheme, setDisplayTheme] = useState<'dark' | 'light' | 'neon'>('dark');
   const [kioskViews, setKioskViews] = useState({ poules: true, classement: true, direct: true, suivants: true });
   const [orgNoteType, setOrgNoteType] = useState<'free' | 'target_time'>('free');
@@ -193,7 +194,8 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         count,
         allMatches,
         showPhotos,
-        kioskViews
+        kioskViews,
+        cardAnnounce
       );
       if (result.success && result.session) {
         setSession(result.session);
@@ -366,6 +368,14 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             />
             Afficher les photos des combattants avant le combat
           </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.5rem 0', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={cardAnnounce}
+              onChange={e => setCardAnnounce(e.target.checked)}
+            />
+            📣 Carton avancer (afficher bandeau + raison sur les écrans)
+          </label>
           <div style={{ margin: '0.5rem 0' }}>
             <div style={{ fontSize: '0.875rem', marginBottom: '0.25rem', color: 'inherit' }}>
               Vues kiosk :
@@ -452,6 +462,17 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             }}
           />
           Afficher les photos des combattants avant le combat
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.5rem 0', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={cardAnnounce}
+            onChange={async e => {
+              setCardAnnounce(e.target.checked);
+              await window.electronAPI.remote.updateCardAnnounce(e.target.checked);
+            }}
+          />
+          📣 Carton avancer (afficher bandeau + raison sur les écrans)
         </label>
         <div style={{ margin: '0.5rem 0' }}>
           <div style={{ fontSize: '0.875rem', marginBottom: '0.4rem', color: 'inherit' }}>

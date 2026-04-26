@@ -118,6 +118,7 @@ export interface ArenaSettings {
   breakDuration: number; // between matches
   autoAdvance: boolean; // automatically load next match
   showPhotos?: boolean; // afficher les photos avant le combat
+  cardAnnounce?: boolean; // annoncer les cartons avec raison sur les affichages
   theme?: DisplayTheme; // thème visuel de l'affichage distant
   customTheme?: CustomTheme; // thème personnalisé (si theme === 'custom')
 }
@@ -150,6 +151,7 @@ export interface ArenaUpdate {
   cardsB?: string[];
   suddenDeath?: boolean;
   showPhotos?: boolean; // afficher les photos avant le combat
+  cardAnnounce?: boolean; // annoncer les cartons avec raison sur les affichages
   theme?: DisplayTheme; // thème visuel de l'affichage distant
   customTheme?: CustomTheme; // thème personnalisé (si theme === 'custom')
   nextMatch?: ArenaMatch | null; // prochain combat (affiché quand status=finished)
