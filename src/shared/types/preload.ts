@@ -331,7 +331,8 @@ export interface RemoteServerAPI {
     strips: number,
     matches?: any[],
     showPhotos?: boolean,
-    kioskViews?: Record<string, boolean>
+    kioskViews?: Record<string, boolean>,
+    cardAnnounce?: boolean
   ) => Promise<{ success: boolean; session?: any; error?: string }>;
   stopSession: () => Promise<{ success: boolean; error?: string }>;
   getSession: () => Promise<{ success: boolean; session?: any; error?: string }>;

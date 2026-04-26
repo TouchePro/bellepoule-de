@@ -413,7 +413,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       strips: number,
       matches?: any[],
       showPhotos?: boolean,
-      kioskViews?: { poules: boolean; classement: boolean; direct: boolean; suivants: boolean }
+      kioskViews?: { poules: boolean; classement: boolean; direct: boolean; suivants: boolean },
+      cardAnnounce?: boolean
     ) =>
       ipcRenderer.invoke(
         'remote:startSession',
@@ -421,7 +422,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
         strips,
         matches,
         showPhotos,
-        kioskViews
+        kioskViews,
+        cardAnnounce
       ),
     stopSession: () => ipcRenderer.invoke('remote:stopSession'),
     getSession: () => ipcRenderer.invoke('remote:getSession'),
