@@ -1384,7 +1384,8 @@ ipcMain.handle(
     strips: number,
     matches?: any[],
     showPhotos?: boolean,
-    kioskViews?: { poules: boolean; classement: boolean; direct: boolean; suivants: boolean }
+    kioskViews?: { poules: boolean; classement: boolean; direct: boolean; suivants: boolean },
+    cardAnnounce?: boolean
   ) => {
     try {
       if (!remoteScoreServer) {
@@ -1396,7 +1397,8 @@ ipcMain.handle(
         strips,
         matches,
         showPhotos,
-        kioskViews
+        kioskViews,
+        cardAnnounce
       );
       return { success: true, session };
     } catch (error) {
