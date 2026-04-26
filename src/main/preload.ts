@@ -428,6 +428,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getArenas: () => ipcRenderer.invoke('remote:getArenas'),
     updateStripCount: (count: number) => ipcRenderer.invoke('remote:updateStripCount', count),
     updateShowPhotos: (value: boolean) => ipcRenderer.invoke('remote:updateShowPhotos', value),
+    updateCardAnnounce: (value: boolean) => ipcRenderer.invoke('remote:updateCardAnnounce', value),
     updateTheme: (theme: string) => ipcRenderer.invoke('remote:updateTheme', theme),
     updateKioskViews: (views: { poules: boolean; classement: boolean; direct: boolean; suivants: boolean }) =>
       ipcRenderer.invoke('remote:updateKioskViews', views),

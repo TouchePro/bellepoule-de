@@ -1508,6 +1508,19 @@ ipcMain.handle('remote:updateShowPhotos', async (_, value: boolean) => {
   }
 });
 
+ipcMain.handle('remote:updateCardAnnounce', async (_, value: boolean) => {
+  try {
+    if (!remoteScoreServer) {
+      return { success: false, error: 'Le serveur distant n est pas démarré' };
+    }
+    remoteScoreServer.updateCardAnnounce(value);
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating cardAnnounce:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
 ipcMain.handle('remote:updateTheme', async (_, theme: string) => {
   try {
     if (!remoteScoreServer) {

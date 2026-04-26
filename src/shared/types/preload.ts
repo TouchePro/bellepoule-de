@@ -338,6 +338,7 @@ export interface RemoteServerAPI {
   getArenas: () => Promise<{ success: boolean; arenas?: any[]; error?: string }>;
   updateStripCount: (count: number) => Promise<{ success: boolean; session?: any; error?: string }>;
   updateShowPhotos: (value: boolean) => Promise<{ success: boolean; error?: string }>;
+  updateCardAnnounce: (value: boolean) => Promise<{ success: boolean; error?: string }>;
   updateMatchArena: (
     matchId: string,
     fromArena: number | null,
