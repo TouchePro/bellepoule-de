@@ -31,6 +31,40 @@
         flex-direction: column;
       }
 
+      /* ── Bandeau annonce carton ── */
+      .card-announcement-banner {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 300;
+        padding: 1rem 2rem;
+        text-align: center;
+        font-size: clamp(1.4rem, 3.5vw, 2.4rem);
+        font-weight: 900;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        animation: banner-slide-in 0.35s ease-out;
+        display: none;
+      }
+      .card-announcement-banner.visible { display: block; }
+      .card-announcement-banner.card-white {
+        background: #e5e7eb; color: #111827; border-bottom: 4px solid #9ca3af;
+      }
+      .card-announcement-banner.card-yellow {
+        background: #fbbf24; color: #1c1917; border-bottom: 4px solid #d97706;
+      }
+      .card-announcement-banner.card-red {
+        background: #dc2626; color: #fff; border-bottom: 4px solid #991b1b;
+      }
+      .card-announcement-banner.card-black {
+        background: #111827; color: #f9fafb; border-bottom: 4px solid #374151;
+      }
+      @keyframes banner-slide-in {
+        from { transform: translateY(-100%); opacity: 0; }
+        to   { transform: translateY(0);    opacity: 1; }
+      }
+
       .header {
         background: rgba(0, 0, 0, 0.4);
         padding: 0.4rem 1rem;
@@ -558,6 +592,8 @@
     </style>
   </head>
   <body>
+    <div id="card-announcement-banner" class="card-announcement-banner"></div>
+
     <div class="header">
       <div class="arena-title">
         <span>⚔️</span>
@@ -729,6 +765,33 @@
           this.socket.on(`arena:${this.arenaId}:update`, data => {
             this.handleArenaUpdate(data);
           });
+
+          this.socket.on(`arena:${this.arenaId}:card_announcement`, ann => {
+            this.showCardAnnouncement(ann);
+          });
+        }
+
+        showCardAnnouncement(ann) {
+          const banner = document.getElementById('card-announcement-banner');
+          if (!banner) return;
+
+          let msg;
+          if (ann.isRevalorisation) {
+            const fromLabel = ann.fromCard === 'white' ? 'blanc' : ann.fromCard === 'yellow' ? 'jaune' : ann.fromCard;
+            const toLabel = ann.toCard === 'yellow' ? 'JAUNE' : ann.toCard === 'red' ? 'ROUGE' : ann.toCard.toUpperCase();
+            msg = `⚠️ Revalorisation — 2ème ${fromLabel} → ${toLabel} · ${ann.fencerName}`;
+          } else {
+            const typeLabel = ann.cardType === 'white' ? 'BLANC' : ann.cardType === 'yellow' ? 'JAUNE' : ann.cardType === 'red' ? 'ROUGE' : 'NOIR';
+            msg = `Carton ${typeLabel} · ${ann.fencerName}`;
+          }
+
+          banner.textContent = msg;
+          banner.className = `card-announcement-banner visible card-${ann.cardType}`;
+
+          if (this._cardAnnouncementTimer) clearTimeout(this._cardAnnouncementTimer);
+          this._cardAnnouncementTimer = setTimeout(() => {
+            banner.className = 'card-announcement-banner';
+          }, 5000);
         }
 
         updateConnectionStatus(connected) {

@@ -301,6 +301,39 @@
         color: #ef4444;
       }
 
+      /* Toggle annonce carton */
+      .card-announce-bar {
+        display: flex;
+        justify-content: center;
+        margin: 0.4rem 0 0.2rem;
+      }
+      .card-announce-toggle {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 2rem;
+        border: 2px solid #4b5563;
+        background: rgba(255,255,255,0.05);
+        color: #d1d5db;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        user-select: none;
+        transition: all 0.2s;
+      }
+      .card-announce-toggle:has(input:checked) {
+        border-color: #f59e0b;
+        background: rgba(245,158,11,0.15);
+        color: #fbbf24;
+      }
+      .card-announce-toggle input {
+        accent-color: #f59e0b;
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+      }
+
       /* Chronomètre */
       .timer-section {
         background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
@@ -807,6 +840,14 @@
               </button>
             </div>
           </div>
+        </div>
+
+        <!-- Toggle annonce carton -->
+        <div class="card-announce-bar">
+          <label class="card-announce-toggle">
+            <input type="checkbox" id="carton-avancer-toggle">
+            📣 Carton avancer
+          </label>
         </div>
 
         <!-- Chronomètre -->
@@ -1452,11 +1493,17 @@
           const cards = fencer === 'A' ? this.cardsA : this.cardsB;
           const otherFencer = fencer === 'A' ? 'B' : 'A';
 
+          // Détecter la revalorisation avant conversion
+          let isRevalorisation = false;
+          let fromCard = null;
+
           // Logique des cartons
           if (cardType === 'white') {
             const whiteCount = cards.filter(c => c === 'white').length;
             if (whiteCount >= 1) {
               // Deuxième blanc = jaune automatique
+              isRevalorisation = true;
+              fromCard = 'white';
               cardType = 'yellow';
               this.showNotification('⚠️ 2ème blanc = Jaune automatique');
             }
@@ -1487,6 +1534,25 @@
           this.updateCardsDisplay();
           this.broadcastUpdate();
           this.saveScore();
+
+          // Annonce carton si case cochée
+          const toggle = document.getElementById('carton-avancer-toggle');
+          if (toggle && toggle.checked) {
+            const nameEl = document.getElementById(`fencer-${fencer.toLowerCase()}-name`);
+            const fencerName = nameEl ? nameEl.textContent.trim() : `Tireur ${fencer}`;
+            this.socket.emit('arena_control', {
+              arenaId: this.arenaId,
+              action: 'card_announcement',
+              announcement: {
+                fencer,
+                fencerName,
+                cardType,
+                isRevalorisation,
+                fromCard: isRevalorisation ? fromCard : null,
+                toCard: isRevalorisation ? cardType : null,
+              },
+            });
+          }
         }
 
         // ── Historique / Undo ─────────────────────────────────────────────────

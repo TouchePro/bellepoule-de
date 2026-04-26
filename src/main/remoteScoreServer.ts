@@ -1546,6 +1546,14 @@ export class RemoteScoreServer {
       cardsA?: string[];
       cardsB?: string[];
       suddenDeath?: boolean;
+      announcement?: {
+        fencer: 'A' | 'B';
+        fencerName: string;
+        cardType: string;
+        isRevalorisation: boolean;
+        fromCard: string | null;
+        toCard: string | null;
+      };
     }
   ): void {
     const arena = this.getArena(data.arenaId);
@@ -1654,6 +1662,14 @@ export class RemoteScoreServer {
             suddenDeath: false,
             status: arena.status,
           });
+        }
+        break;
+      case 'card_announcement':
+        if (data.announcement) {
+          this.io.to(`arena:${data.arenaId}`).emit(
+            `arena:${data.arenaId}:card_announcement`,
+            data.announcement
+          );
         }
         break;
       case 'update_timer':
