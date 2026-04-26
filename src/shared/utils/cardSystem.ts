@@ -49,7 +49,7 @@ export const CARD_REASON_LABELS: Record<CardReason, string> = {
 };
 
 export const CARD_GROUP_LABELS: Record<CardGroup, string> = {
-  [CardGroup.GROUP_1]: 'Groupe 1 (Jaune → Rouge)',
+  [CardGroup.GROUP_1]: 'Groupe 1 (Blanc → Jaune → Rouge → Exclusion)',
   [CardGroup.GROUP_2]: 'Groupe 2 (Rouge direct)',
   [CardGroup.GROUP_3]: 'Groupe 3 (Rouge → Exclusion)',
   [CardGroup.GROUP_4]: 'Groupe 4 (Exclusion immédiate)',
@@ -68,8 +68,9 @@ export function determineCardType(reason: CardReason, previousCards: Card[]): Ca
 
   switch (group) {
     case CardGroup.GROUP_1:
-      if (count === 0) return { type: CardType.YELLOW, shouldExclude: false, points: 0 };
-      if (count <= 2) return { type: CardType.RED, shouldExclude: false, points: 1 };
+      if (count === 0) return { type: CardType.WHITE,  shouldExclude: false, points: 0 };
+      if (count === 1) return { type: CardType.YELLOW, shouldExclude: false, points: 1 };
+      if (count === 2) return { type: CardType.RED,    shouldExclude: false, points: 1 };
       return { type: CardType.BLACK, shouldExclude: true, points: 0 };
 
     case CardGroup.GROUP_2:
@@ -84,7 +85,7 @@ export function determineCardType(reason: CardReason, previousCards: Card[]): Ca
       return { type: CardType.BLACK, shouldExclude: true, points: 0 };
 
     default:
-      return { type: CardType.YELLOW, shouldExclude: false, points: 0 };
+      return { type: CardType.WHITE, shouldExclude: false, points: 0 };
   }
 }
 
