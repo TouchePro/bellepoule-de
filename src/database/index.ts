@@ -871,7 +871,7 @@ export class DatabaseManager {
 
     try {
       const poolsStmt = this.db.prepare(
-        'SELECT id FROM pools WHERE phase_id IN (SELECT id FROM phases WHERE competition_id = ?)'
+        'SELECT id FROM pools WHERE phase_id IN (SELECT id FROM phases WHERE competition_id = ?) ORDER BY number'
       );
       poolsStmt.bind([competitionId]);
 
@@ -903,11 +903,11 @@ export class DatabaseManager {
       }
     }
 
-    // Then get pending matches from those pools
+    // Then get pending matches from those pools, ordered by pool number then match number
     if (poolIds.length > 0) {
       const placeholders = poolIds.map(() => '?').join(',');
       const matchesStmt = this.db.prepare(
-        `SELECT id FROM matches WHERE pool_id IN (${placeholders}) AND status IN ('not_started', 'in_progress') ORDER BY pool_id, number`
+        `SELECT m.id FROM matches m JOIN pools p ON m.pool_id = p.id WHERE m.pool_id IN (${placeholders}) AND m.status IN ('not_started', 'in_progress') ORDER BY p.number, m.number`
       );
       matchesStmt.bind(poolIds);
 
@@ -933,6 +933,7 @@ export class DatabaseManager {
         INNER JOIN pool_fencers pf ON p.id = pf.pool_id
         INNER JOIN fencers f ON pf.fencer_id = f.id
         WHERE f.competition_id = ?
+        ORDER BY p.number
       `);
       poolsStmt.bind([competitionId]);
 
@@ -945,11 +946,11 @@ export class DatabaseManager {
       return results;
     }
 
-    // Get pending matches from those pools
+    // Get pending matches from those pools, ordered by pool number then match number
     if (poolIds.length > 0) {
       const placeholders = poolIds.map(() => '?').join(',');
       const matchesStmt = this.db.prepare(
-        `SELECT id FROM matches WHERE pool_id IN (${placeholders}) AND status IN ('not_started', 'in_progress') ORDER BY pool_id, number`
+        `SELECT m.id FROM matches m JOIN pools p ON m.pool_id = p.id WHERE m.pool_id IN (${placeholders}) AND m.status IN ('not_started', 'in_progress') ORDER BY p.number, m.number`
       );
       matchesStmt.bind(poolIds);
 
@@ -971,11 +972,12 @@ export class DatabaseManager {
     try {
       const matchesStmt = this.db.prepare(`
         SELECT DISTINCT m.id FROM matches m
+        LEFT JOIN pools p ON m.pool_id = p.id
         INNER JOIN fencers fA ON m.fencer_a_id = fA.id
         INNER JOIN fencers fB ON m.fencer_b_id = fB.id
         WHERE (fA.competition_id = ? OR fB.competition_id = ?)
         AND m.status IN ('not_started', 'in_progress')
-        ORDER BY m.pool_id, m.number
+        ORDER BY p.number, m.number
       `);
       matchesStmt.bind([competitionId, competitionId]);
 
