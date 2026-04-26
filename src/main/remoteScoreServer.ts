@@ -1481,6 +1481,7 @@ export class RemoteScoreServer {
             scoreB: arena.currentMatch?.scoreB,
             status: arena.status,
             showPhotos: this.sessionShowPhotos,
+            cardAnnounce: this.sessionCardAnnounce,
             theme: override?.theme ?? this.sessionTheme,
             customTheme: override?.customTheme,
             fencerA: arena.currentMatch?.fencerA,
