@@ -89,7 +89,8 @@ const MENU_LABELS: Record<MenuLang, Record<string, string>> = {
     remoteAlreadyStarted: 'Le serveur de saisie distante est déjà démarré',
     remoteStartedTitle: 'Saisie distante démarrée',
     remoteStartedMsg: 'Les arbitres peuvent maintenant se connecter',
-    remoteDetailTemplate: 'Arène 1: {url}/arene1/arbitre\nArène 2: {url}/arene2/arbitre\nArène 3: {url}/arene3/arbitre\nArène 4: {url}/arene4/arbitre\n\nAffichage kiosk (grand écran public): {url}/kiosk\nClassement en direct: {url}/\n\nPartagez ces URLs avec les arbitres munis de tablettes.\nAssurez-vous que le pare-feu Windows autorise les connexions sur le port {port}.',
+    remoteDetailTemplate:
+      'Arène 1: {url}/arene1/arbitre\nArène 2: {url}/arene2/arbitre\nArène 3: {url}/arene3/arbitre\nArène 4: {url}/arene4/arbitre\n\nAffichage kiosk (grand écran public): {url}/kiosk\nClassement en direct: {url}/\n\nPartagez ces URLs avec les arbitres munis de tablettes.\nAssurez-vous que le pare-feu Windows autorise les connexions sur le port {port}.',
     remoteNotStarted: "Le serveur de saisie distante n'est pas démarré",
     remoteStoppedTitle: 'Saisie distante arrêtée',
     remoteStoppedMsg: 'Le serveur de saisie distante a été arrêté',
@@ -171,7 +172,8 @@ const MENU_LABELS: Record<MenuLang, Record<string, string>> = {
     remoteAlreadyStarted: 'The remote scoring server is already started',
     remoteStartedTitle: 'Remote scoring started',
     remoteStartedMsg: 'Referees can now connect',
-    remoteDetailTemplate: 'Arena 1: {url}/arene1/arbitre\nArena 2: {url}/arene2/arbitre\nArena 3: {url}/arene3/arbitre\nArena 4: {url}/arene4/arbitre\n\nKiosk display (public screen): {url}/kiosk\nLive ranking: {url}/\n\nShare these URLs with referees using tablets.\nMake sure Windows firewall allows connections on port {port}.',
+    remoteDetailTemplate:
+      'Arena 1: {url}/arene1/arbitre\nArena 2: {url}/arene2/arbitre\nArena 3: {url}/arene3/arbitre\nArena 4: {url}/arene4/arbitre\n\nKiosk display (public screen): {url}/kiosk\nLive ranking: {url}/\n\nShare these URLs with referees using tablets.\nMake sure Windows firewall allows connections on port {port}.',
     remoteNotStarted: 'The remote scoring server is not started',
     remoteStoppedTitle: 'Remote scoring stopped',
     remoteStoppedMsg: 'The remote scoring server has been stopped',
@@ -253,7 +255,8 @@ const MENU_LABELS: Record<MenuLang, Record<string, string>> = {
     remoteAlreadyStarted: 'Der Fernpunkteingabe-Server ist bereits gestartet',
     remoteStartedTitle: 'Fernpunkteingabe gestartet',
     remoteStartedMsg: 'Schiedsrichter können sich jetzt verbinden',
-    remoteDetailTemplate: 'Arena 1: {url}/arene1/arbitre\nArena 2: {url}/arene2/arbitre\nArena 3: {url}/arene3/arbitre\nArena 4: {url}/arene4/arbitre\n\nKiosk-Anzeige (öffentlicher Bildschirm): {url}/kiosk\nLive-Rangliste: {url}/\n\nTeilen Sie diese URLs mit Schiedsrichtern mit Tablets.\nStellen Sie sicher, dass die Windows-Firewall Verbindungen auf Port {port} zulässt.',
+    remoteDetailTemplate:
+      'Arena 1: {url}/arene1/arbitre\nArena 2: {url}/arene2/arbitre\nArena 3: {url}/arene3/arbitre\nArena 4: {url}/arene4/arbitre\n\nKiosk-Anzeige (öffentlicher Bildschirm): {url}/kiosk\nLive-Rangliste: {url}/\n\nTeilen Sie diese URLs mit Schiedsrichtern mit Tablets.\nStellen Sie sicher, dass die Windows-Firewall Verbindungen auf Port {port} zulässt.',
     remoteNotStarted: 'Der Fernpunkteingabe-Server ist nicht gestartet',
     remoteStoppedTitle: 'Fernpunkteingabe gestoppt',
     remoteStoppedMsg: 'Der Fernpunkteingabe-Server wurde gestoppt',
@@ -279,7 +282,8 @@ const MENU_LABELS: Record<MenuLang, Record<string, string>> = {
     importErrTitle: 'Importfehler',
     aboutTitle: 'Über BellePoule Modern',
     aboutSoftware: 'Fechtwettkampf-Verwaltungssoftware.',
-    aboutRewrite: 'Moderne Neuentwicklung der originalen BellePoule-Software erstellt von Yann Deboeuf.',
+    aboutRewrite:
+      'Moderne Neuentwicklung der originalen BellePoule-Software erstellt von Yann Deboeuf.',
     aboutBugHint: 'Zum Melden eines Fehlers bitte angeben:',
   },
   'zh-HK': {
@@ -335,7 +339,8 @@ const MENU_LABELS: Record<MenuLang, Record<string, string>> = {
     remoteAlreadyStarted: '遠程計分伺服器已啟動',
     remoteStartedTitle: '遠程計分已啟動',
     remoteStartedMsg: '裁判現在可以連線',
-    remoteDetailTemplate: '賽場 1: {url}/arene1/arbitre\n賽場 2: {url}/arene2/arbitre\n賽場 3: {url}/arene3/arbitre\n賽場 4: {url}/arene4/arbitre\n\nKiosk 顯示（公開大螢幕）: {url}/kiosk\n即時排名: {url}/\n\n請將這些網址分享給使用平板電腦的裁判。\n請確保 Windows 防火牆允許連接埠 {port} 上的連線。',
+    remoteDetailTemplate:
+      '賽場 1: {url}/arene1/arbitre\n賽場 2: {url}/arene2/arbitre\n賽場 3: {url}/arene3/arbitre\n賽場 4: {url}/arene4/arbitre\n\nKiosk 顯示（公開大螢幕）: {url}/kiosk\n即時排名: {url}/\n\n請將這些網址分享給使用平板電腦的裁判。\n請確保 Windows 防火牆允許連接埠 {port} 上的連線。',
     remoteNotStarted: '遠程計分伺服器尚未啟動',
     remoteStoppedTitle: '遠程計分已停止',
     remoteStoppedMsg: '遠程計分伺服器已停止',
@@ -371,7 +376,9 @@ const MENU_LABELS: Record<MenuLang, Record<string, string>> = {
 // ============================================================================
 
 function getL(): Record<string, string> {
-  const lang = (MENU_LABELS[currentMenuLanguage as MenuLang] ? currentMenuLanguage : 'fr') as MenuLang;
+  const lang = (
+    MENU_LABELS[currentMenuLanguage as MenuLang] ? currentMenuLanguage : 'fr'
+  ) as MenuLang;
   return MENU_LABELS[lang];
 }
 
@@ -442,9 +449,11 @@ function createWindow(): void {
 
   // Allow camera access for webcam photo capture
   const cameraPermissions = new Set(['media', 'camera', 'microphone']);
-  mainWindow.webContents.session.setPermissionRequestHandler((_webContents, permission, callback) => {
-    callback(cameraPermissions.has(permission));
-  });
+  mainWindow.webContents.session.setPermissionRequestHandler(
+    (_webContents, permission, callback) => {
+      callback(cameraPermissions.has(permission));
+    }
+  );
 
   mainWindow.webContents.session.setPermissionCheckHandler((_webContents, permission) => {
     return cameraPermissions.has(permission);
@@ -506,7 +515,9 @@ function createWindow(): void {
         const logo = fs.readFileSync(logoPath, 'utf-8');
         if (logo) mainWindow!.webContents.send('app:logoLoaded', logo);
       }
-    } catch { /* logo optionnel */ }
+    } catch {
+      /* logo optionnel */
+    }
   });
 }
 
@@ -862,7 +873,14 @@ async function handleImport(format: string): Promise<void> {
 function showAbout(): void {
   const L = getL();
   const versionInfo = getVersionInfo();
-  const locale = currentMenuLanguage === 'zh-HK' ? 'zh-HK' : currentMenuLanguage === 'de' ? 'de-DE' : currentMenuLanguage === 'en' ? 'en-GB' : 'fr-FR';
+  const locale =
+    currentMenuLanguage === 'zh-HK'
+      ? 'zh-HK'
+      : currentMenuLanguage === 'de'
+        ? 'de-DE'
+        : currentMenuLanguage === 'en'
+          ? 'en-GB'
+          : 'fr-FR';
   const buildDate = new Date(versionInfo.date).toLocaleDateString(locale, {
     day: 'numeric',
     month: 'long',
@@ -1202,7 +1220,7 @@ ipcMain.handle('dialog:saveFile', async (_, options) => {
 
 // Print handler
 ipcMain.handle('window:print', () => {
-  return new Promise<void>((resolve) => {
+  return new Promise<void>(resolve => {
     mainWindow?.webContents.print({ silent: false, printBackground: true }, () => {
       resolve();
     });
@@ -1211,7 +1229,7 @@ ipcMain.handle('window:print', () => {
 
 // Print via hidden BrowserWindow — opens system print dialog on clean HTML
 ipcMain.handle('file:printHtml', async (_, html: string) => {
-  return new Promise<{ success: boolean; error?: string }>((resolve) => {
+  return new Promise<{ success: boolean; error?: string }>(resolve => {
     const tmpFile = path.join(os.tmpdir(), `bp-print-${Date.now()}.html`);
     try {
       fs.writeFileSync(tmpFile, html, 'utf-8');
@@ -1230,15 +1248,23 @@ ipcMain.handle('file:printHtml', async (_, html: string) => {
     printWin.loadFile(tmpFile);
 
     printWin.webContents.once('did-finish-load', () => {
-      printWin.webContents.print({ silent: false, printBackground: true }, (success) => {
-        try { fs.unlinkSync(tmpFile); } catch { /* ignore */ }
+      printWin.webContents.print({ silent: false, printBackground: true }, success => {
+        try {
+          fs.unlinkSync(tmpFile);
+        } catch {
+          /* ignore */
+        }
         printWin.destroy();
         resolve({ success });
       });
     });
 
     printWin.webContents.once('did-fail-load', () => {
-      try { fs.unlinkSync(tmpFile); } catch { /* ignore */ }
+      try {
+        fs.unlinkSync(tmpFile);
+      } catch {
+        /* ignore */
+      }
       printWin.destroy();
       resolve({ success: false, error: 'Chargement HTML échoué' });
     });
@@ -1247,7 +1273,7 @@ ipcMain.handle('file:printHtml', async (_, html: string) => {
 
 // PDF generation via hidden BrowserWindow (propre, sans menus d'application)
 ipcMain.handle('file:printHtmlToPDF', async (_, html: string, outputPath: string) => {
-  return new Promise<{ success: boolean; path?: string; error?: string }>((resolve) => {
+  return new Promise<{ success: boolean; path?: string; error?: string }>(resolve => {
     const tmpFile = path.join(os.tmpdir(), `bp-pdf-${Date.now()}.html`);
     try {
       fs.writeFileSync(tmpFile, html, 'utf-8');
@@ -1286,19 +1312,31 @@ ipcMain.handle('file:printHtmlToPDF', async (_, html: string, outputPath: string
           } catch (writeErr) {
             resolve({ success: false, error: `Impossible d'écrire le PDF: ${writeErr}` });
           } finally {
-            try { fs.unlinkSync(tmpFile); } catch { /* ignore */ }
+            try {
+              fs.unlinkSync(tmpFile);
+            } catch {
+              /* ignore */
+            }
             pdfWin.destroy();
           }
         })
         .catch((err: Error) => {
-          try { fs.unlinkSync(tmpFile); } catch { /* ignore */ }
+          try {
+            fs.unlinkSync(tmpFile);
+          } catch {
+            /* ignore */
+          }
           pdfWin.destroy();
           resolve({ success: false, error: err.message });
         });
     });
 
     pdfWin.webContents.once('did-fail-load', () => {
-      try { fs.unlinkSync(tmpFile); } catch { /* ignore */ }
+      try {
+        fs.unlinkSync(tmpFile);
+      } catch {
+        /* ignore */
+      }
       pdfWin.destroy();
       resolve({ success: false, error: 'Chargement HTML échoué' });
     });
@@ -1467,6 +1505,20 @@ ipcMain.handle('remote:stopSession', async () => {
   }
 });
 
+ipcMain.handle('remote:launchCompetition', async () => {
+  try {
+    if (!remoteScoreServer) {
+      return { success: false, error: 'Le serveur distant n est pas démarré' };
+    }
+
+    remoteScoreServer.launchCompetition();
+    return { success: true };
+  } catch (error) {
+    console.error('Error launching competition:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
 ipcMain.handle('remote:getSession', async () => {
   if (!remoteScoreServer) {
     return { success: false, error: 'Le serveur distant n est pas démarré' };
@@ -1536,18 +1588,21 @@ ipcMain.handle('remote:updateTheme', async (_, theme: string) => {
   }
 });
 
-ipcMain.handle('remote:updateArenaTheme', async (_, arenaId: string, theme: string, customTheme?: any) => {
-  try {
-    if (!remoteScoreServer) {
-      return { success: false, error: 'Le serveur distant n est pas démarré' };
+ipcMain.handle(
+  'remote:updateArenaTheme',
+  async (_, arenaId: string, theme: string, customTheme?: any) => {
+    try {
+      if (!remoteScoreServer) {
+        return { success: false, error: 'Le serveur distant n est pas démarré' };
+      }
+      remoteScoreServer.updateArenaTheme(arenaId, theme as any, customTheme);
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating arena theme:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
     }
-    remoteScoreServer.updateArenaTheme(arenaId, theme as any, customTheme);
-    return { success: true };
-  } catch (error) {
-    console.error('Error updating arena theme:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
   }
-});
+);
 
 ipcMain.handle(
   'remote:updateKioskViews',
@@ -1612,7 +1667,11 @@ ipcMain.handle('remote:updateLogo', async (_, logo: string | null) => {
     if (logo) {
       fs.writeFileSync(logoPath, logo, 'utf-8');
     } else {
-      try { fs.unlinkSync(logoPath); } catch { /* déjà absent */ }
+      try {
+        fs.unlinkSync(logoPath);
+      } catch {
+        /* déjà absent */
+      }
     }
     if (remoteScoreServer) remoteScoreServer.setLogo(logo);
     return { success: true };
@@ -1623,7 +1682,11 @@ ipcMain.handle('remote:updateLogo', async (_, logo: string | null) => {
 
 ipcMain.handle('app:getLogo', async () => {
   const logoPath = path.join(app.getPath('userData'), 'logo.dat');
-  try { return fs.readFileSync(logoPath, 'utf-8'); } catch { return null; }
+  try {
+    return fs.readFileSync(logoPath, 'utf-8');
+  } catch {
+    return null;
+  }
 });
 
 // App info handlers

@@ -323,7 +323,9 @@ export interface RemoteServerInfo {
 }
 
 export interface RemoteServerAPI {
-  startServer: (port?: number) => Promise<{ success: boolean; serverInfo?: RemoteServerInfo; error?: string }>;
+  startServer: (
+    port?: number
+  ) => Promise<{ success: boolean; serverInfo?: RemoteServerInfo; error?: string }>;
   stopServer: () => Promise<{ success: boolean; error?: string }>;
   getServerInfo: () => Promise<{ success: boolean; serverInfo?: RemoteServerInfo; error?: string }>;
   startSession: (
@@ -335,6 +337,7 @@ export interface RemoteServerAPI {
     cardAnnounce?: boolean
   ) => Promise<{ success: boolean; session?: any; error?: string }>;
   stopSession: () => Promise<{ success: boolean; error?: string }>;
+  launchCompetition: () => Promise<{ success: boolean; error?: string }>;
   getSession: () => Promise<{ success: boolean; session?: any; error?: string }>;
   getArenas: () => Promise<{ success: boolean; arenas?: any[]; error?: string }>;
   updateStripCount: (count: number) => Promise<{ success: boolean; session?: any; error?: string }>;
@@ -358,7 +361,9 @@ export interface RemoteServerAPI {
   updateKioskViews: (
     views: Record<string, boolean>
   ) => Promise<{ success: boolean; error?: string }>;
-  setOrgNote: (note: import('../types/remote').OrgNote) => Promise<{ success: boolean; error?: string }>;
+  setOrgNote: (
+    note: import('../types/remote').OrgNote
+  ) => Promise<{ success: boolean; error?: string }>;
   clearOrgNote: () => Promise<{ success: boolean; error?: string }>;
   updateTheme: (
     theme: import('../types/remote').DisplayTheme
@@ -424,15 +429,46 @@ export interface DatabaseAPI {
   deletePhase: (id: string) => Promise<void>;
 
   // Referees
-  createReferee: (competitionId: string, data: { name: string; gender?: string; nationality?: string; club?: string; license?: string; category?: string }) => Promise<Referee>;
+  createReferee: (
+    competitionId: string,
+    data: {
+      name: string;
+      gender?: string;
+      nationality?: string;
+      club?: string;
+      license?: string;
+      category?: string;
+    }
+  ) => Promise<Referee>;
   getReferee: (id: string) => Promise<Referee | null>;
   getRefereesByCompetition: (competitionId: string) => Promise<Referee[]>;
   updateReferee: (id: string, updates: Record<string, string | undefined>) => Promise<void>;
   deleteReferee: (id: string) => Promise<void>;
 
   // Touch / Card read
-  getTouches: (matchId: string) => Promise<Array<{ id: string; fencerId: string; zone: string; points: number; timestamp: string; isValidInSuddenDeath: boolean; isReversed: boolean }>>;
-  getCards: (matchId: string) => Promise<Array<{ id: string; fencerId: string; cardType: string; reason: string; cardGroup: number; timestamp: string; pointsAwarded: number; resultingExclusion: boolean }>>;
+  getTouches: (matchId: string) => Promise<
+    Array<{
+      id: string;
+      fencerId: string;
+      zone: string;
+      points: number;
+      timestamp: string;
+      isValidInSuddenDeath: boolean;
+      isReversed: boolean;
+    }>
+  >;
+  getCards: (matchId: string) => Promise<
+    Array<{
+      id: string;
+      fencerId: string;
+      cardType: string;
+      reason: string;
+      cardGroup: number;
+      timestamp: string;
+      pointsAwarded: number;
+      resultingExclusion: boolean;
+    }>
+  >;
 
   // Session State
   saveSessionState: (competitionId: string, state: SessionState) => Promise<void>;
@@ -460,7 +496,10 @@ export interface FileAPI {
   import: (filepath: string) => Promise<FileOpenResult>;
   writeContent: (filepath: string, content: string) => Promise<void>;
   printHtml: (html: string) => Promise<{ success: boolean; error?: string }>;
-  printHtmlToPDF: (html: string, outputPath: string) => Promise<{ success: boolean; path?: string; error?: string }>;
+  printHtmlToPDF: (
+    html: string,
+    outputPath: string
+  ) => Promise<{ success: boolean; path?: string; error?: string }>;
   exportPhotos: (competitionId: string, filepath: string) => Promise<{ count: number }>;
   importPhotos: (
     competitionId: string,
@@ -509,10 +548,10 @@ export interface ElectronAPI extends MenuAPI, UtilityAPI {
   remote: RemoteServerAPI;
   onRemoteArenaUpdate: (callback: (data: any) => void) => void;
   onRemoteMatchFinished: (callback: (data: any) => void) => void;
-  onKioskNoteUpdate: (callback: (note: import('../types/remote').OrgNote | null) => void) => () => void;
+  onKioskNoteUpdate: (
+    callback: (note: import('../types/remote').OrgNote | null) => void
+  ) => () => void;
   notifyLanguageChanged: (lang: string) => void;
   getLogo: () => Promise<string | null>;
   onLogoLoaded: (callback: (logo: string | null) => void) => () => void;
 }
-
-
