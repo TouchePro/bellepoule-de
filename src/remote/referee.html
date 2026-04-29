@@ -10,7 +10,6 @@
     <script src="/i18n.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-
       * {
         margin: 0;
         padding: 0;
@@ -77,7 +76,6 @@
         padding: 1rem;
         max-width: 100%;
       }
-
 
       /* Panneau de match actif */
       .active-match {
@@ -308,7 +306,7 @@
         position: fixed;
         inset: 0;
         z-index: 1000;
-        background: rgba(0,0,0,0.85);
+        background: rgba(0, 0, 0, 0.85);
         flex-direction: column;
         overflow: hidden;
       }
@@ -334,9 +332,18 @@
         border-radius: 0.25rem;
         display: inline-block;
       }
-      .reason-card-preview.card-white  { background: #e5e7eb; color: #111827; }
-      .reason-card-preview.card-yellow { background: #fbbf24; color: #1c1917; }
-      .reason-card-preview.card-red    { background: #dc2626; color: #fff; }
+      .reason-card-preview.card-white {
+        background: #e5e7eb;
+        color: #111827;
+      }
+      .reason-card-preview.card-yellow {
+        background: #fbbf24;
+        color: #1c1917;
+      }
+      .reason-card-preview.card-red {
+        background: #dc2626;
+        color: #fff;
+      }
       .reason-selector-body {
         flex: 1;
         overflow-y: auto;
@@ -350,7 +357,9 @@
         letter-spacing: 0.08em;
         margin: 0.75rem 0 0.4rem;
       }
-      .reason-group-title:first-child { margin-top: 0; }
+      .reason-group-title:first-child {
+        margin-top: 0;
+      }
       .reason-btn {
         display: block;
         width: 100%;
@@ -363,10 +372,13 @@
         color: #e5e7eb;
         font-size: 0.88rem;
         cursor: pointer;
-        transition: background 0.15s, border-color 0.15s;
+        transition:
+          background 0.15s,
+          border-color 0.15s;
         touch-action: manipulation;
       }
-      .reason-btn:hover, .reason-btn:active {
+      .reason-btn:hover,
+      .reason-btn:active {
         background: #1e3a5f;
         border-color: #3b82f6;
         color: #fff;
@@ -389,7 +401,9 @@
         cursor: pointer;
         touch-action: manipulation;
       }
-      .reason-cancel-btn:hover { background: #374151; }
+      .reason-cancel-btn:hover {
+        background: #374151;
+      }
 
       /* Chronomètre */
       .timer-section {
@@ -780,10 +794,24 @@
       <div class="connection-status">
         <div id="status-dot" class="status-dot"></div>
         <span id="connection-text" data-i18n="remote.connecting">Connexion...</span>
-        <span id="offline-badge" style="display:none; background:#ef4444; padding:0.15rem 0.45rem; border-radius:1rem; font-size:0.7rem; margin-left:0.4rem;">
+        <span
+          id="offline-badge"
+          style="
+            display: none;
+            background: #ef4444;
+            padding: 0.15rem 0.45rem;
+            border-radius: 1rem;
+            font-size: 0.7rem;
+            margin-left: 0.4rem;
+          "
+        >
           📴 <span id="pending-count">0</span>
         </span>
-        <span id="sync-indicator" style="display:none; font-size:0.7rem; margin-left:0.4rem; opacity:0.85;" data-i18n="remote.syncing">
+        <span
+          id="sync-indicator"
+          style="display: none; font-size: 0.7rem; margin-left: 0.4rem; opacity: 0.85"
+          data-i18n="remote.syncing"
+        >
           ⟳ Sync...
         </span>
       </div>
@@ -800,44 +828,32 @@
             <div class="cards-display" id="fencer-a-cards"></div>
             <div class="score-display green-score" id="score-a">0</div>
             <div class="score-buttons">
-              <button
-                id="btn-plus-1-a"
-                class="score-btn btn-plus-1"
-              >
-                +1
-              </button>
-              <button
-                id="btn-plus-3-a"
-                class="score-btn btn-plus-3"
-              >
-                +3
-              </button>
-              <button
-                id="btn-plus-5-a"
-                class="score-btn btn-plus-5"
-              >
-                +5
-              </button>
+              <button id="btn-plus-1-a" class="score-btn btn-plus-1">+1</button>
+              <button id="btn-plus-3-a" class="score-btn btn-plus-3">+3</button>
+              <button id="btn-plus-5-a" class="score-btn btn-plus-5">+5</button>
             </div>
             <div class="card-buttons">
               <button
                 id="btn-card-white-a"
                 class="card-btn card-btn-white"
-                data-i18n-title="referee.card_white" title="Carton blanc"
+                data-i18n-title="referee.card_white"
+                title="Carton blanc"
               >
                 B
               </button>
               <button
                 id="btn-card-yellow-a"
                 class="card-btn card-btn-yellow"
-                data-i18n-title="referee.card_yellow" title="Carton jaune (+3 adv)"
+                data-i18n-title="referee.card_yellow"
+                title="Carton jaune (+3 adv)"
               >
                 J
               </button>
               <button
                 id="btn-card-red-a"
                 class="card-btn card-btn-red"
-                data-i18n-title="referee.card_red" title="Carton rouge (+5 adv)"
+                data-i18n-title="referee.card_red"
+                title="Carton rouge (+5 adv)"
               >
                 R
               </button>
@@ -854,44 +870,32 @@
             <div class="cards-display" id="fencer-b-cards"></div>
             <div class="score-display red-score" id="score-b">0</div>
             <div class="score-buttons">
-              <button
-                id="btn-plus-1-b"
-                class="score-btn btn-plus-1"
-              >
-                +1
-              </button>
-              <button
-                id="btn-plus-3-b"
-                class="score-btn btn-plus-3"
-              >
-                +3
-              </button>
-              <button
-                id="btn-plus-5-b"
-                class="score-btn btn-plus-5"
-              >
-                +5
-              </button>
+              <button id="btn-plus-1-b" class="score-btn btn-plus-1">+1</button>
+              <button id="btn-plus-3-b" class="score-btn btn-plus-3">+3</button>
+              <button id="btn-plus-5-b" class="score-btn btn-plus-5">+5</button>
             </div>
             <div class="card-buttons">
               <button
                 id="btn-card-white-b"
                 class="card-btn card-btn-white"
-                data-i18n-title="referee.card_white" title="Carton blanc"
+                data-i18n-title="referee.card_white"
+                title="Carton blanc"
               >
                 B
               </button>
               <button
                 id="btn-card-yellow-b"
                 class="card-btn card-btn-yellow"
-                data-i18n-title="referee.card_yellow" title="Carton jaune (+3 adv)"
+                data-i18n-title="referee.card_yellow"
+                title="Carton jaune (+3 adv)"
               >
                 J
               </button>
               <button
                 id="btn-card-red-b"
                 class="card-btn card-btn-red"
-                data-i18n-title="referee.card_red" title="Carton rouge (+5 adv)"
+                data-i18n-title="referee.card_red"
+                title="Carton rouge (+5 adv)"
               >
                 R
               </button>
@@ -902,8 +906,25 @@
         <!-- Chronomètre -->
         <div class="timer-section">
           <div class="timer-display" id="timer-display">03:00</div>
-          <div id="sudden-death-label" data-i18n="referee.sudden_death" style="display:none; color:#ef4444; font-weight:900; font-size:1.5rem; text-align:center; margin-top:0.5rem; letter-spacing:0.1em; animation: pulse-timer 0.8s infinite;">⚡ MORT SUBITE</div>
-          <div class="timer-hint" data-i18n="referee.timer_hint">Tapez pour démarrer/pause - Appui long pour reset</div>
+          <div
+            id="sudden-death-label"
+            data-i18n="referee.sudden_death"
+            style="
+              display: none;
+              color: #ef4444;
+              font-weight: 900;
+              font-size: 1.5rem;
+              text-align: center;
+              margin-top: 0.5rem;
+              letter-spacing: 0.1em;
+              animation: pulse-timer 0.8s infinite;
+            "
+          >
+            ⚡ MORT SUBITE
+          </div>
+          <div class="timer-hint" data-i18n="referee.timer_hint">
+            Tapez pour démarrer/pause - Appui long pour reset
+          </div>
         </div>
 
         <!-- Boutons de contrôle -->
@@ -960,7 +981,17 @@
           data-i18n-placeholder="referee.search_placeholder"
           placeholder="🔍 Rechercher un tireur..."
           oninput="refereeApp.filterMatches(this.value)"
-          style="width:100%; padding:0.75rem; border-radius:0.5rem; border:none; margin-bottom:1rem; font-size:1rem; background:rgba(255,255,255,0.15); color:white; outline:none;"
+          style="
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            border: none;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            outline: none;
+          "
         />
         <div id="next-matches-list">
           <div class="next-matches-empty" data-i18n="remote.loading">Chargement...</div>
@@ -1025,7 +1056,10 @@
                 db.createObjectStore(this.STORE_NAME, { keyPath: 'id' });
               }
             };
-            req.onsuccess = e => { this.db = e.target.result; resolve(); };
+            req.onsuccess = e => {
+              this.db = e.target.result;
+              resolve();
+            };
             req.onerror = () => reject(req.error);
           });
         }
@@ -1080,7 +1114,8 @@
         async sync(endpoint) {
           const actions = await this.getAllActions();
           if (actions.length === 0) return { synced: 0, failed: 0 };
-          let synced = 0, failed = 0;
+          let synced = 0,
+            failed = 0;
           for (const action of actions) {
             try {
               const resp = await fetch(endpoint, {
@@ -1101,23 +1136,25 @@
           return { synced, failed };
         }
 
-        isOnline() { return navigator.onLine; }
+        isOnline() {
+          return navigator.onLine;
+        }
       }
       // ────────────────────────────────────────────────────────────────────────
 
       const FAULT_REASONS = [
         {
           group: 1,
-          label: 'Groupe 1 — Blanc → Jaune → Rouge',
+          label: 'Groupe 1 — Blanc → Jaune → Jaune',
           faults: [
-            'Abandon de l\'aire de combat sans autorisation',
+            "Abandon de l'aire de combat sans autorisation",
             'Contre-attaque',
             'Corps à corps pour éviter une touche',
             'Couverture ou substitution de cible',
             'Touche lourde',
             'Interruption abusive du combat',
             'Matériel non conforme',
-            'Non-présentation sur l\'aire de combat',
+            "Non-présentation sur l'aire de combat",
             'Réclamation injustifiée',
             'Bousculade / jeu désordonné / enlèvement du masque avant « Cessez ! »',
             'Commencer avant le « Combattez ! »',
@@ -1129,12 +1166,12 @@
           label: 'Groupe 2 — Rouge direct',
           faults: [
             'Acte violent, vindicatif ou dangereux',
-            'Refus d\'obéissance',
-            'Demande d\'arrêt pour traumatisme non reconnu',
-            'Touche d\'estoc',
+            "Refus d'obéissance",
+            "Demande d'arrêt pour traumatisme non reconnu",
+            "Touche d'estoc",
             'Touche portée très brutalement',
             'Touche pendant / après une chute ou déplacement non maîtrisé',
-            'Sortie volontaire de l\'arène pour éviter une touche',
+            "Sortie volontaire de l'arène pour éviter une touche",
             'Utilisation du bras ou de la main non armée',
             'Absence de marque de contrôle sur le matériel',
           ],
@@ -1144,8 +1181,8 @@
           label: 'Groupe 3 — Rouge direct',
           faults: [
             'Combat non loyal',
-            'Combattant troublant l\'ordre sur l\'arène',
-            'Toute personne troublant l\'ordre hors de l\'arène',
+            "Combattant troublant l'ordre sur l'arène",
+            "Toute personne troublant l'ordre hors de l'arène",
             'Comportement antisportif',
           ],
         },
@@ -1200,11 +1237,14 @@
           // Détecter l'arme de la compétition pour la mort subite Laser Sabre
           fetch('/api/session')
             .then(r => (r.ok ? r.json() : null))
-            .then(s => { if (s) this.isLaserSabre = s.weapon === 'L'; })
+            .then(s => {
+              if (s) this.isLaserSabre = s.weapon === 'L';
+            })
             .catch(() => {});
           // Service Worker PWA
           if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js')
+            navigator.serviceWorker
+              .register('/sw.js')
               .then(() => console.log('[SW] Service Worker enregistré'))
               .catch(err => console.warn('[SW] Enregistrement échoué:', err));
           }
@@ -1252,7 +1292,9 @@
           const size = await this.offlineQueue.getQueueSize().catch(() => 0);
           if (size === 0) return;
           this.showSyncIndicator(true);
-          const result = await this.offlineQueue.sync('/api/sync').catch(() => ({ synced: 0, failed: size }));
+          const result = await this.offlineQueue
+            .sync('/api/sync')
+            .catch(() => ({ synced: 0, failed: size }));
           this.showSyncIndicator(false);
           this.updateOfflineBadge();
           if (result.synced > 0) {
@@ -1500,7 +1542,6 @@
           }
         }
 
-
         selectMatch(matchId) {
           const match = this.matches.find(m => m.id === matchId);
           if (!match || match.status === 'finished') return;
@@ -1634,7 +1675,7 @@
           if (group === 1) {
             if (count === 0) return 'white';
             if (count === 1) return 'yellow';
-            return 'red';
+            return 'yellow'; // Groupe 1: après blanc et jaune, toujours jaune
           }
           return 'red'; // Groupes 2 et 3 : rouge direct
         }
@@ -1652,14 +1693,15 @@
           const body = document.getElementById('reason-selector-body');
           body.innerHTML = '';
           const filteredReasons = FAULT_REASONS.filter(({ group }) => {
-            if (originalCardType === 'white')  return group === 1;
+            if (originalCardType === 'white') return group === 1;
             if (originalCardType === 'yellow') return group === 2;
-            if (originalCardType === 'red')    return group === 3;
+            if (originalCardType === 'red') return group === 3;
             return true;
           });
           filteredReasons.forEach(({ group, label, faults }) => {
             const preview = this.determineCardFromGroup(group, fencer);
-            const previewLabel = preview === 'white' ? 'Blanc' : preview === 'yellow' ? 'Jaune' : 'Rouge';
+            const previewLabel =
+              preview === 'white' ? 'Blanc' : preview === 'yellow' ? 'Jaune' : 'Rouge';
             const titleEl = document.createElement('div');
             titleEl.className = 'reason-group-title';
             titleEl.textContent = `${label} → ${previewLabel}`;
@@ -1684,7 +1726,7 @@
           const history = fencer === 'A' ? this.faultHistoryA : this.faultHistoryB;
           const prevCount = history[group] || 0;
 
-          const isRevalorisation = (group === 1 && prevCount === 1);
+          const isRevalorisation = group === 1 && prevCount === 1;
           history[group] = prevCount + 1;
 
           document.getElementById('reason-selector-overlay').classList.remove('open');
@@ -1757,7 +1799,9 @@
         triggerSuddenDeathChallenger() {
           this.isSuddenDeath = true;
           this.updateSuddenDeathUI();
-          this.showNotification('⚡ MORT SUBITE – Les deux tireurs ont 10 pts ! Zone C uniquement.');
+          this.showNotification(
+            '⚡ MORT SUBITE – Les deux tireurs ont 10 pts ! Zone C uniquement.'
+          );
         }
 
         // Désactiver +1/+3 en mort subite (seule Zone C autorisée en Laser Sabre)
@@ -2034,7 +2078,11 @@
             const resp = await fetch(`/api/matches/${this.currentMatch.id}/score`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ scoreA: this.scoreA, scoreB: this.scoreB, status: this.matchStatus }),
+              body: JSON.stringify({
+                scoreA: this.scoreA,
+                scoreB: this.scoreB,
+                status: this.matchStatus,
+              }),
             });
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
           } catch (error) {
@@ -2207,7 +2255,10 @@
             // Mettre à jour ou ajouter dans la liste locale
             const existingIndex = this.matches.findIndex(m => m.id === newMatch.id);
             if (existingIndex >= 0) {
-              this.matches[existingIndex] = { ...this.matches[existingIndex], status: 'not_started' };
+              this.matches[existingIndex] = {
+                ...this.matches[existingIndex],
+                status: 'not_started',
+              };
             } else {
               this.matches.push(newMatch);
             }
@@ -2262,15 +2313,22 @@
             return;
           }
           const statusBadge = status => {
-            if (status === 'in_progress') return '<span style="background:#f59e0b;color:#fff;font-size:0.7rem;padding:0.15rem 0.4rem;border-radius:0.75rem;margin-left:0.4rem;">⚔️ En cours</span>';
+            if (status === 'in_progress')
+              return '<span style="background:#f59e0b;color:#fff;font-size:0.7rem;padding:0.15rem 0.4rem;border-radius:0.75rem;margin-left:0.4rem;">⚔️ En cours</span>';
             return '<span style="background:#3b82f6;color:#fff;font-size:0.7rem;padding:0.15rem 0.4rem;border-radius:0.75rem;margin-left:0.4rem;">🕐 À jouer</span>';
           };
           container.innerHTML = matches
             .map(match => {
-              const poolNum = match.poolId ? match.poolId.replace(/\D/g,'') || '?' : '';
-              const poolLabel = match.poolId ? `<span style="opacity:0.5;font-size:0.72rem;">Poule ${escHtml(poolNum)}</span>` : '';
+              const poolNum = match.poolId ? match.poolId.replace(/\D/g, '') || '?' : '';
+              const poolLabel = match.poolId
+                ? `<span style="opacity:0.5;font-size:0.72rem;">Poule ${escHtml(poolNum)}</span>`
+                : '';
               const safeId = escHtml(match.id);
-              const clubLine = [match.fencerA?.club, match.fencerB?.club].filter(Boolean).map(escHtml).join(' · ') || '';
+              const clubLine =
+                [match.fencerA?.club, match.fencerB?.club]
+                  .filter(Boolean)
+                  .map(escHtml)
+                  .join(' · ') || '';
               return `
               <div class="next-match-card" onclick="refereeApp.selectMatchFromNextScreen('${safeId}')">
                 <div>
@@ -2298,9 +2356,14 @@
           }
           const filtered = this.allMatches.filter(m => {
             const names = [
-              m.fencerA?.lastName, m.fencerA?.firstName,
-              m.fencerB?.lastName, m.fencerB?.firstName,
-            ].filter(Boolean).join(' ').toLowerCase();
+              m.fencerA?.lastName,
+              m.fencerA?.firstName,
+              m.fencerB?.lastName,
+              m.fencerB?.firstName,
+            ]
+              .filter(Boolean)
+              .join(' ')
+              .toLowerCase();
             return names.includes(q);
           });
           this.renderNextMatchesList(filtered);
