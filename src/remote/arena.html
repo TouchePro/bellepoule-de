@@ -1208,6 +1208,23 @@
         }
 
         setupSocketListeners() {
+          // Récupérer l'état actuel de l'arène au chargement (pour l'affichage initial)
+          fetch(`/api/arenas/${this.arenaId}`)
+            .then(res => res.json())
+            .then(arena => {
+              if (arena && arena.currentMatch && arena.currentMatch.fencerA) {
+                this.handleArenaUpdate({
+                  currentMatch: arena.currentMatch,
+                  status: arena.status,
+                  scoreA: arena.scoreA,
+                  scoreB: arena.scoreB,
+                  fencerA: arena.fencerA,
+                  fencerB: arena.fencerB,
+                });
+              }
+            })
+            .catch(err => console.error('[Arena] Erreur récupération état initial:', err));
+
           this.socket.on('connect', () => {
             this.updateConnectionStatus(true);
             this.socket.emit('join_arena', { arenaId: this.arenaId, role: 'display' });
