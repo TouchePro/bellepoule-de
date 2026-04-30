@@ -1163,7 +1163,7 @@
         },
         {
           group: 2,
-          label: 'Groupe 2 — Rouge direct',
+          label: 'Groupe 2 — Jaune → Rouge → Rouge',
           faults: [
             'Acte violent, vindicatif ou dangereux',
             "Refus d'obéissance",
@@ -1401,7 +1401,7 @@
               btn.classList.add('long-press-active');
               longPressTimer = setTimeout(() => {
                 btn.classList.remove('long-press-active');
-                this.removeCard(config.fencer, config.cardType);
+                this.removeLastCard(config.fencer);
                 longPressTimer = null;
               }, LONG_PRESS_DURATION);
             });
@@ -1430,7 +1430,7 @@
               btn.classList.add('long-press-active');
               longPressTimer = setTimeout(() => {
                 btn.classList.remove('long-press-active');
-                this.removeCard(config.fencer, config.cardType);
+                this.removeLastCard(config.fencer);
                 longPressTimer = null;
               }, LONG_PRESS_DURATION);
             });
@@ -1677,7 +1677,11 @@
             if (count === 1) return 'yellow';
             return 'yellow'; // Groupe 1: après blanc et jaune, toujours jaune
           }
-          return 'red'; // Groupes 2 et 3 : rouge direct
+          if (group === 2) {
+            if (count === 0) return 'yellow'; // 1ère faute groupe 2 = jaune
+            return 'red'; // 2ème+ faute groupe 2 = rouge
+          }
+          return 'red'; // Groupe 3 : rouge direct
         }
 
         openReasonSelector(fencer, originalCardType) {
@@ -1770,6 +1774,8 @@
             scoreB: this.scoreB,
             cardsA: [...this.cardsA],
             cardsB: [...this.cardsB],
+            faultHistoryA: { ...this.faultHistoryA },
+            faultHistoryB: { ...this.faultHistoryB },
             isSuddenDeath: this.isSuddenDeath,
           };
           this.actionHistory.push(snapshot);
@@ -1784,6 +1790,8 @@
           this.scoreB = prev.scoreB;
           this.cardsA = prev.cardsA;
           this.cardsB = prev.cardsB;
+          this.faultHistoryA = prev.faultHistoryA;
+          this.faultHistoryB = prev.faultHistoryB;
           this.isSuddenDeath = prev.isSuddenDeath;
           this.updateScores();
           this.updateCardsDisplay();
@@ -1870,36 +1878,42 @@
           this.showNotification(`-${points} point${points > 1 ? 's' : ''}`);
         }
 
-        // Retirer un carton (appui long)
-        removeCard(fencer, cardType) {
+        // Retirer le dernier carton (appui long sur n'importe quel bouton carton)
+        removeLastCard(fencer) {
           if (!this.currentMatch) return;
           if (this.matchStatus === 'finished') return;
 
           const cards = fencer === 'A' ? this.cardsA : this.cardsB;
+          const history = fencer === 'A' ? this.faultHistoryA : this.faultHistoryB;
 
-          // Trouver l'index du dernier carton du type spécifié
-          const lastIndex = cards.lastIndexOf(cardType);
-
-          if (lastIndex === -1) {
-            this.showNotification(`Aucun carton ${cardType} à retirer`);
+          if (cards.length === 0) {
+            this.showNotification('Aucun carton à retirer');
             return;
           }
 
-          // Retirer le dernier carton de ce type
-          cards.splice(lastIndex, 1);
+          const lastCard = cards.pop();
 
-          // Ajuster le score si nécessaire (retirer les points de pénalité)
-          if (cardType === 'yellow' && fencer === 'A') {
-            this.scoreB = Math.max(0, this.scoreB - 3);
-          } else if (cardType === 'yellow' && fencer === 'B') {
-            this.scoreA = Math.max(0, this.scoreA - 3);
-          } else if (cardType === 'red' && fencer === 'A') {
-            this.scoreB = Math.max(0, this.scoreB - 5);
-          } else if (cardType === 'red' && fencer === 'B') {
-            this.scoreA = Math.max(0, this.scoreA - 5);
+          // Restituer les points accordés à l'adversaire
+          if (lastCard === 'yellow') {
+            if (fencer === 'A') this.scoreB = Math.max(0, this.scoreB - 3);
+            else this.scoreA = Math.max(0, this.scoreA - 3);
+          } else if (lastCard === 'red') {
+            if (fencer === 'A') this.scoreB = Math.max(0, this.scoreB - 5);
+            else this.scoreA = Math.max(0, this.scoreA - 5);
           }
 
-          // Ré-évaluer la mort subite : si un score repasse sous 10, on quitte la mort subite
+          // Décrémenter l'historique des fautes (meilleure approximation par type)
+          if (lastCard === 'white' && history[1] > 0) {
+            history[1]--;
+          } else if (lastCard === 'yellow') {
+            if (history[2] > 0) history[2]--;
+            else if (history[1] > 0) history[1]--;
+          } else if (lastCard === 'red') {
+            if (history[3] > 0) history[3]--;
+            else if (history[2] > 0) history[2]--;
+          }
+
+          // Ré-évaluer la mort subite
           if (this.isSuddenDeath && this.isLaserSabre) {
             if (!(this.scoreA >= 10 && this.scoreB >= 10)) {
               this.isSuddenDeath = false;
@@ -1911,7 +1925,8 @@
           this.updateCardsDisplay();
           this.broadcastUpdate();
           this.saveScore();
-          this.showNotification(`Carton ${cardType} retiré`);
+          const label = lastCard === 'white' ? 'blanc' : lastCard === 'yellow' ? 'jaune' : 'rouge';
+          this.showNotification(`↩ Dernier carton ${label} annulé`);
         }
 
         updateScores() {
