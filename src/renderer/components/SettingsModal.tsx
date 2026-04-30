@@ -7,8 +7,28 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from '../hooks/useTranslation';
 import type { Language } from '../contexts/TranslationContext';
 import LanguageSelector from './LanguageSelector';
+import PdfTemplateModal from './PdfTemplateModal';
 
 const LOGO_STORAGE_KEY = 'bellepoule-logo';
+const WEBHOOK_STORAGE_KEY = 'bellepoule-webhook-url';
+
+function isWebhookUrlSafe(rawUrl: string): boolean {
+  try {
+    const url = new URL(rawUrl);
+    if (url.protocol !== 'https:') return false;
+    const h = url.hostname;
+    if (
+      h === 'localhost' ||
+      h === '127.0.0.1' ||
+      /^10\./.test(h) ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(h) ||
+      /^192\.168\./.test(h)
+    ) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
 const LOGO_MAX_W = 600;
 const LOGO_MAX_H = 200;
 
@@ -46,6 +66,7 @@ interface SettingsModalProps {
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
   const { t, language, theme, changeLanguage, changeTheme } = useTranslation();
+  const [showPdfEditor, setShowPdfEditor] = useState(false);
   const [settings, setSettings] = useState({
     language: language,
     theme: theme,
@@ -54,6 +75,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [logoError, setLogoError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [webhookUrl, setWebhookUrl] = useState<string>(
+    () => localStorage.getItem(WEBHOOK_STORAGE_KEY) ?? ''
+  );
+  const [webhookTestStatus, setWebhookTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
+  const [webhookTestMessage, setWebhookTestMessage] = useState<string>('');
 
   useEffect(() => {
     setSettings(prev => ({ ...prev, language, theme }));
@@ -130,6 +157,38 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
     if (api?.remote?.updateLogo) api.remote.updateLogo(null).catch(() => {});
   };
 
+  const handleWebhookUrlChange = (url: string) => {
+    setWebhookUrl(url);
+    setWebhookTestStatus('idle');
+    localStorage.setItem(WEBHOOK_STORAGE_KEY, url);
+  };
+
+  const handleTestWebhook = async () => {
+    if (!webhookUrl.trim()) return;
+    if (!isWebhookUrlSafe(webhookUrl)) {
+      setWebhookTestStatus('error');
+      setWebhookTestMessage('URL invalide — doit être https vers un hôte public (pas localhost ni IP privée)');
+      return;
+    }
+    setWebhookTestStatus('testing');
+    setWebhookTestMessage('');
+    try {
+      await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: '✅ BellePoule Modern — test de notification webhook',
+          username: 'BellePoule',
+        }),
+      });
+      setWebhookTestStatus('success');
+      setWebhookTestMessage('Webhook envoyé avec succès !');
+    } catch {
+      setWebhookTestStatus('error');
+      setWebhookTestMessage('Échec de l\'envoi — vérifiez l\'URL et la connectivité réseau');
+    }
+  };
+
   const handleSave = () => {
     if (settings.language !== language) {
       changeLanguage(settings.language);
@@ -142,6 +201,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
   };
 
   return (
+    <>
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
         <div className="modal-header">
@@ -226,6 +286,64 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
               </button>
             )}
           </div>
+          {/* PDF Templates */}
+          <div className="form-group" style={{ marginTop: '1rem', borderTop: '1px solid var(--border, #e5e7eb)', paddingTop: '1rem' }}>
+            <label style={{ fontWeight: 600 }}>Exports PDF</label>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted, #6b7280)', marginBottom: '0.5rem' }}>
+              Personnalisez l'apparence de chaque type d'export PDF.
+            </p>
+            <button
+              className="btn btn-secondary"
+              style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}
+              onClick={() => setShowPdfEditor(true)}
+            >
+              {t('pdfTemplate.openButton')}
+            </button>
+          </div>
+
+          {/* Notifications webhook */}
+          <div className="form-group" style={{ marginTop: '1rem', borderTop: '1px solid var(--border, #e5e7eb)', paddingTop: '1rem' }}>
+            <label style={{ fontWeight: 600 }}>Notifications webhook</label>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted, #6b7280)', marginBottom: '0.5rem' }}>
+              URL Discord / Slack / personnalisée (HTTPS uniquement).
+            </p>
+            <input
+              type="url"
+              className="form-input"
+              placeholder="https://hooks.slack.com/services/..."
+              value={webhookUrl}
+              onChange={e => handleWebhookUrlChange(e.target.value)}
+              style={{ marginBottom: '0.5rem' }}
+            />
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <button
+                className="btn btn-secondary"
+                style={{ fontSize: '0.8rem', padding: '0.25rem 0.75rem' }}
+                onClick={handleTestWebhook}
+                disabled={!webhookUrl.trim() || webhookTestStatus === 'testing'}
+              >
+                {webhookTestStatus === 'testing' ? '⏳ Test…' : '🔔 Tester'}
+              </button>
+              {webhookUrl && (
+                <button
+                  className="btn btn-secondary"
+                  style={{ fontSize: '0.8rem', padding: '0.25rem 0.75rem' }}
+                  onClick={() => handleWebhookUrlChange('')}
+                >
+                  Supprimer
+                </button>
+              )}
+            </div>
+            {webhookTestMessage && (
+              <p style={{
+                fontSize: '0.8rem',
+                marginTop: '0.35rem',
+                color: webhookTestStatus === 'success' ? 'var(--success, #16a34a)' : 'var(--danger, #ef4444)',
+              }}>
+                {webhookTestMessage}
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="modal-footer">
@@ -238,6 +356,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
         </div>
       </div>
     </div>
+    {showPdfEditor && <PdfTemplateModal onClose={() => setShowPdfEditor(false)} />}
+    </>
   );
 };
 

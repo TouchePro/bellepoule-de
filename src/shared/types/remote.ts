@@ -118,6 +118,7 @@ export interface ArenaSettings {
   breakDuration: number; // between matches
   autoAdvance: boolean; // automatically load next match
   showPhotos?: boolean; // afficher les photos avant le combat
+  cardAnnounce?: boolean; // annoncer les cartons avec raison sur les affichages
   theme?: DisplayTheme; // thème visuel de l'affichage distant
   customTheme?: CustomTheme; // thème personnalisé (si theme === 'custom')
 }
@@ -130,7 +131,7 @@ export interface ArenaMatch {
   fencerB: Fencer;
   scoreA: number;
   scoreB: number;
-  status: 'pending' | 'in_progress' | 'finished' | 'not_started';
+  status: 'pending' | 'in_progress' | 'finished' | 'not_started' | 'ready';
   startTime: Date | null;
   endTime: Date | null;
   duration?: number; // in seconds
@@ -150,6 +151,7 @@ export interface ArenaUpdate {
   cardsB?: string[];
   suddenDeath?: boolean;
   showPhotos?: boolean; // afficher les photos avant le combat
+  cardAnnounce?: boolean; // annoncer les cartons avec raison sur les affichages
   theme?: DisplayTheme; // thème visuel de l'affichage distant
   customTheme?: CustomTheme; // thème personnalisé (si theme === 'custom')
   nextMatch?: ArenaMatch | null; // prochain combat (affiché quand status=finished)
@@ -166,8 +168,8 @@ export interface RefereeControl {
 
 export interface OrgNote {
   type: 'target_time' | 'free';
-  message: string;           // texte libre affiché sous le titre
-  targetTime?: string;       // "HH:MM" uniquement pour type target_time
-  countdownPrefix?: string;  // mot affiché avant l'heure (ex: "Reprise", "Début")
-  createdAt: string;         // ISO timestamp
+  message: string; // texte libre affiché sous le titre
+  targetTime?: string; // "HH:MM" uniquement pour type target_time
+  countdownPrefix?: string; // mot affiché avant l'heure (ex: "Reprise", "Début")
+  createdAt: string; // ISO timestamp
 }

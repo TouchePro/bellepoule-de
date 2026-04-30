@@ -5,39 +5,41 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from '../contexts/TranslationContext';
 
 interface Shortcut {
   key: string;
-  description: string;
+  descriptionKey: string;
   category: 'navigation' | 'actions' | 'competition' | 'global';
 }
 
 const SHORTCUTS: Shortcut[] = [
   // Global
-  { key: '?', description: "Afficher l'aide des raccourcis", category: 'global' },
-  { key: 'Ctrl + K', description: 'Recherche rapide', category: 'global' },
-  { key: 'Esc', description: 'Fermer la modale / Annuler', category: 'global' },
+  { key: '?', descriptionKey: 'shortcuts.show_help', category: 'global' },
+  { key: 'Ctrl + K', descriptionKey: 'shortcuts.quick_search', category: 'global' },
+  { key: 'Esc', descriptionKey: 'shortcuts.close_modal', category: 'global' },
 
   // Navigation
-  { key: 'Ctrl + 1', description: 'Aller aux poules', category: 'navigation' },
-  { key: 'Ctrl + 2', description: 'Aller au tableau', category: 'navigation' },
-  { key: 'Ctrl + 3', description: 'Aller aux résultats', category: 'navigation' },
-  { key: 'Tab', description: 'Navigation entre champs', category: 'navigation' },
+  { key: 'Ctrl + 1', descriptionKey: 'shortcuts.go_pools', category: 'navigation' },
+  { key: 'Ctrl + 2', descriptionKey: 'shortcuts.go_tableau', category: 'navigation' },
+  { key: 'Ctrl + 3', descriptionKey: 'shortcuts.go_results', category: 'navigation' },
+  { key: 'Tab', descriptionKey: 'shortcuts.nav_fields', category: 'navigation' },
 
   // Actions
-  { key: 'Ctrl + S', description: 'Sauvegarder', category: 'actions' },
-  { key: 'Ctrl + Z', description: 'Annuler (Undo)', category: 'actions' },
-  { key: 'Ctrl + Y', description: 'Refaire (Redo)', category: 'actions' },
-  { key: 'Ctrl + N', description: 'Nouvelle compétition', category: 'actions' },
+  { key: 'Ctrl + S', descriptionKey: 'shortcuts.save', category: 'actions' },
+  { key: 'Ctrl + Z', descriptionKey: 'shortcuts.undo', category: 'actions' },
+  { key: 'Ctrl + Y', descriptionKey: 'shortcuts.redo', category: 'actions' },
+  { key: 'Ctrl + N', descriptionKey: 'shortcuts.new_competition', category: 'actions' },
 
   // Competition
-  { key: 'F5', description: 'Rafraîchir les données', category: 'competition' },
-  { key: 'Space', description: 'Démarrer/Pause le chronomètre', category: 'competition' },
-  { key: '↑ ↓', description: 'Naviguer dans la liste', category: 'competition' },
-  { key: 'Enter', description: 'Valider / Ouvrir', category: 'competition' },
+  { key: 'F5', descriptionKey: 'shortcuts.refresh_data', category: 'competition' },
+  { key: 'Space', descriptionKey: 'shortcuts.timer', category: 'competition' },
+  { key: '↑ ↓', descriptionKey: 'shortcuts.nav_list', category: 'competition' },
+  { key: 'Enter', descriptionKey: 'shortcuts.validate', category: 'competition' },
 ];
 
 export const KeyboardShortcutsHelp: React.FC = () => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
@@ -59,11 +61,11 @@ export const KeyboardShortcutsHelp: React.FC = () => {
   if (!isOpen) return null;
 
   const categories = [
-    { id: 'all', label: 'Tous', icon: '⌨️' },
-    { id: 'global', label: 'Globaux', icon: '🌍' },
-    { id: 'navigation', label: 'Navigation', icon: '🧭' },
-    { id: 'actions', label: 'Actions', icon: '⚡' },
-    { id: 'competition', label: 'Compétition', icon: '🤺' },
+    { id: 'all', label: t('shortcuts.category_all'), icon: '⌨️' },
+    { id: 'global', label: t('shortcuts.category_global'), icon: '🌍' },
+    { id: 'navigation', label: t('shortcuts.category_navigation'), icon: '🧭' },
+    { id: 'actions', label: t('shortcuts.category_actions'), icon: '⚡' },
+    { id: 'competition', label: t('shortcuts.category_competition'), icon: '🤺' },
   ];
 
   const filteredShortcuts =
@@ -104,9 +106,9 @@ export const KeyboardShortcutsHelp: React.FC = () => {
           }}
         >
           <div>
-            <h2 style={{ margin: 0, fontSize: '24px', color: '#111827' }}>⌨️ Raccourcis Clavier</h2>
+            <h2 style={{ margin: 0, fontSize: '24px', color: '#111827' }}>⌨️ {t('shortcuts.title')}</h2>
             <p style={{ margin: '4px 0 0 0', color: '#6b7280', fontSize: '14px' }}>
-              Maîtrisez BellePoule comme un pro
+              {t('shortcuts.subtitle')}
             </p>
           </div>
           <button
@@ -200,7 +202,7 @@ export const KeyboardShortcutsHelp: React.FC = () => {
                     paddingLeft: '8px',
                   }}
                 >
-                  {shortcut.description}
+                  {t(shortcut.descriptionKey)}
                 </span>
               </React.Fragment>
             ))}
@@ -218,7 +220,7 @@ export const KeyboardShortcutsHelp: React.FC = () => {
             textAlign: 'center',
           }}
         >
-          Appuyez sur{' '}
+          {t('shortcuts.footer').split('?')[0]}
           <kbd
             style={{
               padding: '2px 6px',
@@ -229,8 +231,8 @@ export const KeyboardShortcutsHelp: React.FC = () => {
             }}
           >
             ?
-          </kbd>{' '}
-          pour afficher cette aide à tout moment
+          </kbd>
+          {t('shortcuts.footer').split('?')[1]}
         </div>
       </div>
     </div>

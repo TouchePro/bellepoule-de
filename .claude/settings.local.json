@@ -1,36 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run build:*)",
-      "Bash(cmd /c \"npm run build\")",
-      "Bash(npx tsc:*)",
-      "Bash(npm --prefix \"C:/Users/Yann/Git/bellepoule-modern\" run build)",
-      "Bash(command:*)",
-      "Bash(dir:*)",
-      "Bash(echo:*)",
-      "Bash(git -C \"C:/Users/Yann/Git/bellepoule-modern\" status)",
-      "Bash(git -C \"C:/Users/Yann/Git/bellepoule-modern\" diff)",
-      "Bash(git -C \"C:/Users/Yann/Git/bellepoule-modern\" log -3)",
-      "Bash(git -C \"C:/Users/Yann/Git/bellepoule-modern\" add src/database/index.ts src/main/main.ts src/main/remoteScoreServer.ts src/remote/referee.html)",
-      "Bash(git -C:*)",
-      "Bash(npx --prefix \"C:/Users/Yann/Git/bellepoule-modern\" tsc:*)",
-      "Bash(gh pr:*)",
-      "Bash(git checkout origin/dev -b fix/pool-distribution-serpentine-v2)",
-      "Bash(git cherry-pick 8d195dc)",
-      "Bash(git add src/renderer/hooks/usePoolManagement.ts src/renderer/components/CompetitionView.tsx src/renderer/components/OptimizedPoolGrid.tsx)",
-      "Bash(git commit:*)",
-      "Bash(git push origin fix/pool-distribution-serpentine-v2)",
-      "Bash(git checkout dev)",
-      "Bash(git pull origin dev)",
-      "Bash(git rebase origin/dev)",
-      "Bash(git checkout --theirs src/remote/arena.html src/remote/referee.html)",
-      "Bash(git add src/remote/arena.html src/remote/referee.html)",
-      "Bash(git rebase --continue)",
-      "Bash(git cherry-pick 6f028de)",
-      "Bash(git push origin dev)",
-      "Bash(git push origin refs/heads/dev)",
-      "Bash(gh run list --limit 5)",
-      "Bash(gh run view 22394445606 --log-failed)"
+      "Bash(git *)",
+      "Bash(gh *)",
+      "Bash(npm *)",
+      "Bash(npx *)"
     ]
   }
 }

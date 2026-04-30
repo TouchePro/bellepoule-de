@@ -2,6 +2,7 @@
 
 > Analyse complète du codebase (avril 2026). Aucun TODO/FIXME existant — code propre.  
 > Objectif : combler les lacunes fonctionnelles, structurelles et qualitatives pour atteindre un niveau production robuste.
+> Dernière mise à jour : 25 avril 2026
 
 ---
 
@@ -9,49 +10,48 @@
 
 ### Services qui retournent des tableaux vides / valeurs hardcodées
 - [ ] **`cloudSyncService` providers** — `uploadToDropbox/GoogleDrive/OneDrive/Custom()` tous stubs non implémentés
-- [ ] **Late fencers** — `updateDelays()` sort prématurément à la ligne 150, logique auto-forfeit absente
 
 ### Base de données
-- [ ] **DirectElimination en DB** — types `DirectEliminationTable`, `TableNode` définis mais aucune table SQL ni opération DB
-- [ ] **Système de migrations DB** — actuellement `ALTER TABLE` avec try-catch ad-hoc ; implémenter migrations versionnées dans `src/database/migrations/`
+- [x] **DirectElimination en DB** — table `bracket_nodes` créée en migration v2 ; `saveBracketNode/getBracketNodes/deleteBracketNodes` dans `src/database/index.ts:1770`
+- [x] **Système de migrations DB** — migrations versionnées v1–v4 dans `src/database/migrations/migrations.ts` + `MigrationManager`
 
 ### Génération de tableau
-- [ ] **Match pour 3e place** — aucune gestion DB ni frontend (`TableauView.tsx`)
+- [x] **Match pour 3e place** — `thirdPlaceMatch` géré dans `TableauView.tsx:121`, assignation des perdants, UI complète
 
 ### Arbitres
-- [ ] **Attribution automatique** — `refereeManager.ts` existe sans connexion DB ni store
-- [ ] **Détection de conflits** — prévu dans CLAUDE.md, non implémenté
-- [ ] **Intégration dans le flow compétition** — `RefereeManager.tsx` a la logique rotation/conflits mais n'est pas branché depuis `CompetitionView.tsx`
+- [x] **Attribution automatique** — `refereeManager.ts` complet avec algorithme de score/balance, persisté via `window.electronAPI.db.updateMatch()`
+- [x] **Détection de conflits** — `hasClubConflict()` dans `refereeManager.ts:92`, `conflictWarning` renvoyé dans chaque assignment
+- [x] **Intégration dans le flow compétition** — `RefereeManager.tsx` branché sur DB et store
 - [ ] **UI résolution conflits offline** — `useOffline.ts` expose un compteur `conflicts` sans UI de résolution (base : `conflictResolution.ts`)
 
 ---
 
 ## 🟠 IMPORTANT — Remote Scoring & Affichage
 
-- [ ] **Persistance état arène** — config en mémoire dans `remoteScoreServer.ts` ; perdue au redémarrage ; persister en DB
-- [ ] **Queue de matchs par arène** — implémenter ordre, next/previous, statuts
-- [ ] **Reconnexion WebSocket avec replay** — rejouer les mises à jour manquées (buffer d'événements) à la reconnexion arbitre
-- [ ] **Affichage "prochains matchs"** dans `arena.html` — liste avec noms/clubs des tireurs
-- [ ] **Mode spectateur** — `dashboard.html` existe sans rendu backend ; implémenter affichage public des résultats en temps réel
-- [ ] **Kiosk auto-refresh** — `KioskDisplay.tsx` : vérifier et compléter le rafraîchissement automatique des classements de poules
-- [ ] **Trail d'audit scores** — journaliser chaque modification (qui, quand, correction) pour traçabilité en compétition officielle
-- [ ] **Protection PIN des arènes** — token existe mais flow de login non implémenté dans `referee.html`
-- [ ] **Rate limiting** sur les soumissions de score — éviter les double-soumissions concurrentes
-- [ ] **Indicateur sync offline** — feedback visuel dans `referee.html` quand des actions sont en queue (`offlineQueue.ts`)
+- [x] **Persistance état arène** — `persistArenaState()` appelé après chaque modification dans `remoteScoreServer.ts:2431` → table `arena_state` (migration v4)
+- [x] **Queue de matchs par arène** — `sessionMatches` + `matchQueue` gérés dans `remoteScoreServer.ts`
+- [x] **Reconnexion WebSocket avec replay** — `arenaEventBuffer` avec TTL 5 min dans `remoteScoreServer.ts`, replay à la reconnexion
+- [x] **Affichage "prochains matchs"** dans `arena.html` — `#next-match-panel` avec noms/clubs, CSS complet (`arena.html:1016`)
+- [x] **Mode spectateur** — `dashboard.html` reçoit `pools:update`, `matches:update` via Socket.IO, rendu backend complet
+- [x] **Kiosk auto-refresh** — `KioskDisplay.tsx:196` : rotation pools (10s), auto-scroll classement/tableau, auto-switch vers tableau à l'élimination
+- [x] **Trail d'audit scores** — `this.db.logScoreChange()` appelé dans `remoteScoreServer.ts:810` et `2072`, table `score_audit_log` (migration v3)
+- [x] **Protection PIN des arènes** — `login.html` avec `POST /api/auth/login/{arenaId}`, rate limiting login, redirect configurable
+- [x] **Rate limiting** sur les soumissions de score — `scoreRateLimit` Map dans `remoteScoreServer.ts`, délai 500ms par socket/match
+- [x] **Indicateur sync offline** — `#offline-badge` + `#sync-indicator` dans `referee.html:692`, queue IndexedDB visible
 
 ---
 
 ## 🟡 QUALITÉ — Tests
 
 ### Tests unitaires manquants
-- [ ] **Tests database** — zéro test pour `src/database/index.ts` et `src/database/validation.ts`
+- [x] **Tests database validation** — `src/database/validation.test.ts` couvre `validateId`, `validateRequiredString`, `validateEmail`, `ValidationError`
+- [ ] **Tests database operations** — zéro test pour `src/database/index.ts`
 - [ ] **Tests remote scoring server** — Socket.IO, état arène, offline queue
 - [ ] **Tests tournament flow** — transitions de phase, `src/shared/services/tournamentFlow.ts`
-- [ ] **Tests bracket generation** — seeding, byes, tableau 32/64
+- [x] **Tests bracket generation** — `src/shared/utils/tableCalculations.test.ts` couvre seeding, byes, tableau 8/16/32, 3e place
 - [ ] **Tests referee assignment** — détection conflits, rotation automatique
-- [ ] **Tests bulk import** — `src/shared/utils/bulkImport.ts`, parsing XML/FFE/CSV
-- [ ] **Tests fileParser** — `src/shared/utils/fileParser.ts` (41K, zéro couverture)
-- [ ] **Tests tableCalculations** — `src/shared/utils/tableCalculations.ts` (16K, zéro couverture)
+- [x] **Tests bulk import** — `src/shared/utils/bulkImport.test.ts` couvre CSV, FFE XML, doublons, champs manquants
+- [ ] **Tests fileParser** — `src/shared/utils/fileParser.ts` (1268 lignes, zéro couverture)
 - [ ] **Tests penalty progression Laser Sabre** — règles CardGroup non testées
 
 ### Tests composants (zéro actuellement)
@@ -83,7 +83,7 @@
 ### Compétition
 - [ ] **Import direct depuis FFE Connect** — API REST FFE pour récupérer les inscriptions automatiquement
 - [ ] **Classement en temps réel inter-poules** — dashboard des scores en cours avec mise à jour live
-- [ ] **Notifications Discord/Slack** — `notificationService.ts` existe ; l'exposer dans Settings avec test de webhook
+- [x] **Notifications Discord/Slack** — `notificationService.ts` + `useNotifications()` exposés dans Settings (onglet Notifications, champ webhook + bouton test)
 - [ ] **Mode multi-piste simultané** — orchestrer plusieurs pistes avec répartition automatique des matchs
 - [ ] **Statistiques historiques** — comparer performances d'un tireur sur plusieurs compétitions (DB multi-compétition)
 - [ ] **QR code d'inscription** — scanner pour confirmer présence depuis téléphone
@@ -96,15 +96,13 @@
 ### UX
 - [ ] **Mode sombre complet** — `ThemeEditor.tsx` est là ; vérifier cohérence CSS dark mode sur tous les composants
 - [ ] **Raccourcis clavier dans PoolView** — saisie de score au clavier sans souris
-- [ ] **Exposer Undo/Redo** — `useHistory.ts` existe (max 50 actions : UPDATE_SCORE, DELETE_FENCER…) mais aucun bouton UI ; brancher dans `PoolView.tsx` et `CompetitionView.tsx`
+- [x] **Exposer Undo/Redo** — boutons `↩ Annuler` / `↪ Rétablir` ajoutés dans `PoolView.tsx`, branchés sur `useHistory.ts`
 - [ ] **Drag & drop fencers entre poules** — remplacer le select dans `ChangePoolModal.tsx`
 - [ ] **PresentationMode** — `PresentationMode.tsx` : vérifier et compléter pour usage projecteur
 - [ ] **Voice scoring i18n** — `VoiceScoreController.tsx` : vérifier support multilingue Web Speech API
 
 ### Infrastructure
-- [ ] **`npm run type-check`** — `tsc --noEmit` pour validation CI sans compilation
-- [ ] **`npm run analyze`** — bundle Webpack avec webpack-bundle-analyzer
-- [ ] **`npm run test:e2e`** et **`npm run e2e:debug`** — scripts Playwright manquants dans `package.json`
-- [ ] **`npm run db:migrate`** — une fois le système de migration implémenté
+- [x] **`npm run analyze`** — bundle Webpack avec webpack-bundle-analyzer (`webpack.renderer.config.js` + `package.json`)
+- [ ] **`npm run db:migrate`** — non nécessaire : migrations s'exécutent automatiquement au démarrage via `MigrationManager.run()`
 - [ ] **Documentation API IPC** — TypeDoc ou manuel des handlers IPC
-- [ ] **i18n complète** — vérifier que les 7 locales (fr/en/br/ca/de/es/zh-HK) couvrent tous les nouveaux textes
+- [x] **i18n complète** — 7 locales (fr/en/br/ca/de/es/zh-HK) toutes cohérentes (195 clés chacune)

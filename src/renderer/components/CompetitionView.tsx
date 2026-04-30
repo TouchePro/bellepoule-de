@@ -41,11 +41,13 @@ import { FencerPhoto } from './FencerPhoto';
 interface CompetitionViewProps {
   competition: Competition;
   onUpdate: (competition: Competition) => void;
+  requestPhase?: string;
+  onPhaseApplied?: () => void;
 }
 
-const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate }) => {
+const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate, requestPhase, onPhaseApplied }) => {
   const { showToast } = useToast();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   // Settings avec valeurs par défaut
   const poolRounds = competition.settings?.poolRounds ?? 1;
@@ -57,6 +59,14 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
   // États locaux
   const [currentPhase, setCurrentPhase] = useState<Phase>('checkin');
+
+  useEffect(() => {
+    if (requestPhase) {
+      setCurrentPhase(requestPhase as Phase);
+      onPhaseApplied?.();
+    }
+  }, [requestPhase]);
+
   const [showAddFencerModal, setShowAddFencerModal] = useState(false);
   const [showPropertiesModal, setShowPropertiesModal] = useState(false);
   const [importData, setImportData] = useState<{
@@ -232,6 +242,27 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       window.electronAPI.removeAllListeners?.('match:finished');
     };
   }, [updateMatchFromRemote]);
+
+  // Sync matchs tableau vers DB (persistence individuelle, inclut la 3e place)
+  useEffect(() => {
+    if (!competition?.id || tableauMatches.length === 0) return;
+    const maxScore = competition.settings?.defaultTableMaxScore ?? 15;
+    tableauMatches.forEach(m => {
+      window.electronAPI.db.upsertTableauMatch({
+        competitionId: competition.id,
+        matchId: m.id,
+        round: m.round,
+        position: m.position,
+        fencerAId: m.fencerA?.id ?? null,
+        fencerBId: m.fencerB?.id ?? null,
+        scoreA: m.scoreA != null ? { value: m.scoreA, isVictory: m.winner?.id === m.fencerA?.id } : null,
+        scoreB: m.scoreB != null ? { value: m.scoreB, isVictory: m.winner?.id === m.fencerB?.id } : null,
+        status: m.winner ? 'finished' : m.isBye ? 'finished' : 'not_started',
+        maxScore,
+        isBye: m.isBye,
+      }).catch(() => {});
+    });
+  }, [tableauMatches, competition?.id]);
 
   // Menu events
   useMenuEvents({
@@ -498,28 +529,32 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const phases = [
     {
       id: 'checkin',
-      label: 'Appel',
+      label: t('phases.checkin'),
       icon: '📋',
       disabled: false,
       title: undefined as string | undefined,
     },
     {
       id: 'poolprep',
-      label: 'Préparation',
+      label: t('phases.poolprep'),
       icon: '⚙️',
       disabled: false,
       title: undefined as string | undefined,
     },
     {
       id: 'pools',
-      label: skipPoolPhase ? 'Poules (saut)' : poolRounds > 1 ? `Poules (${currentPoolRound}/${poolRounds})` : 'Poules',
+      label: skipPoolPhase
+        ? t('phases.pools_skip')
+        : poolRounds > 1
+          ? t('phases.pools_round', { current: currentPoolRound, total: poolRounds })
+          : t('phases.pools'),
       icon: skipPoolPhase ? '⏭' : '🎯',
       disabled: skipPoolPhase,
-      title: skipPoolPhase ? 'Phase de poules ignorée (0 poules)' : (undefined as string | undefined),
+      title: skipPoolPhase ? t('phases.pools_skip_tooltip') : (undefined as string | undefined),
     },
     {
       id: 'ranking',
-      label: 'Classement',
+      label: t('phases.ranking'),
       icon: '📊',
       disabled: false,
       title: undefined as string | undefined,
@@ -528,25 +563,25 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       ? [
           {
             id: 'tableau',
-            label: 'Tableau',
+            label: t('phases.tableau'),
             icon: '🏆',
             disabled: !isTableauUnlocked,
             title: !isTableauUnlocked
-              ? 'Terminez toutes les poules et validez le classement pour accéder au tableau'
+              ? t('phases.tableau_locked_tooltip')
               : (undefined as string | undefined),
           },
         ]
       : []),
     {
       id: 'results',
-      label: 'Résultats',
+      label: t('phases.results'),
       icon: '🏁',
       disabled: isResultsLocked,
       title: undefined as string | undefined,
     },
     {
       id: 'remote',
-      label: '📡 Saisie distante',
+      label: `📡 ${t('phases.remote')}`,
       icon: '📡',
       disabled: false,
       title: undefined as string | undefined,
@@ -558,13 +593,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
     if (!isLastPoolRound) {
       return {
-        label: `Tour ${currentPoolRound + 1} de poules →`,
+        label: t('pools.next_round_n', { n: currentPoolRound + 1 }),
         action: handleNextPoolRound,
       };
     }
 
     return {
-      label: 'Voir le classement →',
+      label: t('pools.view_ranking_action'),
       action: handleGoToRanking,
     };
   };
@@ -589,7 +624,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             {competition.title}
           </h1>
           <p style={{ opacity: 0.9, fontSize: '0.875rem' }}>
-            {new Date(competition.date).toLocaleDateString('fr-FR', {
+            {new Date(competition.date).toLocaleDateString(language === 'zh-HK' ? 'zh-HK' : language, {
               weekday: 'long',
               day: 'numeric',
               month: 'long',
@@ -600,25 +635,11 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <span className="badge" style={{ background: 'rgba(255,255,255,0.2)' }}>
-            {fencers.length} tireurs
+            {fencers.length} {t('fencer.label')}
           </span>
           <span className="badge" style={{ background: 'rgba(255,255,255,0.2)' }}>
-            {getCheckedInFencers().length} pointés
+            {getCheckedInFencers().length} {t('fencer.present_label')}
           </span>
-          <button
-            onClick={() => setCurrentPhase('remote')}
-            style={{
-              background: 'rgba(255,255,255,0.2)',
-              border: 'none',
-              color: 'white',
-              padding: '0.5rem 1rem',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-            }}
-          >
-            📡 Saisie distante
-          </button>
           <button
             onClick={() => setShowFencerComparison(true)}
             style={{
@@ -631,7 +652,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               fontSize: '0.875rem',
             }}
           >
-            ⚔️ Comparaisons
+            ⚔️ {t('competition.comparisons')}
           </button>
           <button
             onClick={() => setShowAnalytics(true)}
@@ -645,7 +666,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               fontSize: '0.875rem',
             }}
           >
-            📊 Analytics
+            📊 {t('competition.analytics')}
           </button>
           <button
             onClick={() => setShowQRCode(true)}
@@ -851,29 +872,32 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                   style={{
                     display: 'grid',
                     gap: '2rem',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${Math.max(480, 280 + (pools[0]?.fencers?.length ?? 6) * 38)}px), 1fr))`,
                   }}
                 >
                   {pools.map((pool, poolIndex) => (
-                    <PoolView
-                      key={pool.id}
-                      pool={pool}
-                      weapon={competition.weapon}
-                      maxScore={poolMaxScore}
-                      onScoreUpdate={(matchIndex, scoreA, scoreB, winner, specialStatus) =>
-                        updateScore(poolIndex, matchIndex, scoreA, scoreB, winner, specialStatus)
-                      }
-                      onFencerStatusChange={(fencerId, status) => {
-                        // Si abandon, forfait ou exclusion, mettre à jour tous les matchs du tireur
-                        if (
-                          status === 'abandon' ||
-                          status === 'forfait' ||
-                          status === 'exclusion'
-                        ) {
-                          handleFencerForfeit(fencerId, status);
+                    <div key={pool.id} style={{ minWidth: 0, overflow: 'auto' }}>
+                      <PoolView
+                        pool={pool}
+                        weapon={competition.weapon}
+                        competitionName={competition.title}
+                        maxScore={poolMaxScore}
+                        onScoreUpdate={(matchIndex, scoreA, scoreB, winner, specialStatus) =>
+                          updateScore(poolIndex, matchIndex, scoreA, scoreB, winner, specialStatus)
                         }
-                      }}
-                    />
+                        onFencerStatusChange={(fencerId, status) => {
+                          if (
+                            status === 'abandon' ||
+                            status === 'forfait' ||
+                            status === 'exclusion'
+                          ) {
+                            handleFencerForfeit(fencerId, status);
+                          }
+                        }}
+                      />
+                    </div>
                   ))}
                 </div>
               </>
@@ -1045,7 +1069,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         <AnalyticsDashboard
           competition={competition}
           pools={pools}
-          matches={pools.flatMap(p => p.matches)}
+          matches={pools.flatMap(p => p.matches ?? [])}
           fencers={fencers}
           onClose={() => setShowAnalytics(false)}
         />

@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vue Publique – BellePoule</title>
+    <script src="/i18n.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <style>
 @font-face {
@@ -28,6 +29,40 @@
         color: #fff;
         display: flex;
         flex-direction: column;
+      }
+
+      /* ── Bandeau annonce carton ── */
+      .card-announcement-banner {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 300;
+        padding: 1rem 2rem;
+        text-align: center;
+        font-size: clamp(1.4rem, 3.5vw, 2.4rem);
+        font-weight: 900;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        animation: banner-slide-in 0.35s ease-out;
+        display: none;
+      }
+      .card-announcement-banner.visible { display: block; }
+      .card-announcement-banner.card-white {
+        background: #e5e7eb; color: #111827; border-bottom: 4px solid #9ca3af;
+      }
+      .card-announcement-banner.card-yellow {
+        background: #fbbf24; color: #1c1917; border-bottom: 4px solid #d97706;
+      }
+      .card-announcement-banner.card-red {
+        background: #dc2626; color: #fff; border-bottom: 4px solid #991b1b;
+      }
+      .card-announcement-banner.card-black {
+        background: #111827; color: #f9fafb; border-bottom: 4px solid #374151;
+      }
+      @keyframes banner-slide-in {
+        from { transform: translateY(-100%); opacity: 0; }
+        to   { transform: translateY(0);    opacity: 1; }
       }
 
       .header {
@@ -557,6 +592,8 @@
     </style>
   </head>
   <body>
+    <div id="card-announcement-banner" class="card-announcement-banner"></div>
+
     <div class="header">
       <div class="arena-title">
         <span>⚔️</span>
@@ -565,12 +602,12 @@
       <div class="status-section">
         <div class="inversion-toggle">
           <input type="checkbox" id="inversion-checkbox" />
-          <label for="inversion-checkbox">⇄ Inverser</label>
+          <label for="inversion-checkbox" data-i18n="arena.invert">⇄ Inverser</label>
         </div>
-        <div class="match-status-badge status-waiting" id="match-status">En attente</div>
+        <div class="match-status-badge status-waiting" id="match-status" data-i18n="arena.waiting">En attente</div>
         <div class="connection-indicator">
           <div id="connection-dot" class="connection-dot"></div>
-          <span id="connection-text">Connexion...</span>
+          <span id="connection-text" data-i18n="remote.connecting">Connexion...</span>
         </div>
       </div>
     </div>
@@ -579,7 +616,7 @@
       <!-- Écran d'attente -->
       <div class="waiting-screen" id="waiting-screen">
         <div class="arena-idle-number" id="arena-idle-number">1</div>
-        <div class="arena-idle-label">Arène</div>
+        <div class="arena-idle-label" data-i18n="remote.arena">Arène</div>
       </div>
 
       <!-- Écran d'intro photo (affiché quand showPhotos=true et statut ready) -->
@@ -728,6 +765,36 @@
           this.socket.on(`arena:${this.arenaId}:update`, data => {
             this.handleArenaUpdate(data);
           });
+
+          this.socket.on(`arena:${this.arenaId}:card_announcement`, ann => {
+            this.showCardAnnouncement(ann);
+          });
+        }
+
+        showCardAnnouncement(ann) {
+          const banner = document.getElementById('card-announcement-banner');
+          if (!banner) return;
+
+          const typeLabel = ann.cardType === 'white' ? 'BLANC' : ann.cardType === 'yellow' ? 'JAUNE' : ann.cardType === 'red' ? 'ROUGE' : 'NOIR';
+          let line1, line2;
+
+          if (ann.isRevalorisation) {
+            const fromLabel = ann.fromCard === 'white' ? 'blanc' : ann.fromCard === 'yellow' ? 'jaune' : ann.fromCard;
+            line1 = `⚠️ Revalorisation 2ème ${fromLabel} → ${typeLabel} — ${ann.fencerName}`;
+          } else {
+            line1 = `Carton ${typeLabel} — ${ann.fencerName}`;
+          }
+          line2 = ann.reason || null;
+
+          banner.innerHTML = line2
+            ? `<div>${line1}</div><div style="font-size:0.65em; font-weight:600; margin-top:0.25em; opacity:0.9;">${line2}</div>`
+            : `<div>${line1}</div>`;
+          banner.className = `card-announcement-banner visible card-${ann.cardType}`;
+
+          if (this._cardAnnouncementTimer) clearTimeout(this._cardAnnouncementTimer);
+          this._cardAnnouncementTimer = setTimeout(() => {
+            banner.className = 'card-announcement-banner';
+          }, 5000);
         }
 
         updateConnectionStatus(connected) {
@@ -736,10 +803,10 @@
 
           if (connected) {
             dot.classList.add('connected');
-            text.textContent = 'Connecté';
+            text.textContent = window.T('remote.connected');
           } else {
             dot.classList.remove('connected');
-            text.textContent = 'Déconnecté';
+            text.textContent = window.T('remote.disconnected');
           }
         }
 
@@ -797,16 +864,16 @@
           switch (this.matchStatus) {
             case 'idle':
             case 'not_started':
-              badge.textContent = 'En attente';
+              badge.textContent = window.T('arena.status_waiting');
               badge.classList.add('status-waiting');
               break;
             case 'ready':
             case 'in_progress':
-              badge.textContent = 'En cours';
+              badge.textContent = window.T('arena.status_in_progress');
               badge.classList.add('status-progress');
               break;
             case 'finished':
-              badge.textContent = 'Terminé';
+              badge.textContent = window.T('arena.status_finished');
               badge.classList.add('status-finished');
               break;
           }
@@ -934,7 +1001,9 @@
         }
       }
 
-      document.addEventListener('DOMContentLoaded', () => {
+      document.addEventListener('DOMContentLoaded', async () => {
+        await window.initRemoteI18n();
+        document.title = window.T('arena.title');
         new PublicDisplay();
       });
     </script>

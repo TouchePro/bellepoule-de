@@ -2,8 +2,9 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
+const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 
-module.exports = {
+module.exports = (env = {}) => ({
   mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   optimization: {
     minimize: process.env.NODE_ENV === 'production',
@@ -87,5 +88,6 @@ module.exports = {
         },
       ],
     }),
+    ...(env.analyze ? [new BundleAnalyzerPlugin()] : []),
   ],
-};
+});

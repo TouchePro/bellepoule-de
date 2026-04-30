@@ -154,6 +154,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       return ipcRenderer.invoke('db:updateMatch', id, updates);
     },
 
+    upsertTableauMatch: (params: any) => ipcRenderer.invoke('db:upsertTableauMatch', params),
+
     // Pools
     createPool: (phaseId: string, number: number) => {
       if (!phaseId || typeof phaseId !== 'string') {
@@ -201,8 +203,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
     deletePhase: (id: string) => ipcRenderer.invoke('db:deletePhase', id),
 
     // Referees
-    createReferee: (competitionId: string, data: { name: string; gender?: string; nationality?: string; club?: string; license?: string; category?: string }) =>
-      ipcRenderer.invoke('db:createReferee', competitionId, data),
+    createReferee: (
+      competitionId: string,
+      data: {
+        name: string;
+        gender?: string;
+        nationality?: string;
+        club?: string;
+        license?: string;
+        category?: string;
+      }
+    ) => ipcRenderer.invoke('db:createReferee', competitionId, data),
     getReferee: (id: string) => ipcRenderer.invoke('db:getReferee', id),
     getRefereesByCompetition: (competitionId: string) =>
       ipcRenderer.invoke('db:getRefereesByCompetition', competitionId),
@@ -260,8 +271,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
         abandonType,
         snapshots
       ),
-    getAbandonSnapshot: (fencerId: string) =>
-      ipcRenderer.invoke('db:getAbandonSnapshot', fencerId),
+    getAbandonSnapshot: (fencerId: string) => ipcRenderer.invoke('db:getAbandonSnapshot', fencerId),
     deleteAbandonSnapshot: (fencerId: string) =>
       ipcRenderer.invoke('db:deleteAbandonSnapshot', fencerId),
   },
@@ -410,7 +420,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       strips: number,
       matches?: any[],
       showPhotos?: boolean,
-      kioskViews?: { poules: boolean; classement: boolean; direct: boolean; suivants: boolean }
+      kioskViews?: { poules: boolean; classement: boolean; direct: boolean; suivants: boolean },
+      cardAnnounce?: boolean
     ) =>
       ipcRenderer.invoke(
         'remote:startSession',
@@ -418,22 +429,28 @@ contextBridge.exposeInMainWorld('electronAPI', {
         strips,
         matches,
         showPhotos,
-        kioskViews
+        kioskViews,
+        cardAnnounce
       ),
     stopSession: () => ipcRenderer.invoke('remote:stopSession'),
+    launchCompetition: () => ipcRenderer.invoke('remote:launchCompetition'),
     getSession: () => ipcRenderer.invoke('remote:getSession'),
     getArenas: () => ipcRenderer.invoke('remote:getArenas'),
     updateStripCount: (count: number) => ipcRenderer.invoke('remote:updateStripCount', count),
     updateShowPhotos: (value: boolean) => ipcRenderer.invoke('remote:updateShowPhotos', value),
+    updateCardAnnounce: (value: boolean) => ipcRenderer.invoke('remote:updateCardAnnounce', value),
     updateTheme: (theme: string) => ipcRenderer.invoke('remote:updateTheme', theme),
-    updateKioskViews: (views: { poules: boolean; classement: boolean; direct: boolean; suivants: boolean }) =>
-      ipcRenderer.invoke('remote:updateKioskViews', views),
+    updateKioskViews: (views: {
+      poules: boolean;
+      classement: boolean;
+      direct: boolean;
+      suivants: boolean;
+    }) => ipcRenderer.invoke('remote:updateKioskViews', views),
     updateMatchArena: (matchId: string, fromArena: number | null, toArena: number | null) =>
       ipcRenderer.invoke('remote:updateMatchArena', matchId, fromArena, toArena),
     updatePoolFencers: (updates: Array<{ poolId: string; fencers: any[] }>) =>
       ipcRenderer.invoke('remote:updatePoolFencers', updates),
-    refreshDeMatches: (matches: any[]) =>
-      ipcRenderer.invoke('remote:refreshDeMatches', matches),
+    refreshDeMatches: (matches: any[]) => ipcRenderer.invoke('remote:refreshDeMatches', matches),
     setArenaPassword: (arenaId: string, password: string) =>
       ipcRenderer.invoke('remote:setArenaPassword', arenaId, password),
     setOrgNote: (note: any) => ipcRenderer.invoke('remote:setOrgNote', note),

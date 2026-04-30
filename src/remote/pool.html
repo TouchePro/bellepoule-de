@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Saisie Poule – BellePoule</title>
+    <script src="/i18n.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <style>
       * {
@@ -540,29 +541,29 @@
   <body>
     <div class="header">
       <div class="header-left">
-        <div class="header-title" id="pool-title">Chargement…</div>
+        <div class="header-title" id="pool-title" data-i18n="pool.loading">Chargement…</div>
         <div class="header-badge" id="match-count-badge" style="display:none"></div>
       </div>
-      <div class="connection-badge" id="connection-badge">⚡ Connexion…</div>
+      <div class="connection-badge" id="connection-badge" data-i18n="pool.connecting">⚡ Connexion…</div>
     </div>
 
     <div class="tabs">
       <button class="tab-btn active" id="tab-tableau" onclick="switchTab('tableau')">
-        ⊞ Tableau
+        <span data-i18n="pool.tab_grid">⊞ Tableau</span>
       </button>
       <button class="tab-btn" id="tab-matches" onclick="switchTab('matches')">
-        ⚔ Matchs
+        <span data-i18n="pool.tab_matches">⚔ Matchs</span>
       </button>
     </div>
 
     <div class="pool-container" id="pool-container">
-      <div class="status-message" id="status-message">Chargement de la poule…</div>
+      <div class="status-message" id="status-message" data-i18n="pool.loading_pool">Chargement de la poule…</div>
     </div>
 
     <!-- Modal de saisie de score -->
     <div class="modal-overlay" id="modal-overlay">
       <div class="modal">
-        <h2>Saisie du score<strong id="modal-match-label"></strong></h2>
+        <h2><span data-i18n="pool.score_entry">Saisie du score</span><strong id="modal-match-label"></strong></h2>
         <div class="score-inputs">
           <div class="score-fencer">
             <span class="score-fencer-name" id="modal-fencer-a"></span>
@@ -576,8 +577,8 @@
         </div>
         <div class="modal-error" id="modal-error"></div>
         <div class="modal-actions">
-          <button class="btn btn-secondary" id="btn-cancel">Annuler</button>
-          <button class="btn btn-primary" id="btn-submit">Valider</button>
+          <button class="btn btn-secondary" id="btn-cancel" data-i18n="pool.cancel">Annuler</button>
+          <button class="btn btn-primary" id="btn-submit" data-i18n="pool.validate">Valider</button>
         </div>
       </div>
     </div>
@@ -585,10 +586,12 @@
     <!-- Overlay fin de poule -->
     <div class="fin-overlay" id="fin-overlay">
       <div class="fin-icon">🏆</div>
-      <h1>POULE TERMINÉE</h1>
+      <h1 data-i18n="pool.finished">POULE TERMINÉE</h1>
     </div>
 
     <script>
+      window.initRemoteI18n().catch(() => {});
+
       // ── Extraction de l'arenaId depuis l'URL (/areneN/poule → "N") ──
       const pathMatch = window.location.pathname.match(/\/arene(\w+)\/poule/);
       const arenaNumber = pathMatch ? pathMatch[1] : '1';
@@ -611,14 +614,14 @@
       const socket = io();
 
       socket.on('connect', () => {
-        document.getElementById('connection-badge').textContent = '🟢 Connecté';
+        document.getElementById('connection-badge').textContent = window.T('pool.connected');
         document.getElementById('connection-badge').classList.add('connected');
         socket.emit('join_pool', { arenaId });
         loadPoolData();
       });
 
       socket.on('disconnect', () => {
-        document.getElementById('connection-badge').textContent = '🔴 Déconnecté';
+        document.getElementById('connection-badge').textContent = window.T('pool.disconnected');
         document.getElementById('connection-badge').classList.remove('connected');
       });
 
@@ -633,13 +636,13 @@
           const res = await fetch(`/api/arenas/${arenaNumber}/pool-data`);
           if (!res.ok) {
             const err = await res.json().catch(() => ({}));
-            showStatusMessage(err.error || 'Aucune poule assignée à cette arène.');
+            showStatusMessage(err.error || window.T('pool.no_pool'));
             return;
           }
           poolData = await res.json();
           renderAll(poolData);
         } catch (e) {
-          showStatusMessage('Erreur de connexion au serveur.');
+          showStatusMessage(window.T('pool.error_connection'));
         }
       }
 

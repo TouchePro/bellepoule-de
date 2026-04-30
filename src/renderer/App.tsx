@@ -36,6 +36,7 @@ const AppContent: React.FC = () => {
   const [showNewCompetitionModal, setShowNewCompetitionModal] = useState(false);
   const [showReportIssueModal, setShowReportIssueModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [requestedPhase, setRequestedPhase] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Load competitions on mount
@@ -308,14 +309,25 @@ const AppContent: React.FC = () => {
                   setView('home');
                   setActiveTabId(null);
                 }}
-                title="Revenir à la liste des compétitions"
+                title={t('app.back_to_list')}
               >
-                🏠 Général
+                🏠 {t('app.home')}
               </button>
             )}
             <button className="btn btn-primary" onClick={() => setShowNewCompetitionModal(true)}>
               + {t('menu.new_competition')}
             </button>
+            {view === 'competition' && currentCompetition && (
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  setRequestedPhase('remote');
+                }}
+                title={t('phases.remote')}
+              >
+                📡 {t('phases.remote')}
+              </button>
+            )}
             <button
               className="btn btn-secondary"
               onClick={() => setShowSettingsModal(true)}
@@ -384,7 +396,7 @@ const AppContent: React.FC = () => {
                   gap: '0.5rem',
                 }}
               >
-                🏠 Général
+                🏠 {t('app.home')}
               </span>
             </div>
 
@@ -461,7 +473,7 @@ const AppContent: React.FC = () => {
                     e.currentTarget.style.background = 'none';
                     e.currentTarget.style.color = '#6b7280';
                   }}
-                  title="Fermer l'onglet"
+                  title={t('app.close_tab')}
                 >
                   ×
                 </button>
@@ -475,9 +487,9 @@ const AppContent: React.FC = () => {
             <ErrorBoundary
               fallback={
                 <div style={{ padding: '20px', textAlign: 'center' }}>
-                  <h3>🏠 Erreur de chargement</h3>
-                  <p>Une erreur est survenue lors du chargement de la liste des compétitions.</p>
-                  <button onClick={() => window.location.reload()}>Recharger l'application</button>
+                  <h3>🏠 {t('app.load_error_title')}</h3>
+                  <p>{t('app.load_error_message')}</p>
+                  <button onClick={() => window.location.reload()}>{t('app.reload')}</button>
                 </div>
               }
             >
@@ -496,6 +508,8 @@ const AppContent: React.FC = () => {
               <CompetitionView
                 competition={currentCompetition}
                 onUpdate={handleUpdateCompetition}
+                requestPhase={requestedPhase ?? undefined}
+                onPhaseApplied={() => setRequestedPhase(null)}
               />
             </CompetitionErrorBoundary>
           )}
