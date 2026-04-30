@@ -51,7 +51,11 @@
     "U15": "Sub-15",
     "U17": "Sub-17",
     "U20": "Sub-20",
-    "senior": "Sènior"
+    "senior": "Sènior",
+    "V1": "Veterans 1",
+    "V2": "Veterans 2",
+    "V3": "Veterans 3",
+    "V4": "Veterans 4"
   },
   "fencer": {
     "last_name": "Cognom",
@@ -244,6 +248,45 @@
       "ranking-table": "Taula de classificació", "footer": "Peu de pàgina"
     },
     "reset": "Restablir", "exportJson": "Exportar JSON", "importJson": "Importar JSON", "importError": "Fitxer JSON no vàlid"
+  },
+  "cardModal": {
+    "title": "Targeta per a {{name}}",
+    "previous_cards": "Targetes anteriors:",
+    "card_white": "⬜ TARGETA BLANCA",
+    "card_yellow": "🟨 TARGETA GROGA",
+    "card_red": "🟥 TARGETA VERMELLA",
+    "card_black": "⬛ TARGETA NEGRA",
+    "abbr_white": "B",
+    "abbr_yellow": "G",
+    "abbr_red": "V",
+    "abbr_black": "N",
+    "points_for": "+{{points}} punt per a {{name}}",
+    "exclusion": "⚠️ EXCLUSIÓ DE LA COMPETICIÓ"
+  },
+  "cardReasons": {
+    "EARLY_START": "Sortida anticipada",
+    "LATE_STOP": "Continuar després de \"Alto!\"",
+    "BODY_CONTACT": "Contacte corporal voluntari",
+    "COUNTER_ATTACK": "Contraatac",
+    "TARGET_SUBSTITUTION": "Substitució de diana",
+    "VOLUNTARY_DROP": "Deixar caure el sabre voluntàriament",
+    "TIME_WASTING": "Pèrdua de temps",
+    "NON_COMPLIANT_GEAR": "Material no conforme",
+    "ESTOC": "Cop de punta (estocada)",
+    "UNARMED_HAND": "Ús de la mà desarmada",
+    "VOLUNTARY_EXIT": "Sortida voluntària de la pista",
+    "HEAVY_HIT": "Cop fort",
+    "BRUTALITY": "Brutalitat",
+    "DANGEROUS": "Comportament perillós",
+    "REFUSAL": "Negativa a combatre",
+    "UNSPORTSMANLIKE": "Conducta antiesportiva",
+    "CHEATING": "Trampa"
+  },
+  "cardGroups": {
+    "GROUP_1": "Grup 1 (Blanc → Groc → Groc)",
+    "GROUP_2": "Grup 2 (Groc → Vermell → Vermell)",
+    "GROUP_3": "Grup 3 (Vermell → Exclusió)",
+    "GROUP_4": "Grup 4 (Exclusió immediata)"
   },
   "shortcuts": {
     "title": "Dreceres de Teclat",

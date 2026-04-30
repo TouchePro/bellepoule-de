@@ -51,7 +51,11 @@
     "U15": "U15",
     "U17": "U17",
     "U20": "U20",
-    "senior": "Senior"
+    "senior": "Senior",
+    "V1": "Veteranen 1",
+    "V2": "Veteranen 2",
+    "V3": "Veteranen 3",
+    "V4": "Veteranen 4"
   },
   "fencer": {
     "last_name": "Nachname",
@@ -244,6 +248,45 @@
       "ranking-table": "Rangtabelle", "footer": "Fußzeile"
     },
     "reset": "Zurücksetzen", "exportJson": "JSON exportieren", "importJson": "JSON importieren", "importError": "Ungültige JSON-Datei"
+  },
+  "cardModal": {
+    "title": "Karte für {{name}}",
+    "previous_cards": "Vorherige Karten:",
+    "card_white": "⬜ WEISSE KARTE",
+    "card_yellow": "🟨 GELBE KARTE",
+    "card_red": "🟥 ROTE KARTE",
+    "card_black": "⬛ SCHWARZE KARTE",
+    "abbr_white": "W",
+    "abbr_yellow": "G",
+    "abbr_red": "R",
+    "abbr_black": "S",
+    "points_for": "+{{points}} Punkt für {{name}}",
+    "exclusion": "⚠️ AUSSCHLUSS AUS DEM WETTKAMPF"
+  },
+  "cardReasons": {
+    "EARLY_START": "Frühstart",
+    "LATE_STOP": "Weiterkämpfen nach \"Halt!\"",
+    "BODY_CONTACT": "Freiwilliger Körperkontakt",
+    "COUNTER_ATTACK": "Gegenangriff",
+    "TARGET_SUBSTITUTION": "Zielsubstitution",
+    "VOLUNTARY_DROP": "Freiwilliges Fallenlassen des Säbels",
+    "TIME_WASTING": "Zeitverschwendung",
+    "NON_COMPLIANT_GEAR": "Nicht konformes Material",
+    "ESTOC": "Stoß (Estoc)",
+    "UNARMED_HAND": "Verwendung der waffenlosen Hand",
+    "VOLUNTARY_EXIT": "Freiwilliges Verlassen der Bahn",
+    "HEAVY_HIT": "Schwerer Treffer",
+    "BRUTALITY": "Brutalität",
+    "DANGEROUS": "Gefährliches Verhalten",
+    "REFUSAL": "Kampfverweigerung",
+    "UNSPORTSMANLIKE": "Unsportliches Verhalten",
+    "CHEATING": "Betrug"
+  },
+  "cardGroups": {
+    "GROUP_1": "Gruppe 1 (Weiß → Gelb → Gelb)",
+    "GROUP_2": "Gruppe 2 (Gelb → Rot → Rot)",
+    "GROUP_3": "Gruppe 3 (Rot → Ausschluss)",
+    "GROUP_4": "Gruppe 4 (Sofortiger Ausschluss)"
   },
   "shortcuts": {
     "title": "Tastaturkürzel",

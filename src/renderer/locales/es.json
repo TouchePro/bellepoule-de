@@ -51,7 +51,11 @@
     "U15": "Sub-15",
     "U17": "Sub-17",
     "U20": "Sub-20",
-    "senior": "Senior"
+    "senior": "Senior",
+    "V1": "Veteranos 1",
+    "V2": "Veteranos 2",
+    "V3": "Veteranos 3",
+    "V4": "Veteranos 4"
   },
   "fencer": {
     "last_name": "Apellido",
@@ -244,6 +248,45 @@
       "ranking-table": "Tabla de clasificación", "footer": "Pie de página"
     },
     "reset": "Restablecer", "exportJson": "Exportar JSON", "importJson": "Importar JSON", "importError": "Archivo JSON inválido"
+  },
+  "cardModal": {
+    "title": "Tarjeta para {{name}}",
+    "previous_cards": "Tarjetas anteriores:",
+    "card_white": "⬜ TARJETA BLANCA",
+    "card_yellow": "🟨 TARJETA AMARILLA",
+    "card_red": "🟥 TARJETA ROJA",
+    "card_black": "⬛ TARJETA NEGRA",
+    "abbr_white": "B",
+    "abbr_yellow": "A",
+    "abbr_red": "R",
+    "abbr_black": "N",
+    "points_for": "+{{points}} punto para {{name}}",
+    "exclusion": "⚠️ EXCLUSIÓN DE LA COMPETICIÓN"
+  },
+  "cardReasons": {
+    "EARLY_START": "Salida anticipada",
+    "LATE_STOP": "Continuar después de \"¡Alto!\"",
+    "BODY_CONTACT": "Contacto corporal voluntario",
+    "COUNTER_ATTACK": "Contraataque",
+    "TARGET_SUBSTITUTION": "Sustitución de blanco",
+    "VOLUNTARY_DROP": "Soltar el sable voluntariamente",
+    "TIME_WASTING": "Pérdida de tiempo",
+    "NON_COMPLIANT_GEAR": "Material no conforme",
+    "ESTOC": "Golpe de punta (estocada)",
+    "UNARMED_HAND": "Uso de la mano desarmada",
+    "VOLUNTARY_EXIT": "Salida voluntaria de la pista",
+    "HEAVY_HIT": "Golpe fuerte",
+    "BRUTALITY": "Brutalidad",
+    "DANGEROUS": "Comportamiento peligroso",
+    "REFUSAL": "Negativa a combatir",
+    "UNSPORTSMANLIKE": "Conducta antideportiva",
+    "CHEATING": "Trampa"
+  },
+  "cardGroups": {
+    "GROUP_1": "Grupo 1 (Blanco → Amarillo → Amarillo)",
+    "GROUP_2": "Grupo 2 (Amarillo → Rojo → Rojo)",
+    "GROUP_3": "Grupo 3 (Rojo → Exclusión)",
+    "GROUP_4": "Grupo 4 (Exclusión inmediata)"
   },
   "shortcuts": {
     "title": "Atajos de Teclado",
