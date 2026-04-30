@@ -238,7 +238,7 @@
     "customTitlePlaceholder": "留空使用自動標題",
     "colors": { "navy": "主色", "gold": "強調色", "green": "勝利色" },
     "elements": {
-      "header": "頁首", "gold-bar": "金色分隔線", "meta-chips": "資訊標籤",
+      "header": "頁首", "gold-bar": "金色分隔線", "competition-name": "比賽名稱", "meta-chips": "資訊標籤",
       "score-grid": "分數表格", "pending-matches": "待打比賽",
       "finished-matches": "結果", "match-cards": "比賽卡片",
       "ranking-table": "排名表", "footer": "頁尾"

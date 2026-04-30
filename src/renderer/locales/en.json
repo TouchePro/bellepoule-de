@@ -238,7 +238,7 @@
     "customTitlePlaceholder": "Leave empty for automatic title",
     "colors": { "navy": "Primary color", "gold": "Accent color", "green": "Victory color" },
     "elements": {
-      "header": "Header", "gold-bar": "Gold separator", "meta-chips": "Info chips",
+      "header": "Header", "gold-bar": "Gold separator", "competition-name": "Competition name", "meta-chips": "Info chips",
       "score-grid": "Score grid", "pending-matches": "Pending matches",
       "finished-matches": "Results", "match-cards": "Match cards",
       "ranking-table": "Ranking table", "footer": "Footer"

@@ -219,7 +219,8 @@ export const useExport = ({ competition, showToast }: UseExportProps) => {
           pools,
           `Toutes les Poules - ${competition.title} - Tour ${currentPoolRound}`,
           logo,
-          poolTemplate
+          poolTemplate,
+          competition.title
         );
         showToast(`Export PDF de ${pools.length} poules généré avec succès`, 'success');
       } catch (error) {

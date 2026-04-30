@@ -23,7 +23,7 @@ export interface PdfTemplate {
 }
 
 export const PDF_ELEMENT_IDS: Record<PdfDocType, string[]> = {
-  pool:    ['header', 'gold-bar', 'meta-chips', 'score-grid', 'pending-matches', 'finished-matches', 'footer'],
+  pool:    ['header', 'competition-name', 'gold-bar', 'meta-chips', 'score-grid', 'pending-matches', 'finished-matches', 'footer'],
   tableau: ['header', 'gold-bar', 'match-cards', 'footer'],
   ranking: ['header', 'gold-bar', 'ranking-table', 'footer'],
 };

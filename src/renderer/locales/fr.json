@@ -248,6 +248,7 @@
     "elements": {
       "header": "En-tête",
       "gold-bar": "Séparateur doré",
+      "competition-name": "Nom de la compétition",
       "meta-chips": "Puces d'info",
       "score-grid": "Grille des scores",
       "pending-matches": "Matchs à jouer",

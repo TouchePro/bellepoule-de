@@ -2,6 +2,8 @@ import React, { useState, useRef } from 'react';
 import { useTranslation } from '../hooks/useTranslation';
 import type { PdfTemplate, PdfElementConfig } from '../../shared/types/pdfTemplate.types';
 
+const LOGO_KEY = 'bellepoule-logo';
+
 interface Props {
   template: PdfTemplate;
   onChange: (t: PdfTemplate) => void;
@@ -12,7 +14,27 @@ const PdfTemplateEditor: React.FC<Props> = ({ template, onChange, onReset }) => 
   const { t } = useTranslation();
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
+  const [logo, setLogo] = useState<string | null>(() => localStorage.getItem(LOGO_KEY));
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const dataUrl = ev.target?.result as string;
+      localStorage.setItem(LOGO_KEY, dataUrl);
+      setLogo(dataUrl);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleLogoRemove = () => {
+    localStorage.removeItem(LOGO_KEY);
+    setLogo(null);
+  };
 
   const sorted = [...template.elements].sort((a, b) => a.order - b.order);
 
@@ -99,6 +121,33 @@ const PdfTemplateEditor: React.FC<Props> = ({ template, onChange, onReset }) => 
           placeholder={t('pdfTemplate.customTitlePlaceholder')}
           style={{ marginTop: '0.35rem' }}
         />
+      </div>
+
+      {/* Logo */}
+      <div>
+        <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>Logo</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {logo ? (
+            <img
+              src={logo}
+              alt="Logo"
+              style={{ height: '48px', maxWidth: '120px', objectFit: 'contain', border: '1px solid var(--color-border, #d1d5db)', borderRadius: '4px', padding: '2px', background: '#fff' }}
+            />
+          ) : (
+            <div style={{ height: '48px', width: '80px', border: '1px dashed var(--color-border, #d1d5db)', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', color: 'var(--color-muted, #9ca3af)' }}>
+              Aucun logo
+            </div>
+          )}
+          <button className="btn btn-secondary" style={{ fontSize: '0.8rem' }} onClick={() => logoInputRef.current?.click()}>
+            {logo ? 'Changer' : 'Importer'}
+          </button>
+          {logo && (
+            <button className="btn btn-secondary" style={{ fontSize: '0.8rem', color: 'var(--danger, #ef4444)' }} onClick={handleLogoRemove}>
+              Supprimer
+            </button>
+          )}
+          <input ref={logoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleLogoUpload} />
+        </div>
       </div>
 
       {/* Couleurs */}

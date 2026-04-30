@@ -880,6 +880,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                       key={pool.id}
                       pool={pool}
                       weapon={competition.weapon}
+                      competitionName={competition.title}
                       maxScore={poolMaxScore}
                       onScoreUpdate={(matchIndex, scoreA, scoreB, winner, specialStatus) =>
                         updateScore(poolIndex, matchIndex, scoreA, scoreB, winner, specialStatus)

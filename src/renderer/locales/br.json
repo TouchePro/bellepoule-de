@@ -238,7 +238,7 @@
     "customTitlePlaceholder": "Lezel goullo evit titl emgefreek",
     "colors": { "navy": "Liv pennañ", "gold": "Liv mouezh", "green": "Liv trechañ" },
     "elements": {
-      "header": "Penn-bann", "gold-bar": "Barenn aour", "meta-chips": "Chips titouroù",
+      "header": "Penn-bann", "gold-bar": "Barenn aour", "competition-name": "Anv ar genstrivadeg", "meta-chips": "Chips titouroù",
       "score-grid": "Reizh poentoù", "pending-matches": "Emgavioù o vont",
       "finished-matches": "Disoc'hoù", "match-cards": "Kartennoù emgav",
       "ranking-table": "Taolenn renk", "footer": "Troad-pajenn"

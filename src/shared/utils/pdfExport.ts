@@ -201,6 +201,18 @@ const BASE_CSS = `
   .chip strong { color: var(--navy); }
   .chip.gold { background: var(--gold-bg); border-color: var(--gold); }
   .chip.gold strong { color: #92400e; }
+  /* ── Nom compétition ── */
+  .competition-name-section {
+    text-align: center;
+    padding: 2mm 6mm;
+    background: var(--navy);
+    color: var(--gold);
+    font-size: 10pt;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: 2mm;
+    border-radius: 3px;
+  }
   /* ── Section titre ── */
   .section-label {
     font-size: 7.5pt;
@@ -314,7 +326,6 @@ function generatePoolHTML(pool: Pool, options: PoolExportOptions, template?: Pdf
 
   const weaponLabel = weapon ? `<span class="chip"><strong>Arme</strong> ${weapon}</span>` : '';
   const catLabel = category ? `<span class="chip"><strong>Catégorie</strong> ${category}</span>` : '';
-  const compLabel = competitionName ? `<span class="chip gold"><strong>${competitionName}</strong></span>` : '';
 
   const sections: Record<string, string> = {
     'header': `
@@ -327,9 +338,10 @@ function generatePoolHTML(pool: Pool, options: PoolExportOptions, template?: Pdf
     <div class="doc-header-badge">P${pool.number}</div>
   </div>`,
     'gold-bar': `  <div class="gold-bar"></div>`,
+    'competition-name': competitionName ? `  <div class="competition-name-section">${competitionName}</div>` : '',
     'meta-chips': `
   <div class="meta-row">
-    ${compLabel}${weaponLabel}${catLabel}
+    ${weaponLabel}${catLabel}
     <span class="chip"><strong>Tireurs</strong> ${fencers.length}</span>
     <span class="chip"><strong>Matchs</strong> ${finishedCount}/${matches.length}</span>
   </div>`,
@@ -356,7 +368,7 @@ function generatePoolHTML(pool: Pool, options: PoolExportOptions, template?: Pdf
   </div>`,
   };
 
-  const defaultOrder = ['header', 'gold-bar', 'meta-chips', 'score-grid', 'pending-matches', 'finished-matches', 'footer'];
+  const defaultOrder = ['header', 'gold-bar', 'competition-name', 'meta-chips', 'score-grid', 'pending-matches', 'finished-matches', 'footer'];
   const body = assembleBody(sections, template, defaultOrder);
   const cssOverrides = template ? buildCssOverrides(template) : '';
 
@@ -480,11 +492,12 @@ export async function exportMultiplePoolsToPDF(
   pools: Pool[],
   title: string = 'Export des Poules',
   logoBase64?: string,
-  template?: PdfTemplate
+  template?: PdfTemplate,
+  competitionName?: string
 ): Promise<void> {
   if (pools.length === 0) throw new Error('Aucune poule à exporter');
   for (const pool of pools) {
-    await exportPoolToPDF(pool, { title: `${title} - Poule ${pool.number}`, logoBase64 }, template);
+    await exportPoolToPDF(pool, { title: `${title} - Poule ${pool.number}`, logoBase64, competitionName }, template);
   }
 }
 

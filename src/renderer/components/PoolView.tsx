@@ -20,6 +20,7 @@ interface PoolViewProps {
   pool: Pool;
   maxScore?: number;
   weapon?: Weapon;
+  competitionName?: string;
   onScoreUpdate: (
     matchIndex: number,
     scoreA: number,
@@ -37,6 +38,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   pool,
   maxScore = 5,
   weapon,
+  competitionName,
   onScoreUpdate,
   onFencerChangePool,
   onFencerStatusChange,
@@ -354,6 +356,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         includePendingMatches: true,
         includePoolStats: true,
         logoBase64: logo,
+        competitionName,
         visibleColumns: getVisibleColumns('pool'),
       }, poolTemplate);
       showToast(`Export PDF de la poule ${pool.number} généré avec succès`, 'success');

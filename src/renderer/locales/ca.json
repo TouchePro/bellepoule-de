@@ -238,7 +238,7 @@
     "customTitlePlaceholder": "Deixar buit per al títol automàtic",
     "colors": { "navy": "Color principal", "gold": "Color d'accent", "green": "Color de victòria" },
     "elements": {
-      "header": "Capçalera", "gold-bar": "Separador daurat", "meta-chips": "Xips d'info",
+      "header": "Capçalera", "gold-bar": "Separador daurat", "competition-name": "Nom de la competició", "meta-chips": "Xips d'info",
       "score-grid": "Quadrícula de puntuació", "pending-matches": "Combats pendents",
       "finished-matches": "Resultats", "match-cards": "Fitxes de combat",
       "ranking-table": "Taula de classificació", "footer": "Peu de pàgina"

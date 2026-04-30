@@ -238,7 +238,7 @@
     "customTitlePlaceholder": "Leer lassen für automatischen Titel",
     "colors": { "navy": "Hauptfarbe", "gold": "Akzentfarbe", "green": "Siegesfarbe" },
     "elements": {
-      "header": "Kopfzeile", "gold-bar": "Goldene Trennlinie", "meta-chips": "Info-Chips",
+      "header": "Kopfzeile", "gold-bar": "Goldene Trennlinie", "competition-name": "Wettkampfname", "meta-chips": "Info-Chips",
       "score-grid": "Punkteraster", "pending-matches": "Ausstehende Kämpfe",
       "finished-matches": "Ergebnisse", "match-cards": "Kampfblätter",
       "ranking-table": "Rangtabelle", "footer": "Fußzeile"
