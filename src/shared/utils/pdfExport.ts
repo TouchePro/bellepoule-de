@@ -7,7 +7,7 @@
 import { Pool, Match, MatchStatus, Fencer, PoolRanking, Weapon } from '../types';
 import type { PdfTemplate } from '../types/pdfTemplate.types';
 
-interface PoolExportOptions {
+export interface PoolExportOptions {
   title?: string;
   competitionName?: string;
   weapon?: string;
@@ -256,7 +256,7 @@ const STAT_COLS: { id: string; header: string; cls: string; render: (d: RankData
   { id: 'rank',      header: 'Rg',  cls: 'rank-cell', render: d => `${d.rank}` },
 ];
 
-function generatePoolHTML(pool: Pool, options: PoolExportOptions, template?: PdfTemplate): string {
+export function generatePoolHTML(pool: Pool, options: PoolExportOptions, template?: PdfTemplate): string {
   const runtimeTitle = `Poule ${pool.number}`;
   const effectiveTitle = template?.customTitle?.trim() || options.title || runtimeTitle;
   const { competitionName = '', weapon = '', category = '', logoBase64 } = options;
@@ -533,7 +533,7 @@ function getTableauRoundName(round: number): string {
   return names[round] ?? `Tableau de ${round}`;
 }
 
-function generateTableauHTML(
+export function generateTableauHTML(
   matches: TableauMatchForPDF[],
   matchesPerPage: number,
   title: string,
@@ -767,7 +767,7 @@ export async function printTableauHTML(
 
 // ─── Export Classement Général ───────────────────────────────────────────────
 
-function generateRankingHTML(
+export function generateRankingHTML(
   ranking: PoolRanking[],
   title: string,
   isLaserSabre: boolean,
