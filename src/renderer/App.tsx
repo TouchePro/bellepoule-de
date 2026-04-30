@@ -36,6 +36,7 @@ const AppContent: React.FC = () => {
   const [showNewCompetitionModal, setShowNewCompetitionModal] = useState(false);
   const [showReportIssueModal, setShowReportIssueModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [requestedPhase, setRequestedPhase] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Load competitions on mount
@@ -316,6 +317,17 @@ const AppContent: React.FC = () => {
             <button className="btn btn-primary" onClick={() => setShowNewCompetitionModal(true)}>
               + {t('menu.new_competition')}
             </button>
+            {view === 'competition' && currentCompetition && (
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  setRequestedPhase('remote');
+                }}
+                title={t('phases.remote')}
+              >
+                📡 {t('phases.remote')}
+              </button>
+            )}
             <button
               className="btn btn-secondary"
               onClick={() => setShowSettingsModal(true)}
@@ -496,6 +508,8 @@ const AppContent: React.FC = () => {
               <CompetitionView
                 competition={currentCompetition}
                 onUpdate={handleUpdateCompetition}
+                requestPhase={requestedPhase ?? undefined}
+                onPhaseApplied={() => setRequestedPhase(null)}
               />
             </CompetitionErrorBoundary>
           )}

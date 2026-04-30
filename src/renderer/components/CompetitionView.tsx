@@ -41,9 +41,11 @@ import { FencerPhoto } from './FencerPhoto';
 interface CompetitionViewProps {
   competition: Competition;
   onUpdate: (competition: Competition) => void;
+  requestPhase?: string;
+  onPhaseApplied?: () => void;
 }
 
-const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate }) => {
+const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate, requestPhase, onPhaseApplied }) => {
   const { showToast } = useToast();
   const { t, language } = useTranslation();
 
@@ -57,6 +59,14 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
   // États locaux
   const [currentPhase, setCurrentPhase] = useState<Phase>('checkin');
+
+  useEffect(() => {
+    if (requestPhase) {
+      setCurrentPhase(requestPhase as Phase);
+      onPhaseApplied?.();
+    }
+  }, [requestPhase]);
+
   const [showAddFencerModal, setShowAddFencerModal] = useState(false);
   const [showPropertiesModal, setShowPropertiesModal] = useState(false);
   const [importData, setImportData] = useState<{
@@ -630,20 +640,6 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
           <span className="badge" style={{ background: 'rgba(255,255,255,0.2)' }}>
             {getCheckedInFencers().length} {t('fencer.present_label')}
           </span>
-          <button
-            onClick={() => setCurrentPhase('remote')}
-            style={{
-              background: 'rgba(255,255,255,0.2)',
-              border: 'none',
-              color: 'white',
-              padding: '0.5rem 1rem',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-            }}
-          >
-            📡 {t('phases.remote')}
-          </button>
           <button
             onClick={() => setShowFencerComparison(true)}
             style={{
