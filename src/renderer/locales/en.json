@@ -288,6 +288,23 @@
     "GROUP_3": "Group 3 (Red → Exclusion)",
     "GROUP_4": "Group 4 (Immediate Exclusion)"
   },
+  "stats": {
+    "title": "Fencer Statistics",
+    "zone_a": "Zone A (1 pt)",
+    "zone_b": "Zone B (3 pts)",
+    "zone_c": "Zone C (5 pts)",
+    "total_points": "Total pts",
+    "white_cards": "White cards",
+    "yellow_cards": "Yellow cards",
+    "red_cards": "Red cards",
+    "arena_exits": "Arena exits",
+    "matches_played": "Matches",
+    "avg_duration": "Avg duration",
+    "early_finishes": "< 3 min",
+    "export_pdf": "Export statistics (PDF)",
+    "no_data": "No statistics available for this competition.",
+    "laser_only": "Touch zones (A/B/C) are only available in Laser Sabre mode."
+  },
   "shortcuts": {
     "title": "Keyboard Shortcuts",
     "subtitle": "Master BellePoule like a pro",

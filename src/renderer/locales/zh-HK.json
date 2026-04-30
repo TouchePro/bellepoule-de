@@ -288,6 +288,23 @@
     "GROUP_3": "第3組（紅牌 → 取消資格）",
     "GROUP_4": "第4組（即時取消資格）"
   },
+  "stats": {
+    "title": "選手統計",
+    "zone_a": "A區（1分）",
+    "zone_b": "B區（3分）",
+    "zone_c": "C區（5分）",
+    "total_points": "總分",
+    "white_cards": "白牌",
+    "yellow_cards": "黃牌",
+    "red_cards": "紅牌",
+    "arena_exits": "出界次數",
+    "matches_played": "比賽場數",
+    "avg_duration": "平均時長",
+    "early_finishes": "< 3分鐘",
+    "export_pdf": "匯出統計（PDF）",
+    "no_data": "此賽事暫無統計數據。",
+    "laser_only": "觸擊區域（A/B/C）僅適用於雷射佩劍模式。"
+  },
   "shortcuts": {
     "title": "鍵盤快捷鍵",
     "subtitle": "像專業人士一樣掌握 BellePoule",

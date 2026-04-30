@@ -1201,6 +1201,8 @@
           this.scoreB = 0;
           this.cardsA = [];
           this.cardsB = [];
+          this.touchesA = []; // zones touchées par A : 'A' | 'B' | 'C'
+          this.touchesB = []; // zones touchées par B : 'A' | 'B' | 'C'
           this.faultHistoryA = { 1: 0, 2: 0, 3: 0 };
           this.faultHistoryB = { 1: 0, 2: 0, 3: 0 };
           this.matchStatus = 'not_started';
@@ -1553,6 +1555,8 @@
           this.scoreB = match.scoreB?.value || 0;
           this.cardsA = [];
           this.cardsB = [];
+          this.touchesA = [];
+          this.touchesB = [];
           this.faultHistoryA = { 1: 0, 2: 0, 3: 0 };
           this.faultHistoryB = { 1: 0, 2: 0, 3: 0 };
           this.timerSeconds = 180;
@@ -1604,10 +1608,13 @@
 
           this.pushHistory('score');
 
+          const zone = points === 1 ? 'A' : points === 3 ? 'B' : 'C';
           if (fencer === 'A') {
             this.scoreA = Math.max(0, this.scoreA + points);
+            this.touchesA.push(zone);
           } else {
             this.scoreB = Math.max(0, this.scoreB + points);
+            this.touchesB.push(zone);
           }
 
           this.updateScores();
@@ -1839,6 +1846,12 @@
           this.updateScores();
           this.broadcastUpdate();
           this.saveScore();
+          this.socket.emit('arena_control', {
+            arenaId: this.arenaId,
+            action: 'arena_exit',
+            fencer,
+            isVoluntary: false,
+          });
           const label = fencer === 'A' ? 'Rouge' : 'Vert';
           this.showNotification(window.T('referee.arena_exit_notif', { label, points }));
           if (this.cardAnnounceEnabled) {
@@ -1857,11 +1870,15 @@
           if (!this.currentMatch) return;
           if (this.matchStatus === 'finished') return;
 
-          // Ne pas permettre de retirer plus que le score actuel
+          const zone = points === 1 ? 'A' : points === 3 ? 'B' : 'C';
           if (fencer === 'A') {
             this.scoreA = Math.max(0, this.scoreA - points);
+            const idx = this.touchesA.lastIndexOf(zone);
+            if (idx !== -1) this.touchesA.splice(idx, 1);
           } else {
             this.scoreB = Math.max(0, this.scoreB - points);
+            const idx = this.touchesB.lastIndexOf(zone);
+            if (idx !== -1) this.touchesB.splice(idx, 1);
           }
 
           // Ré-évaluer la mort subite : si un score repasse sous 10, on quitte la mort subite
@@ -2069,6 +2086,8 @@
             scoreB: this.scoreB,
             cardsA: this.cardsA,
             cardsB: this.cardsB,
+            touchesA: this.touchesA,
+            touchesB: this.touchesB,
             suddenDeath: this.isSuddenDeath,
           });
         }
@@ -2173,6 +2192,8 @@
               this.scoreB = 0;
               this.cardsA = [];
               this.cardsB = [];
+              this.touchesA = [];
+              this.touchesB = [];
               this.faultHistoryA = { 1: 0, 2: 0, 3: 0 };
               this.faultHistoryB = { 1: 0, 2: 0, 3: 0 };
               this.matchStatus = 'not_started';

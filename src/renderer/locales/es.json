@@ -288,6 +288,23 @@
     "GROUP_3": "Grupo 3 (Rojo → Exclusión)",
     "GROUP_4": "Grupo 4 (Exclusión inmediata)"
   },
+  "stats": {
+    "title": "Estadísticas por tirador",
+    "zone_a": "Zona A (1 pt)",
+    "zone_b": "Zona B (3 pts)",
+    "zone_c": "Zona C (5 pts)",
+    "total_points": "Pts totales",
+    "white_cards": "Tarjetas blancas",
+    "yellow_cards": "Tarjetas amarillas",
+    "red_cards": "Tarjetas rojas",
+    "arena_exits": "Salidas de pista",
+    "matches_played": "Combates",
+    "avg_duration": "Duración med.",
+    "early_finishes": "< 3 min",
+    "export_pdf": "Exportar estadísticas (PDF)",
+    "no_data": "No hay estadísticas disponibles para esta competición.",
+    "laser_only": "Las zonas de toque (A/B/C) sólo están disponibles en modo Sable Láser."
+  },
   "shortcuts": {
     "title": "Atajos de Teclado",
     "subtitle": "Domina BellePoule como un profesional",

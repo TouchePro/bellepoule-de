@@ -1069,6 +1069,18 @@ ipcMain.handle('db:getFencerHistory', async (_, fencerId) => {
   return db.getFencerHistory(fencerId);
 });
 
+ipcMain.handle('db:saveArenaExit', async (_, exit) => {
+  return db.saveArenaExit(exit);
+});
+
+ipcMain.handle('db:getFencerCompetitionStats', async (_, fencerId) => {
+  return db.getFencerCompetitionStats(fencerId);
+});
+
+ipcMain.handle('db:getCompetitionFencerStats', async (_, competitionId) => {
+  return db.getCompetitionFencerStats(competitionId);
+});
+
 // Abandon snapshot handlers
 ipcMain.handle(
   'db:saveAbandonSnapshot',

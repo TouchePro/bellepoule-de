@@ -288,6 +288,23 @@
     "GROUP_3": "Strollad 3 (Ruz → Skarzhadur)",
     "GROUP_4": "Strollad 4 (Skarzhadur diouzhtu)"
   },
+  "stats": {
+    "title": "Stadegoù dre gombatour",
+    "zone_a": "Zonenn A (1 poent)",
+    "zone_b": "Zonenn B (3 poent)",
+    "zone_c": "Zonenn C (5 poent)",
+    "total_points": "Poent. hollek",
+    "white_cards": "Kartennoù gwenn",
+    "yellow_cards": "Kartennoù melen",
+    "red_cards": "Kartennoù ruz",
+    "arena_exits": "Ezhamoù arena",
+    "matches_played": "Emgannioù",
+    "avg_duration": "Padelezh keiñv.",
+    "early_finishes": "< 3 min",
+    "export_pdf": "Ezporzhiañ stadegoù (PDF)",
+    "no_data": "Stadegoù ebet evit ar genstrivadeg-mañ.",
+    "laser_only": "Zonennoù taolioù (A/B/C) hepken el l'izili Sabre Laser."
+  },
   "shortcuts": {
     "title": "Birvikerezh Klavier",
     "subtitle": "Mestrañ BellePoule evel ur prof",

@@ -1656,6 +1656,154 @@ export class DatabaseManager {
     return { matches };
   }
 
+  public saveArenaExit(exit: {
+    id: string;
+    matchId: string;
+    fencerId: string;
+    exitType: string;
+    timestamp: string;
+    pointsAwarded: number;
+  }): void {
+    if (!this.db) throw new Error('Database not open');
+    this.db.run(
+      `INSERT OR REPLACE INTO match_arena_exits
+        (id, match_id, fencer_id, exit_type, timestamp, points_awarded)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [exit.id, exit.matchId, exit.fencerId, exit.exitType, exit.timestamp, exit.pointsAwarded]
+    );
+    this.save();
+  }
+
+  public getFencerCompetitionStats(fencerId: string): {
+    fencerId: string;
+    fencerLastName: string;
+    fencerFirstName: string;
+    fencerClub?: string;
+    competitionId: string;
+    touchesZoneA: number;
+    touchesZoneB: number;
+    touchesZoneC: number;
+    totalTouchPoints: number;
+    whiteCards: number;
+    yellowCards: number;
+    redCards: number;
+    cardsByReason: Record<string, number>;
+    arenaExits: number;
+    matchesPlayed: number;
+    totalDurationSeconds: number;
+    averageDurationSeconds: number;
+    matchesFinishedEarly: number;
+  } {
+    if (!this.db) throw new Error('Database not open');
+
+    // Infos du combattant
+    const fencerRow = (() => {
+      const s = this.db.prepare(
+        'SELECT last_name, first_name, club, competition_id FROM fencers WHERE id = ?'
+      );
+      s.bind([fencerId]);
+      const ok = s.step();
+      const row = ok ? s.getAsObject() : null;
+      s.free();
+      return row;
+    })();
+
+    const empty = {
+      fencerId,
+      fencerLastName: (fencerRow?.last_name as string) ?? '',
+      fencerFirstName: (fencerRow?.first_name as string) ?? '',
+      fencerClub: (fencerRow?.club as string) || undefined,
+      competitionId: (fencerRow?.competition_id as string) ?? '',
+      touchesZoneA: 0, touchesZoneB: 0, touchesZoneC: 0, totalTouchPoints: 0,
+      whiteCards: 0, yellowCards: 0, redCards: 0, cardsByReason: {} as Record<string, number>,
+      arenaExits: 0,
+      matchesPlayed: 0, totalDurationSeconds: 0, averageDurationSeconds: 0, matchesFinishedEarly: 0,
+    };
+
+    // Touches par zone (non-reversed = touches données)
+    const touchStmt = this.db.prepare(
+      `SELECT zone, SUM(points) AS pts, COUNT(*) AS cnt
+       FROM match_touches WHERE fencer_id = ? AND is_reversed = 0
+       GROUP BY zone`
+    );
+    touchStmt.bind([fencerId]);
+    while (touchStmt.step()) {
+      const r = touchStmt.getAsObject();
+      const zone = r.zone as string;
+      const pts = r.pts as number;
+      if (zone === 'A') { empty.touchesZoneA = r.cnt as number; empty.totalTouchPoints += pts; }
+      else if (zone === 'B') { empty.touchesZoneB = r.cnt as number; empty.totalTouchPoints += pts; }
+      else if (zone === 'C') { empty.touchesZoneC = r.cnt as number; empty.totalTouchPoints += pts; }
+    }
+    touchStmt.free();
+
+    // Cartons par type et raison
+    const cardStmt = this.db.prepare(
+      `SELECT card_type, reason, COUNT(*) AS cnt
+       FROM match_cards WHERE fencer_id = ?
+       GROUP BY card_type, reason`
+    );
+    cardStmt.bind([fencerId]);
+    while (cardStmt.step()) {
+      const r = cardStmt.getAsObject();
+      const type = (r.card_type as string).toLowerCase();
+      const cnt = r.cnt as number;
+      if (type === 'white') empty.whiteCards += cnt;
+      else if (type === 'yellow') empty.yellowCards += cnt;
+      else if (type === 'red') empty.redCards += cnt;
+      const reason = r.reason as string;
+      if (reason && reason !== 'unknown') {
+        empty.cardsByReason[reason] = (empty.cardsByReason[reason] ?? 0) + cnt;
+      }
+    }
+    cardStmt.free();
+
+    // Sorties d'arène
+    const exitStmt = this.db.prepare(
+      'SELECT COUNT(*) AS cnt FROM match_arena_exits WHERE fencer_id = ?'
+    );
+    exitStmt.bind([fencerId]);
+    if (exitStmt.step()) {
+      empty.arenaExits = (exitStmt.getAsObject().cnt as number) ?? 0;
+    }
+    exitStmt.free();
+
+    // Durée des matchs (matchs terminés où ce tireur a participé)
+    const durStmt = this.db.prepare(
+      `SELECT COUNT(*) AS total,
+              SUM(COALESCE(duration, 0)) AS total_dur,
+              SUM(CASE WHEN duration IS NOT NULL AND duration < 180 THEN 1 ELSE 0 END) AS early
+       FROM matches
+       WHERE (fencer_a_id = ? OR fencer_b_id = ?) AND status = 'finished'`
+    );
+    durStmt.bind([fencerId, fencerId]);
+    if (durStmt.step()) {
+      const r = durStmt.getAsObject();
+      empty.matchesPlayed = (r.total as number) ?? 0;
+      empty.totalDurationSeconds = (r.total_dur as number) ?? 0;
+      empty.averageDurationSeconds =
+        empty.matchesPlayed > 0
+          ? Math.round(empty.totalDurationSeconds / empty.matchesPlayed)
+          : 0;
+      empty.matchesFinishedEarly = (r.early as number) ?? 0;
+    }
+    durStmt.free();
+
+    return empty;
+  }
+
+  public getCompetitionFencerStats(competitionId: string): ReturnType<typeof this.getFencerCompetitionStats>[] {
+    if (!this.db) throw new Error('Database not open');
+    const ids: string[] = [];
+    const stmt = this.db.prepare('SELECT id FROM fencers WHERE competition_id = ? ORDER BY ref');
+    stmt.bind([competitionId]);
+    while (stmt.step()) {
+      ids.push(stmt.getAsObject().id as string);
+    }
+    stmt.free();
+    return ids.map(id => this.getFencerCompetitionStats(id));
+  }
+
   // ─── Abandon snapshots ──────────────────────────────────────────────────────
 
   public saveAbandonSnapshot(

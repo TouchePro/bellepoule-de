@@ -305,6 +305,23 @@
     "GROUP_3": "Groupe 3 (Rouge → Exclusion)",
     "GROUP_4": "Groupe 4 (Exclusion immédiate)"
   },
+  "stats": {
+    "title": "Statistiques par combattant",
+    "zone_a": "Zone A (1 pt)",
+    "zone_b": "Zone B (3 pts)",
+    "zone_c": "Zone C (5 pts)",
+    "total_points": "Total pts",
+    "white_cards": "Cartons blancs",
+    "yellow_cards": "Cartons jaunes",
+    "red_cards": "Cartons rouges",
+    "arena_exits": "Sorties d'arène",
+    "matches_played": "Matchs joués",
+    "avg_duration": "Durée moy.",
+    "early_finishes": "< 3 min",
+    "export_pdf": "Exporter les statistiques (PDF)",
+    "no_data": "Aucune statistique disponible pour cette compétition.",
+    "laser_only": "Les zones de touches (A/B/C) sont disponibles uniquement en Sabre Laser."
+  },
   "shortcuts": {
     "title": "Raccourcis Clavier",
     "subtitle": "Maîtrisez BellePoule comme un pro",

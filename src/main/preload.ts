@@ -24,6 +24,7 @@ import type {
   MatchCardData,
   MatchTimingData,
   MatchSnapshot,
+  ArenaExitData,
 } from '../shared/types/preload';
 
 // Input validation functions
@@ -256,6 +257,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }
       return ipcRenderer.invoke('db:getFencerHistory', fencerId);
     },
+    saveArenaExit: (exit: ArenaExitData) => ipcRenderer.invoke('db:saveArenaExit', exit),
+    getFencerCompetitionStats: (fencerId: string) =>
+      ipcRenderer.invoke('db:getFencerCompetitionStats', fencerId),
+    getCompetitionFencerStats: (competitionId: string) =>
+      ipcRenderer.invoke('db:getCompetitionFencerStats', competitionId),
     saveAbandonSnapshot: (
       fencerId: string,
       competitionId: string,

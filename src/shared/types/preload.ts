@@ -15,6 +15,7 @@ import {
   ExportFormat,
   Phase,
   DirectEliminationTable,
+  FencerCompetitionStats,
 } from '../types';
 
 // Re-export Pool for preload
@@ -137,6 +138,17 @@ export interface MatchTimingData {
   endTime: string | null; // ISO 8601
   duration: number | null; // secondes
 }
+
+export interface ArenaExitData {
+  id: string;
+  matchId: string;
+  fencerId: string;
+  exitType: 'arena_exit' | 'arena_exit_voluntary';
+  timestamp: string; // ISO 8601
+  pointsAwarded: number;
+}
+
+export type { FencerCompetitionStats };
 
 export interface FencerMatchRecord {
   matchId: string;
@@ -480,6 +492,9 @@ export interface DatabaseAPI {
   saveCard: (card: MatchCardData) => Promise<void>;
   updateMatchTiming: (timing: MatchTimingData) => Promise<void>;
   getFencerHistory: (fencerId: string) => Promise<FencerHistory>;
+  saveArenaExit: (exit: ArenaExitData) => Promise<void>;
+  getFencerCompetitionStats: (fencerId: string) => Promise<FencerCompetitionStats>;
+  getCompetitionFencerStats: (competitionId: string) => Promise<FencerCompetitionStats[]>;
   saveAbandonSnapshot: (
     fencerId: string,
     competitionId: string,

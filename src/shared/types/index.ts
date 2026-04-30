@@ -306,6 +306,35 @@ export interface PoolRanking {
 }
 
 // ============================================================================
+// Statistiques par combattant
+// ============================================================================
+
+export interface FencerCompetitionStats {
+  fencerId: string;
+  fencerLastName: string;
+  fencerFirstName: string;
+  fencerClub?: string;
+  competitionId: string;
+  // Touches Laser Sabre (zones A=1pt, B=3pts, C=5pts)
+  touchesZoneA: number;
+  touchesZoneB: number;
+  touchesZoneC: number;
+  totalTouchPoints: number;
+  // Cartons
+  whiteCards: number;
+  yellowCards: number;
+  redCards: number;
+  cardsByReason: Partial<Record<CardReason, number>>;
+  // Sorties d'arène
+  arenaExits: number;
+  // Durée des matchs
+  matchesPlayed: number;
+  totalDurationSeconds: number;
+  averageDurationSeconds: number;
+  matchesFinishedEarly: number; // durée < 180s (avant le temps réglementaire)
+}
+
+// ============================================================================
 // Pool Phase (Tour de poules)
 // ============================================================================
 

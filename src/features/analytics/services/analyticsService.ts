@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-import { Fencer } from '../../../shared/types';
+import { Fencer, FencerCompetitionStats } from '../../../shared/types';
 import { calculateFencerPoolStats } from '../../../shared/utils/poolCalculations';
 
 export interface CompetitionStats {
@@ -88,6 +88,30 @@ export class AnalyticsService {
       completedMatches: completed.length,
       averageDuration: completed.length > 0 ? totalDuration / completed.length : 0,
     };
+  }
+
+  /**
+   * Statistiques détaillées par combattant (touches, cartons, sorties, durée)
+   */
+  async getCompetitionFencerStats(competitionId: string): Promise<FencerCompetitionStats[]> {
+    if (typeof window === 'undefined' || !window.electronAPI?.db) return [];
+    return window.electronAPI.db.getCompetitionFencerStats(competitionId) as Promise<FencerCompetitionStats[]>;
+  }
+
+  // Alias utilisé par useAnalyticsStore
+  async getFencerStats(competitionId: string): Promise<FencerCompetitionStats[]> {
+    return this.getCompetitionFencerStats(competitionId);
+  }
+
+  async getFencerCompetitionStats(fencerId: string): Promise<FencerCompetitionStats | null> {
+    if (typeof window === 'undefined' || !window.electronAPI?.db) return null;
+    return window.electronAPI.db.getFencerCompetitionStats(fencerId) as Promise<FencerCompetitionStats>;
+  }
+
+  // Stub minimal pour getCompetitionMetrics (appelé par le store)
+  async getCompetitionMetrics(competitionId: string): Promise<{ totalFencers: number; completedMatches: number }> {
+    const stats = await this.getCompetitionStats(competitionId);
+    return { totalFencers: stats.totalFencers, completedMatches: stats.completedMatches };
   }
 
   /**

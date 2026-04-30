@@ -1583,6 +1583,10 @@ export class RemoteScoreServer {
 
   // Stockage des cartons par arène
   private arenaCards: Map<string, { cardsA: string[]; cardsB: string[] }> = new Map();
+  // Stockage des touches par zone par arène (zones : 'A' | 'B' | 'C')
+  private arenaTouches: Map<string, { touchesA: string[]; touchesB: string[] }> = new Map();
+  // Stockage des sorties d'arène par arène
+  private arenaExits: Map<string, Array<{ fencer: 'A' | 'B'; isVoluntary: boolean }>> = new Map();
   private arenaSuddenDeath: Map<string, boolean> = new Map();
   // Debounce par socket pour update_score : clé = socketId:arenaId, valeur = timestamp dernier envoi
   private scoreUpdateDebounce: Map<string, number> = new Map();
@@ -1602,7 +1606,10 @@ export class RemoteScoreServer {
       cardType?: 'white' | 'yellow' | 'red';
       cardsA?: string[];
       cardsB?: string[];
+      touchesA?: string[];
+      touchesB?: string[];
       suddenDeath?: boolean;
+      isVoluntary?: boolean;
       announcement?: {
         fencer: 'A' | 'B';
         fencerName: string;
@@ -1635,8 +1642,9 @@ export class RemoteScoreServer {
                 ? ((m.scoreB as unknown as { value?: number })?.value ?? 0)
                 : (m.scoreB ?? 0),
           });
-          // Réinitialiser les cartons
           this.arenaCards.set(data.arenaId, { cardsA: [], cardsB: [] });
+          this.arenaTouches.set(data.arenaId, { touchesA: [], touchesB: [] });
+          this.arenaExits.set(data.arenaId, []);
         }
         break;
       case 'start':
@@ -1647,13 +1655,15 @@ export class RemoteScoreServer {
         break;
       case 'finish':
         this.finishArenaMatch(data.arenaId);
-        // Réinitialiser les cartons
         this.arenaCards.set(data.arenaId, { cardsA: [], cardsB: [] });
+        this.arenaTouches.set(data.arenaId, { touchesA: [], touchesB: [] });
+        this.arenaExits.set(data.arenaId, []);
         break;
       case 'next':
         this.loadNextMatch(data.arenaId);
-        // Réinitialiser les cartons
         this.arenaCards.set(data.arenaId, { cardsA: [], cardsB: [] });
+        this.arenaTouches.set(data.arenaId, { touchesA: [], touchesB: [] });
+        this.arenaExits.set(data.arenaId, []);
         break;
       case 'update_score': {
         const debounceKey = `${socket.id}:${data.arenaId}`;
@@ -1683,6 +1693,13 @@ export class RemoteScoreServer {
             status: arena.status,
           });
         }
+        // Mettre à jour les touches par zone si fournies
+        if (data.touchesA !== undefined || data.touchesB !== undefined) {
+          const currentTouches = this.arenaTouches.get(data.arenaId) || { touchesA: [], touchesB: [] };
+          if (data.touchesA !== undefined) currentTouches.touchesA = data.touchesA;
+          if (data.touchesB !== undefined) currentTouches.touchesB = data.touchesB;
+          this.arenaTouches.set(data.arenaId, currentTouches);
+        }
         break;
       }
       case 'add_card':
@@ -1703,12 +1720,20 @@ export class RemoteScoreServer {
           });
         }
         break;
+      case 'arena_exit':
+        if (data.fencer) {
+          const exits = this.arenaExits.get(data.arenaId) || [];
+          exits.push({ fencer: data.fencer as 'A' | 'B', isVoluntary: !!data.isVoluntary });
+          this.arenaExits.set(data.arenaId, exits);
+        }
+        break;
       case 'reset_scores':
         if (arena.currentMatch) {
           this.arenaSuddenDeath.set(data.arenaId, false);
           this.updateArenaScore(data.arenaId, 0, 0);
-          // Réinitialiser les cartons
           this.arenaCards.set(data.arenaId, { cardsA: [], cardsB: [] });
+          this.arenaTouches.set(data.arenaId, { touchesA: [], touchesB: [] });
+          this.arenaExits.set(data.arenaId, []);
           this.broadcastArenaUpdate(data.arenaId, {
             arenaId: data.arenaId,
             match: arena.currentMatch,
@@ -2232,6 +2257,80 @@ export class RemoteScoreServer {
       arena.currentMatch.duration = Math.floor(
         (new Date().getTime() - arena.startTime.getTime()) / 1000
       );
+    }
+
+    // Persister le timing en DB
+    if (arena.currentMatch.id && arena.startTime) {
+      const durationSec = arena.currentMatch.duration ?? 0;
+      this.db.updateMatchTiming(
+        arena.currentMatch.id,
+        arena.startTime.toISOString(),
+        arena.currentMatch.endTime!.toISOString(),
+        durationSec
+      );
+    }
+
+    // Persister les cartons accumulés en mémoire
+    const cards = this.arenaCards.get(arenaId) ?? { cardsA: [], cardsB: [] };
+    const now = new Date().toISOString();
+    const matchId = arena.currentMatch.id;
+    if (matchId) {
+      const persistCards = (list: string[], fencerId: string | undefined) => {
+        if (!fencerId) return;
+        for (const cardType of list) {
+          this.db.saveCard({
+            id: `${matchId}-${fencerId}-${cardType}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            matchId,
+            fencerId,
+            cardType,
+            reason: 'unknown',
+            cardGroup: 1,
+            timestamp: now,
+            pointsAwarded: 0,
+            resultingExclusion: false,
+          });
+        }
+      };
+      persistCards(cards.cardsA, arena.currentMatch.fencerA?.id);
+      persistCards(cards.cardsB, arena.currentMatch.fencerB?.id);
+
+      // Persister les touches par zone
+      const touches = this.arenaTouches.get(arenaId) ?? { touchesA: [], touchesB: [] };
+      const persistTouches = (zoneList: string[], fencerId: string | undefined) => {
+        if (!fencerId) return;
+        const ZONE_POINTS: Record<string, number> = { A: 1, B: 3, C: 5 };
+        for (const zone of zoneList) {
+          this.db.saveTouch({
+            id: `${matchId}-${fencerId}-${zone}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            matchId,
+            fencerId,
+            zone,
+            points: ZONE_POINTS[zone] ?? 1,
+            timestamp: now,
+            isValidInSuddenDeath: false,
+            isReversed: false,
+          });
+        }
+      };
+      persistTouches(touches.touchesA, arena.currentMatch.fencerA?.id);
+      persistTouches(touches.touchesB, arena.currentMatch.fencerB?.id);
+
+      // Persister les sorties d'arène
+      const exits = this.arenaExits.get(arenaId) ?? [];
+      for (const exit of exits) {
+        const fencerId = exit.fencer === 'A'
+          ? arena.currentMatch.fencerA?.id
+          : arena.currentMatch.fencerB?.id;
+        if (!fencerId) continue;
+        this.db.saveArenaExit({
+          id: `${matchId}-${fencerId}-exit-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          matchId,
+          fencerId,
+          exitType: exit.isVoluntary ? 'arena_exit_voluntary' : 'arena_exit',
+          timestamp: now,
+          pointsAwarded: 3,
+        });
+      }
     }
 
     const nextMatch = this.peekNextMatch(arenaId);

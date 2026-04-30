@@ -288,6 +288,23 @@
     "GROUP_3": "Gruppe 3 (Rot → Ausschluss)",
     "GROUP_4": "Gruppe 4 (Sofortiger Ausschluss)"
   },
+  "stats": {
+    "title": "Fechter-Statistiken",
+    "zone_a": "Zone A (1 Pt.)",
+    "zone_b": "Zone B (3 Pt.)",
+    "zone_c": "Zone C (5 Pt.)",
+    "total_points": "Punkte ges.",
+    "white_cards": "Weißkarten",
+    "yellow_cards": "Gelbe Karten",
+    "red_cards": "Rote Karten",
+    "arena_exits": "Platzverweise",
+    "matches_played": "Gefechte",
+    "avg_duration": "Ø Dauer",
+    "early_finishes": "< 3 Min.",
+    "export_pdf": "Statistiken exportieren (PDF)",
+    "no_data": "Keine Statistiken für diesen Wettkampf verfügbar.",
+    "laser_only": "Trefferzonen (A/B/C) sind nur im Laser-Säbel-Modus verfügbar."
+  },
   "shortcuts": {
     "title": "Tastaturkürzel",
     "subtitle": "BellePoule wie ein Profi meistern",
