@@ -874,30 +874,30 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                     gap: '2rem',
                     width: '100%',
                     boxSizing: 'border-box',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 420px), 1fr))',
+                    gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${Math.max(480, 280 + (pools[0]?.fencers?.length ?? 6) * 38)}px), 1fr))`,
                   }}
                 >
                   {pools.map((pool, poolIndex) => (
-                    <PoolView
-                      key={pool.id}
-                      pool={pool}
-                      weapon={competition.weapon}
-                      competitionName={competition.title}
-                      maxScore={poolMaxScore}
-                      onScoreUpdate={(matchIndex, scoreA, scoreB, winner, specialStatus) =>
-                        updateScore(poolIndex, matchIndex, scoreA, scoreB, winner, specialStatus)
-                      }
-                      onFencerStatusChange={(fencerId, status) => {
-                        // Si abandon, forfait ou exclusion, mettre à jour tous les matchs du tireur
-                        if (
-                          status === 'abandon' ||
-                          status === 'forfait' ||
-                          status === 'exclusion'
-                        ) {
-                          handleFencerForfeit(fencerId, status);
+                    <div key={pool.id} style={{ minWidth: 0, overflow: 'auto' }}>
+                      <PoolView
+                        pool={pool}
+                        weapon={competition.weapon}
+                        competitionName={competition.title}
+                        maxScore={poolMaxScore}
+                        onScoreUpdate={(matchIndex, scoreA, scoreB, winner, specialStatus) =>
+                          updateScore(poolIndex, matchIndex, scoreA, scoreB, winner, specialStatus)
                         }
-                      }}
-                    />
+                        onFencerStatusChange={(fencerId, status) => {
+                          if (
+                            status === 'abandon' ||
+                            status === 'forfait' ||
+                            status === 'exclusion'
+                          ) {
+                            handleFencerForfeit(fencerId, status);
+                          }
+                        }}
+                      />
+                    </div>
                   ))}
                 </div>
               </>
