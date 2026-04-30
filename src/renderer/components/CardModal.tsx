@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { CardReason, CardGroup, Card, Fencer } from '../../shared/types';
+import { CardReason, Card, Fencer } from '../../shared/types';
 import { CardType } from '../../features/penalties/types/penalty.types';
 import {
   determineCardType,
@@ -84,21 +84,23 @@ export const CardModal: React.FC<CardModalProps> = ({
     }
   };
 
-  const getCardLabel = (cardType: CardType) => {
+  const getCardLabel = (cardType: string) => {
     switch (cardType) {
       case CardType.WHITE:  return t('cardModal.card_white');
       case CardType.YELLOW: return t('cardModal.card_yellow');
       case CardType.RED:    return t('cardModal.card_red');
       case CardType.BLACK:  return t('cardModal.card_black');
+      default:              return cardType;
     }
   };
 
-  const getCardAbbr = (cardType: CardType) => {
+  const getCardAbbr = (cardType: string) => {
     switch (cardType) {
       case CardType.WHITE:  return t('cardModal.abbr_white');
       case CardType.YELLOW: return t('cardModal.abbr_yellow');
       case CardType.RED:    return t('cardModal.abbr_red');
       case CardType.BLACK:  return t('cardModal.abbr_black');
+      default:              return cardType;
     }
   };
 
@@ -139,7 +141,7 @@ export const CardModal: React.FC<CardModalProps> = ({
           {Object.entries(reasonsByGroup).map(([group, reasons]) => (
             <div key={group}>
               <h3 className="font-semibold text-sm text-gray-600 mb-2">
-                {t(`cardGroups.${group as CardGroup}`)}
+                {t(`cardGroups.${group}`)}
               </h3>
               <div className="grid grid-cols-2 gap-2">
                 {reasons.map(reason => (
