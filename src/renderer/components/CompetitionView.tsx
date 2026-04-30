@@ -872,7 +872,9 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                   style={{
                     display: 'grid',
                     gap: '2rem',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 420px), 1fr))',
                   }}
                 >
                   {pools.map((pool, poolIndex) => (
