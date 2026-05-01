@@ -5,7 +5,10 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { Competition, FencerCompetitionStats, Weapon } from '../../../shared/types';
+import { FencerMatchRecord } from '../../../shared/types/preload';
 import { useTranslation } from '../../../renderer/contexts/TranslationContext';
+import { FencerDetailModal } from './FencerDetailModal';
+import { exportCompetitionDetailPDF } from '../../../shared/utils/fencerDetailPdfExport';
 
 interface FencerStatsTableProps {
   competition: Competition;
@@ -24,6 +27,8 @@ export const FencerStatsTable: React.FC<FencerStatsTableProps> = ({ competition 
   const [loading, setLoading] = useState(true);
   const [sortKey, setSortKey] = useState<keyof FencerCompetitionStats>('fencerLastName');
   const [sortAsc, setSortAsc] = useState(true);
+  const [selectedFencer, setSelectedFencer] = useState<FencerCompetitionStats | null>(null);
+  const [exportingComp, setExportingComp] = useState(false);
 
   const isLaser = competition.weapon === Weapon.LASER;
 
@@ -51,6 +56,36 @@ export const FencerStatsTable: React.FC<FencerStatsTableProps> = ({ competition 
   const handleSort = (key: keyof FencerCompetitionStats) => {
     if (sortKey === key) setSortAsc(a => !a);
     else { setSortKey(key); setSortAsc(true); }
+  };
+
+  const cardReasonLabels = useCallback((): Record<string, string> => {
+    const reasons = [
+      'EARLY_START','LATE_STOP','BODY_CONTACT','COUNTER_ATTACK','TARGET_SUBSTITUTION',
+      'VOLUNTARY_DROP','TIME_WASTING','NON_COMPLIANT_GEAR','ESTOC','UNARMED_HAND',
+      'VOLUNTARY_EXIT','HEAVY_HIT','BRUTALITY','DANGEROUS','REFUSAL','UNSPORTSMANLIKE','CHEATING',
+    ];
+    const labels: Record<string, string> = {};
+    for (const r of reasons) {
+      labels[r] = t(`cardReasons.${r}`) ?? r.replace(/_/g, ' ');
+    }
+    return labels;
+  }, [t]);
+
+  const exportCompetitionPdf = async () => {
+    if (!window.electronAPI?.file) return;
+    setExportingComp(true);
+    try {
+      const entries = await Promise.all(
+        stats.map(async s => {
+          const hist = await window.electronAPI.db.getFencerHistory(s.fencerId);
+          return [s.fencerId, hist.matches] as [string, FencerMatchRecord[]];
+        })
+      );
+      const histories = new Map(entries);
+      await exportCompetitionDetailPDF(sorted, histories, competition, cardReasonLabels());
+    } finally {
+      setExportingComp(false);
+    }
   };
 
   const exportPdf = async () => {
@@ -130,18 +165,35 @@ export const FencerStatsTable: React.FC<FencerStatsTableProps> = ({ competition 
   }
 
   return (
+    <>
+    {selectedFencer && (
+      <FencerDetailModal
+        fencer={selectedFencer}
+        competition={competition}
+        onClose={() => setSelectedFencer(null)}
+      />
+    )}
     <div>
       <div className="flex justify-between items-center mb-3">
         <p className="text-xs text-gray-500">
           {sorted.length} combattant{sorted.length > 1 ? 's' : ''}
           {isLaser ? ` — ${t('stats.laser_only')}` : ''}
         </p>
-        <button
-          onClick={exportPdf}
-          className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
-        >
-          {t('stats.export_pdf')}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={exportCompetitionPdf}
+            disabled={exportingComp}
+            className="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 disabled:opacity-50"
+          >
+            {exportingComp ? 'Export…' : t('stats.export_competition_pdf')}
+          </button>
+          <button
+            onClick={exportPdf}
+            className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+          >
+            {t('stats.export_pdf')}
+          </button>
+        </div>
       </div>
 
       <div className="overflow-x-auto">
@@ -167,8 +219,13 @@ export const FencerStatsTable: React.FC<FencerStatsTableProps> = ({ competition 
           </thead>
           <tbody className="bg-white divide-y divide-gray-100">
             {sorted.map(s => (
-              <tr key={s.fencerId} className="hover:bg-gray-50">
-                <td className="px-2 py-2 font-medium whitespace-nowrap">
+              <tr
+                key={s.fencerId}
+                className="hover:bg-blue-50 cursor-pointer"
+                onClick={() => setSelectedFencer(s)}
+                title="Cliquer pour voir le détail"
+              >
+                <td className="px-2 py-2 font-medium whitespace-nowrap underline decoration-dotted decoration-gray-400">
                   {s.fencerLastName} {s.fencerFirstName}
                 </td>
                 <td className="px-2 py-2 text-gray-600">{s.fencerClub ?? '—'}</td>
@@ -191,5 +248,6 @@ export const FencerStatsTable: React.FC<FencerStatsTableProps> = ({ competition 
         </table>
       </div>
     </div>
+    </>
   );
 };

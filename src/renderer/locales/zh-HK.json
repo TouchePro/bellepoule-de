@@ -1,4 +1,4 @@
-{
+﻿{
   "app": {
     "title": "BellePoule Modern",
     "home": "主頁",
@@ -302,6 +302,8 @@
     "avg_duration": "平均時長",
     "early_finishes": "< 3分鐘",
     "export_pdf": "匯出統計（PDF）",
+    "export_fencer_pdf": "匯出選手（PDF）",
+    "export_competition_pdf": "賽事完整 PDF",
     "no_data": "此賽事暫無統計數據。",
     "laser_only": "觸擊區域（A/B/C）僅適用於雷射佩劍模式。"
   },

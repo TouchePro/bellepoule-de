@@ -1,4 +1,4 @@
-{
+﻿{
   "app": {
     "title": "BellePoule Modern",
     "home": "Broadel",
@@ -302,6 +302,8 @@
     "avg_duration": "Padelezh keiñv.",
     "early_finishes": "< 3 min",
     "export_pdf": "Ezporzhiañ stadegoù (PDF)",
+    "export_fencer_pdf": "Ezporzhiañ treuzour (PDF)",
+    "export_competition_pdf": "PDF kenstrivadeg",
     "no_data": "Stadegoù ebet evit ar genstrivadeg-mañ.",
     "laser_only": "Zonennoù taolioù (A/B/C) hepken el l'izili Sabre Laser."
   },

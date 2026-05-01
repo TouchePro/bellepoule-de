@@ -1,4 +1,4 @@
-{
+﻿{
   "app": {
     "title": "BellePoule Modern",
     "home": "Allgemein",
@@ -302,6 +302,8 @@
     "avg_duration": "Ø Dauer",
     "early_finishes": "< 3 Min.",
     "export_pdf": "Statistiken exportieren (PDF)",
+    "export_fencer_pdf": "Fechter exportieren (PDF)",
+    "export_competition_pdf": "Wettkampf PDF exportieren",
     "no_data": "Keine Statistiken für diesen Wettkampf verfügbar.",
     "laser_only": "Trefferzonen (A/B/C) sind nur im Laser-Säbel-Modus verfügbar."
   },

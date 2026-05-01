@@ -319,6 +319,8 @@
     "avg_duration": "Durée moy.",
     "early_finishes": "< 3 min",
     "export_pdf": "Exporter les statistiques (PDF)",
+    "export_fencer_pdf": "Exporter ce combattant (PDF)",
+    "export_competition_pdf": "Export compétition PDF",
     "no_data": "Aucune statistique disponible pour cette compétition.",
     "laser_only": "Les zones de touches (A/B/C) sont disponibles uniquement en Sabre Laser."
   },

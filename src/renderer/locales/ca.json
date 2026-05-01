@@ -1,4 +1,4 @@
-{
+﻿{
   "app": {
     "title": "BellePoule Modern",
     "home": "General",
@@ -302,6 +302,8 @@
     "avg_duration": "Durada mit.",
     "early_finishes": "< 3 min",
     "export_pdf": "Exportar estadístiques (PDF)",
+    "export_fencer_pdf": "Exportar tirador (PDF)",
+    "export_competition_pdf": "Exportar competició PDF",
     "no_data": "No hi ha estadístiques disponibles per a aquesta competició.",
     "laser_only": "Les zones de toc (A/B/C) només estan disponibles en mode Sabre Làser."
   },

@@ -302,6 +302,8 @@
     "avg_duration": "Avg duration",
     "early_finishes": "< 3 min",
     "export_pdf": "Export statistics (PDF)",
+    "export_fencer_pdf": "Export this fencer (PDF)",
+    "export_competition_pdf": "Competition PDF export",
     "no_data": "No statistics available for this competition.",
     "laser_only": "Touch zones (A/B/C) are only available in Laser Sabre mode."
   },
