@@ -8,12 +8,16 @@ import QRCode from 'qrcode';
 import { logger, LogCategory } from '@shared/services/logger';
 import { Competition } from '../../shared/types';
 
+type QRMode = 'results' | 'checkin';
+
 interface QRCodeShareProps {
   competition: Competition;
   onClose: () => void;
+  mode?: QRMode;
 }
 
-export const QRCodeShare: React.FC<QRCodeShareProps> = ({ competition, onClose }) => {
+export const QRCodeShare: React.FC<QRCodeShareProps> = ({ competition, onClose, mode: initialMode = 'results' }) => {
+  const [activeMode, setActiveMode] = useState<QRMode>(initialMode);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(true);
   const [error, setError] = useState<string>('');
@@ -22,11 +26,12 @@ export const QRCodeShare: React.FC<QRCodeShareProps> = ({ competition, onClose }
   useEffect(() => {
     generateQRCode();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [competition.id]);
+  }, [competition.id, activeMode]);
 
   const generateQRCode = async () => {
     setIsGenerating(true);
     setError('');
+    setQrCodeUrl('');
 
     try {
       const info = await window.electronAPI.remote.getServerInfo();
@@ -38,7 +43,10 @@ export const QRCodeShare: React.FC<QRCodeShareProps> = ({ competition, onClose }
         return;
       }
 
-      const url = `${info.serverInfo.url}/competition/${competition.id}/results`;
+      const path = activeMode === 'checkin'
+        ? `/competition/${competition.id}/checkin`
+        : `/competition/${competition.id}/results`;
+      const url = `${info.serverInfo.url}${path}`;
       setShareUrl(url);
 
       const dataUrl = await QRCode.toDataURL(url, { width: 300, margin: 1 });
@@ -55,7 +63,7 @@ export const QRCodeShare: React.FC<QRCodeShareProps> = ({ competition, onClose }
     if (qrCodeUrl) {
       const link = document.createElement('a');
       link.href = qrCodeUrl;
-      link.download = `qrcode-${competition.title.replace(/\s+/g, '-').toLowerCase()}.png`;
+      link.download = `qrcode-${activeMode}-${competition.title.replace(/\s+/g, '-').toLowerCase()}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -68,22 +76,54 @@ export const QRCodeShare: React.FC<QRCodeShareProps> = ({ competition, onClose }
     });
   };
 
+  const modeConfig = {
+    results: {
+      title: 'Partager les résultats',
+      description: `Scannez ce QR code pour accéder aux résultats de la compétition "${competition.title}"`,
+      info: 'Les spectateurs peuvent voir les résultats en temps réel.',
+    },
+    checkin: {
+      title: 'QR Code de pointage',
+      description: `Les tireurs de "${competition.title}" scannent pour se pointer eux-mêmes.`,
+      info: 'Affichez ce QR code à l\'entrée de la salle pour que les tireurs confirment leur présence.',
+    },
+  };
+
+  const cfg = modeConfig[activeMode];
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal modal--md" onClick={e => e.stopPropagation()}>
         <div className="modal__header">
-          <h2 className="modal__title">📱 Partager les résultats</h2>
-          <button className="modal__close" onClick={onClose}>
-            ×
-          </button>
+          <h2 className="modal__title">📱 {cfg.title}</h2>
+          <button className="modal__close" onClick={onClose}>×</button>
+        </div>
+
+        <div style={{ display: 'flex', borderBottom: '1px solid #e5e7eb' }}>
+          {(['results', 'checkin'] as QRMode[]).map(m => (
+            <button
+              key={m}
+              onClick={() => setActiveMode(m)}
+              style={{
+                flex: 1,
+                padding: '0.625rem',
+                background: 'none',
+                border: 'none',
+                borderBottom: activeMode === m ? '2px solid #3b82f6' : '2px solid transparent',
+                color: activeMode === m ? '#3b82f6' : '#6b7280',
+                fontWeight: activeMode === m ? 600 : 400,
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+              }}
+            >
+              {m === 'results' ? '🏆 Résultats' : '✅ Pointage'}
+            </button>
+          ))}
         </div>
 
         <div className="modal__body">
           <div className="qrcode__container">
-            <p className="qrcode__description">
-              Scannez ce QR code pour accéder aux résultats de la compétition{' '}
-              <strong>"{competition.title}"</strong>
-            </p>
+            <p className="qrcode__description">{cfg.description}</p>
 
             <div className="qrcode__image-container">
               {isGenerating ? (
@@ -92,49 +132,32 @@ export const QRCodeShare: React.FC<QRCodeShareProps> = ({ competition, onClose }
                   <p>Génération du QR code...</p>
                 </div>
               ) : error ? (
-                <div className="alert alert--error" style={{ whiteSpace: 'pre-line' }}>
-                  {error}
-                </div>
+                <div className="alert alert--error" style={{ whiteSpace: 'pre-line' }}>{error}</div>
               ) : (
-                <img
-                  src={qrCodeUrl}
-                  alt="QR Code"
-                  className="qrcode__canvas"
-                  width={300}
-                  height={300}
-                />
+                <img src={qrCodeUrl} alt="QR Code" className="qrcode__canvas" width={300} height={300} />
               )}
             </div>
 
             {!error && shareUrl && (
               <div className="qrcode__url">
-                <label className="form-label">URL de partage :</label>
+                <label className="form-label">URL :</label>
                 <div className="qrcode__url-input">
                   <input type="text" value={shareUrl} readOnly className="form-control" />
-                  <button className="btn btn-secondary" onClick={copyToClipboard}>
-                    📋 Copier
-                  </button>
+                  <button className="btn btn-secondary" onClick={copyToClipboard}>📋 Copier</button>
                 </div>
               </div>
             )}
 
             <div className="qrcode__info">
               <div className="alert alert--info">
-                <strong>💡 Comment utiliser :</strong>
-                <ul>
-                  <li>Scannez le QR code avec votre smartphone</li>
-                  <li>ou copiez l'URL pour la partager</li>
-                  <li>Les spectateurs peuvent voir les résultats en temps réel</li>
-                </ul>
+                <strong>💡 </strong>{cfg.info}
               </div>
             </div>
           </div>
         </div>
 
         <div className="modal__footer">
-          <button className="btn btn-secondary" onClick={onClose}>
-            Fermer
-          </button>
+          <button className="btn btn-secondary" onClick={onClose}>Fermer</button>
           <button
             className="btn btn-primary"
             onClick={downloadQRCode}

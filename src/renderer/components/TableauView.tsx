@@ -11,6 +11,8 @@ import { useModalResize } from '../hooks/useModalResize';
 import Bracket from './Bracket';
 import { exportTableauToPDF, printTableauHTML, MAX_MATCHES_PER_PAGE_TABLEAU } from '../../shared/utils/pdfExport';
 import { usePdfTemplateStore } from '../../features/pdfTemplates/hooks/usePdfTemplateStore';
+import MatchCard from './tableau/MatchCard';
+import SeedingTable from './tableau/SeedingTable';
 
 interface BracketMatch {
   id: string;
@@ -707,170 +709,20 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     return results.sort((a, b) => a.rank - b.rank);
   };
 
-  const renderMatch = (match: TableauMatch, verticalPosition?: number) => {
-    const canEdit = !!(match.fencerA && match.fencerB && !match.isBye);
-    const hasScore = match.scoreA !== null && match.scoreB !== null;
-    const isMatchComplete = match.winner !== null;
-
-    const handleArenaClick = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      setSelectedMatchForArena(match.id);
-      setShowArenaModal(true);
-    };
-
-    return (
-      <div
-        key={match.id}
-        style={{
-          border: '1px solid #e5e7eb',
-          borderRadius: '4px',
-          padding: '0.5rem',
-          background: match.winner ? '#f0fdf4' : 'white',
-          minWidth: '180px',
-          cursor: canEdit ? 'pointer' : 'default',
-          ...(verticalPosition !== undefined
-            ? {
-                position: 'absolute' as const,
-                top: `${verticalPosition}px`,
-                left: 0,
-                right: 0,
-                height: `${BASE_MATCH_HEIGHT}px`,
-                overflow: 'hidden',
-              }
-            : { position: 'relative' as const, marginBottom: '0.25rem' }),
-        }}
-        onClick={() => {
-          if (canEdit) openScoreModal(match);
-        }}
-      >
-        {canEdit && !isMatchComplete && (
-          <button
-            onClick={handleArenaClick}
-            style={{
-              position: 'absolute',
-              top: '4px',
-              right: '4px',
-              background: match.arena ? '#10b981' : '#e5e7eb',
-              color: match.arena ? 'white' : '#6b7280',
-              border: 'none',
-              borderRadius: '4px',
-              padding: '2px 6px',
-              fontSize: '0.625rem',
-              cursor: 'pointer',
-              fontWeight: '500',
-            }}
-            title={match.arena ? `Piste ${match.arena}` : 'Assigner à une piste'}
-          >
-            {match.arena ? `P${match.arena}` : '+P'}
-          </button>
-        )}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            padding: '0.25rem',
-            background: match.winner === match.fencerA ? '#dcfce7' : 'transparent',
-            borderRadius: '2px',
-          }}
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
-            <span
-              style={{
-                fontSize: '0.875rem',
-                fontWeight: match.winner === match.fencerA ? '600' : '400',
-              }}
-            >
-              {match.fencerA
-                ? `${match.fencerA.lastName} ${match.fencerA.firstName.charAt(0)}.`
-                : '-'}
-            </span>
-            {match.fencerA && (
-              <span style={{ fontSize: '0.625rem', color: '#6b7280' }}>
-                {match.fencerA.birthDate && `${new Date(match.fencerA.birthDate).getFullYear()}`}
-                {match.fencerA.ranking && ` • #${match.fencerA.ranking}`}
-              </span>
-            )}
-          </div>
-          <span style={{ fontWeight: '600' }}>{match.scoreA !== null ? match.scoreA : ''}</span>
-        </div>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            padding: '0.25rem',
-            background: match.winner === match.fencerB ? '#dcfce7' : 'transparent',
-            borderRadius: '2px',
-          }}
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
-            <span
-              style={{
-                fontSize: '0.875rem',
-                fontWeight: match.winner === match.fencerB ? '600' : '400',
-              }}
-            >
-              {match.fencerB
-                ? `${match.fencerB.lastName} ${match.fencerB.firstName.charAt(0)}.`
-                : '-'}
-            </span>
-            {match.fencerB && (
-              <span style={{ fontSize: '0.625rem', color: '#6b7280' }}>
-                {match.fencerB.birthDate && `${new Date(match.fencerB.birthDate).getFullYear()}`}
-                {match.fencerB.ranking && ` • #${match.fencerB.ranking}`}
-              </span>
-            )}
-          </div>
-          <span style={{ fontWeight: '600' }}>{match.scoreB !== null ? match.scoreB : ''}</span>
-        </div>
-        {match.isBye && (
-          <div
-            style={{
-              fontSize: '0.75rem',
-              color: '#6b7280',
-              textAlign: 'center',
-              marginTop: '0.25rem',
-            }}
-          >
-            Exempt
-          </div>
-        )}
-        {canEdit && !hasScore && viewMode !== 'full' && (
-          <div
-            style={{
-              width: '100%',
-              marginTop: '0.5rem',
-              padding: '0.25rem',
-              fontSize: '0.75rem',
-              background: '#3b82f6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              textAlign: 'center',
-            }}
-          >
-            Saisir score
-          </div>
-        )}
-        {canEdit && hasScore && viewMode !== 'full' && (
-          <div
-            style={{
-              width: '100%',
-              marginTop: '0.5rem',
-              padding: '0.25rem',
-              fontSize: '0.75rem',
-              background: '#f59e0b',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              textAlign: 'center',
-            }}
-          >
-            Modifier score
-          </div>
-        )}
-      </div>
-    );
-  };
+  const renderMatch = (match: TableauMatch, verticalPosition?: number) => (
+    <MatchCard
+      key={match.id}
+      match={match}
+      verticalPosition={verticalPosition}
+      viewMode={viewMode}
+      baseMatchHeight={BASE_MATCH_HEIGHT}
+      onMatchClick={openScoreModal}
+      onArenaClick={id => {
+        setSelectedMatchForArena(id);
+        setShowArenaModal(true);
+      }}
+    />
+  );
 
   const calculateMatchVerticalPosition = (
     matchRound: number,
@@ -1288,48 +1140,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         )}
       </div>
 
-      <div style={{ marginTop: '2rem' }}>
-        <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>
-          Classement après poules
-        </h3>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-            gap: '0.5rem',
-            maxHeight: '200px',
-            overflowY: 'auto',
-          }}
-        >
-          {ranking.slice(0, tableauSize).map((r, idx) => (
-            <div
-              key={r.fencer.id}
-              style={{
-                display: 'flex',
-                gap: '0.5rem',
-                padding: '0.25rem 0.5rem',
-                background: idx < 8 ? '#dbeafe' : 'white',
-                borderRadius: '4px',
-                fontSize: '0.875rem',
-              }}
-            >
-              <span style={{ fontWeight: '600', minWidth: '24px' }}>{idx + 1}.</span>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
-                <span>
-                  {r.fencer.lastName} {r.fencer.firstName}
-                </span>
-                <span style={{ fontSize: '0.625rem', color: '#6b7280' }}>
-                  {r.fencer.birthDate && `${new Date(r.fencer.birthDate).getFullYear()}`}
-                  {r.fencer.ranking && ` • #${r.fencer.ranking}`}
-                </span>
-              </div>
-              <span style={{ marginLeft: 'auto', color: '#6b7280' }}>
-                {(r.ratio * 100).toFixed(0)}%
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
+      <SeedingTable ranking={ranking} tableauSize={tableauSize} />
 
       {/* Score Modal */}
       {(() => {

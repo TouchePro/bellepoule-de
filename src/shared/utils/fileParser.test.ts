@@ -1,0 +1,282 @@
+import { describe, it, expect } from 'vitest';
+import { parseSimpleTXTFile, parseFFEFile, parseXMLFile } from './fileParser';
+import { Gender, FencerStatus } from '../types';
+
+// ============================================================================
+// parseSimpleTXTFile
+// ============================================================================
+
+describe('parseSimpleTXTFile', () => {
+  it('fichier vide → success=false, erreur', () => {
+    const result = parseSimpleTXTFile('');
+    expect(result.success).toBe(false);
+    expect(result.errors.length).toBeGreaterThan(0);
+    expect(result.fencers).toHaveLength(0);
+  });
+
+  it('fichier avec seulement des lignes vides → success=false', () => {
+    const result = parseSimpleTXTFile('   \n\n   ');
+    expect(result.success).toBe(false);
+    expect(result.errors.length).toBeGreaterThan(0);
+  });
+
+  it('ligne header (nom/prenom) ignorée en position 0', () => {
+    const content = 'NOM;PRENOM\nDUPONT;Jean';
+    const result = parseSimpleTXTFile(content);
+    expect(result.fencers).toHaveLength(1);
+    expect(result.fencers[0].lastName).toBe('DUPONT');
+  });
+
+  it('header contenant "club" ignoré', () => {
+    const content = 'NOM PRENOM CLUB\nDUPONT Jean';
+    const result = parseSimpleTXTFile(content);
+    expect(result.fencers).toHaveLength(1);
+  });
+
+  it('2 tireurs séparés par ;', () => {
+    const content = 'DUPONT;Jean\nMARTIN;Marie';
+    const result = parseSimpleTXTFile(content);
+    expect(result.success).toBe(true);
+    expect(result.fencers).toHaveLength(2);
+    expect(result.fencers[0].lastName).toBe('DUPONT');
+    expect(result.fencers[0].firstName).toBe('Jean');
+    expect(result.fencers[1].lastName).toBe('MARTIN');
+    expect(result.fencers[1].firstName).toBe('Marie');
+  });
+
+  it('2 tireurs séparés par virgule', () => {
+    const content = 'DURAND,Pierre\nBERNARD,Sophie';
+    const result = parseSimpleTXTFile(content);
+    expect(result.success).toBe(true);
+    expect(result.fencers).toHaveLength(2);
+  });
+
+  it('séparateur tabulation', () => {
+    const content = 'LEROUX\tAlice';
+    const result = parseSimpleTXTFile(content);
+    expect(result.success).toBe(true);
+    expect(result.fencers[0].lastName).toBe('LEROUX');
+    expect(result.fencers[0].firstName).toBe('Alice');
+  });
+
+  it('extraction gender M', () => {
+    const content = 'DUPONT;Jean;M';
+    const result = parseSimpleTXTFile(content);
+    expect(result.fencers[0].gender).toBe(Gender.MALE);
+  });
+
+  it('extraction gender F', () => {
+    const content = 'MARTIN;Marie;F';
+    const result = parseSimpleTXTFile(content);
+    expect(result.fencers[0].gender).toBe(Gender.FEMALE);
+  });
+
+  it('gender H interprété comme MALE', () => {
+    const content = 'DUPONT;Jean;H';
+    const result = parseSimpleTXTFile(content);
+    expect(result.fencers[0].gender).toBe(Gender.MALE);
+  });
+
+  it('gender absent → MIXED par défaut', () => {
+    const content = 'DUPONT;Jean';
+    const result = parseSimpleTXTFile(content);
+    expect(result.fencers[0].gender).toBe(Gender.MIXED);
+  });
+
+  it('lastName toujours en majuscules', () => {
+    const content = 'dupont;Jean';
+    const result = parseSimpleTXTFile(content);
+    expect(result.fencers[0].lastName).toBe('DUPONT');
+  });
+
+  it('status NOT_CHECKED_IN par défaut', () => {
+    const content = 'DUPONT;Jean';
+    const result = parseSimpleTXTFile(content);
+    expect(result.fencers[0].status).toBe(FencerStatus.NOT_CHECKED_IN);
+  });
+
+  it('warning si aucun tireur trouvé', () => {
+    const content = 'NOM;PRENOM';
+    const result = parseSimpleTXTFile(content);
+    expect(result.warnings.length).toBeGreaterThan(0);
+  });
+
+  it('nationalité FRA par défaut', () => {
+    const content = 'DUPONT;Jean';
+    const result = parseSimpleTXTFile(content);
+    expect(result.fencers[0].nationality).toBe('FRA');
+  });
+
+  it('BOM UTF-8 supprimé correctement', () => {
+    const bom = '﻿';
+    const content = `${bom}DUPONT;Jean`;
+    const result = parseSimpleTXTFile(content);
+    expect(result.success).toBe(true);
+    expect(result.fencers[0].lastName).toBe('DUPONT');
+  });
+});
+
+// ============================================================================
+// parseFFEFile
+// ============================================================================
+
+describe('parseFFEFile', () => {
+  it('fichier vide → success=false, erreur', () => {
+    const result = parseFFEFile('');
+    expect(result.success).toBe(false);
+    expect(result.errors.length).toBeGreaterThan(0);
+  });
+
+  it('format standard NOM;PRENOM;SEXE;DATE;NATION;LIGUE;CLUB;LICENCE;CLASSEMENT', () => {
+    const content = 'NOM;PRENOM;SEXE;DATE;NATION;LIGUE;CLUB;LICENCE;CLASSEMENT\nDUPONT;Jean;M;15/06/1990;FRA;IDF;CE VERSAILLES;123456;10';
+    const result = parseFFEFile(content);
+    expect(result.success).toBe(true);
+    expect(result.fencers).toHaveLength(1);
+    const f = result.fencers[0];
+    expect(f.lastName).toBe('DUPONT');
+    expect(f.firstName).toBe('Jean');
+    expect(f.gender).toBe(Gender.MALE);
+    expect(f.nationality).toBe('FRA');
+  });
+
+  it('BOM UTF-8 supprimé', () => {
+    const bom = '﻿';
+    const content = `${bom}NOM;PRENOM;SEXE;DATE;NATION;LIGUE;CLUB;LICENCE;CLASSEMENT\nDUPONT;Jean;M;01/01/2000;FRA;;;123;5`;
+    const result = parseFFEFile(content);
+    expect(result.success).toBe(true);
+    expect(result.fencers[0].lastName).toBe('DUPONT');
+  });
+
+  it('ligne malformée (moins de 2 champs) ignorée avec warning', () => {
+    const content = 'NOM;PRENOM\nDUPONT\nMARTIN;Sophie;F;01/01/1995;FRA;;;456;3';
+    const result = parseFFEFile(content);
+    expect(result.fencers).toHaveLength(1);
+    expect(result.fencers[0].lastName).toBe('MARTIN');
+  });
+
+  it('gender F détecté', () => {
+    const content = 'NOM;PRENOM;SEXE\nMARTIN;Sophie;F;;;';
+    const result = parseFFEFile(content);
+    if (result.fencers.length > 0) {
+      expect(result.fencers[0].gender).toBe(Gender.FEMALE);
+    }
+  });
+
+  it('gender M détecté', () => {
+    const content = 'NOM;PRENOM;SEXE\nDUPONT;Jean;M;;;';
+    const result = parseFFEFile(content);
+    if (result.fencers.length > 0) {
+      expect(result.fencers[0].gender).toBe(Gender.MALE);
+    }
+  });
+
+  it('tireur complet avec toutes les colonnes', () => {
+    const content = [
+      'NOM;PRENOM;SEXE;DATE;NATION;LIGUE;CLUB;LICENCE;CLASSEMENT',
+      'LEFEBVRE;Claire;F;20/03/1998;FRA;OCCITANIE;MONTPELLIER ESCRIME;789012;7',
+    ].join('\n');
+    const result = parseFFEFile(content);
+    expect(result.success).toBe(true);
+    const f = result.fencers[0];
+    expect(f.lastName).toBe('LEFEBVRE');
+    expect(f.firstName).toBe('Claire');
+    expect(f.gender).toBe(Gender.FEMALE);
+  });
+
+  it('plusieurs tireurs', () => {
+    const content = [
+      'NOM;PRENOM;SEXE;DATE;NATION;LIGUE;CLUB;LICENCE;CLASSEMENT',
+      'DUPONT;Jean;M;01/01/1990;FRA;;;111;1',
+      'MARTIN;Alice;F;02/02/1992;FRA;;;222;2',
+      'BERNARD;Paul;M;03/03/1994;FRA;;;333;3',
+    ].join('\n');
+    const result = parseFFEFile(content);
+    expect(result.success).toBe(true);
+    expect(result.fencers).toHaveLength(3);
+  });
+
+  it('status NOT_CHECKED_IN par défaut', () => {
+    const content = 'NOM;PRENOM;SEXE;DATE;NATION;LIGUE;CLUB;LICENCE;CLASSEMENT\nDUPONT;Jean;M;01/01/1990;FRA;;;111;1';
+    const result = parseFFEFile(content);
+    expect(result.fencers[0].status).toBe(FencerStatus.NOT_CHECKED_IN);
+  });
+
+  it('lastName toujours en majuscules', () => {
+    const content = 'NOM;PRENOM;SEXE\ndupont;Jean;M;;;';
+    const result = parseFFEFile(content);
+    if (result.fencers.length > 0) {
+      expect(result.fencers[0].lastName).toBe('DUPONT');
+    }
+  });
+});
+
+// ============================================================================
+// parseXMLFile
+// ============================================================================
+
+describe('parseXMLFile', () => {
+  it('XML vide → success=false', () => {
+    const result = parseXMLFile('');
+    expect(result.success).toBe(false);
+    expect(result.fencers).toHaveLength(0);
+  });
+
+  it('XML sans balises Tireur → success=false', () => {
+    const xml = '<?xml version="1.0"?><Competition Titre="Test"></Competition>';
+    const result = parseXMLFile(xml);
+    expect(result.success).toBe(false);
+  });
+
+  it('un tireur complet', () => {
+    const xml = `<Competition><Tireur Nom="DUPONT" Prenom="Jean" Sexe="M" Nation="FRA" Ligue="IDF" Club="CE PARIS" Licence="123456" Classement="5"/></Competition>`;
+    const result = parseXMLFile(xml);
+    expect(result.success).toBe(true);
+    expect(result.fencers).toHaveLength(1);
+    const f = result.fencers[0];
+    expect(f.lastName).toBe('DUPONT');
+    expect(f.firstName).toBe('Jean');
+    expect(f.gender).toBe(Gender.MALE);
+    expect(f.nationality).toBe('FRA');
+    expect(f.club).toBe('CE PARIS');
+    expect(f.license).toBe('123456');
+    expect(f.ranking).toBe(5);
+  });
+
+  it('tireur féminin détecté', () => {
+    const xml = `<Competition><Tireur Nom="MARTIN" Prenom="Sophie" Sexe="F" Nation="FRA"/></Competition>`;
+    const result = parseXMLFile(xml);
+    expect(result.fencers[0].gender).toBe(Gender.FEMALE);
+  });
+
+  it('plusieurs tireurs', () => {
+    const xml = [
+      '<Competition>',
+      '<Tireur Nom="DUPONT" Prenom="Jean" Sexe="M" Nation="FRA"/>',
+      '<Tireur Nom="MARTIN" Prenom="Alice" Sexe="F" Nation="FRA"/>',
+      '<Tireur Nom="BERNARD" Prenom="Paul" Sexe="M" Nation="FRA"/>',
+      '</Competition>',
+    ].join('');
+    const result = parseXMLFile(xml);
+    expect(result.success).toBe(true);
+    expect(result.fencers).toHaveLength(3);
+  });
+
+  it('tireur sans Nom ou Prenom ignoré', () => {
+    const xml = `<Competition><Tireur Nom="" Prenom="Jean" Sexe="M"/><Tireur Nom="MARTIN" Prenom="Alice" Sexe="F" Nation="FRA"/></Competition>`;
+    const result = parseXMLFile(xml);
+    expect(result.fencers).toHaveLength(1);
+    expect(result.fencers[0].lastName).toBe('MARTIN');
+  });
+
+  it('status NOT_CHECKED_IN par défaut', () => {
+    const xml = `<Competition><Tireur Nom="DUPONT" Prenom="Jean" Sexe="M" Nation="FRA"/></Competition>`;
+    const result = parseXMLFile(xml);
+    expect(result.fencers[0].status).toBe(FencerStatus.NOT_CHECKED_IN);
+  });
+
+  it('nation FRA par défaut si absente', () => {
+    const xml = `<Competition><Tireur Nom="DUPONT" Prenom="Jean" Sexe="M"/></Competition>`;
+    const result = parseXMLFile(xml);
+    expect(result.fencers[0].nationality).toBe('FRA');
+  });
+});
