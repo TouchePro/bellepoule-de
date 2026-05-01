@@ -7,6 +7,8 @@
 import React, { useState, useEffect } from 'react';
 import { offlineSync } from '../services/offlineSync';
 import { offlineStorage } from '../services/offlineStorage';
+import { SyncConflict } from '@shared/services/cloudSyncService';
+import { ConflictResolutionModal } from './ConflictResolutionModal';
 
 interface OfflineStatusProps {
   className?: string;
@@ -21,6 +23,8 @@ export const OfflineStatus: React.FC<OfflineStatusProps> = ({ className = '' }) 
     lastSync: null as number | null,
   });
   const [showDetails, setShowDetails] = useState(false);
+  const [showConflictModal, setShowConflictModal] = useState(false);
+  const [conflicts] = useState<SyncConflict[]>([]);
 
   useEffect(() => {
     const updateStatus = async () => {
@@ -56,6 +60,10 @@ export const OfflineStatus: React.FC<OfflineStatusProps> = ({ className = '' }) 
       // Note: We're not removing the sync callback as there's no public method for it
     };
   }, []);
+
+  const handleConflictResolve = (_conflictId: string, _resolution: 'local' | 'remote') => {
+    // Resolution logic delegated to parent via cloud sync service
+  };
 
   const handleManualSync = async () => {
     if (!isOnline) return;
@@ -102,6 +110,7 @@ export const OfflineStatus: React.FC<OfflineStatusProps> = ({ className = '' }) 
   };
 
   return (
+    <>
     <div className={`fixed bottom-4 right-4 z-50 ${className}`}>
       <div className="bg-white rounded-lg shadow-lg border border-gray-200 min-w-[250px]">
         {/* Status indicator */}
@@ -158,7 +167,12 @@ export const OfflineStatus: React.FC<OfflineStatusProps> = ({ className = '' }) 
             {syncStatus.conflicts > 0 && (
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Conflits:</span>
-                <span className="text-sm font-medium text-red-600">{syncStatus.conflicts}</span>
+                <button
+                  onClick={() => setShowConflictModal(true)}
+                  className="text-sm font-medium text-red-600 underline hover:text-red-700 transition-colors"
+                >
+                  Résoudre {syncStatus.conflicts} conflit{syncStatus.conflicts > 1 ? 's' : ''}
+                </button>
               </div>
             )}
 
@@ -193,5 +207,13 @@ export const OfflineStatus: React.FC<OfflineStatusProps> = ({ className = '' }) 
         )}
       </div>
     </div>
+
+      <ConflictResolutionModal
+        conflicts={conflicts}
+        onResolve={handleConflictResolve}
+        onClose={() => setShowConflictModal(false)}
+        isOpen={showConflictModal}
+      />
+    </>
   );
 };

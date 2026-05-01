@@ -555,6 +555,51 @@ export interface UtilityAPI {
   removeAllListeners: (channel: string) => void;
 }
 
+// ============================================================================
+// Bracket Node Types
+// ============================================================================
+
+export interface BracketNodeData {
+  id: string;
+  competitionId: string;
+  round: number;
+  position: number;
+  fencerAId: string | null;
+  fencerBId: string | null;
+  winnerId: string | null;
+  isBye: boolean;
+  matchId: string | null;
+}
+
+// ============================================================================
+// Score Audit Log Types
+// ============================================================================
+
+export interface ScoreAuditLogEntry {
+  id: string;
+  matchId: string;
+  competitionId: string;
+  changedBy: string;
+  timestamp: string; // ISO 8601
+  field: 'scoreA' | 'scoreB' | 'status';
+  previousValue: string | null; // JSON
+  newValue: string | null; // JSON
+}
+
+// ============================================================================
+// Arena State Types
+// ============================================================================
+
+export interface ArenaStateData {
+  arenaId: string;
+  competitionId: string;
+  currentMatchId: string | null;
+  strip: number;
+  isActive: boolean;
+  lastUpdated: string; // ISO 8601
+  extraData?: Record<string, unknown>;
+}
+
 export interface ElectronAPI extends MenuAPI, UtilityAPI {
   db: DatabaseAPI;
   file: FileAPI;

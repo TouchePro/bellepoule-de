@@ -338,17 +338,62 @@ export class CloudSyncService {
    * Upload to Google Drive
    */
   private async uploadToGoogleDrive(data: string): Promise<void> {
-    // Google Drive API implementation
-    // This would use the Google Drive API
-    console.log('Uploading to Google Drive...');
+    const fileName = 'bellepoule-backup.json';
+    const searchResp = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=name='${fileName}'&fields=files(id)`,
+      { headers: { Authorization: `Bearer ${this.config.apiKey}` } }
+    );
+    if (!searchResp.ok) {
+      throw new Error(`Google Drive search failed: ${searchResp.statusText}`);
+    }
+    const searchResult = (await searchResp.json()) as { files: Array<{ id: string }> };
+    const existingId = searchResult.files[0]?.id;
+
+    const metadata = JSON.stringify({ name: fileName, mimeType: 'application/json' });
+    const boundary = 'bellepoule_boundary';
+    const body =
+      `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n` +
+      `${metadata}\r\n` +
+      `--${boundary}\r\nContent-Type: application/json\r\n\r\n` +
+      `${data}\r\n` +
+      `--${boundary}--`;
+
+    const url = existingId
+      ? `https://www.googleapis.com/upload/drive/v3/files/${existingId}?uploadType=multipart`
+      : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+    const method = existingId ? 'PATCH' : 'POST';
+
+    const uploadResp = await fetch(url, {
+      method,
+      headers: {
+        Authorization: `Bearer ${this.config.apiKey}`,
+        'Content-Type': `multipart/related; boundary=${boundary}`,
+      },
+      body,
+    });
+    if (!uploadResp.ok) {
+      throw new Error(`Google Drive upload failed: ${uploadResp.statusText}`);
+    }
   }
 
   /**
    * Upload to OneDrive
    */
   private async uploadToOneDrive(data: string): Promise<void> {
-    // OneDrive API implementation
-    console.log('Uploading to OneDrive...');
+    const response = await fetch(
+      'https://graph.microsoft.com/v1.0/me/drive/root:/bellepoule/backup.json:/content',
+      {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${this.config.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: data,
+      }
+    );
+    if (!response.ok) {
+      throw new Error(`OneDrive upload failed: ${response.statusText}`);
+    }
   }
 
   /**
@@ -487,6 +532,68 @@ export class CloudSyncService {
   private async downloadBackup(backupId: string): Promise<string> {
     // Download implementation
     return '';
+  }
+
+  /**
+   * Download current backup from the active cloud provider
+   */
+  async downloadFromCloud(): Promise<{ competitions: Competition[]; fencers: Fencer[]; matches: Match[] }> {
+    let raw: string;
+
+    switch (this.config.provider) {
+      case 'dropbox': {
+        const resp = await fetch('https://content.dropboxapi.com/2/files/download', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.config.apiKey}`,
+            'Dropbox-API-Arg': JSON.stringify({ path: '/bellepoule/backup.json' }),
+          },
+        });
+        if (!resp.ok) throw new Error(`Dropbox download failed: ${resp.statusText}`);
+        raw = await resp.text();
+        break;
+      }
+      case 'gdrive': {
+        const searchResp = await fetch(
+          `https://www.googleapis.com/drive/v3/files?q=name='bellepoule-backup.json'&fields=files(id)`,
+          { headers: { Authorization: `Bearer ${this.config.apiKey}` } }
+        );
+        if (!searchResp.ok) throw new Error(`Google Drive search failed: ${searchResp.statusText}`);
+        const result = (await searchResp.json()) as { files: Array<{ id: string }> };
+        const fileId = result.files[0]?.id;
+        if (!fileId) throw new Error('Google Drive: backup file not found');
+        const dlResp = await fetch(
+          `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+          { headers: { Authorization: `Bearer ${this.config.apiKey}` } }
+        );
+        if (!dlResp.ok) throw new Error(`Google Drive download failed: ${dlResp.statusText}`);
+        raw = await dlResp.text();
+        break;
+      }
+      case 'onedrive': {
+        const resp = await fetch(
+          'https://graph.microsoft.com/v1.0/me/drive/root:/bellepoule/backup.json:/content',
+          { headers: { Authorization: `Bearer ${this.config.apiKey}` } }
+        );
+        if (!resp.ok) throw new Error(`OneDrive download failed: ${resp.statusText}`);
+        raw = await resp.text();
+        break;
+      }
+      case 'custom': {
+        const resp = await fetch('/api/backup', {
+          headers: { Authorization: `Bearer ${this.config.apiKey}` },
+        });
+        if (!resp.ok) throw new Error(`Custom download failed: ${resp.statusText}`);
+        const json = (await resp.json()) as { data: string };
+        raw = json.data;
+        break;
+      }
+      default:
+        throw new Error(`Unknown provider: ${this.config.provider}`);
+    }
+
+    const decrypted = await this.decryptData(raw);
+    return JSON.parse(decrypted) as { competitions: Competition[]; fencers: Fencer[]; matches: Match[] };
   }
 
   /**

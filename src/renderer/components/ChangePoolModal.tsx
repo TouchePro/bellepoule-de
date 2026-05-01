@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Fencer, Pool, MatchStatus } from '../../shared/types';
 
 interface ChangePoolModalProps {
@@ -23,6 +23,8 @@ const ChangePoolModal: React.FC<ChangePoolModalProps> = ({
   onClose,
 }) => {
   const [selectedPoolIndex, setSelectedPoolIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const dragRef = useRef<boolean>(false);
 
   const currentPoolIndex = allPools.findIndex(p => p.id === currentPool.id);
   const otherPools = allPools
@@ -55,16 +57,21 @@ const ChangePoolModal: React.FC<ChangePoolModalProps> = ({
 
         <div className="modal-body">
           <div
+            draggable
+            onDragStart={() => { dragRef.current = true; }}
+            onDragEnd={() => { dragRef.current = false; setDragOverIndex(null); }}
             style={{
               padding: '1rem',
               background: '#f3f4f6',
               borderRadius: '8px',
               marginBottom: '1rem',
               textAlign: 'center',
+              cursor: 'grab',
+              userSelect: 'none',
             }}
           >
             <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>
-              Tireur sélectionné
+              ↕ Tireur (glisser vers une poule)
             </div>
             <div style={{ fontSize: '1.25rem', fontWeight: '600' }}>
               {fencer.firstName} {fencer.lastName}
@@ -126,12 +133,15 @@ const ChangePoolModal: React.FC<ChangePoolModalProps> = ({
                     <div
                       key={pool.id}
                       onClick={() => setSelectedPoolIndex(index)}
+                      onDragOver={e => { e.preventDefault(); setDragOverIndex(index); }}
+                      onDragLeave={() => setDragOverIndex(null)}
+                      onDrop={e => { e.preventDefault(); setSelectedPoolIndex(index); setDragOverIndex(null); }}
                       style={{
                         padding: '0.75rem 1rem',
-                        border: `2px solid ${isSelected ? '#3b82f6' : '#e5e7eb'}`,
+                        border: `2px solid ${isSelected || dragOverIndex === index ? '#3b82f6' : '#e5e7eb'}`,
                         borderRadius: '8px',
                         cursor: 'pointer',
-                        background: isSelected ? '#eff6ff' : 'white',
+                        background: isSelected ? '#eff6ff' : dragOverIndex === index ? '#dbeafe' : 'white',
                         transition: 'all 0.15s ease',
                       }}
                     >

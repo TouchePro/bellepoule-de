@@ -3,8 +3,8 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Competition, Fencer, FencerStatus, Pool, Match, PhaseType } from '../shared/types';
+import React, { useEffect, useCallback } from 'react';
+import { Competition } from '../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
 import CompetitionList from './components/CompetitionList';
 import CompetitionView from './components/CompetitionView';
@@ -16,28 +16,39 @@ import { ToastProvider, useToast } from './components/Toast';
 import { ConfirmProvider, useConfirm } from './components/ConfirmDialog';
 import { TranslationProvider, useTranslation } from './contexts/TranslationContext';
 import { ErrorBoundary, CompetitionErrorBoundary } from './components/ErrorBoundary';
-
-type View = 'home' | 'competition';
-
-interface OpenCompetition {
-  competition: Competition;
-  isDirty: boolean;
-}
+import { useAppState } from './hooks/useAppState';
 
 const AppContent: React.FC = () => {
   const { t, isLoading: translationLoading } = useTranslation();
   const { showToast } = useToast();
   const { confirm } = useConfirm();
-  const [view, setView] = useState<View>('home');
-  const [competitions, setCompetitions] = useState<Competition[]>([]);
-  const [currentCompetition, setCurrentCompetition] = useState<Competition | null>(null);
-  const [openCompetitions, setOpenCompetitions] = useState<OpenCompetition[]>([]);
-  const [activeTabId, setActiveTabId] = useState<string | null>(null);
-  const [showNewCompetitionModal, setShowNewCompetitionModal] = useState(false);
-  const [showReportIssueModal, setShowReportIssueModal] = useState(false);
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [requestedPhase, setRequestedPhase] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+
+  const {
+    view,
+    competitions,
+    currentCompetition,
+    openCompetitions,
+    activeTabId,
+    showNewCompetitionModal,
+    showReportIssueModal,
+    showSettingsModal,
+    requestedPhase,
+    isLoading,
+    setView,
+    setCompetitions,
+    setCurrentCompetition,
+    setOpenCompetitions,
+    setActiveTabId,
+    setShowNewCompetitionModal,
+    setShowReportIssueModal,
+    setShowSettingsModal,
+    setRequestedPhase,
+    loadCompetitions,
+    handleUpdateCompetition,
+    handleBack,
+    handleSettingsSave,
+    handleTabSwitch,
+  } = useAppState(showToast);
 
   // Load competitions on mount
   useEffect(() => {
@@ -100,18 +111,6 @@ const AppContent: React.FC = () => {
     return () => { if (typeof unsub === 'function') unsub(); };
   }, []);
 
-  const loadCompetitions = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      if (window.electronAPI) {
-        const comps = await window.electronAPI.db.getAllCompetitions();
-        setCompetitions(comps);
-      }
-    } catch (error) {
-      logger.error(LogCategory.UI, 'Failed to load competitions', error as Error);
-    }
-    setIsLoading(false);
-  }, []);
 
   const handleCreateCompetition = useCallback(async (data: Partial<Competition>) => {
     try {
@@ -184,15 +183,6 @@ const AppContent: React.FC = () => {
     }
   };
 
-  const handleTabSwitch = (competitionId: string) => {
-    const openComp = openCompetitions.find(open => open.competition.id === competitionId);
-    if (openComp) {
-      setActiveTabId(competitionId);
-      setCurrentCompetition(openComp.competition);
-      setView('competition');
-    }
-  };
-
   const handleTabClose = async (competitionId: string, e?: React.MouseEvent) => {
     if (e) {
       e.stopPropagation();
@@ -258,27 +248,6 @@ const AppContent: React.FC = () => {
     }
   };
 
-  const handleBack = () => {
-    setView('home');
-  };
-
-  const handleSettingsSave = (settings: any) => {
-    // Currently settings handling would go here
-    // For now, the language change is handled in the SettingsModal component
-    logger.debug(LogCategory.UI, 'Settings saved', { settings });
-  };
-
-  const handleUpdateCompetition = (updated: Competition) => {
-    setCurrentCompetition(updated);
-    setCompetitions(competitions.map(c => (c.id === updated.id ? updated : c)));
-
-    // Marquer l'onglet comme modifié
-    setOpenCompetitions(prev =>
-      prev.map(open =>
-        open.competition.id === updated.id ? { ...open, competition: updated, isDirty: true } : open
-      )
-    );
-  };
 
   return (
     <>

@@ -6,15 +6,15 @@
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useModalResize } from '../hooks/useModalResize';
-import { Pool, Fencer, Match, MatchStatus, Score, Weapon, FencerStatus } from '../../shared/types';
+import { Pool, Fencer, MatchStatus, Score, Weapon, FencerStatus } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
-import { formatRatio, formatIndex } from '../../shared/utils/poolCalculations';
 import { useToast } from './Toast';
 import { useConfirm } from './ConfirmDialog';
 import { exportPoolToPDF } from '../../shared/utils/pdfExport';
 import { useColumnVisibility, POOL_COLUMNS, ColumnId } from '../hooks/useColumnVisibility';
 import { usePdfTemplateStore } from '../../features/pdfTemplates/hooks/usePdfTemplateStore';
 import { useHistory } from '../hooks/useHistory';
+import PoolScoreMatrix from './pool/PoolScoreMatrix';
 
 interface PoolViewProps {
   pool: Pool;
@@ -56,6 +56,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   const [victoryA, setVictoryA] = useState(false);
   const [victoryB, setVictoryB] = useState(false);
   const [matchesUpdateTrigger, setMatchesUpdateTrigger] = useState(0);
+  const [keyboardFocusField, setKeyboardFocusField] = useState<'A' | 'B'>('A');
 
   const { addAction, undo, redo, canUndo, canRedo } = useHistory();
 
@@ -85,6 +86,81 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showColumnMenu]);
+
+  // Raccourcis clavier
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ne pas interférer si un input natif est actif (sauf ceux du modal)
+      const target = e.target as HTMLElement;
+      const inModalInput = target.tagName === 'INPUT' && target.closest('.modal');
+
+      if (editingMatch !== null) {
+        // Modal ouvert
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          setEditingMatch(null);
+          setEditingFromRowA(true);
+          setKeyboardFocusField('A');
+          return;
+        }
+        if (e.key === 'Enter' && !inModalInput) {
+          e.preventDefault();
+          handleScoreSubmit();
+          return;
+        }
+        if (e.key === 'Tab' && !inModalInput) {
+          e.preventDefault();
+          setKeyboardFocusField(prev => (prev === 'A' ? 'B' : 'A'));
+          return;
+        }
+        if ((e.key === 'v' || e.key === 'V') && isLaserSabre && !inModalInput) {
+          e.preventDefault();
+          if (keyboardFocusField === 'A') {
+            setVictoryA(prev => !prev);
+            setVictoryB(false);
+          } else {
+            setVictoryB(prev => !prev);
+            setVictoryA(false);
+          }
+          return;
+        }
+        if (/^\d$/.test(e.key) && !inModalInput) {
+          e.preventDefault();
+          const digit = e.key;
+          if (keyboardFocusField === 'A') {
+            setEditScoreA(prev => (prev.length < 2 ? prev + digit : digit));
+          } else {
+            setEditScoreB(prev => (prev.length < 2 ? prev + digit : digit));
+          }
+          return;
+        }
+      } else {
+        // Modal fermé
+        if ((e.key === 'n' || e.key === 'N') && !inModalInput && target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
+          e.preventDefault();
+          const firstPending = orderedMatches.pending[0];
+          if (firstPending) {
+            openScoreModal(firstPending.index);
+            setKeyboardFocusField('A');
+          }
+          return;
+        }
+        if (e.key === 'z' && e.ctrlKey && !e.shiftKey) {
+          e.preventDefault();
+          undo();
+          return;
+        }
+        if ((e.key === 'y' && e.ctrlKey) || (e.key === 'z' && e.ctrlKey && e.shiftKey) || (e.key === 'Z' && e.ctrlKey && e.shiftKey)) {
+          e.preventDefault();
+          redo();
+          return;
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [editingMatch, keyboardFocusField, isLaserSabre, orderedMatches.pending, undo, redo, handleScoreSubmit]);
 
   // Calculer l'ordre optimal des matches restants
   const orderedMatches = useMemo(() => {
@@ -146,16 +222,6 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
 
     return { pending: ordered, finished };
   }, [pool.matches.length, pool.matches.map(m => m.status).join(',')]);
-
-  const getScore = (fencerA: Fencer, fencerB: Fencer): Score | null => {
-    const match = pool.matches.find(
-      m =>
-        (m.fencerA?.id === fencerA.id && m.fencerB?.id === fencerB.id) ||
-        (m.fencerA?.id === fencerB.id && m.fencerB?.id === fencerA.id)
-    );
-    if (!match || match.status !== MatchStatus.FINISHED) return null;
-    return match.fencerA?.id === fencerA.id ? match.scoreA : match.scoreB;
-  };
 
   const getMatchIndex = (fencerA: Fencer, fencerB: Fencer): number => {
     return pool.matches.findIndex(
@@ -314,31 +380,6 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     setVictoryA(false);
     setVictoryB(false);
   };
-
-  const calculateFencerStats = useCallback(
-    (fencer: Fencer) => {
-      let v = 0,
-        d = 0,
-        td = 0,
-        tr = 0;
-      for (const match of pool.matches) {
-        if (match.status !== MatchStatus.FINISHED) continue;
-        if (match.fencerA?.id === fencer.id) {
-          if (match.scoreA?.isVictory) v++;
-          else d++;
-          td += match.scoreA?.value || 0;
-          tr += match.scoreB?.value || 0;
-        } else if (match.fencerB?.id === fencer.id) {
-          if (match.scoreB?.isVictory) v++;
-          else d++;
-          td += match.scoreB?.value || 0;
-          tr += match.scoreA?.value || 0;
-        }
-      }
-      return { v, d, td, tr, index: td - tr, ratio: v + d > 0 ? v / (v + d) : 0 };
-    },
-    [pool.matches]
-  );
 
   const finishedCount = useMemo(
     () => pool.matches.filter(m => m.status === MatchStatus.FINISHED).length,
@@ -715,235 +756,14 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
 
   // Render Grid View
   const renderGridView = () => (
-    <div className="pool-grid">
-      <div className="pool-row">
-        <div className="pool-cell pool-cell-header pool-cell-name"></div>
-        {fencers.map((_, i) => (
-          <div key={i} className="pool-cell pool-cell-header">
-            {i + 1}
-          </div>
-        ))}
-        {isVisible('victories') && (
-          <div
-            className="pool-cell pool-cell-header"
-            onContextMenu={e => {
-              e.preventDefault();
-              toggleColumn('pool', 'victories');
-            }}
-            title="Clic droit pour masquer"
-          >
-            V
-          </div>
-        )}
-        {isVisible('ratio') && (
-          <div
-            className="pool-cell pool-cell-header"
-            onContextMenu={e => {
-              e.preventDefault();
-              toggleColumn('pool', 'ratio');
-            }}
-            title="Clic droit pour masquer"
-          >
-            V/M
-          </div>
-        )}
-        {isVisible('td') && (
-          <div
-            className="pool-cell pool-cell-header"
-            onContextMenu={e => {
-              e.preventDefault();
-              toggleColumn('pool', 'td');
-            }}
-            title="Clic droit pour masquer"
-          >
-            TD
-          </div>
-        )}
-        {isVisible('tr') && (
-          <div
-            className="pool-cell pool-cell-header"
-            onContextMenu={e => {
-              e.preventDefault();
-              toggleColumn('pool', 'tr');
-            }}
-            title="Clic droit pour masquer"
-          >
-            TR
-          </div>
-        )}
-        {isVisible('quest') && isLaserSabre && (
-          <div
-            className="pool-cell pool-cell-header"
-            style={{ color: '#7c3aed' }}
-            onContextMenu={e => {
-              e.preventDefault();
-              toggleColumn('pool', 'quest');
-            }}
-            title="Clic droit pour masquer"
-          >
-            Quest
-          </div>
-        )}
-        {isVisible('index') && (
-          <div
-            className="pool-cell pool-cell-header"
-            onContextMenu={e => {
-              e.preventDefault();
-              toggleColumn('pool', 'index');
-            }}
-            title="Clic droit pour masquer"
-          >
-            Ind
-          </div>
-        )}
-        {isVisible('rank') && (
-          <div
-            className="pool-cell pool-cell-header"
-            onContextMenu={e => {
-              e.preventDefault();
-              toggleColumn('pool', 'rank');
-            }}
-            title="Clic droit pour masquer"
-          >
-            Rg
-          </div>
-        )}
-      </div>
-
-      {fencers.map((rowFencer, rowIndex) => {
-        const stats = calculateFencerStats(rowFencer);
-        const rankEntry = pool.ranking.find(r => r.fencer.id === rowFencer.id);
-
-        return (
-          <div key={rowFencer.id} className="pool-row">
-            <div
-              className="pool-cell pool-cell-header pool-cell-name"
-              title={`${rowFencer.firstName} ${rowFencer.lastName}`}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}
-            >
-              <span style={{ fontWeight: 500 }}>{rowIndex + 1}.</span>
-              <span className="truncate" style={{ flex: 1 }}>
-                {rowFencer.lastName}
-                <span style={{ fontSize: '0.75rem', color: '#6b7280', marginLeft: '0.25rem' }}>
-                  {rowFencer.firstName}
-                </span>
-              </span>
-              {onFencerChangePool && (
-                <button
-                  onClick={e => {
-                    e.stopPropagation();
-                    onFencerChangePool(rowFencer);
-                  }}
-                  title="Changer de poule"
-                  style={{
-                    padding: '0.125rem 0.25rem',
-                    fontSize: '0.625rem',
-                    background: '#e5e7eb',
-                    border: 'none',
-                    borderRadius: '3px',
-                    cursor: 'pointer',
-                    opacity: 0.6,
-                    transition: 'opacity 0.15s',
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
-                  onMouseLeave={e => (e.currentTarget.style.opacity = '0.6')}
-                >
-                  ↔
-                </button>
-              )}
-            </div>
-
-            {fencers.map((colFencer, colIndex) => {
-              if (rowIndex === colIndex) {
-                return <div key={colIndex} className="pool-cell pool-cell-diagonal"></div>;
-              }
-
-              // Vérifier si l'un des tireurs est abandonné/forfait/exclu
-              const rowFencerAbandoned =
-                rowFencer.status === FencerStatus.ABANDONED ||
-                rowFencer.status === FencerStatus.FORFAIT ||
-                rowFencer.status === FencerStatus.EXCLUDED;
-              const colFencerAbandoned =
-                colFencer.status === FencerStatus.ABANDONED ||
-                colFencer.status === FencerStatus.FORFAIT ||
-                colFencer.status === FencerStatus.EXCLUDED;
-
-              // Si un des deux tireurs a abandonné, le match n'est pas joué - cellule grise vide
-              if (rowFencerAbandoned || colFencerAbandoned) {
-                return (
-                  <div
-                    key={colIndex}
-                    className="pool-cell pool-cell-forfeit"
-                    style={{
-                      cursor: 'not-allowed',
-                      backgroundColor: '#e5e7eb',
-                      color: '#9ca3af',
-                    }}
-                    title="Match non disputé (abandon/forfait)"
-                  >
-                    <span>-</span>
-                  </div>
-                );
-              }
-
-              const score = getScore(rowFencer, colFencer);
-              const cellClass = score
-                ? score.isVictory
-                  ? 'pool-cell-victory'
-                  : 'pool-cell-defeat'
-                : 'pool-cell-editable';
-
-              return (
-                <div
-                  key={colIndex}
-                  className={`pool-cell ${cellClass}`}
-                  onClick={() => handleCellClick(rowFencer, colFencer)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {score ? (
-                    <span>
-                      {score.isVictory ? 'V' : ''}
-                      {score.value}
-                    </span>
-                  ) : (
-                    <span style={{ color: '#9CA3AF' }}>-</span>
-                  )}
-                </div>
-              );
-            })}
-
-            {isVisible('victories') && (
-              <div className="pool-cell" style={{ fontWeight: 600 }}>
-                {stats.v}
-              </div>
-            )}
-            {isVisible('ratio') && (
-              <div className="pool-cell text-sm">{formatRatio(stats.ratio)}</div>
-            )}
-            {isVisible('td') && <div className="pool-cell">{stats.td}</div>}
-            {isVisible('tr') && <div className="pool-cell">{stats.tr}</div>}
-            {isVisible('quest') && isLaserSabre && (
-              <div className="pool-cell" style={{ fontWeight: 600, color: '#7c3aed' }}>
-                {rankEntry?.questPoints ?? '-'}
-              </div>
-            )}
-            {isVisible('index') && (
-              <div
-                className="pool-cell"
-                style={{ color: stats.index >= 0 ? '#059669' : '#DC2626' }}
-              >
-                {formatIndex(stats.index)}
-              </div>
-            )}
-            {isVisible('rank') && (
-              <div className="pool-cell" style={{ fontWeight: 600 }}>
-                {rankEntry?.rank || '-'}
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
+    <PoolScoreMatrix
+      pool={pool}
+      isLaserSabre={isLaserSabre}
+      isVisible={isVisible}
+      toggleColumn={toggleColumn}
+      onCellClick={handleCellClick}
+      onFencerChangePool={onFencerChangePool}
+    />
   );
 
   // Composant Prochain Match réutilisable
