@@ -423,11 +423,23 @@ export class OfflineSyncManager {
   }
 
   private async acceptRemoteVersion(conflict: SyncConflict): Promise<void> {
-    // Update local cache with remote version
-    // Implementation depends on what needs to be updated
+    const { entityType, entityId, remoteVersion } = conflict;
+
+    switch (entityType) {
+      case 'match':
+        await offlineStorage.cacheMatches([remoteVersion]);
+        break;
+      case 'fencer':
+        await offlineStorage.cacheFencers([remoteVersion]);
+        break;
+      case 'pool':
+        await offlineStorage.cachePools([remoteVersion]);
+        break;
+    }
+
     logger.debug(
       LogCategory.NETWORK,
-      `[Sync] Accepting remote version for ${conflict.entityType} ${conflict.entityId}`
+      `[Sync] Accepted remote version for ${entityType} ${entityId}`
     );
   }
 }
