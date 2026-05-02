@@ -72,6 +72,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   );
 
   const columnMenuRef = useRef<HTMLDivElement>(null);
+  const handleScoreSubmitRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -165,7 +166,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         }
         if (e.key === 'Enter' && !inModalInput) {
           e.preventDefault();
-          handleScoreSubmit();
+          handleScoreSubmitRef.current();
           return;
         }
         if (e.key === 'Tab' && !inModalInput) {
@@ -220,7 +221,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [editingMatch, keyboardFocusField, isLaserSabre, orderedMatches.pending, undo, redo, handleScoreSubmit]);
+  }, [editingMatch, keyboardFocusField, isLaserSabre, orderedMatches.pending, undo, redo]);
 
   // Calculer l'ordre optimal des matches restants
 
@@ -337,6 +338,9 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     setVictoryA(false);
     setVictoryB(false);
   };
+
+  // Mettre à jour la ref avec la fonction actuelle
+  handleScoreSubmitRef.current = handleScoreSubmit;
 
   const handleSpecialStatus = async (status: 'abandon' | 'forfait' | 'exclusion') => {
     if (editingMatch === null) return;
@@ -577,7 +581,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                 onKeyDown={e => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
-                    handleScoreSubmit();
+                    handleScoreSubmitRef.current();
                   } else if (e.key === 'Tab' && !e.shiftKey) {
                     e.preventDefault();
                     const modalBody = e.currentTarget.closest('.modal-body');
@@ -631,7 +635,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                 onKeyDown={e => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
-                    handleScoreSubmit();
+                    handleScoreSubmitRef.current();
                   } else if (e.key === 'Tab' && e.shiftKey) {
                     e.preventDefault();
                     const modalBody = e.currentTarget.closest('.modal-body');
