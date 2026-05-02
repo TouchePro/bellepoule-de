@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Pool, PoolRanking, Weapon } from '../../shared/types';
+import { Pool, PoolRanking, Weapon, MatchStatus } from '../../shared/types';
 import { calculateOverallRanking, calculateOverallRankingQuest } from '../../shared/utils/poolCalculations';
 import { formatRatio, formatIndex } from '../../shared/utils/poolCalculations';
 
@@ -58,7 +58,7 @@ export const LiveInterPoolRanking: React.FC<LiveInterPoolRankingProps> = ({
 
   const totalMatches = pools.reduce((s, p) => s + p.matches.length, 0);
   const finishedMatches = pools.reduce(
-    (s, p) => s + p.matches.filter(m => m.status === 'FINISHED' || m.status === 'finished').length,
+    (s, p) => s + p.matches.filter(m => m.status === MatchStatus.FINISHED).length,
     0
   );
   const progress = totalMatches > 0 ? Math.round((finishedMatches / totalMatches) * 100) : 0;

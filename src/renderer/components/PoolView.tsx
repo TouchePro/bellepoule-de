@@ -88,6 +88,66 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   }, [showColumnMenu]);
 
   // Raccourcis clavier
+
+  const orderedMatches = useMemo(() => {
+    const pending = pool.matches
+      .map((m, idx) => ({ match: m, index: idx }))
+      .filter(({ match }) => match.status !== MatchStatus.FINISHED);
+
+    const finished = pool.matches
+      .map((m, idx) => ({ match: m, index: idx }))
+      .filter(({ match }) => match.status === MatchStatus.FINISHED);
+
+    if (pending.length === 0) return { pending: [], finished };
+
+    // Algorithme pour éviter qu'un tireur combatte 2 fois d'affilée
+    const ordered: typeof pending = [];
+    const remaining = [...pending];
+    let lastFencerIds: Set<string> = new Set();
+
+    // Si des matchs ont déjà été joués, récupérer les derniers combattants
+    if (finished.length > 0) {
+      const lastMatch = finished[finished.length - 1].match;
+      if (lastMatch.fencerA) lastFencerIds.add(lastMatch.fencerA.id);
+      if (lastMatch.fencerB) lastFencerIds.add(lastMatch.fencerB.id);
+    }
+
+    while (remaining.length > 0) {
+      // Chercher un match où aucun des deux tireurs n'a combattu au dernier tour
+      let bestIdx = -1;
+      let bestScore = -1;
+
+      for (let i = 0; i < remaining.length; i++) {
+        const { match } = remaining[i];
+        const fencerAId = match.fencerA?.id || '';
+        const fencerBId = match.fencerB?.id || '';
+
+        let score = 0;
+        if (!lastFencerIds.has(fencerAId)) score++;
+        if (!lastFencerIds.has(fencerBId)) score++;
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestIdx = i;
+        }
+
+        // Score parfait (2) = aucun des deux n'a combattu
+        if (score === 2) break;
+      }
+
+      // Prendre le meilleur match trouvé (ou le premier si aucun idéal)
+      const chosenIdx = bestIdx >= 0 ? bestIdx : 0;
+      const chosen = remaining.splice(chosenIdx, 1)[0];
+      ordered.push(chosen);
+
+      // Mettre à jour les derniers combattants
+      lastFencerIds = new Set();
+      if (chosen.match.fencerA) lastFencerIds.add(chosen.match.fencerA.id);
+      if (chosen.match.fencerB) lastFencerIds.add(chosen.match.fencerB.id);
+    }
+
+    return { pending: ordered, finished };
+  }, [pool.matches.length, pool.matches.map(m => m.status).join(',')]);
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ne pas interférer si un input natif est actif (sauf ceux du modal)
@@ -163,65 +223,6 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   }, [editingMatch, keyboardFocusField, isLaserSabre, orderedMatches.pending, undo, redo, handleScoreSubmit]);
 
   // Calculer l'ordre optimal des matches restants
-  const orderedMatches = useMemo(() => {
-    const pending = pool.matches
-      .map((m, idx) => ({ match: m, index: idx }))
-      .filter(({ match }) => match.status !== MatchStatus.FINISHED);
-
-    const finished = pool.matches
-      .map((m, idx) => ({ match: m, index: idx }))
-      .filter(({ match }) => match.status === MatchStatus.FINISHED);
-
-    if (pending.length === 0) return { pending: [], finished };
-
-    // Algorithme pour éviter qu'un tireur combatte 2 fois d'affilée
-    const ordered: typeof pending = [];
-    const remaining = [...pending];
-    let lastFencerIds: Set<string> = new Set();
-
-    // Si des matchs ont déjà été joués, récupérer les derniers combattants
-    if (finished.length > 0) {
-      const lastMatch = finished[finished.length - 1].match;
-      if (lastMatch.fencerA) lastFencerIds.add(lastMatch.fencerA.id);
-      if (lastMatch.fencerB) lastFencerIds.add(lastMatch.fencerB.id);
-    }
-
-    while (remaining.length > 0) {
-      // Chercher un match où aucun des deux tireurs n'a combattu au dernier tour
-      let bestIdx = -1;
-      let bestScore = -1;
-
-      for (let i = 0; i < remaining.length; i++) {
-        const { match } = remaining[i];
-        const fencerAId = match.fencerA?.id || '';
-        const fencerBId = match.fencerB?.id || '';
-
-        let score = 0;
-        if (!lastFencerIds.has(fencerAId)) score++;
-        if (!lastFencerIds.has(fencerBId)) score++;
-
-        if (score > bestScore) {
-          bestScore = score;
-          bestIdx = i;
-        }
-
-        // Score parfait (2) = aucun des deux n'a combattu
-        if (score === 2) break;
-      }
-
-      // Prendre le meilleur match trouvé (ou le premier si aucun idéal)
-      const chosenIdx = bestIdx >= 0 ? bestIdx : 0;
-      const chosen = remaining.splice(chosenIdx, 1)[0];
-      ordered.push(chosen);
-
-      // Mettre à jour les derniers combattants
-      lastFencerIds = new Set();
-      if (chosen.match.fencerA) lastFencerIds.add(chosen.match.fencerA.id);
-      if (chosen.match.fencerB) lastFencerIds.add(chosen.match.fencerB.id);
-    }
-
-    return { pending: ordered, finished };
-  }, [pool.matches.length, pool.matches.map(m => m.status).join(',')]);
 
   const getMatchIndex = (fencerA: Fencer, fencerB: Fencer): number => {
     return pool.matches.findIndex(
