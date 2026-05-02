@@ -4,7 +4,6 @@
  * Licensed under GPL-3.0
  */
 
-// @ts-expect-error - sql.js types are incomplete
 import initSqlJs from 'sql.js';
 import * as path from 'path';
 import * as fs from 'fs';
