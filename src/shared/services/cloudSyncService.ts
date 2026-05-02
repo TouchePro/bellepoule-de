@@ -6,6 +6,7 @@
 
 import { Competition, Fencer, Match } from '../types';
 import { detectConflicts, mergeActionsById } from '../utils/conflictResolution';
+import { logger, LogCategory } from './logger';
 
 export interface CloudSyncConfig {
   provider: 'dropbox' | 'gdrive' | 'onedrive' | 'custom';
@@ -102,7 +103,7 @@ export class CloudSyncService {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(jwk));
       }
     } catch (error) {
-      console.error('Failed to initialize encryption:', error);
+      logger.error(LogCategory.SYSTEM, 'Encryption init failed', error as Error);
       throw new Error('Encryption initialization failed');
     }
   }
@@ -131,7 +132,7 @@ export class CloudSyncService {
 
       return btoa(String.fromCharCode(...combined));
     } catch (error) {
-      console.error('Encryption failed:', error);
+      logger.error(LogCategory.SYSTEM, 'Encryption failed', error as Error);
       throw error;
     }
   }
@@ -162,7 +163,7 @@ export class CloudSyncService {
       const decoder = new TextDecoder();
       return decoder.decode(decrypted);
     } catch (error) {
-      console.error('Decryption failed:', error);
+      logger.error(LogCategory.SYSTEM, 'Decryption failed', error as Error);
       throw error;
     }
   }
@@ -211,7 +212,7 @@ export class CloudSyncService {
    */
   async sync(): Promise<boolean> {
     if (this.syncStatus.isSyncing) {
-      console.log('Sync already in progress');
+      logger.debug(LogCategory.SYSTEM, 'Sync already in progress');
       return false;
     }
 
@@ -240,7 +241,7 @@ export class CloudSyncService {
 
       return true;
     } catch (error) {
-      console.error('Sync failed:', error);
+      logger.error(LogCategory.SYSTEM, 'Sync failed', error as Error);
       this.syncStatus.errors.push(error instanceof Error ? error.message : 'Unknown error');
       return false;
     } finally {
@@ -521,7 +522,7 @@ export class CloudSyncService {
 
       return true;
     } catch (error) {
-      console.error('Restore failed:', error);
+      logger.error(LogCategory.SYSTEM, 'Restore failed', error as Error);
       return false;
     }
   }

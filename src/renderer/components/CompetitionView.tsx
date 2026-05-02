@@ -1299,5 +1299,5 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   );
 };
 
-export default CompetitionView;
+export default React.memo(CompetitionView);
 

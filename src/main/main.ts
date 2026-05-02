@@ -455,10 +455,6 @@ function createWindow(): void {
     }
   );
 
-  mainWindow.webContents.session.setPermissionCheckHandler((_webContents, permission) => {
-    return cameraPermissions.has(permission);
-  });
-
   // Security: Set CSP headers for all requests
   mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
     callback({
@@ -1231,12 +1227,10 @@ ipcMain.handle('dialog:saveFile', async (_, options) => {
 });
 
 // Print handler
-ipcMain.handle('window:print', () => {
-  return new Promise<void>(resolve => {
-    mainWindow?.webContents.print({ silent: false, printBackground: true }, () => {
-      resolve();
-    });
-  });
+ipcMain.handle('window:print', async () => {
+  if (mainWindow) {
+    await mainWindow.webContents.print({ silent: false, printBackground: true });
+  }
 });
 
 // Print via hidden BrowserWindow — opens system print dialog on clean HTML
@@ -1259,16 +1253,15 @@ ipcMain.handle('file:printHtml', async (_, html: string) => {
     printWin.setMenu(null);
     printWin.loadFile(tmpFile);
 
-    printWin.webContents.once('did-finish-load', () => {
-      printWin.webContents.print({ silent: false, printBackground: true }, success => {
-        try {
-          fs.unlinkSync(tmpFile);
-        } catch {
-          /* ignore */
-        }
-        printWin.destroy();
-        resolve({ success });
-      });
+    printWin.webContents.once('did-finish-load', async () => {
+      const success = await printWin.webContents.print({ silent: false, printBackground: true });
+      try {
+        fs.unlinkSync(tmpFile);
+      } catch {
+        /* ignore */
+      }
+      printWin.destroy();
+      resolve({ success });
     });
 
     printWin.webContents.once('did-fail-load', () => {

@@ -124,7 +124,9 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     if (fingerprint === sessionPoolsFingerprintRef.current) return;
     sessionPoolsFingerprintRef.current = fingerprint;
     const updates = pools.map(pool => ({ poolId: pool.id, fencers: pool.fencers ?? [] }));
-    window.electronAPI.remote.updatePoolFencers(updates).catch(() => {});
+    window.electronAPI.remote.updatePoolFencers(updates).catch((err: unknown) => {
+      logger.warn(LogCategory.NETWORK, 'Échec updatePoolFencers', err instanceof Error ? err : undefined);
+    });
   }, [pools, isRemoteActive, session]);
 
   // Quand les matchs tableau changent pendant une session active, mettre à jour le serveur
@@ -142,7 +144,9 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     if (key === prevDeMatchesKeyRef.current) return;
     prevDeMatchesKeyRef.current = key;
     if (!isRemoteActive || !session || pendingDeMatches.length === 0) return;
-    window.electronAPI.remote.refreshDeMatches(pendingDeMatches).catch(() => {});
+    window.electronAPI.remote.refreshDeMatches(pendingDeMatches).catch((err: unknown) => {
+      logger.warn(LogCategory.NETWORK, 'Échec refreshDeMatches', err instanceof Error ? err : undefined);
+    });
   }, [pendingDeMatches, isRemoteActive, session]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
