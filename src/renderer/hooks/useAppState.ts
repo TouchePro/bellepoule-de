@@ -41,7 +41,7 @@ export interface AppStateActions {
 }
 
 export function useAppState(
-  showToast: (message: string, type?: string) => void
+  showToast: (message: string, type?: 'info' | 'success' | 'warning' | 'error') => void
 ): AppState & AppStateActions {
   const [view, setView] = useState<View>('home');
   const [competitions, setCompetitions] = useState<Competition[]>([]);
