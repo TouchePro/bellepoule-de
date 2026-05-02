@@ -1253,15 +1253,16 @@ ipcMain.handle('file:printHtml', async (_, html: string) => {
     printWin.setMenu(null);
     printWin.loadFile(tmpFile);
 
-    printWin.webContents.once('did-finish-load', async () => {
-      const success = await printWin.webContents.print({ silent: false, printBackground: true });
-      try {
-        fs.unlinkSync(tmpFile);
-      } catch {
-        /* ignore */
-      }
-      printWin.destroy();
-      resolve({ success });
+    printWin.webContents.once('did-finish-load', () => {
+      printWin.webContents.print({ silent: false, printBackground: true }, (success: boolean) => {
+        try {
+          fs.unlinkSync(tmpFile);
+        } catch {
+          /* ignore */
+        }
+        printWin.destroy();
+        resolve({ success });
+      });
     });
 
     printWin.webContents.once('did-fail-load', () => {
