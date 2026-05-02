@@ -5,6 +5,7 @@
  */
 
 import { Competition, Match, Fencer } from '../types';
+import { logger, LogCategory } from './logger';
 
 export interface NotificationConfig {
   browser: boolean;
@@ -56,7 +57,7 @@ export class NotificationService {
    */
   async initialize(): Promise<boolean> {
     if (!('Notification' in window)) {
-      console.warn('Notifications not supported');
+      logger.warn(LogCategory.SYSTEM, 'Notifications not supported');
       return false;
     }
 
@@ -98,9 +99,9 @@ export class NotificationService {
     if ('serviceWorker' in navigator) {
       try {
         this.swRegistration = await navigator.serviceWorker.register('/notification-sw.js');
-        console.log('Notification service worker registered');
+        logger.info(LogCategory.SYSTEM, 'Notification service worker registered');
       } catch (error) {
-        console.error('Service worker registration failed:', error);
+        logger.error(LogCategory.SYSTEM, 'Service worker registration failed', error as Error);
       }
     }
   }
@@ -179,7 +180,7 @@ export class NotificationService {
     if (!this.config.webhook) return;
 
     if (!this.isWebhookUrlSafe(this.config.webhook.url)) {
-      console.error('Webhook refusé : URL non sécurisée (doit être https vers un hôte public)');
+      logger.error(LogCategory.NETWORK, 'Webhook refusé : URL non sécurisée (doit être https vers un hôte public)');
       return;
     }
 
@@ -196,7 +197,7 @@ export class NotificationService {
         }),
       });
     } catch (error) {
-      console.error('Webhook notification failed:', error);
+      logger.error(LogCategory.NETWORK, 'Webhook notification failed', error as Error);
     }
   }
 
@@ -205,7 +206,7 @@ export class NotificationService {
    */
   private async sendEmail(payload: NotificationPayload): Promise<void> {
     // This would require a server endpoint
-    console.log('Email notification would be sent:', payload);
+    logger.debug(LogCategory.NETWORK, 'Email notification would be sent', { payload });
   }
 
   /**

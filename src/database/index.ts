@@ -419,6 +419,37 @@ export class DatabaseManager {
     }
   }
 
+  private parseFencerRow(row: any): Fencer {
+    let poolStats = undefined;
+    if (row.pool_stats) {
+      try {
+        poolStats = JSON.parse(row.pool_stats as string);
+      } catch {
+        console.error('DB: Failed to parse pool_stats JSON for fencer', row.id);
+      }
+    }
+    return {
+      id: row.id as string,
+      ref: row.ref as number,
+      lastName: row.last_name as string,
+      firstName: row.first_name as string,
+      birthDate: row.birth_date ? new Date(row.birth_date as string) : undefined,
+      gender: row.gender as Gender,
+      nationality: row.nationality as string,
+      region: row.region as string,
+      club: row.club as string,
+      license: row.license as string,
+      ranking: row.ranking as number,
+      status: row.status as FencerStatus,
+      seedNumber: row.seed_number as number,
+      finalRanking: row.final_ranking as number,
+      poolStats,
+      photo: (row.photo as string) || undefined,
+      createdAt: row.created_at ? new Date(row.created_at as string) : new Date(),
+      updatedAt: row.updated_at ? new Date(row.updated_at as string) : new Date(),
+    };
+  }
+
   public getFencer(id: string): Fencer | null {
     if (!this.db) throw new Error('Database not open');
     const stmt = this.db.prepare('SELECT * FROM fencers WHERE id = ?');
@@ -429,41 +460,10 @@ export class DatabaseManager {
     }
     const row = stmt.getAsObject();
     stmt.free();
-
     try {
-      // Parse poolStats with error handling
-      let poolStats = undefined;
-      if (row.pool_stats) {
-        try {
-          poolStats = JSON.parse(row.pool_stats as string);
-        } catch (e) {
-          console.error('DB: Failed to parse pool_stats JSON for fencer', row.id, e);
-        }
-      }
-
-      return {
-        id: row.id as string,
-        ref: row.ref as number,
-        lastName: row.last_name as string,
-        firstName: row.first_name as string,
-        birthDate: row.birth_date ? new Date(row.birth_date as string) : undefined,
-        gender: row.gender as Gender,
-        nationality: row.nationality as string,
-        region: row.region as string,
-        club: row.club as string,
-        license: row.license as string,
-        ranking: row.ranking as number,
-        status: row.status as FencerStatus,
-        seedNumber: row.seed_number as number,
-        finalRanking: row.final_ranking as number,
-        poolStats: poolStats,
-        photo: (row.photo as string) || undefined,
-        createdAt: row.created_at ? new Date(row.created_at as string) : new Date(),
-        updatedAt: row.updated_at ? new Date(row.updated_at as string) : new Date(),
-      };
+      return this.parseFencerRow(row);
     } catch (error) {
       console.error('DB: Error parsing fencer data:', error);
-      console.error('DB: Row data:', row);
       throw error;
     }
   }
@@ -471,11 +471,10 @@ export class DatabaseManager {
   public getFencersByCompetition(competitionId: string): Fencer[] {
     if (!this.db) throw new Error('Database not open');
     const results: Fencer[] = [];
-    const stmt = this.db.prepare('SELECT id FROM fencers WHERE competition_id = ? ORDER BY ref');
+    const stmt = this.db.prepare('SELECT * FROM fencers WHERE competition_id = ? ORDER BY ref');
     stmt.bind([competitionId]);
     while (stmt.step()) {
-      const fencer = this.getFencer(stmt.getAsObject().id as string);
-      if (fencer) results.push(fencer);
+      results.push(this.parseFencerRow(stmt.getAsObject()));
     }
     stmt.free();
     return results;
@@ -504,23 +503,28 @@ export class DatabaseManager {
     let matched = 0;
     const now = new Date().toISOString();
 
+    const selectStmt = this.db.prepare(
+      'SELECT id FROM fencers WHERE competition_id = ? AND license = ? LIMIT 1'
+    );
+    const updateStmt = this.db.prepare(
+      'UPDATE fencers SET photo = ?, updated_at = ? WHERE competition_id = ? AND license = ?'
+    );
+
     for (const { license, photo } of photos) {
-      const stmt = this.db.prepare(
-        'SELECT id FROM fencers WHERE competition_id = ? AND license = ? LIMIT 1'
-      );
-      stmt.bind([competitionId, license]);
-      const exists = stmt.step();
-      stmt.free();
+      selectStmt.bind([competitionId, license]);
+      const exists = selectStmt.step();
+      selectStmt.reset();
 
       if (exists) {
-        this.db.run(
-          'UPDATE fencers SET photo = ?, updated_at = ? WHERE competition_id = ? AND license = ?',
-          [photo, now, competitionId, license]
-        );
+        updateStmt.bind([photo, now, competitionId, license]);
+        updateStmt.step();
+        updateStmt.reset();
         matched++;
       }
     }
 
+    selectStmt.free();
+    updateStmt.free();
     this.save();
     return { matched, total: photos.length };
   }
@@ -799,12 +803,11 @@ export class DatabaseManager {
     if (!this.db) throw new Error('Database not open');
     const results: Fencer[] = [];
     const stmt = this.db.prepare(
-      'SELECT fencer_id FROM pool_fencers WHERE pool_id = ? ORDER BY position'
+      'SELECT f.* FROM fencers f INNER JOIN pool_fencers pf ON f.id = pf.fencer_id WHERE pf.pool_id = ? ORDER BY pf.position'
     );
     stmt.bind([poolId]);
     while (stmt.step()) {
-      const fencer = this.getFencer(stmt.getAsObject().fencer_id as string);
-      if (fencer) results.push(fencer);
+      results.push(this.parseFencerRow(stmt.getAsObject()));
     }
     stmt.free();
     return results;
@@ -812,15 +815,46 @@ export class DatabaseManager {
 
   public getMatchesByPool(poolId: string): Match[] {
     if (!this.db) throw new Error('Database not open');
-    const results: Match[] = [];
-    const stmt = this.db.prepare('SELECT id FROM matches WHERE pool_id = ? ORDER BY number');
+    const matchRows: any[] = [];
+    const stmt = this.db.prepare('SELECT * FROM matches WHERE pool_id = ? ORDER BY number');
     stmt.bind([poolId]);
-    while (stmt.step()) {
-      const match = this.getMatch(stmt.getAsObject().id as string);
-      if (match) results.push(match);
-    }
+    while (stmt.step()) matchRows.push(stmt.getAsObject());
     stmt.free();
-    return results;
+    if (matchRows.length === 0) return [];
+
+    // Batch-fetch all fencers referenced by these matches in a single query
+    const fencerIds = new Set<string>();
+    for (const row of matchRows) {
+      if (row.fencer_a_id) fencerIds.add(row.fencer_a_id as string);
+      if (row.fencer_b_id) fencerIds.add(row.fencer_b_id as string);
+    }
+    const fencersById = new Map<string, Fencer>();
+    if (fencerIds.size > 0) {
+      const placeholders = Array.from({ length: fencerIds.size }, () => '?').join(',');
+      const fStmt = this.db.prepare(`SELECT * FROM fencers WHERE id IN (${placeholders})`);
+      fStmt.bind(Array.from(fencerIds));
+      while (fStmt.step()) {
+        const fRow = fStmt.getAsObject();
+        fencersById.set(fRow.id as string, this.parseFencerRow(fRow));
+      }
+      fStmt.free();
+    }
+
+    return matchRows.map(row => ({
+      id: row.id as string,
+      number: row.number as number,
+      fencerA: row.fencer_a_id ? (fencersById.get(row.fencer_a_id as string) ?? null) : null,
+      fencerB: row.fencer_b_id ? (fencersById.get(row.fencer_b_id as string) ?? null) : null,
+      scoreA: row.score_a ? JSON.parse(row.score_a as string) : null,
+      scoreB: row.score_b ? JSON.parse(row.score_b as string) : null,
+      maxScore: row.max_score as number,
+      status: row.status as MatchStatus,
+      poolId: row.pool_id as string,
+      tableId: row.table_id as string,
+      round: row.round as number,
+      createdAt: new Date(row.created_at as string),
+      updatedAt: new Date(row.updated_at as string),
+    }));
   }
 
   public getCompetitionPools(competitionId: string): { id: string; name: string }[] {

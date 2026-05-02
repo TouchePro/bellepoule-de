@@ -10,7 +10,7 @@
 
 ### Electron
 
-- [ ] **[DEPR-1] `webContents.print()` callback déprécié** — `src/main/main.ts:1236` et `1263`  
+- [x] **[DEPR-1] `webContents.print()` callback déprécié** — `src/main/main.ts:1236` et `1263`  
   Remplacer le troisième argument callback par la version Promise disponible depuis Electron 29 :
   ```ts
   // Avant
@@ -19,7 +19,7 @@
   const success = await webContents.print({ silent: false, printBackground: true });
   ```
 
-- [ ] **[DEPR-2] `setPermissionCheckHandler` déprécié (Electron 25+)** — `src/main/main.ts:458-460`  
+- [x] **[DEPR-2] `setPermissionCheckHandler` déprécié (Electron 25+)** — `src/main/main.ts:458-460`  
   Supprimer l'appel : `setPermissionRequestHandler` seul suffit pour contrôler les permissions caméra/micro.
 
 ### TypeScript
@@ -96,34 +96,34 @@
 
 ### Base de données — Requêtes N+1
 
-- [ ] **[PERF-1] Spin loop CPU dans la sauvegarde BDD** — `src/database/index.ts:104-108`  
+- [ ] **[PERF-1] Spin loop CPU dans la sauvegarde BDD** *(nécessite refactoring async de save() — 35+ appelants)* — `src/database/index.ts:104-108`  
   La boucle `while (Date.now() - start < waitMs)` bloque le thread et peut geler l'UI lors de retries (verrouillage antivirus Windows).  
   Fix : `await new Promise(r => setTimeout(r, waitMs));`
 
-- [ ] **[PERF-2] Requêtes N+1 — `getFencersByCompetition`** — `src/database/index.ts:471-482`  
+- [x] **[PERF-2] Requêtes N+1 — `getFencersByCompetition`** — `src/database/index.ts:471-482`  
   SELECT des IDs → N appels individuels à `getFencer()`.  
   Fix : `SELECT * FROM fencers WHERE competition_id = ? ORDER BY ref` + `parseFencerRow()` direct.
 
-- [ ] **[PERF-3] Requêtes N+1 — `getPoolFencers` + `getMatchesByPool`** — `src/database/index.ts:798-824`  
+- [x] **[PERF-3] Requêtes N+1 — `getPoolFencers` + `getMatchesByPool`** — `src/database/index.ts:798-824`  
   Même anti-pattern SELECT id → N × getRow().  
   Fix : requêtes complètes avec tous les champs.
 
-- [ ] **[PERF-4] Requêtes N+1 critique — `getPoolsByPhase`** — `src/database/index.ts:1162-1188`  
+- [x] **[PERF-4] Requêtes N+1 critique — `getPoolsByPhase`** — `src/database/index.ts:1162-1188`  
   Pour chaque pool : appelle `getPoolFencers()` + `getMatchesByPool()`, chacune faisant elle-même N requêtes.  
   Complexité totale : **O(pools × (fencers + matches))**.  
   Fix : requête JOIN unique ou batch SELECT + regroupement côté applicatif.
 
-- [ ] **[PERF-5] `updateFencerPhotosByLicense` — prepare() dans une boucle for** — `src/database/index.ts:507-514`  
+- [x] **[PERF-5] `updateFencerPhotosByLicense` — prepare() dans une boucle for** — `src/database/index.ts:507-514`  
   N requêtes préparées individuellement pour N photos.  
   Fix : préparer le statement **une fois** hors de la boucle, exécuter N fois.
 
 ### React
 
-- [ ] **[PERF-6] `CompetitionView.tsx` non mémoïsé** — `src/renderer/components/CompetitionView.tsx`  
+- [x] **[PERF-6] `CompetitionView.tsx` non mémoïsé** — `src/renderer/components/CompetitionView.tsx`  
   Composant de 1303 lignes se re-rend à chaque changement du parent.  
   Fix : `export default React.memo(CompetitionView)`
 
-- [ ] **[PERF-7] Handlers sans `useCallback` dans App.tsx** — `src/renderer/App.tsx:145-184`  
+- [x] **[PERF-7] Handlers sans `useCallback` dans App.tsx** — `src/renderer/App.tsx:145-184`  
   `handleSelectCompetition` et consorts recréés à chaque render, propagent des re-renders aux enfants.  
   Fix : `useCallback(fn, [deps])` sur les handlers passés comme props.
 
@@ -141,7 +141,7 @@
 
 ## 🟡 QUALITÉ — Issues de code
 
-- [ ] **[QUAL-1] `console.log/error` dans le code de production**  
+- [x] **[QUAL-1] `console.log/error` dans le code de production**  
   `drop_console` webpack ne couvre que le bundle renderer, pas le process main.  
   Remplacer par `logger.error()` / `logger.warn()` de `src/shared/services/logger.ts` dans :
   - `src/database/index.ts:111`
@@ -150,7 +150,7 @@
   - `src/shared/utils/fileParser.ts:48, 67, 77, 90, 162, 168`
   - `src/shared/utils/tournamentTemplates.ts` (4 appels)
 
-- [ ] **[QUAL-2] Gestion d'erreurs silencieuse (`.catch(() => {})`)**  
+- [x] **[QUAL-2] Gestion d'erreurs silencieuse (`.catch(() => {})`)**  
   Au minimum logger.warn dans chaque catch vide :
   - `src/renderer/App.tsx:106`
   - `src/renderer/components/SettingsModal.tsx:134, 157`

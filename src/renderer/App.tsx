@@ -103,7 +103,9 @@ const AppContent: React.FC = () => {
     api.getLogo?.().then((logo: string | null) => {
       if (logo) localStorage.setItem('bellepoule-logo', logo);
       else localStorage.removeItem('bellepoule-logo');
-    }).catch(() => {});
+    }).catch((err: unknown) => {
+      logger.warn(LogCategory.UI, 'Impossible de charger le logo', err instanceof Error ? err : undefined);
+    });
     const unsub = api.onLogoLoaded?.((logo: string | null) => {
       if (logo) localStorage.setItem('bellepoule-logo', logo);
       else localStorage.removeItem('bellepoule-logo');
@@ -142,7 +144,7 @@ const AppContent: React.FC = () => {
     setShowNewCompetitionModal(false);
   }, []);
 
-  const handleSelectCompetition = async (competition: Competition) => {
+  const handleSelectCompetition = useCallback(async (competition: Competition) => {
     logger.debug(LogCategory.UI, 'handleSelectCompetition', {
       id: competition.id,
       title: competition.title,
@@ -181,9 +183,9 @@ const AppContent: React.FC = () => {
       logger.error(LogCategory.UI, 'Failed to load competition', error as Error);
       showToast('Erreur lors du chargement de la compétition', 'error');
     }
-  };
+  }, [openCompetitions, showToast]);
 
-  const handleTabClose = async (competitionId: string, e?: React.MouseEvent) => {
+  const handleTabClose = useCallback(async (competitionId: string, e?: React.MouseEvent) => {
     if (e) {
       e.stopPropagation();
     }
@@ -214,9 +216,9 @@ const AppContent: React.FC = () => {
         setView('home');
       }
     }
-  };
+  }, [openCompetitions, activeTabId, confirm]);
 
-  const handleDeleteCompetition = async (id: string) => {
+  const handleDeleteCompetition = useCallback(async (id: string) => {
     try {
       if (window.electronAPI) {
         await window.electronAPI.db.deleteCompetition(id);
@@ -246,7 +248,7 @@ const AppContent: React.FC = () => {
     } catch (error) {
       logger.error(LogCategory.UI, 'Failed to delete competition', error as Error);
     }
-  };
+  }, [activeTabId, currentCompetition]);
 
 
   return (

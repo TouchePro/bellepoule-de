@@ -5,6 +5,7 @@
  */
 
 import { Fencer, FencerStatus, Gender } from '../types';
+import { logger, LogCategory } from '../services/logger';
 
 export interface ImportResult {
   success: boolean;
@@ -45,7 +46,7 @@ export function parseSimpleTXTFile(content: string): ImportResult {
     return result;
   }
 
-  console.log(`Parsing TXT file with ${lines.length} lines`);
+  logger.debug(LogCategory.BUSINESS, 'Parsing TXT file', { lines: lines.length });
 
   // Pour chaque ligne, essayer de parser un tireur
   for (let i = 0; i < lines.length; i++) {
@@ -64,7 +65,7 @@ export function parseSimpleTXTFile(content: string): ImportResult {
         line.toLowerCase().includes('club') ||
         line.toLowerCase().includes('ligue'))
     ) {
-      console.log(`Skipping header line: ${line}`);
+      logger.debug(LogCategory.BUSINESS, 'Skipping header line', { line });
       continue;
     }
 
@@ -74,7 +75,7 @@ export function parseSimpleTXTFile(content: string): ImportResult {
         result.fencers.push(fencer);
       }
     } catch (error) {
-      console.error(`Error parsing line ${i + 1}: ${line}`, error);
+      logger.error(LogCategory.BUSINESS, `Error parsing line ${i + 1}`, error instanceof Error ? error : undefined, { line });
       result.errors.push(
         `Ligne ${i + 1}: ${error instanceof Error ? error.message : 'Erreur de parsing'}`
       );
@@ -87,7 +88,7 @@ export function parseSimpleTXTFile(content: string): ImportResult {
     result.warnings.push('Aucun tireur trouvé dans le fichier. Vérifiez le format.');
   }
 
-  console.log(`Parsed ${result.fencers.length} fencers from TXT file`);
+  logger.debug(LogCategory.BUSINESS, 'Parsed TXT file', { fencers: result.fencers.length });
   return result;
 }
 
@@ -137,7 +138,7 @@ function parseTXTLine(line: string, lineNumber: number): Partial<Fencer> | null 
   }
 
   if (bestParts.length < 2) {
-    console.warn(`Line ${lineNumber}: Not enough parts to extract name (${bestParts.length})`);
+    logger.warn(LogCategory.BUSINESS, `Line ${lineNumber}: Not enough parts to extract name`, { parts: bestParts.length });
     return null;
   }
 
@@ -145,7 +146,7 @@ function parseTXTLine(line: string, lineNumber: number): Partial<Fencer> | null 
   const firstName = bestParts[1]?.trim();
 
   if (!lastName || !firstName) {
-    console.warn(`Line ${lineNumber}: Missing name or first name`);
+    logger.warn(LogCategory.BUSINESS, `Line ${lineNumber}: Missing name or first name`);
     return null;
   }
 
@@ -180,7 +181,7 @@ function parseTXTLine(line: string, lineNumber: number): Partial<Fencer> | null 
     status: FencerStatus.NOT_CHECKED_IN,
   };
 
-  console.log(`Parsed fencer: ${firstName} ${lastName} (${gender})`);
+  logger.debug(LogCategory.BUSINESS, 'Parsed fencer', { firstName, lastName, gender });
 
   return fencer;
 }
@@ -211,9 +212,7 @@ export function parseFFEFile(content: string): ImportResult {
 
   // Détecter le format et le(s) séparateur(s)
   const formatInfo = detectFormat(lines);
-  console.log(`Format détecté: ${formatInfo.type}`);
-  console.log(`Séparateur principal: "${formatInfo.primarySeparator}"`);
-  console.log(`Première ligne: ${lines[0]}`);
+  logger.debug(LogCategory.BUSINESS, 'Format détecté', { type: formatInfo.type, separator: formatInfo.primarySeparator });
 
   // Vérifier si la première ligne est un en-tête
   const firstLineLower = lines[0].toLowerCase();
@@ -361,7 +360,7 @@ function detectFormat(lines: string[]): FormatInfo {
       const firstSectionCommas = (parts[0].match(/,/g) || []).length;
       // Format FFF typique: NOM,PRENOM,DATE,SEXE,NATION (4 virgules)
       if (firstSectionCommas >= 3 && firstSectionCommas <= 5) {
-        console.log('Format FFF détecté: première virgule = séparateur NOM/PRÉNOM');
+        logger.debug(LogCategory.BUSINESS, 'Format FFF détecté: première virgule = séparateur NOM/PRÉNOM');
         return {
           type: 'mixed',
           primarySeparator: ';',
@@ -374,7 +373,7 @@ function detectFormat(lines: string[]): FormatInfo {
   // Détecter si c'est le format où seule la première partie utilise des virgules
   const parts = dataLine.split(';');
   if (parts.length >= 2 && parts[0].includes(',')) {
-    console.log('Format mixte détecté: virgules dans première section, points-virgules ensuite');
+    logger.debug(LogCategory.BUSINESS, 'Format mixte détecté: virgules dans première section, points-virgules ensuite');
     return {
       type: 'mixed',
       primarySeparator: ';',
@@ -384,9 +383,7 @@ function detectFormat(lines: string[]): FormatInfo {
 
   // Détecter si le format utilise des virgules dans une structure tabulaire
   if (dataLine.includes(',') && dataLine.includes('\t')) {
-    console.log(
-      'Format mixte détecté: virgules dans les données, tabulations comme séparateurs de tableaux'
-    );
+    logger.debug(LogCategory.BUSINESS, 'Format mixte détecté: virgules dans les données, tabulations comme séparateurs de tableaux');
     return {
       type: 'mixed',
       primarySeparator: '\t',
@@ -396,7 +393,7 @@ function detectFormat(lines: string[]): FormatInfo {
 
   // Format standard avec un seul séparateur
   const separator = detectSeparator(lines);
-  console.log(`Format standard détecté avec séparateur: "${separator}"`);
+  logger.debug(LogCategory.BUSINESS, 'Format standard détecté', { separator });
   return {
     type: 'standard',
     primarySeparator: separator,
@@ -412,7 +409,7 @@ function parseLineWithFormat(line: string, formatInfo: FormatInfo): string[] {
     if (formatInfo.primarySeparator === ',' && formatInfo.secondarySeparator === ',') {
       // Parser directement avec les virgules comme séparateurs
       const parts = parseLine(line, ',');
-      console.log(`Format FFF compact: ${parts.length} colonnes détectées`);
+      logger.debug(LogCategory.BUSINESS, 'Format FFF compact', { columns: parts.length });
       return parts;
     }
 
@@ -592,7 +589,7 @@ function detectSeparator(lines: string[]): string {
     }
   }
 
-  console.log('Scores de séparateurs:', scores);
+  logger.debug(LogCategory.BUSINESS, 'Scores de séparateurs', { scores });
 
   // Si aucun bon séparateur trouvé, essayer point-virgule par défaut (FFE)
   return bestScore > 0 ? bestSep : ';';
@@ -718,7 +715,7 @@ function parseFFELine(
     } else if (['F', 'FEMME', 'FEMALE', 'FEMININ', 'DAME', 'FILLE', 'D'].includes(genderField)) {
       gender = Gender.FEMALE;
     } else {
-      console.warn(`Ligne ${lineNumber}: Sexe non reconnu "${genderField}", mixte par défaut`);
+      logger.warn(LogCategory.BUSINESS, `Ligne ${lineNumber}: Sexe non reconnu`, { genderField });
     }
   }
 
@@ -745,7 +742,7 @@ function parseFFELine(
         const day = parseInt(dateMatch[3]);
         birthDate = new Date(year, month, day);
       } else {
-        console.warn(`Ligne ${lineNumber}: Date non reconnue "${dateStr}"`);
+        logger.warn(LogCategory.BUSINESS, `Ligne ${lineNumber}: Date non reconnue`, { dateStr });
       }
     }
   }
@@ -1070,7 +1067,7 @@ export function importRankingFromFFF(
       });
     } catch (error) {
       result.skipped++;
-      console.error(`Error parsing line ${i + 1}: ${line}`, error);
+      logger.error(LogCategory.BUSINESS, `Error parsing line ${i + 1}`, error instanceof Error ? error : undefined, { line });
       result.errors.push(
         `Ligne ${i + 1}: ${error instanceof Error ? error.message : 'Erreur de parsing'}`
       );
