@@ -50,7 +50,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [editingMatch, setEditingMatch] = useState<number | null>(null);
   const [showColumnMenu, setShowColumnMenu] = useState(false);
-  const [editingFromRowA, setEditingFromRowA] = useState<boolean>(true);
+
   const [editScoreA, setEditScoreA] = useState('');
   const [editScoreB, setEditScoreB] = useState('');
   const [victoryA, setVictoryA] = useState(false);
@@ -160,7 +160,6 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         if (e.key === 'Escape') {
           e.preventDefault();
           setEditingMatch(null);
-          setEditingFromRowA(true);
           setKeyboardFocusField('A');
           return;
         }
@@ -253,20 +252,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     if (rowFencer.id === colFencer.id) return;
     const matchIndex = getMatchIndex(rowFencer, colFencer);
     if (matchIndex === -1) return;
-
-    const match = pool.matches[matchIndex];
-    const isRowA = match.fencerA?.id === rowFencer.id;
-
-    setEditingMatch(matchIndex);
-    setEditingFromRowA(isRowA);
-    setEditScoreA(
-      isRowA ? match.scoreA?.value?.toString() || '' : match.scoreB?.value?.toString() || ''
-    );
-    setEditScoreB(
-      isRowA ? match.scoreB?.value?.toString() || '' : match.scoreA?.value?.toString() || ''
-    );
-    setVictoryA(false);
-    setVictoryB(false);
+    openScoreModal(matchIndex);
   };
 
   const handleScoreSubmit = () => {
@@ -289,9 +275,8 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
       }
     }
 
-    // Si on édite depuis la ligne B, inverser les scores pour les enregistrer correctement
-    const actualScoreA = editingFromRowA ? scoreA : scoreB;
-    const actualScoreB = editingFromRowA ? scoreB : scoreA;
+    const actualScoreA = scoreA;
+    const actualScoreB = scoreB;
 
     // Capturer l'ancien score pour l'historique
     const match = pool.matches[editingMatch];
@@ -302,7 +287,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     if (actualScoreA === actualScoreB) {
       if (isLaserSabre && (victoryA || victoryB)) {
         // Déterminer qui gagne selon la perspective
-        const winner = editingFromRowA ? (victoryA ? 'A' : 'B') : victoryB ? 'A' : 'B';
+        const winner = victoryA ? 'A' : 'B';
         addAction({
           type: 'UPDATE_SCORE',
           description: `Score poule ${pool.number} match ${matchIdx + 1}`,
@@ -332,7 +317,6 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
 
     // Fermer le modal immédiatement après la mise à jour
     setEditingMatch(null);
-    setEditingFromRowA(true);
     setEditScoreA('');
     setEditScoreB('');
     setVictoryA(false);
@@ -379,7 +363,6 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
 
     // Fermer le modal immédiatement après la mise à jour
     setEditingMatch(null);
-    setEditingFromRowA(true);
     setEditScoreA('');
     setEditScoreB('');
     setVictoryA(false);
@@ -481,7 +464,6 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         className="modal-overlay"
         onClick={() => {
           setEditingMatch(null);
-          setEditingFromRowA(true);
         }}
       >
         <div
@@ -745,7 +727,6 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               className="btn btn-secondary"
               onClick={() => {
                 setEditingMatch(null);
-                setEditingFromRowA(true);
               }}
             >
               Annuler
