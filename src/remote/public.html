@@ -660,8 +660,8 @@
       <div class="match-display" id="match-display">
         <div class="fencers-row">
           <!-- Tireur A (Vert) -->
-          <div class="fencer-display green-side">
-            <div class="color-badge green"></div>
+          <div id="fencer-a-display" class="fencer-display green-side">
+            <div id="color-badge-a" class="color-badge green"></div>
             <div class="fencer-name" id="fencer-a-name">-</div>
             <div class="fencer-club" id="fencer-a-club">-</div>
             <div class="cards-container" id="fencer-a-cards"></div>
@@ -672,8 +672,8 @@
           <div class="vs-divider">VS</div>
 
           <!-- Tireur B (Rouge) -->
-          <div class="fencer-display red-side">
-            <div class="color-badge red"></div>
+          <div id="fencer-b-display" class="fencer-display red-side">
+            <div id="color-badge-b" class="color-badge red"></div>
             <div class="fencer-name" id="fencer-b-name">-</div>
             <div class="fencer-club" id="fencer-b-club">-</div>
             <div class="cards-container" id="fencer-b-cards"></div>
@@ -803,6 +803,7 @@
             const cb = document.getElementById('inversion-checkbox');
             if (cb) cb.checked = data.swapped;
             localStorage.setItem('publicInversionEnabled', data.swapped);
+            this.applyInversionColors();
           }
 
           if (data.status) {
@@ -891,6 +892,24 @@
           const valB = (typeof sB === 'object' ? (sB?.value ?? 0) : sB) ?? 0;
           document.getElementById('score-a').textContent = this.inversionEnabled ? valB : valA;
           document.getElementById('score-b').textContent = this.inversionEnabled ? valA : valB;
+
+          this.applyInversionColors();
+        }
+
+        applyInversionColors() {
+          const inv = this.inversionEnabled;
+          const dispA = document.getElementById('fencer-a-display');
+          const dispB = document.getElementById('fencer-b-display');
+          if (dispA) dispA.className = `fencer-display ${inv ? 'red-side' : 'green-side'}`;
+          if (dispB) dispB.className = `fencer-display ${inv ? 'green-side' : 'red-side'}`;
+          const badgeA = document.getElementById('color-badge-a');
+          const badgeB = document.getElementById('color-badge-b');
+          if (badgeA) badgeA.className = `color-badge ${inv ? 'red' : 'green'}`;
+          if (badgeB) badgeB.className = `color-badge ${inv ? 'green' : 'red'}`;
+          const scoreA = document.getElementById('score-a');
+          const scoreB = document.getElementById('score-b');
+          if (scoreA) { scoreA.className = scoreA.className.replace(/\b(green|red)\b/, inv ? 'red' : 'green'); }
+          if (scoreB) { scoreB.className = scoreB.className.replace(/\b(green|red)\b/, inv ? 'green' : 'red'); }
         }
 
         updateCardsDisplay() {
