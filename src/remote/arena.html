@@ -1527,14 +1527,16 @@
           if (!this.nextMatch) return;
           const fA = this.nextMatch.fencerA || {};
           const fB = this.nextMatch.fencerB || {};
+          const left  = this.inversionEnabled ? fB : fA;
+          const right = this.inversionEnabled ? fA : fB;
 
           document.getElementById('next-name-a').textContent =
-            `${fA.lastName || ''} ${fA.firstName || ''}`.trim() || '-';
+            `${left.lastName || ''} ${left.firstName || ''}`.trim() || '-';
           document.getElementById('next-name-b').textContent =
-            `${fB.lastName || ''} ${fB.firstName || ''}`.trim() || '-';
+            `${right.lastName || ''} ${right.firstName || ''}`.trim() || '-';
 
-          this.setNextFencerPhoto('a', fA.photo);
-          this.setNextFencerPhoto('b', fB.photo);
+          this.setNextFencerPhoto('a', left.photo);
+          this.setNextFencerPhoto('b', right.photo);
         }
 
         setNextFencerPhoto(side, photoBase64) {
@@ -1587,14 +1589,16 @@
           if (this.nextMatch) {
             const fA = this.nextMatch.fencerA || {};
             const fB = this.nextMatch.fencerB || {};
+            const left  = this.inversionEnabled ? fB : fA;
+            const right = this.inversionEnabled ? fA : fB;
             document.getElementById('idle-name-a').textContent =
-              `${fA.lastName || ''} ${fA.firstName || ''}`.trim() || '-';
-            document.getElementById('idle-club-a').textContent = fA.club || '';
+              `${left.lastName || ''} ${left.firstName || ''}`.trim() || '-';
+            document.getElementById('idle-club-a').textContent = left.club || '';
             document.getElementById('idle-name-b').textContent =
-              `${fB.lastName || ''} ${fB.firstName || ''}`.trim() || '-';
-            document.getElementById('idle-club-b').textContent = fB.club || '';
-            this.setIdleFencerPhoto('a', fA.photo);
-            this.setIdleFencerPhoto('b', fB.photo);
+              `${right.lastName || ''} ${right.firstName || ''}`.trim() || '-';
+            document.getElementById('idle-club-b').textContent = right.club || '';
+            this.setIdleFencerPhoto('a', left.photo);
+            this.setIdleFencerPhoto('b', right.photo);
             preview.classList.remove('hidden');
             idleNumber.style.display = 'none';
             if (idleLabel) idleLabel.style.display = 'none';
