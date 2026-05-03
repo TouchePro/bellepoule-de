@@ -63,6 +63,16 @@ export const usePoolManagement = ({
     [isLaserSabre]
   );
 
+  // Inclut l'historique des tours précédents pour un classement cumulatif
+  const computeOverallRankingAllRounds = useCallback(
+    (currentPools: Pool[], extraHistory?: Pool[][]) => {
+      const history = extraHistory ?? poolHistory;
+      const allPools = [...history.flat(), ...currentPools];
+      return computeOverallRanking(allPools);
+    },
+    [poolHistory, computeOverallRanking]
+  );
+
   // Générer les poules
   const generatePools = useCallback(
     (checkedInFencers: Fencer[]) => {
@@ -171,14 +181,14 @@ export const usePoolManagement = ({
 
         updatedPools[poolIndex] = pool;
 
-        // Recalculer le classement général
-        const newOverallRanking = computeOverallRanking(updatedPools);
+        // Recalculer le classement général (tous les tours cumulés)
+        const newOverallRanking = computeOverallRankingAllRounds(updatedPools);
         setOverallRanking(newOverallRanking);
 
         return updatedPools;
       });
     },
-    [computePoolRanking, computeOverallRanking]
+    [computePoolRanking, computeOverallRankingAllRounds]
   );
 
   // Passer au tour de poules suivant
@@ -232,12 +242,15 @@ export const usePoolManagement = ({
       setPools(newPools);
       setCurrentPoolRound(prev => prev + 1);
 
-      const ranking = computeOverallRanking(newPools);
+      // Classement cumulatif sur tous les tours terminés (historique + tour courant)
+      // newPools est vide, le classement reflète l'état après le tour qui vient de finir
+      const allCompletedPools = [...poolHistory, pools];
+      const ranking = computeOverallRanking(allCompletedPools.flat());
       setOverallRanking(ranking);
 
       showToast(`Tour ${currentPoolRound + 1} de poules créé`, 'success');
     },
-    [pools, currentPoolRound, poolMaxScore, computeOverallRanking, showToast]
+    [pools, poolHistory, currentPoolRound, poolMaxScore, computeOverallRanking, showToast]
   );
 
   // Vérifier si toutes les poules sont complètes
@@ -362,9 +375,9 @@ export const usePoolManagement = ({
           }
         });
 
-        // Recalculer le classement général
+        // Recalculer le classement général (tous les tours cumulés)
         if (modifiedCount > 0) {
-          const newOverallRanking = computeOverallRanking(updatedPools);
+          const newOverallRanking = computeOverallRankingAllRounds(updatedPools);
           setOverallRanking(newOverallRanking);
           showToast(
             `${modifiedCount} match(s) marqué(s) comme non disputés (${status})`,
@@ -375,7 +388,7 @@ export const usePoolManagement = ({
         return updatedPools;
       });
     },
-    [competitionId, pools, computePoolRanking, computeOverallRanking, showToast]
+    [competitionId, pools, computePoolRanking, computeOverallRankingAllRounds, showToast]
   );
 
   // Annuler un abandon/forfait/exclusion et restaurer les matchs affectés
@@ -449,7 +462,7 @@ export const usePoolManagement = ({
           pool.updatedAt = new Date();
         });
 
-        const newOverallRanking = computeOverallRanking(updatedPools);
+        const newOverallRanking = computeOverallRankingAllRounds(updatedPools);
         setOverallRanking(newOverallRanking);
 
         if (restoredCount > 0) {
@@ -466,7 +479,7 @@ export const usePoolManagement = ({
         await window.electronAPI.db.deleteAbandonSnapshot(fencerId).catch(() => {});
       }
     },
-    [competitionId, computePoolRanking, computeOverallRanking, showToast]
+    [competitionId, computePoolRanking, computeOverallRankingAllRounds, showToast]
   );
 
   // Mettre à jour un match depuis une source externe (serveur distant)
@@ -519,8 +532,8 @@ export const usePoolManagement = ({
           return prevPools;
         }
 
-        // Recalculer le classement général
-        const newOverallRanking = computeOverallRanking(updatedPools);
+        // Recalculer le classement général (tous les tours cumulés)
+        const newOverallRanking = computeOverallRankingAllRounds(updatedPools);
         setOverallRanking(newOverallRanking);
 
         logger.debug(
@@ -530,7 +543,7 @@ export const usePoolManagement = ({
         return updatedPools;
       });
     },
-    [computePoolRanking, computeOverallRanking]
+    [computePoolRanking, computeOverallRankingAllRounds]
   );
 
   // Synchroniser les données des tireurs (ex: photo) dans les matches de poule
@@ -574,6 +587,7 @@ export const usePoolManagement = ({
     getPoolStats,
     computePoolRanking,
     computeOverallRanking,
+    computeOverallRankingAllRounds,
     handleFencerForfeit,
     handleUndoAbandon,
     syncFencersToPool,

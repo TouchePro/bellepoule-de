@@ -983,8 +983,10 @@ export function calculateOverallRankingQuest(pools: Pool[]): PoolRanking[] {
     allRankings.push(...ranking);
   });
 
-  // Trier selon les critères demandés (même ordre que calculateOverallRanking)
-  allRankings.sort((a, b) => {
+  // Fusionner les stats du même tireur (multi-tours de poules)
+  const mergedRankings = mergeFencerRankings(allRankings);
+
+  mergedRankings.sort((a, b) => {
     // 1. Ratio de victoires V/M (décroissant)
     if (a.ratio !== b.ratio) {
       return b.ratio - a.ratio;
@@ -1003,9 +1005,38 @@ export function calculateOverallRankingQuest(pools: Pool[]): PoolRanking[] {
     return 0;
   });
 
-  assignRanks(allRankings);
+  assignRanks(mergedRankings);
 
-  return allRankings;
+  return mergedRankings;
+}
+
+/**
+ * Fusionne les entrées de classement du même tireur (multi-tours de poules).
+ * Additionne victoires, défaites, touches, et recalcule ratio et indice.
+ */
+function mergeFencerRankings(rankings: PoolRanking[]): PoolRanking[] {
+  const byFencer = new Map<string, PoolRanking>();
+  for (const r of rankings) {
+    const existing = byFencer.get(r.fencer.id);
+    if (!existing) {
+      byFencer.set(r.fencer.id, { ...r });
+    } else {
+      existing.victories += r.victories;
+      existing.defeats += r.defeats;
+      existing.matchesPlayed += r.matchesPlayed;
+      existing.touchesScored += r.touchesScored;
+      existing.touchesReceived += r.touchesReceived;
+      existing.index = existing.touchesScored - existing.touchesReceived;
+      existing.ratio =
+        existing.matchesPlayed > 0 ? existing.victories / existing.matchesPlayed : 0;
+      existing.questPoints = (existing.questPoints ?? 0) + (r.questPoints ?? 0);
+      existing.questVictories4 = (existing.questVictories4 ?? 0) + (r.questVictories4 ?? 0);
+      existing.questVictories3 = (existing.questVictories3 ?? 0) + (r.questVictories3 ?? 0);
+      existing.questVictories2 = (existing.questVictories2 ?? 0) + (r.questVictories2 ?? 0);
+      existing.questVictories1 = (existing.questVictories1 ?? 0) + (r.questVictories1 ?? 0);
+    }
+  }
+  return Array.from(byFencer.values());
 }
 
 /**
@@ -1026,11 +1057,10 @@ export function calculateOverallRanking(pools: Pool[]): PoolRanking[] {
     }
   });
 
-  // Trier selon les critères demandés:
-  // 1. Ratio de victoires V/M (décroissant)
-  // 2. Points Quest (décroissant)
-  // 3. Indice (TD-TR) (décroissant)
-  allRankings.sort((a, b) => {
+  // Fusionner les stats du même tireur (multi-tours de poules)
+  const mergedRankings = mergeFencerRankings(allRankings);
+
+  mergedRankings.sort((a, b) => {
     // 1. Ratio de victoires V/M
     if (a.ratio !== b.ratio) {
       return b.ratio - a.ratio;
@@ -1049,9 +1079,9 @@ export function calculateOverallRanking(pools: Pool[]): PoolRanking[] {
     return 0;
   });
 
-  assignRanks(allRankings);
+  assignRanks(mergedRankings);
 
-  return allRankings;
+  return mergedRankings;
 }
 
 // Génère un classement initial depuis la liste des tireurs (sans données de poules)
