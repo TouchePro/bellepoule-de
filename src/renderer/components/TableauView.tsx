@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Fencer, PoolRanking } from '../../shared/types';
+import { Fencer, FencerStatus, PoolRanking } from '../../shared/types';
 import { useToast } from './Toast';
 import { useModalResize } from '../hooks/useModalResize';
 import Bracket from './Bracket';
@@ -183,8 +183,14 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   });
 
   useEffect(() => {
-    if (ranking.length > 0) {
-      const expectedSize = getTableauSize(ranking.length);
+    const eligibleCount = ranking.filter(
+      r =>
+        r.fencer.status !== FencerStatus.ABANDONED &&
+        r.fencer.status !== FencerStatus.FORFAIT &&
+        r.fencer.status !== FencerStatus.EXCLUDED
+    ).length;
+    if (eligibleCount > 0) {
+      const expectedSize = getTableauSize(eligibleCount);
       const currentSize = matches.length > 0 ? Math.max(...matches.map(m => m.round)) : 0;
 
       const hasThirdPlace = matches.some(m => m.round === 3);
@@ -206,8 +212,16 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     return 256;
   };
 
+  const getEligibleFencers = (): PoolRanking[] =>
+    ranking.filter(
+      r =>
+        r.fencer.status !== FencerStatus.ABANDONED &&
+        r.fencer.status !== FencerStatus.FORFAIT &&
+        r.fencer.status !== FencerStatus.EXCLUDED
+    );
+
   const generateTableau = () => {
-    const qualifiedFencers = ranking;
+    const qualifiedFencers = getEligibleFencers();
     const size = getTableauSize(qualifiedFencers.length);
     setTableauSize(size);
 
