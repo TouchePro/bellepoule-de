@@ -392,6 +392,20 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                 >
                   Exporter FFF
                 </button>
+                <button
+                  className="btn btn-ghost"
+                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 16px', borderRadius: 0 }}
+                  onClick={() => { handleExportFencersArchive(); setExportMenuOpen(false); }}
+                >
+                  Exporter tireurs + photos (.bpf)
+                </button>
+                <button
+                  className="btn btn-ghost"
+                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 16px', borderRadius: 0 }}
+                  onClick={() => { handleExportPhotos(); setExportMenuOpen(false); }}
+                >
+                  Exporter photos (.zip)
+                </button>
               </div>
             )}
           </div>
