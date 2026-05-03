@@ -1302,6 +1302,8 @@
             if (cb) cb.checked = data.swapped;
             localStorage.setItem('inversionEnabled', data.swapped);
             this.applyInversionColors();
+            this.updateMatchDisplay();
+            this.updateVisibility();
           }
 
           // Mise à jour du statut
