@@ -22,7 +22,7 @@ import {
   DisplayTheme,
   CustomTheme,
 } from '../shared/types/remote';
-import { Competition, Match, Fencer, MatchStatus, Score } from '../shared/types';
+import { Competition, Match, Fencer, MatchStatus, FencerStatus, Score } from '../shared/types';
 import { DatabaseManager } from '../database';
 
 export class RemoteScoreServer {
@@ -530,7 +530,9 @@ export class RemoteScoreServer {
       try {
         const matches = this.db.getMatchesByPool(poolId);
         const pending = matches.filter(
-          m => m.status === 'not_started' || m.status === 'in_progress'
+          m =>
+            (m.status === 'not_started' || m.status === 'in_progress') &&
+            this.isMatchPlayable(m)
         );
         res.json(pending);
       } catch (error) {
@@ -1852,8 +1854,18 @@ export class RemoteScoreServer {
     return session;
   }
 
+  private isMatchPlayable(m: Match): boolean {
+    const inactive = new Set([FencerStatus.ABANDONED, FencerStatus.FORFAIT, FencerStatus.EXCLUDED]);
+    return (
+      !inactive.has(m.fencerA?.status as FencerStatus) &&
+      !inactive.has(m.fencerB?.status as FencerStatus)
+    );
+  }
+
   private applySmartMatchOrder(matches: Match[]): Match[] {
-    const pending = matches.filter(m => m.status !== MatchStatus.FINISHED);
+    const pending = matches.filter(
+      m => m.status !== MatchStatus.FINISHED && this.isMatchPlayable(m)
+    );
     const finished = matches.filter(m => m.status === MatchStatus.FINISHED);
 
     if (pending.length === 0) return matches;
