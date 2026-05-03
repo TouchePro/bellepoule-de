@@ -839,12 +839,12 @@
       <!-- Match actif -->
       <div class="active-match" id="active-match">
         <div class="fencers-container">
-          <!-- Tireur A (Vert) -->
-          <div class="fencer-box green-side" id="fencer-a-box">
+          <!-- Tireur A (Rouge) -->
+          <div class="fencer-box red-side" id="fencer-a-box">
             <div class="fencer-name" id="fencer-a-name">-</div>
             <div class="fencer-club" id="fencer-a-club">-</div>
             <div class="cards-display" id="fencer-a-cards"></div>
-            <div class="score-display green-score" id="score-a">0</div>
+            <div class="score-display red-score" id="score-a">0</div>
             <div class="score-buttons">
               <button id="btn-plus-1-a" class="score-btn btn-plus-1">+1</button>
               <button id="btn-plus-3-a" class="score-btn btn-plus-3">+3</button>
@@ -881,12 +881,12 @@
           <!-- VS -->
           <div class="vs-divider">VS</div>
 
-          <!-- Tireur B (Rouge) -->
-          <div class="fencer-box red-side" id="fencer-b-box">
+          <!-- Tireur B (Vert) -->
+          <div class="fencer-box green-side" id="fencer-b-box">
             <div class="fencer-name" id="fencer-b-name">-</div>
             <div class="fencer-club" id="fencer-b-club">-</div>
             <div class="cards-display" id="fencer-b-cards"></div>
-            <div class="score-display red-score" id="score-b">0</div>
+            <div class="score-display green-score" id="score-b">0</div>
             <div class="score-buttons">
               <button id="btn-plus-1-b" class="score-btn btn-plus-1">+1</button>
               <button id="btn-plus-3-b" class="score-btn btn-plus-3">+3</button>
@@ -1869,8 +1869,8 @@
           });
           // label = couleur affichée pour le tireur qui a quitté la piste
           const exitColor = fencer === 'A'
-            ? (this.swapped ? 'Rouge' : 'Vert')
-            : (this.swapped ? 'Vert' : 'Rouge');
+            ? (this.swapped ? 'Vert' : 'Rouge')
+            : (this.swapped ? 'Rouge' : 'Vert');
           this.showNotification(window.T('referee.arena_exit_notif', { label: exitColor, points }));
           if (this.cardAnnounceEnabled) {
             const nameEl = document.getElementById(`fencer-${fencer.toLowerCase()}-name`);
@@ -1978,12 +1978,12 @@
         applySwapState() {
           const boxA = document.getElementById('fencer-a-box');
           const boxB = document.getElementById('fencer-b-box');
-          if (boxA) boxA.className = `fencer-box ${this.swapped ? 'red-side' : 'green-side'}`;
-          if (boxB) boxB.className = `fencer-box ${this.swapped ? 'green-side' : 'red-side'}`;
+          if (boxA) boxA.className = `fencer-box ${this.swapped ? 'green-side' : 'red-side'}`;
+          if (boxB) boxB.className = `fencer-box ${this.swapped ? 'red-side' : 'green-side'}`;
           const scoreA = document.getElementById('score-a');
           const scoreB = document.getElementById('score-b');
-          if (scoreA) scoreA.className = `score-display ${this.swapped ? 'red-score' : 'green-score'}`;
-          if (scoreB) scoreB.className = `score-display ${this.swapped ? 'green-score' : 'red-score'}`;
+          if (scoreA) scoreA.className = `score-display ${this.swapped ? 'green-score' : 'red-score'}`;
+          if (scoreB) scoreB.className = `score-display ${this.swapped ? 'red-score' : 'green-score'}`;
 
           if (this.currentMatch) {
             const left = this.swapped ? this.currentMatch.fencerB : this.currentMatch.fencerA;
