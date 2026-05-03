@@ -1535,6 +1535,7 @@ export class RemoteScoreServer {
             scoreA: arena.currentMatch?.scoreA,
             scoreB: arena.currentMatch?.scoreB,
             status: arena.status,
+            swapped: arena.swapped ?? false,
             showPhotos: this.sessionShowPhotos,
             cardAnnounce: this.sessionCardAnnounce,
             theme: override?.theme ?? this.sessionTheme,
@@ -1746,6 +1747,21 @@ export class RemoteScoreServer {
           });
         }
         break;
+      case 'toggle_swap': {
+        arena.swapped = !(arena.swapped ?? false);
+        const cards = this.arenaCards.get(data.arenaId) || { cardsA: [], cardsB: [] };
+        this.broadcastArenaUpdate(data.arenaId, {
+          arenaId: data.arenaId,
+          match: arena.currentMatch,
+          scoreA: arena.currentMatch?.scoreA,
+          scoreB: arena.currentMatch?.scoreB,
+          cardsA: cards.cardsA,
+          cardsB: cards.cardsB,
+          suddenDeath: this.arenaSuddenDeath.get(data.arenaId) ?? false,
+          status: arena.status,
+        });
+        break;
+      }
       case 'card_announcement':
         if (data.announcement) {
           this.io
@@ -2602,9 +2618,11 @@ export class RemoteScoreServer {
   }
 
   private broadcastArenaUpdate(arenaId: string, update: ArenaUpdate): void {
+    const arena = this.getArena(arenaId);
     const override = this.arenaThemeOverrides.get(arenaId);
     const updateWithPhotos: ArenaUpdate = {
       ...update,
+      swapped: arena?.swapped ?? false,
       showPhotos: this.sessionShowPhotos,
       cardAnnounce: this.sessionCardAnnounce,
       theme: override?.theme ?? this.sessionTheme,

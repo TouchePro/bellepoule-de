@@ -101,6 +101,7 @@ export interface Arena {
   startTime: Date | null;
   settings: ArenaSettings;
   password?: string;
+  swapped?: boolean;
 }
 
 export type DisplayTheme = 'dark' | 'light' | 'neon' | 'custom';
@@ -155,6 +156,7 @@ export interface ArenaUpdate {
   theme?: DisplayTheme; // thème visuel de l'affichage distant
   customTheme?: CustomTheme; // thème personnalisé (si theme === 'custom')
   nextMatch?: ArenaMatch | null; // prochain combat (affiché quand status=finished)
+  swapped?: boolean;
 }
 
 export interface RefereeControl {

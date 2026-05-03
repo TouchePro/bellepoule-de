@@ -783,6 +783,23 @@
           min-height: 52px;
         }
       }
+
+      .swap-btn {
+        background: #374151;
+        color: #e5e7eb;
+        border: 1px solid #4b5563;
+        border-radius: 0.4rem;
+        padding: 0.25rem 0.65rem;
+        font-size: 1rem;
+        cursor: pointer;
+        line-height: 1;
+        transition: background 0.15s, border-color 0.15s;
+      }
+      .swap-btn.active {
+        background: #5b21b6;
+        border-color: #7c3aed;
+        color: #fff;
+      }
     </style>
   </head>
   <body>
@@ -792,6 +809,7 @@
         <span>Arène <span id="arena-number">1</span></span>
       </h1>
       <div class="connection-status">
+        <button id="btn-swap" class="swap-btn" onclick="refereeApp.toggleSwap()" data-i18n-title="referee.swap_colors" title="Inverser rouge/vert">⇄</button>
         <div id="status-dot" class="status-dot"></div>
         <span id="connection-text" data-i18n="remote.connecting">Connexion...</span>
         <span
@@ -1214,6 +1232,7 @@
           this.isSuddenDeath = false;
           this.actionHistory = []; // Historique pour undo (max 10)
           this.cardAnnounceEnabled = false; // Réglé depuis les paramètres de saisie distante
+          this.swapped = false;
           this.offlineQueue = new OfflineQueueInline();
 
           this.init();
@@ -1562,21 +1581,13 @@
           this.timerSeconds = 180;
           this.isSuddenDeath = false;
           this.actionHistory = [];
+          this.swapped = false;
           this.stopTimer();
           const undoBtn = document.getElementById('btn-undo');
           if (undoBtn) undoBtn.disabled = true;
 
           // Charger les infos du match
-          document.getElementById('fencer-a-name').textContent =
-            `${match.fencerA?.lastName || ''} ${match.fencerA?.firstName || ''}`.trim();
-          document.getElementById('fencer-a-club').textContent = match.fencerA?.club || '';
-
-          document.getElementById('fencer-b-name').textContent =
-            `${match.fencerB?.lastName || ''} ${match.fencerB?.firstName || ''}`.trim();
-          document.getElementById('fencer-b-club').textContent = match.fencerB?.club || '';
-
-          this.updateScores();
-          this.updateCardsDisplay();
+          this.applySwapState();
           this.updateTimerDisplay();
           this.updateMatchStatus();
           this.updateControlButtons();
@@ -1608,8 +1619,9 @@
 
           this.pushHistory('score');
 
+          const ef = this._effectiveFencer(fencer);
           const zone = points === 1 ? 'A' : points === 3 ? 'B' : 'C';
-          if (fencer === 'A') {
+          if (ef === 'A') {
             this.scoreA = Math.max(0, this.scoreA + points);
             this.touchesA.push(zone);
           } else {
@@ -1637,7 +1649,8 @@
 
           this.pushHistory('card');
 
-          const cards = fencer === 'A' ? this.cardsA : this.cardsB;
+          const ef = this._effectiveFencer(fencer);
+          const cards = ef === 'A' ? this.cardsA : this.cardsB;
 
           // Conversion 2ème blanc → jaune (chemin sans sélecteur de raison)
           if (cardType === 'white') {
@@ -1651,11 +1664,11 @@
           cards.push(cardType);
 
           if (cardType === 'yellow') {
-            if (fencer === 'A') this.scoreB += 3;
+            if (ef === 'A') this.scoreB += 3;
             else this.scoreA += 3;
             this.showNotification("🟨 +3 points pour l'adversaire");
           } else if (cardType === 'red') {
-            if (fencer === 'A') this.scoreB += 5;
+            if (ef === 'A') this.scoreB += 5;
             else this.scoreA += 5;
             this.showNotification("🟥 +5 points pour l'adversaire");
           }
@@ -1669,10 +1682,11 @@
         // ── Gestion carton avec sélecteur de raison ──────────────────────────
 
         handleCardButtonPress(fencer, cardType) {
+          const ef = this._effectiveFencer(fencer);
           if (this.cardAnnounceEnabled) {
-            this.openReasonSelector(fencer, cardType);
+            this.openReasonSelector(ef, cardType);
           } else {
-            this.addCard(fencer, cardType);
+            this.addCard(ef, cardType);
           }
         }
 
@@ -1837,8 +1851,9 @@
           if (this.matchStatus === 'finished') return;
 
           this.pushHistory('arena_exit');
+          const ef = this._effectiveFencer(fencer);
           const points = 3;
-          if (fencer === 'A') {
+          if (ef === 'A') {
             this.scoreB += points;
           } else {
             this.scoreA += points;
@@ -1849,18 +1864,21 @@
           this.socket.emit('arena_control', {
             arenaId: this.arenaId,
             action: 'arena_exit',
-            fencer,
+            fencer: ef,
             isVoluntary: false,
           });
-          const label = fencer === 'A' ? 'Rouge' : 'Vert';
-          this.showNotification(window.T('referee.arena_exit_notif', { label, points }));
+          // label = couleur affichée pour le tireur qui a quitté la piste
+          const exitColor = fencer === 'A'
+            ? (this.swapped ? 'Rouge' : 'Vert')
+            : (this.swapped ? 'Vert' : 'Rouge');
+          this.showNotification(window.T('referee.arena_exit_notif', { label: exitColor, points }));
           if (this.cardAnnounceEnabled) {
             const nameEl = document.getElementById(`fencer-${fencer.toLowerCase()}-name`);
-            const fencerName = nameEl ? nameEl.textContent.trim() : label;
+            const fencerName = nameEl ? nameEl.textContent.trim() : exitColor;
             this.socket.emit('arena_control', {
               arenaId: this.arenaId,
               action: 'exit_announcement',
-              announcement: { fencer, fencerName, points },
+              announcement: { fencer: ef, fencerName, points },
             });
           }
         }
@@ -1870,8 +1888,9 @@
           if (!this.currentMatch) return;
           if (this.matchStatus === 'finished') return;
 
+          const ef = this._effectiveFencer(fencer);
           const zone = points === 1 ? 'A' : points === 3 ? 'B' : 'C';
-          if (fencer === 'A') {
+          if (ef === 'A') {
             this.scoreA = Math.max(0, this.scoreA - points);
             const idx = this.touchesA.lastIndexOf(zone);
             if (idx !== -1) this.touchesA.splice(idx, 1);
@@ -1900,8 +1919,9 @@
           if (!this.currentMatch) return;
           if (this.matchStatus === 'finished') return;
 
-          const cards = fencer === 'A' ? this.cardsA : this.cardsB;
-          const history = fencer === 'A' ? this.faultHistoryA : this.faultHistoryB;
+          const ef = this._effectiveFencer(fencer);
+          const cards = ef === 'A' ? this.cardsA : this.cardsB;
+          const history = ef === 'A' ? this.faultHistoryA : this.faultHistoryB;
 
           if (cards.length === 0) {
             this.showNotification('Aucun carton à retirer');
@@ -1912,10 +1932,10 @@
 
           // Restituer les points accordés à l'adversaire
           if (lastCard === 'yellow') {
-            if (fencer === 'A') this.scoreB = Math.max(0, this.scoreB - 3);
+            if (ef === 'A') this.scoreB = Math.max(0, this.scoreB - 3);
             else this.scoreA = Math.max(0, this.scoreA - 3);
           } else if (lastCard === 'red') {
-            if (fencer === 'A') this.scoreB = Math.max(0, this.scoreB - 5);
+            if (ef === 'A') this.scoreB = Math.max(0, this.scoreB - 5);
             else this.scoreA = Math.max(0, this.scoreA - 5);
           }
 
@@ -1946,6 +1966,40 @@
           this.showNotification(`↩ Dernier carton ${label} annulé`);
         }
 
+        toggleSwap() {
+          this.socket.emit('arena_control', { arenaId: this.arenaId, action: 'toggle_swap' });
+        }
+
+        _effectiveFencer(configFencer) {
+          return this.swapped ? (configFencer === 'A' ? 'B' : 'A') : configFencer;
+        }
+
+        applySwapState() {
+          const boxA = document.getElementById('fencer-a-box');
+          const boxB = document.getElementById('fencer-b-box');
+          if (boxA) boxA.className = `fencer-box ${this.swapped ? 'red-side' : 'green-side'}`;
+          if (boxB) boxB.className = `fencer-box ${this.swapped ? 'green-side' : 'red-side'}`;
+          const scoreA = document.getElementById('score-a');
+          const scoreB = document.getElementById('score-b');
+          if (scoreA) scoreA.className = `score-display ${this.swapped ? 'red-score' : 'green-score'}`;
+          if (scoreB) scoreB.className = `score-display ${this.swapped ? 'green-score' : 'red-score'}`;
+
+          if (this.currentMatch) {
+            const left = this.swapped ? this.currentMatch.fencerB : this.currentMatch.fencerA;
+            const right = this.swapped ? this.currentMatch.fencerA : this.currentMatch.fencerB;
+            document.getElementById('fencer-a-name').textContent =
+              `${left?.lastName || ''} ${left?.firstName || ''}`.trim();
+            document.getElementById('fencer-a-club').textContent = left?.club || '';
+            document.getElementById('fencer-b-name').textContent =
+              `${right?.lastName || ''} ${right?.firstName || ''}`.trim();
+            document.getElementById('fencer-b-club').textContent = right?.club || '';
+          }
+
+          document.getElementById('btn-swap')?.classList.toggle('active', this.swapped);
+          this.updateScores();
+          this.updateCardsDisplay();
+        }
+
         updateScores() {
           const scoreAEl = document.getElementById('score-a');
           const scoreBEl = document.getElementById('score-b');
@@ -1955,8 +2009,8 @@
             scoreAEl.classList.add('not-started');
             scoreBEl.classList.add('not-started');
           } else {
-            scoreAEl.textContent = this.scoreA;
-            scoreBEl.textContent = this.scoreB;
+            scoreAEl.textContent = this.swapped ? this.scoreB : this.scoreA;
+            scoreBEl.textContent = this.swapped ? this.scoreA : this.scoreB;
             scoreAEl.classList.remove('not-started');
             scoreBEl.classList.remove('not-started');
           }
@@ -1971,8 +2025,8 @@
               )
               .join('');
 
-          document.getElementById('fencer-a-cards').innerHTML = renderCards(this.cardsA);
-          document.getElementById('fencer-b-cards').innerHTML = renderCards(this.cardsB);
+          document.getElementById('fencer-a-cards').innerHTML = renderCards(this.swapped ? this.cardsB : this.cardsA);
+          document.getElementById('fencer-b-cards').innerHTML = renderCards(this.swapped ? this.cardsA : this.cardsB);
         }
 
         toggleTimer() {
@@ -2266,6 +2320,11 @@
         handleArenaUpdate(data) {
           if (data.cardAnnounce !== undefined) {
             this.cardAnnounceEnabled = data.cardAnnounce;
+          }
+
+          if (data.swapped !== undefined && data.swapped !== this.swapped) {
+            this.swapped = data.swapped;
+            if (this.currentMatch) this.applySwapState();
           }
 
           // Nouveau match prêt côté serveur (chargement automatique après fin de match)
