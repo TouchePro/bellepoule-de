@@ -1967,7 +1967,8 @@
         }
 
         toggleSwap() {
-          this.socket.emit('arena_control', { arenaId: this.arenaId, action: 'toggle_swap' });
+          this.swapped = !this.swapped;
+          this.applySwapState();
         }
 
         _effectiveFencer(configFencer) {
@@ -2320,11 +2321,6 @@
         handleArenaUpdate(data) {
           if (data.cardAnnounce !== undefined) {
             this.cardAnnounceEnabled = data.cardAnnounce;
-          }
-
-          if (data.swapped !== undefined && data.swapped !== this.swapped) {
-            this.swapped = data.swapped;
-            if (this.currentMatch) this.applySwapState();
           }
 
           // Nouveau match prêt côté serveur (chargement automatique après fin de match)
