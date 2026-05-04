@@ -263,22 +263,28 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
             </h3>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div className="form-group">
-                <label htmlFor="poolRounds">Tours de poules</label>
-                <select
-                  id="poolRounds"
-                  className="form-input form-select"
-                  value={poolRounds}
-                  onChange={e => setPoolRounds(parseInt(e.target.value))}
-                >
-                  <option value="1">1 tour</option>
-                  <option value="2">2 tours</option>
-                  <option value="3">3 tours</option>
-                </select>
-                <small style={{ color: '#6b7280', fontSize: '0.75rem' }}>
-                  Nombre de phases de poules avant le tableau
-                </small>
-              </div>
+              {/* Tours de poules — masqué en mode Quest sans poules préliminaires */}
+              {(!questEnabled || questHasPools) && (
+                <div className="form-group">
+                  <label htmlFor="poolRounds">Tours de poules</label>
+                  <select
+                    id="poolRounds"
+                    className="form-input form-select"
+                    value={questEnabled && questHasPools ? 1 : poolRounds}
+                    onChange={e => setPoolRounds(parseInt(e.target.value))}
+                    disabled={questEnabled && questHasPools}
+                  >
+                    <option value="1">1 tour</option>
+                    <option value="2">2 tours</option>
+                    <option value="3">3 tours</option>
+                  </select>
+                  <small style={{ color: '#6b7280', fontSize: '0.75rem' }}>
+                    {questEnabled && questHasPools
+                      ? '1 tour imposé avant le Tour Quest'
+                      : 'Nombre de phases de poules avant le tableau'}
+                  </small>
+                </div>
+              )}
 
               <div className="form-group">
                 <label htmlFor="hasDirectElimination">Élimination directe</label>
