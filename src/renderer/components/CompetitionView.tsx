@@ -106,6 +106,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     fencers,
     loadFencers,
     addFencer,
+    bulkAddFencers,
     updateFencer,
     deleteFencer,
     deleteAllFencers,
@@ -341,9 +342,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   };
 
   const handleImportFencers = async (importedFencers: Partial<Fencer>[]) => {
-    for (const fencerData of importedFencers) {
-      await addFencer(fencerData as any);
-    }
+    await bulkAddFencers(importedFencers as any);
     setImportData(null);
   };
 
