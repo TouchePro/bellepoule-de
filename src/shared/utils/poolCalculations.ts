@@ -888,12 +888,14 @@ export function calculateFencerQuestStats(
  * 3. Nombre de victoires
  * 4. Nombre de victoires à 4 points, puis 3, puis 2, puis 1
  */
-export function calculatePoolRankingQuest(pool: Pool): PoolRanking[] {
+export function calculatePoolRankingQuest(
+  pool: Pool,
+  cardsByFencer: Record<string, number> = {}
+): PoolRanking[] {
   const rankings: PoolRanking[] = [];
   const forfeitFencers: PoolRanking[] = [];
 
   for (const fencer of pool.fencers) {
-    // Si tireur forfait/abandon/exclu, l'ajouter à la liste séparée
     if (
       fencer.status === FencerStatus.EXCLUDED ||
       fencer.status === FencerStatus.FORFAIT ||
@@ -914,6 +916,7 @@ export function calculatePoolRankingQuest(pool: Pool): PoolRanking[] {
         questVictories3: 0,
         questVictories2: 0,
         questVictories1: 0,
+        totalCards: cardsByFencer[fencer.id] ?? 0,
       });
       continue;
     }
@@ -936,29 +939,29 @@ export function calculatePoolRankingQuest(pool: Pool): PoolRanking[] {
       questVictories3: questStats.v3,
       questVictories2: questStats.v2,
       questVictories1: questStats.v1,
+      totalCards: cardsByFencer[fencer.id] ?? 0,
     });
   }
 
-  // Trier selon les critères demandés (même ordre que calculatePoolRanking)
+  // Critères de classement Quest :
+  // 1. Ratio V/M décroissant
+  // 2. Points Quest décroissants
+  // 3. Moins de cartons (croissant)
+  // 4. Indice (TD-TR) décroissant
+  // 5. Classement initial
   rankings.sort((a, b) => {
-    // 1. Ratio de victoires V/M (décroissant)
-    if (a.ratio !== b.ratio) {
-      return b.ratio - a.ratio;
-    }
+    if (a.ratio !== b.ratio) return b.ratio - a.ratio;
 
-    // 2. Points Quest (décroissant)
     const aQuest = a.questPoints ?? 0;
     const bQuest = b.questPoints ?? 0;
-    if (aQuest !== bQuest) {
-      return bQuest - aQuest;
-    }
+    if (aQuest !== bQuest) return bQuest - aQuest;
 
-    // 3. Indice (TD-TR) (décroissant)
-    if (a.index !== b.index) {
-      return b.index - a.index;
-    }
+    const aCards = a.totalCards ?? 0;
+    const bCards = b.totalCards ?? 0;
+    if (aCards !== bCards) return aCards - bCards;
 
-    // 4. Égalité parfaite - classement initial
+    if (a.index !== b.index) return b.index - a.index;
+
     return (a.fencer.ranking ?? 9999) - (b.fencer.ranking ?? 9999);
   });
 
