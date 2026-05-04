@@ -9,7 +9,7 @@ import { Pool, PoolRanking } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
 import { TableauMatch, FinalResult } from '../components/TableauView';
 
-export type Phase = 'checkin' | 'poolprep' | 'pools' | 'ranking' | 'tableau' | 'results' | 'remote';
+export type Phase = 'checkin' | 'poolprep' | 'pools' | 'ranking' | 'quest' | 'tableau' | 'results' | 'remote';
 
 interface SessionState {
   currentPhase: number;
@@ -59,9 +59,10 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
     poolprep: 1,
     pools: 2,
     ranking: 3,
-    tableau: 4,
-    results: 5,
-    remote: 6,
+    quest: 4,
+    tableau: 5,
+    results: 6,
+    remote: 7,
   };
 
   const numberToPhase: Record<number, Phase> = {
@@ -69,9 +70,10 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
     1: 'poolprep',
     2: 'pools',
     3: 'ranking',
-    4: 'tableau',
-    5: 'results',
-    6: 'remote',
+    4: 'quest',
+    5: 'tableau',
+    6: 'results',
+    7: 'remote',
   };
 
   // Sauvegarder l'état

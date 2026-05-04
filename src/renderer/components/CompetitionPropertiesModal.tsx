@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Competition, Weapon, Gender, Category, CompetitionSettings } from '../../shared/types';
+import { Competition, Weapon, Gender, Category, CompetitionSettings, QuestPhaseConfig } from '../../shared/types';
 import { useTranslation } from '../hooks/useTranslation';
 
 interface CompetitionPropertiesModalProps {
@@ -40,8 +40,45 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
     competition.settings?.thirdPlaceMatch ?? false
   );
 
+  // Tour Quest (Sabre Laser)
+  const existingQuest = competition.settings?.questConfig;
+  const [questEnabled, setQuestEnabled] = useState(existingQuest?.enabled ?? false);
+  const [questHasPools, setQuestHasPools] = useState(existingQuest?.hasPreliminaryPools ?? false);
+  const [questQualifiers, setQuestQualifiers] = useState(existingQuest?.qualifiersCount ?? 8);
+
+  const handleQuestEnabledChange = (enabled: boolean) => {
+    setQuestEnabled(enabled);
+    if (enabled && !questHasPools) {
+      setPoolRounds(0);
+    } else if (!enabled) {
+      if (poolRounds === 0) setPoolRounds(1);
+    }
+  };
+
+  const handleQuestHasPoolsChange = (hasPools: boolean) => {
+    setQuestHasPools(hasPools);
+    if (questEnabled) {
+      setPoolRounds(hasPools ? 1 : 0);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const questConfig: QuestPhaseConfig | undefined =
+      weapon === Weapon.LASER && questEnabled
+        ? {
+            enabled: true,
+            hasPreliminaryPools: questHasPools,
+            qualifiersCount: questHasPools ? questQualifiers : undefined,
+            opponentConstraint: existingQuest?.opponentConstraint ?? 'none',
+            availableTimeMinutes: existingQuest?.availableTimeMinutes,
+            numberOfArenas: existingQuest?.numberOfArenas,
+            fightsPerFencer: existingQuest?.fightsPerFencer,
+          }
+        : weapon === Weapon.LASER
+          ? { enabled: false, hasPreliminaryPools: false, opponentConstraint: 'none' }
+          : undefined;
 
     const settings: CompetitionSettings = {
       ...(competition.settings || {}),
@@ -54,6 +91,7 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
       defaultRanking: competition.settings?.defaultRanking ?? 9999,
       randomScore: competition.settings?.randomScore ?? false,
       minTeamSize: competition.settings?.minTeamSize ?? 3,
+      questConfig,
     };
 
     onSave({
@@ -323,6 +361,117 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
               )}
             </div>
           </div>
+
+          {/* Tour Quest — visible uniquement pour Sabre Laser */}
+          {weapon === Weapon.LASER && (
+            <div style={{ marginBottom: '1rem' }}>
+              <h3
+                style={{
+                  fontSize: '0.875rem',
+                  fontWeight: '600',
+                  color: '#6b7280',
+                  marginBottom: '0.75rem',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Tour Quest
+              </h3>
+
+              {/* Oui / Non */}
+              <div className="form-group" style={{ marginBottom: '0.75rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.875rem' }}>
+                  Tour Quest activé ?
+                </label>
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.875rem' }}>
+                    <input
+                      type="radio"
+                      name="questEnabled"
+                      checked={!questEnabled}
+                      onChange={() => handleQuestEnabledChange(false)}
+                    />
+                    Non
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.875rem' }}>
+                    <input
+                      type="radio"
+                      name="questEnabled"
+                      checked={questEnabled}
+                      onChange={() => handleQuestEnabledChange(true)}
+                    />
+                    Oui
+                  </label>
+                </div>
+              </div>
+
+              {questEnabled && (
+                <div
+                  style={{
+                    background: '#f0fdf4',
+                    border: '1px solid #86efac',
+                    borderRadius: '8px',
+                    padding: '1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.75rem',
+                  }}
+                >
+                  {/* Sans / Avec poules préliminaires */}
+                  <div className="form-group">
+                    <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.875rem' }}>
+                      Poules préliminaires ?
+                    </label>
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.875rem' }}>
+                        <input
+                          type="radio"
+                          name="questHasPools"
+                          checked={!questHasPools}
+                          onChange={() => handleQuestHasPoolsChange(false)}
+                        />
+                        Sans (Quest → Tableau)
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.875rem' }}>
+                        <input
+                          type="radio"
+                          name="questHasPools"
+                          checked={questHasPools}
+                          onChange={() => handleQuestHasPoolsChange(true)}
+                        />
+                        Avec (Poules → Quest → Tableau)
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Nombre de qualifiés */}
+                  {questHasPools && (
+                    <div className="form-group">
+                      <label htmlFor="questQualifiers" style={{ fontSize: '0.875rem' }}>
+                        Nombre de qualifiés des poules vers le Tour Quest
+                      </label>
+                      <input
+                        type="number"
+                        id="questQualifiers"
+                        className="form-input"
+                        value={questQualifiers}
+                        min={2}
+                        onChange={e =>
+                          setQuestQualifiers(Math.max(2, parseInt(e.target.value) || 2))
+                        }
+                        style={{ maxWidth: '150px', marginTop: '0.25rem' }}
+                      />
+                    </div>
+                  )}
+
+                  <small style={{ color: '#166534', fontSize: '0.75rem' }}>
+                    {questHasPools
+                      ? `Formule : 1 tour de poules → Top ${questQualifiers} qualifiés → Tour Quest → Tableau`
+                      : 'Formule : Tour Quest direct → Tableau'}
+                  </small>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary" onClick={onClose}>
