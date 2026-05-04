@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Fencer, QuestPhaseConfig, Pool, Match, MatchStatus, Score } from '../../shared/types';
 import {
   calculateFightsPerFencer,
@@ -13,6 +13,8 @@ import {
   QuestFight,
   OpponentConstraint,
 } from '../../shared/utils/questScheduler';
+import { calculatePoolRankingQuest } from '../../shared/utils/poolCalculations';
+import { formatRatio } from '../../shared/utils/poolCalculations';
 import PoolView from './PoolView';
 
 interface QuestPhaseViewProps {
@@ -43,6 +45,7 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
   );
   const [schedule, setSchedule] = useState<QuestFight[]>([]);
   const [pools, setPools] = useState<Pool[]>([]);
+  const [cardCounts, setCardCounts] = useState<Record<string, number>>({});
 
   const autoFights = calculateFightsPerFencer(timeMinutes, arenas, fencers.length);
   const effectiveFights = manualFights !== '' ? Number(manualFights) : autoFights;
@@ -178,6 +181,16 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
 
   if (state === 'running') {
     const allComplete = pools.every(p => p.isComplete);
+    const questPool = pools[0] ?? null;
+    const ranking = allComplete && questPool
+      ? calculatePoolRankingQuest(questPool, cardCounts)
+      : null;
+
+    const addCard = (fencerId: string) =>
+      setCardCounts(prev => ({ ...prev, [fencerId]: (prev[fencerId] ?? 0) + 1 }));
+    const removeCard = (fencerId: string) =>
+      setCardCounts(prev => ({ ...prev, [fencerId]: Math.max(0, (prev[fencerId] ?? 0) - 1) }));
+
     return (
       <div className="content">
         <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -188,7 +201,8 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
             </button>
           )}
         </div>
-        {pools.map((pool, poolIndex) => (
+
+        {pools.map(pool => (
           <PoolView
             key={pool.id}
             pool={pool}
@@ -201,6 +215,93 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
             onFencerStatusChange={() => {}}
           />
         ))}
+
+        {/* Compteur de cartons */}
+        <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '1.25rem', marginTop: '1.5rem' }}>
+          <p style={{ fontSize: '0.8rem', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
+            Cartons reçus
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+            {fencers.map(f => {
+              const count = cardCounts[f.id] ?? 0;
+              return (
+                <div
+                  key={f.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    padding: '0.35rem 0.6rem',
+                    background: count > 0 ? '#fef3c7' : 'white',
+                    border: `1px solid ${count > 0 ? '#fbbf24' : '#e5e7eb'}`,
+                    borderRadius: '6px',
+                    fontSize: '0.85rem',
+                  }}
+                >
+                  <span style={{ fontWeight: 500 }}>{f.lastName} {f.firstName?.charAt(0)}.</span>
+                  <button
+                    onClick={() => removeCard(f.id)}
+                    disabled={count === 0}
+                    style={{ padding: '0 0.35rem', border: '1px solid #d1d5db', borderRadius: '4px', background: 'white', cursor: count === 0 ? 'not-allowed' : 'pointer', opacity: count === 0 ? 0.4 : 1, lineHeight: 1.4 }}
+                  >−</button>
+                  <span style={{ minWidth: '1.2rem', textAlign: 'center', fontWeight: 700, color: count > 0 ? '#b45309' : '#6b7280' }}>{count}</span>
+                  <button
+                    onClick={() => addCard(f.id)}
+                    style={{ padding: '0 0.35rem', border: '1px solid #d1d5db', borderRadius: '4px', background: 'white', cursor: 'pointer', lineHeight: 1.4 }}
+                  >+</button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Classement final (affiché quand tous les matchs sont terminés) */}
+        {allComplete && ranking && (
+          <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '1.25rem', marginTop: '1.5rem' }}>
+            <p style={{ fontSize: '0.8rem', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
+              Classement Tour Quest
+            </p>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+              <thead>
+                <tr style={{ background: '#f3f4f6' }}>
+                  <th style={{ padding: '0.5rem 0.75rem', textAlign: 'center', borderBottom: '2px solid #e5e7eb', width: '3rem' }}>Rg</th>
+                  <th style={{ padding: '0.5rem 0.75rem', textAlign: 'left', borderBottom: '2px solid #e5e7eb' }}>Tireur</th>
+                  <th style={{ padding: '0.5rem 0.75rem', textAlign: 'center', borderBottom: '2px solid #e5e7eb' }} title="Victoires / Matchs joués">V/M</th>
+                  <th style={{ padding: '0.5rem 0.75rem', textAlign: 'center', borderBottom: '2px solid #e5e7eb' }} title="Points Quest">Pts Q</th>
+                  <th style={{ padding: '0.5rem 0.75rem', textAlign: 'center', borderBottom: '2px solid #e5e7eb' }} title="Cartons reçus (moins = mieux)">Cart.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ranking.map((r, i) => (
+                  <tr
+                    key={r.fencer.id}
+                    style={{ background: i % 2 === 0 ? 'white' : '#f9fafb', borderBottom: '1px solid #e5e7eb' }}
+                  >
+                    <td style={{ padding: '0.5rem 0.75rem', textAlign: 'center', fontWeight: 700, color: r.rank <= 3 ? '#1d4ed8' : '#374151' }}>
+                      {r.rank}
+                    </td>
+                    <td style={{ padding: '0.5rem 0.75rem', fontWeight: 500 }}>
+                      {r.fencer.lastName} {r.fencer.firstName}
+                      {r.fencer.club && <span style={{ color: '#6b7280', fontWeight: 400 }}> ({r.fencer.club})</span>}
+                    </td>
+                    <td style={{ padding: '0.5rem 0.75rem', textAlign: 'center' }}>
+                      {formatRatio(r.ratio)}
+                    </td>
+                    <td style={{ padding: '0.5rem 0.75rem', textAlign: 'center', fontWeight: 600, color: '#1d4ed8' }}>
+                      {r.questPoints ?? 0}
+                    </td>
+                    <td style={{ padding: '0.5rem 0.75rem', textAlign: 'center', color: (r.totalCards ?? 0) > 0 ? '#b45309' : '#6b7280' }}>
+                      {r.totalCards ?? 0}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.75rem' }}>
+              Critères : V/M décroissant → Points Quest décroissants → Cartons croissants
+            </p>
+          </div>
+        )}
       </div>
     );
   }

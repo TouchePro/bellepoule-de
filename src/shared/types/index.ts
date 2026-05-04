@@ -304,6 +304,7 @@ export interface PoolRanking {
   questVictories3?: number; // Nombre de victoires à 3 points (écart 8-11)
   questVictories2?: number; // Nombre de victoires à 2 points (écart 4-7)
   questVictories1?: number; // Nombre de victoires à 1 point (écart ≤3)
+  totalCards?: number;      // Nombre total de cartons reçus (critère de départage Quest)
 }
 
 // ============================================================================
