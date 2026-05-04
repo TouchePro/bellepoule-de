@@ -9,7 +9,7 @@ import { PoolRanking } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
 import { FinalResult } from '../components/TableauView';
 
-type Phase = 'checkin' | 'poolprep' | 'pools' | 'ranking' | 'tableau' | 'results' | 'remote';
+type Phase = 'checkin' | 'poolprep' | 'pools' | 'ranking' | 'quest' | 'tableau' | 'results' | 'remote';
 
 interface UseMenuEventsProps {
   currentPhase: Phase;

@@ -37,6 +37,7 @@ import { TouchOptimizedReferee } from './TouchOptimizedReferee';
 import { PresentationMode } from './PresentationMode';
 import KioskDisplay from './KioskDisplay';
 import { FencerPhoto } from './FencerPhoto';
+import QuestPhaseView from './QuestPhaseView';
 
 interface CompetitionViewProps {
   competition: Competition;
@@ -501,12 +502,21 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     setCurrentPoolRound(prev => prev + 1);
   };
 
+  const questConfig = competition.settings?.questConfig;
+  const questEnabled = isLaserSabre && questConfig?.enabled === true;
+
+  const phaseOrder: Phase[] = (() => {
+    if (!questEnabled) return ['checkin', 'poolprep', 'pools', 'ranking', 'tableau', 'results'];
+    if (questConfig?.hasPreliminaryPools)
+      return ['checkin', 'poolprep', 'pools', 'ranking', 'quest', 'tableau', 'results'];
+    return ['checkin', 'quest', 'tableau', 'results'];
+  })();
+
   const handleGoBack = () => {
     if (skipPoolPhase && currentPhase === 'ranking') {
       setCurrentPhase('poolprep');
       return;
     }
-    const phaseOrder: Phase[] = ['checkin', 'poolprep', 'pools', 'ranking', 'tableau', 'results'];
     const currentIndex = phaseOrder.indexOf(currentPhase);
     if (currentIndex > 0) {
       setCurrentPhase(phaseOrder[currentIndex - 1]);
@@ -559,6 +569,17 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       disabled: false,
       title: undefined as string | undefined,
     },
+    ...(questEnabled
+      ? [
+          {
+            id: 'quest',
+            label: 'Tour Quest',
+            icon: '⚔️',
+            disabled: false,
+            title: undefined as string | undefined,
+          },
+        ]
+      : []),
     ...(hasDirectElimination
       ? [
           {
@@ -770,7 +791,16 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               ← Retour
             </button>
           )}
-          {currentPhase === 'checkin' && (
+          {currentPhase === 'checkin' && questEnabled && !questConfig?.hasPreliminaryPools && (
+            <button
+              className="btn btn-primary"
+              onClick={() => setCurrentPhase('quest')}
+              disabled={getCheckedInFencers().length < 2}
+            >
+              Tour Quest →
+            </button>
+          )}
+          {currentPhase === 'checkin' && (!questEnabled || questConfig?.hasPreliminaryPools) && (
             <button
               className="btn btn-primary"
               onClick={handleGeneratePools}
@@ -921,6 +951,25 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               }
             }}
             onRankingChange={ranking => setOverallRanking(ranking)}
+          />
+        )}
+
+        {currentPhase === 'quest' && questConfig && (
+          <QuestPhaseView
+            fencers={(() => {
+              const checked = getCheckedInFencers();
+              if (questConfig.hasPreliminaryPools && questConfig.qualifiersCount) {
+                return overallRanking
+                  .slice(0, questConfig.qualifiersCount)
+                  .map(r => r.fencer)
+                  .filter(Boolean);
+              }
+              return checked;
+            })()}
+            questConfig={questConfig}
+            competitionWeapon={competition.weapon}
+            maxScore={poolMaxScore}
+            onQuestComplete={() => setCurrentPhase('ranking')}
           />
         )}
 

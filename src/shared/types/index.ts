@@ -136,6 +136,7 @@ export enum MatchStatus {
 export enum PhaseType {
   CHECKIN = 'checkin',
   POOL = 'pool',
+  QUEST = 'quest',
   DIRECT_ELIMINATION = 'direct_elimination',
   CLASSIFICATION = 'classification',
 }
@@ -435,6 +436,20 @@ export interface Competition extends BaseEntity {
   status: 'draft' | 'in_progress' | 'completed' | 'cancelled';
 }
 
+// ============================================================================
+// Quest Phase Configuration (Sabre Laser)
+// ============================================================================
+
+export interface QuestPhaseConfig {
+  enabled: boolean;
+  hasPreliminaryPools: boolean;
+  qualifiersCount?: number;
+  fightsPerFencer?: number;
+  availableTimeMinutes?: number;
+  numberOfArenas?: number;
+  opponentConstraint: 'none' | 'club' | 'region' | 'nation';
+}
+
 export interface CompetitionSettings {
   defaultPoolMaxScore: number; // Score max en poules (défaut: 5)
   defaultTableMaxScore: number; // Score max en tableau (défaut: 10 ou 15)
@@ -445,6 +460,7 @@ export interface CompetitionSettings {
   defaultRanking: number; // Classement par défaut pour non-classés
   randomScore: boolean; // Scores aléatoires (pour tests)
   minTeamSize: number; // Taille min équipe (compétitions par équipes)
+  questConfig?: QuestPhaseConfig; // Configuration du Tour Quest (Sabre Laser uniquement)
 }
 
 export interface Phase extends BaseEntity {
