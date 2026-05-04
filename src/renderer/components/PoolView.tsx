@@ -49,6 +49,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   const poolTemplate = usePdfTemplateStore(s => s.templates.pool);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [editingMatch, setEditingMatch] = useState<number | null>(null);
+  const [isMatchInverted, setIsMatchInverted] = useState(false);
   const [showColumnMenu, setShowColumnMenu] = useState(false);
 
   const [editScoreA, setEditScoreA] = useState('');
@@ -160,6 +161,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         if (e.key === 'Escape') {
           e.preventDefault();
           setEditingMatch(null);
+          setIsMatchInverted(false);
           setKeyboardFocusField('A');
           return;
         }
@@ -239,11 +241,12 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     minHeight: 300,
   });
 
-  const openScoreModal = (matchIndex: number) => {
+  const openScoreModal = (matchIndex: number, inverted = false) => {
     const match = pool.matches[matchIndex];
     setEditingMatch(matchIndex);
-    setEditScoreA(match.scoreA?.value?.toString() || '');
-    setEditScoreB(match.scoreB?.value?.toString() || '');
+    setIsMatchInverted(inverted);
+    setEditScoreA(inverted ? match.scoreB?.value?.toString() || '' : match.scoreA?.value?.toString() || '');
+    setEditScoreB(inverted ? match.scoreA?.value?.toString() || '' : match.scoreB?.value?.toString() || '');
     setVictoryA(false);
     setVictoryB(false);
   };
@@ -252,31 +255,35 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     if (rowFencer.id === colFencer.id) return;
     const matchIndex = getMatchIndex(rowFencer, colFencer);
     if (matchIndex === -1) return;
-    openScoreModal(matchIndex);
+    const match = pool.matches[matchIndex];
+    // Inversion si le tireur de la ligne est fencerB (pour l'afficher à gauche)
+    const inverted = match.fencerA?.id === colFencer.id;
+    openScoreModal(matchIndex, inverted);
   };
 
   const handleScoreSubmit = () => {
     if (editingMatch === null) return;
 
-    const scoreA = parseInt(editScoreA, 10) || 0;
-    const scoreB = parseInt(editScoreB, 10) || 0;
+    const scoreLeft = parseInt(editScoreA, 10) || 0;
+    const scoreRight = parseInt(editScoreB, 10) || 0;
 
     // Valider que les scores ne dépassent pas le maximum
     // Utiliser le maxScore stocké sur le match comme référence, avec fallback sur la prop
     const effectiveMax = pool.matches[editingMatch]?.maxScore || maxScore || 0;
     if (effectiveMax > 0) {
-      if (scoreA > effectiveMax) {
+      if (scoreLeft > effectiveMax) {
         showToast(`Le score du tireur A ne peut pas dépasser ${effectiveMax}`, 'error');
         return;
       }
-      if (scoreB > effectiveMax) {
+      if (scoreRight > effectiveMax) {
         showToast(`Le score du tireur B ne peut pas dépasser ${effectiveMax}`, 'error');
         return;
       }
     }
 
-    const actualScoreA = scoreA;
-    const actualScoreB = scoreB;
+    // Remettre dans l'ordre fencerA/fencerB du match si la vue est inversée
+    const actualScoreA = isMatchInverted ? scoreRight : scoreLeft;
+    const actualScoreB = isMatchInverted ? scoreLeft : scoreRight;
 
     // Capturer l'ancien score pour l'historique
     const match = pool.matches[editingMatch];
@@ -286,8 +293,11 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
 
     if (actualScoreA === actualScoreB) {
       if (isLaserSabre && (victoryA || victoryB)) {
-        // Déterminer qui gagne selon la perspective
-        const winner = victoryA ? 'A' : 'B';
+        // victoryA = victoire du tireur affiché à gauche (= fencerA si normal, fencerB si inversé)
+        const winnerLeft = victoryA;
+        const winner: 'A' | 'B' = isMatchInverted
+          ? (winnerLeft ? 'B' : 'A')
+          : (winnerLeft ? 'A' : 'B');
         addAction({
           type: 'UPDATE_SCORE',
           description: `Score poule ${pool.number} match ${matchIdx + 1}`,
@@ -317,6 +327,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
 
     // Fermer le modal immédiatement après la mise à jour
     setEditingMatch(null);
+    setIsMatchInverted(false);
     setEditScoreA('');
     setEditScoreB('');
     setVictoryA(false);
@@ -330,31 +341,33 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     if (editingMatch === null) return;
 
     const match = pool.matches[editingMatch];
+    // Respecter l'ordre d'affichage : le tireur affiché à gauche est "fencerLeft"
+    const fencerLeft = isMatchInverted ? match.fencerB : match.fencerA;
+    const fencerRight = isMatchInverted ? match.fencerA : match.fencerB;
 
-    // Déterminer quel tireur abandonne (le premier par défaut, pourrait être paramétrable)
     const statusVerb =
       status === 'abandon' ? 'abandonne' : status === 'forfait' ? 'déclare forfait' : 'est exclu';
     const statusInf =
       status === 'abandon' ? 'abandonner' : status === 'forfait' ? 'déclarer forfait' : 'exclure';
-    const isA = await confirm({
-      message: `${match.fencerA?.lastName} ${match.fencerA?.firstName?.charAt(0)}. ${statusVerb} ?\n\nCliquez sur Annuler pour ${statusInf} ${match.fencerB?.lastName} ${match.fencerB?.firstName?.charAt(0)}.`,
-      confirmLabel: `${match.fencerA?.lastName}`,
-      cancelLabel: `${match.fencerB?.lastName}`,
+    const leftAbandons = await confirm({
+      message: `${fencerLeft?.lastName} ${fencerLeft?.firstName?.charAt(0)}. ${statusVerb} ?\n\nCliquez sur Annuler pour ${statusInf} ${fencerRight?.lastName} ${fencerRight?.firstName?.charAt(0)}.`,
+      confirmLabel: `${fencerLeft?.lastName}`,
+      cancelLabel: `${fencerRight?.lastName}`,
     });
 
-    if (isA) {
-      // Tireur A abandonne/forfait/exclu
-      onScoreUpdate(editingMatch, 0, match.scoreB?.value || maxScore, 'B', status);
-      // Notifier le parent pour mettre à jour tous les matchs de ce tireur
-      if (onFencerStatusChange && match.fencerA) {
-        onFencerStatusChange(match.fencerA.id, status);
+    if (leftAbandons) {
+      // Le tireur affiché à gauche abandonne
+      const winner: 'A' | 'B' = isMatchInverted ? 'A' : 'B';
+      onScoreUpdate(editingMatch, isMatchInverted ? match.scoreA?.value || maxScore : 0, isMatchInverted ? 0 : match.scoreB?.value || maxScore, winner, status);
+      if (onFencerStatusChange && fencerLeft) {
+        onFencerStatusChange(fencerLeft.id, status);
       }
     } else {
-      // Tireur B abandonne/forfait/exclu
-      onScoreUpdate(editingMatch, match.scoreA?.value || maxScore, 0, 'A', status);
-      // Notifier le parent pour mettre à jour tous les matchs de ce tireur
-      if (onFencerStatusChange && match.fencerB) {
-        onFencerStatusChange(match.fencerB.id, status);
+      // Le tireur affiché à droite abandonne
+      const winner: 'A' | 'B' = isMatchInverted ? 'B' : 'A';
+      onScoreUpdate(editingMatch, isMatchInverted ? 0 : match.scoreA?.value || maxScore, isMatchInverted ? match.scoreB?.value || maxScore : 0, winner, status);
+      if (onFencerStatusChange && fencerRight) {
+        onFencerStatusChange(fencerRight.id, status);
       }
     }
 
@@ -363,6 +376,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
 
     // Fermer le modal immédiatement après la mise à jour
     setEditingMatch(null);
+    setIsMatchInverted(false);
     setEditScoreA('');
     setEditScoreB('');
     setVictoryA(false);
@@ -464,6 +478,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         className="modal-overlay"
         onClick={() => {
           setEditingMatch(null);
+          setIsMatchInverted(false);
         }}
       >
         <div
@@ -486,23 +501,28 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                 marginBottom: '1.5rem',
               }}
             >
-              {/* Tireur A */}
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-end',
-                  flex: 1,
-                  minWidth: '200px',
-                }}
-              >
-                <div style={{ fontSize: '1.5rem', fontWeight: 600, textAlign: 'right' }}>
-                  {match.fencerA?.lastName}
-                </div>
-                <div style={{ fontSize: '1rem', color: '#6b7280', textAlign: 'right' }}>
-                  {match.fencerA?.firstName} {match.fencerA?.club && `(${match.fencerA.club})`}
-                </div>
-              </div>
+              {/* Tireur gauche (ligne dans la grille) */}
+              {(() => {
+                const f = isMatchInverted ? match.fencerB : match.fencerA;
+                return (
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-end',
+                      flex: 1,
+                      minWidth: '200px',
+                    }}
+                  >
+                    <div style={{ fontSize: '1.5rem', fontWeight: 600, textAlign: 'right' }}>
+                      {f?.lastName}
+                    </div>
+                    <div style={{ fontSize: '1rem', color: '#6b7280', textAlign: 'right' }}>
+                      {f?.firstName} {f?.club && `(${f.club})`}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Bouton Victoire Sabre Laser A */}
               {isLaserSabre && (
@@ -656,23 +676,28 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                 </button>
               )}
 
-              {/* Tireur B */}
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-start',
-                  flex: 1,
-                  minWidth: '200px',
-                }}
-              >
-                <div style={{ fontSize: '1.5rem', fontWeight: 600, textAlign: 'left' }}>
-                  {match.fencerB?.lastName}
-                </div>
-                <div style={{ fontSize: '1rem', color: '#6b7280', textAlign: 'left' }}>
-                  {match.fencerB?.firstName} {match.fencerB?.club && `(${match.fencerB.club})`}
-                </div>
-              </div>
+              {/* Tireur droite (colonne dans la grille) */}
+              {(() => {
+                const f = isMatchInverted ? match.fencerA : match.fencerB;
+                return (
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                      flex: 1,
+                      minWidth: '200px',
+                    }}
+                  >
+                    <div style={{ fontSize: '1.5rem', fontWeight: 600, textAlign: 'left' }}>
+                      {f?.lastName}
+                    </div>
+                    <div style={{ fontSize: '1rem', color: '#6b7280', textAlign: 'left' }}>
+                      {f?.firstName} {f?.club && `(${f.club})`}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Info égalité sabre laser */}
@@ -727,6 +752,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               className="btn btn-secondary"
               onClick={() => {
                 setEditingMatch(null);
+                setIsMatchInverted(false);
               }}
             >
               Annuler
