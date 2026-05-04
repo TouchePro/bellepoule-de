@@ -544,31 +544,36 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       disabled: false,
       title: undefined as string | undefined,
     },
-    {
-      id: 'poolprep',
-      label: t('phases.poolprep'),
-      icon: '⚙️',
-      disabled: false,
-      title: undefined as string | undefined,
-    },
-    {
-      id: 'pools',
-      label: skipPoolPhase
-        ? t('phases.pools_skip')
-        : poolRounds > 1
-          ? t('phases.pools_round', { current: currentPoolRound, total: poolRounds })
-          : t('phases.pools'),
-      icon: skipPoolPhase ? '⏭' : '🎯',
-      disabled: skipPoolPhase,
-      title: skipPoolPhase ? t('phases.pools_skip_tooltip') : (undefined as string | undefined),
-    },
-    {
-      id: 'ranking',
-      label: t('phases.ranking'),
-      icon: '📊',
-      disabled: false,
-      title: undefined as string | undefined,
-    },
+    // Phases de poules : masquées en mode Quest sans poules préliminaires
+    ...(!questEnabled || questConfig?.hasPreliminaryPools
+      ? [
+          {
+            id: 'poolprep',
+            label: t('phases.poolprep'),
+            icon: '⚙️',
+            disabled: false,
+            title: undefined as string | undefined,
+          },
+          {
+            id: 'pools',
+            label: skipPoolPhase
+              ? t('phases.pools_skip')
+              : poolRounds > 1
+                ? t('phases.pools_round', { current: currentPoolRound, total: poolRounds })
+                : t('phases.pools'),
+            icon: skipPoolPhase ? '⏭' : '🎯',
+            disabled: skipPoolPhase,
+            title: skipPoolPhase ? t('phases.pools_skip_tooltip') : (undefined as string | undefined),
+          },
+          {
+            id: 'ranking',
+            label: t('phases.ranking'),
+            icon: '📊',
+            disabled: false,
+            title: undefined as string | undefined,
+          },
+        ]
+      : []),
     ...(questEnabled
       ? [
           {
@@ -1035,10 +1040,11 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
           competition={competition}
           onSave={async updates => {
             const updatedCompetition = { ...competition, ...updates };
+            // Mettre à jour l'UI immédiatement avant l'écriture DB pour éviter le flash
+            onUpdate(updatedCompetition);
             if (window.electronAPI) {
               await window.electronAPI.db.updateCompetition(competition.id, updatedCompetition);
             }
-            onUpdate(updatedCompetition);
           }}
           onClose={() => setShowPropertiesModal(false)}
         />
