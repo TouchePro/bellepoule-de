@@ -198,7 +198,12 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         }
       } else {
         // Modal fermé
-        if ((e.key === 'n' || e.key === 'N') && !inModalInput && target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
+        if (
+          (e.key === 'n' || e.key === 'N') &&
+          !inModalInput &&
+          target.tagName !== 'INPUT' &&
+          target.tagName !== 'TEXTAREA'
+        ) {
           e.preventDefault();
           const firstPending = orderedMatches.pending[0];
           if (firstPending) {
@@ -212,7 +217,11 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           undo();
           return;
         }
-        if ((e.key === 'y' && e.ctrlKey) || (e.key === 'z' && e.ctrlKey && e.shiftKey) || (e.key === 'Z' && e.ctrlKey && e.shiftKey)) {
+        if (
+          (e.key === 'y' && e.ctrlKey) ||
+          (e.key === 'z' && e.ctrlKey && e.shiftKey) ||
+          (e.key === 'Z' && e.ctrlKey && e.shiftKey)
+        ) {
           e.preventDefault();
           redo();
           return;
@@ -245,8 +254,12 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     const match = pool.matches[matchIndex];
     setEditingMatch(matchIndex);
     setIsMatchInverted(inverted);
-    setEditScoreA(inverted ? match.scoreB?.value?.toString() || '' : match.scoreA?.value?.toString() || '');
-    setEditScoreB(inverted ? match.scoreA?.value?.toString() || '' : match.scoreB?.value?.toString() || '');
+    setEditScoreA(
+      inverted ? match.scoreB?.value?.toString() || '' : match.scoreA?.value?.toString() || ''
+    );
+    setEditScoreB(
+      inverted ? match.scoreA?.value?.toString() || '' : match.scoreB?.value?.toString() || ''
+    );
     setVictoryA(false);
     setVictoryB(false);
   };
@@ -287,8 +300,10 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
 
     // Capturer l'ancien score pour l'historique
     const match = pool.matches[editingMatch];
-    const prevScoreA = typeof match?.scoreA === 'number' ? match.scoreA : (match?.scoreA as any)?.value ?? null;
-    const prevScoreB = typeof match?.scoreB === 'number' ? match.scoreB : (match?.scoreB as any)?.value ?? null;
+    const prevScoreA =
+      typeof match?.scoreA === 'number' ? match.scoreA : ((match?.scoreA as any)?.value ?? null);
+    const prevScoreB =
+      typeof match?.scoreB === 'number' ? match.scoreB : ((match?.scoreB as any)?.value ?? null);
     const matchIdx = editingMatch;
 
     if (actualScoreA === actualScoreB) {
@@ -296,28 +311,45 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         // victoryA = victoire du tireur affiché à gauche (= fencerA si normal, fencerB si inversé)
         const winnerLeft = victoryA;
         const winner: 'A' | 'B' = isMatchInverted
-          ? (winnerLeft ? 'B' : 'A')
-          : (winnerLeft ? 'A' : 'B');
+          ? winnerLeft
+            ? 'B'
+            : 'A'
+          : winnerLeft
+            ? 'A'
+            : 'B';
         addAction({
           type: 'UPDATE_SCORE',
           description: `Score poule ${pool.number} match ${matchIdx + 1}`,
-          undo: () => { if (prevScoreA !== null && prevScoreB !== null) onScoreUpdate(matchIdx, prevScoreA, prevScoreB); },
-          redo: () => { onScoreUpdate(matchIdx, actualScoreA, actualScoreB, winner); },
+          undo: () => {
+            if (prevScoreA !== null && prevScoreB !== null)
+              onScoreUpdate(matchIdx, prevScoreA, prevScoreB);
+          },
+          redo: () => {
+            onScoreUpdate(matchIdx, actualScoreA, actualScoreB, winner);
+          },
         });
         onScoreUpdate(editingMatch, actualScoreA, actualScoreB, winner);
       } else if (isLaserSabre) {
         showToast('Match nul : cliquez sur V pour attribuer la victoire', 'warning');
         return;
       } else {
-        showToast('Match nul impossible en escrime !', 'error');
+        showToast(
+          "Match nul impossible ! En match en direct, la mort subite de 30s s'applique automatiquement",
+          'error'
+        );
         return;
       }
     } else {
       addAction({
         type: 'UPDATE_SCORE',
         description: `Score poule ${pool.number} match ${matchIdx + 1}`,
-        undo: () => { if (prevScoreA !== null && prevScoreB !== null) onScoreUpdate(matchIdx, prevScoreA, prevScoreB); },
-        redo: () => { onScoreUpdate(matchIdx, actualScoreA, actualScoreB); },
+        undo: () => {
+          if (prevScoreA !== null && prevScoreB !== null)
+            onScoreUpdate(matchIdx, prevScoreA, prevScoreB);
+        },
+        redo: () => {
+          onScoreUpdate(matchIdx, actualScoreA, actualScoreB);
+        },
       });
       onScoreUpdate(editingMatch, actualScoreA, actualScoreB);
     }
@@ -358,14 +390,26 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     if (leftAbandons) {
       // Le tireur affiché à gauche abandonne
       const winner: 'A' | 'B' = isMatchInverted ? 'A' : 'B';
-      onScoreUpdate(editingMatch, isMatchInverted ? match.scoreA?.value || maxScore : 0, isMatchInverted ? 0 : match.scoreB?.value || maxScore, winner, status);
+      onScoreUpdate(
+        editingMatch,
+        isMatchInverted ? match.scoreA?.value || maxScore : 0,
+        isMatchInverted ? 0 : match.scoreB?.value || maxScore,
+        winner,
+        status
+      );
       if (onFencerStatusChange && fencerLeft) {
         onFencerStatusChange(fencerLeft.id, status);
       }
     } else {
       // Le tireur affiché à droite abandonne
       const winner: 'A' | 'B' = isMatchInverted ? 'B' : 'A';
-      onScoreUpdate(editingMatch, isMatchInverted ? 0 : match.scoreA?.value || maxScore, isMatchInverted ? match.scoreB?.value || maxScore : 0, winner, status);
+      onScoreUpdate(
+        editingMatch,
+        isMatchInverted ? 0 : match.scoreA?.value || maxScore,
+        isMatchInverted ? match.scoreB?.value || maxScore : 0,
+        winner,
+        status
+      );
       if (onFencerStatusChange && fencerRight) {
         onFencerStatusChange(fencerRight.id, status);
       }
@@ -393,15 +437,19 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   const handleExportPDF = async () => {
     try {
       const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
-      await exportPoolToPDF(pool, {
-        title: `Poule ${pool.number} - ${pool.fencers.length} tireurs`,
-        includeFinishedMatches: true,
-        includePendingMatches: true,
-        includePoolStats: true,
-        logoBase64: logo,
-        competitionName,
-        visibleColumns: getVisibleColumns('pool'),
-      }, poolTemplate);
+      await exportPoolToPDF(
+        pool,
+        {
+          title: `Poule ${pool.number} - ${pool.fencers.length} tireurs`,
+          includeFinishedMatches: true,
+          includePendingMatches: true,
+          includePoolStats: true,
+          logoBase64: logo,
+          competitionName,
+          visibleColumns: getVisibleColumns('pool'),
+        },
+        poolTemplate
+      );
       showToast(`Export PDF de la poule ${pool.number} généré avec succès`, 'success');
     } catch (error) {
       logger.error(LogCategory.UI, "Erreur lors de l'export PDF", error as Error);

@@ -5,7 +5,14 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Fencer, Match, MatchStatus, TargetZone } from '../../shared/types';
+import { Fencer, Match, MatchStatus, TargetZone, MatchMode } from '../../shared/types';
+import {
+  checkTimeoutSuddenDeath,
+  isValidSuddenDeathTouch,
+  getSuddenDeathOvertimeDuration,
+  drawWinner,
+} from '../../shared/utils/suddenDeath';
+import TiebreakerAnimation from './TiebreakerAnimation';
 
 interface TouchOptimizedRefereeProps {
   match: Match;
@@ -13,7 +20,7 @@ interface TouchOptimizedRefereeProps {
   fencerB: Fencer;
   maxScore: number;
   onScoreUpdate: (scoreA: number, scoreB: number) => void;
-  onMatchEnd: () => void;
+  onMatchEnd: (winner: 'A' | 'B') => void;
   onVoiceCommand?: (command: string) => void;
 }
 
@@ -34,20 +41,32 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
 }) => {
   const [scoreA, setScoreA] = useState(match.scoreA?.value || 0);
   const [scoreB, setScoreB] = useState(match.scoreB?.value || 0);
-  const [matchTime, setMatchTime] = useState(0);
+  const [matchTime, setMatchTime] = useState(180);
   const [isRunning, setIsRunning] = useState(match.status === MatchStatus.IN_PROGRESS);
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [matchMode, setMatchMode] = useState<MatchMode>(MatchMode.NORMAL);
+  const [showTiebreaker, setShowTiebreaker] = useState(false);
+  const [overtimeActive, setOvertimeActive] = useState(false);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
-  // Timer management
+  // Timer management (countdown)
   useEffect(() => {
-    if (isRunning) {
+    if (isRunning && matchTime > 0) {
       intervalRef.current = setInterval(() => {
-        setMatchTime(prev => prev + 1);
+        setMatchTime(prev => {
+          const next = prev - 1;
+          if (next <= 0) {
+            clearInterval(intervalRef.current!);
+            intervalRef.current = null;
+            handleTimeUp();
+            return 0;
+          }
+          return next;
+        });
       }, 1000);
     } else {
       if (intervalRef.current) {
@@ -175,7 +194,31 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
   };
 
   const handleZoneScore = (fencer: 'A' | 'B', zone: TargetZone, points: number) => {
+    if (
+      matchMode === MatchMode.SUDDEN_DEATH_CHALLENGER ||
+      matchMode === MatchMode.SUDDEN_DEATH_TIMEOUT
+    ) {
+      const validation = isValidSuddenDeathTouch(zone, matchMode);
+      if (!validation.isValid) {
+        return;
+      }
+    }
     handleScoreIncrement(fencer, points);
+  };
+
+  const handleMatchEnd = () => {
+    setIsRunning(false);
+    if (scoreA === scoreB) {
+      setShowTiebreaker(true);
+    } else {
+      onMatchEnd(scoreA > scoreB ? 'A' : 'B');
+    }
+  };
+
+  const handleTiebreakerComplete = (winner: 'A' | 'B') => {
+    setShowTiebreaker(false);
+    setIsRunning(false);
+    onMatchEnd(winner);
   };
 
   const handleScoreDecrement = (fencer: 'A' | 'B') => {
@@ -190,10 +233,28 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
     }
   };
 
-  const handleMatchEnd = () => {
-    setIsRunning(false);
-    onMatchEnd();
-  };
+  const handleTimeUp = useCallback(() => {
+    if (matchMode === MatchMode.SUDDEN_DEATH_TIMEOUT) {
+      if (scoreA === scoreB) {
+        setShowTiebreaker(true);
+      } else {
+        setIsRunning(false);
+        onMatchEnd(scoreA > scoreB ? 'A' : 'B');
+      }
+      return;
+    }
+
+    const suddenDeath = checkTimeoutSuddenDeath(0, scoreA, scoreB);
+    if (suddenDeath.shouldTrigger) {
+      setMatchMode(MatchMode.SUDDEN_DEATH_TIMEOUT);
+      setOvertimeActive(true);
+      setMatchTime(getSuddenDeathOvertimeDuration());
+      setIsRunning(true);
+    } else {
+      setIsRunning(false);
+      onMatchEnd(scoreA > scoreB ? 'A' : 'B');
+    }
+  }, [matchMode, scoreA, scoreB, onMatchEnd]);
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -217,7 +278,16 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
         <div className="flex justify-between items-center">
           <div className="text-2xl font-bold text-gray-800">Piste {match.number || 1}</div>
           <div className="flex items-center space-x-4">
-            <div className="text-xl font-mono">{formatTime(matchTime)}</div>
+            {overtimeActive && (
+              <div className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-bold animate-pulse">
+                MORT SUBITE
+              </div>
+            )}
+            <div
+              className={`text-xl font-mono ${overtimeActive ? 'text-yellow-600 font-bold' : ''}`}
+            >
+              {formatTime(matchTime)}
+            </div>
             <button
               onClick={() => setIsRunning(!isRunning)}
               className={`px-4 py-2 rounded-lg font-medium ${
@@ -349,11 +419,11 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
             <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
               <div className="h-full flex" style={{ width: '100%' }}>
                 <div
-                  className="bg-red-500 transition-all duration-300"
+                  className="bg-green-500 transition-all duration-300"
                   style={{ width: `${(scoreA / maxScore) * 100}%` }}
                 />
                 <div
-                  className="bg-green-500 transition-all duration-300"
+                  className="bg-red-500 transition-all duration-300"
                   style={{ width: `${(scoreB / maxScore) * 100}%` }}
                 />
               </div>
@@ -411,6 +481,14 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
           </div>
         </div>
       </div>
+
+      {showTiebreaker && (
+        <TiebreakerAnimation
+          fencerA={fencerA}
+          fencerB={fencerB}
+          onComplete={handleTiebreakerComplete}
+        />
+      )}
 
       <style
         dangerouslySetInnerHTML={{
