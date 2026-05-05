@@ -197,7 +197,8 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
   const handleZoneScore = (fencer: 'A' | 'B', zone: TargetZone, points: number) => {
     if (
       matchMode === MatchMode.SUDDEN_DEATH_CHALLENGER ||
-      matchMode === MatchMode.SUDDEN_DEATH_TIMEOUT
+      matchMode === MatchMode.SUDDEN_DEATH_TIMEOUT ||
+      matchMode === MatchMode.SUPPLEMENTARY_TIME
     ) {
       const validation = isValidSuddenDeathTouch(zone, matchMode);
       if (!validation.isValid) {
