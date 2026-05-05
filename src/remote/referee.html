@@ -123,12 +123,18 @@
         font-weight: 700;
         font-size: 1rem;
         margin-bottom: 0.2rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .fencer-club {
         font-size: 0.7rem;
         color: #6b7280;
         margin-bottom: 0.2rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       /* Cartons */
@@ -711,6 +717,25 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        overflow: hidden;
+      }
+
+      .next-match-card-names {
+        font-size: 1.05rem;
+        font-weight: 700;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 80%;
+      }
+
+      .next-match-card-sub {
+        font-size: 0.78rem;
+        opacity: 0.65;
+        margin-top: 0.2rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .next-match-card:hover,
@@ -1988,12 +2013,16 @@
           if (this.currentMatch) {
             const left = this.swapped ? this.currentMatch.fencerB : this.currentMatch.fencerA;
             const right = this.swapped ? this.currentMatch.fencerA : this.currentMatch.fencerB;
-            document.getElementById('fencer-a-name').textContent =
-              `${left?.lastName || ''} ${left?.firstName || ''}`.trim();
-            document.getElementById('fencer-a-club').textContent = left?.club || '';
-            document.getElementById('fencer-b-name').textContent =
-              `${right?.lastName || ''} ${right?.firstName || ''}`.trim();
-            document.getElementById('fencer-b-club').textContent = right?.club || '';
+            const leftName = `${left?.lastName || ''} ${left?.firstName || ''}`.trim();
+            const rightName = `${right?.lastName || ''} ${right?.firstName || ''}`.trim();
+            const nameElA = document.getElementById('fencer-a-name');
+            const clubElA = document.getElementById('fencer-a-club');
+            const nameElB = document.getElementById('fencer-b-name');
+            const clubElB = document.getElementById('fencer-b-club');
+            if (nameElA) { nameElA.textContent = leftName; nameElA.title = leftName; }
+            if (clubElA) { clubElA.textContent = left?.club || ''; clubElA.title = left?.club || ''; }
+            if (nameElB) { nameElB.textContent = rightName; nameElB.title = rightName; }
+            if (clubElB) { clubElB.textContent = right?.club || ''; clubElB.title = right?.club || ''; }
           }
 
           document.getElementById('btn-swap')?.classList.toggle('active', this.swapped);
