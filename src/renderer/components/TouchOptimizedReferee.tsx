@@ -11,6 +11,7 @@ import {
   isValidSuddenDeathTouch,
   getSuddenDeathOvertimeDuration,
   drawWinner,
+  isSupplementaryTime,
 } from '../../shared/utils/suddenDeath';
 import TiebreakerAnimation from './TiebreakerAnimation';
 
@@ -234,6 +235,16 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
   };
 
   const handleTimeUp = useCallback(() => {
+    if (matchMode === MatchMode.SUPPLEMENTARY_TIME) {
+      if (scoreA === scoreB) {
+        setShowTiebreaker(true);
+      } else {
+        setIsRunning(false);
+        onMatchEnd(scoreA > scoreB ? 'A' : 'B');
+      }
+      return;
+    }
+
     if (matchMode === MatchMode.SUDDEN_DEATH_TIMEOUT) {
       if (scoreA === scoreB) {
         setShowTiebreaker(true);
@@ -246,7 +257,7 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
 
     const suddenDeath = checkTimeoutSuddenDeath(0, scoreA, scoreB);
     if (suddenDeath.shouldTrigger) {
-      setMatchMode(MatchMode.SUDDEN_DEATH_TIMEOUT);
+      setMatchMode(suddenDeath.mode!);
       setOvertimeActive(true);
       setMatchTime(getSuddenDeathOvertimeDuration());
       setIsRunning(true);
@@ -279,8 +290,12 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
           <div className="text-2xl font-bold text-gray-800">Piste {match.number || 1}</div>
           <div className="flex items-center space-x-4">
             {overtimeActive && (
-              <div className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-bold animate-pulse">
-                MORT SUBITE
+              <div className={`px-3 py-1 rounded-full text-sm font-bold animate-pulse ${
+                matchMode === MatchMode.SUPPLEMENTARY_TIME
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'bg-yellow-100 text-yellow-700'
+              }`}>
+                {matchMode === MatchMode.SUPPLEMENTARY_TIME ? '30s SUPPLEMENTAIRE' : 'MORT SUBITE'}
               </div>
             )}
             <div

@@ -82,6 +82,7 @@ export enum MatchMode {
   NORMAL = 'normal',
   SUDDEN_DEATH_CHALLENGER = 'sudden_death_challenger',
   SUDDEN_DEATH_TIMEOUT = 'sudden_death_timeout',
+  SUPPLEMENTARY_TIME = 'supplementary_time',
 }
 
 // ============================================================================

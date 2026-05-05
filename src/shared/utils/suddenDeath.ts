@@ -50,8 +50,8 @@ export function checkTimeoutSuddenDeath(
   if (timeUp && isTie) {
     return {
       shouldTrigger: true,
-      mode: MatchMode.SUDDEN_DEATH_TIMEOUT,
-      reason: 'Fin du temps avec score égal',
+      mode: MatchMode.SUPPLEMENTARY_TIME,
+      reason: 'Fin du temps avec score égal - 30s supplémentaire',
     };
   }
 
@@ -66,6 +66,10 @@ export function isValidSuddenDeathTouch(
   zone: TargetZone,
   matchMode: MatchMode
 ): TouchValidationResult {
+  if (matchMode === MatchMode.SUPPLEMENTARY_TIME) {
+    return { isValid: true, message: 'Toutes les zones sont valides' };
+  }
+
   if (
     matchMode !== MatchMode.SUDDEN_DEATH_CHALLENGER &&
     matchMode !== MatchMode.SUDDEN_DEATH_TIMEOUT
@@ -94,6 +98,10 @@ export function shouldEndMatch(
     return scoreA >= maxScore || scoreB >= maxScore;
   }
 
+  if (matchMode === MatchMode.SUPPLEMENTARY_TIME) {
+    return scoreA !== scoreB;
+  }
+
   if (
     matchMode === MatchMode.SUDDEN_DEATH_CHALLENGER ||
     matchMode === MatchMode.SUDDEN_DEATH_TIMEOUT
@@ -108,6 +116,10 @@ export function shouldEndMatch(
 
 export function drawWinner(): 'A' | 'B' {
   return Math.random() < 0.5 ? 'A' : 'B';
+}
+
+export function isSupplementaryTime(matchMode: MatchMode): boolean {
+  return matchMode === MatchMode.SUPPLEMENTARY_TIME;
 }
 
 export function getSuddenDeathOvertimeDuration(): number {

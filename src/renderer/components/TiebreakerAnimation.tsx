@@ -57,7 +57,7 @@ const TiebreakerAnimation: React.FC<TiebreakerAnimationProps> = ({
     <div className="tiebreaker-overlay" onClick={e => e.stopPropagation()}>
       <div className="tiebreaker-container">
         <h2 className="tiebreaker-title">Tirage au sort</h2>
-        <p className="tiebreaker-subtitle">Mort subite terminée - Egalite persistante</p>
+        <p className="tiebreaker-subtitle">Temps écoulé - Égalité persistante</p>
 
         <div className="tiebreaker-fencers">
           <div
