@@ -702,6 +702,7 @@
           this.cardsA = [];
           this.cardsB = [];
           this.isSuddenDeath = false;
+          this.overtimeType = null;
           // Clé localStorage indépendante des autres écrans
           this.inversionEnabled = localStorage.getItem('publicInversionEnabled') === 'true';
           this.showPhotos = false;
@@ -842,8 +843,11 @@
 
           if (data.suddenDeath !== undefined) {
             this.isSuddenDeath = data.suddenDeath;
-            this.updateSuddenDeathBanner();
           }
+          if (data.overtimeType !== undefined) {
+            this.overtimeType = data.overtimeType;
+          }
+          this.updateSuddenDeathBanner();
 
           this.updateVisibility();
         }
@@ -951,7 +955,11 @@
         updateSuddenDeathBanner() {
           const banner = document.getElementById('sudden-death-banner');
           if (!banner) return;
-          if (this.isSuddenDeath) {
+          if (this.isSuddenDeath && this.overtimeType === 'supplementary') {
+            banner.textContent = '⏱ 30s SUPPLEMENTAIRE';
+            banner.classList.add('active');
+          } else if (this.isSuddenDeath) {
+            banner.textContent = '⚡ MORT SUBITE';
             banner.classList.add('active');
           } else {
             banner.classList.remove('active');
@@ -968,6 +976,7 @@
             matchDisplay.classList.remove('active');
             photoIntro.classList.add('hidden');
             this.isSuddenDeath = false;
+            this.overtimeType = null;
             this.updateSuddenDeathBanner();
           } else if (this.matchStatus === 'ready' && this.showPhotos && this.currentMatch) {
             waitingScreen.classList.add('hidden');

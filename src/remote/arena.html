@@ -1101,6 +1101,7 @@
           this.cardsA = [];
           this.cardsB = [];
           this.isSuddenDeath = false;
+          this.overtimeType = null;
           this.inversionEnabled = localStorage.getItem('inversionEnabled') === 'true';
           this.showPhotos = false;
           this.theme = localStorage.getItem('displayTheme') || 'dark';
@@ -1357,8 +1358,11 @@
           // Mise à jour mort subite
           if (data.suddenDeath !== undefined) {
             this.isSuddenDeath = data.suddenDeath;
-            this.updateSuddenDeathBanner();
           }
+          if (data.overtimeType !== undefined) {
+            this.overtimeType = data.overtimeType;
+          }
+          this.updateSuddenDeathBanner();
 
           // Afficher/masquer selon le statut
           this.updateVisibility();
@@ -1473,7 +1477,11 @@
         updateSuddenDeathBanner() {
           const banner = document.getElementById('sudden-death-banner');
           if (!banner) return;
-          if (this.isSuddenDeath) {
+          if (this.isSuddenDeath && this.overtimeType === 'supplementary') {
+            banner.textContent = '⏱ 30s SUPPLEMENTAIRE';
+            banner.classList.add('active');
+          } else if (this.isSuddenDeath) {
+            banner.textContent = '⚡ MORT SUBITE';
             banner.classList.add('active');
           } else {
             banner.classList.remove('active');
@@ -1492,6 +1500,7 @@
             photoIntro.classList.add('hidden');
             nextPanel.classList.add('hidden');
             this.isSuddenDeath = false;
+            this.overtimeType = null;
             this.updateSuddenDeathBanner();
             this.updateIdleNextMatchDisplay();
           } else if (this.matchStatus === 'ready' && this.showPhotos && this.currentMatch) {

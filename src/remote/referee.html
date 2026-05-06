@@ -1255,6 +1255,7 @@
           this.longPressTimer = null;
           this.isLaserSabre = false;
           this.isSuddenDeath = false;
+          this.overtimeType = null; // 'supplementary' | 'challenger' | null
           this.actionHistory = []; // Historique pour undo (max 10)
           this.cardAnnounceEnabled = false; // Réglé depuis les paramètres de saisie distante
           this.swapped = false;
@@ -1605,6 +1606,7 @@
           this.faultHistoryB = { 1: 0, 2: 0, 3: 0 };
           this.timerSeconds = 180;
           this.isSuddenDeath = false;
+          this.overtimeType = null;
           this.actionHistory = [];
           this.swapped = false;
           this.stopTimer();
@@ -1636,8 +1638,8 @@
           if (!this.currentMatch) return;
           if (this.matchStatus === 'finished') return;
 
-          // En mort subite Laser Sabre, seule la zone C (+5) est autorisée
-          if (this.isSuddenDeath && this.isLaserSabre && points !== 5) {
+          // En mort subite challenger (10-10), seule la zone C (+5) est autorisée
+          if (this.isSuddenDeath && this.overtimeType === 'challenger' && points !== 5) {
             this.showNotification('⚡ Mort subite : Zone C uniquement !');
             return;
           }
@@ -1823,6 +1825,7 @@
             faultHistoryA: { ...this.faultHistoryA },
             faultHistoryB: { ...this.faultHistoryB },
             isSuddenDeath: this.isSuddenDeath,
+            overtypeType: this.overtimeType,
           };
           this.actionHistory.push(snapshot);
           if (this.actionHistory.length > 10) this.actionHistory.shift();
@@ -1839,6 +1842,7 @@
           this.faultHistoryA = prev.faultHistoryA;
           this.faultHistoryB = prev.faultHistoryB;
           this.isSuddenDeath = prev.isSuddenDeath;
+          this.overtimeType = prev.overtimeType;
           this.updateScores();
           this.updateCardsDisplay();
           this.updateSuddenDeathUI();
@@ -1852,21 +1856,27 @@
 
         triggerSuddenDeathChallenger() {
           this.isSuddenDeath = true;
+          this.overtimeType = 'challenger';
           this.updateSuddenDeathUI();
           this.showNotification(
             '⚡ MORT SUBITE – Les deux tireurs ont 10 pts ! Zone C uniquement.'
           );
         }
 
-        // Désactiver +1/+3 en mort subite (seule Zone C autorisée en Laser Sabre)
+        // Afficher le label sans désactiver les zones (la validation se fait dans addScore)
         updateSuddenDeathUI() {
-          const disabled = this.isSuddenDeath && this.isLaserSabre;
-          ['btn-plus-1-a', 'btn-plus-3-a', 'btn-plus-1-b', 'btn-plus-3-b'].forEach(id => {
-            const btn = document.getElementById(id);
-            if (btn) btn.disabled = disabled;
-          });
           const sdLabel = document.getElementById('sudden-death-label');
-          if (sdLabel) sdLabel.style.display = this.isSuddenDeath ? 'block' : 'none';
+          if (sdLabel) {
+            if (this.isSuddenDeath && this.overtimeType === 'supplementary') {
+              sdLabel.style.display = 'block';
+              sdLabel.textContent = '⏱ 30s SUPPLEMENTAIRE';
+            } else if (this.isSuddenDeath && this.overtimeType === 'challenger') {
+              sdLabel.style.display = 'block';
+              sdLabel.textContent = '⚡ MORT SUBITE';
+            } else {
+              sdLabel.style.display = 'none';
+            }
+          }
         }
 
         // ── Sortie d'arène ────────────────────────────────────────────────────
@@ -1926,9 +1936,10 @@
           }
 
           // Ré-évaluer la mort subite : si un score repasse sous 10, on quitte la mort subite
-          if (this.isSuddenDeath && this.isLaserSabre) {
+          if (this.isSuddenDeath && this.isLaserSabre && this.overtimeType === 'challenger') {
             if (!(this.scoreA >= 10 && this.scoreB >= 10)) {
               this.isSuddenDeath = false;
+              this.overtimeType = null;
               this.updateSuddenDeathUI();
             }
           }
@@ -1976,9 +1987,10 @@
           }
 
           // Ré-évaluer la mort subite
-          if (this.isSuddenDeath && this.isLaserSabre) {
+          if (this.isSuddenDeath && this.isLaserSabre && this.overtimeType === 'challenger') {
             if (!(this.scoreA >= 10 && this.scoreB >= 10)) {
               this.isSuddenDeath = false;
+              this.overtimeType = null;
               this.updateSuddenDeathUI();
             }
           }
@@ -2111,6 +2123,7 @@
         resetTimer() {
           this.stopTimer();
           this.isSuddenDeath = false;
+          this.overtimeType = null;
           this.timerSeconds = 180;
           this.updateTimerDisplay();
           this.broadcastTimerUpdate();
@@ -2120,11 +2133,12 @@
 
         triggerSuddenDeath() {
           this.isSuddenDeath = true;
+          this.overtimeType = 'supplementary';
           this.timerSeconds = 30;
           this.updateTimerDisplay();
           this.broadcastTimerUpdate();
           this.updateSuddenDeathUI();
-          this.showNotification('⚡ MORT SUBITE – Égalité à temps ! Zone C uniquement.');
+          this.showNotification('⏱ 30s SUPPLEMENTAIRE – Égalité à temps ! Toutes les zones sont valides.');
           this.startTimer();
         }
 
@@ -2145,6 +2159,7 @@
 
             this.showNotification(`🏆 ${winnerName} remporte le match (tirage au sort)`);
             this.isSuddenDeath = false;
+            this.overtimeType = null;
             this.updateSuddenDeathUI();
 
             setTimeout(() => this.finishMatch(), 2500);
@@ -2184,6 +2199,7 @@
             time: this.timerSeconds,
             timerStatus: this.timerRunning ? 'running' : 'paused',
             suddenDeath: this.isSuddenDeath,
+            overtypeType: this.overtimeType,
           });
         }
 
@@ -2198,6 +2214,7 @@
             touchesA: this.touchesA,
             touchesB: this.touchesB,
             suddenDeath: this.isSuddenDeath,
+            overtypeType: this.overtimeType,
           });
         }
 
@@ -2308,6 +2325,7 @@
               this.matchStatus = 'not_started';
               this.timerSeconds = 180;
               this.isSuddenDeath = false;
+              this.overtimeType = null;
               this.updateTimerDisplay();
               document.getElementById('active-match').classList.remove('visible');
               this.showNextMatchesScreen();

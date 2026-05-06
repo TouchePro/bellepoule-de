@@ -291,11 +291,13 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
           <div className="text-2xl font-bold text-gray-800">Piste {match.number || 1}</div>
           <div className="flex items-center space-x-4">
             {overtimeActive && (
-              <div className={`px-3 py-1 rounded-full text-sm font-bold animate-pulse ${
-                matchMode === MatchMode.SUPPLEMENTARY_TIME
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'bg-yellow-100 text-yellow-700'
-              }`}>
+              <div
+                className={`px-3 py-1 rounded-full text-sm font-bold animate-pulse ${
+                  matchMode === MatchMode.SUPPLEMENTARY_TIME
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'bg-yellow-100 text-yellow-700'
+                }`}
+              >
                 {matchMode === MatchMode.SUPPLEMENTARY_TIME ? '30s SUPPLEMENTAIRE' : 'MORT SUBITE'}
               </div>
             )}
