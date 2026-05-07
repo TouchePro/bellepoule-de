@@ -48,10 +48,13 @@ export function checkTimeoutSuddenDeath(
   const isTie = scoreA === scoreB;
 
   if (timeUp && isTie) {
+    const bothAtThreshold = scoreA >= CHALLENGER_THRESHOLD && scoreB >= CHALLENGER_THRESHOLD;
     return {
       shouldTrigger: true,
-      mode: MatchMode.SUPPLEMENTARY_TIME,
-      reason: 'Fin du temps avec score égal - 30s supplémentaire',
+      mode: bothAtThreshold ? MatchMode.SUDDEN_DEATH_TIMEOUT : MatchMode.SUPPLEMENTARY_TIME,
+      reason: bothAtThreshold
+        ? 'Fin du temps avec score ≥10 égal - 30s mort subite (Zone C uniquement)'
+        : 'Fin du temps avec score égal - 30s supplémentaire',
     };
   }
 
