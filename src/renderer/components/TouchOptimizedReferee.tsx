@@ -8,6 +8,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Fencer, Match, MatchStatus, TargetZone, MatchMode } from '../../shared/types';
 import {
   checkTimeoutSuddenDeath,
+  checkChallengerSuddenDeath,
   isValidSuddenDeathTouch,
   getSuddenDeathOvertimeDuration,
   drawWinner,
@@ -205,7 +206,30 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
         return;
       }
     }
+
+    // Calcul des nouveaux scores avant setState (React ne met pas à jour synchroniquement)
+    const newScoreA = fencer === 'A' ? Math.min(scoreA + points, maxScore) : scoreA;
+    const newScoreB = fencer === 'B' ? Math.min(scoreB + points, maxScore) : scoreB;
+
     handleScoreIncrement(fencer, points);
+
+    // Vérifications post-touche pour les modes spéciaux
+    if (
+      matchMode === MatchMode.SUPPLEMENTARY_TIME ||
+      matchMode === MatchMode.SUDDEN_DEATH_TIMEOUT ||
+      matchMode === MatchMode.SUDDEN_DEATH_CHALLENGER
+    ) {
+      if (newScoreA !== newScoreB) {
+        setIsRunning(false);
+        onMatchEnd(newScoreA > newScoreB ? 'A' : 'B');
+        return;
+      }
+      if (matchMode === MatchMode.SUPPLEMENTARY_TIME) {
+        if (checkChallengerSuddenDeath(newScoreA, newScoreB).shouldTrigger) {
+          setMatchMode(MatchMode.SUDDEN_DEATH_TIMEOUT);
+        }
+      }
+    }
   };
 
   const handleMatchEnd = () => {

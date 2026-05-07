@@ -67,17 +67,34 @@ describe('checkChallengerSuddenDeath', () => {
 
 describe('checkTimeoutSuddenDeath', () => {
   describe('Déclenchement', () => {
-    it('se déclenche si temps = 0 ET égalité (temps supplémentaire)', () => {
+    it('retourne SUPPLEMENTARY_TIME si scores < 10 à égalité', () => {
       const result = checkTimeoutSuddenDeath(0, 7, 7);
 
       expect(result.shouldTrigger).toBe(true);
       expect(result.mode).toBe(MatchMode.SUPPLEMENTARY_TIME);
     });
 
+    it('retourne SUPPLEMENTARY_TIME si scores = 9 à égalité (sous le seuil)', () => {
+      expect(checkTimeoutSuddenDeath(0, 9, 9).mode).toBe(MatchMode.SUPPLEMENTARY_TIME);
+    });
+
     it('se déclenche même avec égalité à 0-0', () => {
       const result = checkTimeoutSuddenDeath(0, 0, 0);
 
       expect(result.shouldTrigger).toBe(true);
+      expect(result.mode).toBe(MatchMode.SUPPLEMENTARY_TIME);
+    });
+
+    it('retourne SUDDEN_DEATH_TIMEOUT si scores = 10 à égalité', () => {
+      const result = checkTimeoutSuddenDeath(0, 10, 10);
+
+      expect(result.shouldTrigger).toBe(true);
+      expect(result.mode).toBe(MatchMode.SUDDEN_DEATH_TIMEOUT);
+    });
+
+    it('retourne SUDDEN_DEATH_TIMEOUT si scores > 10 à égalité', () => {
+      expect(checkTimeoutSuddenDeath(0, 11, 11).mode).toBe(MatchMode.SUDDEN_DEATH_TIMEOUT);
+      expect(checkTimeoutSuddenDeath(0, 13, 13).mode).toBe(MatchMode.SUDDEN_DEATH_TIMEOUT);
     });
   });
 
