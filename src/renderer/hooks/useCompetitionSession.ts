@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Pool, PoolRanking } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
 import { TableauMatch, FinalResult } from '../components/TableauView';
@@ -52,6 +52,11 @@ interface UseCompetitionSessionProps {
 export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [restoredState, setRestoredState] = useState<Partial<SessionState> | null>(null);
+  const propsRef = useRef(props);
+  const isLoadedRef = useRef(false);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  propsRef.current = props;
+  isLoadedRef.current = isLoaded;
 
   // Phase mapping entre string et number
   const phaseToNumber: Record<Phase, number> = {
@@ -76,37 +81,38 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
     7: 'remote',
   };
 
-  // Sauvegarder l'état
+  // Sauvegarder l'état - lit depuis propsRef pour rester stable (pas de re-création à chaque render)
   const saveState = useCallback(async () => {
-    if (!window.electronAPI?.db?.saveSessionState || !isLoaded) return;
+    if (!window.electronAPI?.db?.saveSessionState || !isLoadedRef.current) return;
+    const p = propsRef.current;
 
     const state: SessionState = {
-      currentPhase: phaseToNumber[props.currentPhase],
-      pools: props.pools,
-      poolHistory: props.poolHistory,
-      overallRanking: props.overallRanking,
-      tableauMatches: props.tableauMatches,
-      finalResults: props.finalResults,
-      currentPoolRound: props.currentPoolRound,
-      skipPoolPhase: props.skipPoolPhase,
+      currentPhase: phaseToNumber[p.currentPhase],
+      pools: p.pools,
+      poolHistory: p.poolHistory,
+      overallRanking: p.overallRanking,
+      tableauMatches: p.tableauMatches,
+      finalResults: p.finalResults,
+      currentPoolRound: p.currentPoolRound,
+      skipPoolPhase: p.skipPoolPhase,
       poolPrepParams: {
-        poolCount: props.poolPrepParams?.poolCount || 0,
-        minFencersPerPool: props.poolPrepParams?.minFencersPerPool || 5,
-        maxFencersPerPool: props.poolPrepParams?.maxFencersPerPool || 7,
+        poolCount: p.poolPrepParams?.poolCount || 0,
+        minFencersPerPool: p.poolPrepParams?.minFencersPerPool || 5,
+        maxFencersPerPool: p.poolPrepParams?.maxFencersPerPool || 7,
       },
       uiState: {
-        currentPhase: props.currentPhase,
-        currentPoolRound: props.currentPoolRound,
-        pools: props.pools.length,
+        currentPhase: p.currentPhase,
+        currentPoolRound: p.currentPoolRound,
+        pools: p.pools.length,
       },
     };
 
     try {
-      await window.electronAPI.db.saveSessionState(props.competitionId, state);
+      await window.electronAPI.db.saveSessionState(p.competitionId, state);
     } catch (e) {
       logger.error(LogCategory.UI, 'Failed to save session state', e as Error);
     }
-  }, [props, isLoaded]);
+  }, []); // stable - lit les props depuis propsRef
 
   // Restaurer l'état
   const restoreState = useCallback(async () => {
@@ -150,12 +156,30 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
     restoreState();
   }, [restoreState]);
 
-  // Sauvegarder à chaque changement
+  // Sauvegarder à chaque changement - debounced 500ms pour éviter les écritures en rafale
   useEffect(() => {
-    if (isLoaded) {
+    if (!isLoaded) return;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      saveTimerRef.current = null;
       saveState();
-    }
-  }, [saveState, isLoaded]);
+    }, 500);
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, [
+    isLoaded,
+    props.currentPhase,
+    props.currentPoolRound,
+    props.pools,
+    props.poolHistory,
+    props.overallRanking,
+    props.tableauMatches,
+    props.finalResults,
+    props.skipPoolPhase,
+    props.poolPrepParams,
+    saveState,
+  ]);
 
   return {
     isLoaded,

@@ -24,6 +24,7 @@ import {
   Referee,
 } from '../shared/types';
 import { validateId, validateSessionState, sanitizeId } from './validation';
+import { logger, LogCategory } from '../shared/services/logger';
 import { MigrationManager } from './migrations';
 import { ALL_MIGRATIONS } from './migrations/migrations';
 
@@ -33,6 +34,7 @@ export class DatabaseManager {
   private db: any = null;
   private dbPath: string;
   private isDirty = false;
+  private saveDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(dbPath?: string) {
     this.dbPath = dbPath || path.join(process.cwd(), 'bellepoule.db');
@@ -65,7 +67,7 @@ export class DatabaseManager {
 
   public close(): void {
     if (this.db) {
-      this.save();
+      this.forceSave();
       this.db.close();
       this.db = null;
     }
@@ -82,55 +84,56 @@ export class DatabaseManager {
 
   private save(): void {
     if (!this.db) return;
+    this.isDirty = true;
+    // Debounce : coalesce les écritures rapides en un seul flush différé
+    if (this.saveDebounceTimer !== null) return;
+    this.saveDebounceTimer = setTimeout(() => {
+      this.saveDebounceTimer = null;
+      this.flushToDisk(0);
+    }, 100);
+  }
+
+  // Écriture réelle sur disque, avec retry async (sans spin-wait bloquant)
+  private flushToDisk(attempt: number): void {
+    if (!this.db || !this.isDirty) return;
 
     const data = this.db.export();
     const buffer = Buffer.from(data);
     const tmpPath = this.dbPath + '.tmp';
-    const maxRetries = 3;
 
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      fs.writeFileSync(tmpPath, buffer);
       try {
-        // Écriture atomique : fichier temporaire puis renommage
-        fs.writeFileSync(tmpPath, buffer);
-        try {
-          fs.renameSync(tmpPath, this.dbPath);
-        } catch {
-          // Sur Windows, renameSync peut échouer si le fichier cible est verrouillé
-          // Fallback: écriture directe
-          fs.writeFileSync(this.dbPath, buffer);
-          try {
-            fs.unlinkSync(tmpPath);
-          } catch {
-            /* ignore */
-          }
-        }
-        this.isDirty = false;
-        return;
-      } catch (error: any) {
-        // EBUSY / EPERM / EACCES : fichier verrouillé (antivirus Windows)
-        const isRetryable =
-          error.code === 'EBUSY' || error.code === 'EPERM' || error.code === 'EACCES';
-        if (isRetryable && attempt < maxRetries - 1) {
-          // Attente courte avant retry (100ms, 200ms)
-          const waitMs = 100 * (attempt + 1);
-          const start = Date.now();
-          while (Date.now() - start < waitMs) {
-            /* attente active */
-          }
-          continue;
-        }
-        console.error(
-          `Échec sauvegarde BDD (tentative ${attempt + 1}/${maxRetries}):`,
-          error.message || error
-        );
-        throw error;
+        fs.renameSync(tmpPath, this.dbPath);
+      } catch {
+        // Sur Windows, renameSync peut échouer si le fichier cible est verrouillé
+        fs.writeFileSync(this.dbPath, buffer);
+        try { fs.unlinkSync(tmpPath); } catch { /* ignore */ }
       }
+      this.isDirty = false;
+    } catch (error: any) {
+      // EBUSY / EPERM / EACCES : fichier verrouillé (antivirus Windows)
+      const isRetryable = error.code === 'EBUSY' || error.code === 'EPERM' || error.code === 'EACCES';
+      if (isRetryable && attempt < 2) {
+        // Retry async sans bloquer le main thread
+        setTimeout(() => this.flushToDisk(attempt + 1), 150 * (attempt + 1));
+        return;
+      }
+      logger.error(
+        LogCategory.DATABASE,
+        `Échec sauvegarde BDD (tentative ${attempt + 1}/3):`,
+        error instanceof Error ? error : new Error(String(error.message || error))
+      );
     }
   }
 
   public forceSave(): void {
+    if (this.saveDebounceTimer !== null) {
+      clearTimeout(this.saveDebounceTimer);
+      this.saveDebounceTimer = null;
+    }
     if (!this.isDirty) return;
-    this.save();
+    this.flushToDisk(0);
   }
 
   public getPath(): string {
