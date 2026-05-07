@@ -136,6 +136,48 @@ export class DatabaseManager {
     this.flushToDisk(0);
   }
 
+  // Version async de la sauvegarde : db.export() reste sync (sql.js) mais le I/O disque
+  // est non-bloquant, ce qui évite de geler le main thread lors de l'autosave.
+  public async saveAsync(): Promise<void> {
+    if (this.saveDebounceTimer !== null) {
+      clearTimeout(this.saveDebounceTimer);
+      this.saveDebounceTimer = null;
+    }
+    if (!this.isDirty || !this.db) return;
+    await this.flushToDiskAsync(0);
+  }
+
+  private async flushToDiskAsync(attempt: number): Promise<void> {
+    if (!this.db || !this.isDirty) return;
+
+    const data = this.db.export();
+    const buffer = Buffer.from(data);
+    const tmpPath = this.dbPath + '.tmp';
+
+    try {
+      await fs.promises.writeFile(tmpPath, buffer);
+      try {
+        await fs.promises.rename(tmpPath, this.dbPath);
+      } catch {
+        await fs.promises.writeFile(this.dbPath, buffer);
+        try { await fs.promises.unlink(tmpPath); } catch { /* ignore */ }
+      }
+      this.isDirty = false;
+    } catch (error: any) {
+      const isRetryable = error.code === 'EBUSY' || error.code === 'EPERM' || error.code === 'EACCES';
+      if (isRetryable && attempt < 2) {
+        await new Promise(resolve => setTimeout(resolve, 150 * (attempt + 1)));
+        await this.flushToDiskAsync(attempt + 1);
+        return;
+      }
+      logger.error(
+        LogCategory.DATABASE,
+        `Échec saveAsync (tentative ${attempt + 1}/3):`,
+        error instanceof Error ? error : new Error(String(error.message || error))
+      );
+    }
+  }
+
   public getPath(): string {
     return this.dbPath;
   }
@@ -730,6 +772,73 @@ export class DatabaseManager {
     );
     this.save();
     return this.getMatch(id)!;
+  }
+
+  // Batch upsert — une transaction SQLite pour N matchs, un seul IPC call
+  public upsertMultipleTableauMatches(
+    competitionId: string,
+    matches: Array<{
+      matchId: string;
+      round: number;
+      position: number;
+      fencerAId?: string | null;
+      fencerBId?: string | null;
+      scoreA?: any | null;
+      scoreB?: any | null;
+      status?: string;
+      maxScore?: number;
+      isBye?: boolean;
+    }>
+  ): void {
+    if (!this.db) throw new Error('Database not open');
+    if (matches.length === 0) return;
+
+    const now = new Date().toISOString();
+    this.db.run('BEGIN');
+    try {
+      const stmt = this.db.prepare(`
+        INSERT INTO matches
+          (id, number, table_id, fencer_a_id, fencer_b_id, score_a, score_b, max_score, status, round, position, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          fencer_a_id = excluded.fencer_a_id,
+          fencer_b_id = excluded.fencer_b_id,
+          score_a     = excluded.score_a,
+          score_b     = excluded.score_b,
+          max_score   = excluded.max_score,
+          status      = excluded.status,
+          round       = excluded.round,
+          position    = excluded.position,
+          updated_at  = excluded.updated_at
+      `);
+      for (const m of matches) {
+        const dbId = `${competitionId}-${m.matchId}`;
+        stmt.bind([
+          dbId,
+          parseInt(m.matchId.replace('-', '')) || 0,
+          competitionId,
+          m.fencerAId ?? null,
+          m.fencerBId ?? null,
+          m.scoreA != null ? JSON.stringify(m.scoreA) : null,
+          m.scoreB != null ? JSON.stringify(m.scoreB) : null,
+          m.maxScore ?? 15,
+          m.status ?? 'not_started',
+          m.round,
+          m.position,
+          now,
+          now,
+        ]);
+        stmt.step();
+        stmt.reset();
+      }
+      stmt.free();
+      this.db.run('COMMIT');
+    } catch (error) {
+      this.db.run('ROLLBACK');
+      throw error;
+    }
+    this.isDirty = true;
+    this.save();
   }
 
   public upsertTableauMatch(params: {

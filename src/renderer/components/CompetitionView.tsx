@@ -246,13 +246,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     };
   }, [updateMatchFromRemote]);
 
-  // Sync matchs tableau vers DB (persistence individuelle, inclut la 3e place)
+  // Sync matchs tableau vers DB (batch, inclut la 3e place)
   useEffect(() => {
     if (!competition?.id || tableauMatches.length === 0) return;
     const maxScore = competition.settings?.defaultTableMaxScore ?? 15;
-    tableauMatches.forEach(m => {
-      window.electronAPI.db.upsertTableauMatch({
-        competitionId: competition.id,
+    window.electronAPI.db.upsertMultipleTableauMatches(
+      competition.id,
+      tableauMatches.map(m => ({
         matchId: m.id,
         round: m.round,
         position: m.position,
@@ -263,8 +263,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         status: m.winner ? 'finished' : m.isBye ? 'finished' : 'not_started',
         maxScore,
         isBye: m.isBye,
-      }).catch((e: unknown) => logger.warn(LogCategory.DATABASE, 'upsertTableauMatch failed', e instanceof Error ? e : undefined));
-    });
+      }))
+    ).catch((e: unknown) => logger.warn(LogCategory.DATABASE, 'upsertMultipleTableauMatches failed', e instanceof Error ? e : undefined));
   }, [tableauMatches, competition?.id]);
 
   // Menu events

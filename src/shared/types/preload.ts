@@ -425,6 +425,21 @@ export interface DatabaseAPI {
     maxScore?: number;
     isBye?: boolean;
   }) => Promise<void>;
+  upsertMultipleTableauMatches: (
+    competitionId: string,
+    matches: Array<{
+      matchId: string;
+      round: number;
+      position: number;
+      fencerAId?: string | null;
+      fencerBId?: string | null;
+      scoreA?: any | null;
+      scoreB?: any | null;
+      status?: string;
+      maxScore?: number;
+      isBye?: boolean;
+    }>
+  ) => Promise<void>;
 
   // Pools
   createPool: (phaseId: string, number: number) => Promise<Pool>;

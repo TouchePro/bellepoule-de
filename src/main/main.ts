@@ -982,6 +982,10 @@ ipcMain.handle('db:upsertTableauMatch', async (_, params) => {
   return db.upsertTableauMatch(params);
 });
 
+ipcMain.handle('db:upsertMultipleTableauMatches', async (_, competitionId: string, matches: any[]) => {
+  return db.upsertMultipleTableauMatches(competitionId, matches);
+});
+
 // Session State handlers
 ipcMain.handle('db:saveSessionState', async (_, competitionId, state) => {
   return db.saveSessionState(competitionId, state);
@@ -1824,9 +1828,9 @@ app.whenReady().then(async () => {
   const startAutosave = () => {
     if (autosaveInterval) clearInterval(autosaveInterval);
     autosaveInterval = setInterval(
-      () => {
+      async () => {
         try {
-          db.forceSave();
+          await db.saveAsync(); // async I/O — ne bloque pas le main thread
           console.log('Autosave completed at', new Date().toISOString());
           mainWindow?.webContents.send('autosave:completed');
         } catch (error) {
