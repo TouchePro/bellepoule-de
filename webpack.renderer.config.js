@@ -43,6 +43,7 @@ module.exports = (env = {}) => ({
     path: path.resolve(__dirname, 'dist/renderer'),
     filename: '[name].js',
     chunkFilename: '[name].chunk.js',
+    globalObject: 'globalThis',
   },
   devServer: {
     port: 8066,
