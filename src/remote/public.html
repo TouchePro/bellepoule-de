@@ -584,9 +584,153 @@
           font-size: clamp(1.2rem, 4vw, 5vh);
         }
       }
+
+      /* ── Animation tirage au sort (pièce 3D) ── */
+      #coin-flip-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.92);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999;
+        animation: coinOverlayIn 0.4s ease-out;
+      }
+      #coin-flip-overlay.hidden { display: none; }
+
+      .coin-flip-content {
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2rem;
+      }
+
+      .coin-flip-title {
+        font-size: clamp(1.8rem, 5vw, 3.5rem);
+        font-weight: 900;
+        color: #fff;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .coin-flip-subtitle {
+        font-size: clamp(1rem, 2.5vw, 1.6rem);
+        color: #d1d5db;
+        margin-top: -1.5rem;
+      }
+
+      .coin-scene {
+        perspective: 1200px;
+        width: clamp(200px, 30vw, 340px);
+        height: clamp(200px, 30vw, 340px);
+      }
+
+      .coin {
+        width: 100%;
+        height: 100%;
+        transform-style: preserve-3d;
+        position: relative;
+      }
+
+      .coin-face {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        backface-visibility: hidden;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        box-shadow: 0 0 40px rgba(0,0,0,0.6), inset 0 0 20px rgba(255,255,255,0.1);
+      }
+
+      .coin-face-label {
+        font-size: clamp(1rem, 2.5vw, 1.5rem);
+        font-weight: 900;
+        color: rgba(255,255,255,0.85);
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+      }
+
+      .coin-face-name {
+        font-size: clamp(1.2rem, 3vw, 2rem);
+        font-weight: 700;
+        color: #fff;
+        text-align: center;
+        padding: 0 1rem;
+        word-break: break-word;
+        max-width: 90%;
+        text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+      }
+
+      .coin-front {
+        background: radial-gradient(circle at 35% 35%, #4ade80, #16a34a 60%, #14532d);
+        border: 6px solid rgba(255,255,255,0.25);
+      }
+
+      .coin-back {
+        background: radial-gradient(circle at 35% 35%, #f87171, #dc2626 60%, #7f1d1d);
+        border: 6px solid rgba(255,255,255,0.25);
+        transform: rotateY(180deg);
+      }
+
+      #coin-result {
+        font-size: clamp(2rem, 6vw, 4rem);
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        animation: resultPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        padding: 0.75rem 2.5rem;
+        border-radius: 16px;
+      }
+      #coin-result.winner-green {
+        color: #22c55e;
+        background: rgba(34, 197, 94, 0.15);
+        border: 3px solid #22c55e;
+        text-shadow: 0 0 30px rgba(34, 197, 94, 0.6);
+      }
+      #coin-result.winner-red {
+        color: #ef4444;
+        background: rgba(239, 68, 68, 0.15);
+        border: 3px solid #ef4444;
+        text-shadow: 0 0 30px rgba(239, 68, 68, 0.6);
+      }
+      #coin-result.hidden { display: none; }
+
+      @keyframes coinOverlayIn {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+      }
+      @keyframes resultPop {
+        from { transform: scale(0.5); opacity: 0; }
+        to   { transform: scale(1);   opacity: 1; }
+      }
     </style>
   </head>
   <body>
+    <!-- Overlay tirage au sort (pièce 3D) -->
+    <div id="coin-flip-overlay" class="hidden">
+      <div class="coin-flip-content">
+        <div class="coin-flip-title">Tirage au sort</div>
+        <div class="coin-flip-subtitle">Égalité persistante — fin du temps supplémentaire</div>
+        <div class="coin-scene">
+          <div class="coin" id="coin-3d">
+            <div class="coin-face coin-front">
+              <span class="coin-face-label">VERT</span>
+              <span class="coin-face-name" id="coin-name-green">—</span>
+            </div>
+            <div class="coin-face coin-back">
+              <span class="coin-face-label">ROUGE</span>
+              <span class="coin-face-name" id="coin-name-red">—</span>
+            </div>
+          </div>
+        </div>
+        <div id="coin-result" class="hidden"></div>
+      </div>
+    </div>
+
     <div id="card-announcement-banner" class="card-announcement-banner"></div>
 
     <div class="header">
@@ -752,6 +896,57 @@
           this.socket.on(`arena:${this.arenaId}:card_announcement`, ann => {
             this.showCardAnnouncement(ann);
           });
+
+          this.socket.on(`arena:${this.arenaId}:coin_flip`, data => {
+            this.showCoinFlipAnimation(data.winner, data.fencerA, data.fencerB);
+          });
+        }
+
+        showCoinFlipAnimation(winner, fencerA, fencerB) {
+          const overlay   = document.getElementById('coin-flip-overlay');
+          const coin      = document.getElementById('coin-3d');
+          const nameGreen = document.getElementById('coin-name-green');
+          const nameRed   = document.getElementById('coin-name-red');
+          const result    = document.getElementById('coin-result');
+          if (!overlay || !coin || !nameGreen || !nameRed || !result) return;
+
+          const fA = this.inversionEnabled ? fencerB : fencerA;
+          const fB = this.inversionEnabled ? fencerA : fencerB;
+          const nameA = fA ? `${fA.lastName || ''} ${fA.firstName || ''}`.trim() || 'VERT'  : 'VERT';
+          const nameB = fB ? `${fB.lastName || ''} ${fB.firstName || ''}`.trim() || 'ROUGE' : 'ROUGE';
+          nameGreen.textContent = nameA;
+          nameRed.textContent   = nameB;
+
+          result.className = 'hidden';
+          result.textContent = '';
+          coin.style.transition = 'none';
+          coin.style.transform  = 'rotateY(0deg)';
+
+          overlay.classList.remove('hidden');
+
+          const visualWinner = this.inversionEnabled
+            ? (winner === 'A' ? 'B' : 'A')
+            : winner;
+          const finalDeg = visualWinner === 'A' ? 3600 : 3780;
+
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              coin.style.transition = 'transform 3.5s cubic-bezier(0.33, 1, 0.68, 1)';
+              coin.style.transform  = `rotateY(${finalDeg}deg)`;
+            });
+          });
+
+          setTimeout(() => {
+            const winnerName = visualWinner === 'A' ? nameA : nameB;
+            const colorClass  = visualWinner === 'A' ? 'winner-green' : 'winner-red';
+            const colorLabel  = visualWinner === 'A' ? 'VERT' : 'ROUGE';
+            result.textContent = `🏆 ${winnerName} gagne ! (${colorLabel})`;
+            result.className   = colorClass;
+          }, 3600);
+
+          setTimeout(() => {
+            overlay.classList.add('hidden');
+          }, 8000);
         }
 
         showCardAnnouncement(ann) {
