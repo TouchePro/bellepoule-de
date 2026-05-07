@@ -438,6 +438,8 @@ function createWindow(): void {
     height: 900,
     minWidth: 1024,
     minHeight: 768,
+    show: false,
+    backgroundColor: '#f3f4f6',
     title: `BellePoule Modern v${versionInfo.version} (Build #${versionInfo.build})`,
     webPreferences: {
       nodeIntegration: false,
@@ -445,6 +447,10 @@ function createWindow(): void {
       preload: path.join(__dirname, 'preload.js'),
     },
     icon: path.join(__dirname, '../../resources/icons/icon.png'),
+  });
+
+  mainWindow.once('ready-to-show', () => {
+    mainWindow?.show();
   });
 
   // Allow camera access for webcam photo capture
