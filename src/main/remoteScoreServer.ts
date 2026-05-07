@@ -2423,6 +2423,12 @@ export class RemoteScoreServer {
           else if (dbM?.scoreB?.isVictory) winnerForRenderer = 'B';
         } catch { /* non bloquant */ }
       }
+      // Fallback pour les matchs en mémoire (non persistés en DB) : tirage au sort
+      if (!winnerForRenderer) {
+        const memScore = this.sessionMatchScores.get(finishedMatch.id);
+        if ((memScore?.scoreA as any)?.isVictory) winnerForRenderer = 'A';
+        else if ((memScore?.scoreB as any)?.isVictory) winnerForRenderer = 'B';
+      }
       mainWindow.webContents.send('match:finished', {
         matchId: finishedMatch.id,
         scoreA: finishedMatch.scoreA,
