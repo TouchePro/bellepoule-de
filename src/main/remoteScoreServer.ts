@@ -1614,6 +1614,8 @@ export class RemoteScoreServer {
       touchesA?: string[];
       touchesB?: string[];
       suddenDeath?: boolean;
+      winner?: 'A' | 'B';
+      overtimeType?: string | null;
       isVoluntary?: boolean;
       announcement?: {
         fencer: 'A' | 'B';
