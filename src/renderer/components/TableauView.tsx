@@ -204,6 +204,21 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     }
   }, [ranking.length, thirdPlaceMatch, maxScore, matches.length]); // Dépend du nombre de tireurs, match pour la 3ème place et score max
 
+  // Filet de sécurité : détecte la complétion du tableau à chaque mise à jour de matches
+  // Couvre les chemins qui ne passent pas par handleScoreSubmit (saisie distante, statuts spéciaux)
+  useEffect(() => {
+    if (matches.length === 0 || !onComplete) return;
+    const champion = matches.find(m => m.round === 2)?.winner;
+    if (!champion) return;
+    const thirdPlaceEntry = matches.find(m => m.round === 3);
+    const thirdPlaceDone = !thirdPlaceEntry || !!thirdPlaceEntry.winner;
+    if (thirdPlaceDone) {
+      onComplete(calculateFinalResults(matches));
+    }
+    // calculateFinalResults et onComplete sont stables pendant la phase tableau
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matches]);
+
   const getTableauSize = (fencerCount: number): number => {
     const sizes = [4, 8, 16, 32, 64, 128, 256];
     for (const size of sizes) {
@@ -425,7 +440,9 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
     // Vérifier si le tableau est complet
     const champion = updatedMatches.find(m => m.round === 2)?.winner;
-    if (champion && onComplete) {
+    const autoFillThirdPlace = updatedMatches.find(m => m.round === 3);
+    const autoFillThirdDone = !autoFillThirdPlace || !!autoFillThirdPlace.winner;
+    if (champion && autoFillThirdDone && onComplete) {
       const finalResults = calculateFinalResults(updatedMatches);
       onComplete(finalResults);
     }
@@ -553,6 +570,14 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     // Propager les gagnants avant de sauvegarder
     propagateWinners(updatedMatches, tableauSize);
     onMatchesChange([...updatedMatches]);
+
+    // Vérifier si le tableau est complet après statut spécial
+    const specialChampion = updatedMatches.find(m => m.round === 2)?.winner;
+    const specialThirdPlace = updatedMatches.find(m => m.round === 3);
+    const specialThirdDone = !specialThirdPlace || !!specialThirdPlace.winner;
+    if (specialChampion && specialThirdDone && onComplete) {
+      onComplete(calculateFinalResults(updatedMatches));
+    }
 
     setShowScoreModal(false);
     setEditingMatch(null);
