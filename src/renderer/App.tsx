@@ -5,6 +5,7 @@
 
 import React, { useEffect, useCallback } from 'react';
 import { Competition } from '../shared/types';
+import type { CompetitionCreateData } from '../shared/types/preload';
 import { logger, LogCategory } from '@shared/services/logger';
 import CompetitionList from './components/CompetitionList';
 import CompetitionView from './components/CompetitionView';
@@ -98,15 +99,14 @@ const AppContent: React.FC = () => {
 
   // Sync logo from disk to localStorage so PDF exports always find it
   useEffect(() => {
-    const api = (window as any).electronAPI;
-    if (!api) return;
-    api.getLogo?.().then((logo: string | null) => {
+    if (!window.electronAPI) return;
+    window.electronAPI.getLogo?.().then((logo: string | null) => {
       if (logo) localStorage.setItem('bellepoule-logo', logo);
       else localStorage.removeItem('bellepoule-logo');
     }).catch((err: unknown) => {
       logger.warn(LogCategory.UI, 'Impossible de charger le logo', err instanceof Error ? err : undefined);
     });
-    const unsub = api.onLogoLoaded?.((logo: string | null) => {
+    const unsub = window.electronAPI.onLogoLoaded?.((logo: string | null) => {
       if (logo) localStorage.setItem('bellepoule-logo', logo);
       else localStorage.removeItem('bellepoule-logo');
     });
@@ -126,7 +126,7 @@ const AppContent: React.FC = () => {
           category: data.category || 'SENIOR',
           ...data,
         };
-        const newComp = await window.electronAPI.db.createCompetition(competitionData as any);
+        const newComp = await window.electronAPI.db.createCompetition(competitionData as unknown as CompetitionCreateData);
         setCompetitions(prev => [newComp, ...prev]);
 
         // Ouvrir la compétition dans un nouvel onglet

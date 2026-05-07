@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Competition, Fencer, FencerStatus, MatchStatus, Weapon } from '../../shared/types';
+import { Competition, Fencer, FencerStatus, Match, MatchStatus, Weapon } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
 import { RankingImportResult } from '../../shared/utils/fileParser';
 import FencerList from './FencerList';
@@ -86,7 +86,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [showKiosk, setShowKiosk] = useState(false);
   const [showPresentation, setShowPresentation] = useState(false);
   const [showKioskDisplay, setShowKioskDisplay] = useState(false);
-  const [selectedMatch, setSelectedMatch] = useState<any>(null);
+  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
 
   // Paramètres de préparation des poules (persistés entre les phases)
   const [minFencersPerPool, setMinFencersPerPool] = useState<number>(5);
@@ -263,7 +263,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         status: m.winner ? 'finished' : m.isBye ? 'finished' : 'not_started',
         maxScore,
         isBye: m.isBye,
-      }).catch(() => {});
+      }).catch((e: unknown) => logger.warn(LogCategory.DATABASE, 'upsertTableauMatch failed', e instanceof Error ? e : undefined));
     });
   }, [tableauMatches, competition?.id]);
 

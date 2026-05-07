@@ -1,4 +1,4 @@
-/**
+﻿/**
  * BellePoule Modern - Remote Score Entry Server
  * Web server for referees to enter scores remotely
  * Licensed under GPL-3.0
@@ -997,6 +997,13 @@ export class RemoteScoreServer {
       if (!this.hasAnyValidToken(req.headers.cookie)) {
         return res.status(401).json({ error: 'Non authentifié' });
       }
+      const clientIp =
+        (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() ??
+        req.socket.remoteAddress ??
+        'unknown';
+      if (!this.checkScoreRateLimit(clientIp)) {
+        return res.status(429).json({ error: 'Trop de soumissions, réessayez dans une minute' });
+      }
       try {
         const { matchId } = req.params;
         const { scoreA: rawA, scoreB: rawB, cardsA, cardsB, winner: winnerOverride } = req.body;
@@ -1452,7 +1459,7 @@ export class RemoteScoreServer {
         const data = await r.json();
         render(data);
       } catch(e) {
-        document.getElementById('app').innerHTML = '<div class="error">Erreur : ' + e.message + '</div>';
+        const errEl = document.getElementById('app'); errEl.textContent = ''; const errDiv = document.createElement('div'); errDiv.className = 'error'; errDiv.textContent = 'Erreur : ' + e.message; errEl.appendChild(errDiv);
       }
     }
     function render(data) {
