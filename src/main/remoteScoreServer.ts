@@ -999,7 +999,7 @@ export class RemoteScoreServer {
       }
       try {
         const { matchId } = req.params;
-        const { scoreA: rawA, scoreB: rawB, cardsA, cardsB } = req.body;
+        const { scoreA: rawA, scoreB: rawB, cardsA, cardsB, winner: winnerOverride } = req.body;
 
         const scoreA = Number(rawA);
         const scoreB = Number(rawB);
@@ -1024,8 +1024,9 @@ export class RemoteScoreServer {
           return res.status(404).json({ error: 'Match non trouvé' });
         }
 
-        // Déterminer le vainqueur
-        const winner = scoreA > scoreB ? 'A' : scoreB > scoreA ? 'B' : null;
+        // Déterminer le vainqueur : scores égaux + tirage au sort → utiliser winnerOverride
+        const winner =
+          scoreA > scoreB ? 'A' : scoreB > scoreA ? 'B' : (winnerOverride === 'A' || winnerOverride === 'B' ? winnerOverride : null);
 
         // Créer les objets Score
         const scoreAObj = {
@@ -1591,6 +1592,7 @@ export class RemoteScoreServer {
   // Stockage des sorties d'arène par arène
   private arenaExits: Map<string, Array<{ fencer: 'A' | 'B'; isVoluntary: boolean }>> = new Map();
   private arenaSuddenDeath: Map<string, boolean> = new Map();
+  private arenaOvertimeType: Map<string, string | null> = new Map();
   // Debounce par socket pour update_score : clé = socketId:arenaId, valeur = timestamp dernier envoi
   private scoreUpdateDebounce: Map<string, number> = new Map();
   private readonly SCORE_UPDATE_DEBOUNCE_MS = 200;
@@ -1612,6 +1614,8 @@ export class RemoteScoreServer {
       touchesA?: string[];
       touchesB?: string[];
       suddenDeath?: boolean;
+      winner?: 'A' | 'B';
+      overtimeType?: string | null;
       isVoluntary?: boolean;
       announcement?: {
         fencer: 'A' | 'B';
@@ -1657,10 +1661,23 @@ export class RemoteScoreServer {
         this.pauseArenaMatch(data.arenaId);
         break;
       case 'finish':
+        this.arenaSuddenDeath.set(data.arenaId, false);
+        this.arenaOvertimeType.set(data.arenaId, null);
         this.finishArenaMatch(data.arenaId);
         this.arenaCards.set(data.arenaId, { cardsA: [], cardsB: [] });
         this.arenaTouches.set(data.arenaId, { touchesA: [], touchesB: [] });
         this.arenaExits.set(data.arenaId, []);
+        break;
+      case 'coin_flip':
+        if (data.winner === 'A' || data.winner === 'B') {
+          this.io
+            .to(`arena:${data.arenaId}`)
+            .emit(`arena:${data.arenaId}:coin_flip`, {
+              winner: data.winner,
+              fencerA: arena.currentMatch?.fencerA,
+              fencerB: arena.currentMatch?.fencerB,
+            });
+        }
         break;
       case 'next':
         this.loadNextMatch(data.arenaId);
@@ -1673,10 +1690,13 @@ export class RemoteScoreServer {
         const lastUpdate = this.scoreUpdateDebounce.get(debounceKey) ?? 0;
         if (Date.now() - lastUpdate < this.SCORE_UPDATE_DEBOUNCE_MS) break;
         this.scoreUpdateDebounce.set(debounceKey, Date.now());
+        if (data.suddenDeath !== undefined) {
+          this.arenaSuddenDeath.set(data.arenaId, data.suddenDeath);
+        }
+        if (data.overtimeType !== undefined) {
+          this.arenaOvertimeType.set(data.arenaId, data.overtimeType);
+        }
         if (data.scoreA !== undefined && data.scoreB !== undefined) {
-          if (data.suddenDeath !== undefined) {
-            this.arenaSuddenDeath.set(data.arenaId, data.suddenDeath);
-          }
           this.updateArenaScore(data.arenaId, data.scoreA, data.scoreB);
         }
         // Mettre à jour aussi les cartons si fournis
@@ -1693,6 +1713,7 @@ export class RemoteScoreServer {
             cardsA: currentCards.cardsA,
             cardsB: currentCards.cardsB,
             suddenDeath: this.arenaSuddenDeath.get(data.arenaId) ?? false,
+            overtimeType: this.arenaOvertimeType.get(data.arenaId) ?? null,
             status: arena.status,
           });
         }
@@ -1733,6 +1754,7 @@ export class RemoteScoreServer {
       case 'reset_scores':
         if (arena.currentMatch) {
           this.arenaSuddenDeath.set(data.arenaId, false);
+          this.arenaOvertimeType.set(data.arenaId, null);
           this.updateArenaScore(data.arenaId, 0, 0);
           this.arenaCards.set(data.arenaId, { cardsA: [], cardsB: [] });
           this.arenaTouches.set(data.arenaId, { touchesA: [], touchesB: [] });
@@ -1745,6 +1767,7 @@ export class RemoteScoreServer {
             cardsA: [],
             cardsB: [],
             suddenDeath: false,
+            overtimeType: null,
             status: arena.status,
           });
         }
@@ -1781,13 +1804,19 @@ export class RemoteScoreServer {
       case 'update_timer':
       case 'pause_timer':
       case 'reset_timer':
-        // Relay timer updates to arena display
+        if (data.suddenDeath !== undefined) {
+          this.arenaSuddenDeath.set(data.arenaId, data.suddenDeath);
+        }
+        if (data.overtimeType !== undefined) {
+          this.arenaOvertimeType.set(data.arenaId, data.overtimeType);
+        }
         this.broadcastArenaUpdate(data.arenaId, {
           arenaId: data.arenaId,
           match: arena.currentMatch,
           time: data.time,
           timerStatus: data.timerStatus,
-          suddenDeath: data.suddenDeath ?? false,
+          suddenDeath: this.arenaSuddenDeath.get(data.arenaId) ?? false,
+          overtimeType: this.arenaOvertimeType.get(data.arenaId) ?? null,
           status: arena.status,
         });
         break;
@@ -2239,6 +2268,7 @@ export class RemoteScoreServer {
       scoreA,
       scoreB,
       suddenDeath: this.arenaSuddenDeath.get(arenaId) ?? false,
+      overtimeType: this.arenaOvertimeType.get(arenaId) ?? null,
       status: arena.status,
     });
 
@@ -2382,10 +2412,28 @@ export class RemoteScoreServer {
     // Émettre l'event pour le renderer (pour sauvegarder le score dans les pools)
     const mainWindow = (global as any).mainWindow;
     if (mainWindow) {
+      // Dériver le vainqueur depuis la DB pour gérer le cas tirage au sort (scores égaux)
+      let winnerForRenderer: 'A' | 'B' | null =
+        finishedMatch.scoreA > finishedMatch.scoreB ? 'A' :
+        finishedMatch.scoreB > finishedMatch.scoreA ? 'B' : null;
+      if (!winnerForRenderer) {
+        try {
+          const dbM = this.db.getMatch(finishedMatch.id) as any;
+          if (dbM?.scoreA?.isVictory) winnerForRenderer = 'A';
+          else if (dbM?.scoreB?.isVictory) winnerForRenderer = 'B';
+        } catch { /* non bloquant */ }
+      }
+      // Fallback pour les matchs en mémoire (non persistés en DB) : tirage au sort
+      if (!winnerForRenderer) {
+        const memScore = this.sessionMatchScores.get(finishedMatch.id);
+        if ((memScore?.scoreA as any)?.isVictory) winnerForRenderer = 'A';
+        else if ((memScore?.scoreB as any)?.isVictory) winnerForRenderer = 'B';
+      }
       mainWindow.webContents.send('match:finished', {
         matchId: finishedMatch.id,
         scoreA: finishedMatch.scoreA,
         scoreB: finishedMatch.scoreB,
+        winner: winnerForRenderer,
         poolId: finishedMatch.poolId,
         isTableau: finishedMatch.isTableau ?? false,
       });
@@ -2425,7 +2473,7 @@ export class RemoteScoreServer {
           return scoreUpdate ? { ...m, ...scoreUpdate } : m;
         });
       const poolMatches = this.applySmartMatchOrder(rawPoolMatches as Match[]).filter(
-        m => m.status !== MatchStatus.FINISHED
+        m => m.status !== MatchStatus.FINISHED && this.isMatchPlayable(m)
       );
       const nextMatch = poolMatches.find(m => m.id !== currentMatchId);
       if (nextMatch) {
@@ -2492,7 +2540,7 @@ export class RemoteScoreServer {
           return scoreUpdate ? { ...m, ...scoreUpdate } : m;
         });
       const poolMatches = this.applySmartMatchOrder(rawPoolMatches as Match[]).filter(
-        m => m.status !== MatchStatus.FINISHED
+        m => m.status !== MatchStatus.FINISHED && this.isMatchPlayable(m)
       );
 
       console.log(

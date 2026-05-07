@@ -216,14 +216,15 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       matchId: string;
       scoreA: number;
       scoreB: number;
+      winner?: 'A' | 'B';
       isTableau?: boolean;
     }) => {
-      const { matchId, scoreA, scoreB } = data;
+      const { matchId, scoreA, scoreB, winner: winnerOverride } = data;
       logger.debug(
         LogCategory.UI,
         `[CompetitionView] Match terminé reçu: ${matchId} - Score: ${scoreA}-${scoreB}`
       );
-      updateMatchFromRemote(matchId, scoreA, scoreB, MatchStatus.FINISHED);
+      updateMatchFromRemote(matchId, scoreA, scoreB, MatchStatus.FINISHED, winnerOverride);
 
       // Mise à jour du tableau d'élimination directe si c'est un match DE
       setTableauMatches(prev => {
@@ -383,19 +384,33 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   };
 
   const handleImportRanking = async (result: RankingImportResult) => {
+    if (!window.electronAPI?.db?.updateFencer) {
+      showToast('Erreur: API non disponible', 'error');
+      return;
+    }
+
     try {
-      // Mettre à jour chaque tireur individuellement
-      for (const detail of result.details) {
-        if (detail.matched && detail.fencerId) {
-          await updateFencer(detail.fencerId, { ranking: detail.ranking });
-        }
-      }
+      const updatePromises = result.details
+        .filter(d => d.matched && d.fencerId)
+        .map(d =>
+          window.electronAPI!.db!.updateFencer!(d.fencerId!, { ranking: d.ranking }).catch(err =>
+            logger.error(LogCategory.UI, `Failed to update ranking for fencer ${d.fencerId}`, err as Error)
+          )
+        );
+      await Promise.allSettled(updatePromises);
+
+      onUpdate({
+        ...competition,
+        fencers: (competition.fencers || []).map(f => {
+          const detail = result.details.find(d => d.fencerId === f.id);
+          return detail?.matched ? { ...f, ranking: detail.ranking, updatedAt: new Date() } : f;
+        }),
+      });
 
       showToast(
         `Classement importé: ${result.updated} tireur(s) mis à jour`,
         result.errors.length > 0 ? 'warning' : 'success'
       );
-
       setImportData(null);
     } catch (error) {
       logger.error(LogCategory.UI, 'Failed to import ranking', error as Error);

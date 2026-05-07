@@ -8,6 +8,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Fencer, Match, MatchStatus, TargetZone, MatchMode } from '../../shared/types';
 import {
   checkTimeoutSuddenDeath,
+  checkChallengerSuddenDeath,
   isValidSuddenDeathTouch,
   getSuddenDeathOvertimeDuration,
   drawWinner,
@@ -53,6 +54,17 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  // Refs pour éviter les stale closures dans le timer
+  const matchModeRef = useRef(matchMode);
+  const scoreARef = useRef(scoreA);
+  const scoreBRef = useRef(scoreB);
+  const handleTimeUpRef = useRef<() => void>(() => {});
+  const [timerPhase, setTimerPhase] = useState(0);
+
+  // Mise à jour des refs pendant le rendu (pattern "latest value cache")
+  matchModeRef.current = matchMode;
+  scoreARef.current = scoreA;
+  scoreBRef.current = scoreB;
 
   // Timer management (countdown)
   useEffect(() => {
@@ -63,7 +75,7 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
           if (next <= 0) {
             clearInterval(intervalRef.current!);
             intervalRef.current = null;
-            handleTimeUp();
+            handleTimeUpRef.current();
             return 0;
           }
           return next;
@@ -81,7 +93,7 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
         clearInterval(intervalRef.current);
       }
     };
-  }, [isRunning]);
+  }, [isRunning, timerPhase]);
 
   // Touch gesture handlers
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -197,14 +209,38 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
   const handleZoneScore = (fencer: 'A' | 'B', zone: TargetZone, points: number) => {
     if (
       matchMode === MatchMode.SUDDEN_DEATH_CHALLENGER ||
-      matchMode === MatchMode.SUDDEN_DEATH_TIMEOUT
+      matchMode === MatchMode.SUDDEN_DEATH_TIMEOUT ||
+      matchMode === MatchMode.SUPPLEMENTARY_TIME
     ) {
       const validation = isValidSuddenDeathTouch(zone, matchMode);
       if (!validation.isValid) {
         return;
       }
     }
+
+    // Calcul des nouveaux scores avant setState (React ne met pas à jour synchroniquement)
+    const newScoreA = fencer === 'A' ? Math.min(scoreA + points, maxScore) : scoreA;
+    const newScoreB = fencer === 'B' ? Math.min(scoreB + points, maxScore) : scoreB;
+
     handleScoreIncrement(fencer, points);
+
+    // Vérifications post-touche pour les modes spéciaux
+    if (
+      matchMode === MatchMode.SUPPLEMENTARY_TIME ||
+      matchMode === MatchMode.SUDDEN_DEATH_TIMEOUT ||
+      matchMode === MatchMode.SUDDEN_DEATH_CHALLENGER
+    ) {
+      if (newScoreA !== newScoreB) {
+        setIsRunning(false);
+        onMatchEnd(newScoreA > newScoreB ? 'A' : 'B');
+        return;
+      }
+      if (matchMode === MatchMode.SUPPLEMENTARY_TIME) {
+        if (checkChallengerSuddenDeath(newScoreA, newScoreB).shouldTrigger) {
+          setMatchMode(MatchMode.SUDDEN_DEATH_TIMEOUT);
+        }
+      }
+    }
   };
 
   const handleMatchEnd = () => {
@@ -235,37 +271,36 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
   };
 
   const handleTimeUp = useCallback(() => {
-    if (matchMode === MatchMode.SUPPLEMENTARY_TIME) {
-      if (scoreA === scoreB) {
+    const mode = matchModeRef.current;
+    const sA = scoreARef.current;
+    const sB = scoreBRef.current;
+
+    if (mode === MatchMode.SUPPLEMENTARY_TIME || mode === MatchMode.SUDDEN_DEATH_TIMEOUT) {
+      if (sA === sB) {
         setShowTiebreaker(true);
       } else {
         setIsRunning(false);
-        onMatchEnd(scoreA > scoreB ? 'A' : 'B');
+        onMatchEnd(sA > sB ? 'A' : 'B');
       }
       return;
     }
 
-    if (matchMode === MatchMode.SUDDEN_DEATH_TIMEOUT) {
-      if (scoreA === scoreB) {
-        setShowTiebreaker(true);
-      } else {
-        setIsRunning(false);
-        onMatchEnd(scoreA > scoreB ? 'A' : 'B');
-      }
-      return;
-    }
-
-    const suddenDeath = checkTimeoutSuddenDeath(0, scoreA, scoreB);
+    const suddenDeath = checkTimeoutSuddenDeath(0, sA, sB);
     if (suddenDeath.shouldTrigger) {
       setMatchMode(suddenDeath.mode!);
       setOvertimeActive(true);
       setMatchTime(getSuddenDeathOvertimeDuration());
-      setIsRunning(true);
+      // timerPhase force le re-démarrage de l'intervalle même si isRunning ne change pas
+      setTimerPhase(p => p + 1);
     } else {
       setIsRunning(false);
-      onMatchEnd(scoreA > scoreB ? 'A' : 'B');
+      onMatchEnd(sA > sB ? 'A' : 'B');
     }
-  }, [matchMode, scoreA, scoreB, onMatchEnd]);
+  }, [onMatchEnd]);
+
+  useEffect(() => {
+    handleTimeUpRef.current = handleTimeUp;
+  }, [handleTimeUp]);
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -290,11 +325,13 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
           <div className="text-2xl font-bold text-gray-800">Piste {match.number || 1}</div>
           <div className="flex items-center space-x-4">
             {overtimeActive && (
-              <div className={`px-3 py-1 rounded-full text-sm font-bold animate-pulse ${
-                matchMode === MatchMode.SUPPLEMENTARY_TIME
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'bg-yellow-100 text-yellow-700'
-              }`}>
+              <div
+                className={`px-3 py-1 rounded-full text-sm font-bold animate-pulse ${
+                  matchMode === MatchMode.SUPPLEMENTARY_TIME
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'bg-yellow-100 text-yellow-700'
+                }`}
+              >
                 {matchMode === MatchMode.SUPPLEMENTARY_TIME ? '30s SUPPLEMENTAIRE' : 'MORT SUBITE'}
               </div>
             )}

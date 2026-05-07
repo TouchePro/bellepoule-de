@@ -260,8 +260,9 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     setEditScoreB(
       inverted ? match.scoreA?.value?.toString() || '' : match.scoreB?.value?.toString() || ''
     );
-    setVictoryA(false);
-    setVictoryB(false);
+    // Restaurer la victoire existante (ex: match déjà saisi par tirage au sort)
+    setVictoryA(!inverted ? !!match.scoreA?.isVictory : !!match.scoreB?.isVictory);
+    setVictoryB(!inverted ? !!match.scoreB?.isVictory : !!match.scoreA?.isVictory);
   };
 
   const handleCellClick = (rowFencer: Fencer, colFencer: Fencer) => {
@@ -332,6 +333,24 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
       } else if (isLaserSabre) {
         showToast('Match nul : cliquez sur V pour attribuer la victoire', 'warning');
         return;
+      } else if (victoryA || victoryB) {
+        // Tirage au sort déjà décidé (ex: résultat importé depuis une tablette arbitre)
+        const winnerLeft = victoryA;
+        const winner: 'A' | 'B' = isMatchInverted
+          ? winnerLeft ? 'B' : 'A'
+          : winnerLeft ? 'A' : 'B';
+        addAction({
+          type: 'UPDATE_SCORE',
+          description: `Score poule ${pool.number} match ${matchIdx + 1}`,
+          undo: () => {
+            if (prevScoreA !== null && prevScoreB !== null)
+              onScoreUpdate(matchIdx, prevScoreA, prevScoreB);
+          },
+          redo: () => {
+            onScoreUpdate(matchIdx, actualScoreA, actualScoreB, winner);
+          },
+        });
+        onScoreUpdate(editingMatch, actualScoreA, actualScoreB, winner);
       } else {
         showToast(
           "Match nul impossible ! En match en direct, la mort subite de 30s s'applique automatiquement",

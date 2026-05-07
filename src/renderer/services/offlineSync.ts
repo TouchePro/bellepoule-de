@@ -19,6 +19,7 @@ export class OfflineSyncManager {
   private isOnline: boolean = true;
   private syncInProgress: boolean = false;
   private syncCallbacks: ((status: SyncResult) => void)[] = [];
+  private emptyPollStreak = 0;
 
   constructor() {
     this.initializeNetworkDetection();
@@ -75,6 +76,7 @@ export class OfflineSyncManager {
     }
 
     this.syncInProgress = true;
+    this.emptyPollStreak = 0;
     logger.debug(LogCategory.NETWORK, '[Sync] Starting synchronization...');
 
     try {
@@ -98,8 +100,16 @@ export class OfflineSyncManager {
 
   // Check if sync is needed and perform it
   private async checkAndSync(): Promise<void> {
+    // Skip IndexedDB read after 4 consecutive empty polls (resume after triggerSync resets streak)
+    if (this.emptyPollStreak >= 4) {
+      this.emptyPollStreak--;
+      return;
+    }
     const pendingActions = await offlineStorage.getPendingActions();
-    if (pendingActions.length > 0) {
+    if (pendingActions.length === 0) {
+      this.emptyPollStreak = Math.min(this.emptyPollStreak + 1, 4);
+    } else {
+      this.emptyPollStreak = 0;
       await this.triggerSync();
     }
   }

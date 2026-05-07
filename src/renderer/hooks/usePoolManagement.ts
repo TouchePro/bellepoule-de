@@ -255,7 +255,19 @@ export const usePoolManagement = ({
 
   // Vérifier si toutes les poules sont complètes
   const areAllPoolsComplete = useCallback(() => {
-    return pools.every(pool => pool.matches.every(match => match.status === MatchStatus.FINISHED));
+    const inactiveStatuses = new Set<FencerStatus>([
+      FencerStatus.ABANDONED,
+      FencerStatus.FORFAIT,
+      FencerStatus.EXCLUDED,
+    ]);
+    return pools.every(pool =>
+      pool.matches.every(match => {
+        const hasInactive =
+          inactiveStatuses.has(match.fencerA?.status as FencerStatus) ||
+          inactiveStatuses.has(match.fencerB?.status as FencerStatus);
+        return hasInactive || match.status === MatchStatus.FINISHED;
+      })
+    );
   }, [pools]);
 
   // Obtenir les statistiques des poules
@@ -484,7 +496,7 @@ export const usePoolManagement = ({
 
   // Mettre à jour un match depuis une source externe (serveur distant)
   const updateMatchFromRemote = useCallback(
-    (matchId: string, scoreA: number, scoreB: number, status: MatchStatus) => {
+    (matchId: string, scoreA: number, scoreB: number, status: MatchStatus, winnerOverride?: 'A' | 'B') => {
       setPools(prevPools => {
         const updatedPools = [...prevPools];
         let matchFound = false;
@@ -495,7 +507,11 @@ export const usePoolManagement = ({
             if (pool.matches[matchIdx].id === matchId) {
               matchFound = true;
               const match = pool.matches[matchIdx];
-              const winner = scoreA > scoreB ? 'A' : scoreB > scoreA ? 'B' : null;
+              // Pour le tirage au sort : scores égaux mais vainqueur explicite
+              const winner =
+                scoreA > scoreB ? 'A' :
+                scoreB > scoreA ? 'B' :
+                (winnerOverride ?? null);
 
               pool.matches[matchIdx] = {
                 ...match,

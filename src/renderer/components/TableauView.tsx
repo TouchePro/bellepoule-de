@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Fencer, FencerStatus, PoolRanking } from '../../shared/types';
 import { useToast } from './Toast';
 import { useModalResize } from '../hooks/useModalResize';
@@ -173,7 +173,9 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [pdfMode, setPdfMode] = useState<'print' | 'pdf'>('pdf');
   const [pdfMatchesPerPage, setPdfMatchesPerPage] = useState<number>(MAX_MATCHES_PER_PAGE_TABLEAU);
+  const [autoAssignArenas, setAutoAssignArenas] = useState(true);
   const isUnlimitedScore = maxScore === 999;
+  const prevMatchesLengthRef = useRef(0);
 
   const { modalRef } = useModalResize({
     defaultWidth: 600,
@@ -181,6 +183,58 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     minWidth: 400,
     minHeight: 300,
   });
+
+  const distributeArenasRoundRobin = useCallback(
+    (matchList: TableauMatch[]): TableauMatch[] => {
+      if (arenaCount <= 0) return matchList;
+      let arenaIdx = 0;
+      return matchList.map(m => {
+        if (m.fencerA && m.fencerB && !m.isBye && !m.winner) {
+          const arena = (arenaIdx % arenaCount) + 1;
+          arenaIdx++;
+          return { ...m, arena };
+        }
+        return m;
+      });
+    },
+    [arenaCount]
+  );
+
+  // Auto-assign arenas when matches are (re)generated and autoAssignArenas is on
+  useEffect(() => {
+    const playable = matches.filter(m => m.fencerA && m.fencerB && !m.isBye);
+    const prev = prevMatchesLengthRef.current;
+    prevMatchesLengthRef.current = playable.length;
+    if (!autoAssignArenas || arenaCount <= 0 || playable.length === 0) return;
+    // Only auto-assign on initial generation (prev was 0) to avoid overriding manual changes
+    if (prev === 0 && playable.length > 0) {
+      const updated = distributeArenasRoundRobin(matches);
+      onMatchesChange(updated);
+      updated.forEach(m => {
+        const orig = matches.find(o => o.id === m.id);
+        if (orig && orig.arena !== m.arena) {
+          onMatchArenaChange?.(m.id, orig.arena ?? null, m.arena ?? null);
+        }
+      });
+    }
+  }, [matches.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleAutoAssignToggle = useCallback(
+    (enabled: boolean) => {
+      setAutoAssignArenas(enabled);
+      if (enabled && arenaCount > 0) {
+        const updated = distributeArenasRoundRobin(matches);
+        onMatchesChange(updated);
+        updated.forEach(m => {
+          const orig = matches.find(o => o.id === m.id);
+          if (orig && orig.arena !== m.arena) {
+            onMatchArenaChange?.(m.id, orig.arena ?? null, m.arena ?? null);
+          }
+        });
+      }
+    },
+    [arenaCount, distributeArenasRoundRobin, matches, onMatchesChange, onMatchArenaChange]
+  );
 
   useEffect(() => {
     const eligibleCount = ranking.filter(
@@ -203,6 +257,21 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
       }
     }
   }, [ranking.length, thirdPlaceMatch, maxScore, matches.length]); // Dépend du nombre de tireurs, match pour la 3ème place et score max
+
+  // Filet de sécurité : détecte la complétion du tableau à chaque mise à jour de matches
+  // Couvre les chemins qui ne passent pas par handleScoreSubmit (saisie distante, statuts spéciaux)
+  useEffect(() => {
+    if (matches.length === 0 || !onComplete) return;
+    const champion = matches.find(m => m.round === 2)?.winner;
+    if (!champion) return;
+    const thirdPlaceEntry = matches.find(m => m.round === 3);
+    const thirdPlaceDone = !thirdPlaceEntry || !!thirdPlaceEntry.winner;
+    if (thirdPlaceDone) {
+      onComplete(calculateFinalResults(matches));
+    }
+    // calculateFinalResults et onComplete sont stables pendant la phase tableau
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matches]);
 
   const getTableauSize = (fencerCount: number): number => {
     const sizes = [4, 8, 16, 32, 64, 128, 256];
@@ -425,7 +494,9 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
     // Vérifier si le tableau est complet
     const champion = updatedMatches.find(m => m.round === 2)?.winner;
-    if (champion && onComplete) {
+    const autoFillThirdPlace = updatedMatches.find(m => m.round === 3);
+    const autoFillThirdDone = !autoFillThirdPlace || !!autoFillThirdPlace.winner;
+    if (champion && autoFillThirdDone && onComplete) {
       const finalResults = calculateFinalResults(updatedMatches);
       onComplete(finalResults);
     }
@@ -553,6 +624,14 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     // Propager les gagnants avant de sauvegarder
     propagateWinners(updatedMatches, tableauSize);
     onMatchesChange([...updatedMatches]);
+
+    // Vérifier si le tableau est complet après statut spécial
+    const specialChampion = updatedMatches.find(m => m.round === 2)?.winner;
+    const specialThirdPlace = updatedMatches.find(m => m.round === 3);
+    const specialThirdDone = !specialThirdPlace || !!specialThirdPlace.winner;
+    if (specialChampion && specialThirdDone && onComplete) {
+      onComplete(calculateFinalResults(updatedMatches));
+    }
 
     setShowScoreModal(false);
     setEditingMatch(null);
@@ -941,6 +1020,32 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           Tableau de {tableauSize} - {ranking.length} qualifiés
         </h2>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          {arenaCount > 0 && (
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                fontSize: '0.875rem',
+                color: '#374151',
+                cursor: 'pointer',
+                padding: '0.5rem 0.75rem',
+                background: autoAssignArenas ? '#eff6ff' : '#f3f4f6',
+                border: `1px solid ${autoAssignArenas ? '#3b82f6' : '#d1d5db'}`,
+                borderRadius: '6px',
+                userSelect: 'none',
+              }}
+              title="Assigne automatiquement les matchs aux arènes disponibles en round-robin"
+            >
+              <input
+                type="checkbox"
+                checked={autoAssignArenas}
+                onChange={e => handleAutoAssignToggle(e.target.checked)}
+                style={{ cursor: 'pointer' }}
+              />
+              <span>🏟️ Assignation auto</span>
+            </label>
+          )}
           <button
             onClick={handleAutoFillScores}
             style={{

@@ -169,16 +169,85 @@ export class CloudSyncService {
   }
 
   /**
-   * Compress data before upload
+   * Compress data before upload using native CompressionStream (gzip)
    */
   private async compressData(data: string): Promise<string> {
     if (!this.config.compressionEnabled) {
       return data;
     }
 
-    // Simple compression using built-in APIs if available
-    // In production, you'd use a library like pako
-    return data;
+    if (typeof CompressionStream === 'undefined') {
+      return data;
+    }
+
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(data);
+    const cs = new CompressionStream('gzip');
+    const writer = cs.writable.getWriter();
+    writer.write(bytes);
+    writer.close();
+
+    const chunks: Uint8Array[] = [];
+    const reader = cs.readable.getReader();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+    }
+
+    const totalLength = chunks.reduce((acc, c) => acc + c.length, 0);
+    const compressed = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const chunk of chunks) {
+      compressed.set(chunk, offset);
+      offset += chunk.length;
+    }
+
+    // Encode as base64 with marker prefix so decompressData knows the format
+    return 'gz:' + btoa(String.fromCharCode(...compressed));
+  }
+
+  /**
+   * Decompress data produced by compressData (handles gz: prefix or plain JSON)
+   */
+  private async decompressData(data: string): Promise<string> {
+    if (!data.startsWith('gz:')) {
+      return data;
+    }
+
+    if (typeof DecompressionStream === 'undefined') {
+      throw new Error('DecompressionStream not available');
+    }
+
+    const b64 = data.slice(3);
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+
+    const ds = new DecompressionStream('gzip');
+    const writer = ds.writable.getWriter();
+    writer.write(bytes);
+    writer.close();
+
+    const chunks: Uint8Array[] = [];
+    const reader = ds.readable.getReader();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+    }
+
+    const totalLength = chunks.reduce((acc, c) => acc + c.length, 0);
+    const decompressed = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const chunk of chunks) {
+      decompressed.set(chunk, offset);
+      offset += chunk.length;
+    }
+
+    return new TextDecoder().decode(decompressed);
   }
 
   /**
@@ -515,7 +584,8 @@ export class CloudSyncService {
 
       // Decrypt and decompress
       const decrypted = await this.decryptData(backupData);
-      const data = JSON.parse(decrypted) as { competitions: Competition[]; fencers: Fencer[]; matches: Match[] };
+      const decompressed = await this.decompressData(decrypted);
+      const data = JSON.parse(decompressed) as { competitions: Competition[]; fencers: Fencer[]; matches: Match[] };
 
       // Restore to local database
       await this.updateLocalData(data);
@@ -594,7 +664,8 @@ export class CloudSyncService {
     }
 
     const decrypted = await this.decryptData(raw);
-    return JSON.parse(decrypted) as { competitions: Competition[]; fencers: Fencer[]; matches: Match[] };
+    const decompressed = await this.decompressData(decrypted);
+    return JSON.parse(decompressed) as { competitions: Competition[]; fencers: Fencer[]; matches: Match[] };
   }
 
   /**
