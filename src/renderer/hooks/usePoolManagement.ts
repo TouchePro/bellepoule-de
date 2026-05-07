@@ -255,7 +255,19 @@ export const usePoolManagement = ({
 
   // Vérifier si toutes les poules sont complètes
   const areAllPoolsComplete = useCallback(() => {
-    return pools.every(pool => pool.matches.every(match => match.status === MatchStatus.FINISHED));
+    const inactiveStatuses = new Set<FencerStatus>([
+      FencerStatus.ABANDONED,
+      FencerStatus.FORFAIT,
+      FencerStatus.EXCLUDED,
+    ]);
+    return pools.every(pool =>
+      pool.matches.every(match => {
+        const hasInactive =
+          inactiveStatuses.has(match.fencerA?.status as FencerStatus) ||
+          inactiveStatuses.has(match.fencerB?.status as FencerStatus);
+        return hasInactive || match.status === MatchStatus.FINISHED;
+      })
+    );
   }, [pools]);
 
   // Obtenir les statistiques des poules

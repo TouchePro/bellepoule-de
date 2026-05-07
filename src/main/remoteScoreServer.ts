@@ -2465,7 +2465,7 @@ export class RemoteScoreServer {
           return scoreUpdate ? { ...m, ...scoreUpdate } : m;
         });
       const poolMatches = this.applySmartMatchOrder(rawPoolMatches as Match[]).filter(
-        m => m.status !== MatchStatus.FINISHED
+        m => m.status !== MatchStatus.FINISHED && this.isMatchPlayable(m)
       );
       const nextMatch = poolMatches.find(m => m.id !== currentMatchId);
       if (nextMatch) {
@@ -2532,7 +2532,7 @@ export class RemoteScoreServer {
           return scoreUpdate ? { ...m, ...scoreUpdate } : m;
         });
       const poolMatches = this.applySmartMatchOrder(rawPoolMatches as Match[]).filter(
-        m => m.status !== MatchStatus.FINISHED
+        m => m.status !== MatchStatus.FINISHED && this.isMatchPlayable(m)
       );
 
       console.log(
