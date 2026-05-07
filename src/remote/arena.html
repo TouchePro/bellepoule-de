@@ -1427,10 +1427,6 @@
             result.className   = colorClass;
           }, 3600);
 
-          // Masquer l'overlay automatiquement après 8s
-          setTimeout(() => {
-            overlay.classList.add('hidden');
-          }, 8000);
         }
 
         showExitAnnouncement(ann) {
@@ -1516,6 +1512,10 @@
           if (data.status) {
             this.matchStatus = data.status;
             this.updateStatusBadge();
+            if (data.status === 'finished') {
+              const overlay = document.getElementById('coin-flip-overlay');
+              if (overlay) overlay.classList.add('hidden');
+            }
           }
 
           // Mise à jour du match
