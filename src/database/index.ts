@@ -32,6 +32,7 @@ let SQL: any = null;
 export class DatabaseManager {
   private db: any = null;
   private dbPath: string;
+  private isDirty = false;
 
   constructor(dbPath?: string) {
     this.dbPath = dbPath || path.join(process.cwd(), 'bellepoule.db');
@@ -70,6 +71,15 @@ export class DatabaseManager {
     }
   }
 
+  private run(sql: string, params?: any[]): void {
+    if (params !== undefined) {
+      this.db.run(sql, params);
+    } else {
+      this.db.run(sql);
+    }
+    this.isDirty = true;
+  }
+
   private save(): void {
     if (!this.db) return;
 
@@ -94,6 +104,7 @@ export class DatabaseManager {
             /* ignore */
           }
         }
+        this.isDirty = false;
         return;
       } catch (error: any) {
         // EBUSY / EPERM / EACCES : fichier verrouillé (antivirus Windows)
@@ -118,6 +129,7 @@ export class DatabaseManager {
   }
 
   public forceSave(): void {
+    if (!this.isDirty) return;
     this.save();
   }
 
@@ -144,7 +156,7 @@ export class DatabaseManager {
     const now = new Date().toISOString();
     const stateJson = JSON.stringify(state);
 
-    this.db.run(
+    this.run(
       `
       INSERT OR REPLACE INTO session_state (competition_id, state_json, updated_at)
       VALUES (?, ?, ?)
@@ -185,7 +197,7 @@ export class DatabaseManager {
     // Input validation
     validateId(competitionId, 'competitionId');
 
-    this.db.run('DELETE FROM session_state WHERE competition_id = ?', [sanitizeId(competitionId)]);
+    this.run('DELETE FROM session_state WHERE competition_id = ?', [sanitizeId(competitionId)]);
     this.save();
   }
 
@@ -195,7 +207,7 @@ export class DatabaseManager {
     const now = new Date().toISOString();
     const id = comp.id || uuidv4();
 
-    this.db.run(
+    this.run(
       `
       INSERT INTO competitions (id, title, date, weapon, gender, category, location, color, settings, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -299,8 +311,8 @@ export class DatabaseManager {
 
   public deleteCompetition(id: string): void {
     if (!this.db) throw new Error('Database not open');
-    this.db.run('DELETE FROM fencers WHERE competition_id = ?', [id]);
-    this.db.run('DELETE FROM competitions WHERE id = ?', [id]);
+    this.run('DELETE FROM fencers WHERE competition_id = ?', [id]);
+    this.run('DELETE FROM competitions WHERE id = ?', [id]);
     this.save();
   }
 
@@ -309,55 +321,55 @@ export class DatabaseManager {
     const now = new Date().toISOString();
 
     if (updates.title !== undefined)
-      this.db.run('UPDATE competitions SET title = ?, updated_at = ? WHERE id = ?', [
+      this.run('UPDATE competitions SET title = ?, updated_at = ? WHERE id = ?', [
         updates.title,
         now,
         id,
       ]);
     if (updates.date !== undefined)
-      this.db.run('UPDATE competitions SET date = ?, updated_at = ? WHERE id = ?', [
+      this.run('UPDATE competitions SET date = ?, updated_at = ? WHERE id = ?', [
         updates.date.toISOString(),
         now,
         id,
       ]);
     if (updates.location !== undefined)
-      this.db.run('UPDATE competitions SET location = ?, updated_at = ? WHERE id = ?', [
+      this.run('UPDATE competitions SET location = ?, updated_at = ? WHERE id = ?', [
         updates.location,
         now,
         id,
       ]);
     if (updates.organizer !== undefined)
-      this.db.run('UPDATE competitions SET organizer = ?, updated_at = ? WHERE id = ?', [
+      this.run('UPDATE competitions SET organizer = ?, updated_at = ? WHERE id = ?', [
         updates.organizer,
         now,
         id,
       ]);
     if (updates.weapon !== undefined)
-      this.db.run('UPDATE competitions SET weapon = ?, updated_at = ? WHERE id = ?', [
+      this.run('UPDATE competitions SET weapon = ?, updated_at = ? WHERE id = ?', [
         updates.weapon,
         now,
         id,
       ]);
     if (updates.gender !== undefined)
-      this.db.run('UPDATE competitions SET gender = ?, updated_at = ? WHERE id = ?', [
+      this.run('UPDATE competitions SET gender = ?, updated_at = ? WHERE id = ?', [
         updates.gender,
         now,
         id,
       ]);
     if (updates.category !== undefined)
-      this.db.run('UPDATE competitions SET category = ?, updated_at = ? WHERE id = ?', [
+      this.run('UPDATE competitions SET category = ?, updated_at = ? WHERE id = ?', [
         updates.category,
         now,
         id,
       ]);
     if (updates.status !== undefined)
-      this.db.run('UPDATE competitions SET status = ?, updated_at = ? WHERE id = ?', [
+      this.run('UPDATE competitions SET status = ?, updated_at = ? WHERE id = ?', [
         updates.status,
         now,
         id,
       ]);
     if (updates.settings !== undefined)
-      this.db.run('UPDATE competitions SET settings = ?, updated_at = ? WHERE id = ?', [
+      this.run('UPDATE competitions SET settings = ?, updated_at = ? WHERE id = ?', [
         JSON.stringify(updates.settings),
         now,
         id,
@@ -382,7 +394,7 @@ export class DatabaseManager {
     const ref = fencer.ref || maxRef + 1;
 
     try {
-      this.db.run(
+      this.run(
         `
         INSERT INTO fencers (id, competition_id, ref, last_name, first_name, birth_date, gender, nationality, club, region, license, ranking, status, photo, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -618,7 +630,7 @@ export class DatabaseManager {
       setClauses.push('updated_at = ?');
       values.push(now);
       values.push(id);
-      this.db.run(`UPDATE fencers SET ${setClauses.join(', ')} WHERE id = ?`, values);
+      this.run(`UPDATE fencers SET ${setClauses.join(', ')} WHERE id = ?`, values);
     }
 
     this.save();
@@ -639,16 +651,16 @@ export class DatabaseManager {
 
     try {
       // Supprimer d'abord les associations pool_fencers
-      this.db.run('DELETE FROM pool_fencers WHERE fencer_id = ?', [id]);
+      this.run('DELETE FROM pool_fencers WHERE fencer_id = ?', [id]);
 
       // Supprimer les matchs où ce tireur participe
-      this.db.run(
+      this.run(
         'DELETE FROM matches WHERE fencer_a_id = ? OR fencer_b_id = ?',
         [id, id]
       );
 
       // Supprimer le tireur
-      const result = this.db.run('DELETE FROM fencers WHERE id = ?', [id]);
+      const result = this.run('DELETE FROM fencers WHERE id = ?', [id]);
 
       // Vérifier que la suppression a réussi
       if (result.changes === 0) {
@@ -671,20 +683,20 @@ export class DatabaseManager {
     try {
       if (competitionId) {
         // Suppression filtrée par compétition
-        this.db.run(
+        this.run(
           `DELETE FROM pool_fencers WHERE fencer_id IN (SELECT id FROM fencers WHERE competition_id = ?)`,
           [competitionId]
         );
-        this.db.run(
+        this.run(
           `DELETE FROM matches WHERE fencer_a_id IN (SELECT id FROM fencers WHERE competition_id = ?) OR fencer_b_id IN (SELECT id FROM fencers WHERE competition_id = ?)`,
           [competitionId, competitionId]
         );
-        this.db.run('DELETE FROM fencers WHERE competition_id = ?', [competitionId]);
+        this.run('DELETE FROM fencers WHERE competition_id = ?', [competitionId]);
       } else {
         // Suppression de tous les tireurs
-        this.db.run('DELETE FROM pool_fencers');
-        this.db.run('DELETE FROM matches');
-        this.db.run('DELETE FROM fencers');
+        this.run('DELETE FROM pool_fencers');
+        this.run('DELETE FROM matches');
+        this.run('DELETE FROM fencers');
       }
       this.save();
     } catch (error) {
@@ -699,7 +711,7 @@ export class DatabaseManager {
     if (!this.db) throw new Error('Database not open');
     const now = new Date().toISOString();
     const id = match.id || uuidv4();
-    this.db.run(
+    this.run(
       `INSERT INTO matches (id, number, pool_id, fencer_a_id, fencer_b_id, max_score, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
@@ -736,7 +748,7 @@ export class DatabaseManager {
     const status = params.status ?? 'not_started';
     const exists = !!this.getMatch(dbId);
     if (!exists) {
-      this.db.run(
+      this.run(
         `INSERT INTO matches (id, number, table_id, fencer_a_id, fencer_b_id, max_score, status, round, position, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
@@ -754,7 +766,7 @@ export class DatabaseManager {
         ]
       );
     } else {
-      this.db.run(
+      this.run(
         `UPDATE matches SET fencer_a_id=?, fencer_b_id=?, score_a=?, score_b=?, status=?, round=?, position=?, updated_at=? WHERE id=?`,
         [
           params.fencerAId ?? null,
@@ -1108,25 +1120,25 @@ export class DatabaseManager {
     if (!this.db) throw new Error('Database not open');
     const now = new Date().toISOString();
     if (updates.scoreA !== undefined)
-      this.db.run('UPDATE matches SET score_a = ?, updated_at = ? WHERE id = ?', [
+      this.run('UPDATE matches SET score_a = ?, updated_at = ? WHERE id = ?', [
         JSON.stringify(updates.scoreA),
         now,
         id,
       ]);
     if (updates.scoreB !== undefined)
-      this.db.run('UPDATE matches SET score_b = ?, updated_at = ? WHERE id = ?', [
+      this.run('UPDATE matches SET score_b = ?, updated_at = ? WHERE id = ?', [
         JSON.stringify(updates.scoreB),
         now,
         id,
       ]);
     if (updates.status !== undefined)
-      this.db.run('UPDATE matches SET status = ?, updated_at = ? WHERE id = ?', [
+      this.run('UPDATE matches SET status = ?, updated_at = ? WHERE id = ?', [
         updates.status,
         now,
         id,
       ]);
     if (updates.refereeId !== undefined)
-      this.db.run('UPDATE matches SET referee_id = ?, updated_at = ? WHERE id = ?', [
+      this.run('UPDATE matches SET referee_id = ?, updated_at = ? WHERE id = ?', [
         updates.refereeId,
         now,
         id,
@@ -1139,7 +1151,7 @@ export class DatabaseManager {
     const now = new Date().toISOString();
 
     // Mettre à jour les informations de la poule
-    this.db.run('UPDATE pools SET updated_at = ?, is_complete = ? WHERE id = ?', [
+    this.run('UPDATE pools SET updated_at = ?, is_complete = ? WHERE id = ?', [
       now,
       pool.isComplete ? 1 : 0,
       pool.id,
@@ -1165,7 +1177,7 @@ export class DatabaseManager {
     if (!this.db) throw new Error('Database not open');
     const id = uuidv4();
     const now = new Date().toISOString();
-    this.db.run(
+    this.run(
       `INSERT INTO pools (id, phase_id, number, is_complete, has_error, created_at, updated_at)
        VALUES (?, ?, ?, 0, 0, ?, ?)`,
       [id, phaseId, number, now, now]
@@ -1186,7 +1198,7 @@ export class DatabaseManager {
 
   public addFencerToPool(poolId: string, fencerId: string, position: number): void {
     if (!this.db) throw new Error('Database not open');
-    this.db.run(
+    this.run(
       `INSERT OR REPLACE INTO pool_fencers (pool_id, fencer_id, position) VALUES (?, ?, ?)`,
       [poolId, fencerId, position]
     );
@@ -1227,7 +1239,7 @@ export class DatabaseManager {
     if (!this.db) throw new Error('Database not open');
     const id = uuidv4();
     const now = new Date().toISOString();
-    this.db.run(
+    this.run(
       `INSERT INTO phases (id, competition_id, name, type, order_index, status, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, 'pending', ?, ?)`,
       [id, competitionId, name, type, order, now, now]
@@ -1301,14 +1313,14 @@ export class DatabaseManager {
     if (setClauses.length > 0) {
       setClauses.push('updated_at = ?');
       values.push(now, id);
-      this.db.run(`UPDATE phases SET ${setClauses.join(', ')} WHERE id = ?`, values);
+      this.run(`UPDATE phases SET ${setClauses.join(', ')} WHERE id = ?`, values);
       this.save();
     }
   }
 
   public deletePhase(id: string): void {
     if (!this.db) throw new Error('Database not open');
-    this.db.run('DELETE FROM phases WHERE id = ?', [id]);
+    this.run('DELETE FROM phases WHERE id = ?', [id]);
     this.save();
   }
 
@@ -1331,7 +1343,7 @@ export class DatabaseManager {
     const nextRef = (refStmt.getAsObject().next_ref as number) ?? 1;
     refStmt.free();
 
-    this.db.run(
+    this.run(
       `INSERT INTO referees (id, competition_id, ref, name, gender, nationality, club, license, category, status, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)`,
       [id, competitionId, nextRef, data.name, data.gender ?? null, data.nationality ?? 'FRA',
@@ -1390,14 +1402,14 @@ export class DatabaseManager {
     if (setClauses.length > 0) {
       setClauses.push('updated_at = ?');
       values.push(now, id);
-      this.db.run(`UPDATE referees SET ${setClauses.join(', ')} WHERE id = ?`, values);
+      this.run(`UPDATE referees SET ${setClauses.join(', ')} WHERE id = ?`, values);
       this.save();
     }
   }
 
   public deleteReferee(id: string): void {
     if (!this.db) throw new Error('Database not open');
-    this.db.run('DELETE FROM referees WHERE id = ?', [id]);
+    this.run('DELETE FROM referees WHERE id = ?', [id]);
     this.save();
   }
 
@@ -1486,7 +1498,7 @@ export class DatabaseManager {
     isReversed?: boolean;
   }): void {
     if (!this.db) throw new Error('Database not open');
-    this.db.run(
+    this.run(
       `INSERT OR REPLACE INTO match_touches
         (id, match_id, fencer_id, zone, points, timestamp, is_valid_in_sudden_death, is_reversed)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -1516,7 +1528,7 @@ export class DatabaseManager {
     resultingExclusion?: boolean;
   }): void {
     if (!this.db) throw new Error('Database not open');
-    this.db.run(
+    this.run(
       `INSERT OR REPLACE INTO match_cards
         (id, match_id, fencer_id, card_type, reason, card_group, timestamp, points_awarded, resulting_exclusion)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -1543,7 +1555,7 @@ export class DatabaseManager {
   ): void {
     if (!this.db) throw new Error('Database not open');
     const now = new Date().toISOString();
-    this.db.run(
+    this.run(
       `UPDATE matches SET start_time = ?, end_time = ?, duration = ?, updated_at = ? WHERE id = ?`,
       [startTime, endTime, duration, now, matchId]
     );
@@ -1698,7 +1710,7 @@ export class DatabaseManager {
     pointsAwarded: number;
   }): void {
     if (!this.db) throw new Error('Database not open');
-    this.db.run(
+    this.run(
       `INSERT OR REPLACE INTO match_arena_exits
         (id, match_id, fencer_id, exit_type, timestamp, points_awarded)
        VALUES (?, ?, ?, ?, ?, ?)`,
@@ -1849,8 +1861,8 @@ export class DatabaseManager {
     if (!this.db) throw new Error('Database not open');
     const now = new Date().toISOString();
     // Supprime un éventuel snapshot existant pour ce tireur
-    this.db.run('DELETE FROM fencer_abandons WHERE fencer_id = ?', [fencerId]);
-    this.db.run(
+    this.run('DELETE FROM fencer_abandons WHERE fencer_id = ?', [fencerId]);
+    this.run(
       `INSERT INTO fencer_abandons (id, fencer_id, competition_id, previous_status, abandon_type, match_snapshots, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
@@ -1899,7 +1911,7 @@ export class DatabaseManager {
 
   public deleteAbandonSnapshot(fencerId: string): void {
     if (!this.db) return;
-    this.db.run('DELETE FROM fencer_abandons WHERE fencer_id = ?', [fencerId]);
+    this.run('DELETE FROM fencer_abandons WHERE fencer_id = ?', [fencerId]);
     this.save();
   }
 
@@ -1949,7 +1961,7 @@ export class DatabaseManager {
   }): void {
     if (!this.db) throw new Error('Database not open');
     const now = new Date().toISOString();
-    this.db.run(
+    this.run(
       `INSERT OR REPLACE INTO bracket_nodes
         (id, competition_id, phase_id, round, position, fencer_id, match_id, is_bye, is_third_place, parent_node_id, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM bracket_nodes WHERE id=?), ?), ?)`,
@@ -1981,7 +1993,7 @@ export class DatabaseManager {
 
   public clearBracket(competitionId: string, phaseId: string): void {
     if (!this.db) throw new Error('Database not open');
-    this.db.run(
+    this.run(
       `DELETE FROM bracket_nodes WHERE competition_id=? AND phase_id=?`,
       [competitionId, phaseId]
     );
@@ -2002,7 +2014,7 @@ export class DatabaseManager {
   }): void {
     if (!this.db) throw new Error('Database not open');
     const { v4: uuidv4gen } = require('uuid');
-    this.db.run(
+    this.run(
       `INSERT INTO score_audit_log
         (id, match_id, arena_id, previous_score_a, previous_score_b, new_score_a, new_score_b, changed_by, changed_at, reason)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -2058,7 +2070,7 @@ export class DatabaseManager {
     status: string;
   }): void {
     if (!this.db) throw new Error('Database not open');
-    this.db.run(
+    this.run(
       `INSERT OR REPLACE INTO arena_state
         (arena_id, competition_id, current_match, match_queue, settings, status, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -2113,7 +2125,7 @@ export class DatabaseManager {
 
   public clearArenaStates(competitionId: string): void {
     if (!this.db) throw new Error('Database not open');
-    this.db.run(`DELETE FROM arena_state WHERE competition_id=?`, [competitionId]);
+    this.run(`DELETE FROM arena_state WHERE competition_id=?`, [competitionId]);
     this.save();
   }
 }

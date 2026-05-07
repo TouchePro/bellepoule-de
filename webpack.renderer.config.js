@@ -18,13 +18,31 @@ module.exports = (env = {}) => ({
         },
       }),
     ],
+    splitChunks: {
+      chunks: 'all',
+      cacheGroups: {
+        vendor: {
+          test: /[\\/]node_modules[\\/]/,
+          name: 'vendors',
+          chunks: 'all',
+          priority: 10,
+        },
+        react: {
+          test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
+          name: 'react',
+          chunks: 'all',
+          priority: 20,
+        },
+      },
+    },
   },
   entry: './src/renderer/index.tsx',
   target: 'electron-renderer',
   devtool: 'source-map',
   output: {
     path: path.resolve(__dirname, 'dist/renderer'),
-    filename: 'renderer.js',
+    filename: '[name].js',
+    chunkFilename: '[name].chunk.js',
   },
   devServer: {
     port: 8066,
