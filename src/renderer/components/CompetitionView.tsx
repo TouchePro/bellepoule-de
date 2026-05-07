@@ -216,14 +216,15 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       matchId: string;
       scoreA: number;
       scoreB: number;
+      winner?: 'A' | 'B';
       isTableau?: boolean;
     }) => {
-      const { matchId, scoreA, scoreB } = data;
+      const { matchId, scoreA, scoreB, winner: winnerOverride } = data;
       logger.debug(
         LogCategory.UI,
         `[CompetitionView] Match terminé reçu: ${matchId} - Score: ${scoreA}-${scoreB}`
       );
-      updateMatchFromRemote(matchId, scoreA, scoreB, MatchStatus.FINISHED);
+      updateMatchFromRemote(matchId, scoreA, scoreB, MatchStatus.FINISHED, winnerOverride);
 
       // Mise à jour du tableau d'élimination directe si c'est un match DE
       setTableauMatches(prev => {

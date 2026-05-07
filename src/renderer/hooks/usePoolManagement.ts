@@ -484,7 +484,7 @@ export const usePoolManagement = ({
 
   // Mettre à jour un match depuis une source externe (serveur distant)
   const updateMatchFromRemote = useCallback(
-    (matchId: string, scoreA: number, scoreB: number, status: MatchStatus) => {
+    (matchId: string, scoreA: number, scoreB: number, status: MatchStatus, winnerOverride?: 'A' | 'B') => {
       setPools(prevPools => {
         const updatedPools = [...prevPools];
         let matchFound = false;
@@ -495,7 +495,11 @@ export const usePoolManagement = ({
             if (pool.matches[matchIdx].id === matchId) {
               matchFound = true;
               const match = pool.matches[matchIdx];
-              const winner = scoreA > scoreB ? 'A' : scoreB > scoreA ? 'B' : null;
+              // Pour le tirage au sort : scores égaux mais vainqueur explicite
+              const winner =
+                scoreA > scoreB ? 'A' :
+                scoreB > scoreA ? 'B' :
+                (winnerOverride ?? null);
 
               pool.matches[matchIdx] = {
                 ...match,

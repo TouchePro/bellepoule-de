@@ -1256,6 +1256,7 @@
           this.isLaserSabre = false;
           this.isSuddenDeath = false;
           this.overtimeType = null; // 'supplementary' | 'challenger' | null
+          this.coinFlipWinner = null; // 'A' | 'B' | null — vainqueur par tirage au sort
           this.actionHistory = []; // Historique pour undo (max 10)
           this.cardAnnounceEnabled = false; // Réglé depuis les paramètres de saisie distante
           this.swapped = false;
@@ -1825,7 +1826,7 @@
             faultHistoryA: { ...this.faultHistoryA },
             faultHistoryB: { ...this.faultHistoryB },
             isSuddenDeath: this.isSuddenDeath,
-            overtypeType: this.overtimeType,
+            overtimeType: this.overtimeType,
           };
           this.actionHistory.push(snapshot);
           if (this.actionHistory.length > 10) this.actionHistory.shift();
@@ -2143,27 +2144,72 @@
         }
 
         triggerTiebreaker() {
-          this.showNotification('⚡ Tirage au sort en cours...');
-          setTimeout(() => {
-            const winner = Math.random() < 0.5 ? 'A' : 'B';
-            const nameEl = document.getElementById(`fencer-${winner.toLowerCase()}-name`);
-            const winnerName = nameEl ? nameEl.textContent.trim() : `Tireur ${winner}`;
+          const winner = Math.random() < 0.5 ? 'A' : 'B';
+          this.coinFlipWinner = winner;
 
-            if (winner === 'A') {
-              this.scoreA++;
-            } else {
-              this.scoreB++;
-            }
-            this.updateScores();
-            this.broadcastUpdate();
+          // Déclencher l'animation plein écran sur l'affichage de score
+          this.socket.emit('arena_control', {
+            arenaId: this.arenaId,
+            action: 'coin_flip',
+            winner,
+          });
 
-            this.showNotification(`🏆 ${winnerName} remporte le match (tirage au sort)`);
-            this.isSuddenDeath = false;
-            this.overtimeType = null;
-            this.updateSuddenDeathUI();
+          this.showNotification('🪙 Tirage au sort — animation en cours...');
 
-            setTimeout(() => this.finishMatch(), 2500);
-          }, 1500);
+          // Attendre la fin de l'animation (~4.5s) avant de terminer le match
+          setTimeout(() => this.confirmFinishWithCoinFlip(winner), 4500);
+        }
+
+        async confirmFinishWithCoinFlip(winner) {
+          if (!this.currentMatch) return;
+
+          const nameEl = document.getElementById(`fencer-${winner.toLowerCase()}-name`);
+          const winnerName = nameEl ? nameEl.textContent.trim() : `Tireur ${winner}`;
+          this.showNotification(`🏆 ${winnerName} remporte le match (tirage au sort)`);
+
+          this.isSuddenDeath = false;
+          this.overtimeType = null;
+          this.updateSuddenDeathUI();
+          this.matchStatus = 'finished';
+          this.stopTimer();
+
+          try {
+            await fetch(`/api/matches/${this.currentMatch.id}/finish`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                scoreA: this.scoreA,
+                scoreB: this.scoreB,
+                winner,
+                cardsA: this.cardsA,
+                cardsB: this.cardsB,
+              }),
+            });
+
+            this.updateControlButtons();
+            this.socket.emit('arena_control', { arenaId: this.arenaId, action: 'finish' });
+
+            setTimeout(() => {
+              this.currentMatch = null;
+              this.scoreA = 0;
+              this.scoreB = 0;
+              this.cardsA = [];
+              this.cardsB = [];
+              this.touchesA = [];
+              this.touchesB = [];
+              this.faultHistoryA = { 1: 0, 2: 0, 3: 0 };
+              this.faultHistoryB = { 1: 0, 2: 0, 3: 0 };
+              this.coinFlipWinner = null;
+              this.matchStatus = 'not_started';
+              this.timerSeconds = 180;
+              this.updateTimerDisplay();
+              document.getElementById('active-match').classList.remove('visible');
+              this.showNextMatchesScreen();
+            }, 2000);
+          } catch (error) {
+            console.error('Erreur fin de match (tirage au sort):', error);
+            this.showNotification(window.T('referee.error_save'), true);
+          }
         }
 
         updateTimerDisplay() {
@@ -2199,7 +2245,7 @@
             time: this.timerSeconds,
             timerStatus: this.timerRunning ? 'running' : 'paused',
             suddenDeath: this.isSuddenDeath,
-            overtypeType: this.overtimeType,
+            overtimeType: this.overtimeType,
           });
         }
 
@@ -2214,7 +2260,7 @@
             touchesA: this.touchesA,
             touchesB: this.touchesB,
             suddenDeath: this.isSuddenDeath,
-            overtypeType: this.overtimeType,
+            overtimeType: this.overtimeType,
           });
         }
 
