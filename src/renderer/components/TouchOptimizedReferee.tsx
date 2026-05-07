@@ -54,6 +54,17 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  // Refs pour éviter les stale closures dans le timer
+  const matchModeRef = useRef(matchMode);
+  const scoreARef = useRef(scoreA);
+  const scoreBRef = useRef(scoreB);
+  const handleTimeUpRef = useRef<() => void>(() => {});
+  const [timerPhase, setTimerPhase] = useState(0);
+
+  // Mise à jour des refs pendant le rendu (pattern "latest value cache")
+  matchModeRef.current = matchMode;
+  scoreARef.current = scoreA;
+  scoreBRef.current = scoreB;
 
   // Timer management (countdown)
   useEffect(() => {
@@ -64,7 +75,7 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
           if (next <= 0) {
             clearInterval(intervalRef.current!);
             intervalRef.current = null;
-            handleTimeUp();
+            handleTimeUpRef.current();
             return 0;
           }
           return next;
@@ -82,7 +93,7 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
         clearInterval(intervalRef.current);
       }
     };
-  }, [isRunning]);
+  }, [isRunning, timerPhase]);
 
   // Touch gesture handlers
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -260,37 +271,36 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
   };
 
   const handleTimeUp = useCallback(() => {
-    if (matchMode === MatchMode.SUPPLEMENTARY_TIME) {
-      if (scoreA === scoreB) {
+    const mode = matchModeRef.current;
+    const sA = scoreARef.current;
+    const sB = scoreBRef.current;
+
+    if (mode === MatchMode.SUPPLEMENTARY_TIME || mode === MatchMode.SUDDEN_DEATH_TIMEOUT) {
+      if (sA === sB) {
         setShowTiebreaker(true);
       } else {
         setIsRunning(false);
-        onMatchEnd(scoreA > scoreB ? 'A' : 'B');
+        onMatchEnd(sA > sB ? 'A' : 'B');
       }
       return;
     }
 
-    if (matchMode === MatchMode.SUDDEN_DEATH_TIMEOUT) {
-      if (scoreA === scoreB) {
-        setShowTiebreaker(true);
-      } else {
-        setIsRunning(false);
-        onMatchEnd(scoreA > scoreB ? 'A' : 'B');
-      }
-      return;
-    }
-
-    const suddenDeath = checkTimeoutSuddenDeath(0, scoreA, scoreB);
+    const suddenDeath = checkTimeoutSuddenDeath(0, sA, sB);
     if (suddenDeath.shouldTrigger) {
       setMatchMode(suddenDeath.mode!);
       setOvertimeActive(true);
       setMatchTime(getSuddenDeathOvertimeDuration());
-      setIsRunning(true);
+      // timerPhase force le re-démarrage de l'intervalle même si isRunning ne change pas
+      setTimerPhase(p => p + 1);
     } else {
       setIsRunning(false);
-      onMatchEnd(scoreA > scoreB ? 'A' : 'B');
+      onMatchEnd(sA > sB ? 'A' : 'B');
     }
-  }, [matchMode, scoreA, scoreB, onMatchEnd]);
+  }, [onMatchEnd]);
+
+  useEffect(() => {
+    handleTimeUpRef.current = handleTimeUp;
+  }, [handleTimeUp]);
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
