@@ -1011,6 +1011,21 @@
 
         <!-- Chronomètre -->
         <div class="timer-section">
+          <div
+            id="mort-subite-label"
+            style="
+              display: none;
+              color: #ea580c;
+              font-weight: 900;
+              font-size: 1.6rem;
+              text-align: center;
+              margin-bottom: 0.3rem;
+              letter-spacing: 0.1em;
+              animation: pulse-timer 0.6s infinite;
+            "
+          >
+            ⚡ MORT SUBITE – Zone C uniquement !
+          </div>
           <div class="timer-display" id="timer-display">03:00</div>
           <div
             id="sudden-death-label"
@@ -1026,7 +1041,7 @@
               animation: pulse-timer 0.8s infinite;
             "
           >
-            ⚡ MORT SUBITE
+            ⏱ 30s SUPPLEMENTAIRE
           </div>
           <div class="timer-hint" data-i18n="referee.timer_hint">
             Tapez pour démarrer/pause - Appui long pour reset
@@ -1716,7 +1731,11 @@
           if (this.matchStatus === 'finished') return;
 
           // En mort subite challenger (10-10), seule la zone C (+5) est autorisée
-          if (this.isSuddenDeath && this.overtimeType === 'challenger' && points !== 5) {
+          if (
+            this.isSuddenDeath &&
+            (this.overtimeType === 'challenger' || this.overtimeType === 'challenger_supplementary') &&
+            points !== 5
+          ) {
             this.showNotification('⚡ Mort subite : Zone C uniquement !');
             return;
           }
@@ -1737,7 +1756,11 @@
 
           // Mode Challenger : mort subite si les DEUX combattants ≥ 10 pts (Laser Sabre uniquement)
           // Vérifier AVANT broadcastUpdate pour que le serveur reçoive l'état correct
-          if (this.isLaserSabre && !this.isSuddenDeath) {
+          // Le déclenchement est autorisé hors mort subite ET pendant le temps supplémentaire
+          if (
+            this.isLaserSabre &&
+            (!this.isSuddenDeath || this.overtimeType === 'supplementary')
+          ) {
             if (this.scoreA >= 10 && this.scoreB >= 10) {
               this.triggerSuddenDeathChallenger();
             }
@@ -1933,26 +1956,31 @@
 
         triggerSuddenDeathChallenger() {
           this.isSuddenDeath = true;
-          this.overtimeType = 'challenger';
+          // Si on est déjà en temps supplémentaire, on combine les deux états
+          this.overtimeType = this.overtimeType === 'supplementary'
+            ? 'challenger_supplementary'
+            : 'challenger';
           this.updateSuddenDeathUI();
           this.showNotification(
             '⚡ MORT SUBITE – Les deux tireurs ont 10 pts ! Zone C uniquement.'
           );
         }
 
-        // Afficher le label sans désactiver les zones (la validation se fait dans addScore)
+        // Afficher les labels selon l'état courant
         updateSuddenDeathUI() {
           const sdLabel = document.getElementById('sudden-death-label');
+          const msLabel = document.getElementById('mort-subite-label');
+
+          const isSupplementary = this.isSuddenDeath &&
+            (this.overtimeType === 'supplementary' || this.overtimeType === 'challenger_supplementary');
+          const isChallengerSD = this.isSuddenDeath &&
+            (this.overtimeType === 'challenger' || this.overtimeType === 'challenger_supplementary');
+
           if (sdLabel) {
-            if (this.isSuddenDeath && this.overtimeType === 'supplementary') {
-              sdLabel.style.display = 'block';
-              sdLabel.textContent = '⏱ 30s SUPPLEMENTAIRE';
-            } else if (this.isSuddenDeath && this.overtimeType === 'challenger') {
-              sdLabel.style.display = 'block';
-              sdLabel.textContent = '⚡ MORT SUBITE';
-            } else {
-              sdLabel.style.display = 'none';
-            }
+            sdLabel.style.display = isSupplementary ? 'block' : 'none';
+          }
+          if (msLabel) {
+            msLabel.style.display = isChallengerSD ? 'block' : 'none';
           }
         }
 
@@ -2012,11 +2040,17 @@
             if (idx !== -1) this.touchesB.splice(idx, 1);
           }
 
-          // Ré-évaluer la mort subite : si un score repasse sous 10, on quitte la mort subite
-          if (this.isSuddenDeath && this.isLaserSabre && this.overtimeType === 'challenger') {
+          // Ré-évaluer la mort subite : si un score repasse sous 10, on quitte la mort subite challenger
+          if (
+            this.isSuddenDeath && this.isLaserSabre &&
+            (this.overtimeType === 'challenger' || this.overtimeType === 'challenger_supplementary')
+          ) {
             if (!(this.scoreA >= 10 && this.scoreB >= 10)) {
-              this.isSuddenDeath = false;
-              this.overtimeType = null;
+              // Revenir au temps supplémentaire si c'était déclenché pendant le supplémentaire
+              this.overtimeType = this.overtimeType === 'challenger_supplementary'
+                ? 'supplementary'
+                : null;
+              if (this.overtimeType === null) this.isSuddenDeath = false;
               this.updateSuddenDeathUI();
             }
           }
@@ -2064,10 +2098,15 @@
           }
 
           // Ré-évaluer la mort subite
-          if (this.isSuddenDeath && this.isLaserSabre && this.overtimeType === 'challenger') {
+          if (
+            this.isSuddenDeath && this.isLaserSabre &&
+            (this.overtimeType === 'challenger' || this.overtimeType === 'challenger_supplementary')
+          ) {
             if (!(this.scoreA >= 10 && this.scoreB >= 10)) {
-              this.isSuddenDeath = false;
-              this.overtimeType = null;
+              this.overtimeType = this.overtimeType === 'challenger_supplementary'
+                ? 'supplementary'
+                : null;
+              if (this.overtimeType === null) this.isSuddenDeath = false;
               this.updateSuddenDeathUI();
             }
           }

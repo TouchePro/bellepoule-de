@@ -622,6 +622,25 @@
         }
       }
 
+      .mort-subite-banner {
+        margin-top: 0.3rem;
+        padding: 0.4rem 1.2rem;
+        background: linear-gradient(135deg, #ea580c, #fb923c);
+        color: #fff;
+        font-size: clamp(1.8rem, 5vw, 7vh);
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        border-radius: 0.5rem;
+        text-align: center;
+        animation: timer-pulse 0.6s infinite;
+        display: none;
+      }
+
+      .mort-subite-banner.active {
+        display: block;
+      }
+
       .sudden-death-banner {
         margin-top: 0.3rem;
         padding: 0.3rem 1rem;
@@ -1195,8 +1214,9 @@
 
         <!-- Chronomètre -->
         <div class="timer-section">
+          <div class="mort-subite-banner" id="mort-subite-banner">⚡ MORT SUBITE</div>
           <div class="timer-display" id="timer-display">03:00</div>
-          <div class="sudden-death-banner" id="sudden-death-banner">⚡ MORT SUBITE</div>
+          <div class="sudden-death-banner" id="sudden-death-banner">⏱ 30s SUPPLEMENTAIRE</div>
           <div class="timer-label">Temps restant</div>
         </div>
 
@@ -1681,15 +1701,26 @@
 
         updateSuddenDeathBanner() {
           const banner = document.getElementById('sudden-death-banner');
-          if (!banner) return;
-          if (this.isSuddenDeath && this.overtimeType === 'supplementary') {
-            banner.textContent = '⏱ 30s SUPPLEMENTAIRE';
-            banner.classList.add('active');
-          } else if (this.isSuddenDeath) {
-            banner.textContent = '⚡ MORT SUBITE';
-            banner.classList.add('active');
-          } else {
-            banner.classList.remove('active');
+          const msBanner = document.getElementById('mort-subite-banner');
+
+          const isSupplementary = this.isSuddenDeath &&
+            (this.overtimeType === 'supplementary' || this.overtimeType === 'challenger_supplementary');
+          const isChallengerSD = this.isSuddenDeath &&
+            (this.overtimeType === 'challenger' || this.overtimeType === 'challenger_supplementary');
+
+          if (banner) {
+            if (isSupplementary) {
+              banner.classList.add('active');
+            } else {
+              banner.classList.remove('active');
+            }
+          }
+          if (msBanner) {
+            if (isChallengerSD) {
+              msBanner.classList.add('active');
+            } else {
+              msBanner.classList.remove('active');
+            }
           }
         }
 
