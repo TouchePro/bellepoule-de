@@ -51,6 +51,7 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
   const [matchMode, setMatchMode] = useState<MatchMode>(MatchMode.NORMAL);
   const [showTiebreaker, setShowTiebreaker] = useState(false);
   const [overtimeActive, setOvertimeActive] = useState(false);
+  const [supplementaryActive, setSupplementaryActive] = useState(false);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -245,6 +246,7 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
 
   const handleMatchEnd = () => {
     setIsRunning(false);
+    setSupplementaryActive(false);
     if (scoreA === scoreB) {
       setShowTiebreaker(true);
     } else {
@@ -255,6 +257,7 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
   const handleTiebreakerComplete = (winner: 'A' | 'B') => {
     setShowTiebreaker(false);
     setIsRunning(false);
+    setSupplementaryActive(false);
     onMatchEnd(winner);
   };
 
@@ -289,11 +292,15 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
     if (suddenDeath.shouldTrigger) {
       setMatchMode(suddenDeath.mode!);
       setOvertimeActive(true);
+      if (suddenDeath.mode === MatchMode.SUPPLEMENTARY_TIME) {
+        setSupplementaryActive(true);
+      }
       setMatchTime(getSuddenDeathOvertimeDuration());
       // timerPhase force le re-démarrage de l'intervalle même si isRunning ne change pas
       setTimerPhase(p => p + 1);
     } else {
       setIsRunning(false);
+      setSupplementaryActive(false);
       onMatchEnd(sA > sB ? 'A' : 'B');
     }
   }, [onMatchEnd]);
@@ -324,15 +331,14 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
         <div className="flex justify-between items-center">
           <div className="text-2xl font-bold text-gray-800">Piste {match.number || 1}</div>
           <div className="flex items-center space-x-4">
-            {overtimeActive && (
-              <div
-                className={`px-3 py-1 rounded-full text-sm font-bold animate-pulse ${
-                  matchMode === MatchMode.SUPPLEMENTARY_TIME
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'bg-yellow-100 text-yellow-700'
-                }`}
-              >
-                {matchMode === MatchMode.SUPPLEMENTARY_TIME ? '30s SUPPLEMENTAIRE' : 'MORT SUBITE'}
+            {overtimeActive && (matchMode === MatchMode.SUDDEN_DEATH_TIMEOUT || matchMode === MatchMode.SUDDEN_DEATH_CHALLENGER) && (
+              <div className="px-3 py-1 rounded-full text-sm font-bold animate-pulse bg-orange-100 text-orange-700">
+                ⚡ MORT SUBITE
+              </div>
+            )}
+            {overtimeActive && (matchMode === MatchMode.SUPPLEMENTARY_TIME || supplementaryActive) && (
+              <div className="px-3 py-1 rounded-full text-sm font-bold animate-pulse bg-blue-100 text-blue-700">
+                ⏱ 30s SUPPLEMENTAIRE
               </div>
             )}
             <div
