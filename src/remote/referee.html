@@ -659,6 +659,69 @@
         color: white;
       }
 
+      /* Overlay confirmation tirage au sort */
+      #coin-flip-confirm {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.88);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1100;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s;
+      }
+      #coin-flip-confirm.active {
+        opacity: 1;
+        visibility: visible;
+      }
+      .coin-flip-confirm-content {
+        background: #111827;
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 1rem;
+        padding: 2rem 1.5rem;
+        max-width: 90%;
+        width: 400px;
+        text-align: center;
+        color: white;
+        transform: scale(0.9);
+        transition: all 0.3s;
+      }
+      #coin-flip-confirm.active .coin-flip-confirm-content {
+        transform: scale(1);
+      }
+      .coin-flip-confirm-label {
+        font-size: 1rem;
+        color: #9ca3af;
+        margin-bottom: 0.5rem;
+      }
+      .coin-flip-confirm-winner {
+        font-size: 1.6rem;
+        font-weight: 800;
+        margin-bottom: 0.25rem;
+      }
+      .coin-flip-confirm-winner.winner-green { color: #22c55e; }
+      .coin-flip-confirm-winner.winner-red   { color: #ef4444; }
+      .coin-flip-confirm-color {
+        font-size: 0.9rem;
+        color: #9ca3af;
+        margin-bottom: 1.5rem;
+      }
+      .btn-confirm-coin-flip {
+        width: 100%;
+        padding: 1rem;
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: white;
+        border: none;
+        border-radius: 0.75rem;
+        font-size: 1.1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .btn-confirm-coin-flip:hover { background: #b91c1c; }
+
       /* Notification */
       .notification {
         position: fixed;
@@ -1061,6 +1124,19 @@
             <span data-i18n="referee.confirm">Confirmer</span>
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- Overlay confirmation tirage au sort -->
+    <div id="coin-flip-confirm">
+      <div class="coin-flip-confirm-content">
+        <div style="font-size:2.5rem;margin-bottom:0.75rem">🪙</div>
+        <div class="coin-flip-confirm-label">Tirage au sort — Vainqueur :</div>
+        <div class="coin-flip-confirm-winner" id="coin-flip-confirm-name">—</div>
+        <div class="coin-flip-confirm-color" id="coin-flip-confirm-color">—</div>
+        <button class="btn-confirm-coin-flip" onclick="refereeApp.confirmCoinFlipFinish()">
+          🏁 Terminer le match
+        </button>
       </div>
     </div>
 
@@ -2156,8 +2232,33 @@
 
           this.showNotification('🪙 Tirage au sort — animation en cours...');
 
-          // Attendre la fin de l'animation (~4.5s) avant de terminer le match
-          setTimeout(() => this.confirmFinishWithCoinFlip(winner), 4500);
+          // Afficher la confirmation sur la tablette après la fin de l'animation
+          setTimeout(() => this.showCoinFlipConfirm(winner), 4500);
+        }
+
+        showCoinFlipConfirm(winner) {
+          const nameEl = document.getElementById(`fencer-${winner.toLowerCase()}-name`);
+          const winnerName = nameEl ? nameEl.textContent.trim() : `Tireur ${winner}`;
+          const colorLabel = winner === 'A' ? 'VERT' : 'ROUGE';
+
+          const nameDisplay = document.getElementById('coin-flip-confirm-name');
+          const colorDisplay = document.getElementById('coin-flip-confirm-color');
+          if (nameDisplay) {
+            nameDisplay.textContent = winnerName;
+            nameDisplay.className = `coin-flip-confirm-winner ${winner === 'A' ? 'winner-green' : 'winner-red'}`;
+          }
+          if (colorDisplay) colorDisplay.textContent = `(${colorLabel})`;
+
+          const overlay = document.getElementById('coin-flip-confirm');
+          if (overlay) overlay.classList.add('active');
+        }
+
+        confirmCoinFlipFinish() {
+          const overlay = document.getElementById('coin-flip-confirm');
+          if (overlay) overlay.classList.remove('active');
+          if (this.coinFlipWinner) {
+            this.confirmFinishWithCoinFlip(this.coinFlipWinner);
+          }
         }
 
         async confirmFinishWithCoinFlip(winner) {
