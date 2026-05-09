@@ -1,4 +1,4 @@
-{
+﻿{
   "app": {
     "title": "BellePoule Modern",
     "home": "Allgemein",
@@ -51,7 +51,11 @@
     "U15": "U15",
     "U17": "U17",
     "U20": "U20",
-    "senior": "Senior"
+    "senior": "Senior",
+    "V1": "Veteranen 1",
+    "V2": "Veteranen 2",
+    "V3": "Veteranen 3",
+    "V4": "Veteranen 4"
   },
   "fencer": {
     "last_name": "Nachname",
@@ -244,6 +248,64 @@
       "ranking-table": "Rangtabelle", "footer": "Fußzeile"
     },
     "reset": "Zurücksetzen", "exportJson": "JSON exportieren", "importJson": "JSON importieren", "importError": "Ungültige JSON-Datei"
+  },
+  "cardModal": {
+    "title": "Karte für {{name}}",
+    "previous_cards": "Vorherige Karten:",
+    "card_white": "⬜ WEISSE KARTE",
+    "card_yellow": "🟨 GELBE KARTE",
+    "card_red": "🟥 ROTE KARTE",
+    "card_black": "⬛ SCHWARZE KARTE",
+    "abbr_white": "W",
+    "abbr_yellow": "G",
+    "abbr_red": "R",
+    "abbr_black": "S",
+    "points_for": "+{{points}} Punkt für {{name}}",
+    "exclusion": "⚠️ AUSSCHLUSS AUS DEM WETTKAMPF"
+  },
+  "cardReasons": {
+    "EARLY_START": "Frühstart",
+    "LATE_STOP": "Weiterkämpfen nach \"Halt!\"",
+    "BODY_CONTACT": "Freiwilliger Körperkontakt",
+    "COUNTER_ATTACK": "Gegenangriff",
+    "TARGET_SUBSTITUTION": "Zielsubstitution",
+    "VOLUNTARY_DROP": "Freiwilliges Fallenlassen des Säbels",
+    "TIME_WASTING": "Zeitverschwendung",
+    "NON_COMPLIANT_GEAR": "Nicht konformes Material",
+    "ESTOC": "Stoß (Estoc)",
+    "UNARMED_HAND": "Verwendung der waffenlosen Hand",
+    "VOLUNTARY_EXIT": "Freiwilliges Verlassen der Bahn",
+    "HEAVY_HIT": "Schwerer Treffer",
+    "BRUTALITY": "Brutalität",
+    "DANGEROUS": "Gefährliches Verhalten",
+    "REFUSAL": "Kampfverweigerung",
+    "UNSPORTSMANLIKE": "Unsportliches Verhalten",
+    "CHEATING": "Betrug"
+  },
+  "cardGroups": {
+    "GROUP_1": "Gruppe 1 (Weiß → Gelb → Gelb)",
+    "GROUP_2": "Gruppe 2 (Gelb → Rot → Rot)",
+    "GROUP_3": "Gruppe 3 (Rot → Ausschluss)",
+    "GROUP_4": "Gruppe 4 (Sofortiger Ausschluss)"
+  },
+  "stats": {
+    "title": "Fechter-Statistiken",
+    "zone_a": "Zone A (1 Pt.)",
+    "zone_b": "Zone B (3 Pt.)",
+    "zone_c": "Zone C (5 Pt.)",
+    "total_points": "Punkte ges.",
+    "white_cards": "Weißkarten",
+    "yellow_cards": "Gelbe Karten",
+    "red_cards": "Rote Karten",
+    "arena_exits": "Platzverweise",
+    "matches_played": "Gefechte",
+    "avg_duration": "Ø Dauer",
+    "early_finishes": "< 3 Min.",
+    "export_pdf": "Statistiken exportieren (PDF)",
+    "export_fencer_pdf": "Fechter exportieren (PDF)",
+    "export_competition_pdf": "Wettkampf PDF exportieren",
+    "no_data": "Keine Statistiken für diesen Wettkampf verfügbar.",
+    "laser_only": "Trefferzonen (A/B/C) sind nur im Laser-Säbel-Modus verfügbar."
   },
   "shortcuts": {
     "title": "Tastaturkürzel",

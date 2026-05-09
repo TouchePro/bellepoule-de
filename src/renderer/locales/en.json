@@ -51,7 +51,11 @@
     "U15": "U15",
     "U17": "U17",
     "U20": "U20",
-    "senior": "Senior"
+    "senior": "Senior",
+    "V1": "Veterans 1",
+    "V2": "Veterans 2",
+    "V3": "Veterans 3",
+    "V4": "Veterans 4"
   },
   "fencer": {
     "last_name": "Last Name",
@@ -244,6 +248,64 @@
       "ranking-table": "Ranking table", "footer": "Footer"
     },
     "reset": "Reset", "exportJson": "Export JSON", "importJson": "Import JSON", "importError": "Invalid JSON file"
+  },
+  "cardModal": {
+    "title": "Card for {{name}}",
+    "previous_cards": "Previous cards:",
+    "card_white": "⬜ WHITE CARD",
+    "card_yellow": "🟨 YELLOW CARD",
+    "card_red": "🟥 RED CARD",
+    "card_black": "⬛ BLACK CARD",
+    "abbr_white": "W",
+    "abbr_yellow": "Y",
+    "abbr_red": "R",
+    "abbr_black": "B",
+    "points_for": "+{{points}} point for {{name}}",
+    "exclusion": "⚠️ EXCLUSION FROM COMPETITION"
+  },
+  "cardReasons": {
+    "EARLY_START": "Early start",
+    "LATE_STOP": "Continue after \"Halt!\"",
+    "BODY_CONTACT": "Voluntary body contact",
+    "COUNTER_ATTACK": "Counter-attack",
+    "TARGET_SUBSTITUTION": "Target substitution",
+    "VOLUNTARY_DROP": "Voluntary sabre drop",
+    "TIME_WASTING": "Time wasting",
+    "NON_COMPLIANT_GEAR": "Non-compliant equipment",
+    "ESTOC": "Thrust (estoc)",
+    "UNARMED_HAND": "Use of unarmed hand",
+    "VOLUNTARY_EXIT": "Voluntary exit from piste",
+    "HEAVY_HIT": "Heavy hit",
+    "BRUTALITY": "Brutality",
+    "DANGEROUS": "Dangerous behaviour",
+    "REFUSAL": "Refusal to fight",
+    "UNSPORTSMANLIKE": "Unsportsmanlike conduct",
+    "CHEATING": "Cheating"
+  },
+  "cardGroups": {
+    "GROUP_1": "Group 1 (White → Yellow → Yellow)",
+    "GROUP_2": "Group 2 (Yellow → Red → Red)",
+    "GROUP_3": "Group 3 (Red → Exclusion)",
+    "GROUP_4": "Group 4 (Immediate Exclusion)"
+  },
+  "stats": {
+    "title": "Fencer Statistics",
+    "zone_a": "Zone A (1 pt)",
+    "zone_b": "Zone B (3 pts)",
+    "zone_c": "Zone C (5 pts)",
+    "total_points": "Total pts",
+    "white_cards": "White cards",
+    "yellow_cards": "Yellow cards",
+    "red_cards": "Red cards",
+    "arena_exits": "Arena exits",
+    "matches_played": "Matches",
+    "avg_duration": "Avg duration",
+    "early_finishes": "< 3 min",
+    "export_pdf": "Export statistics (PDF)",
+    "export_fencer_pdf": "Export this fencer (PDF)",
+    "export_competition_pdf": "Competition PDF export",
+    "no_data": "No statistics available for this competition.",
+    "laser_only": "Touch zones (A/B/C) are only available in Laser Sabre mode."
   },
   "shortcuts": {
     "title": "Keyboard Shortcuts",

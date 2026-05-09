@@ -15,6 +15,7 @@ import {
   ExportFormat,
   Phase,
   DirectEliminationTable,
+  FencerCompetitionStats,
 } from '../types';
 
 // Re-export Pool for preload
@@ -137,6 +138,17 @@ export interface MatchTimingData {
   endTime: string | null; // ISO 8601
   duration: number | null; // secondes
 }
+
+export interface ArenaExitData {
+  id: string;
+  matchId: string;
+  fencerId: string;
+  exitType: 'arena_exit' | 'arena_exit_voluntary';
+  timestamp: string; // ISO 8601
+  pointsAwarded: number;
+}
+
+export type { FencerCompetitionStats };
 
 export interface FencerMatchRecord {
   matchId: string;
@@ -413,6 +425,21 @@ export interface DatabaseAPI {
     maxScore?: number;
     isBye?: boolean;
   }) => Promise<void>;
+  upsertMultipleTableauMatches: (
+    competitionId: string,
+    matches: Array<{
+      matchId: string;
+      round: number;
+      position: number;
+      fencerAId?: string | null;
+      fencerBId?: string | null;
+      scoreA?: any | null;
+      scoreB?: any | null;
+      status?: string;
+      maxScore?: number;
+      isBye?: boolean;
+    }>
+  ) => Promise<void>;
 
   // Pools
   createPool: (phaseId: string, number: number) => Promise<Pool>;
@@ -480,6 +507,9 @@ export interface DatabaseAPI {
   saveCard: (card: MatchCardData) => Promise<void>;
   updateMatchTiming: (timing: MatchTimingData) => Promise<void>;
   getFencerHistory: (fencerId: string) => Promise<FencerHistory>;
+  saveArenaExit: (exit: ArenaExitData) => Promise<void>;
+  getFencerCompetitionStats: (fencerId: string) => Promise<FencerCompetitionStats>;
+  getCompetitionFencerStats: (competitionId: string) => Promise<FencerCompetitionStats[]>;
   saveAbandonSnapshot: (
     fencerId: string,
     competitionId: string,
@@ -538,6 +568,51 @@ export interface UtilityAPI {
   openExternal: (url: string) => Promise<void>;
   getVersionInfo: () => Promise<VersionInfo>;
   removeAllListeners: (channel: string) => void;
+}
+
+// ============================================================================
+// Bracket Node Types
+// ============================================================================
+
+export interface BracketNodeData {
+  id: string;
+  competitionId: string;
+  round: number;
+  position: number;
+  fencerAId: string | null;
+  fencerBId: string | null;
+  winnerId: string | null;
+  isBye: boolean;
+  matchId: string | null;
+}
+
+// ============================================================================
+// Score Audit Log Types
+// ============================================================================
+
+export interface ScoreAuditLogEntry {
+  id: string;
+  matchId: string;
+  competitionId: string;
+  changedBy: string;
+  timestamp: string; // ISO 8601
+  field: 'scoreA' | 'scoreB' | 'status';
+  previousValue: string | null; // JSON
+  newValue: string | null; // JSON
+}
+
+// ============================================================================
+// Arena State Types
+// ============================================================================
+
+export interface ArenaStateData {
+  arenaId: string;
+  competitionId: string;
+  currentMatchId: string | null;
+  strip: number;
+  isActive: boolean;
+  lastUpdated: string; // ISO 8601
+  extraData?: Record<string, unknown>;
 }
 
 export interface ElectronAPI extends MenuAPI, UtilityAPI {

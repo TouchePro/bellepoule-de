@@ -228,4 +228,24 @@ export const ALL_MIGRATIONS: Migration[] = [
       db.run(`CREATE INDEX IF NOT EXISTS idx_arena_state_competition ON arena_state(competition_id)`);
     },
   },
+
+  {
+    version: 5,
+    description: 'Table match_arena_exits pour les sorties d\'arène',
+    up(db) {
+      db.run(`
+        CREATE TABLE IF NOT EXISTS match_arena_exits (
+          id TEXT PRIMARY KEY,
+          match_id TEXT NOT NULL,
+          fencer_id TEXT NOT NULL,
+          exit_type TEXT NOT NULL,
+          timestamp TEXT NOT NULL,
+          points_awarded INTEGER NOT NULL DEFAULT 3,
+          FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE
+        )
+      `);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_arena_exits_match ON match_arena_exits(match_id)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_arena_exits_fencer ON match_arena_exits(fencer_id)`);
+    },
+  },
 ];

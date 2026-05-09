@@ -4,13 +4,15 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useEffect } from 'react';
-import { Fencer, PoolRanking } from '../../shared/types';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Fencer, FencerStatus, PoolRanking } from '../../shared/types';
 import { useToast } from './Toast';
 import { useModalResize } from '../hooks/useModalResize';
 import Bracket from './Bracket';
 import { exportTableauToPDF, printTableauHTML, MAX_MATCHES_PER_PAGE_TABLEAU } from '../../shared/utils/pdfExport';
 import { usePdfTemplateStore } from '../../features/pdfTemplates/hooks/usePdfTemplateStore';
+import MatchCard from './tableau/MatchCard';
+import SeedingTable from './tableau/SeedingTable';
 
 interface BracketMatch {
   id: string;
@@ -171,7 +173,9 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [pdfMode, setPdfMode] = useState<'print' | 'pdf'>('pdf');
   const [pdfMatchesPerPage, setPdfMatchesPerPage] = useState<number>(MAX_MATCHES_PER_PAGE_TABLEAU);
+  const [autoAssignArenas, setAutoAssignArenas] = useState(true);
   const isUnlimitedScore = maxScore === 999;
+  const prevMatchesLengthRef = useRef(0);
 
   const { modalRef } = useModalResize({
     defaultWidth: 600,
@@ -180,9 +184,67 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     minHeight: 300,
   });
 
+  const distributeArenasRoundRobin = useCallback(
+    (matchList: TableauMatch[]): TableauMatch[] => {
+      if (arenaCount <= 0) return matchList;
+      let arenaIdx = 0;
+      return matchList.map(m => {
+        if (m.fencerA && m.fencerB && !m.isBye && !m.winner) {
+          const arena = (arenaIdx % arenaCount) + 1;
+          arenaIdx++;
+          return { ...m, arena };
+        }
+        return m;
+      });
+    },
+    [arenaCount]
+  );
+
+  // Auto-assign arenas when matches are (re)generated and autoAssignArenas is on
   useEffect(() => {
-    if (ranking.length > 0) {
-      const expectedSize = getTableauSize(ranking.length);
+    const playable = matches.filter(m => m.fencerA && m.fencerB && !m.isBye);
+    const prev = prevMatchesLengthRef.current;
+    prevMatchesLengthRef.current = playable.length;
+    if (!autoAssignArenas || arenaCount <= 0 || playable.length === 0) return;
+    // Only auto-assign on initial generation (prev was 0) to avoid overriding manual changes
+    if (prev === 0 && playable.length > 0) {
+      const updated = distributeArenasRoundRobin(matches);
+      onMatchesChange(updated);
+      updated.forEach(m => {
+        const orig = matches.find(o => o.id === m.id);
+        if (orig && orig.arena !== m.arena) {
+          onMatchArenaChange?.(m.id, orig.arena ?? null, m.arena ?? null);
+        }
+      });
+    }
+  }, [matches.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleAutoAssignToggle = useCallback(
+    (enabled: boolean) => {
+      setAutoAssignArenas(enabled);
+      if (enabled && arenaCount > 0) {
+        const updated = distributeArenasRoundRobin(matches);
+        onMatchesChange(updated);
+        updated.forEach(m => {
+          const orig = matches.find(o => o.id === m.id);
+          if (orig && orig.arena !== m.arena) {
+            onMatchArenaChange?.(m.id, orig.arena ?? null, m.arena ?? null);
+          }
+        });
+      }
+    },
+    [arenaCount, distributeArenasRoundRobin, matches, onMatchesChange, onMatchArenaChange]
+  );
+
+  useEffect(() => {
+    const eligibleCount = ranking.filter(
+      r =>
+        r.fencer.status !== FencerStatus.ABANDONED &&
+        r.fencer.status !== FencerStatus.FORFAIT &&
+        r.fencer.status !== FencerStatus.EXCLUDED
+    ).length;
+    if (eligibleCount > 0) {
+      const expectedSize = getTableauSize(eligibleCount);
       const currentSize = matches.length > 0 ? Math.max(...matches.map(m => m.round)) : 0;
 
       const hasThirdPlace = matches.some(m => m.round === 3);
@@ -196,6 +258,21 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     }
   }, [ranking.length, thirdPlaceMatch, maxScore, matches.length]); // Dépend du nombre de tireurs, match pour la 3ème place et score max
 
+  // Filet de sécurité : détecte la complétion du tableau à chaque mise à jour de matches
+  // Couvre les chemins qui ne passent pas par handleScoreSubmit (saisie distante, statuts spéciaux)
+  useEffect(() => {
+    if (matches.length === 0 || !onComplete) return;
+    const champion = matches.find(m => m.round === 2)?.winner;
+    if (!champion) return;
+    const thirdPlaceEntry = matches.find(m => m.round === 3);
+    const thirdPlaceDone = !thirdPlaceEntry || !!thirdPlaceEntry.winner;
+    if (thirdPlaceDone) {
+      onComplete(calculateFinalResults(matches));
+    }
+    // calculateFinalResults et onComplete sont stables pendant la phase tableau
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matches]);
+
   const getTableauSize = (fencerCount: number): number => {
     const sizes = [4, 8, 16, 32, 64, 128, 256];
     for (const size of sizes) {
@@ -204,8 +281,16 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     return 256;
   };
 
+  const getEligibleFencers = (): PoolRanking[] =>
+    ranking.filter(
+      r =>
+        r.fencer.status !== FencerStatus.ABANDONED &&
+        r.fencer.status !== FencerStatus.FORFAIT &&
+        r.fencer.status !== FencerStatus.EXCLUDED
+    );
+
   const generateTableau = () => {
-    const qualifiedFencers = ranking;
+    const qualifiedFencers = getEligibleFencers();
     const size = getTableauSize(qualifiedFencers.length);
     setTableauSize(size);
 
@@ -409,7 +494,9 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
     // Vérifier si le tableau est complet
     const champion = updatedMatches.find(m => m.round === 2)?.winner;
-    if (champion && onComplete) {
+    const autoFillThirdPlace = updatedMatches.find(m => m.round === 3);
+    const autoFillThirdDone = !autoFillThirdPlace || !!autoFillThirdPlace.winner;
+    if (champion && autoFillThirdDone && onComplete) {
       const finalResults = calculateFinalResults(updatedMatches);
       onComplete(finalResults);
     }
@@ -537,6 +624,14 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     // Propager les gagnants avant de sauvegarder
     propagateWinners(updatedMatches, tableauSize);
     onMatchesChange([...updatedMatches]);
+
+    // Vérifier si le tableau est complet après statut spécial
+    const specialChampion = updatedMatches.find(m => m.round === 2)?.winner;
+    const specialThirdPlace = updatedMatches.find(m => m.round === 3);
+    const specialThirdDone = !specialThirdPlace || !!specialThirdPlace.winner;
+    if (specialChampion && specialThirdDone && onComplete) {
+      onComplete(calculateFinalResults(updatedMatches));
+    }
 
     setShowScoreModal(false);
     setEditingMatch(null);
@@ -707,170 +802,20 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     return results.sort((a, b) => a.rank - b.rank);
   };
 
-  const renderMatch = (match: TableauMatch, verticalPosition?: number) => {
-    const canEdit = !!(match.fencerA && match.fencerB && !match.isBye);
-    const hasScore = match.scoreA !== null && match.scoreB !== null;
-    const isMatchComplete = match.winner !== null;
-
-    const handleArenaClick = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      setSelectedMatchForArena(match.id);
-      setShowArenaModal(true);
-    };
-
-    return (
-      <div
-        key={match.id}
-        style={{
-          border: '1px solid #e5e7eb',
-          borderRadius: '4px',
-          padding: '0.5rem',
-          background: match.winner ? '#f0fdf4' : 'white',
-          minWidth: '180px',
-          cursor: canEdit ? 'pointer' : 'default',
-          ...(verticalPosition !== undefined
-            ? {
-                position: 'absolute' as const,
-                top: `${verticalPosition}px`,
-                left: 0,
-                right: 0,
-                height: `${BASE_MATCH_HEIGHT}px`,
-                overflow: 'hidden',
-              }
-            : { position: 'relative' as const, marginBottom: '0.25rem' }),
-        }}
-        onClick={() => {
-          if (canEdit) openScoreModal(match);
-        }}
-      >
-        {canEdit && !isMatchComplete && (
-          <button
-            onClick={handleArenaClick}
-            style={{
-              position: 'absolute',
-              top: '4px',
-              right: '4px',
-              background: match.arena ? '#10b981' : '#e5e7eb',
-              color: match.arena ? 'white' : '#6b7280',
-              border: 'none',
-              borderRadius: '4px',
-              padding: '2px 6px',
-              fontSize: '0.625rem',
-              cursor: 'pointer',
-              fontWeight: '500',
-            }}
-            title={match.arena ? `Piste ${match.arena}` : 'Assigner à une piste'}
-          >
-            {match.arena ? `P${match.arena}` : '+P'}
-          </button>
-        )}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            padding: '0.25rem',
-            background: match.winner === match.fencerA ? '#dcfce7' : 'transparent',
-            borderRadius: '2px',
-          }}
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
-            <span
-              style={{
-                fontSize: '0.875rem',
-                fontWeight: match.winner === match.fencerA ? '600' : '400',
-              }}
-            >
-              {match.fencerA
-                ? `${match.fencerA.lastName} ${match.fencerA.firstName.charAt(0)}.`
-                : '-'}
-            </span>
-            {match.fencerA && (
-              <span style={{ fontSize: '0.625rem', color: '#6b7280' }}>
-                {match.fencerA.birthDate && `${new Date(match.fencerA.birthDate).getFullYear()}`}
-                {match.fencerA.ranking && ` • #${match.fencerA.ranking}`}
-              </span>
-            )}
-          </div>
-          <span style={{ fontWeight: '600' }}>{match.scoreA !== null ? match.scoreA : ''}</span>
-        </div>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            padding: '0.25rem',
-            background: match.winner === match.fencerB ? '#dcfce7' : 'transparent',
-            borderRadius: '2px',
-          }}
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
-            <span
-              style={{
-                fontSize: '0.875rem',
-                fontWeight: match.winner === match.fencerB ? '600' : '400',
-              }}
-            >
-              {match.fencerB
-                ? `${match.fencerB.lastName} ${match.fencerB.firstName.charAt(0)}.`
-                : '-'}
-            </span>
-            {match.fencerB && (
-              <span style={{ fontSize: '0.625rem', color: '#6b7280' }}>
-                {match.fencerB.birthDate && `${new Date(match.fencerB.birthDate).getFullYear()}`}
-                {match.fencerB.ranking && ` • #${match.fencerB.ranking}`}
-              </span>
-            )}
-          </div>
-          <span style={{ fontWeight: '600' }}>{match.scoreB !== null ? match.scoreB : ''}</span>
-        </div>
-        {match.isBye && (
-          <div
-            style={{
-              fontSize: '0.75rem',
-              color: '#6b7280',
-              textAlign: 'center',
-              marginTop: '0.25rem',
-            }}
-          >
-            Exempt
-          </div>
-        )}
-        {canEdit && !hasScore && viewMode !== 'full' && (
-          <div
-            style={{
-              width: '100%',
-              marginTop: '0.5rem',
-              padding: '0.25rem',
-              fontSize: '0.75rem',
-              background: '#3b82f6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              textAlign: 'center',
-            }}
-          >
-            Saisir score
-          </div>
-        )}
-        {canEdit && hasScore && viewMode !== 'full' && (
-          <div
-            style={{
-              width: '100%',
-              marginTop: '0.5rem',
-              padding: '0.25rem',
-              fontSize: '0.75rem',
-              background: '#f59e0b',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              textAlign: 'center',
-            }}
-          >
-            Modifier score
-          </div>
-        )}
-      </div>
-    );
-  };
+  const renderMatch = (match: TableauMatch, verticalPosition?: number) => (
+    <MatchCard
+      key={match.id}
+      match={match}
+      verticalPosition={verticalPosition}
+      viewMode={viewMode}
+      baseMatchHeight={BASE_MATCH_HEIGHT}
+      onMatchClick={openScoreModal}
+      onArenaClick={id => {
+        setSelectedMatchForArena(id);
+        setShowArenaModal(true);
+      }}
+    />
+  );
 
   const calculateMatchVerticalPosition = (
     matchRound: number,
@@ -1075,6 +1020,32 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           Tableau de {tableauSize} - {ranking.length} qualifiés
         </h2>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          {arenaCount > 0 && (
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                fontSize: '0.875rem',
+                color: '#374151',
+                cursor: 'pointer',
+                padding: '0.5rem 0.75rem',
+                background: autoAssignArenas ? '#eff6ff' : '#f3f4f6',
+                border: `1px solid ${autoAssignArenas ? '#3b82f6' : '#d1d5db'}`,
+                borderRadius: '6px',
+                userSelect: 'none',
+              }}
+              title="Assigne automatiquement les matchs aux arènes disponibles en round-robin"
+            >
+              <input
+                type="checkbox"
+                checked={autoAssignArenas}
+                onChange={e => handleAutoAssignToggle(e.target.checked)}
+                style={{ cursor: 'pointer' }}
+              />
+              <span>🏟️ Assignation auto</span>
+            </label>
+          )}
           <button
             onClick={handleAutoFillScores}
             style={{
@@ -1288,48 +1259,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         )}
       </div>
 
-      <div style={{ marginTop: '2rem' }}>
-        <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>
-          Classement après poules
-        </h3>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-            gap: '0.5rem',
-            maxHeight: '200px',
-            overflowY: 'auto',
-          }}
-        >
-          {ranking.slice(0, tableauSize).map((r, idx) => (
-            <div
-              key={r.fencer.id}
-              style={{
-                display: 'flex',
-                gap: '0.5rem',
-                padding: '0.25rem 0.5rem',
-                background: idx < 8 ? '#dbeafe' : 'white',
-                borderRadius: '4px',
-                fontSize: '0.875rem',
-              }}
-            >
-              <span style={{ fontWeight: '600', minWidth: '24px' }}>{idx + 1}.</span>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
-                <span>
-                  {r.fencer.lastName} {r.fencer.firstName}
-                </span>
-                <span style={{ fontSize: '0.625rem', color: '#6b7280' }}>
-                  {r.fencer.birthDate && `${new Date(r.fencer.birthDate).getFullYear()}`}
-                  {r.fencer.ranking && ` • #${r.fencer.ranking}`}
-                </span>
-              </div>
-              <span style={{ marginLeft: 'auto', color: '#6b7280' }}>
-                {(r.ratio * 100).toFixed(0)}%
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
+      <SeedingTable ranking={ranking} tableauSize={tableauSize} />
 
       {/* Score Modal */}
       {(() => {

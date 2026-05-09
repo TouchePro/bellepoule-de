@@ -19,6 +19,7 @@ export class OfflineSyncManager {
   private isOnline: boolean = true;
   private syncInProgress: boolean = false;
   private syncCallbacks: ((status: SyncResult) => void)[] = [];
+  private emptyPollStreak = 0;
 
   constructor() {
     this.initializeNetworkDetection();
@@ -75,6 +76,7 @@ export class OfflineSyncManager {
     }
 
     this.syncInProgress = true;
+    this.emptyPollStreak = 0;
     logger.debug(LogCategory.NETWORK, '[Sync] Starting synchronization...');
 
     try {
@@ -98,8 +100,16 @@ export class OfflineSyncManager {
 
   // Check if sync is needed and perform it
   private async checkAndSync(): Promise<void> {
+    // Skip IndexedDB read after 4 consecutive empty polls (resume after triggerSync resets streak)
+    if (this.emptyPollStreak >= 4) {
+      this.emptyPollStreak--;
+      return;
+    }
     const pendingActions = await offlineStorage.getPendingActions();
-    if (pendingActions.length > 0) {
+    if (pendingActions.length === 0) {
+      this.emptyPollStreak = Math.min(this.emptyPollStreak + 1, 4);
+    } else {
+      this.emptyPollStreak = 0;
       await this.triggerSync();
     }
   }
@@ -423,11 +433,23 @@ export class OfflineSyncManager {
   }
 
   private async acceptRemoteVersion(conflict: SyncConflict): Promise<void> {
-    // Update local cache with remote version
-    // Implementation depends on what needs to be updated
+    const { entityType, entityId, remoteVersion } = conflict;
+
+    switch (entityType) {
+      case 'match':
+        await offlineStorage.cacheMatches([remoteVersion]);
+        break;
+      case 'fencer':
+        await offlineStorage.cacheFencers([remoteVersion]);
+        break;
+      case 'pool':
+        await offlineStorage.cachePools([remoteVersion]);
+        break;
+    }
+
     logger.debug(
       LogCategory.NETWORK,
-      `[Sync] Accepting remote version for ${conflict.entityType} ${conflict.entityId}`
+      `[Sync] Accepted remote version for ${entityType} ${entityId}`
     );
   }
 }

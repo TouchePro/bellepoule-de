@@ -31,7 +31,8 @@ export function createTouch(
 
   if (
     matchMode === MatchMode.SUDDEN_DEATH_CHALLENGER ||
-    matchMode === MatchMode.SUDDEN_DEATH_TIMEOUT
+    matchMode === MatchMode.SUDDEN_DEATH_TIMEOUT ||
+    matchMode === MatchMode.SUPPLEMENTARY_TIME
   ) {
     const validation = isValidSuddenDeathTouch(zone, matchMode);
     if (!validation.isValid) {
@@ -56,7 +57,10 @@ export function createTouch(
     zone,
     points,
     timestamp: new Date(),
-    isValidInSuddenDeath: matchMode.startsWith('sudden_death') ?? false,
+    isValidInSuddenDeath:
+      matchMode === MatchMode.SUDDEN_DEATH_CHALLENGER ||
+      matchMode === MatchMode.SUDDEN_DEATH_TIMEOUT ||
+      matchMode === MatchMode.SUPPLEMENTARY_TIME,
   };
 
   return { success: true, touch };

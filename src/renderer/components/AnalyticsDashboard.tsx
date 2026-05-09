@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Competition, Fencer, Pool, Match, MatchStatus } from '../../shared/types';
+import { FencerStatsTable } from '../../features/analytics/components/FencerStatsTable';
 
 interface AnalyticsData {
   totalFencers: number;
@@ -269,6 +270,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   className = '',
   onClose,
 }) => {
+  const [activeTab, setActiveTab] = useState<'performance' | 'stats'>('performance');
   const [selectedTimeframe, setSelectedTimeframe] = useState<'live' | 'last30min' | 'all'>('live');
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastUpdate, setLastUpdate] = useState(new Date());
@@ -292,7 +294,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     <div className="modal-overlay" onClick={onClose}>
     <div className={`modal modal--lg analytics-dashboard ${className}`} onClick={e => e.stopPropagation()}>
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">Analytics Dashboard</h2>
           <p className="text-gray-600">{competition.title}</p>
@@ -327,6 +329,25 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         </div>
       </div>
 
+      {/* Onglets */}
+      <div className="flex border-b border-gray-200 mb-5">
+        <button
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'performance' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+          onClick={() => setActiveTab('performance')}
+        >
+          Performance
+        </button>
+        <button
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'stats' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+          onClick={() => setActiveTab('stats')}
+        >
+          Statistiques
+        </button>
+      </div>
+
+      {activeTab === 'stats' && <FencerStatsTable competition={competition} />}
+
+      {activeTab === 'performance' && <>
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-blue-50 rounded-lg p-4">
@@ -433,6 +454,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           </div>
         </div>
       </div>
+      </>}
     </div>
     </div>
   );

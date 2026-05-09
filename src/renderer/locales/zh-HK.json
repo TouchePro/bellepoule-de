@@ -1,4 +1,4 @@
-{
+﻿{
   "app": {
     "title": "BellePoule Modern",
     "home": "主頁",
@@ -51,7 +51,11 @@
     "U15": "U15（青少年組）",
     "U17": "U17（青年組）",
     "U20": "U20（青壯年組）",
-    "senior": "成年組"
+    "senior": "成年組",
+    "V1": "老將1",
+    "V2": "老將2",
+    "V3": "老將3",
+    "V4": "老將4"
   },
   "fencer": {
     "last_name": "姓",
@@ -244,6 +248,64 @@
       "ranking-table": "排名表", "footer": "頁尾"
     },
     "reset": "重設", "exportJson": "匯出JSON", "importJson": "匯入JSON", "importError": "JSON檔案無效"
+  },
+  "cardModal": {
+    "title": "{{name}} 的罰牌",
+    "previous_cards": "過往罰牌：",
+    "card_white": "⬜ 白牌",
+    "card_yellow": "🟨 黃牌",
+    "card_red": "🟥 紅牌",
+    "card_black": "⬛ 黑牌",
+    "abbr_white": "白",
+    "abbr_yellow": "黃",
+    "abbr_red": "紅",
+    "abbr_black": "黑",
+    "points_for": "+{{points}} 分給 {{name}}",
+    "exclusion": "⚠️ 取消參賽資格"
+  },
+  "cardReasons": {
+    "EARLY_START": "提前出擊",
+    "LATE_STOP": "在「停！」後繼續",
+    "BODY_CONTACT": "故意身體接觸",
+    "COUNTER_ATTACK": "反擊",
+    "TARGET_SUBSTITUTION": "替換目標區域",
+    "VOLUNTARY_DROP": "故意丟棄軍刀",
+    "TIME_WASTING": "拖延時間",
+    "NON_COMPLIANT_GEAR": "裝備不合規",
+    "ESTOC": "刺擊（非切擊）",
+    "UNARMED_HAND": "使用非持武器手",
+    "VOLUNTARY_EXIT": "主動離開賽道",
+    "HEAVY_HIT": "重擊",
+    "BRUTALITY": "暴力行為",
+    "DANGEROUS": "危險行為",
+    "REFUSAL": "拒絕對戰",
+    "UNSPORTSMANLIKE": "不符合體育精神",
+    "CHEATING": "作弊"
+  },
+  "cardGroups": {
+    "GROUP_1": "第1組（白牌 → 黃牌 → 黃牌）",
+    "GROUP_2": "第2組（黃牌 → 紅牌 → 紅牌）",
+    "GROUP_3": "第3組（紅牌 → 取消資格）",
+    "GROUP_4": "第4組（即時取消資格）"
+  },
+  "stats": {
+    "title": "選手統計",
+    "zone_a": "A區（1分）",
+    "zone_b": "B區（3分）",
+    "zone_c": "C區（5分）",
+    "total_points": "總分",
+    "white_cards": "白牌",
+    "yellow_cards": "黃牌",
+    "red_cards": "紅牌",
+    "arena_exits": "出界次數",
+    "matches_played": "比賽場數",
+    "avg_duration": "平均時長",
+    "early_finishes": "< 3分鐘",
+    "export_pdf": "匯出統計（PDF）",
+    "export_fencer_pdf": "匯出選手（PDF）",
+    "export_competition_pdf": "賽事完整 PDF",
+    "no_data": "此賽事暫無統計數據。",
+    "laser_only": "觸擊區域（A/B/C）僅適用於雷射佩劍模式。"
   },
   "shortcuts": {
     "title": "鍵盤快捷鍵",

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from '../hooks/useTranslation';
 import { usePdfTemplateStore } from '../../features/pdfTemplates/hooks/usePdfTemplateStore';
 import PdfTemplateEditor from './PdfTemplateEditor';
+import PdfPreview from './PdfPreview';
 import type { PdfDocType, PdfTemplate } from '../../shared/types/pdfTemplate.types';
 
 interface Props {
@@ -17,22 +18,17 @@ const PdfTemplateModal: React.FC<Props> = ({ onClose }) => {
 
   const current = templates[activeType];
 
-  const handleChange = (updated: PdfTemplate) => {
-    setTemplate(activeType, updated);
-  };
-
-  const handleReset = () => {
-    resetTemplate(activeType);
-  };
+  const handleChange = (updated: PdfTemplate) => setTemplate(activeType, updated);
+  const handleReset = () => resetTemplate(activeType);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
         className="modal"
         onClick={e => e.stopPropagation()}
-        style={{ maxWidth: '780px', width: '95%', maxHeight: '90vh', overflow: 'auto' }}
+        style={{ maxWidth: '1350px', width: '98%', maxHeight: '92vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
       >
-        <div className="modal-header">
+        <div className="modal-header" style={{ flexShrink: 0 }}>
           <h2 className="modal-title">{t('pdfTemplate.modalTitle')}</h2>
           <button
             className="btn btn-secondary"
@@ -43,29 +39,43 @@ const PdfTemplateModal: React.FC<Props> = ({ onClose }) => {
           </button>
         </div>
 
-        <div className="modal-body">
-          {/* Sélecteur de type */}
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>
-            {DOC_TYPES.map(type => (
-              <button
-                key={type}
-                className={`btn ${activeType === type ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ fontSize: '0.85rem' }}
-                onClick={() => setActiveType(type)}
-              >
-                {t(`pdfTemplate.docType.${type}`)}
-              </button>
-            ))}
-          </div>
-
-          <PdfTemplateEditor
-            template={current}
-            onChange={handleChange}
-            onReset={handleReset}
-          />
+        {/* Type selector */}
+        <div style={{ display: 'flex', gap: '0.5rem', padding: '0.75rem 1.25rem 0', flexShrink: 0 }}>
+          {DOC_TYPES.map(type => (
+            <button
+              key={type}
+              className={`btn ${activeType === type ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ fontSize: '0.85rem' }}
+              onClick={() => setActiveType(type)}
+            >
+              {t(`pdfTemplate.docType.${type}`)}
+            </button>
+          ))}
         </div>
 
-        <div className="modal-footer">
+        {/* Body: editor + preview side by side */}
+        <div style={{ display: 'flex', gap: '1.25rem', padding: '1rem 1.25rem', flex: 1, overflow: 'hidden', minHeight: 0 }}>
+
+          {/* Left: editor */}
+          <div style={{ flex: '0 0 440px', overflowY: 'auto', overflowX: 'hidden' }}>
+            <PdfTemplateEditor
+              template={current}
+              onChange={handleChange}
+              onReset={handleReset}
+            />
+          </div>
+
+          {/* Right: live preview */}
+          <div style={{ flex: '1 1 0', minWidth: '300px', overflowY: 'auto', overflowX: 'hidden' }}>
+            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-muted, #9ca3af)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '0.5rem' }}>
+              Prévisualisation
+            </div>
+            <PdfPreview template={current} docType={activeType} />
+          </div>
+
+        </div>
+
+        <div className="modal-footer" style={{ flexShrink: 0 }}>
           <button className="btn btn-primary" onClick={onClose}>
             {t('actions.close') || 'Fermer'}
           </button>

@@ -1,4 +1,4 @@
-{
+﻿{
   "app": {
     "title": "BellePoule Modern",
     "home": "Broadel",
@@ -51,7 +51,11 @@
     "U15": "U15 (Minimod)",
     "U17": "U17 (Kadet)",
     "U20": "U20 (Junior)",
-    "senior": "Koskour"
+    "senior": "Koskour",
+    "V1": "Kozh 1",
+    "V2": "Kozh 2",
+    "V3": "Kozh 3",
+    "V4": "Kozh 4"
   },
   "fencer": {
     "last_name": "Anv-tiezh",
@@ -244,6 +248,64 @@
       "ranking-table": "Taolenn renk", "footer": "Troad-pajenn"
     },
     "reset": "Adderaouiñ", "exportJson": "Ezporzhiañ JSON", "importJson": "Enporzhiañ JSON", "importError": "Restr JSON fall"
+  },
+  "cardModal": {
+    "title": "Kartennik evit {{name}}",
+    "previous_cards": "Kartennoù a-raok:",
+    "card_white": "⬜ KARTENN WENN",
+    "card_yellow": "🟨 KARTENN VELEN",
+    "card_red": "🟥 KARTENN RUZ",
+    "card_black": "⬛ KARTENN DU",
+    "abbr_white": "G",
+    "abbr_yellow": "M",
+    "abbr_red": "R",
+    "abbr_black": "D",
+    "points_for": "+{{points}} poent evit {{name}}",
+    "exclusion": "⚠️ SKARZHADUR EUS AR GENSTRIVADEG"
+  },
+  "cardReasons": {
+    "EARLY_START": "Loc'h a-raok",
+    "LATE_STOP": "Kenderc'hel goude \"Paouez!\"",
+    "BODY_CONTACT": "Darempred korf dre youl",
+    "COUNTER_ATTACK": "Enkontraduri",
+    "TARGET_SUBSTITUTION": "Amprouiñ an hent",
+    "VOLUNTARY_DROP": "Leuskel ar sabr dre youl",
+    "TIME_WASTING": "Kollet amzer",
+    "NON_COMPLIANT_GEAR": "Binvioù didalvoudek",
+    "ESTOC": "Frapp poent (estoc)",
+    "UNARMED_HAND": "Arver an dorn hep arm",
+    "VOLUNTARY_EXIT": "Kuitaat an douar dre youl",
+    "HEAVY_HIT": "Frapp trumm",
+    "BRUTALITY": "Broutalded",
+    "DANGEROUS": "Emzalc'h dañjerus",
+    "REFUSAL": "Refuz da emgann",
+    "UNSPORTSMANLIKE": "Emzalc'h disgwir",
+    "CHEATING": "Trubuilh"
+  },
+  "cardGroups": {
+    "GROUP_1": "Strollad 1 (Gwenn → Melen → Melen)",
+    "GROUP_2": "Strollad 2 (Melen → Ruz → Ruz)",
+    "GROUP_3": "Strollad 3 (Ruz → Skarzhadur)",
+    "GROUP_4": "Strollad 4 (Skarzhadur diouzhtu)"
+  },
+  "stats": {
+    "title": "Stadegoù dre gombatour",
+    "zone_a": "Zonenn A (1 poent)",
+    "zone_b": "Zonenn B (3 poent)",
+    "zone_c": "Zonenn C (5 poent)",
+    "total_points": "Poent. hollek",
+    "white_cards": "Kartennoù gwenn",
+    "yellow_cards": "Kartennoù melen",
+    "red_cards": "Kartennoù ruz",
+    "arena_exits": "Ezhamoù arena",
+    "matches_played": "Emgannioù",
+    "avg_duration": "Padelezh keiñv.",
+    "early_finishes": "< 3 min",
+    "export_pdf": "Ezporzhiañ stadegoù (PDF)",
+    "export_fencer_pdf": "Ezporzhiañ treuzour (PDF)",
+    "export_competition_pdf": "PDF kenstrivadeg",
+    "no_data": "Stadegoù ebet evit ar genstrivadeg-mañ.",
+    "laser_only": "Zonennoù taolioù (A/B/C) hepken el l'izili Sabre Laser."
   },
   "shortcuts": {
     "title": "Birvikerezh Klavier",

@@ -498,7 +498,8 @@ function resolveConflictsForCriterion(
           poolIdx,
           pools,
           getCriterionKey,
-          protectedCriteria
+          protectedCriteria,
+          keyMaps
         );
 
         if (swapPartner) {
@@ -531,7 +532,8 @@ function findSwapPartner(
   currentPoolIdx: number,
   pools: Fencer[][],
   getCriterionKey: CriterionKey,
-  protectedCriteria: CriterionKey[]
+  protectedCriteria: CriterionKey[],
+  keyMaps: Map<string, number>[]
 ): { poolIdx: number; fencerIdx: number } | null {
   const poolCount = pools.length;
   let bestSwap: { poolIdx: number; fencerIdx: number; score: number } | null = null;
@@ -554,7 +556,8 @@ function findSwapPartner(
             otherPoolIdx,
             pools,
             getCriterionKey,
-            protectedCriteria
+            protectedCriteria,
+            keyMaps
           )
         ) {
           const score = 1000 - offset * 10 - Math.abs(fencerIdx - otherFencerIdx);
@@ -581,18 +584,22 @@ function canSwapResolveConflict(
   pool2Idx: number,
   pools: Fencer[][],
   getCriterionKey: CriterionKey,
-  protectedCriteria: CriterionKey[]
+  protectedCriteria: CriterionKey[],
+  keyMaps: Map<string, number>[]
 ): boolean {
   const pool1 = pools[pool1Idx];
   const pool2 = pools[pool2Idx];
+  const keyMap1 = keyMaps[pool1Idx];
+  const keyMap2 = keyMaps[pool2Idx];
 
   const key1 = getCriterionKey(fencer1);
   const key2 = getCriterionKey(fencer2);
 
-  const conflicts1Before = pool1.filter(f => f !== fencer1 && getCriterionKey(f) === key1).length;
-  const conflicts2Before = pool2.filter(f => f !== fencer2 && getCriterionKey(f) === key2).length;
-  const conflicts1After = pool1.filter(f => f !== fencer1 && getCriterionKey(f) === key2).length;
-  const conflicts2After = pool2.filter(f => f !== fencer2 && getCriterionKey(f) === key1).length;
+  // O(1) lookups via pre-built maps instead of O(n) filter() calls
+  const conflicts1Before = (keyMap1.get(key1) ?? 0) - 1;
+  const conflicts2Before = (keyMap2.get(key2) ?? 0) - 1;
+  const conflicts1After = key1 === key2 ? conflicts1Before : (keyMap1.get(key2) ?? 0);
+  const conflicts2After = key1 === key2 ? conflicts2Before : (keyMap2.get(key1) ?? 0);
 
   if (conflicts1After > 0 || conflicts2After > 0) return false;
   if (conflicts1After + conflicts2After > conflicts1Before + conflicts2Before) return false;
@@ -888,12 +895,14 @@ export function calculateFencerQuestStats(
  * 3. Nombre de victoires
  * 4. Nombre de victoires à 4 points, puis 3, puis 2, puis 1
  */
-export function calculatePoolRankingQuest(pool: Pool): PoolRanking[] {
+export function calculatePoolRankingQuest(
+  pool: Pool,
+  cardsByFencer: Record<string, number> = {}
+): PoolRanking[] {
   const rankings: PoolRanking[] = [];
   const forfeitFencers: PoolRanking[] = [];
 
   for (const fencer of pool.fencers) {
-    // Si tireur forfait/abandon/exclu, l'ajouter à la liste séparée
     if (
       fencer.status === FencerStatus.EXCLUDED ||
       fencer.status === FencerStatus.FORFAIT ||
@@ -914,6 +923,7 @@ export function calculatePoolRankingQuest(pool: Pool): PoolRanking[] {
         questVictories3: 0,
         questVictories2: 0,
         questVictories1: 0,
+        totalCards: cardsByFencer[fencer.id] ?? 0,
       });
       continue;
     }
@@ -936,29 +946,29 @@ export function calculatePoolRankingQuest(pool: Pool): PoolRanking[] {
       questVictories3: questStats.v3,
       questVictories2: questStats.v2,
       questVictories1: questStats.v1,
+      totalCards: cardsByFencer[fencer.id] ?? 0,
     });
   }
 
-  // Trier selon les critères demandés (même ordre que calculatePoolRanking)
+  // Critères de classement Quest :
+  // 1. Ratio V/M décroissant
+  // 2. Points Quest décroissants
+  // 3. Moins de cartons (croissant)
+  // 4. Indice (TD-TR) décroissant
+  // 5. Classement initial
   rankings.sort((a, b) => {
-    // 1. Ratio de victoires V/M (décroissant)
-    if (a.ratio !== b.ratio) {
-      return b.ratio - a.ratio;
-    }
+    if (a.ratio !== b.ratio) return b.ratio - a.ratio;
 
-    // 2. Points Quest (décroissant)
     const aQuest = a.questPoints ?? 0;
     const bQuest = b.questPoints ?? 0;
-    if (aQuest !== bQuest) {
-      return bQuest - aQuest;
-    }
+    if (aQuest !== bQuest) return bQuest - aQuest;
 
-    // 3. Indice (TD-TR) (décroissant)
-    if (a.index !== b.index) {
-      return b.index - a.index;
-    }
+    const aCards = a.totalCards ?? 0;
+    const bCards = b.totalCards ?? 0;
+    if (aCards !== bCards) return aCards - bCards;
 
-    // 4. Égalité parfaite - classement initial
+    if (a.index !== b.index) return b.index - a.index;
+
     return (a.fencer.ranking ?? 9999) - (b.fencer.ranking ?? 9999);
   });
 
@@ -983,8 +993,10 @@ export function calculateOverallRankingQuest(pools: Pool[]): PoolRanking[] {
     allRankings.push(...ranking);
   });
 
-  // Trier selon les critères demandés (même ordre que calculateOverallRanking)
-  allRankings.sort((a, b) => {
+  // Fusionner les stats du même tireur (multi-tours de poules)
+  const mergedRankings = mergeFencerRankings(allRankings);
+
+  mergedRankings.sort((a, b) => {
     // 1. Ratio de victoires V/M (décroissant)
     if (a.ratio !== b.ratio) {
       return b.ratio - a.ratio;
@@ -1003,9 +1015,38 @@ export function calculateOverallRankingQuest(pools: Pool[]): PoolRanking[] {
     return 0;
   });
 
-  assignRanks(allRankings);
+  assignRanks(mergedRankings);
 
-  return allRankings;
+  return mergedRankings;
+}
+
+/**
+ * Fusionne les entrées de classement du même tireur (multi-tours de poules).
+ * Additionne victoires, défaites, touches, et recalcule ratio et indice.
+ */
+function mergeFencerRankings(rankings: PoolRanking[]): PoolRanking[] {
+  const byFencer = new Map<string, PoolRanking>();
+  for (const r of rankings) {
+    const existing = byFencer.get(r.fencer.id);
+    if (!existing) {
+      byFencer.set(r.fencer.id, { ...r });
+    } else {
+      existing.victories += r.victories;
+      existing.defeats += r.defeats;
+      existing.matchesPlayed += r.matchesPlayed;
+      existing.touchesScored += r.touchesScored;
+      existing.touchesReceived += r.touchesReceived;
+      existing.index = existing.touchesScored - existing.touchesReceived;
+      existing.ratio =
+        existing.matchesPlayed > 0 ? existing.victories / existing.matchesPlayed : 0;
+      existing.questPoints = (existing.questPoints ?? 0) + (r.questPoints ?? 0);
+      existing.questVictories4 = (existing.questVictories4 ?? 0) + (r.questVictories4 ?? 0);
+      existing.questVictories3 = (existing.questVictories3 ?? 0) + (r.questVictories3 ?? 0);
+      existing.questVictories2 = (existing.questVictories2 ?? 0) + (r.questVictories2 ?? 0);
+      existing.questVictories1 = (existing.questVictories1 ?? 0) + (r.questVictories1 ?? 0);
+    }
+  }
+  return Array.from(byFencer.values());
 }
 
 /**
@@ -1026,11 +1067,10 @@ export function calculateOverallRanking(pools: Pool[]): PoolRanking[] {
     }
   });
 
-  // Trier selon les critères demandés:
-  // 1. Ratio de victoires V/M (décroissant)
-  // 2. Points Quest (décroissant)
-  // 3. Indice (TD-TR) (décroissant)
-  allRankings.sort((a, b) => {
+  // Fusionner les stats du même tireur (multi-tours de poules)
+  const mergedRankings = mergeFencerRankings(allRankings);
+
+  mergedRankings.sort((a, b) => {
     // 1. Ratio de victoires V/M
     if (a.ratio !== b.ratio) {
       return b.ratio - a.ratio;
@@ -1049,9 +1089,9 @@ export function calculateOverallRanking(pools: Pool[]): PoolRanking[] {
     return 0;
   });
 
-  assignRanks(allRankings);
+  assignRanks(mergedRankings);
 
-  return allRankings;
+  return mergedRankings;
 }
 
 // Génère un classement initial depuis la liste des tireurs (sans données de poules)

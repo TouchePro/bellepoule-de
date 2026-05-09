@@ -47,6 +47,7 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
       status: FencerStatus.NOT_CHECKED_IN,
       photo,
     });
+    onClose();
   };
 
   return (

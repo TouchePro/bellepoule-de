@@ -51,7 +51,11 @@
     "U15": "Minimes",
     "U17": "Cadets",
     "U20": "Juniors",
-    "senior": "Seniors"
+    "senior": "Seniors",
+    "V1": "Vétérans 1",
+    "V2": "Vétérans 2",
+    "V3": "Vétérans 3",
+    "V4": "Vétérans 4"
   },
   "fencer": {
     "last_name": "Nom",
@@ -261,6 +265,64 @@
     "exportJson": "Exporter JSON",
     "importJson": "Importer JSON",
     "importError": "Fichier JSON invalide"
+  },
+  "cardModal": {
+    "title": "Carton pour {{name}}",
+    "previous_cards": "Cartons précédents :",
+    "card_white": "⬜ CARTON BLANC",
+    "card_yellow": "🟨 CARTON JAUNE",
+    "card_red": "🟥 CARTON ROUGE",
+    "card_black": "⬛ CARTON NOIR",
+    "abbr_white": "B",
+    "abbr_yellow": "J",
+    "abbr_red": "R",
+    "abbr_black": "N",
+    "points_for": "+{{points}} point pour {{name}}",
+    "exclusion": "⚠️ EXCLUSION DE LA COMPÉTITION"
+  },
+  "cardReasons": {
+    "EARLY_START": "Départ anticipé",
+    "LATE_STOP": "Continue après « Cessez ! »",
+    "BODY_CONTACT": "Corps à corps volontaire",
+    "COUNTER_ATTACK": "Contre-attaque",
+    "TARGET_SUBSTITUTION": "Substitution de cible",
+    "VOLUNTARY_DROP": "Lâcher de sabre volontaire",
+    "TIME_WASTING": "Perte de temps",
+    "NON_COMPLIANT_GEAR": "Matériel non conforme",
+    "ESTOC": "Coup de pointe (estoc)",
+    "UNARMED_HAND": "Usage main non armée",
+    "VOLUNTARY_EXIT": "Sortie volontaire",
+    "HEAVY_HIT": "Frappe lourde",
+    "BRUTALITY": "Brutalité",
+    "DANGEROUS": "Comportement dangereux",
+    "REFUSAL": "Refus de combattre",
+    "UNSPORTSMANLIKE": "Anti-sportif",
+    "CHEATING": "Tricherie"
+  },
+  "cardGroups": {
+    "GROUP_1": "Groupe 1 (Blanc → Jaune → Jaune)",
+    "GROUP_2": "Groupe 2 (Jaune → Rouge → Rouge)",
+    "GROUP_3": "Groupe 3 (Rouge → Exclusion)",
+    "GROUP_4": "Groupe 4 (Exclusion immédiate)"
+  },
+  "stats": {
+    "title": "Statistiques par combattant",
+    "zone_a": "Zone A (1 pt)",
+    "zone_b": "Zone B (3 pts)",
+    "zone_c": "Zone C (5 pts)",
+    "total_points": "Total pts",
+    "white_cards": "Cartons blancs",
+    "yellow_cards": "Cartons jaunes",
+    "red_cards": "Cartons rouges",
+    "arena_exits": "Sorties d'arène",
+    "matches_played": "Matchs joués",
+    "avg_duration": "Durée moy.",
+    "early_finishes": "< 3 min",
+    "export_pdf": "Exporter les statistiques (PDF)",
+    "export_fencer_pdf": "Exporter ce combattant (PDF)",
+    "export_competition_pdf": "Export compétition PDF",
+    "no_data": "Aucune statistique disponible pour cette compétition.",
+    "laser_only": "Les zones de touches (A/B/C) sont disponibles uniquement en Sabre Laser."
   },
   "shortcuts": {
     "title": "Raccourcis Clavier",

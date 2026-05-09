@@ -48,10 +48,13 @@ export function checkTimeoutSuddenDeath(
   const isTie = scoreA === scoreB;
 
   if (timeUp && isTie) {
+    const bothAtThreshold = scoreA >= CHALLENGER_THRESHOLD && scoreB >= CHALLENGER_THRESHOLD;
     return {
       shouldTrigger: true,
-      mode: MatchMode.SUDDEN_DEATH_TIMEOUT,
-      reason: 'Fin du temps avec score égal',
+      mode: bothAtThreshold ? MatchMode.SUDDEN_DEATH_TIMEOUT : MatchMode.SUPPLEMENTARY_TIME,
+      reason: bothAtThreshold
+        ? 'Fin du temps avec score ≥10 égal - 30s mort subite (Zone C uniquement)'
+        : 'Fin du temps avec score égal - 30s supplémentaire',
     };
   }
 
@@ -66,6 +69,10 @@ export function isValidSuddenDeathTouch(
   zone: TargetZone,
   matchMode: MatchMode
 ): TouchValidationResult {
+  if (matchMode === MatchMode.SUPPLEMENTARY_TIME) {
+    return { isValid: true, message: 'Toutes les zones sont valides' };
+  }
+
   if (
     matchMode !== MatchMode.SUDDEN_DEATH_CHALLENGER &&
     matchMode !== MatchMode.SUDDEN_DEATH_TIMEOUT
@@ -94,6 +101,10 @@ export function shouldEndMatch(
     return scoreA >= maxScore || scoreB >= maxScore;
   }
 
+  if (matchMode === MatchMode.SUPPLEMENTARY_TIME) {
+    return scoreA !== scoreB;
+  }
+
   if (
     matchMode === MatchMode.SUDDEN_DEATH_CHALLENGER ||
     matchMode === MatchMode.SUDDEN_DEATH_TIMEOUT
@@ -108,6 +119,10 @@ export function shouldEndMatch(
 
 export function drawWinner(): 'A' | 'B' {
   return Math.random() < 0.5 ? 'A' : 'B';
+}
+
+export function isSupplementaryTime(matchMode: MatchMode): boolean {
+  return matchMode === MatchMode.SUPPLEMENTARY_TIME;
 }
 
 export function getSuddenDeathOvertimeDuration(): number {

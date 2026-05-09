@@ -1,7 +1,7 @@
 {
   "name": "bellepoule-modern",
   "productName": "BellePoule Modern",
-  "version": "1.0.2-build.642",
+  "version": "1.0.3-build.711",
   "description": "Modern fencing tournament management software - Rewritten from the original BellePoule",
   "main": "dist/main/main.js",
   "scripts": {
@@ -29,7 +29,8 @@
     "type-check": "tsc --noEmit",
     "test:e2e": "playwright test",
     "e2e:debug": "playwright test --debug",
-    "analyze": "webpack --config webpack.renderer.config.js --env analyze"
+    "analyze": "webpack --config webpack.renderer.config.js --env analyze",
+    "docs:api": "typedoc"
   },
   "keywords": [
     "fencing",
@@ -148,6 +149,10 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.0.0",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/sql.js": "^1.4.11",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
     "@vitest/coverage-v8": "^4.0.18",
@@ -162,6 +167,7 @@
     "eslint-plugin-react": "^7.34.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "html-webpack-plugin": "^5.6.3",
+    "jsdom": "^25.0.0",
     "prettier": "^3.2.0",
     "style-loader": "^4.0.0",
     "terser-webpack-plugin": "^5.3.16",

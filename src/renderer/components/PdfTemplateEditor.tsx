@@ -27,6 +27,7 @@ const PdfTemplateEditor: React.FC<Props> = ({ template, onChange, onReset }) => 
       const dataUrl = ev.target?.result as string;
       localStorage.setItem(LOGO_KEY, dataUrl);
       setLogo(dataUrl);
+      window.dispatchEvent(new CustomEvent('bellepoule-logo-change'));
     };
     reader.readAsDataURL(file);
   };
@@ -34,6 +35,7 @@ const PdfTemplateEditor: React.FC<Props> = ({ template, onChange, onReset }) => 
   const handleLogoRemove = () => {
     localStorage.removeItem(LOGO_KEY);
     setLogo(null);
+    window.dispatchEvent(new CustomEvent('bellepoule-logo-change'));
   };
 
   const sorted = [...template.elements].sort((a, b) => a.order - b.order);

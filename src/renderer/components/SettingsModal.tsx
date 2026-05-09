@@ -8,6 +8,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import type { Language } from '../contexts/TranslationContext';
 import LanguageSelector from './LanguageSelector';
 import PdfTemplateModal from './PdfTemplateModal';
+import { logger, LogCategory } from '@shared/services/logger';
 
 const LOGO_STORAGE_KEY = 'bellepoule-logo';
 const WEBHOOK_STORAGE_KEY = 'bellepoule-webhook-url';
@@ -131,7 +132,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
       setLogo(base64);
       localStorage.setItem(LOGO_STORAGE_KEY, base64);
       const api = (window as any).electronAPI;
-      if (api?.remote?.updateLogo) api.remote.updateLogo(base64).catch(() => {});
+      if (api?.remote?.updateLogo) api.remote.updateLogo(base64).catch((err: unknown) => {
+        logger.warn(LogCategory.NETWORK, 'Échec mise à jour logo remote', err instanceof Error ? err : undefined);
+      });
     } catch {
       setLogoError('Impossible de lire l\'image');
     }
@@ -154,7 +157,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
     setLogo(null);
     localStorage.removeItem(LOGO_STORAGE_KEY);
     const api = (window as any).electronAPI;
-    if (api?.remote?.updateLogo) api.remote.updateLogo(null).catch(() => {});
+    if (api?.remote?.updateLogo) api.remote.updateLogo(null).catch((err: unknown) => {
+      logger.warn(LogCategory.NETWORK, 'Échec suppression logo remote', err instanceof Error ? err : undefined);
+    });
   };
 
   const handleWebhookUrlChange = (url: string) => {

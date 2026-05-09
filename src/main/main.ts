@@ -438,6 +438,8 @@ function createWindow(): void {
     height: 900,
     minWidth: 1024,
     minHeight: 768,
+    show: false,
+    backgroundColor: '#f3f4f6',
     title: `BellePoule Modern v${versionInfo.version} (Build #${versionInfo.build})`,
     webPreferences: {
       nodeIntegration: false,
@@ -447,6 +449,10 @@ function createWindow(): void {
     icon: path.join(__dirname, '../../resources/icons/icon.png'),
   });
 
+  mainWindow.once('ready-to-show', () => {
+    mainWindow?.show();
+  });
+
   // Allow camera access for webcam photo capture
   const cameraPermissions = new Set(['media', 'camera', 'microphone']);
   mainWindow.webContents.session.setPermissionRequestHandler(
@@ -454,10 +460,6 @@ function createWindow(): void {
       callback(cameraPermissions.has(permission));
     }
   );
-
-  mainWindow.webContents.session.setPermissionCheckHandler((_webContents, permission) => {
-    return cameraPermissions.has(permission);
-  });
 
   // Security: Set CSP headers for all requests
   mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
@@ -980,6 +982,10 @@ ipcMain.handle('db:upsertTableauMatch', async (_, params) => {
   return db.upsertTableauMatch(params);
 });
 
+ipcMain.handle('db:upsertMultipleTableauMatches', async (_, competitionId: string, matches: any[]) => {
+  return db.upsertMultipleTableauMatches(competitionId, matches);
+});
+
 // Session State handlers
 ipcMain.handle('db:saveSessionState', async (_, competitionId, state) => {
   return db.saveSessionState(competitionId, state);
@@ -1067,6 +1073,18 @@ ipcMain.handle('db:updateMatchTiming', async (_, timing) => {
 
 ipcMain.handle('db:getFencerHistory', async (_, fencerId) => {
   return db.getFencerHistory(fencerId);
+});
+
+ipcMain.handle('db:saveArenaExit', async (_, exit) => {
+  return db.saveArenaExit(exit);
+});
+
+ipcMain.handle('db:getFencerCompetitionStats', async (_, fencerId) => {
+  return db.getFencerCompetitionStats(fencerId);
+});
+
+ipcMain.handle('db:getCompetitionFencerStats', async (_, competitionId) => {
+  return db.getCompetitionFencerStats(competitionId);
 });
 
 // Abandon snapshot handlers
@@ -1219,12 +1237,10 @@ ipcMain.handle('dialog:saveFile', async (_, options) => {
 });
 
 // Print handler
-ipcMain.handle('window:print', () => {
-  return new Promise<void>(resolve => {
-    mainWindow?.webContents.print({ silent: false, printBackground: true }, () => {
-      resolve();
-    });
-  });
+ipcMain.handle('window:print', async () => {
+  if (mainWindow) {
+    await mainWindow.webContents.print({ silent: false, printBackground: true });
+  }
 });
 
 // Print via hidden BrowserWindow — opens system print dialog on clean HTML
@@ -1248,7 +1264,7 @@ ipcMain.handle('file:printHtml', async (_, html: string) => {
     printWin.loadFile(tmpFile);
 
     printWin.webContents.once('did-finish-load', () => {
-      printWin.webContents.print({ silent: false, printBackground: true }, success => {
+      printWin.webContents.print({ silent: false, printBackground: true }, (success: boolean) => {
         try {
           fs.unlinkSync(tmpFile);
         } catch {
@@ -1812,9 +1828,9 @@ app.whenReady().then(async () => {
   const startAutosave = () => {
     if (autosaveInterval) clearInterval(autosaveInterval);
     autosaveInterval = setInterval(
-      () => {
+      async () => {
         try {
-          db.forceSave();
+          await db.saveAsync(); // async I/O — ne bloque pas le main thread
           console.log('Autosave completed at', new Date().toISOString());
           mainWindow?.webContents.send('autosave:completed');
         } catch (error) {

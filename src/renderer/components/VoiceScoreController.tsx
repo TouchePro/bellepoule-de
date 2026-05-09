@@ -12,13 +12,22 @@ interface VoiceCommand {
   description: string;
 }
 
+const LANG_CONFIG: Record<string, { locale: string; score: RegExp; increment: RegExp; start: RegExp; pause: RegExp; finish: RegExp }> = {
+  fr: { locale: 'fr-FR', score: /(?:score|mettre|set)\s+([ab])\s+(\d+)/i, increment: /(?:plus|ajouter|add)\s+([ab])/i, start: /(?:démarrer|commencer|start|go)/i, pause: /(?:pause|stop|arrêter)/i, finish: /(?:terminer|fini|fin|end)/i },
+  en: { locale: 'en-US', score: /(?:score|set)\s+([ab])\s+(\d+)/i, increment: /(?:plus|add|increment)\s+([ab])/i, start: /(?:start|begin|go)/i, pause: /(?:pause|stop)/i, finish: /(?:finish|done|end)/i },
+  de: { locale: 'de-DE', score: /(?:stand|score|set)\s+([ab])\s+(\d+)/i, increment: /(?:punkt|plus|add)\s+([ab])/i, start: /(?:start|starten|beginnen)/i, pause: /(?:pause|stop)/i, finish: /(?:beenden|fertig|ende)/i },
+};
+
 export const VoiceScoreController: React.FC<{
   onScoreA?: (score: number) => void;
   onScoreB?: (score: number) => void;
   onStart?: () => void;
   onPause?: () => void;
   onFinish?: () => void;
-}> = ({ onScoreA, onScoreB, onStart, onPause, onFinish }) => {
+  language?: string;
+}> = ({ onScoreA, onScoreB, onStart, onPause, onFinish, language = 'fr' }) => {
+  const langKey = Object.keys(LANG_CONFIG).find(k => language.startsWith(k)) ?? 'fr';
+  const lang = LANG_CONFIG[langKey];
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [lastCommand, setLastCommand] = useState('');
@@ -87,32 +96,29 @@ export const VoiceScoreController: React.FC<{
     (text: string) => {
       const lowerText = text.toLowerCase().trim();
 
-      // Score command
-      const scoreMatch = lowerText.match(/(?:score|set)\s+([ab])\s+(\d+)/i);
+      const scoreMatch = lowerText.match(lang.score);
       if (scoreMatch) {
         commands[0].action([scoreMatch[1], scoreMatch[2]]);
-        setLastCommand(`Score ${scoreMatch[1]}: ${scoreMatch[2]}`);
+        setLastCommand(`Score ${scoreMatch[1].toUpperCase()}: ${scoreMatch[2]}`);
         return;
       }
 
-      // Increment command
-      const plusMatch = lowerText.match(/(?:plus|add|increment)\s+([ab])/i);
+      const plusMatch = lowerText.match(lang.increment);
       if (plusMatch) {
         commands[4].action([plusMatch[1]]);
-        setLastCommand(`+1 pour ${plusMatch[1]}`);
+        setLastCommand(`+1 ${plusMatch[1].toUpperCase()}`);
         return;
       }
 
-      // Start/Pause/Finish
-      if (/démarrer|start|commencer|go/.test(lowerText)) {
+      if (lang.start.test(lowerText)) {
         commands[1].action();
-        setLastCommand('Match démarré');
-      } else if (/pause|stop|arrêter/.test(lowerText)) {
+        setLastCommand('▶ Démarré');
+      } else if (lang.pause.test(lowerText)) {
         commands[2].action();
-        setLastCommand('Match en pause');
-      } else if (/terminer|fini|fin|end/.test(lowerText)) {
+        setLastCommand('⏸ Pause');
+      } else if (lang.finish.test(lowerText)) {
         commands[3].action();
-        setLastCommand('Match terminé');
+        setLastCommand('⏹ Terminé');
       }
     },
     [commands]
@@ -130,7 +136,7 @@ export const VoiceScoreController: React.FC<{
 
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = 'fr-FR';
+    recognition.lang = lang.locale;
 
     recognition.onresult = (event: any) => {
       const current = event.resultIndex;

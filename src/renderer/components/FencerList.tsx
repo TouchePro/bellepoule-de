@@ -3,7 +3,7 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Fencer, FencerStatus } from '../../shared/types';
 import EditFencerModal from './EditFencerModal';
 import { useTranslation } from '../hooks/useTranslation';
@@ -73,7 +73,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-  const filteredFencers = fencers
+  const filteredFencers = useMemo(() => fencers
     .filter(f => {
       const search = searchTerm.toLowerCase();
       return (
@@ -95,10 +95,16 @@ const FencerListComponent: React.FC<FencerListProps> = ({
         default:
           return 0;
       }
-    });
+    }), [fencers, searchTerm, sortBy]);
 
-  const checkedInCount = fencers.filter(f => f.status === FencerStatus.CHECKED_IN).length;
-  const notCheckedInCount = fencers.filter(f => f.status === FencerStatus.NOT_CHECKED_IN).length;
+  const checkedInCount = useMemo(
+    () => fencers.filter(f => f.status === FencerStatus.CHECKED_IN).length,
+    [fencers]
+  );
+  const notCheckedInCount = useMemo(
+    () => fencers.filter(f => f.status === FencerStatus.NOT_CHECKED_IN).length,
+    [fencers]
+  );
 
   const handleEditSave = (id: string, updates: Partial<Fencer>) => {
     if (onEditFencer) {
@@ -391,6 +397,20 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                   onClick={() => { handleExportFencers('fff'); setExportMenuOpen(false); }}
                 >
                   Exporter FFF
+                </button>
+                <button
+                  className="btn btn-ghost"
+                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 16px', borderRadius: 0 }}
+                  onClick={() => { handleExportFencersArchive(); setExportMenuOpen(false); }}
+                >
+                  Exporter tireurs + photos (.bpf)
+                </button>
+                <button
+                  className="btn btn-ghost"
+                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 16px', borderRadius: 0 }}
+                  onClick={() => { handleExportPhotos(); setExportMenuOpen(false); }}
+                >
+                  Exporter photos (.zip)
                 </button>
               </div>
             )}
