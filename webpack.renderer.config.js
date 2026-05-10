@@ -2,8 +2,9 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
+const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 
-module.exports = {
+module.exports = (env = {}) => ({
   mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   optimization: {
     minimize: process.env.NODE_ENV === 'production',
@@ -17,13 +18,32 @@ module.exports = {
         },
       }),
     ],
+    splitChunks: {
+      chunks: 'all',
+      cacheGroups: {
+        vendor: {
+          test: /[\\/]node_modules[\\/]/,
+          name: 'vendors',
+          chunks: 'all',
+          priority: 10,
+        },
+        react: {
+          test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
+          name: 'react',
+          chunks: 'all',
+          priority: 20,
+        },
+      },
+    },
   },
   entry: './src/renderer/index.tsx',
   target: 'electron-renderer',
   devtool: 'source-map',
   output: {
     path: path.resolve(__dirname, 'dist/renderer'),
-    filename: 'renderer.js',
+    filename: '[name].js',
+    chunkFilename: '[name].chunk.js',
+    globalObject: 'globalThis',
   },
   devServer: {
     port: 8066,
@@ -87,5 +107,6 @@ module.exports = {
         },
       ],
     }),
+    ...(env.analyze ? [new BundleAnalyzerPlugin()] : []),
   ],
-};
+});

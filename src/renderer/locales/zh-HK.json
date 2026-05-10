@@ -1,6 +1,12 @@
-{
+﻿{
   "app": {
-    "title": "BellePoule Modern"
+    "title": "BellePoule Modern",
+    "home": "主頁",
+    "back_to_list": "返回比賽列表",
+    "close_tab": "關閉標籤",
+    "load_error_title": "載入錯誤",
+    "load_error_message": "載入比賽列表時發生錯誤。",
+    "reload": "重新載入應用程式"
   },
   "menu": {
     "new_competition": "新增比賽",
@@ -24,7 +30,9 @@
     "third_place_match_ok": "點擊確定以加入銅牌賽",
     "third_place_match_cancel": "點擊取消以於半準決賽後結束",
     "third_place_match_label": "銅牌賽（季軍賽）",
-    "third_place_match_description": "為兩位落敗半準決賽選手安排額外比賽，以決定第三及第四名"
+    "third_place_match_description": "為兩位落敗半準決賽選手安排額外比賽，以決定第三及第四名",
+    "comparisons": "比較",
+    "analytics": "分析"
   },
   "weapons": {
     "epee": "重劍",
@@ -43,7 +51,11 @@
     "U15": "U15（青少年組）",
     "U17": "U17（青年組）",
     "U20": "U20（青壯年組）",
-    "senior": "成年組"
+    "senior": "成年組",
+    "V1": "老將1",
+    "V2": "老將2",
+    "V3": "老將3",
+    "V4": "老將4"
   },
   "fencer": {
     "last_name": "姓",
@@ -63,7 +75,9 @@
     "abandon": "棄賽",
     "forfait": "放棄資格",
     "reactivate": "重新啟用",
-    "points": "分數"
+    "points": "分數",
+    "label": "劍手",
+    "present_label": "已報到"
   },
   "status": {
     "checked_in": "已報到",
@@ -79,7 +93,12 @@
   },
   "phases": {
     "checkin": "報到",
+    "poolprep": "準備",
     "pools": "分組賽",
+    "pools_skip": "分組賽（跳過）",
+    "pools_round": "分組賽（{{current}}/{{total}}）",
+    "pools_skip_tooltip": "分組賽階段已跳過（0 組）",
+    "tableau_locked_tooltip": "完成所有分組賽並驗證排名後方可進入淘汰賽",
     "ranking": "排名",
     "tableau": "淘汰賽",
     "results": "成績",
@@ -98,7 +117,9 @@
     "no_pools": "無分組",
     "return_to_checkin": "返回報到",
     "pool_number": "分組",
-    "change_pool": "更改分組"
+    "change_pool": "更改分組",
+    "next_round_n": "第 {{n}} 輪分組賽 →",
+    "view_ranking_action": "查看排名 →"
   },
   "ranking": {
     "rank": "排名",
@@ -204,12 +225,111 @@
     "warning": "警告",
     "info": "資訊",
     "connection_lost": "連線中斷",
-    "connection_restored": "連線已恢復"
+    "connection_restored": "連線已恢復",
+    "name_required": "姓和名為必填欄位"
   },
   "time": {
     "minutes": "分鐘",
     "seconds": "秒",
     "hours": "小時",
     "days": "天"
+  },
+  "pdfTemplate": {
+    "modalTitle": "自訂PDF匯出",
+    "openButton": "自訂PDF",
+    "docType": { "pool": "分組", "tableau": "淘汰賽", "ranking": "排名" },
+    "customTitle": "自訂標題",
+    "customTitlePlaceholder": "留空使用自動標題",
+    "colors": { "navy": "主色", "gold": "強調色", "green": "勝利色" },
+    "elements": {
+      "header": "頁首", "gold-bar": "金色分隔線", "competition-name": "比賽名稱", "meta-chips": "資訊標籤",
+      "score-grid": "分數表格", "pending-matches": "待打比賽",
+      "finished-matches": "結果", "match-cards": "比賽卡片",
+      "ranking-table": "排名表", "footer": "頁尾"
+    },
+    "reset": "重設", "exportJson": "匯出JSON", "importJson": "匯入JSON", "importError": "JSON檔案無效"
+  },
+  "cardModal": {
+    "title": "{{name}} 的罰牌",
+    "previous_cards": "過往罰牌：",
+    "card_white": "⬜ 白牌",
+    "card_yellow": "🟨 黃牌",
+    "card_red": "🟥 紅牌",
+    "card_black": "⬛ 黑牌",
+    "abbr_white": "白",
+    "abbr_yellow": "黃",
+    "abbr_red": "紅",
+    "abbr_black": "黑",
+    "points_for": "+{{points}} 分給 {{name}}",
+    "exclusion": "⚠️ 取消參賽資格"
+  },
+  "cardReasons": {
+    "EARLY_START": "提前出擊",
+    "LATE_STOP": "在「停！」後繼續",
+    "BODY_CONTACT": "故意身體接觸",
+    "COUNTER_ATTACK": "反擊",
+    "TARGET_SUBSTITUTION": "替換目標區域",
+    "VOLUNTARY_DROP": "故意丟棄軍刀",
+    "TIME_WASTING": "拖延時間",
+    "NON_COMPLIANT_GEAR": "裝備不合規",
+    "ESTOC": "刺擊（非切擊）",
+    "UNARMED_HAND": "使用非持武器手",
+    "VOLUNTARY_EXIT": "主動離開賽道",
+    "HEAVY_HIT": "重擊",
+    "BRUTALITY": "暴力行為",
+    "DANGEROUS": "危險行為",
+    "REFUSAL": "拒絕對戰",
+    "UNSPORTSMANLIKE": "不符合體育精神",
+    "CHEATING": "作弊"
+  },
+  "cardGroups": {
+    "GROUP_1": "第1組（白牌 → 黃牌 → 黃牌）",
+    "GROUP_2": "第2組（黃牌 → 紅牌 → 紅牌）",
+    "GROUP_3": "第3組（紅牌 → 取消資格）",
+    "GROUP_4": "第4組（即時取消資格）"
+  },
+  "stats": {
+    "title": "選手統計",
+    "zone_a": "A區（1分）",
+    "zone_b": "B區（3分）",
+    "zone_c": "C區（5分）",
+    "total_points": "總分",
+    "white_cards": "白牌",
+    "yellow_cards": "黃牌",
+    "red_cards": "紅牌",
+    "arena_exits": "出界次數",
+    "matches_played": "比賽場數",
+    "avg_duration": "平均時長",
+    "early_finishes": "< 3分鐘",
+    "export_pdf": "匯出統計（PDF）",
+    "export_fencer_pdf": "匯出選手（PDF）",
+    "export_competition_pdf": "賽事完整 PDF",
+    "no_data": "此賽事暫無統計數據。",
+    "laser_only": "觸擊區域（A/B/C）僅適用於雷射佩劍模式。"
+  },
+  "shortcuts": {
+    "title": "鍵盤快捷鍵",
+    "subtitle": "像專業人士一樣掌握 BellePoule",
+    "footer": "隨時按 ? 顯示此說明",
+    "category_all": "全部",
+    "category_global": "全域",
+    "category_navigation": "導航",
+    "category_actions": "操作",
+    "category_competition": "比賽",
+    "show_help": "顯示快捷鍵說明",
+    "quick_search": "快速搜尋",
+    "close_modal": "關閉視窗 / 取消",
+    "go_pools": "前往分組賽",
+    "go_tableau": "前往淘汰賽",
+    "go_results": "前往成績",
+    "nav_fields": "欄位間導航",
+    "save": "儲存",
+    "undo": "復原",
+    "redo": "重做",
+    "new_competition": "新增比賽",
+    "refresh_data": "重新整理資料",
+    "timer": "開始/暫停計時器",
+    "nav_list": "在列表中導航",
+    "validate": "確認 / 開啟"
   }
 }

@@ -1,6 +1,12 @@
-{
+﻿{
   "app": {
-    "title": "BellePoule Modern"
+    "title": "BellePoule Modern",
+    "home": "Allgemein",
+    "back_to_list": "Zurück zur Wettbewerbliste",
+    "close_tab": "Tab schließen",
+    "load_error_title": "Ladefehler",
+    "load_error_message": "Beim Laden der Wettbewerbliste ist ein Fehler aufgetreten.",
+    "reload": "Anwendung neu laden"
   },
   "menu": {
     "new_competition": "Neuer Wettbewerb",
@@ -24,7 +30,9 @@
     "third_place_match_ok": "Klicken Sie auf OK, um das kleine Finale hinzuzufügen",
     "third_place_match_cancel": "Klicken Sie auf Abbrechen, um nach den Halbfinals zu beenden",
     "third_place_match_label": "Kleines Finale (Spiel um den 3. Platz)",
-    "third_place_match_description": "Organisiert ein zusätzliches Spiel zwischen den beiden verlierenden Halbfinalisten, um den 3. und 4. Platz zu bestimmen"
+    "third_place_match_description": "Organisiert ein zusätzliches Spiel zwischen den beiden verlierenden Halbfinalisten, um den 3. und 4. Platz zu bestimmen",
+    "comparisons": "Vergleiche",
+    "analytics": "Auswertung"
   },
   "weapons": {
     "epee": "Degen",
@@ -43,7 +51,11 @@
     "U15": "U15",
     "U17": "U17",
     "U20": "U20",
-    "senior": "Senior"
+    "senior": "Senior",
+    "V1": "Veteranen 1",
+    "V2": "Veteranen 2",
+    "V3": "Veteranen 3",
+    "V4": "Veteranen 4"
   },
   "fencer": {
     "last_name": "Nachname",
@@ -63,7 +75,9 @@
     "abandon": "Aufgeben",
     "forfait": "Nicht Antreten",
     "reactivate": "Reaktivieren",
-    "points": "Punkte"
+    "points": "Punkte",
+    "label": "Fechter",
+    "present_label": "angemeldet"
   },
   "status": {
     "checked_in": "Eingecheckt",
@@ -79,7 +93,12 @@
   },
   "phases": {
     "checkin": "Anmeldung",
+    "poolprep": "Vorbereitung",
     "pools": "Pools",
+    "pools_skip": "Gruppen (übersprungen)",
+    "pools_round": "Gruppen ({{current}}/{{total}})",
+    "pools_skip_tooltip": "Gruppenphase übersprungen (0 Gruppen)",
+    "tableau_locked_tooltip": "Beenden Sie alle Gruppen und validieren Sie das Ranking, um auf die Direktausscheidungen zuzugreifen",
     "ranking": "Rangliste",
     "tableau": "Tabelle",
     "results": "Ergebnisse",
@@ -98,7 +117,9 @@
     "no_pools": "Keine Pools",
     "return_to_checkin": "Zurück zur Anmeldung",
     "pool_number": "Pool",
-    "change_pool": "Pool Wechseln"
+    "change_pool": "Pool Wechseln",
+    "next_round_n": "Runde {{n}} →",
+    "view_ranking_action": "Rangliste anzeigen →"
   },
   "ranking": {
     "rank": "Rg",
@@ -204,12 +225,111 @@
     "warning": "Warnung",
     "info": "Information",
     "connection_lost": "Verbindung verloren",
-    "connection_restored": "Verbindung wiederhergestellt"
+    "connection_restored": "Verbindung wiederhergestellt",
+    "name_required": "Nachname und Vorname sind erforderlich"
   },
   "time": {
     "minutes": "Minuten",
     "seconds": "Sekunden",
     "hours": "Stunden",
     "days": "Tage"
+  },
+  "pdfTemplate": {
+    "modalTitle": "PDF-Exporte anpassen",
+    "openButton": "PDFs anpassen",
+    "docType": { "pool": "Gruppen", "tableau": "Direktausscheidungen", "ranking": "Rangliste" },
+    "customTitle": "Benutzerdefinierter Titel",
+    "customTitlePlaceholder": "Leer lassen für automatischen Titel",
+    "colors": { "navy": "Hauptfarbe", "gold": "Akzentfarbe", "green": "Siegesfarbe" },
+    "elements": {
+      "header": "Kopfzeile", "gold-bar": "Goldene Trennlinie", "competition-name": "Wettkampfname", "meta-chips": "Info-Chips",
+      "score-grid": "Punkteraster", "pending-matches": "Ausstehende Kämpfe",
+      "finished-matches": "Ergebnisse", "match-cards": "Kampfblätter",
+      "ranking-table": "Rangtabelle", "footer": "Fußzeile"
+    },
+    "reset": "Zurücksetzen", "exportJson": "JSON exportieren", "importJson": "JSON importieren", "importError": "Ungültige JSON-Datei"
+  },
+  "cardModal": {
+    "title": "Karte für {{name}}",
+    "previous_cards": "Vorherige Karten:",
+    "card_white": "⬜ WEISSE KARTE",
+    "card_yellow": "🟨 GELBE KARTE",
+    "card_red": "🟥 ROTE KARTE",
+    "card_black": "⬛ SCHWARZE KARTE",
+    "abbr_white": "W",
+    "abbr_yellow": "G",
+    "abbr_red": "R",
+    "abbr_black": "S",
+    "points_for": "+{{points}} Punkt für {{name}}",
+    "exclusion": "⚠️ AUSSCHLUSS AUS DEM WETTKAMPF"
+  },
+  "cardReasons": {
+    "EARLY_START": "Frühstart",
+    "LATE_STOP": "Weiterkämpfen nach \"Halt!\"",
+    "BODY_CONTACT": "Freiwilliger Körperkontakt",
+    "COUNTER_ATTACK": "Gegenangriff",
+    "TARGET_SUBSTITUTION": "Zielsubstitution",
+    "VOLUNTARY_DROP": "Freiwilliges Fallenlassen des Säbels",
+    "TIME_WASTING": "Zeitverschwendung",
+    "NON_COMPLIANT_GEAR": "Nicht konformes Material",
+    "ESTOC": "Stoß (Estoc)",
+    "UNARMED_HAND": "Verwendung der waffenlosen Hand",
+    "VOLUNTARY_EXIT": "Freiwilliges Verlassen der Bahn",
+    "HEAVY_HIT": "Schwerer Treffer",
+    "BRUTALITY": "Brutalität",
+    "DANGEROUS": "Gefährliches Verhalten",
+    "REFUSAL": "Kampfverweigerung",
+    "UNSPORTSMANLIKE": "Unsportliches Verhalten",
+    "CHEATING": "Betrug"
+  },
+  "cardGroups": {
+    "GROUP_1": "Gruppe 1 (Weiß → Gelb → Gelb)",
+    "GROUP_2": "Gruppe 2 (Gelb → Rot → Rot)",
+    "GROUP_3": "Gruppe 3 (Rot → Ausschluss)",
+    "GROUP_4": "Gruppe 4 (Sofortiger Ausschluss)"
+  },
+  "stats": {
+    "title": "Fechter-Statistiken",
+    "zone_a": "Zone A (1 Pt.)",
+    "zone_b": "Zone B (3 Pt.)",
+    "zone_c": "Zone C (5 Pt.)",
+    "total_points": "Punkte ges.",
+    "white_cards": "Weißkarten",
+    "yellow_cards": "Gelbe Karten",
+    "red_cards": "Rote Karten",
+    "arena_exits": "Platzverweise",
+    "matches_played": "Gefechte",
+    "avg_duration": "Ø Dauer",
+    "early_finishes": "< 3 Min.",
+    "export_pdf": "Statistiken exportieren (PDF)",
+    "export_fencer_pdf": "Fechter exportieren (PDF)",
+    "export_competition_pdf": "Wettkampf PDF exportieren",
+    "no_data": "Keine Statistiken für diesen Wettkampf verfügbar.",
+    "laser_only": "Trefferzonen (A/B/C) sind nur im Laser-Säbel-Modus verfügbar."
+  },
+  "shortcuts": {
+    "title": "Tastaturkürzel",
+    "subtitle": "BellePoule wie ein Profi meistern",
+    "footer": "Drücken Sie ? um diese Hilfe jederzeit anzuzeigen",
+    "category_all": "Alle",
+    "category_global": "Global",
+    "category_navigation": "Navigation",
+    "category_actions": "Aktionen",
+    "category_competition": "Wettkampf",
+    "show_help": "Hilfe für Tastaturkürzel anzeigen",
+    "quick_search": "Schnellsuche",
+    "close_modal": "Modal schließen / Abbrechen",
+    "go_pools": "Zur Gruppenphase",
+    "go_tableau": "Zu den Direktausscheidungen",
+    "go_results": "Zu den Ergebnissen",
+    "nav_fields": "Zwischen Feldern navigieren",
+    "save": "Speichern",
+    "undo": "Rückgängig",
+    "redo": "Wiederholen",
+    "new_competition": "Neuer Wettkampf",
+    "refresh_data": "Daten aktualisieren",
+    "timer": "Stoppuhr starten/pausieren",
+    "nav_list": "In der Liste navigieren",
+    "validate": "Bestätigen / Öffnen"
   }
 }

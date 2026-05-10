@@ -49,6 +49,10 @@ npm run lint            # ESLint check
 npm run lint:fix        # ESLint auto-fix
 npm run format          # Prettier format
 npm run format:check    # Prettier validation
+npm run type-check      # TypeScript no-emit check
+npm run analyze         # Webpack bundle analyzer (opens browser)
+npm run test:e2e        # Playwright E2E tests
+npm run e2e:debug       # Playwright debug mode
 ```
 
 ## Architecture

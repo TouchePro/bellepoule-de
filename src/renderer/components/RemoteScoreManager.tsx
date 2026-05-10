@@ -63,17 +63,30 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const [arenaPasswords, setArenaPasswords] = useState<Record<string, string>>({});
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [showPhotos, setShowPhotos] = useState(false);
+  const [cardAnnounce, setCardAnnounce] = useState(false);
   const [displayTheme, setDisplayTheme] = useState<'dark' | 'light' | 'neon'>('dark');
-  const [kioskViews, setKioskViews] = useState({ poules: true, classement: true, direct: true, suivants: true });
+  const [kioskViews, setKioskViews] = useState({
+    poules: true,
+    classement: true,
+    direct: true,
+    suivants: true,
+  });
   const [orgNoteType, setOrgNoteType] = useState<'free' | 'target_time'>('free');
   const [orgNoteMessage, setOrgNoteMessage] = useState('');
   const [orgNoteTime, setOrgNoteTime] = useState('');
   const [orgNotePrefix, setOrgNotePrefix] = useState('Reprise');
   const [orgNoteActive, setOrgNoteActive] = useState(false);
   // Thèmes par arène : arenaId → { theme, customTheme? }
-  const [arenaThemes, setArenaThemes] = useState<Record<string, { theme: DisplayTheme; customTheme?: CustomTheme }>>({});
+  const [arenaThemes, setArenaThemes] = useState<
+    Record<string, { theme: DisplayTheme; customTheme?: CustomTheme }>
+  >({});
   // Éditeur de thème
   const [themeEditorTarget, setThemeEditorTarget] = useState<string | null>(null);
+  // Lancement de la compétition
+  const [isLaunched, setIsLaunched] = useState<boolean>(() => {
+    const key = `bellepoule-remote-launched-${competition.id}`;
+    return localStorage.getItem(key) === 'true';
+  });
 
   useEffect(() => {
     if (!activeQR) {
@@ -111,7 +124,9 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     if (fingerprint === sessionPoolsFingerprintRef.current) return;
     sessionPoolsFingerprintRef.current = fingerprint;
     const updates = pools.map(pool => ({ poolId: pool.id, fencers: pool.fencers ?? [] }));
-    window.electronAPI.remote.updatePoolFencers(updates).catch(() => {});
+    window.electronAPI.remote.updatePoolFencers(updates).catch((err: unknown) => {
+      logger.warn(LogCategory.NETWORK, 'Échec updatePoolFencers', err instanceof Error ? err : undefined);
+    });
   }, [pools, isRemoteActive, session]);
 
   // Quand les matchs tableau changent pendant une session active, mettre à jour le serveur
@@ -129,7 +144,9 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     if (key === prevDeMatchesKeyRef.current) return;
     prevDeMatchesKeyRef.current = key;
     if (!isRemoteActive || !session || pendingDeMatches.length === 0) return;
-    window.electronAPI.remote.refreshDeMatches(pendingDeMatches).catch(() => {});
+    window.electronAPI.remote.refreshDeMatches(pendingDeMatches).catch((err: unknown) => {
+      logger.warn(LogCategory.NETWORK, 'Échec refreshDeMatches', err instanceof Error ? err : undefined);
+    });
   }, [pendingDeMatches, isRemoteActive, session]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -176,8 +193,14 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       // Prepend fencer-order markers so the server can rebuild poolFencersCache correctly.
       // The FIE match order for 4-fencer pools starts with [1,4] not [1,2], so naively
       // extracting fencers from match pairs produces the wrong order.
-      const poolMatches = pools.flatMap(pool => [
-        { __poolFencers: true, poolId: pool.id, fencers: pool.fencers || [] },
+      const sortedPools = [...pools].sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
+      const poolMatches = sortedPools.flatMap(pool => [
+        {
+          __poolFencers: true,
+          poolId: pool.id,
+          poolNumber: pool.number,
+          fencers: pool.fencers || [],
+        },
         ...(pool.matches || []),
       ]);
       const deMatches = (tableauMatches || [])
@@ -193,7 +216,8 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         count,
         allMatches,
         showPhotos,
-        kioskViews
+        kioskViews,
+        cardAnnounce
       );
       if (result.success && result.session) {
         setSession(result.session);
@@ -248,6 +272,8 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
 
       if (result.success) {
         setSession(null);
+        setIsLaunched(false);
+        localStorage.removeItem(`bellepoule-remote-launched-${competition.id}`);
         showToast('Saisie distante arrêtée', 'success');
         onStopRemote();
       } else {
@@ -280,12 +306,15 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   }, []);
 
   // Appliquer un thème (prédéfini ou custom) à une arène
-  const handleArenaThemeChange = useCallback(async (arenaId: string, theme: DisplayTheme, customTheme?: CustomTheme) => {
-    setArenaThemes(prev => ({ ...prev, [arenaId]: { theme, customTheme } }));
-    if (session) {
-      await window.electronAPI.remote.updateArenaTheme(arenaId, theme, customTheme);
-    }
-  }, [session]);
+  const handleArenaThemeChange = useCallback(
+    async (arenaId: string, theme: DisplayTheme, customTheme?: CustomTheme) => {
+      setArenaThemes(prev => ({ ...prev, [arenaId]: { theme, customTheme } }));
+      if (session) {
+        await window.electronAPI.remote.updateArenaTheme(arenaId, theme, customTheme);
+      }
+    },
+    [session]
+  );
 
   // La grille d'URLs reflète l'état réel du serveur (committedCount) ou la session active
   const arenaCount = session ? session.strips.length : effectiveCommitted;
@@ -366,6 +395,22 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             />
             Afficher les photos des combattants avant le combat
           </label>
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              margin: '0.5rem 0',
+              cursor: 'pointer',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={cardAnnounce}
+              onChange={e => setCardAnnounce(e.target.checked)}
+            />
+            📣 Carton avancer (afficher bandeau + raison sur les écrans)
+          </label>
           <div style={{ margin: '0.5rem 0' }}>
             <div style={{ fontSize: '0.875rem', marginBottom: '0.25rem', color: 'inherit' }}>
               Vues kiosk :
@@ -391,8 +436,12 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
               </label>
             ))}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.75rem 0' }}>
-            <label htmlFor="remote-port" style={{ whiteSpace: 'nowrap' }}>Port :</label>
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.75rem 0' }}
+          >
+            <label htmlFor="remote-port" style={{ whiteSpace: 'nowrap' }}>
+              Port :
+            </label>
             <input
               id="remote-port"
               type="number"
@@ -453,6 +502,46 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           />
           Afficher les photos des combattants avant le combat
         </label>
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            margin: '0.5rem 0',
+            cursor: 'pointer',
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={cardAnnounce}
+            onChange={async e => {
+              setCardAnnounce(e.target.checked);
+              await window.electronAPI.remote.updateCardAnnounce(e.target.checked);
+            }}
+          />
+          📣 Carton avancer (afficher bandeau + raison sur les écrans)
+        </label>
+        {!isLaunched && (
+          <div style={{ margin: '0.75rem 0' }}>
+            <button
+              className="btn-primary"
+              style={{ padding: '0.6rem 1.2rem', fontSize: '1rem', fontWeight: 'bold' }}
+              onClick={async () => {
+                const result = await window.electronAPI.remote.launchCompetition();
+                if (result.success) {
+                  const key = `bellepoule-remote-launched-${competition.id}`;
+                  setIsLaunched(true);
+                  localStorage.setItem(key, 'true');
+                  showToast('Compétition lancée sur les écrans', 'success');
+                } else {
+                  showToast(`Erreur: ${result.error}`, 'error');
+                }
+              }}
+            >
+              🚀 Lancer la compétition
+            </button>
+          </div>
+        )}
         <div style={{ margin: '0.5rem 0' }}>
           <div style={{ fontSize: '0.875rem', marginBottom: '0.4rem', color: 'inherit' }}>
             Thème de l'affichage :
@@ -519,12 +608,35 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         </div>
 
         {/* Note d'organisation */}
-        <div style={{ margin: '0.75rem 0', padding: '0.75rem', border: '1px solid #334155', borderRadius: '0.5rem', background: '#1e293b' }}>
-          <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem', color: '#94a3b8' }}>
+        <div
+          style={{
+            margin: '0.75rem 0',
+            padding: '0.75rem',
+            border: '1px solid #334155',
+            borderRadius: '0.5rem',
+            background: '#1e293b',
+          }}
+        >
+          <div
+            style={{
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              marginBottom: '0.5rem',
+              color: '#94a3b8',
+            }}
+          >
             Note d'organisation (kiosk)
           </div>
           <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.5rem' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', color: '#e2e8f0' }}>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                cursor: 'pointer',
+                color: '#e2e8f0',
+              }}
+            >
               <input
                 type="radio"
                 name="orgNoteType"
@@ -533,7 +645,15 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
               />
               Message libre
             </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', color: '#e2e8f0' }}>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                cursor: 'pointer',
+                color: '#e2e8f0',
+              }}
+            >
               <input
                 type="radio"
                 name="orgNoteType"
@@ -548,24 +668,58 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             value={orgNoteMessage}
             onChange={e => setOrgNoteMessage(e.target.value)}
             rows={3}
-            style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#0f172a', color: '#e2e8f0', boxSizing: 'border-box', marginBottom: '0.4rem', resize: 'vertical', fontFamily: 'inherit', fontSize: 'inherit' }}
+            style={{
+              width: '100%',
+              padding: '0.4rem 0.6rem',
+              borderRadius: '0.3rem',
+              border: '1px solid #475569',
+              background: '#0f172a',
+              color: '#e2e8f0',
+              boxSizing: 'border-box',
+              marginBottom: '0.4rem',
+              resize: 'vertical',
+              fontFamily: 'inherit',
+              fontSize: 'inherit',
+            }}
           />
           {orgNoteType === 'target_time' && (
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.4rem' }}>
+            <div
+              style={{
+                display: 'flex',
+                gap: '0.5rem',
+                alignItems: 'center',
+                marginBottom: '0.4rem',
+              }}
+            >
               <select
                 value={orgNotePrefix}
                 onChange={e => setOrgNotePrefix(e.target.value)}
-                style={{ padding: '0.4rem 0.6rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#0f172a', color: '#e2e8f0', cursor: 'pointer' }}
+                style={{
+                  padding: '0.4rem 0.6rem',
+                  borderRadius: '0.3rem',
+                  border: '1px solid #475569',
+                  background: '#0f172a',
+                  color: '#e2e8f0',
+                  cursor: 'pointer',
+                }}
               >
                 {['Reprise', 'Début', 'Fin', 'Pause', 'Déjeuner', 'Cérémonie'].map(p => (
-                  <option key={p} value={p}>{p}</option>
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
                 ))}
               </select>
               <input
                 type="time"
                 value={orgNoteTime}
                 onChange={e => setOrgNoteTime(e.target.value)}
-                style={{ padding: '0.4rem 0.6rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#0f172a', color: '#e2e8f0' }}
+                style={{
+                  padding: '0.4rem 0.6rem',
+                  borderRadius: '0.3rem',
+                  border: '1px solid #475569',
+                  background: '#0f172a',
+                  color: '#e2e8f0',
+                }}
               />
             </div>
           )}
@@ -576,13 +730,24 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                 const note = {
                   type: orgNoteType,
                   message: orgNoteMessage.trim(),
-                  ...(orgNoteType === 'target_time' ? { targetTime: orgNoteTime, countdownPrefix: orgNotePrefix } : {}),
+                  ...(orgNoteType === 'target_time'
+                    ? { targetTime: orgNoteTime, countdownPrefix: orgNotePrefix }
+                    : {}),
                   createdAt: new Date().toISOString(),
                 };
                 await window.electronAPI.remote.setOrgNote(note);
                 setOrgNoteActive(true);
               }}
-              style={{ flex: 1, padding: '0.4rem', borderRadius: '0.3rem', border: 'none', background: orgNoteActive ? '#1d4ed8' : '#2563eb', color: '#fff', cursor: 'pointer', fontWeight: 500 }}
+              style={{
+                flex: 1,
+                padding: '0.4rem',
+                borderRadius: '0.3rem',
+                border: 'none',
+                background: orgNoteActive ? '#1d4ed8' : '#2563eb',
+                color: '#fff',
+                cursor: 'pointer',
+                fontWeight: 500,
+              }}
             >
               {orgNoteActive ? '↻ Mettre à jour' : '▶ Afficher'}
             </button>
@@ -592,7 +757,14 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                   await window.electronAPI.remote.clearOrgNote();
                   setOrgNoteActive(false);
                 }}
-                style={{ padding: '0.4rem 0.75rem', borderRadius: '0.3rem', border: 'none', background: '#475569', color: '#fff', cursor: 'pointer' }}
+                style={{
+                  padding: '0.4rem 0.75rem',
+                  borderRadius: '0.3rem',
+                  border: 'none',
+                  background: '#475569',
+                  color: '#fff',
+                  cursor: 'pointer',
+                }}
               >
                 ✕ Masquer
               </button>
@@ -610,140 +782,163 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             const arenaId = `arena${arena.number}`;
             const arenaTheme = arenaThemes[arenaId];
             return (
-            <div key={arena.number} className="arena-url-card">
-              <div className="arena-url-header">
-                <strong>Piste {arena.number}</strong>
-                {/* Sélecteur de thème par arène */}
-                <div className="arena-theme-picker">
-                  {(
-                    [
-                      { value: 'dark'  as const, icon: '🌙', title: 'Sombre'  },
-                      { value: 'light' as const, icon: '☀️', title: 'Clair'   },
-                      { value: 'neon'  as const, icon: '⚡', title: 'Néon'    },
-                    ]
-                  ).map(({ value, icon, title }) => (
+              <div key={arena.number} className="arena-url-card">
+                <div className="arena-url-header">
+                  <strong>Piste {arena.number}</strong>
+                  {/* Sélecteur de thème par arène */}
+                  <div className="arena-theme-picker">
+                    {[
+                      { value: 'dark' as const, icon: '🌙', title: 'Sombre' },
+                      { value: 'light' as const, icon: '☀️', title: 'Clair' },
+                      { value: 'neon' as const, icon: '⚡', title: 'Néon' },
+                    ].map(({ value, icon, title }) => (
+                      <button
+                        key={value}
+                        title={title}
+                        className={`arena-theme-btn ${arenaTheme?.theme === value ? 'active' : ''}`}
+                        onClick={() => handleArenaThemeChange(arenaId, value)}
+                      >
+                        {icon}
+                      </button>
+                    ))}
                     <button
-                      key={value}
-                      title={title}
-                      className={`arena-theme-btn ${arenaTheme?.theme === value ? 'active' : ''}`}
-                      onClick={() => handleArenaThemeChange(arenaId, value)}
+                      title="Thème personnalisé"
+                      className={`arena-theme-btn ${arenaTheme?.theme === 'custom' ? 'active' : ''}`}
+                      onClick={() => setThemeEditorTarget(arenaId)}
                     >
-                      {icon}
+                      ✏️
                     </button>
-                  ))}
+                  </div>
+                </div>
+                <div className="arena-url-row">
+                  <span className="arena-url-label">Arbitre</span>
+                  <code className="arena-url-value">{arena.refereeUrl}</code>
                   <button
-                    title="Thème personnalisé"
-                    className={`arena-theme-btn ${arenaTheme?.theme === 'custom' ? 'active' : ''}`}
-                    onClick={() => setThemeEditorTarget(arenaId)}
+                    className="btn-copy"
+                    onClick={() => copyToClipboard(arena.refereeUrl, arena.number * 10)}
+                    title="Copier l'URL"
                   >
-                    ✏️
+                    {copiedIndex === arena.number * 10 ? '✓' : '📋'}
+                  </button>
+                  <button
+                    className="btn-qr"
+                    onClick={() =>
+                      setActiveQR({
+                        url: arena.refereeUrl,
+                        label: `Piste ${arena.number} – Arbitre`,
+                      })
+                    }
+                    title="QR code"
+                  >
+                    📱
                   </button>
                 </div>
-              </div>
-              <div className="arena-url-row">
-                <span className="arena-url-label">Arbitre</span>
-                <code className="arena-url-value">{arena.refereeUrl}</code>
-                <button
-                  className="btn-copy"
-                  onClick={() => copyToClipboard(arena.refereeUrl, arena.number * 10)}
-                  title="Copier l'URL"
-                >
-                  {copiedIndex === arena.number * 10 ? '✓' : '📋'}
-                </button>
-                <button
-                  className="btn-qr"
-                  onClick={() =>
-                    setActiveQR({ url: arena.refereeUrl, label: `Piste ${arena.number} – Arbitre` })
-                  }
-                  title="QR code"
-                >
-                  📱
-                </button>
-              </div>
-              <div className="arena-url-row">
-                <span className="arena-url-label">Affichage</span>
-                <code className="arena-url-value">{arena.displayUrl}</code>
-                <button
-                  className="btn-copy"
-                  onClick={() => copyToClipboard(arena.displayUrl, arena.number * 10 + 1)}
-                  title="Copier l'URL"
-                >
-                  {copiedIndex === arena.number * 10 + 1 ? '✓' : '📋'}
-                </button>
-                <button
-                  className="btn-qr"
-                  onClick={() =>
-                    setActiveQR({
-                      url: arena.displayUrl,
-                      label: `Piste ${arena.number} – Affichage`,
-                    })
-                  }
-                  title="QR code"
-                >
-                  📱
-                </button>
-              </div>
-              <div className="arena-url-row">
-                <span className="arena-url-label">Poule</span>
-                <code className="arena-url-value">{arena.poolUrl}</code>
-                <button
-                  className="btn-copy"
-                  onClick={() => copyToClipboard(arena.poolUrl, arena.number * 10 + 2)}
-                  title="Copier l'URL"
-                >
-                  {copiedIndex === arena.number * 10 + 2 ? '✓' : '📋'}
-                </button>
-                <button
-                  className="btn-qr"
-                  onClick={() =>
-                    setActiveQR({
-                      url: arena.poolUrl,
-                      label: `Piste ${arena.number} – Poule`,
-                    })
-                  }
-                  title="QR code"
-                >
-                  📱
-                </button>
-              </div>
-              <div className="arena-url-row">
-                <span className="arena-url-label">Public</span>
-                <code className="arena-url-value">{arena.publicUrl}</code>
-                <button
-                  className="btn-copy"
-                  onClick={() => copyToClipboard(arena.publicUrl, arena.number * 10 + 3)}
-                  title="Copier l'URL"
-                >
-                  {copiedIndex === arena.number * 10 + 3 ? '✓' : '📋'}
-                </button>
-                <button
-                  className="btn-qr"
-                  onClick={() =>
-                    setActiveQR({
-                      url: arena.publicUrl,
-                      label: `Piste ${arena.number} – Public`,
-                    })
-                  }
-                  title="QR code"
-                >
-                  📱
-                </button>
-              </div>
-              <div className="arena-url-row">
-                <span className="arena-url-label">🔒 MDP</span>
-                <input
-                  type="password"
-                  className="arena-password-input"
-                  placeholder="Aucun (accès libre)"
-                  value={arenaPasswords[`arena${arena.number}`] ?? ''}
-                  onChange={e =>
-                    setArenaPasswords(p => ({
-                      ...p,
-                      [`arena${arena.number}`]: e.target.value,
-                    }))
-                  }
-                  onKeyDown={async e => {
-                    if (e.key === 'Enter') {
+                <div className="arena-url-row">
+                  <span className="arena-url-label">Affichage</span>
+                  <code className="arena-url-value">{arena.displayUrl}</code>
+                  <button
+                    className="btn-copy"
+                    onClick={() => copyToClipboard(arena.displayUrl, arena.number * 10 + 1)}
+                    title="Copier l'URL"
+                  >
+                    {copiedIndex === arena.number * 10 + 1 ? '✓' : '📋'}
+                  </button>
+                  <button
+                    className="btn-qr"
+                    onClick={() =>
+                      setActiveQR({
+                        url: arena.displayUrl,
+                        label: `Piste ${arena.number} – Affichage`,
+                      })
+                    }
+                    title="QR code"
+                  >
+                    📱
+                  </button>
+                </div>
+                <div className="arena-url-row">
+                  <span className="arena-url-label">Poule</span>
+                  <code className="arena-url-value">{arena.poolUrl}</code>
+                  <button
+                    className="btn-copy"
+                    onClick={() => copyToClipboard(arena.poolUrl, arena.number * 10 + 2)}
+                    title="Copier l'URL"
+                  >
+                    {copiedIndex === arena.number * 10 + 2 ? '✓' : '📋'}
+                  </button>
+                  <button
+                    className="btn-qr"
+                    onClick={() =>
+                      setActiveQR({
+                        url: arena.poolUrl,
+                        label: `Piste ${arena.number} – Poule`,
+                      })
+                    }
+                    title="QR code"
+                  >
+                    📱
+                  </button>
+                </div>
+                <div className="arena-url-row">
+                  <span className="arena-url-label">Public</span>
+                  <code className="arena-url-value">{arena.publicUrl}</code>
+                  <button
+                    className="btn-copy"
+                    onClick={() => copyToClipboard(arena.publicUrl, arena.number * 10 + 3)}
+                    title="Copier l'URL"
+                  >
+                    {copiedIndex === arena.number * 10 + 3 ? '✓' : '📋'}
+                  </button>
+                  <button
+                    className="btn-qr"
+                    onClick={() =>
+                      setActiveQR({
+                        url: arena.publicUrl,
+                        label: `Piste ${arena.number} – Public`,
+                      })
+                    }
+                    title="QR code"
+                  >
+                    📱
+                  </button>
+                </div>
+                <div className="arena-url-row">
+                  <span className="arena-url-label">🔒 MDP</span>
+                  <input
+                    type="password"
+                    className="arena-password-input"
+                    placeholder="Aucun (accès libre)"
+                    value={arenaPasswords[`arena${arena.number}`] ?? ''}
+                    onChange={e =>
+                      setArenaPasswords(p => ({
+                        ...p,
+                        [`arena${arena.number}`]: e.target.value,
+                      }))
+                    }
+                    onKeyDown={async e => {
+                      if (e.key === 'Enter') {
+                        const pwd = arenaPasswords[`arena${arena.number}`] ?? '';
+                        const result = await window.electronAPI.remote.setArenaPassword(
+                          `arena${arena.number}`,
+                          pwd
+                        );
+                        if (result.success) {
+                          showToast(
+                            pwd
+                              ? `Mot de passe défini pour la piste ${arena.number}`
+                              : `Mot de passe supprimé pour la piste ${arena.number}`,
+                            'success'
+                          );
+                        } else {
+                          showToast(result.error ?? 'Erreur', 'error');
+                        }
+                      }
+                    }}
+                  />
+                  <button
+                    className="btn-copy"
+                    title="Définir le mot de passe"
+                    onClick={async () => {
                       const pwd = arenaPasswords[`arena${arena.number}`] ?? '';
                       const result = await window.electronAPI.remote.setArenaPassword(
                         `arena${arena.number}`,
@@ -759,34 +954,12 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                       } else {
                         showToast(result.error ?? 'Erreur', 'error');
                       }
-                    }
-                  }}
-                />
-                <button
-                  className="btn-copy"
-                  title="Définir le mot de passe"
-                  onClick={async () => {
-                    const pwd = arenaPasswords[`arena${arena.number}`] ?? '';
-                    const result = await window.electronAPI.remote.setArenaPassword(
-                      `arena${arena.number}`,
-                      pwd
-                    );
-                    if (result.success) {
-                      showToast(
-                        pwd
-                          ? `Mot de passe défini pour la piste ${arena.number}`
-                          : `Mot de passe supprimé pour la piste ${arena.number}`,
-                        'success'
-                      );
-                    } else {
-                      showToast(result.error ?? 'Erreur', 'error');
-                    }
-                  }}
-                >
-                  ✓
-                </button>
+                    }}
+                  >
+                    ✓
+                  </button>
+                </div>
               </div>
-            </div>
             );
           })}
         </div>

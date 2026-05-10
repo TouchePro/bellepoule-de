@@ -41,64 +41,64 @@ const createMockCard = (
 // ============================================================================
 
 describe("determineCardType - Système d'escalade FFE", () => {
-  describe('Groupe 1: Jaune → Rouge → Rouge → Exclusion', () => {
-    it('1ère faute Groupe 1 = Carton JAUNE (0 point)', () => {
+  describe('Groupe 1: Blanc → Jaune → Jaune', () => {
+    it('1ère faute Groupe 1 = Carton BLANC (0 point)', () => {
       const result = determineCardType(CardReason.EARLY_START, []);
 
-      expect(result.type).toBe(CardType.YELLOW);
+      expect(result.type).toBe(CardType.WHITE);
       expect(result.points).toBe(0);
       expect(result.shouldExclude).toBe(false);
     });
 
-    it('2ème faute Groupe 1 = Carton ROUGE (+1 point)', () => {
-      const previousCards = [createMockCard(CardGroup.GROUP_1, CardType.YELLOW)];
+    it('2ème faute Groupe 1 = Carton JAUNE (+1 point)', () => {
+      const previousCards = [createMockCard(CardGroup.GROUP_1, CardType.WHITE)];
 
       const result = determineCardType(CardReason.LATE_STOP, previousCards);
 
-      expect(result.type).toBe(CardType.RED);
+      expect(result.type).toBe(CardType.YELLOW);
       expect(result.points).toBe(1);
       expect(result.shouldExclude).toBe(false);
     });
 
-    it('3ème faute Groupe 1 = Carton ROUGE (+1 point)', () => {
+    it('3ème faute Groupe 1 = Carton JAUNE (+1 point)', () => {
       const previousCards = [
+        createMockCard(CardGroup.GROUP_1, CardType.WHITE),
         createMockCard(CardGroup.GROUP_1, CardType.YELLOW),
-        createMockCard(CardGroup.GROUP_1, CardType.RED),
       ];
 
       const result = determineCardType(CardReason.BODY_CONTACT, previousCards);
 
-      expect(result.type).toBe(CardType.RED);
+      expect(result.type).toBe(CardType.YELLOW);
       expect(result.points).toBe(1);
       expect(result.shouldExclude).toBe(false);
     });
 
-    it('4ème faute Groupe 1 = Carton NOIR (exclusion)', () => {
+    it('4ème faute Groupe 1 = Carton JAUNE (+1 point, pas de Noir)', () => {
       const previousCards = [
+        createMockCard(CardGroup.GROUP_1, CardType.WHITE),
         createMockCard(CardGroup.GROUP_1, CardType.YELLOW),
-        createMockCard(CardGroup.GROUP_1, CardType.RED),
-        createMockCard(CardGroup.GROUP_1, CardType.RED),
+        createMockCard(CardGroup.GROUP_1, CardType.YELLOW),
       ];
 
       const result = determineCardType(CardReason.COUNTER_ATTACK, previousCards);
 
-      expect(result.type).toBe(CardType.BLACK);
-      expect(result.points).toBe(0);
-      expect(result.shouldExclude).toBe(true);
+      expect(result.type).toBe(CardType.YELLOW);
+      expect(result.points).toBe(1);
+      expect(result.shouldExclude).toBe(false);
     });
   });
 
-  describe('Groupe 2: Rouge → Rouge → Exclusion', () => {
-    it('1ère faute Groupe 2 = Carton ROUGE (+1 point)', () => {
+  describe('Groupe 2: Jaune → Rouge → Rouge', () => {
+    it('1ère faute Groupe 2 = Carton JAUNE (+1 point)', () => {
       const result = determineCardType(CardReason.ESTOC, []);
 
-      expect(result.type).toBe(CardType.RED);
+      expect(result.type).toBe(CardType.YELLOW);
       expect(result.points).toBe(1);
       expect(result.shouldExclude).toBe(false);
     });
 
     it('2ème faute Groupe 2 = Carton ROUGE (+1 point)', () => {
-      const previousCards = [createMockCard(CardGroup.GROUP_2, CardType.RED)];
+      const previousCards = [createMockCard(CardGroup.GROUP_2, CardType.YELLOW)];
 
       const result = determineCardType(CardReason.VOLUNTARY_EXIT, previousCards);
 
@@ -107,16 +107,17 @@ describe("determineCardType - Système d'escalade FFE", () => {
       expect(result.shouldExclude).toBe(false);
     });
 
-    it('3ème faute Groupe 2 = Carton NOIR (exclusion)', () => {
+    it('3ème faute Groupe 2 = Carton ROUGE (+1 point, pas de Noir)', () => {
       const previousCards = [
-        createMockCard(CardGroup.GROUP_2, CardType.RED),
+        createMockCard(CardGroup.GROUP_2, CardType.YELLOW),
         createMockCard(CardGroup.GROUP_2, CardType.RED),
       ];
 
       const result = determineCardType(CardReason.HEAVY_HIT, previousCards);
 
-      expect(result.type).toBe(CardType.BLACK);
-      expect(result.shouldExclude).toBe(true);
+      expect(result.type).toBe(CardType.RED);
+      expect(result.points).toBe(1);
+      expect(result.shouldExclude).toBe(false);
     });
   });
 
@@ -165,17 +166,17 @@ describe("determineCardType - Système d'escalade FFE", () => {
 
   describe('Isolation entre groupes', () => {
     it("Les cartons d'un groupe n'affectent pas les autres groupes", () => {
-      // 3 cartons Groupe 1
+      // 3 cartons Groupe 1 (séquence complète B→J→R)
       const previousCards = [
+        createMockCard(CardGroup.GROUP_1, CardType.WHITE),
         createMockCard(CardGroup.GROUP_1, CardType.YELLOW),
-        createMockCard(CardGroup.GROUP_1, CardType.RED),
         createMockCard(CardGroup.GROUP_1, CardType.RED),
       ];
 
-      // Faute Groupe 2 = Rouge (pas noir)
+      // Faute Groupe 2 = Jaune (pas noir, pas rouge)
       const result = determineCardType(CardReason.ESTOC, previousCards);
 
-      expect(result.type).toBe(CardType.RED);
+      expect(result.type).toBe(CardType.YELLOW);
       expect(result.shouldExclude).toBe(false);
     });
   });

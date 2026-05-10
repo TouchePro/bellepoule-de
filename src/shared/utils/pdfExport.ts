@@ -5,8 +5,9 @@
  */
 
 import { Pool, Match, MatchStatus, Fencer, PoolRanking, Weapon } from '../types';
+import type { PdfTemplate } from '../types/pdfTemplate.types';
 
-interface PoolExportOptions {
+export interface PoolExportOptions {
   title?: string;
   competitionName?: string;
   weapon?: string;
@@ -80,6 +81,28 @@ async function savePDF(html: string, defaultName: string): Promise<void> {
   if (!res.success) {
     throw new Error(res.error ?? 'Échec de la génération PDF');
   }
+}
+
+// ─── Template helpers ─────────────────────────────────────────────────────────
+
+function buildCssOverrides(t: PdfTemplate): string {
+  return `:root { --navy: ${t.colors.navy}; --gold: ${t.colors.gold}; --green: ${t.colors.green}; }`;
+}
+
+function isVisible(t: PdfTemplate | undefined, id: string): boolean {
+  if (!t) return true;
+  return t.elements.find(e => e.id === id)?.visible ?? true;
+}
+
+function assembleBody(
+  sections: Record<string, string>,
+  t: PdfTemplate | undefined,
+  defaultOrder: string[]
+): string {
+  const order = t
+    ? [...t.elements].sort((a, b) => a.order - b.order).map(e => e.id)
+    : defaultOrder;
+  return order.filter(id => isVisible(t, id)).map(id => sections[id] ?? '').join('\n');
 }
 
 // ─── CSS commun ───────────────────────────────────────────────────────────────
@@ -178,6 +201,18 @@ const BASE_CSS = `
   .chip strong { color: var(--navy); }
   .chip.gold { background: var(--gold-bg); border-color: var(--gold); }
   .chip.gold strong { color: #92400e; }
+  /* ── Nom compétition ── */
+  .competition-name-section {
+    text-align: center;
+    padding: 2mm 6mm;
+    background: var(--navy);
+    color: var(--gold);
+    font-size: 10pt;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: 2mm;
+    border-radius: 3px;
+  }
   /* ── Section titre ── */
   .section-label {
     font-size: 7.5pt;
@@ -221,8 +256,10 @@ const STAT_COLS: { id: string; header: string; cls: string; render: (d: RankData
   { id: 'rank',      header: 'Rg',  cls: 'rank-cell', render: d => `${d.rank}` },
 ];
 
-function generatePoolHTML(pool: Pool, options: PoolExportOptions): string {
-  const { title = `Poule ${pool.number}`, competitionName = '', weapon = '', category = '', logoBase64 } = options;
+export function generatePoolHTML(pool: Pool, options: PoolExportOptions, template?: PdfTemplate): string {
+  const runtimeTitle = `Poule ${pool.number}`;
+  const effectiveTitle = template?.customTitle?.trim() || options.title || runtimeTitle;
+  const { competitionName = '', weapon = '', category = '', logoBase64 } = options;
   const fencers = pool.fencers ?? [];
   const matches = pool.matches ?? [];
   const finishedCount = matches.filter(m => m.status === MatchStatus.FINISHED).length;
@@ -232,7 +269,6 @@ function generatePoolHTML(pool: Pool, options: PoolExportOptions): string {
     ? STAT_COLS.filter(c => options.visibleColumns!.includes(c.id))
     : STAT_COLS;
 
-  // Classement
   const rankings = fencers.map(f => ({
     fencer: f,
     stats: calculateFencerStats(f, matches),
@@ -246,7 +282,6 @@ function generatePoolHTML(pool: Pool, options: PoolExportOptions): string {
   rankings.forEach((r, i) => { r.rank = i + 1; });
   const rankMap = new Map(rankings.map(r => [r.fencer.id, r]));
 
-  // Grille scores
   const colHeaders = fencers.map((_, i) => `<th class="num-header">${i + 1}</th>`).join('');
   const rows = fencers.map((fencer, row) => {
     const data = rankMap.get(fencer.id)!;
@@ -267,20 +302,18 @@ function generatePoolHTML(pool: Pool, options: PoolExportOptions): string {
       </tr>`;
   }).join('');
 
-  // Matchs restants
   const pending = matches.filter(m => m.status !== MatchStatus.FINISHED);
-  const pendingHTML = pending.length === 0 ? '' : `
+  const pendingSection = pending.length === 0 ? '' : `
     <div class="section-label">Matchs à jouer (${pending.length})</div>
     <div class="match-grid">
-      ${pending.map((m, i) => {
+      ${pending.map(m => {
         const idx = matches.indexOf(m) + 1;
         return `<div class="match-item match-pending">${idx}. ${m.fencerA?.lastName ?? '?'} — ${m.fencerB?.lastName ?? '?'}</div>`;
       }).join('')}
     </div>`;
 
-  // Matchs terminés
   const finished = matches.filter(m => m.status === MatchStatus.FINISHED);
-  const finishedHTML = finished.length === 0 ? '' : `
+  const finishedSection = finished.length === 0 ? '' : `
     <div class="section-label" style="margin-top:4mm">Résultats (${finished.length})</div>
     <div class="match-grid match-grid-2col">
       ${finished.map(m => {
@@ -293,14 +326,59 @@ function generatePoolHTML(pool: Pool, options: PoolExportOptions): string {
 
   const weaponLabel = weapon ? `<span class="chip"><strong>Arme</strong> ${weapon}</span>` : '';
   const catLabel = category ? `<span class="chip"><strong>Catégorie</strong> ${category}</span>` : '';
-  const compLabel = competitionName ? `<span class="chip gold"><strong>${competitionName}</strong></span>` : '';
+
+  const sections: Record<string, string> = {
+    'header': `
+  <div class="doc-header">
+    ${logoBase64 ? `<img class="doc-header-logo" src="${logoBase64}" alt="Logo" />` : ''}
+    <div class="doc-header-left">
+      <h1>${effectiveTitle}</h1>
+      <div class="subtitle">Grille de poule • ${finishedCount}/${matches.length} matchs joués</div>
+    </div>
+    <div class="doc-header-badge">P${pool.number}</div>
+  </div>`,
+    'gold-bar': `  <div class="gold-bar"></div>`,
+    'competition-name': competitionName ? `  <div class="competition-name-section">${competitionName}</div>` : '',
+    'meta-chips': `
+  <div class="meta-row">
+    ${weaponLabel}${catLabel}
+    <span class="chip"><strong>Tireurs</strong> ${fencers.length}</span>
+    <span class="chip"><strong>Matchs</strong> ${finishedCount}/${matches.length}</span>
+  </div>`,
+    'score-grid': `
+  <div class="section-label">Grille des scores</div>
+  <table class="score-grid">
+    <thead>
+      <tr>
+        <th class="num-header">#</th>
+        <th class="name-header">Tireur</th>
+        ${colHeaders}
+        ${activeCols.map(c => `<th class="${c.cls === 'rank-cell' ? 'rank-header' : 'stat-header'}">${c.header}</th>`).join('')}
+        <th class="sig-header">Signature</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>`,
+    'pending-matches': pendingSection,
+    'finished-matches': finishedSection,
+    'footer': `
+  <div class="doc-footer">
+    <span>BellePoule Modern</span>
+    <span>${now}</span>
+  </div>`,
+  };
+
+  const defaultOrder = ['header', 'gold-bar', 'competition-name', 'meta-chips', 'score-grid', 'pending-matches', 'finished-matches', 'footer'];
+  const body = assembleBody(sections, template, defaultOrder);
+  const cssOverrides = template ? buildCssOverrides(template) : '';
 
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>${title}</title>
+  <title>${effectiveTitle}</title>
   <style>
+    ${cssOverrides}
     ${BASE_CSS}
 
     /* Grille scores */
@@ -394,68 +472,32 @@ function generatePoolHTML(pool: Pool, options: PoolExportOptions): string {
   </style>
 </head>
 <body>
-  <div class="doc-header">
-    ${logoBase64 ? `<img class="doc-header-logo" src="${logoBase64}" alt="Logo" />` : ''}
-    <div class="doc-header-left">
-      <h1>${title}</h1>
-      <div class="subtitle">Grille de poule • ${finishedCount}/${matches.length} matchs joués</div>
-    </div>
-    <div class="doc-header-badge">P${pool.number}</div>
-  </div>
-  <div class="gold-bar"></div>
-
-  <div class="meta-row">
-    ${compLabel}
-    ${weaponLabel}
-    ${catLabel}
-    <span class="chip"><strong>Tireurs</strong> ${fencers.length}</span>
-    <span class="chip"><strong>Matchs</strong> ${finishedCount}/${matches.length}</span>
-  </div>
-
-  <div class="section-label">Grille des scores</div>
-  <table class="score-grid">
-    <thead>
-      <tr>
-        <th class="num-header">#</th>
-        <th class="name-header">Tireur</th>
-        ${colHeaders}
-        ${activeCols.map(c => `<th class="${c.cls === 'rank-cell' ? 'rank-header' : 'stat-header'}">${c.header}</th>`).join('')}
-        <th class="sig-header">Signature</th>
-      </tr>
-    </thead>
-    <tbody>${rows}</tbody>
-  </table>
-
-  ${pendingHTML}
-  ${finishedHTML}
-
-  <div class="doc-footer">
-    <span>BellePoule Modern</span>
-    <span>${now}</span>
-  </div>
+${body}
 </body>
 </html>`;
 }
 
 // ─── Export Poule ─────────────────────────────────────────────────────────────
 
-export async function exportPoolToPDF(pool: Pool, options: PoolExportOptions = {}): Promise<void> {
+export async function exportPoolToPDF(pool: Pool, options: PoolExportOptions = {}, template?: PdfTemplate): Promise<void> {
   if (!pool.fencers || pool.fencers.length === 0) throw new Error('La poule ne contient aucun tireur');
   if (!pool.matches || pool.matches.length === 0) throw new Error('La poule ne contient aucun match');
 
   const title = options.title ?? `Poule ${pool.number}`;
-  const html = generatePoolHTML(pool, { ...options, title });
+  const html = generatePoolHTML(pool, { ...options, title }, template);
   await savePDF(html, `poule-${pool.number}.pdf`);
 }
 
 export async function exportMultiplePoolsToPDF(
   pools: Pool[],
   title: string = 'Export des Poules',
-  logoBase64?: string
+  logoBase64?: string,
+  template?: PdfTemplate,
+  competitionName?: string
 ): Promise<void> {
   if (pools.length === 0) throw new Error('Aucune poule à exporter');
   for (const pool of pools) {
-    await exportPoolToPDF(pool, { title: `${title} - Poule ${pool.number}`, logoBase64 });
+    await exportPoolToPDF(pool, { title: `${title} - Poule ${pool.number}`, logoBase64, competitionName }, template);
   }
 }
 
@@ -491,11 +533,12 @@ function getTableauRoundName(round: number): string {
   return names[round] ?? `Tableau de ${round}`;
 }
 
-function generateTableauHTML(
+export function generateTableauHTML(
   matches: TableauMatchForPDF[],
   matchesPerPage: number,
   title: string,
-  logoBase64?: string
+  logoBase64?: string,
+  template?: PdfTemplate
 ): string {
   const real = matches.filter(m => !m.isBye && m.fencerA && m.fencerB);
   const sorted = [...real].sort((a, b) => b.round - a.round || a.position - b.position);
@@ -560,24 +603,41 @@ function generateTableauHTML(
     return `<div class="page${isLast ? '' : ' page-break'}">${cards}</div>`;
   }).join('');
 
+  const effectiveTitle = template?.customTitle?.trim() || title;
+  const cssOverrides = template ? buildCssOverrides(template) : '';
+
+  const sections: Record<string, string> = {
+    'header': `
+  <div class="doc-header">
+    ${logoBase64 ? `<img class="doc-header-logo" src="${logoBase64}" alt="Logo" />` : ''}
+    <div class="doc-header-left">
+      <h1>${effectiveTitle}</h1>
+      <div class="subtitle">Feuilles d'arbitrage — Élimination directe</div>
+    </div>
+    <div class="doc-header-badge" style="font-size:11pt">ED</div>
+  </div>`,
+    'gold-bar': `  <div class="gold-bar"></div>`,
+    'match-cards': `  ${pagesHTML}`,
+    'footer': `
+  <div class="doc-footer">
+    <span>BellePoule Modern</span>
+    <span>${now}</span>
+  </div>`,
+  };
+
+  const defaultOrder = ['header', 'gold-bar', 'match-cards', 'footer'];
+  const body = assembleBody(sections, template, defaultOrder);
+
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>${title}</title>
+  <title>${effectiveTitle}</title>
   <style>
+    ${cssOverrides}
     ${BASE_CSS}
     @page { size: A4; margin: 12mm 10mm; }
 
-    .page-title {
-      text-align: center;
-      font-size: 13pt;
-      font-weight: 700;
-      color: var(--navy);
-      margin-bottom: 5mm;
-      padding-bottom: 3mm;
-      border-bottom: 2px solid var(--gold);
-    }
     .page-break { page-break-after: always; }
 
     .match-card {
@@ -662,22 +722,7 @@ function generateTableauHTML(
   </style>
 </head>
 <body>
-  <div class="doc-header">
-    ${logoBase64 ? `<img class="doc-header-logo" src="${logoBase64}" alt="Logo" />` : ''}
-    <div class="doc-header-left">
-      <h1>${title}</h1>
-      <div class="subtitle">Feuilles d'arbitrage — Élimination directe</div>
-    </div>
-    <div class="doc-header-badge" style="font-size:11pt">ED</div>
-  </div>
-  <div class="gold-bar"></div>
-
-  ${pagesHTML}
-
-  <div class="doc-footer">
-    <span>BellePoule Modern</span>
-    <span>${now}</span>
-  </div>
+${body}
 </body>
 </html>`;
 }
@@ -686,14 +731,15 @@ export async function exportTableauToPDF(
   matches: TableauMatchForPDF[],
   matchesPerPage: number,
   title: string = 'Tableau Élimination Directe',
-  logoBase64?: string
+  logoBase64?: string,
+  template?: PdfTemplate
 ): Promise<void> {
   const real = matches.filter(m => !m.isBye && m.fencerA && m.fencerB);
   if (real.length === 0) {
     throw new Error('Aucun match à exporter (tous sont des exempts ou sans tireurs assignés)');
   }
 
-  const html = generateTableauHTML(matches, matchesPerPage, title, logoBase64);
+  const html = generateTableauHTML(matches, matchesPerPage, title, logoBase64, template);
   await savePDF(html, `tableau-elimination.pdf`);
 }
 
@@ -701,13 +747,14 @@ export async function printTableauHTML(
   matches: TableauMatchForPDF[],
   matchesPerPage: number,
   title: string = 'Tableau Élimination Directe',
-  logoBase64?: string
+  logoBase64?: string,
+  template?: PdfTemplate
 ): Promise<void> {
   const real = matches.filter(m => !m.isBye && m.fencerA && m.fencerB);
   if (real.length === 0) {
     throw new Error('Aucun match à imprimer (tous sont des exempts ou sans tireurs assignés)');
   }
-  const html = generateTableauHTML(matches, matchesPerPage, title, logoBase64);
+  const html = generateTableauHTML(matches, matchesPerPage, title, logoBase64, template);
   const api = (window as any).electronAPI;
   if (!api?.file?.printHtml) {
     throw new Error('API Electron non disponible');
@@ -720,12 +767,13 @@ export async function printTableauHTML(
 
 // ─── Export Classement Général ───────────────────────────────────────────────
 
-function generateRankingHTML(
+export function generateRankingHTML(
   ranking: PoolRanking[],
   title: string,
   isLaserSabre: boolean,
   visibleColumns: string[],
-  logoBase64?: string
+  logoBase64?: string,
+  template?: PdfTemplate
 ): string {
   const vis = (col: string) => visibleColumns.includes(col);
   const now = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -766,12 +814,42 @@ function generateRankingHTML(
     th('index', 'Indice'),
   ].join('');
 
+  const effectiveTitle = template?.customTitle?.trim() || title;
+  const cssOverrides = template ? buildCssOverrides(template) : '';
+
+  const sections: Record<string, string> = {
+    'header': `
+  <div class="doc-header">
+    ${logoBase64 ? `<img class="doc-header-logo" src="${logoBase64}" alt="Logo" />` : ''}
+    <div class="doc-header-left">
+      <h1>${effectiveTitle}</h1>
+      <div class="subtitle">Classement général — ${ranking.length} tireur${ranking.length > 1 ? 's' : ''}</div>
+    </div>
+    <div class="doc-header-badge" style="font-size:11pt">RG</div>
+  </div>`,
+    'gold-bar': `  <div class="gold-bar"></div>`,
+    'ranking-table': `
+  <table>
+    <thead><tr>${headers}</tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`,
+    'footer': `
+  <div class="doc-footer">
+    <span>BellePoule Modern</span>
+    <span>${now}</span>
+  </div>`,
+  };
+
+  const defaultOrder = ['header', 'gold-bar', 'ranking-table', 'footer'];
+  const body = assembleBody(sections, template, defaultOrder);
+
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>${title}</title>
+  <title>${effectiveTitle}</title>
   <style>
+    ${cssOverrides}
     ${BASE_CSS}
     table { width: 100%; border-collapse: collapse; font-size: 9pt; }
     th {
@@ -788,23 +866,7 @@ function generateRankingHTML(
   </style>
 </head>
 <body>
-  <div class="doc-header">
-    ${logoBase64 ? `<img class="doc-header-logo" src="${logoBase64}" alt="Logo" />` : ''}
-    <div class="doc-header-left">
-      <h1>${title}</h1>
-      <div class="subtitle">Classement général — ${ranking.length} tireur${ranking.length > 1 ? 's' : ''}</div>
-    </div>
-    <div class="doc-header-badge" style="font-size:11pt">RG</div>
-  </div>
-  <div class="gold-bar"></div>
-  <table>
-    <thead><tr>${headers}</tr></thead>
-    <tbody>${rows}</tbody>
-  </table>
-  <div class="doc-footer">
-    <span>BellePoule Modern</span>
-    <span>${now}</span>
-  </div>
+${body}
 </body>
 </html>`;
 }
@@ -814,12 +876,121 @@ export async function exportRankingToPDF(
   title: string = 'Classement Général',
   weapon?: Weapon,
   visibleColumns?: string[],
-  logoBase64?: string
+  logoBase64?: string,
+  template?: PdfTemplate
 ): Promise<void> {
   if (ranking.length === 0) throw new Error('Aucun tireur dans le classement');
   const isLaserSabre = weapon === 'L' || weapon === ('LASER' as any);
   const cols = visibleColumns ?? ['rank', 'lastName', 'firstName', 'club', 'victories', 'ratio', 'td', 'tr', 'quest', 'index'];
-  const html = generateRankingHTML(ranking, title, isLaserSabre, cols, logoBase64);
+  const html = generateRankingHTML(ranking, title, isLaserSabre, cols, logoBase64, template);
   await savePDF(html, 'classement-general.pdf');
+}
+
+// ─── Export Résultats Finaux ───────────────────────────────────────────────────
+
+interface FinalResultForPDF {
+  rank: number;
+  fencer: Fencer;
+  eliminatedAt?: string;
+}
+
+function generateResultsHTML(
+  results: FinalResultForPDF[],
+  title: string,
+  logoBase64?: string,
+  template?: PdfTemplate
+): string {
+  const now = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+  const medals: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
+
+  const rows = results.map(r => {
+    const medal = medals[r.rank] ?? '';
+    const status =
+      (r.fencer as any).status === 'ABANDONED' ? ' <span style="color:#ef4444;font-size:8pt">(A)</span>' :
+      (r.fencer as any).status === 'FORFAIT'   ? ' <span style="color:#ef4444;font-size:8pt">(F)</span>' :
+      (r.fencer as any).status === 'EXCLUDED'  ? ' <span style="color:#ef4444;font-size:8pt">(X)</span>' : '';
+    return `
+<tr>
+  <td style="text-align:center;font-weight:700;color:var(--navy)">${medal} ${r.rank}</td>
+  <td style="font-weight:600">${r.fencer.lastName.toUpperCase()}${status}</td>
+  <td>${r.fencer.firstName ?? ''}</td>
+  <td style="color:var(--gray-dark)">${r.fencer.club ?? ''}</td>
+  <td style="text-align:center;color:var(--gray-dark)">${r.eliminatedAt ?? '-'}</td>
+</tr>`;
+  }).join('');
+
+  const effectiveTitle = template?.customTitle?.trim() || title;
+  const cssOverrides = template ? buildCssOverrides(template) : '';
+
+  const sections: Record<string, string> = {
+    'header': `
+  <div class="doc-header">
+    ${logoBase64 ? `<img class="doc-header-logo" src="${logoBase64}" alt="Logo" />` : ''}
+    <div class="doc-header-left">
+      <h1>${effectiveTitle}</h1>
+      <div class="subtitle">Classement final — ${results.length} tireur${results.length > 1 ? 's' : ''}</div>
+    </div>
+    <div class="doc-header-badge" style="font-size:11pt">RF</div>
+  </div>`,
+    'gold-bar': `  <div class="gold-bar"></div>`,
+    'results-table': `
+  <table>
+    <thead>
+      <tr>
+        <th style="width:10mm">Rg</th>
+        <th style="text-align:left">Nom</th>
+        <th style="text-align:left">Prénom</th>
+        <th style="text-align:left">Club</th>
+        <th>Éliminé en</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>`,
+    'footer': `
+  <div class="doc-footer">
+    <span>BellePoule Modern</span>
+    <span>${now}</span>
+  </div>`,
+  };
+
+  const defaultOrder = ['header', 'gold-bar', 'results-table', 'footer'];
+  const body = assembleBody(sections, template, defaultOrder);
+
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>${effectiveTitle}</title>
+  <style>
+    ${cssOverrides}
+    ${BASE_CSS}
+    table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+    th {
+      background: var(--navy); color: var(--white);
+      font-size: 8pt; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.8px; padding: 2.5mm 3mm; text-align: center;
+    }
+    td { padding: 2mm 3mm; border-bottom: 1px solid var(--gray-light); vertical-align: middle; }
+    tr:nth-child(even) td { background: var(--gray-xlight); }
+    tr:nth-child(1) td:first-child { color: #d97706; font-size: 11pt; }
+    tr:nth-child(2) td:first-child { color: #6b7280; font-size: 11pt; }
+    tr:nth-child(3) td:first-child { color: #92400e; font-size: 11pt; }
+  </style>
+</head>
+<body>
+${body}
+</body>
+</html>`;
+}
+
+export async function exportResultsToPDF(
+  results: FinalResultForPDF[],
+  title: string = 'Résultats Finaux',
+  logoBase64?: string,
+  template?: PdfTemplate
+): Promise<void> {
+  if (results.length === 0) throw new Error('Aucun résultat à exporter');
+  const html = generateResultsHTML(results, title, logoBase64, template);
+  await savePDF(html, 'resultats-finaux.pdf');
 }
 

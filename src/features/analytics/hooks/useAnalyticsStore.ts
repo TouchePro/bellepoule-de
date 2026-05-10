@@ -2,8 +2,23 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { useShallow } from 'zustand/shallow';
-import { AnalyticsState, AnalyticsActions } from '../types/analytics.types';
 import { AnalyticsService } from '../services/analyticsService';
+import type { FencerCompetitionStats } from '../../../shared/types';
+
+interface CompetitionMetrics { totalFencers: number; completedMatches: number }
+
+interface AnalyticsState {
+  fencerStats: FencerCompetitionStats[];
+  competitionMetrics: CompetitionMetrics | null;
+  isLoading: boolean;
+  error: string | null;
+}
+
+interface AnalyticsActions {
+  loadFencerStats: (competitionId: string) => Promise<void>;
+  loadCompetitionMetrics: (competitionId: string) => Promise<void>;
+  clearError: () => void;
+}
 
 const service = new AnalyticsService();
 
@@ -13,7 +28,6 @@ export const useAnalyticsStore = create<AnalyticsState & AnalyticsActions>()(
       // State
       fencerStats: [],
       competitionMetrics: null,
-      predictions: [],
       isLoading: false,
       error: null,
 
@@ -44,21 +58,6 @@ export const useAnalyticsStore = create<AnalyticsState & AnalyticsActions>()(
         }
       },
 
-      predictMatch: async (fencerAId: string, fencerBId: string) => {
-        try {
-          const prediction = await service.predictMatch(fencerAId, fencerBId);
-          set(state => {
-            state.predictions.push(prediction);
-          });
-          return prediction;
-        } catch (error) {
-          set({
-            error: error instanceof Error ? error.message : 'Failed to predict match',
-          });
-          throw error;
-        }
-      },
-
       clearError: () => {
         set({ error: null });
       },
@@ -70,7 +69,6 @@ export const useAnalyticsStore = create<AnalyticsState & AnalyticsActions>()(
 // ── Selector hooks ───────────────────────────────────────────────────────────
 export const useFencerStats = () => useAnalyticsStore(useShallow(s => s.fencerStats));
 export const useCompetitionMetrics = () => useAnalyticsStore(s => s.competitionMetrics);
-export const usePredictions = () => useAnalyticsStore(useShallow(s => s.predictions));
 export const useAnalyticsLoading = () => useAnalyticsStore(s => s.isLoading);
 export const useAnalyticsError = () => useAnalyticsStore(s => s.error);
 export const useAnalyticsActions = () =>

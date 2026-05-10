@@ -82,6 +82,7 @@ export enum MatchMode {
   NORMAL = 'normal',
   SUDDEN_DEATH_CHALLENGER = 'sudden_death_challenger',
   SUDDEN_DEATH_TIMEOUT = 'sudden_death_timeout',
+  SUPPLEMENTARY_TIME = 'supplementary_time',
 }
 
 // ============================================================================
@@ -136,6 +137,7 @@ export enum MatchStatus {
 export enum PhaseType {
   CHECKIN = 'checkin',
   POOL = 'pool',
+  QUEST = 'quest',
   DIRECT_ELIMINATION = 'direct_elimination',
   CLASSIFICATION = 'classification',
 }
@@ -303,6 +305,36 @@ export interface PoolRanking {
   questVictories3?: number; // Nombre de victoires à 3 points (écart 8-11)
   questVictories2?: number; // Nombre de victoires à 2 points (écart 4-7)
   questVictories1?: number; // Nombre de victoires à 1 point (écart ≤3)
+  totalCards?: number;      // Nombre total de cartons reçus (critère de départage Quest)
+}
+
+// ============================================================================
+// Statistiques par combattant
+// ============================================================================
+
+export interface FencerCompetitionStats {
+  fencerId: string;
+  fencerLastName: string;
+  fencerFirstName: string;
+  fencerClub?: string;
+  competitionId: string;
+  // Touches Laser Sabre (zones A=1pt, B=3pts, C=5pts)
+  touchesZoneA: number;
+  touchesZoneB: number;
+  touchesZoneC: number;
+  totalTouchPoints: number;
+  // Cartons
+  whiteCards: number;
+  yellowCards: number;
+  redCards: number;
+  cardsByReason: Partial<Record<CardReason, number>>;
+  // Sorties d'arène
+  arenaExits: number;
+  // Durée des matchs
+  matchesPlayed: number;
+  totalDurationSeconds: number;
+  averageDurationSeconds: number;
+  matchesFinishedEarly: number; // durée < 180s (avant le temps réglementaire)
 }
 
 // ============================================================================
@@ -406,6 +438,20 @@ export interface Competition extends BaseEntity {
   status: 'draft' | 'in_progress' | 'completed' | 'cancelled';
 }
 
+// ============================================================================
+// Quest Phase Configuration (Sabre Laser)
+// ============================================================================
+
+export interface QuestPhaseConfig {
+  enabled: boolean;
+  hasPreliminaryPools: boolean;
+  qualifiersCount?: number;
+  fightsPerFencer?: number;
+  availableTimeMinutes?: number;
+  numberOfArenas?: number;
+  opponentConstraint: 'none' | 'club' | 'region' | 'nation';
+}
+
 export interface CompetitionSettings {
   defaultPoolMaxScore: number; // Score max en poules (défaut: 5)
   defaultTableMaxScore: number; // Score max en tableau (défaut: 10 ou 15)
@@ -416,6 +462,7 @@ export interface CompetitionSettings {
   defaultRanking: number; // Classement par défaut pour non-classés
   randomScore: boolean; // Scores aléatoires (pour tests)
   minTeamSize: number; // Taille min équipe (compétitions par équipes)
+  questConfig?: QuestPhaseConfig; // Configuration du Tour Quest (Sabre Laser uniquement)
 }
 
 export interface Phase extends BaseEntity {

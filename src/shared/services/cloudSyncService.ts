@@ -6,6 +6,7 @@
 
 import { Competition, Fencer, Match } from '../types';
 import { detectConflicts, mergeActionsById } from '../utils/conflictResolution';
+import { logger, LogCategory } from './logger';
 
 export interface CloudSyncConfig {
   provider: 'dropbox' | 'gdrive' | 'onedrive' | 'custom';
@@ -102,7 +103,7 @@ export class CloudSyncService {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(jwk));
       }
     } catch (error) {
-      console.error('Failed to initialize encryption:', error);
+      logger.error(LogCategory.SYSTEM, 'Encryption init failed', error as Error);
       throw new Error('Encryption initialization failed');
     }
   }
@@ -131,7 +132,7 @@ export class CloudSyncService {
 
       return btoa(String.fromCharCode(...combined));
     } catch (error) {
-      console.error('Encryption failed:', error);
+      logger.error(LogCategory.SYSTEM, 'Encryption failed', error as Error);
       throw error;
     }
   }
@@ -162,22 +163,91 @@ export class CloudSyncService {
       const decoder = new TextDecoder();
       return decoder.decode(decrypted);
     } catch (error) {
-      console.error('Decryption failed:', error);
+      logger.error(LogCategory.SYSTEM, 'Decryption failed', error as Error);
       throw error;
     }
   }
 
   /**
-   * Compress data before upload
+   * Compress data before upload using native CompressionStream (gzip)
    */
   private async compressData(data: string): Promise<string> {
     if (!this.config.compressionEnabled) {
       return data;
     }
 
-    // Simple compression using built-in APIs if available
-    // In production, you'd use a library like pako
-    return data;
+    if (typeof CompressionStream === 'undefined') {
+      return data;
+    }
+
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(data);
+    const cs = new CompressionStream('gzip');
+    const writer = cs.writable.getWriter();
+    writer.write(bytes);
+    writer.close();
+
+    const chunks: Uint8Array[] = [];
+    const reader = cs.readable.getReader();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+    }
+
+    const totalLength = chunks.reduce((acc, c) => acc + c.length, 0);
+    const compressed = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const chunk of chunks) {
+      compressed.set(chunk, offset);
+      offset += chunk.length;
+    }
+
+    // Encode as base64 with marker prefix so decompressData knows the format
+    return 'gz:' + btoa(String.fromCharCode(...compressed));
+  }
+
+  /**
+   * Decompress data produced by compressData (handles gz: prefix or plain JSON)
+   */
+  private async decompressData(data: string): Promise<string> {
+    if (!data.startsWith('gz:')) {
+      return data;
+    }
+
+    if (typeof DecompressionStream === 'undefined') {
+      throw new Error('DecompressionStream not available');
+    }
+
+    const b64 = data.slice(3);
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+
+    const ds = new DecompressionStream('gzip');
+    const writer = ds.writable.getWriter();
+    writer.write(bytes);
+    writer.close();
+
+    const chunks: Uint8Array[] = [];
+    const reader = ds.readable.getReader();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+    }
+
+    const totalLength = chunks.reduce((acc, c) => acc + c.length, 0);
+    const decompressed = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const chunk of chunks) {
+      decompressed.set(chunk, offset);
+      offset += chunk.length;
+    }
+
+    return new TextDecoder().decode(decompressed);
   }
 
   /**
@@ -211,7 +281,7 @@ export class CloudSyncService {
    */
   async sync(): Promise<boolean> {
     if (this.syncStatus.isSyncing) {
-      console.log('Sync already in progress');
+      logger.debug(LogCategory.SYSTEM, 'Sync already in progress');
       return false;
     }
 
@@ -240,7 +310,7 @@ export class CloudSyncService {
 
       return true;
     } catch (error) {
-      console.error('Sync failed:', error);
+      logger.error(LogCategory.SYSTEM, 'Sync failed', error as Error);
       this.syncStatus.errors.push(error instanceof Error ? error.message : 'Unknown error');
       return false;
     } finally {
@@ -338,17 +408,62 @@ export class CloudSyncService {
    * Upload to Google Drive
    */
   private async uploadToGoogleDrive(data: string): Promise<void> {
-    // Google Drive API implementation
-    // This would use the Google Drive API
-    console.log('Uploading to Google Drive...');
+    const fileName = 'bellepoule-backup.json';
+    const searchResp = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=name='${fileName}'&fields=files(id)`,
+      { headers: { Authorization: `Bearer ${this.config.apiKey}` } }
+    );
+    if (!searchResp.ok) {
+      throw new Error(`Google Drive search failed: ${searchResp.statusText}`);
+    }
+    const searchResult = (await searchResp.json()) as { files: Array<{ id: string }> };
+    const existingId = searchResult.files[0]?.id;
+
+    const metadata = JSON.stringify({ name: fileName, mimeType: 'application/json' });
+    const boundary = 'bellepoule_boundary';
+    const body =
+      `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n` +
+      `${metadata}\r\n` +
+      `--${boundary}\r\nContent-Type: application/json\r\n\r\n` +
+      `${data}\r\n` +
+      `--${boundary}--`;
+
+    const url = existingId
+      ? `https://www.googleapis.com/upload/drive/v3/files/${existingId}?uploadType=multipart`
+      : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+    const method = existingId ? 'PATCH' : 'POST';
+
+    const uploadResp = await fetch(url, {
+      method,
+      headers: {
+        Authorization: `Bearer ${this.config.apiKey}`,
+        'Content-Type': `multipart/related; boundary=${boundary}`,
+      },
+      body,
+    });
+    if (!uploadResp.ok) {
+      throw new Error(`Google Drive upload failed: ${uploadResp.statusText}`);
+    }
   }
 
   /**
    * Upload to OneDrive
    */
   private async uploadToOneDrive(data: string): Promise<void> {
-    // OneDrive API implementation
-    console.log('Uploading to OneDrive...');
+    const response = await fetch(
+      'https://graph.microsoft.com/v1.0/me/drive/root:/bellepoule/backup.json:/content',
+      {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${this.config.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: data,
+      }
+    );
+    if (!response.ok) {
+      throw new Error(`OneDrive upload failed: ${response.statusText}`);
+    }
   }
 
   /**
@@ -469,14 +584,15 @@ export class CloudSyncService {
 
       // Decrypt and decompress
       const decrypted = await this.decryptData(backupData);
-      const data = JSON.parse(decrypted) as { competitions: Competition[]; fencers: Fencer[]; matches: Match[] };
+      const decompressed = await this.decompressData(decrypted);
+      const data = JSON.parse(decompressed) as { competitions: Competition[]; fencers: Fencer[]; matches: Match[] };
 
       // Restore to local database
       await this.updateLocalData(data);
 
       return true;
     } catch (error) {
-      console.error('Restore failed:', error);
+      logger.error(LogCategory.SYSTEM, 'Restore failed', error as Error);
       return false;
     }
   }
@@ -487,6 +603,69 @@ export class CloudSyncService {
   private async downloadBackup(backupId: string): Promise<string> {
     // Download implementation
     return '';
+  }
+
+  /**
+   * Download current backup from the active cloud provider
+   */
+  async downloadFromCloud(): Promise<{ competitions: Competition[]; fencers: Fencer[]; matches: Match[] }> {
+    let raw: string;
+
+    switch (this.config.provider) {
+      case 'dropbox': {
+        const resp = await fetch('https://content.dropboxapi.com/2/files/download', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.config.apiKey}`,
+            'Dropbox-API-Arg': JSON.stringify({ path: '/bellepoule/backup.json' }),
+          },
+        });
+        if (!resp.ok) throw new Error(`Dropbox download failed: ${resp.statusText}`);
+        raw = await resp.text();
+        break;
+      }
+      case 'gdrive': {
+        const searchResp = await fetch(
+          `https://www.googleapis.com/drive/v3/files?q=name='bellepoule-backup.json'&fields=files(id)`,
+          { headers: { Authorization: `Bearer ${this.config.apiKey}` } }
+        );
+        if (!searchResp.ok) throw new Error(`Google Drive search failed: ${searchResp.statusText}`);
+        const result = (await searchResp.json()) as { files: Array<{ id: string }> };
+        const fileId = result.files[0]?.id;
+        if (!fileId) throw new Error('Google Drive: backup file not found');
+        const dlResp = await fetch(
+          `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+          { headers: { Authorization: `Bearer ${this.config.apiKey}` } }
+        );
+        if (!dlResp.ok) throw new Error(`Google Drive download failed: ${dlResp.statusText}`);
+        raw = await dlResp.text();
+        break;
+      }
+      case 'onedrive': {
+        const resp = await fetch(
+          'https://graph.microsoft.com/v1.0/me/drive/root:/bellepoule/backup.json:/content',
+          { headers: { Authorization: `Bearer ${this.config.apiKey}` } }
+        );
+        if (!resp.ok) throw new Error(`OneDrive download failed: ${resp.statusText}`);
+        raw = await resp.text();
+        break;
+      }
+      case 'custom': {
+        const resp = await fetch('/api/backup', {
+          headers: { Authorization: `Bearer ${this.config.apiKey}` },
+        });
+        if (!resp.ok) throw new Error(`Custom download failed: ${resp.statusText}`);
+        const json = (await resp.json()) as { data: string };
+        raw = json.data;
+        break;
+      }
+      default:
+        throw new Error(`Unknown provider: ${this.config.provider}`);
+    }
+
+    const decrypted = await this.decryptData(raw);
+    const decompressed = await this.decompressData(decrypted);
+    return JSON.parse(decompressed) as { competitions: Competition[]; fencers: Fencer[]; matches: Match[] };
   }
 
   /**

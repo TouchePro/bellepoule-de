@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Competition, Fencer, FencerStatus, MatchStatus, Weapon } from '../../shared/types';
+import { Competition, Fencer, FencerStatus, Match, MatchStatus, Weapon } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
 import { RankingImportResult } from '../../shared/utils/fileParser';
 import FencerList from './FencerList';
@@ -37,15 +37,18 @@ import { TouchOptimizedReferee } from './TouchOptimizedReferee';
 import { PresentationMode } from './PresentationMode';
 import KioskDisplay from './KioskDisplay';
 import { FencerPhoto } from './FencerPhoto';
+import QuestPhaseView from './QuestPhaseView';
 
 interface CompetitionViewProps {
   competition: Competition;
   onUpdate: (competition: Competition) => void;
+  requestPhase?: string;
+  onPhaseApplied?: () => void;
 }
 
-const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate }) => {
+const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate, requestPhase, onPhaseApplied }) => {
   const { showToast } = useToast();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   // Settings avec valeurs par défaut
   const poolRounds = competition.settings?.poolRounds ?? 1;
@@ -57,6 +60,14 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
   // États locaux
   const [currentPhase, setCurrentPhase] = useState<Phase>('checkin');
+
+  useEffect(() => {
+    if (requestPhase) {
+      setCurrentPhase(requestPhase as Phase);
+      onPhaseApplied?.();
+    }
+  }, [requestPhase]);
+
   const [showAddFencerModal, setShowAddFencerModal] = useState(false);
   const [showPropertiesModal, setShowPropertiesModal] = useState(false);
   const [importData, setImportData] = useState<{
@@ -75,7 +86,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [showKiosk, setShowKiosk] = useState(false);
   const [showPresentation, setShowPresentation] = useState(false);
   const [showKioskDisplay, setShowKioskDisplay] = useState(false);
-  const [selectedMatch, setSelectedMatch] = useState<any>(null);
+  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
 
   // Paramètres de préparation des poules (persistés entre les phases)
   const [minFencersPerPool, setMinFencersPerPool] = useState<number>(5);
@@ -95,6 +106,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     fencers,
     loadFencers,
     addFencer,
+    bulkAddFencers,
     updateFencer,
     deleteFencer,
     deleteAllFencers,
@@ -204,14 +216,15 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       matchId: string;
       scoreA: number;
       scoreB: number;
+      winner?: 'A' | 'B';
       isTableau?: boolean;
     }) => {
-      const { matchId, scoreA, scoreB } = data;
+      const { matchId, scoreA, scoreB, winner: winnerOverride } = data;
       logger.debug(
         LogCategory.UI,
         `[CompetitionView] Match terminé reçu: ${matchId} - Score: ${scoreA}-${scoreB}`
       );
-      updateMatchFromRemote(matchId, scoreA, scoreB, MatchStatus.FINISHED);
+      updateMatchFromRemote(matchId, scoreA, scoreB, MatchStatus.FINISHED, winnerOverride);
 
       // Mise à jour du tableau d'élimination directe si c'est un match DE
       setTableauMatches(prev => {
@@ -232,6 +245,27 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       window.electronAPI.removeAllListeners?.('match:finished');
     };
   }, [updateMatchFromRemote]);
+
+  // Sync matchs tableau vers DB (batch, inclut la 3e place)
+  useEffect(() => {
+    if (!competition?.id || tableauMatches.length === 0) return;
+    const maxScore = competition.settings?.defaultTableMaxScore ?? 15;
+    window.electronAPI.db.upsertMultipleTableauMatches(
+      competition.id,
+      tableauMatches.map(m => ({
+        matchId: m.id,
+        round: m.round,
+        position: m.position,
+        fencerAId: m.fencerA?.id ?? null,
+        fencerBId: m.fencerB?.id ?? null,
+        scoreA: m.scoreA != null ? { value: m.scoreA, isVictory: m.winner?.id === m.fencerA?.id } : null,
+        scoreB: m.scoreB != null ? { value: m.scoreB, isVictory: m.winner?.id === m.fencerB?.id } : null,
+        status: m.winner ? 'finished' : m.isBye ? 'finished' : 'not_started',
+        maxScore,
+        isBye: m.isBye,
+      }))
+    ).catch((e: unknown) => logger.warn(LogCategory.DATABASE, 'upsertMultipleTableauMatches failed', e instanceof Error ? e : undefined));
+  }, [tableauMatches, competition?.id]);
 
   // Menu events
   useMenuEvents({
@@ -309,9 +343,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   };
 
   const handleImportFencers = async (importedFencers: Partial<Fencer>[]) => {
-    for (const fencerData of importedFencers) {
-      await addFencer(fencerData as any);
-    }
+    await bulkAddFencers(importedFencers as any);
     setImportData(null);
   };
 
@@ -352,19 +384,33 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   };
 
   const handleImportRanking = async (result: RankingImportResult) => {
+    if (!window.electronAPI?.db?.updateFencer) {
+      showToast('Erreur: API non disponible', 'error');
+      return;
+    }
+
     try {
-      // Mettre à jour chaque tireur individuellement
-      for (const detail of result.details) {
-        if (detail.matched && detail.fencerId) {
-          await updateFencer(detail.fencerId, { ranking: detail.ranking });
-        }
-      }
+      const updatePromises = result.details
+        .filter(d => d.matched && d.fencerId)
+        .map(d =>
+          window.electronAPI!.db!.updateFencer!(d.fencerId!, { ranking: d.ranking }).catch(err =>
+            logger.error(LogCategory.UI, `Failed to update ranking for fencer ${d.fencerId}`, err as Error)
+          )
+        );
+      await Promise.allSettled(updatePromises);
+
+      onUpdate({
+        ...competition,
+        fencers: (competition.fencers || []).map(f => {
+          const detail = result.details.find(d => d.fencerId === f.id);
+          return detail?.matched ? { ...f, ranking: detail.ranking, updatedAt: new Date() } : f;
+        }),
+      });
 
       showToast(
         `Classement importé: ${result.updated} tireur(s) mis à jour`,
         result.errors.length > 0 ? 'warning' : 'success'
       );
-
       setImportData(null);
     } catch (error) {
       logger.error(LogCategory.UI, 'Failed to import ranking', error as Error);
@@ -470,12 +516,21 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     setCurrentPoolRound(prev => prev + 1);
   };
 
+  const questConfig = competition.settings?.questConfig;
+  const questEnabled = isLaserSabre && questConfig?.enabled === true;
+
+  const phaseOrder: Phase[] = (() => {
+    if (!questEnabled) return ['checkin', 'poolprep', 'pools', 'ranking', 'tableau', 'results'];
+    if (questConfig?.hasPreliminaryPools)
+      return ['checkin', 'poolprep', 'pools', 'ranking', 'quest', 'tableau', 'results'];
+    return ['checkin', 'quest', 'tableau', 'results'];
+  })();
+
   const handleGoBack = () => {
     if (skipPoolPhase && currentPhase === 'ranking') {
       setCurrentPhase('poolprep');
       return;
     }
-    const phaseOrder: Phase[] = ['checkin', 'poolprep', 'pools', 'ranking', 'tableau', 'results'];
     const currentIndex = phaseOrder.indexOf(currentPhase);
     if (currentIndex > 0) {
       setCurrentPhase(phaseOrder[currentIndex - 1]);
@@ -498,55 +553,75 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const phases = [
     {
       id: 'checkin',
-      label: 'Appel',
+      label: t('phases.checkin'),
       icon: '📋',
       disabled: false,
       title: undefined as string | undefined,
     },
-    {
-      id: 'poolprep',
-      label: 'Préparation',
-      icon: '⚙️',
-      disabled: false,
-      title: undefined as string | undefined,
-    },
-    {
-      id: 'pools',
-      label: skipPoolPhase ? 'Poules (saut)' : poolRounds > 1 ? `Poules (${currentPoolRound}/${poolRounds})` : 'Poules',
-      icon: skipPoolPhase ? '⏭' : '🎯',
-      disabled: skipPoolPhase,
-      title: skipPoolPhase ? 'Phase de poules ignorée (0 poules)' : (undefined as string | undefined),
-    },
-    {
-      id: 'ranking',
-      label: 'Classement',
-      icon: '📊',
-      disabled: false,
-      title: undefined as string | undefined,
-    },
+    // Phases de poules : masquées en mode Quest sans poules préliminaires
+    ...(!questEnabled || questConfig?.hasPreliminaryPools
+      ? [
+          {
+            id: 'poolprep',
+            label: t('phases.poolprep'),
+            icon: '⚙️',
+            disabled: false,
+            title: undefined as string | undefined,
+          },
+          {
+            id: 'pools',
+            label: skipPoolPhase
+              ? t('phases.pools_skip')
+              : poolRounds > 1
+                ? t('phases.pools_round', { current: currentPoolRound, total: poolRounds })
+                : t('phases.pools'),
+            icon: skipPoolPhase ? '⏭' : '🎯',
+            disabled: skipPoolPhase,
+            title: skipPoolPhase ? t('phases.pools_skip_tooltip') : (undefined as string | undefined),
+          },
+          {
+            id: 'ranking',
+            label: t('phases.ranking'),
+            icon: '📊',
+            disabled: false,
+            title: undefined as string | undefined,
+          },
+        ]
+      : []),
+    ...(questEnabled
+      ? [
+          {
+            id: 'quest',
+            label: 'Tour Quest',
+            icon: '⚔️',
+            disabled: false,
+            title: undefined as string | undefined,
+          },
+        ]
+      : []),
     ...(hasDirectElimination
       ? [
           {
             id: 'tableau',
-            label: 'Tableau',
+            label: t('phases.tableau'),
             icon: '🏆',
             disabled: !isTableauUnlocked,
             title: !isTableauUnlocked
-              ? 'Terminez toutes les poules et validez le classement pour accéder au tableau'
+              ? t('phases.tableau_locked_tooltip')
               : (undefined as string | undefined),
           },
         ]
       : []),
     {
       id: 'results',
-      label: 'Résultats',
+      label: t('phases.results'),
       icon: '🏁',
       disabled: isResultsLocked,
       title: undefined as string | undefined,
     },
     {
       id: 'remote',
-      label: '📡 Saisie distante',
+      label: `📡 ${t('phases.remote')}`,
       icon: '📡',
       disabled: false,
       title: undefined as string | undefined,
@@ -558,13 +633,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
     if (!isLastPoolRound) {
       return {
-        label: `Tour ${currentPoolRound + 1} de poules →`,
+        label: t('pools.next_round_n', { n: currentPoolRound + 1 }),
         action: handleNextPoolRound,
       };
     }
 
     return {
-      label: 'Voir le classement →',
+      label: t('pools.view_ranking_action'),
       action: handleGoToRanking,
     };
   };
@@ -589,7 +664,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             {competition.title}
           </h1>
           <p style={{ opacity: 0.9, fontSize: '0.875rem' }}>
-            {new Date(competition.date).toLocaleDateString('fr-FR', {
+            {new Date(competition.date).toLocaleDateString(language === 'zh-HK' ? 'zh-HK' : language, {
               weekday: 'long',
               day: 'numeric',
               month: 'long',
@@ -600,25 +675,11 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <span className="badge" style={{ background: 'rgba(255,255,255,0.2)' }}>
-            {fencers.length} tireurs
+            {fencers.length} {t('fencer.label')}
           </span>
           <span className="badge" style={{ background: 'rgba(255,255,255,0.2)' }}>
-            {getCheckedInFencers().length} pointés
+            {getCheckedInFencers().length} {t('fencer.present_label')}
           </span>
-          <button
-            onClick={() => setCurrentPhase('remote')}
-            style={{
-              background: 'rgba(255,255,255,0.2)',
-              border: 'none',
-              color: 'white',
-              padding: '0.5rem 1rem',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-            }}
-          >
-            📡 Saisie distante
-          </button>
           <button
             onClick={() => setShowFencerComparison(true)}
             style={{
@@ -631,7 +692,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               fontSize: '0.875rem',
             }}
           >
-            ⚔️ Comparaisons
+            ⚔️ {t('competition.comparisons')}
           </button>
           <button
             onClick={() => setShowAnalytics(true)}
@@ -645,7 +706,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               fontSize: '0.875rem',
             }}
           >
-            📊 Analytics
+            📊 {t('competition.analytics')}
           </button>
           <button
             onClick={() => setShowQRCode(true)}
@@ -749,7 +810,16 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               ← Retour
             </button>
           )}
-          {currentPhase === 'checkin' && (
+          {currentPhase === 'checkin' && questEnabled && !questConfig?.hasPreliminaryPools && (
+            <button
+              className="btn btn-primary"
+              onClick={() => setCurrentPhase('quest')}
+              disabled={getCheckedInFencers().length < 2}
+            >
+              Tour Quest →
+            </button>
+          )}
+          {currentPhase === 'checkin' && (!questEnabled || questConfig?.hasPreliminaryPools) && (
             <button
               className="btn btn-primary"
               onClick={handleGeneratePools}
@@ -851,29 +921,32 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                   style={{
                     display: 'grid',
                     gap: '2rem',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${Math.max(480, 280 + (pools[0]?.fencers?.length ?? 6) * 38)}px), 1fr))`,
                   }}
                 >
                   {pools.map((pool, poolIndex) => (
-                    <PoolView
-                      key={pool.id}
-                      pool={pool}
-                      weapon={competition.weapon}
-                      maxScore={poolMaxScore}
-                      onScoreUpdate={(matchIndex, scoreA, scoreB, winner, specialStatus) =>
-                        updateScore(poolIndex, matchIndex, scoreA, scoreB, winner, specialStatus)
-                      }
-                      onFencerStatusChange={(fencerId, status) => {
-                        // Si abandon, forfait ou exclusion, mettre à jour tous les matchs du tireur
-                        if (
-                          status === 'abandon' ||
-                          status === 'forfait' ||
-                          status === 'exclusion'
-                        ) {
-                          handleFencerForfeit(fencerId, status);
+                    <div key={pool.id} style={{ minWidth: 0, overflow: 'auto' }}>
+                      <PoolView
+                        pool={pool}
+                        weapon={competition.weapon}
+                        competitionName={competition.title}
+                        maxScore={poolMaxScore}
+                        onScoreUpdate={(matchIndex, scoreA, scoreB, winner, specialStatus) =>
+                          updateScore(poolIndex, matchIndex, scoreA, scoreB, winner, specialStatus)
                         }
-                      }}
-                    />
+                        onFencerStatusChange={(fencerId, status) => {
+                          if (
+                            status === 'abandon' ||
+                            status === 'forfait' ||
+                            status === 'exclusion'
+                          ) {
+                            handleFencerForfeit(fencerId, status);
+                          }
+                        }}
+                      />
+                    </div>
                   ))}
                 </div>
               </>
@@ -897,6 +970,25 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               }
             }}
             onRankingChange={ranking => setOverallRanking(ranking)}
+          />
+        )}
+
+        {currentPhase === 'quest' && questConfig && (
+          <QuestPhaseView
+            fencers={(() => {
+              const checked = getCheckedInFencers();
+              if (questConfig.hasPreliminaryPools && questConfig.qualifiersCount) {
+                return overallRanking
+                  .slice(0, questConfig.qualifiersCount)
+                  .map(r => r.fencer)
+                  .filter(Boolean);
+              }
+              return checked;
+            })()}
+            questConfig={questConfig}
+            competitionWeapon={competition.weapon}
+            maxScore={poolMaxScore}
+            onQuestComplete={() => setCurrentPhase('ranking')}
           />
         )}
 
@@ -962,10 +1054,11 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
           competition={competition}
           onSave={async updates => {
             const updatedCompetition = { ...competition, ...updates };
+            // Mettre à jour l'UI immédiatement avant l'écriture DB pour éviter le flash
+            onUpdate(updatedCompetition);
             if (window.electronAPI) {
               await window.electronAPI.db.updateCompetition(competition.id, updatedCompetition);
             }
-            onUpdate(updatedCompetition);
           }}
           onClose={() => setShowPropertiesModal(false)}
         />
@@ -1045,7 +1138,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         <AnalyticsDashboard
           competition={competition}
           pools={pools}
-          matches={pools.flatMap(p => p.matches)}
+          matches={pools.flatMap(p => p.matches ?? [])}
           fencers={fencers}
           onClose={() => setShowAnalytics(false)}
         />
@@ -1275,5 +1368,5 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   );
 };
 
-export default CompetitionView;
+export default React.memo(CompetitionView);
 

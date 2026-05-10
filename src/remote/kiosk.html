@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Kiosk - BellePoule Modern</title>
+    <script src="/i18n.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -414,8 +415,8 @@
         text-align: center;
       }
 
-      .score-a { color: #ef4444; }
-      .score-b { color: #10b981; }
+      .score-a { color: #10b981; }
+      .score-b { color: #ef4444; }
 
       .arena-vs {
         font-size: 1rem;
@@ -681,7 +682,7 @@
 
     <!-- Overlay note d'organisation -->
     <div id="org-note-overlay">
-      <div id="org-note-label">⏸ Pause</div>
+      <div id="org-note-label" data-i18n="kiosk.pause">⏸ Pause</div>
       <div id="org-note-time"></div>
       <div id="org-note-countdown"></div>
       <div id="org-note-message"></div>
@@ -695,23 +696,23 @@
         <span class="menu-competition" id="menu-competition-name">—</span>
       </div>
       <div class="menu-nav">
-        <button id="btn-poules" class="active" onclick="switchView('poules')">Poules</button>
-        <button id="btn-classement" onclick="switchView('classement')">Classement</button>
-        <button id="btn-direct" onclick="switchView('direct')">Matchs en direct</button>
-        <button id="btn-suivants" onclick="switchView('suivants')">Matchs suivants</button>
+        <button id="btn-poules" class="active" onclick="switchView('poules')" data-i18n="kiosk.pools">Poules</button>
+        <button id="btn-classement" onclick="switchView('classement')" data-i18n="kiosk.ranking">Classement</button>
+        <button id="btn-direct" onclick="switchView('direct')" data-i18n="kiosk.live">Matchs en direct</button>
+        <button id="btn-suivants" onclick="switchView('suivants')" data-i18n="kiosk.next_matches">Matchs suivants</button>
       </div>
       <div style="position:relative;margin-left:0.5rem">
         <button id="btn-settings" class="settings-btn" title="Configurer les vues">⚙</button>
         <div id="settings-panel" class="settings-panel hidden">
-          <div class="settings-title">Vues affichées</div>
+          <div class="settings-title" data-i18n="kiosk.settings_title">Vues affichées</div>
           <label class="settings-item">
-            <input type="checkbox" id="cb-poules" checked> Poules
+            <input type="checkbox" id="cb-poules" checked> <span data-i18n="kiosk.pools">Poules</span>
           </label>
           <label class="settings-item">
-            <input type="checkbox" id="cb-classement" checked> Classement
+            <input type="checkbox" id="cb-classement" checked> <span data-i18n="kiosk.ranking">Classement</span>
           </label>
           <label class="settings-item">
-            <input type="checkbox" id="cb-direct" checked> Matchs en cours
+            <input type="checkbox" id="cb-direct" checked> <span data-i18n="kiosk.live_matches">Matchs en cours</span>
           </label>
           <label class="settings-item">
             <input type="checkbox" id="cb-suivants" checked> Matchs suivants
@@ -728,16 +729,16 @@
     <div id="view-poules" class="kiosk-view active">
       <div class="view-header">
         <div>
-          <div class="view-title">Poules</div>
-          <div class="view-subtitle" id="poules-subtitle">Classements des poules</div>
+          <div class="view-title" data-i18n="kiosk.pools">Poules</div>
+          <div class="view-subtitle" id="poules-subtitle" data-i18n="kiosk.pools_subtitle">Classements des poules</div>
         </div>
         <div class="view-badge" id="poules-badge">—</div>
       </div>
       <div class="pools-grid" id="pools-container">
         <div class="no-data">
           <div class="no-data-icon">🤺</div>
-          <h3>Aucune poule disponible</h3>
-          <p>Démarrez la compétition pour voir les poules</p>
+          <h3 data-i18n="kiosk.no_pools">Aucune poule disponible</h3>
+          <p data-i18n="kiosk.no_pools_hint">Démarrez la compétition pour voir les poules</p>
         </div>
       </div>
     </div>
@@ -849,7 +850,7 @@
         if (note.type === 'target_time' && note.targetTime) {
           const [hh, mm] = note.targetTime.split(':').map(Number);
           const fmtTime = String(hh).padStart(2, '0') + 'h' + String(mm).padStart(2, '0');
-          document.getElementById('org-note-time').textContent = (note.countdownPrefix || 'Reprise') + ' à ' + fmtTime;
+          document.getElementById('org-note-time').textContent = (note.countdownPrefix || window.T('kiosk.resume_at')) + ' à ' + fmtTime;
 
           const computeCountdown = () => {
             const now = new Date();
@@ -860,7 +861,7 @@
             const m = Math.floor(diffSec / 60);
             const s = diffSec % 60;
             document.getElementById('org-note-countdown').textContent =
-              'dans ' + m + ' min ' + String(s).padStart(2, '0') + ' s';
+              window.T('kiosk.countdown_prefix') + ' ' + m + ' min ' + String(s).padStart(2, '0') + ' s';
             if (diffSec === 0) { clearInterval(_orgNoteInterval); overlay.classList.remove('visible'); }
           };
           computeCountdown();
@@ -1388,7 +1389,8 @@
       }
 
       // ─── Init ─────────────────────────────────────────────────────────────────
-      window.addEventListener('DOMContentLoaded', () => {
+      window.addEventListener('DOMContentLoaded', async () => {
+        await window.initRemoteI18n();
         fetchData();
         fetchLogo();
         setInterval(fetchData, 15000);

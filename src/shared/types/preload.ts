@@ -15,6 +15,7 @@ import {
   ExportFormat,
   Phase,
   DirectEliminationTable,
+  FencerCompetitionStats,
 } from '../types';
 
 // Re-export Pool for preload
@@ -101,6 +102,7 @@ export interface MatchUpdateData {
   startTime?: Date;
   endTime?: Date;
   duration?: number;
+  refereeId?: string;
 }
 
 // ============================================================================
@@ -136,6 +138,17 @@ export interface MatchTimingData {
   endTime: string | null; // ISO 8601
   duration: number | null; // secondes
 }
+
+export interface ArenaExitData {
+  id: string;
+  matchId: string;
+  fencerId: string;
+  exitType: 'arena_exit' | 'arena_exit_voluntary';
+  timestamp: string; // ISO 8601
+  pointsAwarded: number;
+}
+
+export type { FencerCompetitionStats };
 
 export interface FencerMatchRecord {
   matchId: string;
@@ -322,7 +335,9 @@ export interface RemoteServerInfo {
 }
 
 export interface RemoteServerAPI {
-  startServer: (port?: number) => Promise<{ success: boolean; serverInfo?: RemoteServerInfo; error?: string }>;
+  startServer: (
+    port?: number
+  ) => Promise<{ success: boolean; serverInfo?: RemoteServerInfo; error?: string }>;
   stopServer: () => Promise<{ success: boolean; error?: string }>;
   getServerInfo: () => Promise<{ success: boolean; serverInfo?: RemoteServerInfo; error?: string }>;
   startSession: (
@@ -330,13 +345,16 @@ export interface RemoteServerAPI {
     strips: number,
     matches?: any[],
     showPhotos?: boolean,
-    kioskViews?: Record<string, boolean>
+    kioskViews?: Record<string, boolean>,
+    cardAnnounce?: boolean
   ) => Promise<{ success: boolean; session?: any; error?: string }>;
   stopSession: () => Promise<{ success: boolean; error?: string }>;
+  launchCompetition: () => Promise<{ success: boolean; error?: string }>;
   getSession: () => Promise<{ success: boolean; session?: any; error?: string }>;
   getArenas: () => Promise<{ success: boolean; arenas?: any[]; error?: string }>;
   updateStripCount: (count: number) => Promise<{ success: boolean; session?: any; error?: string }>;
   updateShowPhotos: (value: boolean) => Promise<{ success: boolean; error?: string }>;
+  updateCardAnnounce: (value: boolean) => Promise<{ success: boolean; error?: string }>;
   updateMatchArena: (
     matchId: string,
     fromArena: number | null,
@@ -355,7 +373,9 @@ export interface RemoteServerAPI {
   updateKioskViews: (
     views: Record<string, boolean>
   ) => Promise<{ success: boolean; error?: string }>;
-  setOrgNote: (note: import('../types/remote').OrgNote) => Promise<{ success: boolean; error?: string }>;
+  setOrgNote: (
+    note: import('../types/remote').OrgNote
+  ) => Promise<{ success: boolean; error?: string }>;
   clearOrgNote: () => Promise<{ success: boolean; error?: string }>;
   updateTheme: (
     theme: import('../types/remote').DisplayTheme
@@ -392,6 +412,34 @@ export interface DatabaseAPI {
   getMatch: (id: string) => Promise<Match | null>;
   getMatchesByPool: (poolId: string) => Promise<Match[]>;
   updateMatch: (id: string, updates: MatchUpdateData) => Promise<void>;
+  upsertTableauMatch: (params: {
+    competitionId: string;
+    matchId: string;
+    round: number;
+    position: number;
+    fencerAId?: string | null;
+    fencerBId?: string | null;
+    scoreA?: any | null;
+    scoreB?: any | null;
+    status?: string;
+    maxScore?: number;
+    isBye?: boolean;
+  }) => Promise<void>;
+  upsertMultipleTableauMatches: (
+    competitionId: string,
+    matches: Array<{
+      matchId: string;
+      round: number;
+      position: number;
+      fencerAId?: string | null;
+      fencerBId?: string | null;
+      scoreA?: any | null;
+      scoreB?: any | null;
+      status?: string;
+      maxScore?: number;
+      isBye?: boolean;
+    }>
+  ) => Promise<void>;
 
   // Pools
   createPool: (phaseId: string, number: number) => Promise<Pool>;
@@ -408,15 +456,46 @@ export interface DatabaseAPI {
   deletePhase: (id: string) => Promise<void>;
 
   // Referees
-  createReferee: (competitionId: string, data: { name: string; gender?: string; nationality?: string; club?: string; license?: string; category?: string }) => Promise<Referee>;
+  createReferee: (
+    competitionId: string,
+    data: {
+      name: string;
+      gender?: string;
+      nationality?: string;
+      club?: string;
+      license?: string;
+      category?: string;
+    }
+  ) => Promise<Referee>;
   getReferee: (id: string) => Promise<Referee | null>;
   getRefereesByCompetition: (competitionId: string) => Promise<Referee[]>;
   updateReferee: (id: string, updates: Record<string, string | undefined>) => Promise<void>;
   deleteReferee: (id: string) => Promise<void>;
 
   // Touch / Card read
-  getTouches: (matchId: string) => Promise<Array<{ id: string; fencerId: string; zone: string; points: number; timestamp: string; isValidInSuddenDeath: boolean; isReversed: boolean }>>;
-  getCards: (matchId: string) => Promise<Array<{ id: string; fencerId: string; cardType: string; reason: string; cardGroup: number; timestamp: string; pointsAwarded: number; resultingExclusion: boolean }>>;
+  getTouches: (matchId: string) => Promise<
+    Array<{
+      id: string;
+      fencerId: string;
+      zone: string;
+      points: number;
+      timestamp: string;
+      isValidInSuddenDeath: boolean;
+      isReversed: boolean;
+    }>
+  >;
+  getCards: (matchId: string) => Promise<
+    Array<{
+      id: string;
+      fencerId: string;
+      cardType: string;
+      reason: string;
+      cardGroup: number;
+      timestamp: string;
+      pointsAwarded: number;
+      resultingExclusion: boolean;
+    }>
+  >;
 
   // Session State
   saveSessionState: (competitionId: string, state: SessionState) => Promise<void>;
@@ -428,6 +507,9 @@ export interface DatabaseAPI {
   saveCard: (card: MatchCardData) => Promise<void>;
   updateMatchTiming: (timing: MatchTimingData) => Promise<void>;
   getFencerHistory: (fencerId: string) => Promise<FencerHistory>;
+  saveArenaExit: (exit: ArenaExitData) => Promise<void>;
+  getFencerCompetitionStats: (fencerId: string) => Promise<FencerCompetitionStats>;
+  getCompetitionFencerStats: (competitionId: string) => Promise<FencerCompetitionStats[]>;
   saveAbandonSnapshot: (
     fencerId: string,
     competitionId: string,
@@ -444,7 +526,10 @@ export interface FileAPI {
   import: (filepath: string) => Promise<FileOpenResult>;
   writeContent: (filepath: string, content: string) => Promise<void>;
   printHtml: (html: string) => Promise<{ success: boolean; error?: string }>;
-  printHtmlToPDF: (html: string, outputPath: string) => Promise<{ success: boolean; path?: string; error?: string }>;
+  printHtmlToPDF: (
+    html: string,
+    outputPath: string
+  ) => Promise<{ success: boolean; path?: string; error?: string }>;
   exportPhotos: (competitionId: string, filepath: string) => Promise<{ count: number }>;
   importPhotos: (
     competitionId: string,
@@ -485,6 +570,51 @@ export interface UtilityAPI {
   removeAllListeners: (channel: string) => void;
 }
 
+// ============================================================================
+// Bracket Node Types
+// ============================================================================
+
+export interface BracketNodeData {
+  id: string;
+  competitionId: string;
+  round: number;
+  position: number;
+  fencerAId: string | null;
+  fencerBId: string | null;
+  winnerId: string | null;
+  isBye: boolean;
+  matchId: string | null;
+}
+
+// ============================================================================
+// Score Audit Log Types
+// ============================================================================
+
+export interface ScoreAuditLogEntry {
+  id: string;
+  matchId: string;
+  competitionId: string;
+  changedBy: string;
+  timestamp: string; // ISO 8601
+  field: 'scoreA' | 'scoreB' | 'status';
+  previousValue: string | null; // JSON
+  newValue: string | null; // JSON
+}
+
+// ============================================================================
+// Arena State Types
+// ============================================================================
+
+export interface ArenaStateData {
+  arenaId: string;
+  competitionId: string;
+  currentMatchId: string | null;
+  strip: number;
+  isActive: boolean;
+  lastUpdated: string; // ISO 8601
+  extraData?: Record<string, unknown>;
+}
+
 export interface ElectronAPI extends MenuAPI, UtilityAPI {
   db: DatabaseAPI;
   file: FileAPI;
@@ -493,10 +623,10 @@ export interface ElectronAPI extends MenuAPI, UtilityAPI {
   remote: RemoteServerAPI;
   onRemoteArenaUpdate: (callback: (data: any) => void) => void;
   onRemoteMatchFinished: (callback: (data: any) => void) => void;
-  onKioskNoteUpdate: (callback: (note: import('../types/remote').OrgNote | null) => void) => () => void;
+  onKioskNoteUpdate: (
+    callback: (note: import('../types/remote').OrgNote | null) => void
+  ) => () => void;
   notifyLanguageChanged: (lang: string) => void;
   getLogo: () => Promise<string | null>;
   onLogoLoaded: (callback: (logo: string | null) => void) => () => void;
 }
-
-

@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Classement en Direct - BellePoule Modern</title>
+    <script src="/i18n.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -498,9 +499,9 @@
 
       <!-- Tab Navigation -->
       <nav class="tab-nav">
-        <button class="tab-btn active" data-tab="poules">Poules</button>
-        <button class="tab-btn" data-tab="classement">Classement Général</button>
-        <button class="tab-btn" data-tab="direct">Matchs en Cours</button>
+        <button class="tab-btn active" data-tab="poules" data-i18n="dashboard.pools">Poules</button>
+        <button class="tab-btn" data-tab="classement" data-i18n="dashboard.ranking">Classement Général</button>
+        <button class="tab-btn" data-tab="direct" data-i18n="dashboard.live">Matchs en Cours</button>
       </nav>
 
       <!-- Tab: Poules -->
@@ -508,8 +509,8 @@
         <div class="pools-grid" id="pools-container">
           <div class="no-data">
             <div class="no-data-icon">🤺</div>
-            <h3>Aucune poule en cours</h3>
-            <p>Les poules apparaîtront ici une fois la compétition démarrée</p>
+            <h3 data-i18n="dashboard.no_pools">Aucune poule en cours</h3>
+            <p data-i18n="dashboard.no_pools_hint">Les poules apparaîtront ici une fois la compétition démarrée</p>
           </div>
         </div>
       </div>
@@ -518,7 +519,7 @@
       <div id="tab-classement" class="tab-content">
         <div class="overall-ranking">
           <div class="overall-header">
-            <h2>🏅 Classement Général Quest</h2>
+            <h2 data-i18n="dashboard.ranking_title">🏅 Classement Général Quest</h2>
             <div class="quest-total" id="quest-total"></div>
           </div>
           <table class="overall-table">
@@ -534,7 +535,7 @@
             <tbody id="ranking-body">
               <tr>
                 <td colspan="5" style="text-align: center; color: #9ca3af; padding: 2rem">
-                  En attente des résultats...
+                  <span data-i18n="dashboard.ranking_waiting">En attente des résultats...</span>
                 </td>
               </tr>
             </tbody>
@@ -547,8 +548,8 @@
         <div class="live-matches" id="live-matches">
           <div class="no-data">
             <div class="no-data-icon">⏱️</div>
-            <h3>Aucun match en cours</h3>
-            <p>Les matchs en direct apparaîtront ici</p>
+            <h3 data-i18n="dashboard.no_live">Aucun match en cours</h3>
+            <p data-i18n="dashboard.no_live_hint">Les matchs en direct apparaîtront ici</p>
           </div>
         </div>
       </div>
@@ -557,7 +558,7 @@
     <!-- Refresh Indicator -->
     <div class="refresh-indicator" id="refresh-indicator">
       <span class="sync-icon">🔄</span>
-      <span>Auto-refresh: 10s</span>
+      <span data-i18n="dashboard.autorefresh">Auto-refresh: 10s</span>
     </div>
 
     <script>
@@ -801,7 +802,10 @@
       }
 
       // Initialize on load
-      window.addEventListener('DOMContentLoaded', init);
+      window.addEventListener('DOMContentLoaded', async () => {
+        await window.initRemoteI18n();
+        init();
+      });
 
       // Cleanup on unload
       window.addEventListener('beforeunload', () => {

@@ -5,14 +5,14 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { CardReason, CardGroup, Card, Fencer } from '../../shared/types';
+import { CardReason, Card, Fencer } from '../../shared/types';
 import { CardType } from '../../features/penalties/types/penalty.types';
 import {
   determineCardType,
+  createCard,
   getReasonsByGroup,
-  CARD_REASON_LABELS,
-  CARD_GROUP_LABELS,
 } from '../../shared/utils/cardSystem';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface CardModalProps {
   isOpen: boolean;
@@ -31,6 +31,7 @@ export const CardModal: React.FC<CardModalProps> = ({
   previousCards,
   opponentName,
 }) => {
+  const { t } = useTranslation();
   const [selectedReason, setSelectedReason] = useState<CardReason | null>(null);
 
   const reasonsByGroup = useMemo(() => getReasonsByGroup(), []);
@@ -44,17 +45,7 @@ export const CardModal: React.FC<CardModalProps> = ({
 
   const handleConfirm = () => {
     if (selectedReason && preview) {
-      const card: Card = {
-        id: crypto.randomUUID(),
-        matchId: '',
-        fencerId: fencer.id,
-        type: preview.type,
-        reason: selectedReason,
-        group: CardGroup.GROUP_1,
-        timestamp: new Date(),
-        pointsAwarded: preview.points,
-        resultingExclusion: preview.shouldExclude,
-      };
+      const card = createCard('', fencer.id, selectedReason, previousCards);
       onConfirm(selectedReason, card);
       setSelectedReason(null);
       onClose();
@@ -64,6 +55,8 @@ export const CardModal: React.FC<CardModalProps> = ({
   const getCardBgColor = (cardType: CardType | undefined) => {
     if (!cardType) return 'bg-gray-100';
     switch (cardType) {
+      case CardType.WHITE:
+        return 'bg-white border-gray-400';
       case CardType.YELLOW:
         return 'bg-yellow-100 border-yellow-400';
       case CardType.RED:
@@ -78,6 +71,8 @@ export const CardModal: React.FC<CardModalProps> = ({
   const getButtonColor = (cardType: CardType | undefined) => {
     if (!cardType) return 'bg-gray-300';
     switch (cardType) {
+      case CardType.WHITE:
+        return 'bg-gray-400 hover:bg-gray-500';
       case CardType.YELLOW:
         return 'bg-yellow-500 hover:bg-yellow-600';
       case CardType.RED:
@@ -89,29 +84,53 @@ export const CardModal: React.FC<CardModalProps> = ({
     }
   };
 
+  const getCardLabel = (cardType: string) => {
+    switch (cardType) {
+      case CardType.WHITE:  return t('cardModal.card_white');
+      case CardType.YELLOW: return t('cardModal.card_yellow');
+      case CardType.RED:    return t('cardModal.card_red');
+      case CardType.BLACK:  return t('cardModal.card_black');
+      default:              return cardType;
+    }
+  };
+
+  const getCardAbbr = (cardType: string) => {
+    switch (cardType) {
+      case CardType.WHITE:  return t('cardModal.abbr_white');
+      case CardType.YELLOW: return t('cardModal.abbr_yellow');
+      case CardType.RED:    return t('cardModal.abbr_red');
+      case CardType.BLACK:  return t('cardModal.abbr_black');
+      default:              return cardType;
+    }
+  };
+
+  const fencerName = `${fencer.lastName} ${fencer.firstName}`;
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <h2 className="text-xl font-bold mb-4">
-          Carton pour {fencer.lastName} {fencer.firstName}
+          {t('cardModal.title', { name: fencerName })}
         </h2>
 
         {previousCards.length > 0 && (
           <div className="mb-4 p-3 bg-gray-100 rounded">
-            <p className="text-sm font-medium">Cartons précédents :</p>
+            <p className="text-sm font-medium">{t('cardModal.previous_cards')}</p>
             <div className="flex gap-2 mt-1">
               {previousCards.map(card => (
                 <span
                   key={card.id}
                   className={`px-2 py-1 rounded text-xs font-bold ${
-                    card.type === CardType.YELLOW
-                      ? 'bg-yellow-400 text-black'
-                      : card.type === CardType.RED
-                        ? 'bg-red-500 text-white'
-                        : 'bg-black text-white'
+                    card.type === CardType.WHITE
+                      ? 'bg-white border border-gray-400 text-black'
+                      : card.type === CardType.YELLOW
+                        ? 'bg-yellow-400 text-black'
+                        : card.type === CardType.RED
+                          ? 'bg-red-500 text-white'
+                          : 'bg-black text-white'
                   }`}
                 >
-                  {card.type === CardType.YELLOW ? 'J' : card.type === CardType.RED ? 'R' : 'N'}
+                  {getCardAbbr(card.type)}
                 </span>
               ))}
             </div>
@@ -122,7 +141,7 @@ export const CardModal: React.FC<CardModalProps> = ({
           {Object.entries(reasonsByGroup).map(([group, reasons]) => (
             <div key={group}>
               <h3 className="font-semibold text-sm text-gray-600 mb-2">
-                {CARD_GROUP_LABELS[group as unknown as CardGroup]}
+                {t(`cardGroups.${group}`)}
               </h3>
               <div className="grid grid-cols-2 gap-2">
                 {reasons.map(reason => (
@@ -135,7 +154,7 @@ export const CardModal: React.FC<CardModalProps> = ({
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    {CARD_REASON_LABELS[reason]}
+                    {t(`cardReasons.${reason}`)}
                   </button>
                 ))}
               </div>
@@ -145,27 +164,21 @@ export const CardModal: React.FC<CardModalProps> = ({
 
         {preview && (
           <div className={`mt-4 p-4 rounded-lg border-2 ${getCardBgColor(preview.type)}`}>
-            <p className="font-bold text-lg">
-              {preview.type === CardType.YELLOW
-                ? '🟨 CARTON JAUNE'
-                : preview.type === CardType.RED
-                  ? '🟥 CARTON ROUGE'
-                  : '⬛ CARTON NOIR'}
-            </p>
+            <p className="font-bold text-lg">{getCardLabel(preview.type)}</p>
             {preview.points > 0 && (
               <p className="text-sm mt-1">
-                +{preview.points} point pour {opponentName}
+                {t('cardModal.points_for', { points: preview.points, name: opponentName })}
               </p>
             )}
             {preview.shouldExclude && (
-              <p className="text-sm mt-1 font-bold">⚠️ EXCLUSION DE LA COMPÉTITION</p>
+              <p className="text-sm mt-1 font-bold">{t('cardModal.exclusion')}</p>
             )}
           </div>
         )}
 
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} className="flex-1 px-4 py-2 border rounded hover:bg-gray-50">
-            Annuler
+            {t('actions.cancel')}
           </button>
           <button
             onClick={handleConfirm}
@@ -174,7 +187,7 @@ export const CardModal: React.FC<CardModalProps> = ({
               preview?.type
             )} disabled:opacity-50`}
           >
-            Confirmer
+            {t('actions.confirm')}
           </button>
         </div>
       </div>

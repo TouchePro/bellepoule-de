@@ -775,6 +775,38 @@ body {
   --color-border-dark: #d1d5db;
 }
 
+/* Dark mode overrides for hardcoded colors */
+.theme-dark .pool-cell-diagonal { background: #1f2937; }
+.theme-dark .pool-cell-victory { background: #14532d; color: #86efac; }
+.theme-dark .pool-cell-defeat { background: #450a0a; color: #fca5a5; }
+.theme-dark .tableau-fencer-winner { background: #14532d; color: #86efac; }
+.theme-dark .badge-success { background: #14532d; color: #86efac; }
+.theme-dark .badge-warning { background: #451a03; color: #fcd34d; }
+.theme-dark .badge-danger { background: #450a0a; color: #fca5a5; }
+.theme-dark .badge-info { background: #1e3a5f; color: #93c5fd; }
+.theme-dark .remote-status.active { background: #14532d; border-color: #15803d; }
+.theme-dark .modal { background: var(--color-surface); color: var(--color-text); }
+.theme-dark .modal-header { background: var(--color-bg); border-color: var(--color-border); }
+.theme-dark .modal-footer { background: var(--color-bg); border-color: var(--color-border); }
+.theme-dark .modal-body { background: var(--color-surface); }
+.theme-dark .form-control { background: var(--color-bg); color: var(--color-text); border-color: var(--color-border); }
+.theme-dark .btn-secondary { background: var(--color-surface); color: var(--color-text); border-color: var(--color-border); }
+.theme-dark .btn-secondary:hover { background: var(--color-border); }
+.theme-dark table { color: var(--color-text); }
+.theme-dark th { background: var(--color-bg); color: var(--color-text-light); border-color: var(--color-border); }
+.theme-dark td { border-color: var(--color-border); }
+.theme-dark tr:hover td { background: rgba(255,255,255,0.04); }
+.theme-dark select { background: var(--color-bg); color: var(--color-text); border-color: var(--color-border); }
+.theme-dark input[type="text"],
+.theme-dark input[type="number"],
+.theme-dark input[type="date"],
+.theme-dark input[type="search"],
+.theme-dark textarea { background: var(--color-bg); color: var(--color-text); border-color: var(--color-border); }
+.theme-dark .alert--info { background: #1e3a5f; color: #93c5fd; border-color: #2563eb; }
+.theme-dark .alert--error { background: #450a0a; color: #fca5a5; border-color: #dc2626; }
+.theme-dark .alert--warning { background: #451a03; color: #fcd34d; border-color: #d97706; }
+.theme-dark .alert--success { background: #14532d; color: #86efac; border-color: #16a34a; }
+
 /* ============================================================================
    FENCER COMPARISON (Head-to-Head)
    ============================================================================ */

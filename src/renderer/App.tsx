@@ -3,8 +3,9 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Competition, Fencer, FencerStatus, Pool, Match, PhaseType } from '../shared/types';
+import React, { useEffect, useCallback } from 'react';
+import { Competition } from '../shared/types';
+import type { CompetitionCreateData } from '../shared/types/preload';
 import { logger, LogCategory } from '@shared/services/logger';
 import CompetitionList from './components/CompetitionList';
 import CompetitionView from './components/CompetitionView';
@@ -16,27 +17,39 @@ import { ToastProvider, useToast } from './components/Toast';
 import { ConfirmProvider, useConfirm } from './components/ConfirmDialog';
 import { TranslationProvider, useTranslation } from './contexts/TranslationContext';
 import { ErrorBoundary, CompetitionErrorBoundary } from './components/ErrorBoundary';
-
-type View = 'home' | 'competition';
-
-interface OpenCompetition {
-  competition: Competition;
-  isDirty: boolean;
-}
+import { useAppState } from './hooks/useAppState';
 
 const AppContent: React.FC = () => {
   const { t, isLoading: translationLoading } = useTranslation();
   const { showToast } = useToast();
   const { confirm } = useConfirm();
-  const [view, setView] = useState<View>('home');
-  const [competitions, setCompetitions] = useState<Competition[]>([]);
-  const [currentCompetition, setCurrentCompetition] = useState<Competition | null>(null);
-  const [openCompetitions, setOpenCompetitions] = useState<OpenCompetition[]>([]);
-  const [activeTabId, setActiveTabId] = useState<string | null>(null);
-  const [showNewCompetitionModal, setShowNewCompetitionModal] = useState(false);
-  const [showReportIssueModal, setShowReportIssueModal] = useState(false);
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+
+  const {
+    view,
+    competitions,
+    currentCompetition,
+    openCompetitions,
+    activeTabId,
+    showNewCompetitionModal,
+    showReportIssueModal,
+    showSettingsModal,
+    requestedPhase,
+    isLoading,
+    setView,
+    setCompetitions,
+    setCurrentCompetition,
+    setOpenCompetitions,
+    setActiveTabId,
+    setShowNewCompetitionModal,
+    setShowReportIssueModal,
+    setShowSettingsModal,
+    setRequestedPhase,
+    loadCompetitions,
+    handleUpdateCompetition,
+    handleBack,
+    handleSettingsSave,
+    handleTabSwitch,
+  } = useAppState(showToast);
 
   // Load competitions on mount
   useEffect(() => {
@@ -86,31 +99,20 @@ const AppContent: React.FC = () => {
 
   // Sync logo from disk to localStorage so PDF exports always find it
   useEffect(() => {
-    const api = (window as any).electronAPI;
-    if (!api) return;
-    api.getLogo?.().then((logo: string | null) => {
+    if (!window.electronAPI) return;
+    window.electronAPI.getLogo?.().then((logo: string | null) => {
       if (logo) localStorage.setItem('bellepoule-logo', logo);
       else localStorage.removeItem('bellepoule-logo');
-    }).catch(() => {});
-    const unsub = api.onLogoLoaded?.((logo: string | null) => {
+    }).catch((err: unknown) => {
+      logger.warn(LogCategory.UI, 'Impossible de charger le logo', err instanceof Error ? err : undefined);
+    });
+    const unsub = window.electronAPI.onLogoLoaded?.((logo: string | null) => {
       if (logo) localStorage.setItem('bellepoule-logo', logo);
       else localStorage.removeItem('bellepoule-logo');
     });
     return () => { if (typeof unsub === 'function') unsub(); };
   }, []);
 
-  const loadCompetitions = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      if (window.electronAPI) {
-        const comps = await window.electronAPI.db.getAllCompetitions();
-        setCompetitions(comps);
-      }
-    } catch (error) {
-      logger.error(LogCategory.UI, 'Failed to load competitions', error as Error);
-    }
-    setIsLoading(false);
-  }, []);
 
   const handleCreateCompetition = useCallback(async (data: Partial<Competition>) => {
     try {
@@ -124,7 +126,7 @@ const AppContent: React.FC = () => {
           category: data.category || 'SENIOR',
           ...data,
         };
-        const newComp = await window.electronAPI.db.createCompetition(competitionData as any);
+        const newComp = await window.electronAPI.db.createCompetition(competitionData as unknown as CompetitionCreateData);
         setCompetitions(prev => [newComp, ...prev]);
 
         // Ouvrir la compétition dans un nouvel onglet
@@ -142,7 +144,7 @@ const AppContent: React.FC = () => {
     setShowNewCompetitionModal(false);
   }, []);
 
-  const handleSelectCompetition = async (competition: Competition) => {
+  const handleSelectCompetition = useCallback(async (competition: Competition) => {
     logger.debug(LogCategory.UI, 'handleSelectCompetition', {
       id: competition.id,
       title: competition.title,
@@ -181,18 +183,9 @@ const AppContent: React.FC = () => {
       logger.error(LogCategory.UI, 'Failed to load competition', error as Error);
       showToast('Erreur lors du chargement de la compétition', 'error');
     }
-  };
+  }, [openCompetitions, showToast]);
 
-  const handleTabSwitch = (competitionId: string) => {
-    const openComp = openCompetitions.find(open => open.competition.id === competitionId);
-    if (openComp) {
-      setActiveTabId(competitionId);
-      setCurrentCompetition(openComp.competition);
-      setView('competition');
-    }
-  };
-
-  const handleTabClose = async (competitionId: string, e?: React.MouseEvent) => {
+  const handleTabClose = useCallback(async (competitionId: string, e?: React.MouseEvent) => {
     if (e) {
       e.stopPropagation();
     }
@@ -223,9 +216,9 @@ const AppContent: React.FC = () => {
         setView('home');
       }
     }
-  };
+  }, [openCompetitions, activeTabId, confirm]);
 
-  const handleDeleteCompetition = async (id: string) => {
+  const handleDeleteCompetition = useCallback(async (id: string) => {
     try {
       if (window.electronAPI) {
         await window.electronAPI.db.deleteCompetition(id);
@@ -255,29 +248,8 @@ const AppContent: React.FC = () => {
     } catch (error) {
       logger.error(LogCategory.UI, 'Failed to delete competition', error as Error);
     }
-  };
+  }, [activeTabId, currentCompetition]);
 
-  const handleBack = () => {
-    setView('home');
-  };
-
-  const handleSettingsSave = (settings: any) => {
-    // Currently settings handling would go here
-    // For now, the language change is handled in the SettingsModal component
-    logger.debug(LogCategory.UI, 'Settings saved', { settings });
-  };
-
-  const handleUpdateCompetition = (updated: Competition) => {
-    setCurrentCompetition(updated);
-    setCompetitions(competitions.map(c => (c.id === updated.id ? updated : c)));
-
-    // Marquer l'onglet comme modifié
-    setOpenCompetitions(prev =>
-      prev.map(open =>
-        open.competition.id === updated.id ? { ...open, competition: updated, isDirty: true } : open
-      )
-    );
-  };
 
   return (
     <>
@@ -308,14 +280,25 @@ const AppContent: React.FC = () => {
                   setView('home');
                   setActiveTabId(null);
                 }}
-                title="Revenir à la liste des compétitions"
+                title={t('app.back_to_list')}
               >
-                🏠 Général
+                🏠 {t('app.home')}
               </button>
             )}
             <button className="btn btn-primary" onClick={() => setShowNewCompetitionModal(true)}>
               + {t('menu.new_competition')}
             </button>
+            {view === 'competition' && currentCompetition && (
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  setRequestedPhase('remote');
+                }}
+                title={t('phases.remote')}
+              >
+                📡 {t('phases.remote')}
+              </button>
+            )}
             <button
               className="btn btn-secondary"
               onClick={() => setShowSettingsModal(true)}
@@ -384,7 +367,7 @@ const AppContent: React.FC = () => {
                   gap: '0.5rem',
                 }}
               >
-                🏠 Général
+                🏠 {t('app.home')}
               </span>
             </div>
 
@@ -461,7 +444,7 @@ const AppContent: React.FC = () => {
                     e.currentTarget.style.background = 'none';
                     e.currentTarget.style.color = '#6b7280';
                   }}
-                  title="Fermer l'onglet"
+                  title={t('app.close_tab')}
                 >
                   ×
                 </button>
@@ -475,9 +458,9 @@ const AppContent: React.FC = () => {
             <ErrorBoundary
               fallback={
                 <div style={{ padding: '20px', textAlign: 'center' }}>
-                  <h3>🏠 Erreur de chargement</h3>
-                  <p>Une erreur est survenue lors du chargement de la liste des compétitions.</p>
-                  <button onClick={() => window.location.reload()}>Recharger l'application</button>
+                  <h3>🏠 {t('app.load_error_title')}</h3>
+                  <p>{t('app.load_error_message')}</p>
+                  <button onClick={() => window.location.reload()}>{t('app.reload')}</button>
                 </div>
               }
             >
@@ -496,6 +479,8 @@ const AppContent: React.FC = () => {
               <CompetitionView
                 competition={currentCompetition}
                 onUpdate={handleUpdateCompetition}
+                requestPhase={requestedPhase ?? undefined}
+                onPhaseApplied={() => setRequestedPhase(null)}
               />
             </CompetitionErrorBoundary>
           )}

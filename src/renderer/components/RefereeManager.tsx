@@ -36,10 +36,19 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
 
   const manager = useMemo(() => new RefereeManager(referees, config), [referees, config]);
 
+  const persistAssignments = async (map: Map<string, Referee>) => {
+    for (const [matchId, referee] of map.entries()) {
+      try {
+        await window.electronAPI.db.updateMatch(matchId, { refereeId: referee.id });
+      } catch { /* non bloquant */ }
+    }
+  };
+
   const handleAutoAssign = () => {
     const newAssignments = manager.assignRefereesToMatches(matches, pools);
     setAssignments(newAssignments);
     onAssignmentsChange(newAssignments);
+    persistAssignments(newAssignments);
   };
 
   const handleManualAssign = (matchId: string, refereeId: string) => {
@@ -49,6 +58,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
       newAssignments.set(matchId, referee);
       setAssignments(newAssignments);
       onAssignmentsChange(newAssignments);
+      window.electronAPI.db.updateMatch(matchId, { refereeId: referee.id }).catch(() => {});
     }
   };
 

@@ -6,18 +6,21 @@
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useModalResize } from '../hooks/useModalResize';
-import { Pool, Fencer, Match, MatchStatus, Score, Weapon, FencerStatus } from '../../shared/types';
+import { Pool, Fencer, MatchStatus, Score, Weapon, FencerStatus } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
-import { formatRatio, formatIndex } from '../../shared/utils/poolCalculations';
 import { useToast } from './Toast';
 import { useConfirm } from './ConfirmDialog';
 import { exportPoolToPDF } from '../../shared/utils/pdfExport';
 import { useColumnVisibility, POOL_COLUMNS, ColumnId } from '../hooks/useColumnVisibility';
+import { usePdfTemplateStore } from '../../features/pdfTemplates/hooks/usePdfTemplateStore';
+import { useHistory } from '../hooks/useHistory';
+import PoolScoreMatrix from './pool/PoolScoreMatrix';
 
 interface PoolViewProps {
   pool: Pool;
   maxScore?: number;
   weapon?: Weapon;
+  competitionName?: string;
   onScoreUpdate: (
     matchIndex: number,
     scoreA: number,
@@ -35,6 +38,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   pool,
   maxScore = 5,
   weapon,
+  competitionName,
   onScoreUpdate,
   onFencerChangePool,
   onFencerStatusChange,
@@ -42,15 +46,20 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   const { showToast } = useToast();
   const { confirm } = useConfirm();
   const { isColumnVisible, toggleColumn, getVisibleColumns } = useColumnVisibility();
+  const poolTemplate = usePdfTemplateStore(s => s.templates.pool);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [editingMatch, setEditingMatch] = useState<number | null>(null);
+  const [isMatchInverted, setIsMatchInverted] = useState(false);
   const [showColumnMenu, setShowColumnMenu] = useState(false);
-  const [editingFromRowA, setEditingFromRowA] = useState<boolean>(true);
+
   const [editScoreA, setEditScoreA] = useState('');
   const [editScoreB, setEditScoreB] = useState('');
   const [victoryA, setVictoryA] = useState(false);
   const [victoryB, setVictoryB] = useState(false);
   const [matchesUpdateTrigger, setMatchesUpdateTrigger] = useState(0);
+  const [keyboardFocusField, setKeyboardFocusField] = useState<'A' | 'B'>('A');
+
+  const { addAction, undo, redo, canUndo, canRedo } = useHistory();
 
   const isLaserSabre = weapon === Weapon.LASER;
   const fencers = pool.fencers;
@@ -64,6 +73,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   );
 
   const columnMenuRef = useRef<HTMLDivElement>(null);
+  const handleScoreSubmitRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -79,7 +89,8 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     };
   }, [showColumnMenu]);
 
-  // Calculer l'ordre optimal des matches restants
+  // Raccourcis clavier
+
   const orderedMatches = useMemo(() => {
     const pending = pool.matches
       .map((m, idx) => ({ match: m, index: idx }))
@@ -139,16 +150,90 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
 
     return { pending: ordered, finished };
   }, [pool.matches.length, pool.matches.map(m => m.status).join(',')]);
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ne pas interférer si un input natif est actif (sauf ceux du modal)
+      const target = e.target as HTMLElement;
+      const inModalInput = target.tagName === 'INPUT' && target.closest('.modal');
 
-  const getScore = (fencerA: Fencer, fencerB: Fencer): Score | null => {
-    const match = pool.matches.find(
-      m =>
-        (m.fencerA?.id === fencerA.id && m.fencerB?.id === fencerB.id) ||
-        (m.fencerA?.id === fencerB.id && m.fencerB?.id === fencerA.id)
-    );
-    if (!match || match.status !== MatchStatus.FINISHED) return null;
-    return match.fencerA?.id === fencerA.id ? match.scoreA : match.scoreB;
-  };
+      if (editingMatch !== null) {
+        // Modal ouvert
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          setEditingMatch(null);
+          setIsMatchInverted(false);
+          setKeyboardFocusField('A');
+          return;
+        }
+        if (e.key === 'Enter' && !inModalInput) {
+          e.preventDefault();
+          handleScoreSubmitRef.current();
+          return;
+        }
+        if (e.key === 'Tab' && !inModalInput) {
+          e.preventDefault();
+          setKeyboardFocusField(prev => (prev === 'A' ? 'B' : 'A'));
+          return;
+        }
+        if ((e.key === 'v' || e.key === 'V') && isLaserSabre && !inModalInput) {
+          e.preventDefault();
+          if (keyboardFocusField === 'A') {
+            setVictoryA(prev => !prev);
+            setVictoryB(false);
+          } else {
+            setVictoryB(prev => !prev);
+            setVictoryA(false);
+          }
+          return;
+        }
+        if (/^\d$/.test(e.key) && !inModalInput) {
+          e.preventDefault();
+          const digit = e.key;
+          if (keyboardFocusField === 'A') {
+            setEditScoreA(prev => (prev.length < 2 ? prev + digit : digit));
+          } else {
+            setEditScoreB(prev => (prev.length < 2 ? prev + digit : digit));
+          }
+          return;
+        }
+      } else {
+        // Modal fermé
+        if (
+          (e.key === 'n' || e.key === 'N') &&
+          !inModalInput &&
+          target.tagName !== 'INPUT' &&
+          target.tagName !== 'TEXTAREA'
+        ) {
+          e.preventDefault();
+          const firstPending = orderedMatches.pending[0];
+          if (firstPending) {
+            openScoreModal(firstPending.index);
+            setKeyboardFocusField('A');
+          }
+          return;
+        }
+        if (e.key === 'z' && e.ctrlKey && !e.shiftKey) {
+          e.preventDefault();
+          undo();
+          return;
+        }
+        if (
+          (e.key === 'y' && e.ctrlKey) ||
+          (e.key === 'z' && e.ctrlKey && e.shiftKey) ||
+          (e.key === 'Z' && e.ctrlKey && e.shiftKey)
+        ) {
+          e.preventDefault();
+          redo();
+          return;
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [editingMatch, keyboardFocusField, isLaserSabre, orderedMatches.pending, undo, redo]);
+
+  // Calculer l'ordre optimal des matches restants
 
   const getMatchIndex = (fencerA: Fencer, fencerB: Fencer): number => {
     return pool.matches.findIndex(
@@ -165,72 +250,126 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     minHeight: 300,
   });
 
-  const openScoreModal = (matchIndex: number) => {
+  const openScoreModal = (matchIndex: number, inverted = false) => {
     const match = pool.matches[matchIndex];
     setEditingMatch(matchIndex);
-    setEditScoreA(match.scoreA?.value?.toString() || '');
-    setEditScoreB(match.scoreB?.value?.toString() || '');
-    setVictoryA(false);
-    setVictoryB(false);
+    setIsMatchInverted(inverted);
+    setEditScoreA(
+      inverted ? match.scoreB?.value?.toString() || '' : match.scoreA?.value?.toString() || ''
+    );
+    setEditScoreB(
+      inverted ? match.scoreA?.value?.toString() || '' : match.scoreB?.value?.toString() || ''
+    );
+    // Restaurer la victoire existante (ex: match déjà saisi par tirage au sort)
+    setVictoryA(!inverted ? !!match.scoreA?.isVictory : !!match.scoreB?.isVictory);
+    setVictoryB(!inverted ? !!match.scoreB?.isVictory : !!match.scoreA?.isVictory);
   };
 
   const handleCellClick = (rowFencer: Fencer, colFencer: Fencer) => {
     if (rowFencer.id === colFencer.id) return;
     const matchIndex = getMatchIndex(rowFencer, colFencer);
     if (matchIndex === -1) return;
-
     const match = pool.matches[matchIndex];
-    const isRowA = match.fencerA?.id === rowFencer.id;
-
-    setEditingMatch(matchIndex);
-    setEditingFromRowA(isRowA);
-    setEditScoreA(
-      isRowA ? match.scoreA?.value?.toString() || '' : match.scoreB?.value?.toString() || ''
-    );
-    setEditScoreB(
-      isRowA ? match.scoreB?.value?.toString() || '' : match.scoreA?.value?.toString() || ''
-    );
-    setVictoryA(false);
-    setVictoryB(false);
+    // Inversion si le tireur de la ligne est fencerB (pour l'afficher à gauche)
+    const inverted = match.fencerA?.id === colFencer.id;
+    openScoreModal(matchIndex, inverted);
   };
 
   const handleScoreSubmit = () => {
     if (editingMatch === null) return;
 
-    const scoreA = parseInt(editScoreA, 10) || 0;
-    const scoreB = parseInt(editScoreB, 10) || 0;
+    const scoreLeft = parseInt(editScoreA, 10) || 0;
+    const scoreRight = parseInt(editScoreB, 10) || 0;
 
     // Valider que les scores ne dépassent pas le maximum
     // Utiliser le maxScore stocké sur le match comme référence, avec fallback sur la prop
     const effectiveMax = pool.matches[editingMatch]?.maxScore || maxScore || 0;
     if (effectiveMax > 0) {
-      if (scoreA > effectiveMax) {
+      if (scoreLeft > effectiveMax) {
         showToast(`Le score du tireur A ne peut pas dépasser ${effectiveMax}`, 'error');
         return;
       }
-      if (scoreB > effectiveMax) {
+      if (scoreRight > effectiveMax) {
         showToast(`Le score du tireur B ne peut pas dépasser ${effectiveMax}`, 'error');
         return;
       }
     }
 
-    // Si on édite depuis la ligne B, inverser les scores pour les enregistrer correctement
-    const actualScoreA = editingFromRowA ? scoreA : scoreB;
-    const actualScoreB = editingFromRowA ? scoreB : scoreA;
+    // Remettre dans l'ordre fencerA/fencerB du match si la vue est inversée
+    const actualScoreA = isMatchInverted ? scoreRight : scoreLeft;
+    const actualScoreB = isMatchInverted ? scoreLeft : scoreRight;
+
+    // Capturer l'ancien score pour l'historique
+    const match = pool.matches[editingMatch];
+    const prevScoreA =
+      typeof match?.scoreA === 'number' ? match.scoreA : ((match?.scoreA as any)?.value ?? null);
+    const prevScoreB =
+      typeof match?.scoreB === 'number' ? match.scoreB : ((match?.scoreB as any)?.value ?? null);
+    const matchIdx = editingMatch;
 
     if (actualScoreA === actualScoreB) {
       if (isLaserSabre && (victoryA || victoryB)) {
-        // Déterminer qui gagne selon la perspective
-        const winner = editingFromRowA ? (victoryA ? 'A' : 'B') : victoryB ? 'A' : 'B';
+        // victoryA = victoire du tireur affiché à gauche (= fencerA si normal, fencerB si inversé)
+        const winnerLeft = victoryA;
+        const winner: 'A' | 'B' = isMatchInverted
+          ? winnerLeft
+            ? 'B'
+            : 'A'
+          : winnerLeft
+            ? 'A'
+            : 'B';
+        addAction({
+          type: 'UPDATE_SCORE',
+          description: `Score poule ${pool.number} match ${matchIdx + 1}`,
+          undo: () => {
+            if (prevScoreA !== null && prevScoreB !== null)
+              onScoreUpdate(matchIdx, prevScoreA, prevScoreB);
+          },
+          redo: () => {
+            onScoreUpdate(matchIdx, actualScoreA, actualScoreB, winner);
+          },
+        });
         onScoreUpdate(editingMatch, actualScoreA, actualScoreB, winner);
       } else if (isLaserSabre) {
         showToast('Match nul : cliquez sur V pour attribuer la victoire', 'warning');
         return;
+      } else if (victoryA || victoryB) {
+        // Tirage au sort déjà décidé (ex: résultat importé depuis une tablette arbitre)
+        const winnerLeft = victoryA;
+        const winner: 'A' | 'B' = isMatchInverted
+          ? winnerLeft ? 'B' : 'A'
+          : winnerLeft ? 'A' : 'B';
+        addAction({
+          type: 'UPDATE_SCORE',
+          description: `Score poule ${pool.number} match ${matchIdx + 1}`,
+          undo: () => {
+            if (prevScoreA !== null && prevScoreB !== null)
+              onScoreUpdate(matchIdx, prevScoreA, prevScoreB);
+          },
+          redo: () => {
+            onScoreUpdate(matchIdx, actualScoreA, actualScoreB, winner);
+          },
+        });
+        onScoreUpdate(editingMatch, actualScoreA, actualScoreB, winner);
       } else {
-        showToast('Match nul impossible en escrime !', 'error');
+        showToast(
+          "Match nul impossible ! En match en direct, la mort subite de 30s s'applique automatiquement",
+          'error'
+        );
         return;
       }
     } else {
+      addAction({
+        type: 'UPDATE_SCORE',
+        description: `Score poule ${pool.number} match ${matchIdx + 1}`,
+        undo: () => {
+          if (prevScoreA !== null && prevScoreB !== null)
+            onScoreUpdate(matchIdx, prevScoreA, prevScoreB);
+        },
+        redo: () => {
+          onScoreUpdate(matchIdx, actualScoreA, actualScoreB);
+        },
+      });
       onScoreUpdate(editingMatch, actualScoreA, actualScoreB);
     }
 
@@ -239,42 +378,59 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
 
     // Fermer le modal immédiatement après la mise à jour
     setEditingMatch(null);
-    setEditingFromRowA(true);
+    setIsMatchInverted(false);
     setEditScoreA('');
     setEditScoreB('');
     setVictoryA(false);
     setVictoryB(false);
   };
 
+  // Mettre à jour la ref avec la fonction actuelle
+  handleScoreSubmitRef.current = handleScoreSubmit;
+
   const handleSpecialStatus = async (status: 'abandon' | 'forfait' | 'exclusion') => {
     if (editingMatch === null) return;
 
     const match = pool.matches[editingMatch];
+    // Respecter l'ordre d'affichage : le tireur affiché à gauche est "fencerLeft"
+    const fencerLeft = isMatchInverted ? match.fencerB : match.fencerA;
+    const fencerRight = isMatchInverted ? match.fencerA : match.fencerB;
 
-    // Déterminer quel tireur abandonne (le premier par défaut, pourrait être paramétrable)
     const statusVerb =
       status === 'abandon' ? 'abandonne' : status === 'forfait' ? 'déclare forfait' : 'est exclu';
     const statusInf =
       status === 'abandon' ? 'abandonner' : status === 'forfait' ? 'déclarer forfait' : 'exclure';
-    const isA = await confirm({
-      message: `${match.fencerA?.lastName} ${match.fencerA?.firstName?.charAt(0)}. ${statusVerb} ?\n\nCliquez sur Annuler pour ${statusInf} ${match.fencerB?.lastName} ${match.fencerB?.firstName?.charAt(0)}.`,
-      confirmLabel: `${match.fencerA?.lastName}`,
-      cancelLabel: `${match.fencerB?.lastName}`,
+    const leftAbandons = await confirm({
+      message: `${fencerLeft?.lastName} ${fencerLeft?.firstName?.charAt(0)}. ${statusVerb} ?\n\nCliquez sur Annuler pour ${statusInf} ${fencerRight?.lastName} ${fencerRight?.firstName?.charAt(0)}.`,
+      confirmLabel: `${fencerLeft?.lastName}`,
+      cancelLabel: `${fencerRight?.lastName}`,
     });
 
-    if (isA) {
-      // Tireur A abandonne/forfait/exclu
-      onScoreUpdate(editingMatch, 0, match.scoreB?.value || maxScore, 'B', status);
-      // Notifier le parent pour mettre à jour tous les matchs de ce tireur
-      if (onFencerStatusChange && match.fencerA) {
-        onFencerStatusChange(match.fencerA.id, status);
+    if (leftAbandons) {
+      // Le tireur affiché à gauche abandonne
+      const winner: 'A' | 'B' = isMatchInverted ? 'A' : 'B';
+      onScoreUpdate(
+        editingMatch,
+        isMatchInverted ? match.scoreA?.value || maxScore : 0,
+        isMatchInverted ? 0 : match.scoreB?.value || maxScore,
+        winner,
+        status
+      );
+      if (onFencerStatusChange && fencerLeft) {
+        onFencerStatusChange(fencerLeft.id, status);
       }
     } else {
-      // Tireur B abandonne/forfait/exclu
-      onScoreUpdate(editingMatch, match.scoreA?.value || maxScore, 0, 'A', status);
-      // Notifier le parent pour mettre à jour tous les matchs de ce tireur
-      if (onFencerStatusChange && match.fencerB) {
-        onFencerStatusChange(match.fencerB.id, status);
+      // Le tireur affiché à droite abandonne
+      const winner: 'A' | 'B' = isMatchInverted ? 'B' : 'A';
+      onScoreUpdate(
+        editingMatch,
+        isMatchInverted ? 0 : match.scoreA?.value || maxScore,
+        isMatchInverted ? match.scoreB?.value || maxScore : 0,
+        winner,
+        status
+      );
+      if (onFencerStatusChange && fencerRight) {
+        onFencerStatusChange(fencerRight.id, status);
       }
     }
 
@@ -283,37 +439,12 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
 
     // Fermer le modal immédiatement après la mise à jour
     setEditingMatch(null);
-    setEditingFromRowA(true);
+    setIsMatchInverted(false);
     setEditScoreA('');
     setEditScoreB('');
     setVictoryA(false);
     setVictoryB(false);
   };
-
-  const calculateFencerStats = useCallback(
-    (fencer: Fencer) => {
-      let v = 0,
-        d = 0,
-        td = 0,
-        tr = 0;
-      for (const match of pool.matches) {
-        if (match.status !== MatchStatus.FINISHED) continue;
-        if (match.fencerA?.id === fencer.id) {
-          if (match.scoreA?.isVictory) v++;
-          else d++;
-          td += match.scoreA?.value || 0;
-          tr += match.scoreB?.value || 0;
-        } else if (match.fencerB?.id === fencer.id) {
-          if (match.scoreB?.isVictory) v++;
-          else d++;
-          td += match.scoreB?.value || 0;
-          tr += match.scoreA?.value || 0;
-        }
-      }
-      return { v, d, td, tr, index: td - tr, ratio: v + d > 0 ? v / (v + d) : 0 };
-    },
-    [pool.matches]
-  );
 
   const finishedCount = useMemo(
     () => pool.matches.filter(m => m.status === MatchStatus.FINISHED).length,
@@ -325,14 +456,19 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   const handleExportPDF = async () => {
     try {
       const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
-      await exportPoolToPDF(pool, {
-        title: `Poule ${pool.number} - ${pool.fencers.length} tireurs`,
-        includeFinishedMatches: true,
-        includePendingMatches: true,
-        includePoolStats: true,
-        logoBase64: logo,
-        visibleColumns: getVisibleColumns('pool'),
-      });
+      await exportPoolToPDF(
+        pool,
+        {
+          title: `Poule ${pool.number} - ${pool.fencers.length} tireurs`,
+          includeFinishedMatches: true,
+          includePendingMatches: true,
+          includePoolStats: true,
+          logoBase64: logo,
+          competitionName,
+          visibleColumns: getVisibleColumns('pool'),
+        },
+        poolTemplate
+      );
       showToast(`Export PDF de la poule ${pool.number} généré avec succès`, 'success');
     } catch (error) {
       logger.error(LogCategory.UI, "Erreur lors de l'export PDF", error as Error);
@@ -409,7 +545,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         className="modal-overlay"
         onClick={() => {
           setEditingMatch(null);
-          setEditingFromRowA(true);
+          setIsMatchInverted(false);
         }}
       >
         <div
@@ -432,23 +568,28 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                 marginBottom: '1.5rem',
               }}
             >
-              {/* Tireur A */}
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-end',
-                  flex: 1,
-                  minWidth: '200px',
-                }}
-              >
-                <div style={{ fontSize: '1.5rem', fontWeight: 600, textAlign: 'right' }}>
-                  {match.fencerA?.lastName}
-                </div>
-                <div style={{ fontSize: '1rem', color: '#6b7280', textAlign: 'right' }}>
-                  {match.fencerA?.firstName} {match.fencerA?.club && `(${match.fencerA.club})`}
-                </div>
-              </div>
+              {/* Tireur gauche (ligne dans la grille) */}
+              {(() => {
+                const f = isMatchInverted ? match.fencerB : match.fencerA;
+                return (
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-end',
+                      flex: 1,
+                      minWidth: '200px',
+                    }}
+                  >
+                    <div style={{ fontSize: '1.5rem', fontWeight: 600, textAlign: 'right' }}>
+                      {f?.lastName}
+                    </div>
+                    <div style={{ fontSize: '1rem', color: '#6b7280', textAlign: 'right' }}>
+                      {f?.firstName} {f?.club && `(${f.club})`}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Bouton Victoire Sabre Laser A */}
               {isLaserSabre && (
@@ -509,7 +650,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                 onKeyDown={e => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
-                    handleScoreSubmit();
+                    handleScoreSubmitRef.current();
                   } else if (e.key === 'Tab' && !e.shiftKey) {
                     e.preventDefault();
                     const modalBody = e.currentTarget.closest('.modal-body');
@@ -563,7 +704,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                 onKeyDown={e => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
-                    handleScoreSubmit();
+                    handleScoreSubmitRef.current();
                   } else if (e.key === 'Tab' && e.shiftKey) {
                     e.preventDefault();
                     const modalBody = e.currentTarget.closest('.modal-body');
@@ -602,23 +743,28 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                 </button>
               )}
 
-              {/* Tireur B */}
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-start',
-                  flex: 1,
-                  minWidth: '200px',
-                }}
-              >
-                <div style={{ fontSize: '1.5rem', fontWeight: 600, textAlign: 'left' }}>
-                  {match.fencerB?.lastName}
-                </div>
-                <div style={{ fontSize: '1rem', color: '#6b7280', textAlign: 'left' }}>
-                  {match.fencerB?.firstName} {match.fencerB?.club && `(${match.fencerB.club})`}
-                </div>
-              </div>
+              {/* Tireur droite (colonne dans la grille) */}
+              {(() => {
+                const f = isMatchInverted ? match.fencerA : match.fencerB;
+                return (
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                      flex: 1,
+                      minWidth: '200px',
+                    }}
+                  >
+                    <div style={{ fontSize: '1.5rem', fontWeight: 600, textAlign: 'left' }}>
+                      {f?.lastName}
+                    </div>
+                    <div style={{ fontSize: '1rem', color: '#6b7280', textAlign: 'left' }}>
+                      {f?.firstName} {f?.club && `(${f.club})`}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Info égalité sabre laser */}
@@ -673,7 +819,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               className="btn btn-secondary"
               onClick={() => {
                 setEditingMatch(null);
-                setEditingFromRowA(true);
+                setIsMatchInverted(false);
               }}
             >
               Annuler
@@ -689,235 +835,14 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
 
   // Render Grid View
   const renderGridView = () => (
-    <div className="pool-grid">
-      <div className="pool-row">
-        <div className="pool-cell pool-cell-header pool-cell-name"></div>
-        {fencers.map((_, i) => (
-          <div key={i} className="pool-cell pool-cell-header">
-            {i + 1}
-          </div>
-        ))}
-        {isVisible('victories') && (
-          <div
-            className="pool-cell pool-cell-header"
-            onContextMenu={e => {
-              e.preventDefault();
-              toggleColumn('pool', 'victories');
-            }}
-            title="Clic droit pour masquer"
-          >
-            V
-          </div>
-        )}
-        {isVisible('ratio') && (
-          <div
-            className="pool-cell pool-cell-header"
-            onContextMenu={e => {
-              e.preventDefault();
-              toggleColumn('pool', 'ratio');
-            }}
-            title="Clic droit pour masquer"
-          >
-            V/M
-          </div>
-        )}
-        {isVisible('td') && (
-          <div
-            className="pool-cell pool-cell-header"
-            onContextMenu={e => {
-              e.preventDefault();
-              toggleColumn('pool', 'td');
-            }}
-            title="Clic droit pour masquer"
-          >
-            TD
-          </div>
-        )}
-        {isVisible('tr') && (
-          <div
-            className="pool-cell pool-cell-header"
-            onContextMenu={e => {
-              e.preventDefault();
-              toggleColumn('pool', 'tr');
-            }}
-            title="Clic droit pour masquer"
-          >
-            TR
-          </div>
-        )}
-        {isVisible('quest') && isLaserSabre && (
-          <div
-            className="pool-cell pool-cell-header"
-            style={{ color: '#7c3aed' }}
-            onContextMenu={e => {
-              e.preventDefault();
-              toggleColumn('pool', 'quest');
-            }}
-            title="Clic droit pour masquer"
-          >
-            Quest
-          </div>
-        )}
-        {isVisible('index') && (
-          <div
-            className="pool-cell pool-cell-header"
-            onContextMenu={e => {
-              e.preventDefault();
-              toggleColumn('pool', 'index');
-            }}
-            title="Clic droit pour masquer"
-          >
-            Ind
-          </div>
-        )}
-        {isVisible('rank') && (
-          <div
-            className="pool-cell pool-cell-header"
-            onContextMenu={e => {
-              e.preventDefault();
-              toggleColumn('pool', 'rank');
-            }}
-            title="Clic droit pour masquer"
-          >
-            Rg
-          </div>
-        )}
-      </div>
-
-      {fencers.map((rowFencer, rowIndex) => {
-        const stats = calculateFencerStats(rowFencer);
-        const rankEntry = pool.ranking.find(r => r.fencer.id === rowFencer.id);
-
-        return (
-          <div key={rowFencer.id} className="pool-row">
-            <div
-              className="pool-cell pool-cell-header pool-cell-name"
-              title={`${rowFencer.firstName} ${rowFencer.lastName}`}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}
-            >
-              <span style={{ fontWeight: 500 }}>{rowIndex + 1}.</span>
-              <span className="truncate" style={{ flex: 1 }}>
-                {rowFencer.lastName}
-                <span style={{ fontSize: '0.75rem', color: '#6b7280', marginLeft: '0.25rem' }}>
-                  {rowFencer.firstName}
-                </span>
-              </span>
-              {onFencerChangePool && (
-                <button
-                  onClick={e => {
-                    e.stopPropagation();
-                    onFencerChangePool(rowFencer);
-                  }}
-                  title="Changer de poule"
-                  style={{
-                    padding: '0.125rem 0.25rem',
-                    fontSize: '0.625rem',
-                    background: '#e5e7eb',
-                    border: 'none',
-                    borderRadius: '3px',
-                    cursor: 'pointer',
-                    opacity: 0.6,
-                    transition: 'opacity 0.15s',
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
-                  onMouseLeave={e => (e.currentTarget.style.opacity = '0.6')}
-                >
-                  ↔
-                </button>
-              )}
-            </div>
-
-            {fencers.map((colFencer, colIndex) => {
-              if (rowIndex === colIndex) {
-                return <div key={colIndex} className="pool-cell pool-cell-diagonal"></div>;
-              }
-
-              // Vérifier si l'un des tireurs est abandonné/forfait/exclu
-              const rowFencerAbandoned =
-                rowFencer.status === FencerStatus.ABANDONED ||
-                rowFencer.status === FencerStatus.FORFAIT ||
-                rowFencer.status === FencerStatus.EXCLUDED;
-              const colFencerAbandoned =
-                colFencer.status === FencerStatus.ABANDONED ||
-                colFencer.status === FencerStatus.FORFAIT ||
-                colFencer.status === FencerStatus.EXCLUDED;
-
-              // Si un des deux tireurs a abandonné, le match n'est pas joué - cellule grise vide
-              if (rowFencerAbandoned || colFencerAbandoned) {
-                return (
-                  <div
-                    key={colIndex}
-                    className="pool-cell pool-cell-forfeit"
-                    style={{
-                      cursor: 'not-allowed',
-                      backgroundColor: '#e5e7eb',
-                      color: '#9ca3af',
-                    }}
-                    title="Match non disputé (abandon/forfait)"
-                  >
-                    <span>-</span>
-                  </div>
-                );
-              }
-
-              const score = getScore(rowFencer, colFencer);
-              const cellClass = score
-                ? score.isVictory
-                  ? 'pool-cell-victory'
-                  : 'pool-cell-defeat'
-                : 'pool-cell-editable';
-
-              return (
-                <div
-                  key={colIndex}
-                  className={`pool-cell ${cellClass}`}
-                  onClick={() => handleCellClick(rowFencer, colFencer)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {score ? (
-                    <span>
-                      {score.isVictory ? 'V' : ''}
-                      {score.value}
-                    </span>
-                  ) : (
-                    <span style={{ color: '#9CA3AF' }}>-</span>
-                  )}
-                </div>
-              );
-            })}
-
-            {isVisible('victories') && (
-              <div className="pool-cell" style={{ fontWeight: 600 }}>
-                {stats.v}
-              </div>
-            )}
-            {isVisible('ratio') && (
-              <div className="pool-cell text-sm">{formatRatio(stats.ratio)}</div>
-            )}
-            {isVisible('td') && <div className="pool-cell">{stats.td}</div>}
-            {isVisible('tr') && <div className="pool-cell">{stats.tr}</div>}
-            {isVisible('quest') && isLaserSabre && (
-              <div className="pool-cell" style={{ fontWeight: 600, color: '#7c3aed' }}>
-                {rankEntry?.questPoints ?? '-'}
-              </div>
-            )}
-            {isVisible('index') && (
-              <div
-                className="pool-cell"
-                style={{ color: stats.index >= 0 ? '#059669' : '#DC2626' }}
-              >
-                {formatIndex(stats.index)}
-              </div>
-            )}
-            {isVisible('rank') && (
-              <div className="pool-cell" style={{ fontWeight: 600 }}>
-                {rankEntry?.rank || '-'}
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
+    <PoolScoreMatrix
+      pool={pool}
+      isLaserSabre={isLaserSabre}
+      isVisible={isVisible}
+      toggleColumn={toggleColumn}
+      onCellClick={handleCellClick}
+      onFencerChangePool={onFencerChangePool}
+    />
   );
 
   // Composant Prochain Match réutilisable
@@ -1390,6 +1315,38 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           </span>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button
+            onClick={undo}
+            disabled={!canUndo}
+            style={{
+              padding: '0.375rem 0.6rem',
+              fontSize: '0.8rem',
+              background: canUndo ? '#6b7280' : '#e5e7eb',
+              color: canUndo ? 'white' : '#9ca3af',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: canUndo ? 'pointer' : 'not-allowed',
+            }}
+            title="Annuler (Ctrl+Z)"
+          >
+            ↩
+          </button>
+          <button
+            onClick={redo}
+            disabled={!canRedo}
+            style={{
+              padding: '0.375rem 0.6rem',
+              fontSize: '0.8rem',
+              background: canRedo ? '#6b7280' : '#e5e7eb',
+              color: canRedo ? 'white' : '#9ca3af',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: canRedo ? 'pointer' : 'not-allowed',
+            }}
+            title="Rétablir (Ctrl+Y)"
+          >
+            ↪
+          </button>
           <button
             onClick={handleAutoFillScores}
             style={{
