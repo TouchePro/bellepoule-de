@@ -67,7 +67,7 @@ export class DatabaseManager {
 
   public close(): void {
     if (this.db) {
-      this.forceSave();
+      this.saveSync();
       this.db.close();
       this.db = null;
     }
@@ -127,13 +127,47 @@ export class DatabaseManager {
     }
   }
 
-  public forceSave(): void {
+  public saveSync(): void {
     if (this.saveDebounceTimer !== null) {
       clearTimeout(this.saveDebounceTimer);
       this.saveDebounceTimer = null;
     }
-    if (!this.isDirty) return;
-    this.flushToDisk(0);
+    if (!this.isDirty || !this.db) return;
+
+    const data = this.db.export();
+    const buffer = Buffer.from(data);
+    const tmpPath = this.dbPath + '.tmp';
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        fs.writeFileSync(tmpPath, buffer);
+        try {
+          fs.renameSync(tmpPath, this.dbPath);
+        } catch {
+          fs.writeFileSync(this.dbPath, buffer);
+          try { fs.unlinkSync(tmpPath); } catch { /* ignore */ }
+        }
+        this.isDirty = false;
+        return;
+      } catch (error: any) {
+        const retryable = error.code === 'EBUSY' || error.code === 'EPERM' || error.code === 'EACCES';
+        if (!retryable || attempt >= 2) {
+          logger.error(
+            LogCategory.DATABASE,
+            `saveSync échoué (tentative ${attempt + 1}/3):`,
+            error instanceof Error ? error : new Error(String(error.message || error))
+          );
+          return;
+        }
+        // Spinwait synchrone — acceptable lors d'un quit
+        const end = Date.now() + 150 * (attempt + 1);
+        while (Date.now() < end) { /* attente */ }
+      }
+    }
+  }
+
+  public forceSave(): void {
+    this.saveSync();
   }
 
   // Version async de la sauvegarde : db.export() reste sync (sql.js) mais le I/O disque

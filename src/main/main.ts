@@ -1864,24 +1864,28 @@ app.whenReady().then(async () => {
   });
 });
 
-app.on('window-all-closed', () => {
-  db.forceSave(); // Save before closing
+const shutdownDb = () => {
+  if (!db.isOpen()) return;
+  db.saveSync();
   db.close();
+};
+
+app.on('window-all-closed', () => {
+  shutdownDb();
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
 
 app.on('before-quit', () => {
-  db.forceSave(); // Save before quitting
-  db.close();
+  shutdownDb(); // no-op si déjà fermé
 });
 
 // Handle uncaught exceptions - save before crash
 process.on('uncaughtException', error => {
   console.error('Uncaught Exception:', error);
   try {
-    db.forceSave(); // Try to save data before showing error
+    db.saveSync();
   } catch (e) {
     console.error('Failed to save on crash:', e);
   }
