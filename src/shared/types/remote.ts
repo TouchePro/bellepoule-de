@@ -152,6 +152,7 @@ export interface ArenaUpdate {
   cardsB?: string[];
   suddenDeath?: boolean;
   overtimeType?: string | null;
+  waitingOvertime?: boolean;
   showPhotos?: boolean; // afficher les photos avant le combat
   cardAnnounce?: boolean; // annoncer les cartons avec raison sur les affichages
   theme?: DisplayTheme; // thème visuel de l'affichage distant
