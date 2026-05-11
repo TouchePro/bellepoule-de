@@ -2210,9 +2210,12 @@
 
               if (this.timerSeconds === 0) {
                 this.stopTimer();
-                if (this.scoreA === this.scoreB && !this.isSuddenDeath) {
+                if (this.scoreA === this.scoreB &&
+                    (!this.isSuddenDeath || this.overtimeType === 'challenger')) {
+                  // Égalité : fin du temps normal OU fin du temps en mode challenger → 30s supplémentaires
                   this.triggerSuddenDeath();
                 } else if (this.isSuddenDeath && this.scoreA === this.scoreB) {
+                  // Fin des 30s supplémentaires avec égalité → tirage au sort
                   this.triggerTiebreaker();
                 } else {
                   this.showNotification('⏰ Temps écoulé !');
@@ -2249,12 +2252,20 @@
 
         triggerSuddenDeath() {
           this.isSuddenDeath = true;
-          this.overtimeType = 'supplementary';
+          // Si déjà en mode challenger (Sabre Laser 10-10), conserver la contrainte Zone C
+          if (this.overtimeType === 'challenger') {
+            this.overtimeType = 'challenger_supplementary';
+          } else {
+            this.overtimeType = 'supplementary';
+          }
           this.timerSeconds = 30;
           this.updateTimerDisplay();
           this.broadcastTimerUpdate();
           this.updateSuddenDeathUI();
-          this.showNotification('⏱ 30s SUPPLEMENTAIRE – Égalité à temps ! Toutes les zones sont valides.');
+          const msg = this.overtimeType === 'challenger_supplementary'
+            ? '⏱ 30s SUPPLEMENTAIRE – Égalité ! Zone C uniquement (Mort Subite Challenger).'
+            : '⏱ 30s SUPPLEMENTAIRE – Égalité à temps ! Toutes les zones sont valides.';
+          this.showNotification(msg);
           this.startTimer();
         }
 
