@@ -323,68 +323,75 @@ export const usePoolManagement = ({
             : FencerStatus.EXCLUDED;
 
       setPools(prevPools => {
-        const updatedPools = [...prevPools];
         let modifiedCount = 0;
 
-        updatedPools.forEach(pool => {
-          // Mettre à jour le statut du tireur dans la liste des tireurs de la poule
-          const poolFencer = pool.fencers.find(f => f.id === fencerId);
-          if (poolFencer) {
-            poolFencer.status = newFencerStatus;
-          }
+        const updatedPools = prevPools.map(pool => {
+          const hasFencer =
+            pool.fencers.some(f => f.id === fencerId) ||
+            pool.matches.some(m => m.fencerA?.id === fencerId || m.fencerB?.id === fencerId);
+          if (!hasFencer) return pool;
 
-          pool.matches.forEach(match => {
-            // Vérifier si le tireur est dans ce match
+          const newFencers = pool.fencers.map(f =>
+            f.id === fencerId ? { ...f, status: newFencerStatus } : f
+          );
+
+          const newMatches = pool.matches.map(match => {
             const isFencerA = match.fencerA?.id === fencerId;
             const isFencerB = match.fencerB?.id === fencerId;
-
-            if (!isFencerA && !isFencerB) return;
+            if (!isFencerA && !isFencerB) return match;
 
             // Ne pas écraser les matchs déjà disputés avec de vrais scores,
-            // mais propager quand même le statut forfait dans la référence fencer
+            // mais propager quand même le statut dans la référence fencer
             // pour que calculateFencerPoolStats annule ces matchs pour les adversaires.
             const isAlreadyPlayed =
               match.status === MatchStatus.FINISHED &&
               !match.scoreA?.isForfait &&
               !match.scoreB?.isForfait;
 
-            if (isFencerA && match.fencerA) {
-              match.fencerA.status = newFencerStatus;
-              if (!isAlreadyPlayed) {
-                match.scoreA = {
-                  value: 0,
-                  isVictory: false,
-                  isAbstention: status === 'abandon',
-                  isExclusion: status === 'exclusion',
-                  isForfait: status === 'forfait',
-                };
-              }
-            } else if (isFencerB && match.fencerB) {
-              match.fencerB.status = newFencerStatus;
-              if (!isAlreadyPlayed) {
-                match.scoreB = {
-                  value: 0,
-                  isVictory: false,
-                  isAbstention: status === 'abandon',
-                  isExclusion: status === 'exclusion',
-                  isForfait: status === 'forfait',
-                };
-              }
-            }
+            const newMatch = {
+              ...match,
+              fencerA:
+                isFencerA && match.fencerA
+                  ? { ...match.fencerA, status: newFencerStatus }
+                  : match.fencerA,
+              fencerB:
+                isFencerB && match.fencerB
+                  ? { ...match.fencerB, status: newFencerStatus }
+                  : match.fencerB,
+            };
 
             if (!isAlreadyPlayed) {
-              // Marquer le match comme terminé (non disputé)
-              match.status = MatchStatus.FINISHED;
-              match.updatedAt = new Date();
+              if (isFencerA) {
+                newMatch.scoreA = {
+                  value: 0,
+                  isVictory: false,
+                  isAbstention: status === 'abandon',
+                  isExclusion: status === 'exclusion',
+                  isForfait: status === 'forfait',
+                };
+              } else {
+                newMatch.scoreB = {
+                  value: 0,
+                  isVictory: false,
+                  isAbstention: status === 'abandon',
+                  isExclusion: status === 'exclusion',
+                  isForfait: status === 'forfait',
+                };
+              }
+              newMatch.status = MatchStatus.FINISHED;
+              newMatch.updatedAt = new Date();
               modifiedCount++;
             }
+
+            return newMatch;
           });
 
-          // Recalculer le classement de la poule
+          const newPool = { ...pool, fencers: newFencers, matches: newMatches };
           if (modifiedCount > 0) {
-            pool.ranking = computePoolRanking(pool);
-            pool.updatedAt = new Date();
+            newPool.ranking = computePoolRanking(newPool);
+            newPool.updatedAt = new Date();
           }
+          return newPool;
         });
 
         // Recalculer le classement général (tous les tours cumulés)
@@ -415,37 +422,45 @@ export const usePoolManagement = ({
       }
 
       setPools(prevPools => {
-        const updatedPools = [...prevPools];
         let restoredCount = 0;
+        const restoredStatus = snapshot
+          ? (snapshot.previousStatus as FencerStatus)
+          : FencerStatus.CHECKED_IN;
 
-        updatedPools.forEach(pool => {
-          // Restaurer le statut du tireur dans la poule
-          const poolFencer = pool.fencers.find(f => f.id === fencerId);
-          if (poolFencer) {
-            poolFencer.status = snapshot
-              ? (snapshot.previousStatus as FencerStatus)
-              : FencerStatus.CHECKED_IN;
-          }
+        const updatedPools = prevPools.map(pool => {
+          const hasFencer =
+            pool.fencers.some(f => f.id === fencerId) ||
+            pool.matches.some(m => m.fencerA?.id === fencerId || m.fencerB?.id === fencerId);
+          if (!hasFencer) return pool;
 
-          pool.matches.forEach(match => {
+          const newFencers = pool.fencers.map(f =>
+            f.id === fencerId ? { ...f, status: restoredStatus } : f
+          );
+
+          const newMatches = pool.matches.map(match => {
             const isFencerA = match.fencerA?.id === fencerId;
             const isFencerB = match.fencerB?.id === fencerId;
-            if (!isFencerA && !isFencerB) return;
+            if (!isFencerA && !isFencerB) return match;
 
             if (snapshot) {
               // Restauration depuis le snapshot
               const saved = snapshot.matchSnapshots.find(s => s.matchId === match.id);
-              if (saved) {
-                match.status = saved.status as MatchStatus;
-                match.scoreA = saved.scoreA as Score | null;
-                match.scoreB = saved.scoreB as Score | null;
-                if (isFencerA && match.fencerA) {
-                  match.fencerA.status = snapshot.previousStatus as FencerStatus;
-                } else if (isFencerB && match.fencerB) {
-                  match.fencerB.status = snapshot.previousStatus as FencerStatus;
-                }
-                restoredCount++;
-              }
+              if (!saved) return match;
+              restoredCount++;
+              return {
+                ...match,
+                status: saved.status as MatchStatus,
+                scoreA: saved.scoreA as Score | null,
+                scoreB: saved.scoreB as Score | null,
+                fencerA:
+                  isFencerA && match.fencerA
+                    ? { ...match.fencerA, status: restoredStatus }
+                    : match.fencerA,
+                fencerB:
+                  isFencerB && match.fencerB
+                    ? { ...match.fencerB, status: restoredStatus }
+                    : match.fencerB,
+              };
             } else {
               // Fallback sans snapshot : réinitialise les matchs marqués abandon/forfait/exclusion
               // uniquement si l'adversaire n'est pas lui-même en statut spécial
@@ -457,21 +472,30 @@ export const usePoolManagement = ({
                 !oppScore?.isForfait &&
                 !oppScore?.isExclusion
               ) {
-                match.status = MatchStatus.NOT_STARTED;
-                match.scoreA = null;
-                match.scoreB = null;
-                if (isFencerA && match.fencerA) {
-                  match.fencerA.status = FencerStatus.CHECKED_IN;
-                } else if (isFencerB && match.fencerB) {
-                  match.fencerB.status = FencerStatus.CHECKED_IN;
-                }
                 restoredCount++;
+                return {
+                  ...match,
+                  status: MatchStatus.NOT_STARTED,
+                  scoreA: null,
+                  scoreB: null,
+                  fencerA:
+                    isFencerA && match.fencerA
+                      ? { ...match.fencerA, status: FencerStatus.CHECKED_IN }
+                      : match.fencerA,
+                  fencerB:
+                    isFencerB && match.fencerB
+                      ? { ...match.fencerB, status: FencerStatus.CHECKED_IN }
+                      : match.fencerB,
+                };
               }
+              return match;
             }
           });
 
-          pool.ranking = computePoolRanking(pool);
-          pool.updatedAt = new Date();
+          const newPool = { ...pool, fencers: newFencers, matches: newMatches };
+          newPool.ranking = computePoolRanking(newPool);
+          newPool.updatedAt = new Date();
+          return newPool;
         });
 
         const newOverallRanking = computeOverallRankingAllRounds(updatedPools);
