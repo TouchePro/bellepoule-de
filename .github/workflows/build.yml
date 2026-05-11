@@ -330,7 +330,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
           name: '🚀 BellePoule Modern v${{ needs.increment-version.outputs.version }} Build #${{ needs.increment-version.outputs.build }}'
@@ -353,10 +353,11 @@ jobs:
             Menu **Aide > À propos** ou **F1**
           files: |
             builds/windows-exe/*.exe
-            builds/macos-x64-dmg/*.dmg
-            builds/macos-arm64-dmg/*.dmg
+            builds/macos-x64-dmg/*-x64.dmg
+            builds/macos-arm64-dmg/*-arm64.dmg
             builds/linux-x64-appimage/*.AppImage
             builds/linux-arm64-appimage/*.AppImage
+          fail_on_unmatched_files: false
           draft: false
           prerelease: false
         env:
