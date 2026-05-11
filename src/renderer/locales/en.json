@@ -98,6 +98,7 @@
     "pools_skip": "Pools (skipped)",
     "pools_round": "Pools ({{current}}/{{total}})",
     "pools_skip_tooltip": "Pool phase skipped (0 pools)",
+    "pools_locked_tooltip": "Complete pool preparation first",
     "tableau_locked_tooltip": "Complete all pools and validate ranking to access the table",
     "ranking": "Ranking",
     "tableau": "Table",

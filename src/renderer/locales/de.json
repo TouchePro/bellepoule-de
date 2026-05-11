@@ -98,6 +98,7 @@
     "pools_skip": "Pools (übersprungen)",
     "pools_round": "Pools ({{current}}/{{total}})",
     "pools_skip_tooltip": "Poolphase übersprungen (0 Pools)",
+    "pools_locked_tooltip": "Schließen Sie zuerst die Poolvorbereitung ab",
     "tableau_locked_tooltip": "Beenden Sie alle Pools und validieren Sie das Ranking, um auf die Tabelle zuzugreifen",
     "ranking": "Rangliste",
     "tableau": "Tabelle",

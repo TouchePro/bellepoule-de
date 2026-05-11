@@ -98,6 +98,7 @@
     "pools_skip": "Poules (saut)",
     "pools_round": "Poules ({{current}}/{{total}})",
     "pools_skip_tooltip": "Phase de poules ignorée (0 poules)",
+    "pools_locked_tooltip": "Terminez la préparation des poules d'abord",
     "tableau_locked_tooltip": "Terminez toutes les poules et validez le classement pour accéder au tableau",
     "ranking": "Classement",
     "tableau": "Tableau",

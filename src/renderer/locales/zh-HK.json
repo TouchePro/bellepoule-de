@@ -98,6 +98,7 @@
     "pools_skip": "分組賽（跳過）",
     "pools_round": "分組賽（{{current}}/{{total}}）",
     "pools_skip_tooltip": "分組賽階段已跳過（0 組）",
+    "pools_locked_tooltip": "請先完成分組準備",
     "tableau_locked_tooltip": "完成所有分組賽並驗證排名後方可進入淘汰賽",
     "ranking": "排名",
     "tableau": "淘汰賽",

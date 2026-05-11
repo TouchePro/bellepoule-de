@@ -3,8 +3,8 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useEffect } from 'react';
-import { Competition, Fencer, FencerStatus, Match, MatchStatus, Weapon } from '../../shared/types';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Competition, Fencer, FencerStatus, Match, MatchStatus, Weapon, QuestPhaseConfig } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
 import { RankingImportResult } from '../../shared/utils/fileParser';
 import FencerList from './FencerList';
@@ -171,6 +171,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         'poolprep',
         'pools',
         'ranking',
+        'quest',
         'tableau',
         'results',
         'remote',
@@ -418,6 +419,22 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     }
   };
 
+  const handleQuestConfigUpdate = useCallback(
+    async (updates: Partial<QuestPhaseConfig>) => {
+      if (!competition.settings?.questConfig) return;
+      const updatedCompetition = {
+        ...competition,
+        settings: {
+          ...competition.settings,
+          questConfig: { ...competition.settings.questConfig, ...updates },
+        },
+      };
+      onUpdate(updatedCompetition);
+      await window.electronAPI?.db.updateCompetition(competition.id, updatedCompetition);
+    },
+    [competition, onUpdate]
+  );
+
   const handleGoToRanking = () => {
     const ranking = computeOverallRanking(pools);
     setOverallRanking(ranking);
@@ -518,13 +535,21 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
   const questConfig = competition.settings?.questConfig;
   const questEnabled = isLaserSabre && questConfig?.enabled === true;
+  const questNoPool = questEnabled && !questConfig?.hasPreliminaryPools;
 
-  const phaseOrder: Phase[] = (() => {
+  const phaseOrder = useMemo<Phase[]>(() => {
     if (!questEnabled) return ['checkin', 'poolprep', 'pools', 'ranking', 'tableau', 'results'];
     if (questConfig?.hasPreliminaryPools)
       return ['checkin', 'poolprep', 'pools', 'ranking', 'quest', 'tableau', 'results'];
     return ['checkin', 'quest', 'tableau', 'results'];
-  })();
+  }, [questEnabled, questConfig?.hasPreliminaryPools]);
+
+  // Réinitialiser currentPhase si elle n'existe plus dans le nouveau phaseOrder
+  useEffect(() => {
+    if (!phaseOrder.includes(currentPhase)) {
+      setCurrentPhase('checkin');
+    }
+  }, [phaseOrder]);
 
   const handleGoBack = () => {
     if (skipPoolPhase && currentPhase === 'ranking') {
@@ -541,14 +566,18 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const canAdvanceFromPools = skipPoolPhase || (pools.length > 0 && areAllPoolsComplete());
   const isLastPoolRound = currentPoolRound >= poolRounds;
   const isResultsLocked = hasDirectElimination && finalResults.length === 0;
-  const isTableauUnlocked = canAdvanceFromPools && rankingValidated;
+  // En mode quest-sans-poules, le tableau se débloque par la complétion de la quête (rankingValidated)
+  const isTableauUnlocked = questNoPool
+    ? rankingValidated
+    : canAdvanceFromPools && rankingValidated;
 
   // Réinitialiser la validation du classement si les poules ne sont plus toutes terminées
+  // (sauf en mode quest-sans-poules où c'est la quête qui valide)
   useEffect(() => {
-    if (!canAdvanceFromPools) {
+    if (!canAdvanceFromPools && !questNoPool) {
       setRankingValidated(false);
     }
-  }, [canAdvanceFromPools]);
+  }, [canAdvanceFromPools, questNoPool]);
 
   const phases = [
     {
@@ -576,8 +605,12 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                 ? t('phases.pools_round', { current: currentPoolRound, total: poolRounds })
                 : t('phases.pools'),
             icon: skipPoolPhase ? '⏭' : '🎯',
-            disabled: skipPoolPhase,
-            title: skipPoolPhase ? t('phases.pools_skip_tooltip') : (undefined as string | undefined),
+            disabled: skipPoolPhase || pools.length === 0,
+            title: skipPoolPhase
+              ? t('phases.pools_skip_tooltip')
+              : pools.length === 0
+                ? t('phases.pools_locked_tooltip')
+                : (undefined as string | undefined),
           },
           {
             id: 'ranking',
@@ -988,7 +1021,11 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             questConfig={questConfig}
             competitionWeapon={competition.weapon}
             maxScore={poolMaxScore}
-            onQuestComplete={() => setCurrentPhase('ranking')}
+            onQuestComplete={() => {
+              setRankingValidated(true);
+              setCurrentPhase(questConfig.hasPreliminaryPools ? 'ranking' : 'tableau');
+            }}
+            onConfigUpdate={handleQuestConfigUpdate}
           />
         )}
 
