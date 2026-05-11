@@ -1497,6 +1497,19 @@ ipcMain.handle(
   }
 );
 
+ipcMain.handle(
+  'remote:syncPoolMatches',
+  async (_, poolsData: Array<{ poolId: string; matches: any[] }>) => {
+    try {
+      if (!remoteScoreServer) return { success: false, error: 'Serveur non démarré' };
+      remoteScoreServer.syncPoolMatches(poolsData);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Erreur' };
+    }
+  }
+);
+
 ipcMain.handle('remote:refreshDeMatches', async (_, matches: any[]) => {
   try {
     if (!remoteScoreServer) return { success: false, error: 'Serveur non démarré' };
@@ -1851,24 +1864,28 @@ app.whenReady().then(async () => {
   });
 });
 
-app.on('window-all-closed', () => {
-  db.forceSave(); // Save before closing
+const shutdownDb = () => {
+  if (!db.isOpen()) return;
+  db.saveSync();
   db.close();
+};
+
+app.on('window-all-closed', () => {
+  shutdownDb();
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
 
 app.on('before-quit', () => {
-  db.forceSave(); // Save before quitting
-  db.close();
+  shutdownDb(); // no-op si déjà fermé
 });
 
 // Handle uncaught exceptions - save before crash
 process.on('uncaughtException', error => {
   console.error('Uncaught Exception:', error);
   try {
-    db.forceSave(); // Try to save data before showing error
+    db.saveSync();
   } catch (e) {
     console.error('Failed to save on crash:', e);
   }

@@ -129,6 +129,31 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     });
   }, [pools, isRemoteActive, session]);
 
+  // Quand les résultats de matchs de poule changent dans le logiciel, synchroniser le serveur distant
+  const sessionMatchesFingerprintRef = useRef<string>('');
+  useEffect(() => {
+    const fingerprint = pools
+      .map(
+        p =>
+          `${p.id}:${(p.matches ?? []).map((m: any) => `${m.id}=${m.status}|${m.scoreA ?? ''}-${m.scoreB ?? ''}`).join(',')}`
+      )
+      .join('|');
+    if (!isRemoteActive || !session) {
+      sessionMatchesFingerprintRef.current = fingerprint;
+      return;
+    }
+    if (fingerprint === sessionMatchesFingerprintRef.current) return;
+    sessionMatchesFingerprintRef.current = fingerprint;
+    const poolsData = pools.map(pool => ({ poolId: pool.id, matches: pool.matches ?? [] }));
+    window.electronAPI.remote.syncPoolMatches(poolsData).catch((err: unknown) => {
+      logger.warn(
+        LogCategory.NETWORK,
+        'Échec syncPoolMatches',
+        err instanceof Error ? err : undefined
+      );
+    });
+  }, [pools, isRemoteActive, session]);
+
   // Quand les matchs tableau changent pendant une session active, mettre à jour le serveur
   // sans avoir à arrêter/relancer la saisie distante (transition poules → tableau).
   const prevDeMatchesKeyRef = useRef<string>('');

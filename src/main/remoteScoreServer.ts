@@ -2908,9 +2908,12 @@ export class RemoteScoreServer {
       }
 
       allMatches = realMatches.filter(
-        m => m.isTableau || m.status === 'not_started' || m.status === 'in_progress'
+        m =>
+          m.isTableau
+            ? m.status === 'not_started' || m.status === 'in_progress'
+            : true // Tous les matchs de poule, y compris finished (nécessaires pour la grille)
       );
-      console.log(`[RemoteScoreServer] ${allMatches.length} matchs en attente après filtrage`);
+      console.log(`[RemoteScoreServer] ${allMatches.length} matchs après filtrage`);
     } else {
       // Récupérer les matchs en attente depuis la DB
       console.log('[RemoteScoreServer] Pas de matches reçus, recherche dans la DB...');
@@ -3283,6 +3286,49 @@ export class RemoteScoreServer {
         this.io
           .to(`pool:${aId}`)
           .emit(`pool:${aId}:update`, { poolId, fencers: updatedFencers, matches, isComplete });
+        break;
+      }
+    }
+  }
+
+  public syncPoolMatches(poolsData: Array<{ poolId: string; matches: any[] }>): void {
+    const updatedPoolIds = new Set<string>();
+
+    for (const { poolId, matches } of poolsData) {
+      this.sessionMatches = [
+        ...this.sessionMatches.filter(
+          (m: any) =>
+            m.isTableau ||
+            (m.poolId || m.pool?.id || `pool-${m.poolNumber || m.number}`) !== poolId
+        ),
+        ...matches,
+      ];
+      updatedPoolIds.add(poolId);
+    }
+
+    for (const poolId of updatedPoolIds) {
+      for (const [aId, arena] of this.arenas) {
+        if (arena.currentMatch?.poolId !== poolId) continue;
+        const fencers = this.poolFencersCache.get(poolId) ?? this.db.getPoolFencers(poolId);
+        const inMemory = this.sessionMatches
+          .filter(
+            (m: any) =>
+              !m.isTableau &&
+              (m.poolId || m.pool?.id || `pool-${m.poolNumber || m.number}`) === poolId
+          )
+          .sort((a: any, b: any) => (a.number || 0) - (b.number || 0));
+        const poolMatches =
+          inMemory.length > 0
+            ? inMemory.map((m: any) => {
+                const u = this.sessionMatchScores.get(m.id);
+                return u ? { ...m, ...u } : m;
+              })
+            : this.db.getMatchesByPool(poolId);
+        const isComplete =
+          poolMatches.length > 0 && poolMatches.every((m: any) => m.status === MatchStatus.FINISHED);
+        this.io
+          .to(`pool:${aId}`)
+          .emit(`pool:${aId}:update`, { poolId, fencers, matches: poolMatches, isComplete });
         break;
       }
     }

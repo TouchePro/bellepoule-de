@@ -365,6 +365,9 @@ export interface RemoteServerAPI {
   updatePoolFencers: (
     updates: Array<{ poolId: string; fencers: any[] }>
   ) => Promise<{ success: boolean; error?: string }>;
+  syncPoolMatches: (
+    poolsData: Array<{ poolId: string; matches: any[] }>
+  ) => Promise<{ success: boolean; error?: string }>;
   refreshDeMatches: (matches: any[]) => Promise<{ success: boolean; error?: string }>;
   setArenaPassword: (
     arenaId: string,

@@ -441,6 +441,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('remote:updateMatchArena', matchId, fromArena, toArena),
     updatePoolFencers: (updates: Array<{ poolId: string; fencers: any[] }>) =>
       ipcRenderer.invoke('remote:updatePoolFencers', updates),
+    syncPoolMatches: (poolsData: Array<{ poolId: string; matches: any[] }>) =>
+      ipcRenderer.invoke('remote:syncPoolMatches', poolsData),
     refreshDeMatches: (matches: any[]) => ipcRenderer.invoke('remote:refreshDeMatches', matches),
     setArenaPassword: (arenaId: string, password: string) =>
       ipcRenderer.invoke('remote:setArenaPassword', arenaId, password),
