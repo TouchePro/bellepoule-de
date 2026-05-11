@@ -1706,6 +1706,9 @@ export class RemoteScoreServer {
         this.arenaCards.set(data.arenaId, { cardsA: [], cardsB: [] });
         this.arenaTouches.set(data.arenaId, { touchesA: [], touchesB: [] });
         this.arenaExits.set(data.arenaId, []);
+        this.arenaSuddenDeath.set(data.arenaId, false);
+        this.arenaOvertimeType.set(data.arenaId, null);
+        this.arenaWaitingOvertime.set(data.arenaId, false);
         break;
       case 'update_score': {
         const debounceKey = `${socket.id}:${data.arenaId}`;
@@ -1736,6 +1739,7 @@ export class RemoteScoreServer {
             cardsB: currentCards.cardsB,
             suddenDeath: this.arenaSuddenDeath.get(data.arenaId) ?? false,
             overtimeType: this.arenaOvertimeType.get(data.arenaId) ?? null,
+            waitingOvertime: this.arenaWaitingOvertime.get(data.arenaId) ?? false,
             status: arena.status,
           });
         }
