@@ -1929,6 +1929,7 @@
             faultHistoryB: { ...this.faultHistoryB },
             isSuddenDeath: this.isSuddenDeath,
             overtimeType: this.overtimeType,
+            waitingOvertimeStart: this.waitingOvertimeStart,
           };
           this.actionHistory.push(snapshot);
           if (this.actionHistory.length > 10) this.actionHistory.shift();
@@ -1946,9 +1947,11 @@
           this.faultHistoryB = prev.faultHistoryB;
           this.isSuddenDeath = prev.isSuddenDeath;
           this.overtimeType = prev.overtimeType;
+          this.waitingOvertimeStart = prev.waitingOvertimeStart ?? false;
           this.updateScores();
           this.updateCardsDisplay();
           this.updateSuddenDeathUI();
+          this.updateControlButtons();
           this.broadcastUpdate();
           this.saveScore();
           this.showNotification('↩ Action annulée');
@@ -2341,6 +2344,7 @@
           this.showNotification(`🏆 ${winnerName} remporte le match (tirage au sort)`);
 
           this.isSuddenDeath = false;
+          this.waitingOvertimeStart = false;
           this.overtimeType = null;
           this.updateSuddenDeathUI();
           this.matchStatus = 'finished';
@@ -2553,6 +2557,7 @@
               this.matchStatus = 'not_started';
               this.timerSeconds = 180;
               this.isSuddenDeath = false;
+              this.waitingOvertimeStart = false;
               this.overtimeType = null;
               this.updateTimerDisplay();
               document.getElementById('active-match').classList.remove('visible');
