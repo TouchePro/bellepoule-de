@@ -1351,6 +1351,7 @@
           this.actionHistory = []; // Historique pour undo (max 10)
           this.cardAnnounceEnabled = false; // Réglé depuis les paramètres de saisie distante
           this.swapped = false;
+          this.pausedForModal = false;
           this.offlineQueue = new OfflineQueueInline();
 
           this.init();
@@ -2470,6 +2471,11 @@
         showFinishModal() {
           if (!this.currentMatch || this.matchStatus !== 'in_progress') return;
 
+          if (this.timerRunning) {
+            this.pauseTimer();
+            this.pausedForModal = true;
+          }
+
           document.getElementById('final-score-display').textContent =
             `${this.scoreA} - ${this.scoreB}`;
           document.getElementById('finish-modal').classList.add('active');
@@ -2477,6 +2483,10 @@
 
         hideFinishModal() {
           document.getElementById('finish-modal').classList.remove('active');
+          if (this.pausedForModal && this.matchStatus !== 'finished') {
+            this.startTimer();
+          }
+          this.pausedForModal = false;
         }
 
         async confirmFinish() {
