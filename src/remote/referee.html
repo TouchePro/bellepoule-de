@@ -1346,6 +1346,7 @@
           this.longPressTimer = null;
           this.isLaserSabre = false;
           this.isSuddenDeath = false;
+          this.waitingOvertimeStart = false;
           this.overtimeType = null; // 'supplementary' | 'challenger' | null
           this.coinFlipWinner = null; // 'A' | 'B' | null — vainqueur par tirage au sort
           this.actionHistory = []; // Historique pour undo (max 10)
@@ -1699,6 +1700,7 @@
           this.faultHistoryB = { 1: 0, 2: 0, 3: 0 };
           this.timerSeconds = 180;
           this.isSuddenDeath = false;
+          this.waitingOvertimeStart = false;
           this.overtimeType = null;
           this.actionHistory = [];
           this.swapped = false;
@@ -2213,8 +2215,8 @@
                 this.stopTimer();
                 if (this.scoreA === this.scoreB &&
                     (!this.isSuddenDeath || this.overtimeType === 'challenger')) {
-                  // Égalité : fin du temps normal OU fin du temps en mode challenger → 30s supplémentaires
-                  this.triggerSuddenDeath();
+                  // Égalité : attente manuelle de l'arbitre pour lancer les 30s
+                  this.prepareSuddenDeath();
                 } else if (this.isSuddenDeath && this.scoreA === this.scoreB) {
                   // Fin des 30s supplémentaires avec égalité → tirage au sort
                   this.triggerTiebreaker();
@@ -2243,12 +2245,31 @@
         resetTimer() {
           this.stopTimer();
           this.isSuddenDeath = false;
+          this.waitingOvertimeStart = false;
           this.overtimeType = null;
           this.timerSeconds = 180;
           this.updateTimerDisplay();
           this.broadcastTimerUpdate();
           this.updateSuddenDeathUI();
+          this.updateControlButtons();
           this.showNotification('🔄 Chronomètre réinitialisé');
+        }
+
+        prepareSuddenDeath() {
+          this.waitingOvertimeStart = true;
+          this.updateControlButtons();
+          this.socket.emit('arena_control', {
+            arenaId: this.arenaId,
+            action: 'waiting_overtime',
+            time: 0,
+            timerStatus: 'paused',
+          });
+          this.showNotification('⚖️ Égalité ! Appuyez sur "Lancer 30s" pour démarrer le temps supplémentaire.');
+        }
+
+        launchSuddenDeath() {
+          this.waitingOvertimeStart = false;
+          this.triggerSuddenDeath();
         }
 
         triggerSuddenDeath() {
