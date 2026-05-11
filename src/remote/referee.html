@@ -560,6 +560,18 @@
         color: white;
       }
 
+      .btn-launch-overtime {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+        font-weight: bold;
+        animation: pulse-overtime 1s ease-in-out infinite;
+      }
+
+      @keyframes pulse-overtime {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.85; transform: scale(1.03); }
+      }
+
       .btn-resume {
         background: linear-gradient(135deg, #22c55e, #16a34a);
         color: white;
@@ -2577,6 +2589,15 @@
           const startBtn = document.getElementById('btn-start');
           const finishBtn = document.getElementById('btn-finish');
 
+          // État d'attente : l'arbitre doit déclencher manuellement les 30s
+          if (this.waitingOvertimeStart) {
+            startBtn.disabled = false;
+            startBtn.textContent = '⏱ Lancer 30s';
+            startBtn.className = 'control-btn btn-launch-overtime';
+            if (finishBtn) finishBtn.disabled = false;
+            return;
+          }
+
           // Réinitialiser les classes
           startBtn.className = 'control-btn btn-start';
 
@@ -2602,6 +2623,10 @@
         }
 
         handleStartPauseClick() {
+          if (this.waitingOvertimeStart) {
+            this.launchSuddenDeath();
+            return;
+          }
           if (this.matchStatus === 'not_started') {
             this.startMatch();
           } else if (this.matchStatus === 'in_progress') {
