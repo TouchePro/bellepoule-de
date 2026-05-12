@@ -560,6 +560,18 @@
         color: white;
       }
 
+      .btn-launch-overtime {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+        font-weight: bold;
+        animation: pulse-overtime 1s ease-in-out infinite;
+      }
+
+      @keyframes pulse-overtime {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.85; transform: scale(1.03); }
+      }
+
       .btn-resume {
         background: linear-gradient(135deg, #22c55e, #16a34a);
         color: white;
@@ -1346,6 +1358,7 @@
           this.longPressTimer = null;
           this.isLaserSabre = false;
           this.isSuddenDeath = false;
+          this.waitingOvertimeStart = false;
           this.overtimeType = null; // 'supplementary' | 'challenger' | null
           this.coinFlipWinner = null; // 'A' | 'B' | null — vainqueur par tirage au sort
           this.actionHistory = []; // Historique pour undo (max 10)
@@ -1699,6 +1712,7 @@
           this.faultHistoryB = { 1: 0, 2: 0, 3: 0 };
           this.timerSeconds = 180;
           this.isSuddenDeath = false;
+          this.waitingOvertimeStart = false;
           this.overtimeType = null;
           this.actionHistory = [];
           this.swapped = false;
@@ -1927,6 +1941,7 @@
             faultHistoryB: { ...this.faultHistoryB },
             isSuddenDeath: this.isSuddenDeath,
             overtimeType: this.overtimeType,
+            waitingOvertimeStart: this.waitingOvertimeStart,
           };
           this.actionHistory.push(snapshot);
           if (this.actionHistory.length > 10) this.actionHistory.shift();
@@ -1944,9 +1959,11 @@
           this.faultHistoryB = prev.faultHistoryB;
           this.isSuddenDeath = prev.isSuddenDeath;
           this.overtimeType = prev.overtimeType;
+          this.waitingOvertimeStart = prev.waitingOvertimeStart ?? false;
           this.updateScores();
           this.updateCardsDisplay();
           this.updateSuddenDeathUI();
+          this.updateControlButtons();
           this.broadcastUpdate();
           this.saveScore();
           this.showNotification('↩ Action annulée');
@@ -2213,8 +2230,8 @@
                 this.stopTimer();
                 if (this.scoreA === this.scoreB &&
                     (!this.isSuddenDeath || this.overtimeType === 'challenger')) {
-                  // Égalité : fin du temps normal OU fin du temps en mode challenger → 30s supplémentaires
-                  this.triggerSuddenDeath();
+                  // Égalité : attente manuelle de l'arbitre pour lancer les 30s
+                  this.prepareSuddenDeath();
                 } else if (this.isSuddenDeath && this.scoreA === this.scoreB) {
                   // Fin des 30s supplémentaires avec égalité → tirage au sort
                   this.triggerTiebreaker();
@@ -2243,12 +2260,31 @@
         resetTimer() {
           this.stopTimer();
           this.isSuddenDeath = false;
+          this.waitingOvertimeStart = false;
           this.overtimeType = null;
           this.timerSeconds = 180;
           this.updateTimerDisplay();
           this.broadcastTimerUpdate();
           this.updateSuddenDeathUI();
+          this.updateControlButtons();
           this.showNotification('🔄 Chronomètre réinitialisé');
+        }
+
+        prepareSuddenDeath() {
+          this.waitingOvertimeStart = true;
+          this.updateControlButtons();
+          this.socket.emit('arena_control', {
+            arenaId: this.arenaId,
+            action: 'waiting_overtime',
+            time: 0,
+            timerStatus: 'paused',
+          });
+          this.showNotification('⚖️ Égalité ! Appuyez sur "Lancer 30s" pour démarrer le temps supplémentaire.');
+        }
+
+        launchSuddenDeath() {
+          this.waitingOvertimeStart = false;
+          this.triggerSuddenDeath();
         }
 
         triggerSuddenDeath() {
@@ -2320,6 +2356,7 @@
           this.showNotification(`🏆 ${winnerName} remporte le match (tirage au sort)`);
 
           this.isSuddenDeath = false;
+          this.waitingOvertimeStart = false;
           this.overtimeType = null;
           this.updateSuddenDeathUI();
           this.matchStatus = 'finished';
@@ -2532,6 +2569,7 @@
               this.matchStatus = 'not_started';
               this.timerSeconds = 180;
               this.isSuddenDeath = false;
+              this.waitingOvertimeStart = false;
               this.overtimeType = null;
               this.updateTimerDisplay();
               document.getElementById('active-match').classList.remove('visible');
@@ -2550,6 +2588,15 @@
         updateControlButtons() {
           const startBtn = document.getElementById('btn-start');
           const finishBtn = document.getElementById('btn-finish');
+
+          // État d'attente : l'arbitre doit déclencher manuellement les 30s
+          if (this.waitingOvertimeStart) {
+            startBtn.disabled = false;
+            startBtn.textContent = '⏱ Lancer 30s';
+            startBtn.className = 'control-btn btn-launch-overtime';
+            if (finishBtn) finishBtn.disabled = false;
+            return;
+          }
 
           // Réinitialiser les classes
           startBtn.className = 'control-btn btn-start';
@@ -2576,6 +2623,10 @@
         }
 
         handleStartPauseClick() {
+          if (this.waitingOvertimeStart) {
+            this.launchSuddenDeath();
+            return;
+          }
           if (this.matchStatus === 'not_started') {
             this.startMatch();
           } else if (this.matchStatus === 'in_progress') {

@@ -98,6 +98,7 @@
     "pools_skip": "Poules (saltades)",
     "pools_round": "Poules ({{current}}/{{total}})",
     "pools_skip_tooltip": "Fase de poules ignorada (0 poules)",
+    "pools_locked_tooltip": "Completeu primer la preparació de les poules",
     "tableau_locked_tooltip": "Completeu totes les poules i valideu la classificació per accedir al quadre",
     "ranking": "Classificació",
     "tableau": "Quadre",

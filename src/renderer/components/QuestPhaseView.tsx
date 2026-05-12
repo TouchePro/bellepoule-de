@@ -23,6 +23,7 @@ interface QuestPhaseViewProps {
   competitionWeapon: string;
   maxScore: number;
   onQuestComplete: () => void;
+  onConfigUpdate?: (updates: Partial<QuestPhaseConfig>) => void;
 }
 
 type QuestState = 'config' | 'running';
@@ -33,6 +34,7 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
   competitionWeapon,
   maxScore,
   onQuestComplete,
+  onConfigUpdate,
 }) => {
   const [state, setState] = useState<QuestState>('config');
 
@@ -324,7 +326,11 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
               style={inputStyle}
               value={timeMinutes}
               min={5}
-              onChange={e => setTimeMinutes(Math.max(5, parseInt(e.target.value) || 5))}
+              onChange={e => {
+                const v = Math.max(5, parseInt(e.target.value) || 5);
+                setTimeMinutes(v);
+                onConfigUpdate?.({ availableTimeMinutes: v });
+              }}
             />
           </div>
           <div>
@@ -334,7 +340,11 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
               style={inputStyle}
               value={arenas}
               min={1}
-              onChange={e => setArenas(Math.max(1, parseInt(e.target.value) || 1))}
+              onChange={e => {
+                const v = Math.max(1, parseInt(e.target.value) || 1);
+                setArenas(v);
+                onConfigUpdate?.({ numberOfArenas: v });
+              }}
             />
           </div>
           <div>
@@ -374,7 +384,11 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
             value={manualFights}
             min={1}
             placeholder={String(autoFights)}
-            onChange={e => setManualFights(e.target.value === '' ? '' : Math.max(1, parseInt(e.target.value) || 1))}
+            onChange={e => {
+              const v = e.target.value === '' ? '' : Math.max(1, parseInt(e.target.value) || 1);
+              setManualFights(v);
+              onConfigUpdate?.({ fightsPerFencer: v === '' ? undefined : Number(v) });
+            }}
           />
           <p style={smallText}>
             Valeur effective :{' '}
@@ -395,7 +409,10 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
                 name="constraint"
                 value={c}
                 checked={constraint === c}
-                onChange={() => setConstraint(c)}
+                onChange={() => {
+                  setConstraint(c);
+                  onConfigUpdate?.({ opponentConstraint: c });
+                }}
               />
               {c === 'none' && 'Aucune'}
               {c === 'club' && 'Pas même club (régionale)'}

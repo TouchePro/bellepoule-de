@@ -1600,6 +1600,7 @@ export class RemoteScoreServer {
   private arenaExits: Map<string, Array<{ fencer: 'A' | 'B'; isVoluntary: boolean }>> = new Map();
   private arenaSuddenDeath: Map<string, boolean> = new Map();
   private arenaOvertimeType: Map<string, string | null> = new Map();
+  private arenaWaitingOvertime: Map<string, boolean> = new Map();
   // Debounce par socket pour update_score : clé = socketId:arenaId, valeur = timestamp dernier envoi
   private scoreUpdateDebounce: Map<string, number> = new Map();
   private readonly SCORE_UPDATE_DEBOUNCE_MS = 200;
@@ -1670,10 +1671,24 @@ export class RemoteScoreServer {
       case 'finish':
         this.arenaSuddenDeath.set(data.arenaId, false);
         this.arenaOvertimeType.set(data.arenaId, null);
+        this.arenaWaitingOvertime.set(data.arenaId, false);
         this.finishArenaMatch(data.arenaId);
         this.arenaCards.set(data.arenaId, { cardsA: [], cardsB: [] });
         this.arenaTouches.set(data.arenaId, { touchesA: [], touchesB: [] });
         this.arenaExits.set(data.arenaId, []);
+        break;
+      case 'waiting_overtime':
+        this.arenaWaitingOvertime.set(data.arenaId, true);
+        this.broadcastArenaUpdate(data.arenaId, {
+          arenaId: data.arenaId,
+          match: arena.currentMatch,
+          time: 0,
+          timerStatus: 'paused',
+          suddenDeath: false,
+          overtimeType: null,
+          waitingOvertime: true,
+          status: arena.status,
+        });
         break;
       case 'coin_flip':
         if (data.winner === 'A' || data.winner === 'B') {
@@ -1691,6 +1706,9 @@ export class RemoteScoreServer {
         this.arenaCards.set(data.arenaId, { cardsA: [], cardsB: [] });
         this.arenaTouches.set(data.arenaId, { touchesA: [], touchesB: [] });
         this.arenaExits.set(data.arenaId, []);
+        this.arenaSuddenDeath.set(data.arenaId, false);
+        this.arenaOvertimeType.set(data.arenaId, null);
+        this.arenaWaitingOvertime.set(data.arenaId, false);
         break;
       case 'update_score': {
         const debounceKey = `${socket.id}:${data.arenaId}`;
@@ -1721,6 +1739,7 @@ export class RemoteScoreServer {
             cardsB: currentCards.cardsB,
             suddenDeath: this.arenaSuddenDeath.get(data.arenaId) ?? false,
             overtimeType: this.arenaOvertimeType.get(data.arenaId) ?? null,
+            waitingOvertime: this.arenaWaitingOvertime.get(data.arenaId) ?? false,
             status: arena.status,
           });
         }
@@ -1762,6 +1781,7 @@ export class RemoteScoreServer {
         if (arena.currentMatch) {
           this.arenaSuddenDeath.set(data.arenaId, false);
           this.arenaOvertimeType.set(data.arenaId, null);
+          this.arenaWaitingOvertime.set(data.arenaId, false);
           this.updateArenaScore(data.arenaId, 0, 0);
           this.arenaCards.set(data.arenaId, { cardsA: [], cardsB: [] });
           this.arenaTouches.set(data.arenaId, { touchesA: [], touchesB: [] });
@@ -1775,6 +1795,7 @@ export class RemoteScoreServer {
             cardsB: [],
             suddenDeath: false,
             overtimeType: null,
+            waitingOvertime: false,
             status: arena.status,
           });
         }
@@ -1817,6 +1838,10 @@ export class RemoteScoreServer {
         if (data.overtimeType !== undefined) {
           this.arenaOvertimeType.set(data.arenaId, data.overtimeType);
         }
+        // Clear waiting state when sudden death actually starts
+        if (data.suddenDeath) {
+          this.arenaWaitingOvertime.set(data.arenaId, false);
+        }
         this.broadcastArenaUpdate(data.arenaId, {
           arenaId: data.arenaId,
           match: arena.currentMatch,
@@ -1824,6 +1849,7 @@ export class RemoteScoreServer {
           timerStatus: data.timerStatus,
           suddenDeath: this.arenaSuddenDeath.get(data.arenaId) ?? false,
           overtimeType: this.arenaOvertimeType.get(data.arenaId) ?? null,
+          waitingOvertime: this.arenaWaitingOvertime.get(data.arenaId) ?? false,
           status: arena.status,
         });
         break;

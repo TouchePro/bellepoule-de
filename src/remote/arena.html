@@ -660,6 +660,23 @@
         display: block;
       }
 
+      .waiting-overtime-banner {
+        margin-top: 0.3rem;
+        padding: 0.3rem 1rem;
+        background: linear-gradient(135deg, #6b7280, #9ca3af);
+        color: white;
+        border-radius: 0.5rem;
+        font-weight: bold;
+        font-size: 0.9rem;
+        text-align: center;
+        letter-spacing: 0.05em;
+        display: none;
+      }
+
+      .waiting-overtime-banner.active {
+        display: block;
+      }
+
       .timer-label {
         display: none;
       }
@@ -1216,6 +1233,7 @@
         <div class="timer-section">
           <div class="mort-subite-banner" id="mort-subite-banner">⚡ MORT SUBITE</div>
           <div class="timer-display" id="timer-display">03:00</div>
+          <div class="waiting-overtime-banner" id="waiting-overtime-banner">⚖️ ÉGALITÉ – attente arbitre</div>
           <div class="sudden-death-banner" id="sudden-death-banner">⏱ 30s SUPPLEMENTAIRE</div>
           <div class="timer-label">Temps restant</div>
         </div>
@@ -1266,6 +1284,7 @@
           this.cardsB = [];
           this.isSuddenDeath = false;
           this.overtimeType = null;
+          this.waitingOvertime = false;
           this.inversionEnabled = localStorage.getItem('inversionEnabled') === 'true';
           this.showPhotos = false;
           this.theme = localStorage.getItem('displayTheme') || 'dark';
@@ -1587,6 +1606,15 @@
           if (data.overtimeType !== undefined) {
             this.overtimeType = data.overtimeType;
           }
+          // Mise à jour état attente overtime
+          if (data.waitingOvertime !== undefined) {
+            this.waitingOvertime = data.waitingOvertime;
+          }
+          // Clear automatique quand le timer de mort subite démarre
+          if (data.suddenDeath) {
+            this.waitingOvertime = false;
+          }
+          this.updateWaitingOvertimeBanner();
           this.updateSuddenDeathBanner();
 
           // Afficher/masquer selon le statut
@@ -1724,6 +1752,11 @@
           }
         }
 
+        updateWaitingOvertimeBanner() {
+          const banner = document.getElementById('waiting-overtime-banner');
+          if (banner) banner.classList.toggle('active', !!this.waitingOvertime);
+        }
+
         updateVisibility() {
           const waitingScreen = document.getElementById('waiting-screen');
           const matchDisplay = document.getElementById('match-display');
@@ -1737,6 +1770,8 @@
             nextPanel.classList.add('hidden');
             this.isSuddenDeath = false;
             this.overtimeType = null;
+            this.waitingOvertime = false;
+            this.updateWaitingOvertimeBanner();
             this.updateSuddenDeathBanner();
             this.updateIdleNextMatchDisplay();
           } else if (this.matchStatus === 'ready' && this.showPhotos && this.currentMatch) {

@@ -98,6 +98,7 @@
     "pools_skip": "Poullou (treuzet)",
     "pools_round": "Poullou ({{current}}/{{total}})",
     "pools_skip_tooltip": "Talbenn poulloù trespasset (0 poullou)",
+    "pools_locked_tooltip": "Echuiit kentañ gant kempenn ar poulloù",
     "tableau_locked_tooltip": "Echuiit an holl poullou ha validait ar renk evit mont d'ar daolenn",
     "ranking": "Renk",
     "tableau": "Taolenn",
