@@ -740,8 +740,8 @@
         flex: 1;
       }
 
-      .photo-card-a { color: #22c55e; }
-      .photo-card-b { color: #ef4444; }
+      .photo-card-a { color: #ef4444; }
+      .photo-card-b { color: #22c55e; }
 
       .photo-circle {
         width: min(30vw, 42vh);
@@ -1545,6 +1545,9 @@
             this.applyInversionColors();
             this.updateMatchDisplay();
             this.updateVisibility();
+            if (this.matchStatus === 'ready' && this.showPhotos) {
+              this.updatePhotoIntro();
+            }
           }
 
           // Mise à jour du statut
@@ -1839,16 +1842,19 @@
           const fA = this.currentMatch.fencerA || {};
           const fB = this.currentMatch.fencerB || {};
 
+          const left  = this.inversionEnabled ? fB : fA;
+          const right = this.inversionEnabled ? fA : fB;
+
           document.getElementById('intro-name-a').textContent =
-            `${fA.lastName || ''} ${fA.firstName || ''}`.trim() || '-';
-          document.getElementById('intro-club-a').textContent = fA.club || '';
+            `${left.lastName || ''} ${left.firstName || ''}`.trim() || '-';
+          document.getElementById('intro-club-a').textContent = left.club || '';
 
           document.getElementById('intro-name-b').textContent =
-            `${fB.lastName || ''} ${fB.firstName || ''}`.trim() || '-';
-          document.getElementById('intro-club-b').textContent = fB.club || '';
+            `${right.lastName || ''} ${right.firstName || ''}`.trim() || '-';
+          document.getElementById('intro-club-b').textContent = right.club || '';
 
-          this.setFencerPhoto('a', fA.photo);
-          this.setFencerPhoto('b', fB.photo);
+          this.setFencerPhoto('a', left.photo);
+          this.setFencerPhoto('b', right.photo);
         }
 
         setFencerPhoto(side, photoBase64) {
