@@ -435,7 +435,19 @@ jobs:
       - name: List downloaded files
         run: find builds -type f
 
-      - name: Create or Update Dev Release
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete existing dev release and tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete dev --yes --cleanup-tag 2>/dev/null || true
+
+      - name: Create Dev Release
         uses: ncipollo/release-action@v1
         with:
           tag: dev
