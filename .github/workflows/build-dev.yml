@@ -482,20 +482,22 @@ jobs:
           gh api repos/$REPO/releases --paginate 2>/dev/null | jq -r '.[] | "\(.id) \(.tag_name)"'
           echo "=== Tag lookup ==="
           gh api repos/$REPO/releases/tags/dev-prerelease 2>&1 | jq '.' || true
-          RELEASE_ID=$(gh api repos/$REPO/releases --paginate 2>/dev/null | jq -r '.[] | select(.tag_name=="dev-prerelease") | .id' | head -1)
-          echo "RELEASE_ID=${RELEASE_ID}"
-          if [ -n "$RELEASE_ID" ]; then
-            echo "Deleting existing release $RELEASE_ID"
-            gh api -X DELETE repos/$REPO/releases/$RELEASE_ID && echo "Release deleted" || echo "Release delete failed"
-          fi
-          echo "Deleting tag dev-prerelease (if exists)"
-          git push origin :refs/tags/dev-prerelease 2>&1 && echo "Tag deleted" || echo "Tag not found, continuing"
-          sleep 2
-          echo "Creating new release"
-          gh release create dev-prerelease \
+          TAG="dev-build-${{ needs.increment-version.outputs.build }}"
+          echo "Creating release with tag $TAG"
+          gh release create "$TAG" \
             --repo "$REPO" \
             --title "$TITLE" \
             --notes "$NOTES" \
             --prerelease \
             --target dev \
             "${FILES[@]}"
+
+          # Keep only the 5 most recent dev builds (cleanup old ones)
+          gh api repos/$REPO/releases --paginate 2>/dev/null \
+            | jq -r '.[] | select(.prerelease==true) | "\(.id) \(.tag_name)"' \
+            | grep " dev-build-" | sort -t- -k3 -rn | tail -n +6 \
+            | while read id tag; do
+                echo "Cleaning up old release $tag ($id)"
+                gh api -X DELETE repos/$REPO/releases/$id || true
+                gh api -X DELETE repos/$REPO/git/refs/tags/$tag || true
+              done
