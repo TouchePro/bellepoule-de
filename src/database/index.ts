@@ -796,8 +796,8 @@ export class DatabaseManager {
         id,
         match.number || 1,
         poolId || null,
-        match.fencerA?.id || null,
-        match.fencerB?.id || null,
+        match.fencerA?.id || (match as any).fencerAId || null,
+        match.fencerB?.id || (match as any).fencerBId || null,
         match.maxScore || 5,
         'not_started',
         now,
@@ -1319,9 +1319,17 @@ export class DatabaseManager {
 
   // ─── Pool CRUD ──────────────────────────────────────────────────────────────
 
-  public createPool(phaseId: string, number: number): Pool {
+  public clearPoolsForPhase(phaseId: string): void {
     if (!this.db) throw new Error('Database not open');
-    const id = uuidv4();
+    this.run('DELETE FROM matches WHERE pool_id IN (SELECT id FROM pools WHERE phase_id = ?)', [phaseId]);
+    this.run('DELETE FROM pool_fencers WHERE pool_id IN (SELECT id FROM pools WHERE phase_id = ?)', [phaseId]);
+    this.run('DELETE FROM pools WHERE phase_id = ?', [phaseId]);
+    this.save();
+  }
+
+  public createPool(phaseId: string, number: number, poolId?: string): Pool {
+    if (!this.db) throw new Error('Database not open');
+    const id = poolId || uuidv4();
     const now = new Date().toISOString();
     this.run(
       `INSERT INTO pools (id, phase_id, number, is_complete, has_error, created_at, updated_at)

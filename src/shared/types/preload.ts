@@ -336,8 +336,13 @@ export interface RemoteServerInfo {
 }
 
 export interface RemoteServerAPI {
+  getNetworkInterfaces: () => Promise<{
+    success: boolean;
+    interfaces?: { name: string; address: string }[];
+  }>;
   startServer: (
-    port?: number
+    port?: number,
+    host?: string
   ) => Promise<{ success: boolean; serverInfo?: RemoteServerInfo; error?: string }>;
   stopServer: () => Promise<{ success: boolean; error?: string }>;
   getServerInfo: () => Promise<{ success: boolean; serverInfo?: RemoteServerInfo; error?: string }>;

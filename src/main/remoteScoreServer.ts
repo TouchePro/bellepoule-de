@@ -30,6 +30,7 @@ export class RemoteScoreServer {
   private server: any;
   private io: SocketIOServer;
   private port: number;
+  private host: string;
   private db: DatabaseManager;
   private session: RemoteSession | null = null;
   private arenas: Map<string, Arena> = new Map();
@@ -77,10 +78,11 @@ export class RemoteScoreServer {
   private readonly EVENT_BUFFER_MAX = 50;
   private readonly EVENT_BUFFER_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
-  constructor(db: DatabaseManager, port: number = 8066) {
+  constructor(db: DatabaseManager, port: number = 8066, host: string = '0.0.0.0') {
     console.log('[RemoteScoreServer] Initialisation du serveur de saisie distante...');
     this.db = db;
     this.port = port;
+    this.host = host;
     this.app = express();
     this.server = createServer(this.app);
     // Limiter CORS au réseau local (localhost + LAN) pour la sécurité
@@ -2804,18 +2806,18 @@ export class RemoteScoreServer {
   }
 
   public getServerUrl(): string {
-    const ip = this.getLocalIPAddress();
+    const ip = this.host !== '0.0.0.0' ? this.host : this.getLocalIPAddress();
     return `http://${ip}:${this.port}`;
   }
 
   public start(): void {
     console.log('[RemoteScoreServer] Démarrage du serveur...');
     console.log(`[RemoteScoreServer] Port: ${this.port}`);
-    console.log(`[RemoteScoreServer] Interface: 0.0.0.0 (toutes les interfaces)`);
+    console.log(`[RemoteScoreServer] Interface: ${this.host}`);
     console.log(`[RemoteScoreServer] URL locale: http://localhost:${this.port}`);
-    console.log(`[RemoteScoreServer] URL réseau: http://${this.getLocalIPAddress()}:${this.port}`);
+    console.log(`[RemoteScoreServer] URL réseau: ${this.getServerUrl()}`);
 
-    this.server.listen(this.port, '0.0.0.0', () => {
+    this.server.listen(this.port, this.host, () => {
       const url = this.getServerUrl();
       console.log(`[RemoteScoreServer] ============================================`);
       console.log(`[RemoteScoreServer] SERVEUR DÉMARRÉ AVEC SUCCÈS ✓`);

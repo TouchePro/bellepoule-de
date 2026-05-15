@@ -1385,14 +1385,30 @@ ipcMain.handle('shell:openExternal', async (_, url: string) => {
 });
 
 // Remote score server handlers
-ipcMain.handle('remote:startServer', async (_event, port?: number) => {
+ipcMain.handle('remote:getNetworkInterfaces', async () => {
+  const ifaces = os.networkInterfaces();
+  const result: { name: string; address: string }[] = [
+    { name: 'Toutes les interfaces', address: '0.0.0.0' },
+  ];
+  for (const [name, addrs] of Object.entries(ifaces)) {
+    for (const iface of addrs || []) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        result.push({ name: `${name} (${iface.address})`, address: iface.address });
+      }
+    }
+  }
+  return { success: true, interfaces: result };
+});
+
+ipcMain.handle('remote:startServer', async (_event, port?: number, host?: string) => {
   try {
     if (remoteScoreServer) {
       return { success: false, error: 'Le serveur est déjà démarré' };
     }
 
     const effectivePort = port ?? 8066;
-    remoteScoreServer = new RemoteScoreServer(db, effectivePort);
+    const effectiveHost = host ?? '0.0.0.0';
+    remoteScoreServer = new RemoteScoreServer(db, effectivePort, effectiveHost);
     remoteScoreServerPort = effectivePort;
     remoteScoreServer.start();
 

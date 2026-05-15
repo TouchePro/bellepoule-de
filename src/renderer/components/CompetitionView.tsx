@@ -3,7 +3,7 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Competition, Fencer, FencerStatus, Match, MatchStatus, Weapon, QuestPhaseConfig } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
 import { RankingImportResult } from '../../shared/utils/fileParser';
@@ -145,6 +145,12 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     if (pools.length > 0 && remoteArenaCount === 1) setRemoteArenaCount(pools.length);
   }, [pools.length]);
 
+  const poolPrepParams = useMemo(() => ({
+    poolCount: pools.length,
+    minFencersPerPool,
+    maxFencersPerPool,
+  }), [pools.length, minFencersPerPool, maxFencersPerPool]);
+
   // Session state persistence
   const { isLoaded, restoredState } = useCompetitionSession({
     competitionId: competition.id,
@@ -156,11 +162,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     tableauMatches,
     finalResults,
     skipPoolPhase,
-    poolPrepParams: {
-      poolCount: pools.length,
-      minFencersPerPool,
-      maxFencersPerPool,
-    },
+    poolPrepParams,
   });
 
   // Restaurer l'état au chargement
@@ -194,6 +196,23 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       if (restoredState.skipPoolPhase) setSkipPoolPhase(restoredState.skipPoolPhase);
     }
   }, [restoredState, isLoaded]);
+
+  // Fallback DB : si session state n'a pas de poules, essayer de les charger depuis la DB
+  useEffect(() => {
+    if (!isLoaded || pools.length > 0) return;
+    let cancelled = false;
+    window.electronAPI.db.getPhasesByCompetition(competition.id)
+      .then(phases => {
+        if (cancelled) return [];
+        const poolPhase = phases.find((p: { type: string }) => p.type === 'pool');
+        return poolPhase ? window.electronAPI.db.getPoolsByPhase(poolPhase.id) : [];
+      })
+      .then(dbPools => {
+        if (!cancelled && dbPools.length > 0) setPools(dbPools);
+      })
+      .catch((e: unknown) => logger.warn(LogCategory.DATABASE, 'DB pool fallback failed', e instanceof Error ? e : undefined));
+    return () => { cancelled = true; };
+  }, [isLoaded, pools.length, competition.id]);
 
   // Charger les tireurs au montage
   useEffect(() => {
@@ -246,6 +265,27 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       window.electronAPI.removeAllListeners?.('match:finished');
     };
   }, [updateMatchFromRemote]);
+
+  // Sync scores/statuts des matches de poule vers la DB quand ils changent
+  const prevPoolsRef = useRef(pools);
+  useEffect(() => {
+    if (!window.electronAPI?.db?.updateMatch || !isLoaded) return;
+    const prev = prevPoolsRef.current;
+    prevPoolsRef.current = pools;
+    pools.forEach((pool, pIdx) => {
+      pool.matches.forEach((match, mIdx) => {
+        const prevMatch = prev[pIdx]?.matches[mIdx];
+        if (!prevMatch) return;
+        if (match.status !== prevMatch.status || match.scoreA !== prevMatch.scoreA || match.scoreB !== prevMatch.scoreB) {
+          window.electronAPI!.db!.updateMatch(match.id, {
+            scoreA: match.scoreA ?? undefined,
+            scoreB: match.scoreB ?? undefined,
+            status: match.status,
+          }).catch((e: unknown) => logger.warn(LogCategory.DATABASE, 'updateMatch pool failed', e instanceof Error ? e : undefined));
+        }
+      });
+    });
+  }, [pools, isLoaded]);
 
   // Sync matchs tableau vers DB (batch, inclut la 3e place)
   useEffect(() => {
@@ -319,6 +359,33 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     isLaserSabre,
   });
 
+  // Persister les poules générées dans les tables DB (pools, pool_fencers, matches)
+  const persistPoolsToDB = useCallback(async (generatedPools: typeof pools) => {
+    if (!window.electronAPI?.db) return;
+    try {
+      const phases = await window.electronAPI.db.getPhasesByCompetition(competition.id);
+      let poolPhase = phases.find(p => p.type === 'pool');
+      if (!poolPhase) {
+        poolPhase = await window.electronAPI.db.createPhase(competition.id, 'pool', 1, 'Poules');
+      }
+      await window.electronAPI.db.clearPoolsForPhase(poolPhase.id);
+      for (const pool of generatedPools) {
+        await window.electronAPI.db.createPool(poolPhase.id, pool.number, pool.id);
+        pool.fencers.forEach((fencer, pos) => {
+          window.electronAPI!.db!.addFencerToPool(pool.id, fencer.id, pos);
+        });
+        for (const match of pool.matches) {
+          await window.electronAPI.db.createMatch(
+            { id: match.id, number: match.number, fencerAId: match.fencerA?.id, fencerBId: match.fencerB?.id, maxScore: match.maxScore },
+            pool.id
+          );
+        }
+      }
+    } catch (e) {
+      logger.error(LogCategory.DATABASE, 'persistPoolsToDB failed', e as Error);
+    }
+  }, [competition.id]);
+
   // Handlers
   const handleCheckInFencer = (id: string) => {
     const fencer = fencers.find(f => f.id === id);
@@ -331,10 +398,11 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     }
   };
 
-  const handleGeneratePools = () => {
+  const handleGeneratePools = async () => {
     const checkedIn = getCheckedInFencers();
     const newPools = generatePoolsHook(checkedIn);
     if (newPools) {
+      await persistPoolsToDB(newPools);
       setCurrentPhase('poolprep');
     }
   };

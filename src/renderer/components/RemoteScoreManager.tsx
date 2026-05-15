@@ -54,6 +54,12 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     const saved = localStorage.getItem('bellepoule-remote-port');
     return saved ? parseInt(saved, 10) : 8066;
   });
+  const [networkInterfaces, setNetworkInterfaces] = useState<{ name: string; address: string }[]>([
+    { name: 'Toutes les interfaces', address: '0.0.0.0' },
+  ]);
+  const [selectedInterface, setSelectedInterface] = useState<string>(() => {
+    return localStorage.getItem('bellepoule-remote-interface') ?? '0.0.0.0';
+  });
   // pendingCount : valeur affichée (modifiée par +/−, non encore appliquée)
   const [pendingCount, setPendingCount] = useState<number | null>(null);
   // committedCount : valeur appliquée au serveur ou confirmée par l'utilisateur
@@ -87,6 +93,14 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     const key = `bellepoule-remote-launched-${competition.id}`;
     return localStorage.getItem(key) === 'true';
   });
+
+  useEffect(() => {
+    window.electronAPI.remote.getNetworkInterfaces().then((res: any) => {
+      if (res?.success && res.interfaces?.length) {
+        setNetworkInterfaces(res.interfaces);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     if (!activeQR) {
@@ -197,7 +211,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const startRemoteServer = async () => {
     try {
       setIsLoading(true);
-      const result = await window.electronAPI.remote.startServer(remotePort);
+      const result = await window.electronAPI.remote.startServer(remotePort, selectedInterface);
 
       if (result.success && result.serverInfo) {
         setServerUrl(result.serverInfo.url);
@@ -285,7 +299,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   };
 
   const handlePortChange = (value: number) => {
-    const port = Math.max(1024, Math.min(65535, value || 8066));
+    const port = Math.max(1, Math.min(65535, value || 8066));
     setRemotePort(port);
     localStorage.setItem('bellepoule-remote-port', String(port));
   };
@@ -464,20 +478,42 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           <div
             style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.75rem 0' }}
           >
+            <label htmlFor="remote-interface" style={{ whiteSpace: 'nowrap' }}>
+              Interface :
+            </label>
+            <select
+              id="remote-interface"
+              value={selectedInterface}
+              onChange={e => {
+                setSelectedInterface(e.target.value);
+                localStorage.setItem('bellepoule-remote-interface', e.target.value);
+              }}
+              disabled={isLoading}
+            >
+              {networkInterfaces.map(iface => (
+                <option key={iface.address} value={iface.address}>
+                  {iface.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.75rem 0' }}
+          >
             <label htmlFor="remote-port" style={{ whiteSpace: 'nowrap' }}>
               Port :
             </label>
             <input
               id="remote-port"
               type="number"
-              min={1024}
+              min={1}
               max={65535}
               value={remotePort}
               onChange={e => handlePortChange(parseInt(e.target.value, 10))}
               style={{ width: '80px' }}
               disabled={isLoading}
             />
-            <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>1024–65535, défaut 8066</span>
+            <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>1–65535, défaut 8066</span>
           </div>
           <button className="btn-primary" onClick={onStartRemote}>
             ⚡ Démarrer la saisie distante
