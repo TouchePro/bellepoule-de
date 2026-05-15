@@ -2810,31 +2810,37 @@ export class RemoteScoreServer {
     return `http://${ip}:${this.port}`;
   }
 
-  public start(): void {
+  public start(): Promise<void> {
     console.log('[RemoteScoreServer] Démarrage du serveur...');
     console.log(`[RemoteScoreServer] Port: ${this.port}`);
     console.log(`[RemoteScoreServer] Interface: ${this.host}`);
     console.log(`[RemoteScoreServer] URL locale: http://localhost:${this.port}`);
     console.log(`[RemoteScoreServer] URL réseau: ${this.getServerUrl()}`);
 
-    this.server.listen(this.port, this.host, () => {
-      const url = this.getServerUrl();
-      console.log(`[RemoteScoreServer] ============================================`);
-      console.log(`[RemoteScoreServer] SERVEUR DÉMARRÉ AVEC SUCCÈS ✓`);
-      console.log(`[RemoteScoreServer] Port: ${this.port}`);
-      console.log(`[RemoteScoreServer] URL: ${url}`);
-      console.log(`[RemoteScoreServer] Arènes disponibles: ${this.arenaCount}`);
-      console.log(`[RemoteScoreServer] ============================================`);
-      console.log(`[RemoteScoreServer] Les arbitres peuvent se connecter sur: ${url}`);
-    });
+    return new Promise((resolve, reject) => {
+      this.server.once('error', (err: any) => {
+        console.error('[RemoteScoreServer] ERREUR DU SERVEUR:', err);
+        if (err.code === 'EADDRINUSE') {
+          console.error(`[RemoteScoreServer] Le port ${this.port} est déjà utilisé!`);
+        }
+        reject(err);
+      });
 
-    // Gestion des erreurs du serveur
-    this.server.on('error', (err: any) => {
-      console.error('[RemoteScoreServer] ERREUR DU SERVEUR:', err);
-      if (err.code === 'EADDRINUSE') {
-        console.error(`[RemoteScoreServer] Le port ${this.port} est déjà utilisé!`);
-        console.error("[RemoteScoreServer] Arrêtez l'autre instance ou utilisez un autre port.");
-      }
+      this.server.listen(this.port, this.host, () => {
+        const url = this.getServerUrl();
+        console.log(`[RemoteScoreServer] ============================================`);
+        console.log(`[RemoteScoreServer] SERVEUR DÉMARRÉ AVEC SUCCÈS ✓`);
+        console.log(`[RemoteScoreServer] Port: ${this.port}`);
+        console.log(`[RemoteScoreServer] URL: ${url}`);
+        console.log(`[RemoteScoreServer] Arènes disponibles: ${this.arenaCount}`);
+        console.log(`[RemoteScoreServer] ============================================`);
+        console.log(`[RemoteScoreServer] Les arbitres peuvent se connecter sur: ${url}`);
+        // Switch from one-shot 'once' error handler to persistent one for runtime errors
+        this.server.on('error', (err: any) => {
+          console.error('[RemoteScoreServer] ERREUR DU SERVEUR:', err);
+        });
+        resolve();
+      });
     });
   }
 

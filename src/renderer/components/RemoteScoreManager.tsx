@@ -214,6 +214,10 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       const result = await window.electronAPI.remote.startServer(competition.id, remotePort, selectedInterface);
 
       if (result.success && result.serverInfo) {
+        if (result.serverInfo.port !== remotePort) {
+          setRemotePort(result.serverInfo.port);
+          localStorage.setItem(`bellepoule-remote-port-${competition.id}`, String(result.serverInfo.port));
+        }
         setServerUrl(result.serverInfo.url);
         await startSession(result.serverInfo.url, effectivePending);
       } else {

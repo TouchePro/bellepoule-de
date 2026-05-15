@@ -226,6 +226,16 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     }
   }, [fencers]);
 
+  // Restaurer l'état actif de la saisie distante si le serveur tourne déjà (ex : retour sur l'onglet)
+  useEffect(() => {
+    if (!window.electronAPI?.remote) return;
+    window.electronAPI.remote.getServerInfo(competition.id).then((res: any) => {
+      if (res?.success && res.serverInfo) {
+        setIsRemoteActive(true);
+      }
+    });
+  }, [competition.id]);
+
   // Écouter les mises à jour des matches distants
   // Note: pas de garde sur currentPhase car la phase 'remote' affiche le panel de saisie distante
   // mais les mises à jour doivent quand même être appliquées aux pools
