@@ -72,6 +72,7 @@ export interface FencerUpdateData {
 }
 
 export interface MatchCreateData {
+  id?: string;
   number: number;
   fencerAId?: string;
   fencerBId?: string;
@@ -445,7 +446,8 @@ export interface DatabaseAPI {
   ) => Promise<void>;
 
   // Pools
-  createPool: (phaseId: string, number: number) => Promise<Pool>;
+  createPool: (phaseId: string, number: number, poolId?: string) => Promise<Pool>;
+  clearPoolsForPhase: (phaseId: string) => Promise<void>;
   addFencerToPool: (poolId: string, fencerId: string, position: number) => Promise<void>;
   getPoolFencers: (poolId: string) => Promise<Fencer[]>;
   getPoolsByPhase: (phaseId: string) => Promise<Pool[]>;
@@ -502,6 +504,7 @@ export interface DatabaseAPI {
 
   // Session State
   saveSessionState: (competitionId: string, state: SessionState) => Promise<void>;
+  saveSessionStateSync: (competitionId: string, state: unknown) => boolean;
   getSessionState: (competitionId: string) => Promise<SessionState | null>;
   clearSessionState: (competitionId: string) => Promise<void>;
 

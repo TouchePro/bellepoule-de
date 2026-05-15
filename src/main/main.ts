@@ -995,6 +995,18 @@ ipcMain.handle('db:getSessionState', async (_, competitionId) => {
   return db.getSessionState(competitionId);
 });
 
+// Sync save for beforeunload (renderer cannot await async IPC on close)
+ipcMain.on('db:saveSessionStateSync', (event, competitionId: string, state: unknown) => {
+  try {
+    db.saveSessionState(competitionId, state);
+    db.forceSave();
+    event.returnValue = true;
+  } catch (e) {
+    console.error('[DB] Sync session state save failed', e);
+    event.returnValue = false;
+  }
+});
+
 ipcMain.handle('db:clearSessionState', async (_, competitionId) => {
   return db.clearSessionState(competitionId);
 });
@@ -1003,8 +1015,11 @@ ipcMain.handle('db:clearSessionState', async (_, competitionId) => {
 ipcMain.handle('db:updatePool', async (_, pool) => {
   return db.updatePool(pool);
 });
-ipcMain.handle('db:createPool', async (_, phaseId, number) => {
-  return db.createPool(phaseId, number);
+ipcMain.handle('db:createPool', async (_, phaseId, number, poolId) => {
+  return db.createPool(phaseId, number, poolId);
+});
+ipcMain.handle('db:clearPoolsForPhase', async (_, phaseId) => {
+  return db.clearPoolsForPhase(phaseId);
 });
 ipcMain.handle('db:addFencerToPool', async (_, poolId, fencerId, position) => {
   return db.addFencerToPool(poolId, fencerId, position);

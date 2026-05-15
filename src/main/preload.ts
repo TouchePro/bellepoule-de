@@ -143,14 +143,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('db:upsertMultipleTableauMatches', competitionId, matches),
 
     // Pools
-    createPool: (phaseId: string, number: number) => {
+    createPool: (phaseId: string, number: number, poolId?: string) => {
       if (!phaseId || typeof phaseId !== 'string') {
         throw new Error('Phase ID is required and must be a string');
       }
       if (typeof number !== 'number' || number < 0) {
         throw new Error('Pool number is required and must be positive');
       }
-      return ipcRenderer.invoke('db:createPool', phaseId, number);
+      return ipcRenderer.invoke('db:createPool', phaseId, number, poolId);
+    },
+    clearPoolsForPhase: (phaseId: string) => {
+      if (!phaseId || typeof phaseId !== 'string') {
+        throw new Error('Phase ID is required and must be a string');
+      }
+      return ipcRenderer.invoke('db:clearPoolsForPhase', phaseId);
     },
     addFencerToPool: (poolId: string, fencerId: string, position: number) => {
       if (!poolId || typeof poolId !== 'string') {
@@ -217,6 +223,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
         throw new Error('Competition ID is required and must be a string');
       }
       return ipcRenderer.invoke('db:saveSessionState', competitionId, state);
+    },
+    saveSessionStateSync: (competitionId: string, state: unknown): boolean => {
+      if (!competitionId || typeof competitionId !== 'string') {
+        throw new Error('Competition ID is required and must be a string');
+      }
+      return ipcRenderer.sendSync('db:saveSessionStateSync', competitionId, state);
     },
     getSessionState: (competitionId: string) => {
       if (!competitionId || typeof competitionId !== 'string') {
