@@ -430,6 +430,12 @@ jobs:
       contents: write
 
     steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: dev
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Download All Artifacts
         uses: actions/download-artifact@v8
         with:
@@ -437,12 +443,6 @@ jobs:
 
       - name: List downloaded files
         run: find builds -type f
-
-      - uses: actions/checkout@v6
-        with:
-          ref: dev
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Delete existing dev-latest release and tag
         env:
