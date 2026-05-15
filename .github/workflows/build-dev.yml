@@ -462,7 +462,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          FILES=$(find builds -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" \) | tr '\n' ' ')
+          mapfile -t FILES < <(find builds -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" \))
           gh release create dev-latest \
             --title "🧪 BellePoule Modern Dev v${{ needs.increment-version.outputs.version }} Build #${{ needs.increment-version.outputs.build }}" \
             --notes "## 🧪 Version de Développement
@@ -492,4 +492,4 @@ jobs:
           **Build automatique** • Branche: \`dev\` • Commit: \`${{ github.sha }}\`" \
             --prerelease \
             --target dev \
-            $FILES
+            "${FILES[@]}"
