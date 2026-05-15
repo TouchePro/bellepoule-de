@@ -447,52 +447,49 @@ jobs:
       - name: Delete existing dev release and tag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
         run: |
-          gh release delete dev --yes --cleanup-tag 2>/dev/null || true
+          # Delete release via API (handles immutable releases)
+          RELEASE_ID=$(gh api repos/$REPO/releases/tags/dev --jq '.id' 2>/dev/null || true)
+          if [ -n "$RELEASE_ID" ] && [ "$RELEASE_ID" != "null" ]; then
+            echo "Deleting release ID $RELEASE_ID"
+            gh api -X DELETE repos/$REPO/releases/$RELEASE_ID
+          fi
+          # Delete tag
+          git push origin :refs/tags/dev 2>/dev/null || true
 
-      - name: Create Dev Release
-        uses: ncipollo/release-action@v1
-        with:
-          tag: dev
-          name: '🧪 BellePoule Modern Dev v${{ needs.increment-version.outputs.version }} Build #${{ needs.increment-version.outputs.build }}'
-          body: |
-            ## 🧪 Version de Développement
+      - name: Create Dev Release via gh CLI
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          FILES=$(find builds -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" \) | tr '\n' ' ')
+          gh release create dev \
+            --title "🧪 BellePoule Modern Dev v${{ needs.increment-version.outputs.version }} Build #${{ needs.increment-version.outputs.build }}" \
+            --notes "## 🧪 Version de Développement
 
-            **Version**: `${{ needs.increment-version.outputs.version }}`
-            **Build**: `#${{ needs.increment-version.outputs.build }}`
+          **Version**: \`${{ needs.increment-version.outputs.version }}\`
+          **Build**: \`#${{ needs.increment-version.outputs.build }}\`
 
-            **Ceci est une version de test !**
+          **Ceci est une version de test !**
 
-            Cette release contient les dernières modifications de la branche `dev` et est destinée aux tests.
+          Cette release contient les dernières modifications de la branche \`dev\` et est destinée aux tests.
 
-            Pour la version stable, utilisez la release principale.
+          ### 📥 Téléchargements
 
-            ### 📥 Téléchargements
+          | Plateforme | Architecture | Fichier |
+          |------------|--------------|---------|
+          | **Windows** | x64 | \`.exe\` portable |
+          | **macOS** | x64 | \`.dmg\` |
+          | **macOS** | ARM64 | \`.dmg\` (Apple Silicon M1/M2/M3) |
+          | **Linux** | x64 | \`.AppImage\` |
+          | **Linux** | ARM64 | \`.AppImage\` (Raspberry Pi, etc.) |
 
-            | Plateforme | Architecture | Fichier |
-            |------------|--------------|---------|
-            | **Windows** | x64 | `.exe` portable |
-            | **macOS** | x64 | `.dmg` |
-            | **macOS** | ARM64 | `.dmg` (Apple Silicon M1/M2/M3) |
-            | **Linux** | x64 | `.AppImage` |
-            | **Linux** | ARM64 | `.AppImage` (Raspberry Pi, etc.) |
+          ### ⚠️ Notes
+          - Cette version peut contenir des bugs
+          - Les fonctionnalités sont en cours de développement
 
-            ### ⚠️ Notes
-            - Cette version peut contenir des bugs
-            - Les fonctionnalités sont en cours de développement
-            - Pour toute issue, merci de la signaler sur GitHub
-
-            ---
-            **Build automatique** • Branche: `dev` • Commit: `${{ github.sha }}`
-          artifacts: |
-            builds/windows-exe-dev/*.exe
-            builds/macos-x64-dmg-dev/*.dmg
-            builds/macos-arm64-dmg-dev/*.dmg
-            builds/linux-x64-appimage-dev/*.AppImage
-            builds/linux-arm64-appimage-dev/*.AppImage
-          draft: false
-          prerelease: true
-          allowUpdates: true
-          removeArtifacts: true
-          makeLatest: false
-          token: ${{ secrets.GITHUB_TOKEN }}
+          ---
+          **Build automatique** • Branche: \`dev\` • Commit: \`${{ github.sha }}\`" \
+            --prerelease \
+            --target dev \
+            $FILES
