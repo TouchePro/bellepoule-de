@@ -485,20 +485,13 @@ jobs:
           RELEASE_ID=$(gh api repos/$REPO/releases --paginate 2>/dev/null | jq -r '.[] | select(.tag_name=="dev-prerelease") | .id' | head -1)
           echo "RELEASE_ID=${RELEASE_ID}"
           if [ -n "$RELEASE_ID" ]; then
-            echo "Updating existing release $RELEASE_ID"
-            gh api -X PATCH repos/$REPO/releases/$RELEASE_ID \
-              -f name="$TITLE" \
-              -f body="$NOTES" \
-              -F prerelease=true
-            for f in "${FILES[@]}"; do
-              gh release upload dev-prerelease "$f" --clobber
-            done
-          else
-            echo "Creating new release"
-            gh release create dev-prerelease \
-              --title "$TITLE" \
-              --notes "$NOTES" \
-              --prerelease \
-              --target dev \
-              "${FILES[@]}"
+            echo "Deleting existing release $RELEASE_ID"
+            gh release delete dev-prerelease --yes --cleanup-tag 2>&1 || true
           fi
+          echo "Creating new release"
+          gh release create dev-prerelease \
+            --title "$TITLE" \
+            --notes "$NOTES" \
+            --prerelease \
+            --target dev \
+            "${FILES[@]}"
