@@ -578,8 +578,9 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     const now = new Date();
     const newPools = distribution.map((poolFencers, index) => {
       const matchOrder = generatePoolMatchOrder(poolFencers.length);
+      const poolId = crypto.randomUUID();
       const matches = matchOrder.map(([a, b], matchIndex) => ({
-        id: `match-r${currentPoolRound + 1}-${index}-${matchIndex}`,
+        id: crypto.randomUUID(),
         number: matchIndex + 1,
         fencerA: poolFencers[a - 1],
         fencerB: poolFencers[b - 1],
@@ -587,13 +588,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         scoreB: null,
         maxScore: poolMaxScore,
         status: MatchStatus.NOT_STARTED,
-        poolId: `pool-r${currentPoolRound + 1}-${index}`,
+        poolId,
         createdAt: now,
         updatedAt: now,
       }));
 
       return {
-        id: `pool-r${currentPoolRound + 1}-${index}`,
+        id: poolId,
         number: index + 1,
         fencers: poolFencers,
         matches,
