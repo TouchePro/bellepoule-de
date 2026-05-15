@@ -444,28 +444,13 @@ jobs:
       - name: List downloaded files
         run: find builds -type f
 
-      - name: Delete existing dev-latest release and tag
+      - name: Create or Update Dev Release via gh CLI
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
         run: |
-          RELEASE_ID=$(gh api repos/$REPO/releases/tags/dev-latest 2>/dev/null | jq -r 'if .id then .id else empty end')
-          if [ -n "$RELEASE_ID" ]; then
-            echo "Deleting release ID $RELEASE_ID"
-            gh api -X DELETE repos/$REPO/releases/$RELEASE_ID || true
-          else
-            echo "No existing release found"
-          fi
-          git push origin :refs/tags/dev-latest 2>/dev/null || true
-
-      - name: Create Dev Release via gh CLI
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
           mapfile -t FILES < <(find builds -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" \))
-          gh release create dev-latest \
-            --title "🧪 BellePoule Modern Dev v${{ needs.increment-version.outputs.version }} Build #${{ needs.increment-version.outputs.build }}" \
-            --notes "## 🧪 Version de Développement
+          NOTES="## 🧪 Version de Développement
 
           **Version**: \`${{ needs.increment-version.outputs.version }}\`
           **Build**: \`#${{ needs.increment-version.outputs.build }}\`
@@ -489,7 +474,31 @@ jobs:
           - Les fonctionnalités sont en cours de développement
 
           ---
-          **Build automatique** • Branche: \`dev\` • Commit: \`${{ github.sha }}\`" \
-            --prerelease \
-            --target dev \
-            "${FILES[@]}"
+          **Build automatique** • Branche: \`dev\` • Commit: \`${{ github.sha }}\`"
+
+          TITLE="🧪 BellePoule Modern Dev v${{ needs.increment-version.outputs.version }} Build #${{ needs.increment-version.outputs.build }}"
+
+          RELEASE_ID=$(gh api repos/$REPO/releases/tags/dev-latest 2>/dev/null | jq -r 'if .id then .id else empty end')
+          if [ -n "$RELEASE_ID" ]; then
+            echo "Updating existing release $RELEASE_ID"
+            gh api -X PATCH repos/$REPO/releases/$RELEASE_ID \
+              -f name="$TITLE" \
+              -f body="$NOTES" \
+              -F prerelease=true
+            for f in "${FILES[@]}"; do
+              ASSET_NAME=$(basename "$f")
+              ASSET_ID=$(gh api repos/$REPO/releases/$RELEASE_ID/assets 2>/dev/null | jq -r --arg n "$ASSET_NAME" '.[] | select(.name==$n) | .id')
+              if [ -n "$ASSET_ID" ]; then
+                gh api -X DELETE repos/$REPO/releases/assets/$ASSET_ID
+              fi
+              gh release upload dev-latest "$f" --clobber
+            done
+          else
+            echo "Creating new release"
+            gh release create dev-latest \
+              --title "$TITLE" \
+              --notes "$NOTES" \
+              --prerelease \
+              --target dev \
+              "${FILES[@]}"
+          fi
