@@ -478,6 +478,10 @@ jobs:
 
           TITLE="🧪 BellePoule Modern Dev v${{ needs.increment-version.outputs.version }} Build #${{ needs.increment-version.outputs.build }}"
 
+          echo "=== All releases ==="
+          gh api repos/$REPO/releases --paginate 2>/dev/null | jq -r '.[] | "\(.id) \(.tag_name)"'
+          echo "=== Tag lookup ==="
+          gh api repos/$REPO/releases/tags/dev-latest 2>&1 | jq '.' || true
           RELEASE_ID=$(gh api repos/$REPO/releases --paginate 2>/dev/null | jq -r '.[] | select(.tag_name=="dev-latest") | .id' | head -1)
           echo "RELEASE_ID=${RELEASE_ID}"
           if [ -n "$RELEASE_ID" ]; then
