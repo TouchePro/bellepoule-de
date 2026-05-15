@@ -478,7 +478,7 @@ jobs:
 
           TITLE="🧪 BellePoule Modern Dev v${{ needs.increment-version.outputs.version }} Build #${{ needs.increment-version.outputs.build }}"
 
-          RELEASE_ID=$(gh release view dev-latest --json id --jq '.id' 2>/dev/null || true)
+          RELEASE_ID=$(gh api repos/$REPO/releases --paginate 2>/dev/null | jq -r '.[] | select(.tag_name=="dev-latest") | .id' | head -1)
           echo "RELEASE_ID=${RELEASE_ID}"
           if [ -n "$RELEASE_ID" ]; then
             echo "Updating existing release $RELEASE_ID"
