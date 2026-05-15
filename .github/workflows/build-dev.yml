@@ -487,10 +487,11 @@ jobs:
           if [ -n "$RELEASE_ID" ]; then
             echo "Deleting existing release $RELEASE_ID"
             gh api -X DELETE repos/$REPO/releases/$RELEASE_ID && echo "Release deleted" || echo "Release delete failed"
-            git push origin :refs/tags/dev-prerelease 2>&1 && echo "Tag deleted" || echo "Tag delete failed (may not exist)"
-            sleep 2
           fi
-          echo "Creating new release (token length: ${#GH_TOKEN})"
+          echo "Deleting tag dev-prerelease (if exists)"
+          git push origin :refs/tags/dev-prerelease 2>&1 && echo "Tag deleted" || echo "Tag not found, continuing"
+          sleep 2
+          echo "Creating new release"
           gh release create dev-prerelease \
             --repo "$REPO" \
             --title "$TITLE" \
