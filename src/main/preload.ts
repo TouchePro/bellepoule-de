@@ -471,6 +471,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     updateArenaTheme: (competitionId: string, arenaId: string, theme: string, customTheme?: any) =>
       ipcRenderer.invoke('remote:updateArenaTheme', competitionId, arenaId, theme, customTheme),
     updateLogo: (logo: string | null) => ipcRenderer.invoke('remote:updateLogo', logo),
+    setWallpaper: (competitionId: string, wallpaper: string | null) =>
+      ipcRenderer.invoke('remote:setWallpaper', competitionId, wallpaper),
     changePort: (competitionId: string, newPort: number) =>
       ipcRenderer.invoke('remote:changePort', competitionId, newPort),
   },

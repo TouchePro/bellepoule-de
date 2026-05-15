@@ -404,6 +404,10 @@ export interface RemoteServerAPI {
     customTheme?: import('../types/remote').CustomTheme
   ) => Promise<{ success: boolean; error?: string }>;
   updateLogo: (logo: string | null) => Promise<{ success: boolean; error?: string }>;
+  setWallpaper: (
+    competitionId: string,
+    wallpaper: string | null
+  ) => Promise<{ success: boolean; error?: string }>;
   changePort: (
     competitionId: string,
     newPort: number

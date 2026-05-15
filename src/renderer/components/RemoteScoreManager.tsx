@@ -71,6 +71,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const [showPhotos, setShowPhotos] = useState(false);
   const [cardAnnounce, setCardAnnounce] = useState(false);
   const [displayTheme, setDisplayTheme] = useState<'dark' | 'light' | 'neon'>('dark');
+  const [arenaWallpaper, setArenaWallpaper] = useState<string | null>(null);
   const [kioskViews, setKioskViews] = useState({
     poules: true,
     classement: true,
@@ -682,6 +683,69 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                 {icon} {label}
               </button>
             ))}
+          </div>
+        </div>
+        <div style={{ margin: '0.5rem 0' }}>
+          <div style={{ fontSize: '0.875rem', marginBottom: '0.4rem', color: 'inherit' }}>
+            Fond d'écran arènes (écran d'attente) :
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {arenaWallpaper && (
+              <img
+                src={arenaWallpaper}
+                alt="Fond d'écran"
+                style={{ width: 80, height: 45, objectFit: 'cover', borderRadius: '0.25rem', border: '1px solid #475569' }}
+              />
+            )}
+            <label
+              style={{
+                padding: '0.35rem 0.75rem',
+                borderRadius: '0.375rem',
+                border: '1px solid #475569',
+                background: 'transparent',
+                color: '#e2e8f0',
+                cursor: 'pointer',
+                fontSize: '0.8rem',
+              }}
+            >
+              {arenaWallpaper ? '🖼 Changer' : '🖼 Importer'}
+              <input
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={async e => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = async ev => {
+                    const base64 = ev.target?.result as string;
+                    setArenaWallpaper(base64);
+                    await window.electronAPI.remote.setWallpaper(competition.id, base64);
+                  };
+                  reader.readAsDataURL(file);
+                  e.target.value = '';
+                }}
+              />
+            </label>
+            {arenaWallpaper && (
+              <button
+                onClick={async () => {
+                  setArenaWallpaper(null);
+                  await window.electronAPI.remote.setWallpaper(competition.id, null);
+                }}
+                style={{
+                  padding: '0.35rem 0.5rem',
+                  borderRadius: '0.375rem',
+                  border: '1px solid #475569',
+                  background: 'transparent',
+                  color: '#f87171',
+                  cursor: 'pointer',
+                  fontSize: '0.8rem',
+                }}
+              >
+                ✕ Supprimer
+              </button>
+            )}
           </div>
         </div>
         <div style={{ margin: '0.5rem 0' }}>

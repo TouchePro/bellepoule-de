@@ -1727,6 +1727,17 @@ ipcMain.handle('remote:updateLogo', async (_, logo: string | null) => {
   }
 });
 
+ipcMain.handle('remote:setWallpaper', async (_, competitionId: string, wallpaper: string | null) => {
+  try {
+    const entry = remoteServers.get(competitionId);
+    if (!entry) return { success: false };
+    entry.server.setWallpaper(wallpaper);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
 ipcMain.handle('remote:changePort', async (_, competitionId: string, newPort: number) => {
   try {
     const entry = remoteServers.get(competitionId);

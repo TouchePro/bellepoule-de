@@ -48,6 +48,7 @@ export class RemoteScoreServer {
     new Map();
   private orgNote: OrgNote | null = null; // Note d'organisation affichée sur le kiosk
   private sessionLogo: string | null = null; // Logo organisateur (base64) pour kiosk et affichages publics
+  private sessionWallpaper: string | null = null; // Fond d'écran (base64) affiché sur les arènes en attente
   private currentLang: string = 'fr'; // Langue courante de l'interface (fr, en, zh-HK, ...)
   private sessionKioskViews: {
     poules: boolean;
@@ -454,6 +455,10 @@ export class RemoteScoreServer {
     // Logo organisateur
     this.app.get('/api/logo', (req, res) => {
       res.json({ logo: this.sessionLogo });
+    });
+
+    this.app.get('/api/wallpaper', (req, res) => {
+      res.json({ wallpaper: this.sessionWallpaper });
     });
 
     // Arena routes
@@ -3452,6 +3457,11 @@ export class RemoteScoreServer {
   public setLogo(logo: string | null): void {
     this.sessionLogo = logo;
     this.io.emit('logo:update', { logo });
+  }
+
+  public setWallpaper(wallpaper: string | null): void {
+    this.sessionWallpaper = wallpaper;
+    this.io.emit('wallpaper:update', { wallpaper });
   }
 
   public setArenaPassword(arenaId: string, password: string): void {
