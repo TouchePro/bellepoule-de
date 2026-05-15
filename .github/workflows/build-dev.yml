@@ -490,8 +490,9 @@ jobs:
             git push origin :refs/tags/dev-prerelease 2>&1 && echo "Tag deleted" || echo "Tag delete failed (may not exist)"
             sleep 2
           fi
-          echo "Creating new release"
+          echo "Creating new release (token length: ${#GH_TOKEN})"
           gh release create dev-prerelease \
+            --repo "$REPO" \
             --title "$TITLE" \
             --notes "$NOTES" \
             --prerelease \
