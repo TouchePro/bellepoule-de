@@ -26,7 +26,7 @@ Merci pour votre soutien ! / Thank you for your support!
 
 ### 🚀 [**Télécharger la dernière version stable**](https://github.com/klinnex/bellepoule-modern/releases/latest)
 
-### 🧪 [**Télécharger la version de développement (dev)**](https://github.com/klinnex/bellepoule-modern/releases/tag/dev-prerelease)
+### 🧪 [**Télécharger la version de développement (dev)**](https://github.com/klinnex/bellepoule-modern/releases?q=dev-build&expanded=true)
 
 > ⚠️ **Version de test** : Contient les dernières fonctionnalités mais peut être instable
 
@@ -298,16 +298,16 @@ D'après l'analyse du code et les demandes utilisateurs, les prochaines mises à
 
 ### 🧪 **Version de Développement** (Tests)
 
-📦 **[Télécharger la dernière version dev](https://github.com/klinnex/bellepoule-modern/releases/tag/dev-prerelease)**
+📦 **[Télécharger la dernière version dev](https://github.com/klinnex/bellepoule-modern/releases?q=dev-build&expanded=true)**
 
 > ⚠️ **Attention** : Cette version est destinée aux tests et peut contenir des bugs.
 
 | Plateforme  | Architecture | Lien                                                                                                      |
 | ----------- | ------------ | --------------------------------------------------------------------------------------------------------- |
-| **Windows** | x64          | [`BellePoule Modern-dev-*.exe`](https://github.com/klinnex/bellepoule-modern/releases/tag/dev-prerelease)            |
-| **macOS**   | x64          | [`BellePoule Modern-dev-*.dmg`](https://github.com/klinnex/bellepoule-modern/releases/tag/dev-prerelease)            |
-| **Linux**   | x64          | [`BellePoule Modern-dev-*-x64.AppImage`](https://github.com/klinnex/bellepoule-modern/releases/tag/dev-prerelease)   |
-| **Linux**   | ARM64        | [`BellePoule Modern-dev-*-arm64.AppImage`](https://github.com/klinnex/bellepoule-modern/releases/tag/dev-prerelease) |
+| **Windows** | x64          | [`BellePoule Modern-dev-*.exe`](https://github.com/klinnex/bellepoule-modern/releases?q=dev-build&expanded=true)            |
+| **macOS**   | x64          | [`BellePoule Modern-dev-*.dmg`](https://github.com/klinnex/bellepoule-modern/releases?q=dev-build&expanded=true)            |
+| **Linux**   | x64          | [`BellePoule Modern-dev-*-x64.AppImage`](https://github.com/klinnex/bellepoule-modern/releases?q=dev-build&expanded=true)   |
+| **Linux**   | ARM64        | [`BellePoule Modern-dev-*-arm64.AppImage`](https://github.com/klinnex/bellepoule-modern/releases?q=dev-build&expanded=true) |
 
 ### 🆕 **Nouveautés de la v2.0** (PDF Optimisé)
 
@@ -400,7 +400,7 @@ Ce projet utilise **GitHub Actions** pour créer automatiquement :
 ### **Liens directs**
 
 - 🟢 **Release stable** : [`/releases/latest`](https://github.com/klinnex/bellepoule-modern/releases/latest)
-- 🧪 **Release dev** : [`/releases/tag/dev-prerelease`](https://github.com/klinnex/bellepoule-modern/releases/tag/dev-prerelease)
+- 🧪 **Release dev** : [`/releases?q=dev-build`](https://github.com/klinnex/bellepoule-modern/releases?q=dev-build&expanded=true)
 - 📊 **État des builds** : [GitHub Actions](https://github.com/klinnex/bellepoule-modern/actions)
 
 ### **Historique des builds**
