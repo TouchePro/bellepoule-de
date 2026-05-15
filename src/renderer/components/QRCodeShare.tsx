@@ -34,7 +34,7 @@ export const QRCodeShare: React.FC<QRCodeShareProps> = ({ competition, onClose, 
     setQrCodeUrl('');
 
     try {
-      const info = await window.electronAPI.remote.getServerInfo();
+      const info = await window.electronAPI.remote.getServerInfo(competition.id);
       if (!info.success || !info.serverInfo) {
         setError(
           "Le serveur distant doit être démarré pour partager les résultats.\nActivez la saisie distante depuis l'onglet correspondant."

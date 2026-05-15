@@ -1113,6 +1113,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               if (isRemoteActive) {
                 const match = tableauMatches.find(m => m.id === matchId);
                 window.electronAPI.remote.updateMatchArena(
+                  competition.id,
                   matchId,
                   oldArena,
                   newArena,
