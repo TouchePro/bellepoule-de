@@ -933,7 +933,7 @@ function generateResultsHTML(
     <div class="doc-header-badge" style="font-size:11pt">RF</div>
   </div>`,
     'gold-bar': `  <div class="gold-bar"></div>`,
-    'results-table': `
+    'ranking-table': `
   <table>
     <thead>
       <tr>
