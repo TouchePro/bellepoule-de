@@ -176,6 +176,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   const [autoAssignArenas, setAutoAssignArenas] = useState(true);
   const isUnlimitedScore = maxScore === 999;
   const prevMatchesLengthRef = useRef(0);
+  const isInitialMatchesRef = useRef(true);
 
   const { modalRef } = useModalResize({
     defaultWidth: 600,
@@ -261,6 +262,12 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   // Filet de sécurité : détecte la complétion du tableau à chaque mise à jour de matches
   // Couvre les chemins qui ne passent pas par handleScoreSubmit (saisie distante, statuts spéciaux)
   useEffect(() => {
+    // Ignorer le premier rendu : si le tableau est déjà complet au montage (ex : retour depuis
+    // le classement final), ne pas déclencher onComplete qui redirigerait immédiatement vers results.
+    if (isInitialMatchesRef.current) {
+      isInitialMatchesRef.current = false;
+      return;
+    }
     if (matches.length === 0 || !onComplete) return;
     const champion = matches.find(m => m.round === 2)?.winner;
     if (!champion) return;
