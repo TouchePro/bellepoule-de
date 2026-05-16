@@ -525,8 +525,9 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           }
         }
       } else {
-        // Scores différents, pas besoin de traitement spécial
-        onScoreUpdate(index, scoreA, scoreB);
+        // Scores différents : désigner le vainqueur explicitement
+        const winnerOverride: 'A' | 'B' = scoreA > scoreB ? 'A' : 'B';
+        onScoreUpdate(index, scoreA, scoreB, winnerOverride);
       }
     }
 

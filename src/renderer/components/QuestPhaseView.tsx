@@ -117,6 +117,15 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
     winner?: 'A' | 'B',
     specialStatus?: 'abandon' | 'forfait' | 'exclusion'
   ) => {
+    const effectiveWinner: 'A' | 'B' | undefined =
+      winner !== undefined
+        ? winner
+        : scoreA > scoreB
+          ? 'A'
+          : scoreB > scoreA
+            ? 'B'
+            : undefined;
+
     setPools(prev =>
       prev.map(pool => ({
         ...pool,
@@ -133,16 +142,16 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
 
           return {
             ...m,
-            scoreA: makeScore(scoreA, winner === 'A'),
-            scoreB: makeScore(scoreB, winner === 'B'),
-            status: winner !== undefined ? MatchStatus.FINISHED : m.status,
+            scoreA: makeScore(scoreA, effectiveWinner === 'A'),
+            scoreB: makeScore(scoreB, effectiveWinner === 'B'),
+            status: effectiveWinner !== undefined ? MatchStatus.FINISHED : m.status,
             updatedAt: new Date(),
           };
         }),
         isComplete: pool.matches.every(
           (m, i) => i !== matchIndex
             ? m.status === MatchStatus.FINISHED
-            : winner !== undefined
+            : effectiveWinner !== undefined
         ),
       }))
     );
