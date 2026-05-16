@@ -689,6 +689,9 @@
         flex-direction: column;
         align-items: center;
         gap: 1.5rem;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
       }
 
       .waiting-screen.hidden {
@@ -1413,6 +1416,21 @@
           this.socket.on(`arena:${this.arenaId}:coin_flip`, data => {
             this.showCoinFlipAnimation(data.winner, data.fencerA, data.fencerB);
           });
+
+          this.socket.on('wallpaper:update', ({ wallpaper }) => {
+            this.applyWallpaper(wallpaper);
+          });
+
+          fetch('/api/wallpaper')
+            .then(res => res.json())
+            .then(data => { if (data.wallpaper) this.applyWallpaper(data.wallpaper); })
+            .catch(() => {});
+        }
+
+        applyWallpaper(wallpaper) {
+          const ws = document.getElementById('waiting-screen');
+          if (!ws) return;
+          ws.style.backgroundImage = wallpaper ? `url(${wallpaper})` : '';
         }
 
         showCoinFlipAnimation(winner, fencerA, fencerB) {

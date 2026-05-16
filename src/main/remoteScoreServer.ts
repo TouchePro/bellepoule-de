@@ -30,6 +30,7 @@ export class RemoteScoreServer {
   private server: any;
   private io: SocketIOServer;
   private port: number;
+  private host: string;
   private db: DatabaseManager;
   private session: RemoteSession | null = null;
   private arenas: Map<string, Arena> = new Map();
@@ -47,6 +48,7 @@ export class RemoteScoreServer {
     new Map();
   private orgNote: OrgNote | null = null; // Note d'organisation affichée sur le kiosk
   private sessionLogo: string | null = null; // Logo organisateur (base64) pour kiosk et affichages publics
+  private sessionWallpaper: string | null = null; // Fond d'écran (base64) affiché sur les arènes en attente
   private currentLang: string = 'fr'; // Langue courante de l'interface (fr, en, zh-HK, ...)
   private sessionKioskViews: {
     poules: boolean;
@@ -77,10 +79,11 @@ export class RemoteScoreServer {
   private readonly EVENT_BUFFER_MAX = 50;
   private readonly EVENT_BUFFER_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
-  constructor(db: DatabaseManager, port: number = 8066) {
+  constructor(db: DatabaseManager, port: number = 8066, host: string = '0.0.0.0') {
     console.log('[RemoteScoreServer] Initialisation du serveur de saisie distante...');
     this.db = db;
     this.port = port;
+    this.host = host;
     this.app = express();
     this.server = createServer(this.app);
     // Limiter CORS au réseau local (localhost + LAN) pour la sécurité
@@ -452,6 +455,10 @@ export class RemoteScoreServer {
     // Logo organisateur
     this.app.get('/api/logo', (req, res) => {
       res.json({ logo: this.sessionLogo });
+    });
+
+    this.app.get('/api/wallpaper', (req, res) => {
+      res.json({ wallpaper: this.sessionWallpaper });
     });
 
     // Arena routes
@@ -2804,35 +2811,41 @@ export class RemoteScoreServer {
   }
 
   public getServerUrl(): string {
-    const ip = this.getLocalIPAddress();
+    const ip = this.host !== '0.0.0.0' ? this.host : this.getLocalIPAddress();
     return `http://${ip}:${this.port}`;
   }
 
-  public start(): void {
+  public start(): Promise<void> {
     console.log('[RemoteScoreServer] Démarrage du serveur...');
     console.log(`[RemoteScoreServer] Port: ${this.port}`);
-    console.log(`[RemoteScoreServer] Interface: 0.0.0.0 (toutes les interfaces)`);
+    console.log(`[RemoteScoreServer] Interface: ${this.host}`);
     console.log(`[RemoteScoreServer] URL locale: http://localhost:${this.port}`);
-    console.log(`[RemoteScoreServer] URL réseau: http://${this.getLocalIPAddress()}:${this.port}`);
+    console.log(`[RemoteScoreServer] URL réseau: ${this.getServerUrl()}`);
 
-    this.server.listen(this.port, '0.0.0.0', () => {
-      const url = this.getServerUrl();
-      console.log(`[RemoteScoreServer] ============================================`);
-      console.log(`[RemoteScoreServer] SERVEUR DÉMARRÉ AVEC SUCCÈS ✓`);
-      console.log(`[RemoteScoreServer] Port: ${this.port}`);
-      console.log(`[RemoteScoreServer] URL: ${url}`);
-      console.log(`[RemoteScoreServer] Arènes disponibles: ${this.arenaCount}`);
-      console.log(`[RemoteScoreServer] ============================================`);
-      console.log(`[RemoteScoreServer] Les arbitres peuvent se connecter sur: ${url}`);
-    });
+    return new Promise((resolve, reject) => {
+      this.server.once('error', (err: any) => {
+        console.error('[RemoteScoreServer] ERREUR DU SERVEUR:', err);
+        if (err.code === 'EADDRINUSE') {
+          console.error(`[RemoteScoreServer] Le port ${this.port} est déjà utilisé!`);
+        }
+        reject(err);
+      });
 
-    // Gestion des erreurs du serveur
-    this.server.on('error', (err: any) => {
-      console.error('[RemoteScoreServer] ERREUR DU SERVEUR:', err);
-      if (err.code === 'EADDRINUSE') {
-        console.error(`[RemoteScoreServer] Le port ${this.port} est déjà utilisé!`);
-        console.error("[RemoteScoreServer] Arrêtez l'autre instance ou utilisez un autre port.");
-      }
+      this.server.listen(this.port, this.host, () => {
+        const url = this.getServerUrl();
+        console.log(`[RemoteScoreServer] ============================================`);
+        console.log(`[RemoteScoreServer] SERVEUR DÉMARRÉ AVEC SUCCÈS ✓`);
+        console.log(`[RemoteScoreServer] Port: ${this.port}`);
+        console.log(`[RemoteScoreServer] URL: ${url}`);
+        console.log(`[RemoteScoreServer] Arènes disponibles: ${this.arenaCount}`);
+        console.log(`[RemoteScoreServer] ============================================`);
+        console.log(`[RemoteScoreServer] Les arbitres peuvent se connecter sur: ${url}`);
+        // Switch from one-shot 'once' error handler to persistent one for runtime errors
+        this.server.on('error', (err: any) => {
+          console.error('[RemoteScoreServer] ERREUR DU SERVEUR:', err);
+        });
+        resolve();
+      });
     });
   }
 
@@ -3444,6 +3457,11 @@ export class RemoteScoreServer {
   public setLogo(logo: string | null): void {
     this.sessionLogo = logo;
     this.io.emit('logo:update', { logo });
+  }
+
+  public setWallpaper(wallpaper: string | null): void {
+    this.sessionWallpaper = wallpaper;
+    this.io.emit('wallpaper:update', { wallpaper });
   }
 
   public setArenaPassword(arenaId: string, password: string): void {

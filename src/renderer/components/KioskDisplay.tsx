@@ -282,7 +282,7 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
       if (target <= now) target.setDate(target.getDate() + 1); // lendemain si dépassé
       const diffSec = Math.max(0, Math.floor((target.getTime() - now.getTime()) / 1000));
       if (diffSec === 0) {
-        window.electronAPI.remote.clearOrgNote();
+        window.electronAPI.remote.clearOrgNote(competition.id);
         return;
       }
       const m = Math.floor(diffSec / 60);

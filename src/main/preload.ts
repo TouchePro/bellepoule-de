@@ -143,14 +143,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('db:upsertMultipleTableauMatches', competitionId, matches),
 
     // Pools
-    createPool: (phaseId: string, number: number) => {
+    createPool: (phaseId: string, number: number, poolId?: string) => {
       if (!phaseId || typeof phaseId !== 'string') {
         throw new Error('Phase ID is required and must be a string');
       }
       if (typeof number !== 'number' || number < 0) {
         throw new Error('Pool number is required and must be positive');
       }
-      return ipcRenderer.invoke('db:createPool', phaseId, number);
+      return ipcRenderer.invoke('db:createPool', phaseId, number, poolId);
+    },
+    clearPoolsForPhase: (phaseId: string) => {
+      if (!phaseId || typeof phaseId !== 'string') {
+        throw new Error('Phase ID is required and must be a string');
+      }
+      return ipcRenderer.invoke('db:clearPoolsForPhase', phaseId);
     },
     addFencerToPool: (poolId: string, fencerId: string, position: number) => {
       if (!poolId || typeof poolId !== 'string') {
@@ -217,6 +223,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
         throw new Error('Competition ID is required and must be a string');
       }
       return ipcRenderer.invoke('db:saveSessionState', competitionId, state);
+    },
+    saveSessionStateSync: (competitionId: string, state: unknown): boolean => {
+      if (!competitionId || typeof competitionId !== 'string') {
+        throw new Error('Competition ID is required and must be a string');
+      }
+      return ipcRenderer.sendSync('db:saveSessionStateSync', competitionId, state);
     },
     getSessionState: (competitionId: string) => {
       if (!competitionId || typeof competitionId !== 'string') {
@@ -403,9 +415,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Remote score server functions
   remote: {
-    startServer: (port?: number) => ipcRenderer.invoke('remote:startServer', port),
-    stopServer: () => ipcRenderer.invoke('remote:stopServer'),
-    getServerInfo: () => ipcRenderer.invoke('remote:getServerInfo'),
+    getNetworkInterfaces: () => ipcRenderer.invoke('remote:getNetworkInterfaces'),
+    startServer: (competitionId: string, port?: number, host?: string) =>
+      ipcRenderer.invoke('remote:startServer', competitionId, port, host),
+    stopServer: (competitionId: string) => ipcRenderer.invoke('remote:stopServer', competitionId),
+    getServerInfo: (competitionId: string) => ipcRenderer.invoke('remote:getServerInfo', competitionId),
     startSession: (
       competitionId: string,
       strips: number,
@@ -423,34 +437,44 @@ contextBridge.exposeInMainWorld('electronAPI', {
         kioskViews,
         cardAnnounce
       ),
-    stopSession: () => ipcRenderer.invoke('remote:stopSession'),
-    launchCompetition: () => ipcRenderer.invoke('remote:launchCompetition'),
-    getSession: () => ipcRenderer.invoke('remote:getSession'),
-    getArenas: () => ipcRenderer.invoke('remote:getArenas'),
-    updateStripCount: (count: number) => ipcRenderer.invoke('remote:updateStripCount', count),
-    updateShowPhotos: (value: boolean) => ipcRenderer.invoke('remote:updateShowPhotos', value),
-    updateCardAnnounce: (value: boolean) => ipcRenderer.invoke('remote:updateCardAnnounce', value),
-    updateTheme: (theme: string) => ipcRenderer.invoke('remote:updateTheme', theme),
-    updateKioskViews: (views: {
+    stopSession: (competitionId: string) => ipcRenderer.invoke('remote:stopSession', competitionId),
+    launchCompetition: (competitionId: string) => ipcRenderer.invoke('remote:launchCompetition', competitionId),
+    getSession: (competitionId: string) => ipcRenderer.invoke('remote:getSession', competitionId),
+    getArenas: (competitionId: string) => ipcRenderer.invoke('remote:getArenas', competitionId),
+    updateStripCount: (competitionId: string, count: number) =>
+      ipcRenderer.invoke('remote:updateStripCount', competitionId, count),
+    updateShowPhotos: (competitionId: string, value: boolean) =>
+      ipcRenderer.invoke('remote:updateShowPhotos', competitionId, value),
+    updateCardAnnounce: (competitionId: string, value: boolean) =>
+      ipcRenderer.invoke('remote:updateCardAnnounce', competitionId, value),
+    updateTheme: (competitionId: string, theme: string) =>
+      ipcRenderer.invoke('remote:updateTheme', competitionId, theme),
+    updateKioskViews: (competitionId: string, views: {
       poules: boolean;
       classement: boolean;
       direct: boolean;
       suivants: boolean;
-    }) => ipcRenderer.invoke('remote:updateKioskViews', views),
-    updateMatchArena: (matchId: string, fromArena: number | null, toArena: number | null) =>
-      ipcRenderer.invoke('remote:updateMatchArena', matchId, fromArena, toArena),
-    updatePoolFencers: (updates: Array<{ poolId: string; fencers: any[] }>) =>
-      ipcRenderer.invoke('remote:updatePoolFencers', updates),
-    syncPoolMatches: (poolsData: Array<{ poolId: string; matches: any[] }>) =>
-      ipcRenderer.invoke('remote:syncPoolMatches', poolsData),
-    refreshDeMatches: (matches: any[]) => ipcRenderer.invoke('remote:refreshDeMatches', matches),
-    setArenaPassword: (arenaId: string, password: string) =>
-      ipcRenderer.invoke('remote:setArenaPassword', arenaId, password),
-    setOrgNote: (note: any) => ipcRenderer.invoke('remote:setOrgNote', note),
-    clearOrgNote: () => ipcRenderer.invoke('remote:clearOrgNote'),
-    updateArenaTheme: (arenaId: string, theme: string, customTheme?: any) =>
-      ipcRenderer.invoke('remote:updateArenaTheme', arenaId, theme, customTheme),
+    }) => ipcRenderer.invoke('remote:updateKioskViews', competitionId, views),
+    updateMatchArena: (competitionId: string, matchId: string, fromArena: number | null, toArena: number | null) =>
+      ipcRenderer.invoke('remote:updateMatchArena', competitionId, matchId, fromArena, toArena),
+    updatePoolFencers: (competitionId: string, updates: Array<{ poolId: string; fencers: any[] }>) =>
+      ipcRenderer.invoke('remote:updatePoolFencers', competitionId, updates),
+    syncPoolMatches: (competitionId: string, poolsData: Array<{ poolId: string; matches: any[] }>) =>
+      ipcRenderer.invoke('remote:syncPoolMatches', competitionId, poolsData),
+    refreshDeMatches: (competitionId: string, matches: any[]) =>
+      ipcRenderer.invoke('remote:refreshDeMatches', competitionId, matches),
+    setArenaPassword: (competitionId: string, arenaId: string, password: string) =>
+      ipcRenderer.invoke('remote:setArenaPassword', competitionId, arenaId, password),
+    setOrgNote: (competitionId: string, note: any) =>
+      ipcRenderer.invoke('remote:setOrgNote', competitionId, note),
+    clearOrgNote: (competitionId: string) => ipcRenderer.invoke('remote:clearOrgNote', competitionId),
+    updateArenaTheme: (competitionId: string, arenaId: string, theme: string, customTheme?: any) =>
+      ipcRenderer.invoke('remote:updateArenaTheme', competitionId, arenaId, theme, customTheme),
     updateLogo: (logo: string | null) => ipcRenderer.invoke('remote:updateLogo', logo),
+    setWallpaper: (competitionId: string, wallpaper: string | null) =>
+      ipcRenderer.invoke('remote:setWallpaper', competitionId, wallpaper),
+    changePort: (competitionId: string, newPort: number) =>
+      ipcRenderer.invoke('remote:changePort', competitionId, newPort),
   },
 
   // Remote event listeners (for real-time updates)

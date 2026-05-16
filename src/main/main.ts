@@ -16,9 +16,18 @@ import { Competition, Fencer, FencerStatus, Match, MatchStatus, Pool } from '../
 // Database instance
 const db = new DatabaseManager();
 
-// Remote score server
-let remoteScoreServer: any = null;
-let remoteScoreServerPort: number = 8066;
+// Remote score servers — one per competition (key = competitionId)
+const remoteServers = new Map<string, { server: RemoteScoreServer; port: number; host: string }>();
+const usedPorts = new Set<number>();
+const BASE_REMOTE_PORT = 8066;
+
+function findAvailablePort(preferred?: number): number {
+  if (preferred && !usedPorts.has(preferred)) return preferred;
+  const start = preferred ? preferred + 1 : BASE_REMOTE_PORT;
+  let port = start;
+  while (usedPorts.has(port)) port++;
+  return port;
+}
 
 // Auto updater
 let autoUpdater: AutoUpdater | null = null;
@@ -712,67 +721,18 @@ function createMenu(language?: string): void {
 // Remote Score Server
 // ============================================================================
 
-function startRemoteScoreServer(port: number = 8066): void {
+function startRemoteScoreServer(): void {
   const L = getL();
-  if (remoteScoreServer) {
-    dialog.showMessageBox(mainWindow!, {
-      type: 'info',
-      title: L.remoteTitle,
-      message: L.remoteAlreadyStarted,
-      buttons: ['OK'],
-    });
-    return;
-  }
-
-  try {
-    remoteScoreServer = new RemoteScoreServer(db, port);
-    remoteScoreServerPort = port;
-    remoteScoreServer.start();
-
-    const serverUrl = remoteScoreServer.getServerUrl();
-    const detail = L.remoteDetailTemplate
-      .replace(/{url}/g, serverUrl)
-      .replace('{port}', String(port));
-    dialog.showMessageBox(mainWindow!, {
-      type: 'info',
-      title: L.remoteStartedTitle,
-      message: L.remoteStartedMsg,
-      detail,
-      buttons: ['OK'],
-    });
-
-    // Stocker la référence globale pour le serveur distant
-    (global as any).mainWindow = mainWindow;
-  } catch (error) {
-    dialog.showErrorBox(L.errTitle, `${L.remoteErrStart} ${error}`);
-  }
+  dialog.showMessageBox(mainWindow!, {
+    type: 'info',
+    title: L.remoteTitle,
+    message: 'Utilisez le panneau "Saisie distante" dans l\'onglet compétition.',
+    buttons: ['OK'],
+  });
 }
 
 function stopRemoteScoreServer(): void {
-  const L = getL();
-  if (!remoteScoreServer) {
-    dialog.showMessageBox(mainWindow!, {
-      type: 'info',
-      title: L.remoteTitle,
-      message: L.remoteNotStarted,
-      buttons: ['OK'],
-    });
-    return;
-  }
-
-  try {
-    remoteScoreServer.stop();
-    remoteScoreServer = null;
-
-    dialog.showMessageBox(mainWindow!, {
-      type: 'info',
-      title: L.remoteStoppedTitle,
-      message: L.remoteStoppedMsg,
-      buttons: ['OK'],
-    });
-  } catch (error) {
-    dialog.showErrorBox(L.errTitle, `${L.remoteErrStop} ${error}`);
-  }
+  startRemoteScoreServer();
 }
 
 // ============================================================================
@@ -995,6 +955,18 @@ ipcMain.handle('db:getSessionState', async (_, competitionId) => {
   return db.getSessionState(competitionId);
 });
 
+// Sync save for beforeunload (renderer cannot await async IPC on close)
+ipcMain.on('db:saveSessionStateSync', (event, competitionId: string, state: unknown) => {
+  try {
+    db.saveSessionState(competitionId, state);
+    db.forceSave();
+    event.returnValue = true;
+  } catch (e) {
+    console.error('[DB] Sync session state save failed', e);
+    event.returnValue = false;
+  }
+});
+
 ipcMain.handle('db:clearSessionState', async (_, competitionId) => {
   return db.clearSessionState(competitionId);
 });
@@ -1003,8 +975,11 @@ ipcMain.handle('db:clearSessionState', async (_, competitionId) => {
 ipcMain.handle('db:updatePool', async (_, pool) => {
   return db.updatePool(pool);
 });
-ipcMain.handle('db:createPool', async (_, phaseId, number) => {
-  return db.createPool(phaseId, number);
+ipcMain.handle('db:createPool', async (_, phaseId, number, poolId) => {
+  return db.createPool(phaseId, number, poolId);
+});
+ipcMain.handle('db:clearPoolsForPhase', async (_, phaseId) => {
+  return db.clearPoolsForPhase(phaseId);
 });
 ipcMain.handle('db:addFencerToPool', async (_, poolId, fencerId, position) => {
   return db.addFencerToPool(poolId, fencerId, position);
@@ -1370,42 +1345,65 @@ ipcMain.handle('shell:openExternal', async (_, url: string) => {
 });
 
 // Remote score server handlers
-ipcMain.handle('remote:startServer', async (_event, port?: number) => {
+ipcMain.handle('remote:getNetworkInterfaces', async () => {
+  const ifaces = os.networkInterfaces();
+  const result: { name: string; address: string }[] = [
+    { name: 'Toutes les interfaces', address: '0.0.0.0' },
+  ];
+  for (const [name, addrs] of Object.entries(ifaces)) {
+    for (const iface of addrs || []) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        result.push({ name: `${name} (${iface.address})`, address: iface.address });
+      }
+    }
+  }
+  return { success: true, interfaces: result };
+});
+
+ipcMain.handle('remote:startServer', async (_event, competitionId: string, port?: number, host?: string) => {
   try {
-    if (remoteScoreServer) {
-      return { success: false, error: 'Le serveur est déjà démarré' };
+    if (remoteServers.has(competitionId)) {
+      return { success: false, error: 'Le serveur est déjà démarré pour cette compétition' };
     }
 
-    const effectivePort = port ?? 8066;
-    remoteScoreServer = new RemoteScoreServer(db, effectivePort);
-    remoteScoreServerPort = effectivePort;
-    remoteScoreServer.start();
+    const effectivePort = findAvailablePort(port);
+    const effectiveHost = host ?? '0.0.0.0';
+    const server = new RemoteScoreServer(db, effectivePort, effectiveHost);
+    try {
+      await server.start();
+    } catch (startError: any) {
+      console.error('Error binding remote server port:', startError);
+      return { success: false, error: startError?.message ?? 'Port indisponible' };
+    }
+    remoteServers.set(competitionId, { server, port: effectivePort, host: effectiveHost });
+    usedPorts.add(effectivePort);
 
-    const serverUrl = remoteScoreServer.getServerUrl();
-    const serverInfo = {
-      url: serverUrl,
-      ip: remoteScoreServer.getLocalIPAddress(),
-      port: effectivePort,
-    };
-
-    // Stocker la référence globale pour le serveur distant
     (global as any).mainWindow = mainWindow;
 
-    return { success: true, serverInfo };
+    return {
+      success: true,
+      serverInfo: {
+        url: server.getServerUrl(),
+        ip: server.getLocalIPAddress(),
+        port: effectivePort,
+      },
+    };
   } catch (error) {
     console.error('Error starting remote server:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
   }
 });
 
-ipcMain.handle('remote:stopServer', async () => {
+ipcMain.handle('remote:stopServer', async (_event, competitionId: string) => {
   try {
-    if (!remoteScoreServer) {
-      return { success: false, error: "Le serveur n'est pas démarré" };
+    const entry = remoteServers.get(competitionId);
+    if (!entry) {
+      return { success: false, error: "Le serveur n'est pas démarré pour cette compétition" };
     }
 
-    remoteScoreServer.stop();
-    remoteScoreServer = null;
+    entry.server.stop();
+    usedPorts.delete(entry.port);
+    remoteServers.delete(competitionId);
 
     return { success: true };
   } catch (error) {
@@ -1414,17 +1412,18 @@ ipcMain.handle('remote:stopServer', async () => {
   }
 });
 
-ipcMain.handle('remote:getServerInfo', async () => {
-  if (!remoteScoreServer) {
-    return { success: false, error: "Le serveur n'est pas démarré" };
+ipcMain.handle('remote:getServerInfo', async (_event, competitionId: string) => {
+  const entry = remoteServers.get(competitionId);
+  if (!entry) {
+    return { success: false, error: "Le serveur n'est pas démarré pour cette compétition" };
   }
 
   return {
     success: true,
     serverInfo: {
-      url: remoteScoreServer.getServerUrl(),
-      ip: remoteScoreServer.getLocalIPAddress(),
-      port: remoteScoreServerPort,
+      url: entry.server.getServerUrl(),
+      ip: entry.server.getLocalIPAddress(),
+      port: entry.port,
     },
   };
 });
@@ -1442,11 +1441,12 @@ ipcMain.handle(
     cardAnnounce?: boolean
   ) => {
     try {
-      if (!remoteScoreServer) {
-        return { success: false, error: 'Le serveur distant n est pas démarré' };
+      const entry = remoteServers.get(competitionId);
+      if (!entry) {
+        return { success: false, error: 'Le serveur distant n est pas démarré pour cette compétition' };
       }
 
-      const session = await remoteScoreServer.startSession(
+      const session = await entry.server.startSession(
         competitionId,
         strips,
         matches,
@@ -1466,6 +1466,7 @@ ipcMain.handle(
   'remote:updateMatchArena',
   async (
     _,
+    competitionId: string,
     matchId: string,
     fromArena: number | null,
     toArena: number | null,
@@ -1473,10 +1474,9 @@ ipcMain.handle(
     fencerB?: any
   ) => {
     try {
-      if (!remoteScoreServer) {
-        return { success: false, error: 'Serveur non démarré' };
-      }
-      remoteScoreServer.updateMatchArena(matchId, fromArena, toArena, fencerA, fencerB);
+      const entry = remoteServers.get(competitionId);
+      if (!entry) return { success: false, error: 'Serveur non démarré' };
+      entry.server.updateMatchArena(matchId, fromArena, toArena, fencerA, fencerB);
       return { success: true };
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : 'Erreur' };
@@ -1486,10 +1486,11 @@ ipcMain.handle(
 
 ipcMain.handle(
   'remote:updatePoolFencers',
-  async (_, updates: Array<{ poolId: string; fencers: any[] }>) => {
+  async (_, competitionId: string, updates: Array<{ poolId: string; fencers: any[] }>) => {
     try {
-      if (!remoteScoreServer) return { success: false, error: 'Serveur non démarré' };
-      remoteScoreServer.updatePoolFencers(updates);
+      const entry = remoteServers.get(competitionId);
+      if (!entry) return { success: false, error: 'Serveur non démarré' };
+      entry.server.updatePoolFencers(updates);
       return { success: true };
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : 'Erreur' };
@@ -1499,10 +1500,11 @@ ipcMain.handle(
 
 ipcMain.handle(
   'remote:syncPoolMatches',
-  async (_, poolsData: Array<{ poolId: string; matches: any[] }>) => {
+  async (_, competitionId: string, poolsData: Array<{ poolId: string; matches: any[] }>) => {
     try {
-      if (!remoteScoreServer) return { success: false, error: 'Serveur non démarré' };
-      remoteScoreServer.syncPoolMatches(poolsData);
+      const entry = remoteServers.get(competitionId);
+      if (!entry) return { success: false, error: 'Serveur non démarré' };
+      entry.server.syncPoolMatches(poolsData);
       return { success: true };
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : 'Erreur' };
@@ -1510,23 +1512,25 @@ ipcMain.handle(
   }
 );
 
-ipcMain.handle('remote:refreshDeMatches', async (_, matches: any[]) => {
+ipcMain.handle('remote:refreshDeMatches', async (_, competitionId: string, matches: any[]) => {
   try {
-    if (!remoteScoreServer) return { success: false, error: 'Serveur non démarré' };
-    remoteScoreServer.refreshDeMatches(matches);
+    const entry = remoteServers.get(competitionId);
+    if (!entry) return { success: false, error: 'Serveur non démarré' };
+    entry.server.refreshDeMatches(matches);
     return { success: true };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : 'Erreur' };
   }
 });
 
-ipcMain.handle('remote:stopSession', async () => {
+ipcMain.handle('remote:stopSession', async (_event, competitionId: string) => {
   try {
-    if (!remoteScoreServer) {
-      return { success: false, error: 'Le serveur distant n est pas démarré' };
+    const entry = remoteServers.get(competitionId);
+    if (!entry) {
+      return { success: false, error: 'Le serveur distant n est pas démarré pour cette compétition' };
     }
 
-    remoteScoreServer.stopSession();
+    entry.server.stopSession();
     return { success: true };
   } catch (error) {
     console.error('Error stopping session:', error);
@@ -1534,13 +1538,14 @@ ipcMain.handle('remote:stopSession', async () => {
   }
 });
 
-ipcMain.handle('remote:launchCompetition', async () => {
+ipcMain.handle('remote:launchCompetition', async (_event, competitionId: string) => {
   try {
-    if (!remoteScoreServer) {
-      return { success: false, error: 'Le serveur distant n est pas démarré' };
+    const entry = remoteServers.get(competitionId);
+    if (!entry) {
+      return { success: false, error: 'Le serveur distant n est pas démarré pour cette compétition' };
     }
 
-    remoteScoreServer.launchCompetition();
+    entry.server.launchCompetition();
     return { success: true };
   } catch (error) {
     console.error('Error launching competition:', error);
@@ -1548,29 +1553,32 @@ ipcMain.handle('remote:launchCompetition', async () => {
   }
 });
 
-ipcMain.handle('remote:getSession', async () => {
-  if (!remoteScoreServer) {
-    return { success: false, error: 'Le serveur distant n est pas démarré' };
+ipcMain.handle('remote:getSession', async (_event, competitionId: string) => {
+  const entry = remoteServers.get(competitionId);
+  if (!entry) {
+    return { success: false, error: 'Le serveur distant n est pas démarré pour cette compétition' };
   }
 
-  return { success: true, session: remoteScoreServer.getSession() };
+  return { success: true, session: entry.server.getSession() };
 });
 
-ipcMain.handle('remote:getArenas', async () => {
-  if (!remoteScoreServer) {
-    return { success: false, error: 'Le serveur distant n est pas démarré' };
+ipcMain.handle('remote:getArenas', async (_event, competitionId: string) => {
+  const entry = remoteServers.get(competitionId);
+  if (!entry) {
+    return { success: false, error: 'Le serveur distant n est pas démarré pour cette compétition' };
   }
 
-  return { success: true, arenas: remoteScoreServer.getAllArenas() };
+  return { success: true, arenas: entry.server.getAllArenas() };
 });
 
-ipcMain.handle('remote:updateStripCount', async (_, newCount: number) => {
+ipcMain.handle('remote:updateStripCount', async (_, competitionId: string, newCount: number) => {
   try {
-    if (!remoteScoreServer) {
-      return { success: false, error: 'Le serveur distant n est pas démarré' };
+    const entry = remoteServers.get(competitionId);
+    if (!entry) {
+      return { success: false, error: 'Le serveur distant n est pas démarré pour cette compétition' };
     }
 
-    const session = remoteScoreServer.updateStripCount(newCount);
+    const session = entry.server.updateStripCount(newCount);
     return { success: true, session };
   } catch (error) {
     console.error('Error updating strip count:', error);
@@ -1578,12 +1586,13 @@ ipcMain.handle('remote:updateStripCount', async (_, newCount: number) => {
   }
 });
 
-ipcMain.handle('remote:updateShowPhotos', async (_, value: boolean) => {
+ipcMain.handle('remote:updateShowPhotos', async (_, competitionId: string, value: boolean) => {
   try {
-    if (!remoteScoreServer) {
-      return { success: false, error: 'Le serveur distant n est pas démarré' };
+    const entry = remoteServers.get(competitionId);
+    if (!entry) {
+      return { success: false, error: 'Le serveur distant n est pas démarré pour cette compétition' };
     }
-    remoteScoreServer.updateShowPhotos(value);
+    entry.server.updateShowPhotos(value);
     return { success: true };
   } catch (error) {
     console.error('Error updating showPhotos:', error);
@@ -1591,12 +1600,13 @@ ipcMain.handle('remote:updateShowPhotos', async (_, value: boolean) => {
   }
 });
 
-ipcMain.handle('remote:updateCardAnnounce', async (_, value: boolean) => {
+ipcMain.handle('remote:updateCardAnnounce', async (_, competitionId: string, value: boolean) => {
   try {
-    if (!remoteScoreServer) {
-      return { success: false, error: 'Le serveur distant n est pas démarré' };
+    const entry = remoteServers.get(competitionId);
+    if (!entry) {
+      return { success: false, error: 'Le serveur distant n est pas démarré pour cette compétition' };
     }
-    remoteScoreServer.updateCardAnnounce(value);
+    entry.server.updateCardAnnounce(value);
     return { success: true };
   } catch (error) {
     console.error('Error updating cardAnnounce:', error);
@@ -1604,12 +1614,13 @@ ipcMain.handle('remote:updateCardAnnounce', async (_, value: boolean) => {
   }
 });
 
-ipcMain.handle('remote:updateTheme', async (_, theme: string) => {
+ipcMain.handle('remote:updateTheme', async (_, competitionId: string, theme: string) => {
   try {
-    if (!remoteScoreServer) {
-      return { success: false, error: 'Le serveur distant n est pas démarré' };
+    const entry = remoteServers.get(competitionId);
+    if (!entry) {
+      return { success: false, error: 'Le serveur distant n est pas démarré pour cette compétition' };
     }
-    remoteScoreServer.updateTheme(theme as any);
+    entry.server.updateTheme(theme as any);
     return { success: true };
   } catch (error) {
     console.error('Error updating theme:', error);
@@ -1619,12 +1630,13 @@ ipcMain.handle('remote:updateTheme', async (_, theme: string) => {
 
 ipcMain.handle(
   'remote:updateArenaTheme',
-  async (_, arenaId: string, theme: string, customTheme?: any) => {
+  async (_, competitionId: string, arenaId: string, theme: string, customTheme?: any) => {
     try {
-      if (!remoteScoreServer) {
-        return { success: false, error: 'Le serveur distant n est pas démarré' };
+      const entry = remoteServers.get(competitionId);
+      if (!entry) {
+        return { success: false, error: 'Le serveur distant n est pas démarré pour cette compétition' };
       }
-      remoteScoreServer.updateArenaTheme(arenaId, theme as any, customTheme);
+      entry.server.updateArenaTheme(arenaId, theme as any, customTheme);
       return { success: true };
     } catch (error) {
       console.error('Error updating arena theme:', error);
@@ -1635,12 +1647,13 @@ ipcMain.handle(
 
 ipcMain.handle(
   'remote:updateKioskViews',
-  async (_, views: { poules: boolean; classement: boolean; direct: boolean }) => {
+  async (_, competitionId: string, views: { poules: boolean; classement: boolean; direct: boolean; suivants: boolean }) => {
     try {
-      if (!remoteScoreServer) {
-        return { success: false, error: 'Le serveur distant n est pas démarré' };
+      const entry = remoteServers.get(competitionId);
+      if (!entry) {
+        return { success: false, error: 'Le serveur distant n est pas démarré pour cette compétition' };
       }
-      remoteScoreServer.updateKioskViews(views);
+      entry.server.updateKioskViews(views);
       return { success: true };
     } catch (error) {
       console.error('Error updating kioskViews:', error);
@@ -1649,12 +1662,13 @@ ipcMain.handle(
   }
 );
 
-ipcMain.handle('remote:setArenaPassword', async (_, arenaId: string, password: string) => {
+ipcMain.handle('remote:setArenaPassword', async (_, competitionId: string, arenaId: string, password: string) => {
   try {
-    if (!remoteScoreServer) {
-      return { success: false, error: 'Le serveur distant n est pas démarré' };
+    const entry = remoteServers.get(competitionId);
+    if (!entry) {
+      return { success: false, error: 'Le serveur distant n est pas démarré pour cette compétition' };
     }
-    remoteScoreServer.setArenaPassword(arenaId, password);
+    entry.server.setArenaPassword(arenaId, password);
     return { success: true };
   } catch (error) {
     console.error('Error setting arena password:', error);
@@ -1662,12 +1676,13 @@ ipcMain.handle('remote:setArenaPassword', async (_, arenaId: string, password: s
   }
 });
 
-ipcMain.handle('remote:setOrgNote', async (_, note) => {
+ipcMain.handle('remote:setOrgNote', async (_, competitionId: string, note: any) => {
   try {
-    if (!remoteScoreServer) {
-      return { success: false, error: 'Le serveur distant n est pas démarré' };
+    const entry = remoteServers.get(competitionId);
+    if (!entry) {
+      return { success: false, error: 'Le serveur distant n est pas démarré pour cette compétition' };
     }
-    remoteScoreServer.setOrgNote(note);
+    entry.server.setOrgNote(note);
     mainWindow?.webContents.send('kiosk:note', note);
     return { success: true };
   } catch (error) {
@@ -1676,12 +1691,13 @@ ipcMain.handle('remote:setOrgNote', async (_, note) => {
   }
 });
 
-ipcMain.handle('remote:clearOrgNote', async () => {
+ipcMain.handle('remote:clearOrgNote', async (_event, competitionId: string) => {
   try {
-    if (!remoteScoreServer) {
-      return { success: false, error: 'Le serveur distant n est pas démarré' };
+    const entry = remoteServers.get(competitionId);
+    if (!entry) {
+      return { success: false, error: 'Le serveur distant n est pas démarré pour cette compétition' };
     }
-    remoteScoreServer.clearOrgNote();
+    entry.server.clearOrgNote();
     mainWindow?.webContents.send('kiosk:note', null);
     return { success: true };
   } catch (error) {
@@ -1702,8 +1718,50 @@ ipcMain.handle('remote:updateLogo', async (_, logo: string | null) => {
         /* déjà absent */
       }
     }
-    if (remoteScoreServer) remoteScoreServer.setLogo(logo);
+    for (const { server } of remoteServers.values()) {
+      server.setLogo(logo);
+    }
     return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
+ipcMain.handle('remote:setWallpaper', async (_, competitionId: string, wallpaper: string | null) => {
+  try {
+    const entry = remoteServers.get(competitionId);
+    if (!entry) return { success: false };
+    entry.server.setWallpaper(wallpaper);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
+ipcMain.handle('remote:changePort', async (_, competitionId: string, newPort: number) => {
+  try {
+    const entry = remoteServers.get(competitionId);
+    if (!entry) {
+      return { success: false, error: 'Le serveur n est pas démarré pour cette compétition' };
+    }
+    if (usedPorts.has(newPort) && newPort !== entry.port) {
+      return { success: false, error: `Le port ${newPort} est déjà utilisé` };
+    }
+    const host = entry.host;
+    entry.server.stop();
+    usedPorts.delete(entry.port);
+    const server = new RemoteScoreServer(db, newPort, host);
+    server.start();
+    remoteServers.set(competitionId, { server, port: newPort, host });
+    usedPorts.add(newPort);
+    return {
+      success: true,
+      serverInfo: {
+        url: server.getServerUrl(),
+        ip: server.getLocalIPAddress(),
+        port: newPort,
+      },
+    };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
   }
@@ -1727,7 +1785,9 @@ ipcMain.handle('app:getVersionInfo', async () => {
 ipcMain.on('app:language-changed', (_, lang: string) => {
   currentMenuLanguage = lang;
   createMenu(lang);
-  if (remoteScoreServer) remoteScoreServer.setLanguage(lang);
+  for (const { server } of remoteServers.values()) {
+    server.setLanguage(lang);
+  }
 });
 
 // AutoUpdater handlers

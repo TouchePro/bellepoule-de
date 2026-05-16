@@ -72,6 +72,7 @@ export interface FencerUpdateData {
 }
 
 export interface MatchCreateData {
+  id?: string;
   number: number;
   fencerAId?: string;
   fencerBId?: string;
@@ -335,11 +336,17 @@ export interface RemoteServerInfo {
 }
 
 export interface RemoteServerAPI {
+  getNetworkInterfaces: () => Promise<{
+    success: boolean;
+    interfaces?: { name: string; address: string }[];
+  }>;
   startServer: (
-    port?: number
+    competitionId: string,
+    port?: number,
+    host?: string
   ) => Promise<{ success: boolean; serverInfo?: RemoteServerInfo; error?: string }>;
-  stopServer: () => Promise<{ success: boolean; error?: string }>;
-  getServerInfo: () => Promise<{ success: boolean; serverInfo?: RemoteServerInfo; error?: string }>;
+  stopServer: (competitionId: string) => Promise<{ success: boolean; error?: string }>;
+  getServerInfo: (competitionId: string) => Promise<{ success: boolean; serverInfo?: RemoteServerInfo; error?: string }>;
   startSession: (
     competitionId: string,
     strips: number,
@@ -348,14 +355,15 @@ export interface RemoteServerAPI {
     kioskViews?: Record<string, boolean>,
     cardAnnounce?: boolean
   ) => Promise<{ success: boolean; session?: any; error?: string }>;
-  stopSession: () => Promise<{ success: boolean; error?: string }>;
-  launchCompetition: () => Promise<{ success: boolean; error?: string }>;
-  getSession: () => Promise<{ success: boolean; session?: any; error?: string }>;
-  getArenas: () => Promise<{ success: boolean; arenas?: any[]; error?: string }>;
-  updateStripCount: (count: number) => Promise<{ success: boolean; session?: any; error?: string }>;
-  updateShowPhotos: (value: boolean) => Promise<{ success: boolean; error?: string }>;
-  updateCardAnnounce: (value: boolean) => Promise<{ success: boolean; error?: string }>;
+  stopSession: (competitionId: string) => Promise<{ success: boolean; error?: string }>;
+  launchCompetition: (competitionId: string) => Promise<{ success: boolean; error?: string }>;
+  getSession: (competitionId: string) => Promise<{ success: boolean; session?: any; error?: string }>;
+  getArenas: (competitionId: string) => Promise<{ success: boolean; arenas?: any[]; error?: string }>;
+  updateStripCount: (competitionId: string, count: number) => Promise<{ success: boolean; session?: any; error?: string }>;
+  updateShowPhotos: (competitionId: string, value: boolean) => Promise<{ success: boolean; error?: string }>;
+  updateCardAnnounce: (competitionId: string, value: boolean) => Promise<{ success: boolean; error?: string }>;
   updateMatchArena: (
+    competitionId: string,
     matchId: string,
     fromArena: number | null,
     toArena: number | null,
@@ -363,31 +371,47 @@ export interface RemoteServerAPI {
     fencerB?: Fencer | null
   ) => Promise<{ success: boolean; error?: string }>;
   updatePoolFencers: (
+    competitionId: string,
     updates: Array<{ poolId: string; fencers: any[] }>
   ) => Promise<{ success: boolean; error?: string }>;
   syncPoolMatches: (
+    competitionId: string,
     poolsData: Array<{ poolId: string; matches: any[] }>
   ) => Promise<{ success: boolean; error?: string }>;
-  refreshDeMatches: (matches: any[]) => Promise<{ success: boolean; error?: string }>;
+  refreshDeMatches: (competitionId: string, matches: any[]) => Promise<{ success: boolean; error?: string }>;
   setArenaPassword: (
+    competitionId: string,
     arenaId: string,
     password: string
   ) => Promise<{ success: boolean; error?: string }>;
   updateKioskViews: (
+    competitionId: string,
     views: Record<string, boolean>
   ) => Promise<{ success: boolean; error?: string }>;
   setOrgNote: (
+    competitionId: string,
     note: import('../types/remote').OrgNote
   ) => Promise<{ success: boolean; error?: string }>;
-  clearOrgNote: () => Promise<{ success: boolean; error?: string }>;
+  clearOrgNote: (competitionId: string) => Promise<{ success: boolean; error?: string }>;
   updateTheme: (
+    competitionId: string,
     theme: import('../types/remote').DisplayTheme
   ) => Promise<{ success: boolean; error?: string }>;
   updateArenaTheme: (
+    competitionId: string,
     arenaId: string,
     theme: import('../types/remote').DisplayTheme,
     customTheme?: import('../types/remote').CustomTheme
   ) => Promise<{ success: boolean; error?: string }>;
+  updateLogo: (logo: string | null) => Promise<{ success: boolean; error?: string }>;
+  setWallpaper: (
+    competitionId: string,
+    wallpaper: string | null
+  ) => Promise<{ success: boolean; error?: string }>;
+  changePort: (
+    competitionId: string,
+    newPort: number
+  ) => Promise<{ success: boolean; serverInfo?: RemoteServerInfo; error?: string }>;
 }
 
 // ============================================================================
@@ -445,7 +469,8 @@ export interface DatabaseAPI {
   ) => Promise<void>;
 
   // Pools
-  createPool: (phaseId: string, number: number) => Promise<Pool>;
+  createPool: (phaseId: string, number: number, poolId?: string) => Promise<Pool>;
+  clearPoolsForPhase: (phaseId: string) => Promise<void>;
   addFencerToPool: (poolId: string, fencerId: string, position: number) => Promise<void>;
   getPoolFencers: (poolId: string) => Promise<Fencer[]>;
   getPoolsByPhase: (phaseId: string) => Promise<Pool[]>;
@@ -502,6 +527,7 @@ export interface DatabaseAPI {
 
   // Session State
   saveSessionState: (competitionId: string, state: SessionState) => Promise<void>;
+  saveSessionStateSync: (competitionId: string, state: unknown) => boolean;
   getSessionState: (competitionId: string) => Promise<SessionState | null>;
   clearSessionState: (competitionId: string) => Promise<void>;
 

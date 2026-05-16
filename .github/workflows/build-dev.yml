@@ -5,6 +5,9 @@ on:
     branches: [dev]
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   increment-version:
     runs-on: ubuntu-latest
@@ -16,7 +19,7 @@ jobs:
       full_version: ${{ steps.version.outputs.full_version }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: dev
           fetch-depth: 0
@@ -74,13 +77,13 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: dev
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
 
@@ -136,7 +139,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: windows-exe-dev
           path: release/*-dev-*.exe
@@ -147,13 +150,13 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: dev
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
 
@@ -203,7 +206,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: macos-x64-dmg-dev
           path: release/*-dev-*-x64.dmg
@@ -214,13 +217,13 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: dev
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
 
@@ -270,7 +273,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: macos-arm64-dmg-dev
           path: release/*-dev-*-arm64.dmg
@@ -281,13 +284,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: dev
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
 
@@ -337,7 +340,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: linux-x64-appimage-dev
           path: release/*-dev-*.AppImage
@@ -349,13 +352,13 @@ jobs:
     continue-on-error: true
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: dev
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
 
@@ -405,7 +408,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: linux-arm64-appimage-dev
           path: release/*-dev-*.AppImage
@@ -427,64 +430,74 @@ jobs:
       contents: write
 
     steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: dev
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Download All Artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           path: builds
 
       - name: List downloaded files
         run: find builds -type f
 
-      - name: Delete existing dev release
-        run: |
-          # Supprimer la release dev existante si elle existe
-          gh release delete dev --repo "${{ github.repository }}" --yes --cleanup-tag 2>/dev/null || true
-          # Nettoyer le tag dev s'il reste
-          gh api -X DELETE "repos/${{ github.repository }}/git/refs/tags/dev" 2>/dev/null || true
+      - name: Create or Update Dev Release via gh CLI
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          mapfile -t FILES < <(find builds -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" \))
+          NOTES="## 🧪 Version de Développement
 
-      - name: Create Dev Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: dev
-          name: '🧪 BellePoule Modern Dev v${{ needs.increment-version.outputs.version }} Build #${{ needs.increment-version.outputs.build }}'
-          body: |
-            ## 🧪 Version de Développement
+          **Version**: \`${{ needs.increment-version.outputs.version }}\`
+          **Build**: \`#${{ needs.increment-version.outputs.build }}\`
 
-            **Version**: `${{ needs.increment-version.outputs.version }}`
-            **Build**: `#${{ needs.increment-version.outputs.build }}`
+          **Ceci est une version de test !**
 
-            **Ceci est une version de test !** 
+          Cette release contient les dernières modifications de la branche \`dev\` et est destinée aux tests.
 
-            Cette release contient les dernières modifications de la branche `dev` et est destinée aux tests.
+          ### 📥 Téléchargements
 
-            Pour la version stable, utilisez la release principale.
+          | Plateforme | Architecture | Fichier |
+          |------------|--------------|---------|
+          | **Windows** | x64 | \`.exe\` portable |
+          | **macOS** | x64 | \`.dmg\` |
+          | **macOS** | ARM64 | \`.dmg\` (Apple Silicon M1/M2/M3) |
+          | **Linux** | x64 | \`.AppImage\` |
+          | **Linux** | ARM64 | \`.AppImage\` (Raspberry Pi, etc.) |
 
-            ### 📥 Téléchargements
+          ### ⚠️ Notes
+          - Cette version peut contenir des bugs
+          - Les fonctionnalités sont en cours de développement
 
-            | Plateforme | Architecture | Fichier |
-            |------------|--------------|---------|
-            | **Windows** | x64 | `.exe` portable |
-            | **macOS** | x64 | `.dmg` |
-            | **macOS** | ARM64 | `.dmg` (Apple Silicon M1/M2/M3) |
-            | **Linux** | x64 | `.AppImage` |
-            | **Linux** | ARM64 | `.AppImage` (Raspberry Pi, etc.) |
+          ---
+          **Build automatique** • Branche: \`dev\` • Commit: \`${{ github.sha }}\`"
 
-            ### ⚠️ Notes
-            - Cette version peut contenir des bugs
-            - Les fonctionnalités sont en cours de développement
-            - Pour toute issue, merci de la signaler sur GitHub
+          TITLE="🧪 BellePoule Modern Dev v${{ needs.increment-version.outputs.version }} Build #${{ needs.increment-version.outputs.build }}"
 
-            ---
-            **Build automatique** • Branche: `dev` • Commit: `${{ github.sha }}`
-          files: |
-            builds/windows-exe-dev/*.exe
-            builds/macos-x64-dmg-dev/*.dmg
-            builds/macos-arm64-dmg-dev/*.dmg
-            builds/linux-x64-appimage-dev/*.AppImage
-            builds/linux-arm64-appimage-dev/*.AppImage
-          draft: false
-          prerelease: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          echo "=== All releases ==="
+          gh api repos/$REPO/releases --paginate 2>/dev/null | jq -r '.[] | "\(.id) \(.tag_name)"'
+          echo "=== Tag lookup ==="
+          gh api repos/$REPO/releases/tags/dev-prerelease 2>&1 | jq '.' || true
+          TAG="dev-build-${{ needs.increment-version.outputs.build }}"
+          echo "Creating release with tag $TAG"
+          gh release create "$TAG" \
+            --repo "$REPO" \
+            --title "$TITLE" \
+            --notes "$NOTES" \
+            --prerelease \
+            --target dev \
+            "${FILES[@]}"
+
+          # Keep only the 5 most recent dev builds (cleanup old ones)
+          gh api repos/$REPO/releases --paginate 2>/dev/null \
+            | jq -r '.[] | select(.prerelease==true) | "\(.id) \(.tag_name)"' \
+            | grep " dev-build-" | sort -t- -k3 -rn | tail -n +6 \
+            | while read id tag; do
+                echo "Cleaning up old release $tag ($id)"
+                gh api -X DELETE repos/$REPO/releases/$id || true
+                gh api -X DELETE repos/$REPO/git/refs/tags/$tag || true
+              done

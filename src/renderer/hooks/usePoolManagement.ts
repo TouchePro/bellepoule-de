@@ -89,10 +89,10 @@ export const usePoolManagement = ({
       });
 
       const generatedPools: Pool[] = distribution.map((poolFencers, index) => {
-        const poolId = `pool-${index}`;
+        const poolId = crypto.randomUUID();
         const matchOrder = generatePoolMatchOrder(poolFencers.length);
         const matches: Match[] = matchOrder.map(([a, b], matchIndex) => ({
-          id: `match-${index}-${matchIndex}`,
+          id: crypto.randomUUID(),
           poolId,
           number: matchIndex + 1,
           fencerA: poolFencers[a - 1],
@@ -208,10 +208,10 @@ export const usePoolManagement = ({
       });
 
       const newPools: Pool[] = distribution.map((poolFencers, index) => {
-        const poolId = `pool-round${currentPoolRound + 1}-${index}`;
+        const poolId = crypto.randomUUID();
         const matchOrder = generatePoolMatchOrder(poolFencers.length);
         const matches: Match[] = matchOrder.map(([a, b], matchIndex) => ({
-          id: `match-round${currentPoolRound + 1}-${index}-${matchIndex}`,
+          id: crypto.randomUUID(),
           poolId,
           number: matchIndex + 1,
           fencerA: poolFencers[a - 1],

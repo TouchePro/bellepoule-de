@@ -156,6 +156,40 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
     restoreState();
   }, [restoreState]);
 
+  // Sauvegarde synchrone avant fermeture fenêtre (saveState async non awaitable dans beforeunload)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+      if (!window.electronAPI?.db?.saveSessionStateSync || !isLoadedRef.current) return;
+      const p = propsRef.current;
+      const phaseMap: Record<Phase, number> = {
+        checkin: 0, poolprep: 1, pools: 2, ranking: 3,
+        quest: 4, tableau: 5, results: 6, remote: 7,
+      };
+      window.electronAPI.db.saveSessionStateSync(p.competitionId, {
+        currentPhase: phaseMap[p.currentPhase],
+        pools: p.pools,
+        poolHistory: p.poolHistory,
+        overallRanking: p.overallRanking,
+        tableauMatches: p.tableauMatches,
+        finalResults: p.finalResults,
+        currentPoolRound: p.currentPoolRound,
+        skipPoolPhase: p.skipPoolPhase,
+        poolPrepParams: p.poolPrepParams,
+        uiState: {
+          currentPhase: p.currentPhase,
+          currentPoolRound: p.currentPoolRound,
+          pools: p.pools.length,
+        },
+      });
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
   // Sauvegarder à chaque changement - debounced 500ms pour éviter les écritures en rafale
   useEffect(() => {
     if (!isLoaded) return;
@@ -165,7 +199,11 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
       saveState();
     }, 500);
     return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+        saveState(); // fire immédiatement sur unmount
+      }
     };
   }, [
     isLoaded,

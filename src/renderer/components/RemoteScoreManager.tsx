@@ -51,8 +51,14 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [serverUrl, setServerUrl] = useState<string>('');
   const [remotePort, setRemotePort] = useState<number>(() => {
-    const saved = localStorage.getItem('bellepoule-remote-port');
+    const saved = localStorage.getItem(`bellepoule-remote-port-${competition.id}`);
     return saved ? parseInt(saved, 10) : 8066;
+  });
+  const [networkInterfaces, setNetworkInterfaces] = useState<{ name: string; address: string }[]>([
+    { name: 'Toutes les interfaces', address: '0.0.0.0' },
+  ]);
+  const [selectedInterface, setSelectedInterface] = useState<string>(() => {
+    return localStorage.getItem('bellepoule-remote-interface') ?? '0.0.0.0';
   });
   // pendingCount : valeur affichée (modifiée par +/−, non encore appliquée)
   const [pendingCount, setPendingCount] = useState<number | null>(null);
@@ -65,6 +71,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const [showPhotos, setShowPhotos] = useState(false);
   const [cardAnnounce, setCardAnnounce] = useState(false);
   const [displayTheme, setDisplayTheme] = useState<'dark' | 'light' | 'neon'>('dark');
+  const [arenaWallpaper, setArenaWallpaper] = useState<string | null>(null);
   const [kioskViews, setKioskViews] = useState({
     poules: true,
     classement: true,
@@ -87,6 +94,14 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     const key = `bellepoule-remote-launched-${competition.id}`;
     return localStorage.getItem(key) === 'true';
   });
+
+  useEffect(() => {
+    window.electronAPI.remote.getNetworkInterfaces().then((res: any) => {
+      if (res?.success && res.interfaces?.length) {
+        setNetworkInterfaces(res.interfaces);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     if (!activeQR) {
@@ -124,7 +139,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     if (fingerprint === sessionPoolsFingerprintRef.current) return;
     sessionPoolsFingerprintRef.current = fingerprint;
     const updates = pools.map(pool => ({ poolId: pool.id, fencers: pool.fencers ?? [] }));
-    window.electronAPI.remote.updatePoolFencers(updates).catch((err: unknown) => {
+    window.electronAPI.remote.updatePoolFencers(competition.id, updates).catch((err: unknown) => {
       logger.warn(LogCategory.NETWORK, 'Échec updatePoolFencers', err instanceof Error ? err : undefined);
     });
   }, [pools, isRemoteActive, session]);
@@ -145,7 +160,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     if (fingerprint === sessionMatchesFingerprintRef.current) return;
     sessionMatchesFingerprintRef.current = fingerprint;
     const poolsData = pools.map(pool => ({ poolId: pool.id, matches: pool.matches ?? [] }));
-    window.electronAPI.remote.syncPoolMatches(poolsData).catch((err: unknown) => {
+    window.electronAPI.remote.syncPoolMatches(competition.id, poolsData).catch((err: unknown) => {
       logger.warn(
         LogCategory.NETWORK,
         'Échec syncPoolMatches',
@@ -169,7 +184,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     if (key === prevDeMatchesKeyRef.current) return;
     prevDeMatchesKeyRef.current = key;
     if (!isRemoteActive || !session || pendingDeMatches.length === 0) return;
-    window.electronAPI.remote.refreshDeMatches(pendingDeMatches).catch((err: unknown) => {
+    window.electronAPI.remote.refreshDeMatches(competition.id, pendingDeMatches).catch((err: unknown) => {
       logger.warn(LogCategory.NETWORK, 'Échec refreshDeMatches', err instanceof Error ? err : undefined);
     });
   }, [pendingDeMatches, isRemoteActive, session]);
@@ -179,10 +194,10 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     if (!isRemoteActive) return;
     // Si une session est déjà active (retour sur l'onglet après navigation), on reconnecte
     // sans redémarrer le serveur pour ne pas perdre l'état des pistes configurées.
-    window.electronAPI.remote.getSession().then(async (result: any) => {
+    window.electronAPI.remote.getSession(competition.id).then(async (result: any) => {
       if (result.success && result.session) {
         // Récupérer l'IP réseau réelle (éviter localhost)
-        const info = await window.electronAPI.remote.getServerInfo();
+        const info = await window.electronAPI.remote.getServerInfo(competition.id);
         if (info.success && info.serverInfo) setServerUrl(info.serverInfo.url);
         setSession(result.session);
         const existingCount = result.session.strips.length;
@@ -197,9 +212,13 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const startRemoteServer = async () => {
     try {
       setIsLoading(true);
-      const result = await window.electronAPI.remote.startServer(remotePort);
+      const result = await window.electronAPI.remote.startServer(competition.id, remotePort, selectedInterface);
 
       if (result.success && result.serverInfo) {
+        if (result.serverInfo.port !== remotePort) {
+          setRemotePort(result.serverInfo.port);
+          localStorage.setItem(`bellepoule-remote-port-${competition.id}`, String(result.serverInfo.port));
+        }
         setServerUrl(result.serverInfo.url);
         await startSession(result.serverInfo.url, effectivePending);
       } else {
@@ -264,7 +283,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     if (session) {
       // Serveur actif : appliquer via IPC
       try {
-        const result = await window.electronAPI.remote.updateStripCount(newCount);
+        const result = await window.electronAPI.remote.updateStripCount(competition.id, newCount);
         if (result.success && result.session) {
           setSession(result.session);
           setCommittedCount(newCount);
@@ -285,15 +304,32 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   };
 
   const handlePortChange = (value: number) => {
-    const port = Math.max(1024, Math.min(65535, value || 8066));
+    const port = Math.max(1, Math.min(65535, value || 8066));
     setRemotePort(port);
-    localStorage.setItem('bellepoule-remote-port', String(port));
+    localStorage.setItem(`bellepoule-remote-port-${competition.id}`, String(port));
+  };
+
+  const handleChangePort = async () => {
+    setIsLoading(true);
+    try {
+      const result = await window.electronAPI.remote.changePort(competition.id, remotePort);
+      if (result.success && result.serverInfo) {
+        setServerUrl(result.serverInfo.url);
+        showToast(`Port changé : ${result.serverInfo.port}`, 'success');
+      } else {
+        showToast(`Erreur: ${result.error}`, 'error');
+      }
+    } catch (error) {
+      logger.error(LogCategory.UI, 'Failed to change port', error as Error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleStopRemote = async () => {
     setIsLoading(true);
     try {
-      const result = await window.electronAPI.remote.stopServer();
+      const result = await window.electronAPI.remote.stopServer(competition.id);
 
       if (result.success) {
         setSession(null);
@@ -335,7 +371,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     async (arenaId: string, theme: DisplayTheme, customTheme?: CustomTheme) => {
       setArenaThemes(prev => ({ ...prev, [arenaId]: { theme, customTheme } }));
       if (session) {
-        await window.electronAPI.remote.updateArenaTheme(arenaId, theme, customTheme);
+        await window.electronAPI.remote.updateArenaTheme(competition.id, arenaId, theme, customTheme);
       }
     },
     [session]
@@ -464,20 +500,42 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           <div
             style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.75rem 0' }}
           >
+            <label htmlFor="remote-interface" style={{ whiteSpace: 'nowrap' }}>
+              Interface :
+            </label>
+            <select
+              id="remote-interface"
+              value={selectedInterface}
+              onChange={e => {
+                setSelectedInterface(e.target.value);
+                localStorage.setItem('bellepoule-remote-interface', e.target.value);
+              }}
+              disabled={isLoading}
+            >
+              {networkInterfaces.map(iface => (
+                <option key={iface.address} value={iface.address}>
+                  {iface.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.75rem 0' }}
+          >
             <label htmlFor="remote-port" style={{ whiteSpace: 'nowrap' }}>
               Port :
             </label>
             <input
               id="remote-port"
               type="number"
-              min={1024}
+              min={1}
               max={65535}
               value={remotePort}
               onChange={e => handlePortChange(parseInt(e.target.value, 10))}
               style={{ width: '80px' }}
               disabled={isLoading}
             />
-            <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>1024–65535, défaut 8066</span>
+            <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>1–65535, défaut 8066</span>
           </div>
           <button className="btn-primary" onClick={onStartRemote}>
             ⚡ Démarrer la saisie distante
@@ -495,6 +553,30 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           <p>
             Serveur: <strong>{serverUrl}</strong>
           </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
+            <label htmlFor={`remote-port-active-${competition.id}`} style={{ whiteSpace: 'nowrap', fontSize: '0.875rem' }}>
+              Port :
+            </label>
+            <input
+              id={`remote-port-active-${competition.id}`}
+              type="number"
+              min={1}
+              max={65535}
+              value={remotePort}
+              onChange={e => handlePortChange(parseInt(e.target.value, 10))}
+              style={{ width: '75px' }}
+              disabled={isLoading}
+            />
+            <button
+              className="btn-secondary"
+              onClick={handleChangePort}
+              disabled={isLoading}
+              title="Redémarrer le serveur sur ce port"
+              style={{ fontSize: '0.8rem', padding: '0.2rem 0.5rem' }}
+            >
+              🔄 Recharger
+            </button>
+          </div>
         </div>
         <button className="btn-secondary" onClick={handleStopRemote} disabled={isLoading}>
           🛑 Arrêter
@@ -522,7 +604,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             checked={showPhotos}
             onChange={async e => {
               setShowPhotos(e.target.checked);
-              await window.electronAPI.remote.updateShowPhotos(e.target.checked);
+              await window.electronAPI.remote.updateShowPhotos(competition.id, e.target.checked);
             }}
           />
           Afficher les photos des combattants avant le combat
@@ -541,7 +623,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             checked={cardAnnounce}
             onChange={async e => {
               setCardAnnounce(e.target.checked);
-              await window.electronAPI.remote.updateCardAnnounce(e.target.checked);
+              await window.electronAPI.remote.updateCardAnnounce(competition.id, e.target.checked);
             }}
           />
           📣 Carton avancer (afficher bandeau + raison sur les écrans)
@@ -552,7 +634,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
               className="btn-primary"
               style={{ padding: '0.6rem 1.2rem', fontSize: '1rem', fontWeight: 'bold' }}
               onClick={async () => {
-                const result = await window.electronAPI.remote.launchCompetition();
+                const result = await window.electronAPI.remote.launchCompetition(competition.id);
                 if (result.success) {
                   const key = `bellepoule-remote-launched-${competition.id}`;
                   setIsLaunched(true);
@@ -583,7 +665,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                 key={value}
                 onClick={async () => {
                   setDisplayTheme(value);
-                  await window.electronAPI.remote.updateTheme(value);
+                  await window.electronAPI.remote.updateTheme(competition.id, value);
                 }}
                 style={{
                   flex: 1,
@@ -601,6 +683,69 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                 {icon} {label}
               </button>
             ))}
+          </div>
+        </div>
+        <div style={{ margin: '0.5rem 0' }}>
+          <div style={{ fontSize: '0.875rem', marginBottom: '0.4rem', color: 'inherit' }}>
+            Fond d'écran arènes (écran d'attente) :
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {arenaWallpaper && (
+              <img
+                src={arenaWallpaper}
+                alt="Fond d'écran"
+                style={{ width: 80, height: 45, objectFit: 'cover', borderRadius: '0.25rem', border: '1px solid #475569' }}
+              />
+            )}
+            <label
+              style={{
+                padding: '0.35rem 0.75rem',
+                borderRadius: '0.375rem',
+                border: '1px solid #475569',
+                background: 'transparent',
+                color: '#e2e8f0',
+                cursor: 'pointer',
+                fontSize: '0.8rem',
+              }}
+            >
+              {arenaWallpaper ? '🖼 Changer' : '🖼 Importer'}
+              <input
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={async e => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = async ev => {
+                    const base64 = ev.target?.result as string;
+                    setArenaWallpaper(base64);
+                    await window.electronAPI.remote.setWallpaper(competition.id, base64);
+                  };
+                  reader.readAsDataURL(file);
+                  e.target.value = '';
+                }}
+              />
+            </label>
+            {arenaWallpaper && (
+              <button
+                onClick={async () => {
+                  setArenaWallpaper(null);
+                  await window.electronAPI.remote.setWallpaper(competition.id, null);
+                }}
+                style={{
+                  padding: '0.35rem 0.5rem',
+                  borderRadius: '0.375rem',
+                  border: '1px solid #475569',
+                  background: 'transparent',
+                  color: '#f87171',
+                  cursor: 'pointer',
+                  fontSize: '0.8rem',
+                }}
+              >
+                ✕ Supprimer
+              </button>
+            )}
           </div>
         </div>
         <div style={{ margin: '0.5rem 0' }}>
@@ -624,7 +769,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                 onChange={async e => {
                   const next = { ...kioskViews, [key]: e.target.checked };
                   setKioskViews(next);
-                  await window.electronAPI.remote.updateKioskViews(next);
+                  await window.electronAPI.remote.updateKioskViews(competition.id, next);
                 }}
               />
               {label}
@@ -760,7 +905,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                     : {}),
                   createdAt: new Date().toISOString(),
                 };
-                await window.electronAPI.remote.setOrgNote(note);
+                await window.electronAPI.remote.setOrgNote(competition.id, note);
                 setOrgNoteActive(true);
               }}
               style={{
@@ -779,7 +924,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             {orgNoteActive && (
               <button
                 onClick={async () => {
-                  await window.electronAPI.remote.clearOrgNote();
+                  await window.electronAPI.remote.clearOrgNote(competition.id);
                   setOrgNoteActive(false);
                 }}
                 style={{
@@ -944,6 +1089,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                       if (e.key === 'Enter') {
                         const pwd = arenaPasswords[`arena${arena.number}`] ?? '';
                         const result = await window.electronAPI.remote.setArenaPassword(
+                          competition.id,
                           `arena${arena.number}`,
                           pwd
                         );
@@ -966,6 +1112,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                     onClick={async () => {
                       const pwd = arenaPasswords[`arena${arena.number}`] ?? '';
                       const result = await window.electronAPI.remote.setArenaPassword(
+                        competition.id,
                         `arena${arena.number}`,
                         pwd
                       );

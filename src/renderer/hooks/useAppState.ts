@@ -69,7 +69,7 @@ export function useAppState(
 
   const handleUpdateCompetition = useCallback(
     (updated: Competition) => {
-      setCurrentCompetition(updated);
+      setCurrentCompetition(prev => (prev?.id === updated.id ? updated : prev));
       setCompetitions(prev => prev.map(c => (c.id === updated.id ? updated : c)));
       setOpenCompetitions(prev =>
         prev.map(open =>
