@@ -754,7 +754,10 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     // Issue #61: Les éliminés en quarts se retrouvaient en bas du classement
     // Issue #60: Les tireurs éliminés à chaque tour ont des rangs distincts
     // Issue #59: Départage par somme des points Quest (poules + tableau)
-    const rounds = [4, 8, 16, 32, 64, 128].filter(r => r <= tableauSize);
+    const effectiveSize = matchList.length > 0
+      ? Math.max(...matchList.filter(m => m.round !== 3).map(m => m.round))
+      : tableauSize;
+    const rounds = [4, 8, 16, 32, 64, 128].filter(r => r <= effectiveSize);
     let currentRank = thirdPlaceMatch?.winner ? 5 : 3;
 
     // DEBUG: console.log('Rounds à traiter:', rounds, 'currentRank de départ:', currentRank);
