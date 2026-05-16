@@ -41,15 +41,24 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
     return {};
   };
 
-  // Si pas de résultats finaux, afficher le classement des poules
-  const resultsToDisplay =
-    finalResults.length > 0
-      ? finalResults
-      : poolRanking.map((pr, idx) => ({
-          rank: idx + 1,
-          fencer: pr.fencer,
-          eliminatedAt: 'Poules',
-        }));
+  const resultsToDisplay = (() => {
+    if (finalResults.length === 0) {
+      return poolRanking.map((pr, idx) => ({
+        rank: idx + 1,
+        fencer: pr.fencer,
+        eliminatedAt: 'Poules' as const,
+      }));
+    }
+    const tableauIds = new Set(finalResults.map(r => r.fencer.id));
+    const poolEliminated = poolRanking
+      .filter(pr => !tableauIds.has(pr.fencer.id))
+      .map((pr, idx) => ({
+        rank: finalResults.length + idx + 1,
+        fencer: pr.fencer,
+        eliminatedAt: 'Poules' as const,
+      }));
+    return [...finalResults, ...poolEliminated];
+  })();
 
   // Export CSV
   const exportCSV = () => {
