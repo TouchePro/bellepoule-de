@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { Fencer, QuestPhaseConfig, Pool, Match, MatchStatus, Score } from '../../shared/types';
+import { Fencer, QuestPhaseConfig, Pool, Match, MatchStatus, Score, PoolRanking } from '../../shared/types';
 import {
   calculateFightsPerFencer,
   generateQuestSchedule,
@@ -22,7 +22,7 @@ interface QuestPhaseViewProps {
   questConfig: QuestPhaseConfig;
   competitionWeapon: string;
   maxScore: number;
-  onQuestComplete: () => void;
+  onQuestComplete: (ranking: PoolRanking[]) => void;
   onConfigUpdate?: (updates: Partial<QuestPhaseConfig>) => void;
 }
 
@@ -207,7 +207,7 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
         <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Tour Quest en cours</h2>
           {allComplete && (
-            <button className="btn btn-primary" onClick={onQuestComplete}>
+            <button className="btn btn-primary" onClick={() => onQuestComplete(ranking ?? [])}>
               Valider le Tour Quest →
             </button>
           )}

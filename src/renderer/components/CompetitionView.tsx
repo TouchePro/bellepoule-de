@@ -1086,27 +1086,32 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
           />
         )}
 
-        {currentPhase === 'quest' && questConfig && (
-          <QuestPhaseView
-            fencers={(() => {
-              const checked = getCheckedInFencers();
-              if (questConfig.hasPreliminaryPools && questConfig.qualifiersCount) {
-                return overallRanking
-                  .slice(0, questConfig.qualifiersCount)
-                  .map(r => r.fencer)
-                  .filter(Boolean);
-              }
-              return checked;
-            })()}
-            questConfig={questConfig}
-            competitionWeapon={competition.weapon}
-            maxScore={poolMaxScore}
-            onQuestComplete={() => {
-              setRankingValidated(true);
-              setCurrentPhase(questConfig.hasPreliminaryPools ? 'ranking' : 'tableau');
-            }}
-            onConfigUpdate={handleQuestConfigUpdate}
-          />
+        {questEnabled && questConfig && (
+          <div style={{ display: currentPhase === 'quest' ? undefined : 'none' }}>
+            <QuestPhaseView
+              fencers={(() => {
+                const checked = getCheckedInFencers();
+                if (questConfig.hasPreliminaryPools && questConfig.qualifiersCount) {
+                  return overallRanking
+                    .slice(0, questConfig.qualifiersCount)
+                    .map(r => r.fencer)
+                    .filter(Boolean);
+                }
+                return checked;
+              })()}
+              questConfig={questConfig}
+              competitionWeapon={competition.weapon}
+              maxScore={poolMaxScore}
+              onQuestComplete={ranking => {
+                if (!questConfig.hasPreliminaryPools) {
+                  setOverallRanking(ranking);
+                }
+                setRankingValidated(true);
+                setCurrentPhase(questConfig.hasPreliminaryPools ? 'ranking' : 'tableau');
+              }}
+              onConfigUpdate={handleQuestConfigUpdate}
+            />
+          </div>
         )}
 
         {currentPhase === 'tableau' && (
