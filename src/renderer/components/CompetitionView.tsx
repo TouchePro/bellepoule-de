@@ -620,7 +620,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     if (!questEnabled) return ['checkin', 'poolprep', 'pools', 'ranking', 'tableau', 'results'];
     if (questConfig?.hasPreliminaryPools)
       return ['checkin', 'poolprep', 'pools', 'ranking', 'quest', 'tableau', 'results'];
-    return ['checkin', 'quest', 'tableau', 'results'];
+    return ['checkin', 'quest', 'ranking', 'tableau', 'results'];
   }, [questEnabled, questConfig?.hasPreliminaryPools]);
 
   // Réinitialiser currentPhase si elle n'existe plus dans le nouveau phaseOrder
@@ -692,15 +692,18 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                 ? t('phases.pools_locked_tooltip')
                 : (undefined as string | undefined),
           },
-          {
-            id: 'ranking',
-            label: t('phases.ranking'),
-            icon: '📊',
-            disabled: false,
-            title: undefined as string | undefined,
-          },
         ]
       : []),
+    // Classement : toujours présent (désactivé en mode quest-sans-poules jusqu'à fin de quête)
+    {
+      id: 'ranking',
+      label: t('phases.ranking'),
+      icon: '📊',
+      disabled: questNoPool && !rankingValidated,
+      title: questNoPool && !rankingValidated
+        ? t('phases.tableau_locked_tooltip')
+        : (undefined as string | undefined),
+    },
     ...(questEnabled
       ? [
           {
@@ -1105,9 +1108,16 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               onQuestComplete={ranking => {
                 if (!questConfig.hasPreliminaryPools) {
                   setOverallRanking(ranking);
+                } else {
+                  // Fusionner qualifiés re-classés par quest + non-qualifiés du classement poules
+                  const questFencerIds = new Set(ranking.map(r => r.fencer?.id).filter(Boolean));
+                  const nonQualifiers = overallRanking
+                    .filter(r => !questFencerIds.has(r.fencer?.id))
+                    .map((r, i) => ({ ...r, rank: ranking.length + i + 1 }));
+                  setOverallRanking([...ranking, ...nonQualifiers]);
                 }
                 setRankingValidated(true);
-                setCurrentPhase(questConfig.hasPreliminaryPools ? 'ranking' : 'tableau');
+                setCurrentPhase('ranking');
               }}
               onConfigUpdate={handleQuestConfigUpdate}
             />
