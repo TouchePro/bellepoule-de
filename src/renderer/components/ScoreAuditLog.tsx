@@ -64,6 +64,39 @@ export const ScoreAuditLog: React.FC<Props> = ({ competitionId }) => {
     return true;
   });
 
+  const exportCsv = useCallback(async () => {
+    const header = 'timestamp_iso,poule,match,score_avant_a,score_avant_b,score_apres_a,score_apres_b,arbitre,ip,source\n';
+    const rows = filtered.map(e => {
+      const cols = [
+        new Date(e.changedAt).toISOString(),
+        e.poolNumber != null ? String(e.poolNumber) : '',
+        e.matchNumber != null ? String(e.matchNumber) : '',
+        e.previousScoreA != null ? String(e.previousScoreA.value ?? '') : '',
+        e.previousScoreB != null ? String(e.previousScoreB.value ?? '') : '',
+        String(e.newScoreA?.value ?? ''),
+        String(e.newScoreB?.value ?? ''),
+        (e.refereeName ?? e.changedBy ?? '').replace(/,/g, ';'),
+        (e.ipAddress ?? '').replace(/,/g, ';'),
+        (e.changedBy ?? ''),
+      ];
+      return cols.join(',');
+    });
+    const csv = header + rows.join('\n');
+    try {
+      const result = await window.electronAPI.dialog.saveFile({
+        title: 'Exporter le journal des scores',
+        defaultPath: `historique_scores_${new Date().toISOString().slice(0,10)}.csv`,
+        filters: [{ name: 'CSV / TXT', extensions: ['csv', 'txt'] }],
+      });
+      if (result && !result.canceled && result.filePath) {
+        await window.electronAPI.file.writeContent(result.filePath, csv);
+        showToast('Fichier exporté', 'success');
+      }
+    } catch {
+      showToast('Erreur export', 'error');
+    }
+  }, [filtered, showToast]);
+
   return (
     <div style={{ padding: '1.5rem', maxWidth: '100%', overflowX: 'auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
@@ -87,6 +120,14 @@ export const ScoreAuditLog: React.FC<Props> = ({ competitionId }) => {
           onChange={e => setFilterReferee(e.target.value)}
           style={{ padding: '0.3rem 0.6rem', borderRadius: 4, border: '1px solid #D1D5DB', minWidth: 140 }}
         />
+
+        <button
+          className="btn btn-secondary"
+          onClick={exportCsv}
+          disabled={filtered.length === 0}
+        >
+          ⬇ Export CSV
+        </button>
 
         <button
           className="btn btn-secondary"

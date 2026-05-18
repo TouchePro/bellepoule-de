@@ -963,7 +963,28 @@ ipcMain.handle('db:getMatchesByPool', async (_, poolId) => {
 });
 
 ipcMain.handle('db:updateMatch', async (_, id, updates) => {
-  return db.updateMatch(id, updates);
+  const hasScore = updates.scoreA !== undefined || updates.scoreB !== undefined;
+  if (hasScore) {
+    try {
+      const prev = db.getMatch(id);
+      db.updateMatch(id, updates);
+      if (prev) {
+        db.logScoreChange({
+          matchId: id,
+          poolId: prev.poolId ?? undefined,
+          previousScoreA: prev.scoreA,
+          previousScoreB: prev.scoreB,
+          newScoreA: updates.scoreA ?? prev.scoreA,
+          newScoreB: updates.scoreB ?? prev.scoreB,
+          changedBy: 'ui',
+        });
+      }
+    } catch {
+      db.updateMatch(id, updates);
+    }
+  } else {
+    db.updateMatch(id, updates);
+  }
 });
 
 ipcMain.handle('db:upsertTableauMatch', async (_, params) => {
