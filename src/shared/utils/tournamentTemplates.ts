@@ -50,6 +50,8 @@ export const OFFICIAL_TEMPLATES: TournamentTemplate[] = [
       defaultRanking: 0,
       randomScore: false,
       minTeamSize: 3,
+      defaultPoolTimerSeconds: 180,
+      defaultTableTimerSeconds: 180,
     },
     poolConfig: {
       minPoolSize: 5,
@@ -82,6 +84,8 @@ export const OFFICIAL_TEMPLATES: TournamentTemplate[] = [
       defaultRanking: 0,
       randomScore: false,
       minTeamSize: 3,
+      defaultPoolTimerSeconds: 180,
+      defaultTableTimerSeconds: 180,
     },
     poolConfig: {
       minPoolSize: 5,
@@ -114,6 +118,8 @@ export const OFFICIAL_TEMPLATES: TournamentTemplate[] = [
       defaultRanking: 0,
       randomScore: false,
       minTeamSize: 3,
+      defaultPoolTimerSeconds: 180,
+      defaultTableTimerSeconds: 180,
     },
     poolConfig: {
       minPoolSize: 4,
@@ -146,6 +152,8 @@ export const OFFICIAL_TEMPLATES: TournamentTemplate[] = [
       defaultRanking: 0,
       randomScore: false,
       minTeamSize: 3,
+      defaultPoolTimerSeconds: 180,
+      defaultTableTimerSeconds: 180,
     },
     poolConfig: {
       minPoolSize: 5,
@@ -178,6 +186,8 @@ export const OFFICIAL_TEMPLATES: TournamentTemplate[] = [
       defaultRanking: 0,
       randomScore: false,
       minTeamSize: 3,
+      defaultPoolTimerSeconds: 180,
+      defaultTableTimerSeconds: 180,
     },
     poolConfig: {
       minPoolSize: 5,
