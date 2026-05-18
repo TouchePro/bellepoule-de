@@ -918,6 +918,16 @@
         flex-shrink: 0;
       }
 
+      .next-referee-name {
+        font-size: 0.72rem;
+        color: rgba(255, 255, 255, 0.55);
+        white-space: nowrap;
+        flex-shrink: 0;
+        margin-left: 0.25rem;
+      }
+
+      .next-referee-name.hidden { display: none; }
+
       /* Responsive portrait/mobile */
       @media (max-width: 768px) {
         .fencers-row {
@@ -1269,6 +1279,7 @@
               <span class="next-fighter-name" id="next-name-b">-</span>
             </div>
           </div>
+          <div class="next-referee-name hidden" id="next-referee-name">⚖️ <span id="next-referee-label"></span></div>
         </div>
       </div>
     </div>
@@ -1290,6 +1301,7 @@
           this.waitingOvertime = false;
           this.inversionEnabled = localStorage.getItem('inversionEnabled') === 'true';
           this.showPhotos = false;
+          this.refereeFeatureEnabled = false;
           this.theme = localStorage.getItem('displayTheme') || 'dark';
           this.currentCustomTheme = null;
 
@@ -1552,6 +1564,11 @@
           // Mise à jour du réglage photos
           if (data.showPhotos !== undefined) {
             this.showPhotos = data.showPhotos;
+          }
+
+          // Mise à jour flag gestion arbitres
+          if (data.refereeFeatureEnabled !== undefined) {
+            this.refereeFeatureEnabled = data.refereeFeatureEnabled;
           }
 
           // Mise à jour état d'inversion (synchronisé avec le serveur)
@@ -1840,6 +1857,15 @@
 
           this.setNextFencerPhoto('a', left.photo);
           this.setNextFencerPhoto('b', right.photo);
+
+          const refEl = document.getElementById('next-referee-name');
+          const refLabel = document.getElementById('next-referee-label');
+          if (this.refereeFeatureEnabled && this.nextMatch.referee && refEl && refLabel) {
+            refLabel.textContent = this.nextMatch.referee.name;
+            refEl.classList.remove('hidden');
+          } else if (refEl) {
+            refEl.classList.add('hidden');
+          }
         }
 
         setNextFencerPhoto(side, photoBase64) {

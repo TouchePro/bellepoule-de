@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Referee, Match, Pool, Competition } from '../../shared/types';
 import { RefereeManager, RefereeRotationConfig } from '../../shared/services/refereeManager';
 
@@ -33,6 +33,24 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
   });
   const [assignments, setAssignments] = useState<Map<string, Referee>>(new Map());
   const [showReport, setShowReport] = useState(false);
+  const [activeTab, setActiveTab] = useState<'assignments' | 'history'>('assignments');
+  const [historyRows, setHistoryRows] = useState<Array<{
+    matchId: string; matchNumber: number; poolName: string | null;
+    fencerAName: string; fencerBName: string;
+    scoreA: number | null; scoreB: number | null; status: string;
+    refereeId: string | null; refereeName: string | null;
+  }>>([]);
+
+  const loadHistory = useCallback(async () => {
+    try {
+      const rows = await window.electronAPI.db.getMatchesWithReferees(competition.id);
+      setHistoryRows(rows);
+    } catch { /* silencieux */ }
+  }, [competition.id]);
+
+  useEffect(() => {
+    if (activeTab === 'history') loadHistory();
+  }, [activeTab, loadHistory]);
 
   const manager = useMemo(() => new RefereeManager(referees, config), [referees, config]);
 
@@ -87,7 +105,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
     >
       <h2
         style={{
-          marginBottom: '1.5rem',
+          marginBottom: '1rem',
           color: '#1f2937',
           borderBottom: '2px solid #e5e7eb',
           paddingBottom: '0.5rem',
@@ -95,6 +113,72 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
       >
         👨‍⚖️ Gestion des Arbitres
       </h2>
+
+      {/* Onglets */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+        {(['assignments', 'history'] as const).map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            style={{
+              padding: '0.5rem 1.25rem',
+              borderRadius: '6px',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: activeTab === tab ? '700' : '400',
+              background: activeTab === tab ? '#3b82f6' : '#e5e7eb',
+              color: activeTab === tab ? 'white' : '#374151',
+            }}
+          >
+            {tab === 'assignments' ? '📋 Assignations' : '📜 Historique'}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'history' && (
+        <div>
+          <div style={{ marginBottom: '0.75rem', display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              onClick={loadHistory}
+              style={{ padding: '0.4rem 1rem', borderRadius: '5px', border: '1px solid #d1d5db', cursor: 'pointer', background: 'white' }}
+            >
+              ↻ Actualiser
+            </button>
+          </div>
+          {historyRows.length === 0 ? (
+            <p style={{ color: '#6b7280', fontStyle: 'italic' }}>Aucun match avec arbitre assigné.</p>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+              <thead>
+                <tr style={{ background: '#f3f4f6' }}>
+                  {['Poule', 'Match', 'Tireur A', 'Tireur B', 'Score', 'Statut', 'Arbitre'].map(h => (
+                    <th key={h} style={{ padding: '0.5rem 0.75rem', textAlign: 'left', borderBottom: '2px solid #e5e7eb' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {historyRows.map(row => (
+                  <tr key={row.matchId} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                    <td style={{ padding: '0.45rem 0.75rem' }}>{row.poolName ?? '—'}</td>
+                    <td style={{ padding: '0.45rem 0.75rem' }}>#{row.matchNumber}</td>
+                    <td style={{ padding: '0.45rem 0.75rem' }}>{row.fencerAName}</td>
+                    <td style={{ padding: '0.45rem 0.75rem' }}>{row.fencerBName}</td>
+                    <td style={{ padding: '0.45rem 0.75rem', textAlign: 'center' }}>
+                      {row.scoreA !== null && row.scoreB !== null ? `${row.scoreA} – ${row.scoreB}` : '—'}
+                    </td>
+                    <td style={{ padding: '0.45rem 0.75rem', color: row.status === 'finished' ? '#166534' : '#6b7280' }}>
+                      {row.status === 'finished' ? '✓ Terminé' : row.status}
+                    </td>
+                    <td style={{ padding: '0.45rem 0.75rem', fontWeight: '500' }}>{row.refereeName ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'assignments' && (<>
 
       {/* Configuration */}
       <div
@@ -383,6 +467,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
           })}
         </div>
       </div>
+      </>)}
     </div>
   );
 };

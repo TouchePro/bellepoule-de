@@ -43,6 +43,7 @@ export class RemoteScoreServer {
   private sessionMatchScores: Map<string, { scoreA: any; scoreB: any; status: string }> = new Map(); // Scores en mémoire
   private sessionShowPhotos: boolean = false; // Afficher les photos des combattants avant le combat
   private sessionCardAnnounce: boolean = false; // Annoncer les cartons avec raison sur les affichages
+  private sessionRefereeFeatureEnabled: boolean = false; // Fonctionnalité gestion arbitres activée
   private sessionTheme: DisplayTheme = 'dark'; // Thème visuel de l'affichage distant (global)
   private arenaThemeOverrides: Map<string, { theme: DisplayTheme; customTheme?: CustomTheme }> =
     new Map();
@@ -1559,6 +1560,8 @@ export class RemoteScoreServer {
             customTheme: override?.customTheme,
             fencerA: arena.currentMatch?.fencerA,
             fencerB: arena.currentMatch?.fencerB,
+            refereeFeatureEnabled: this.sessionRefereeFeatureEnabled,
+            referees: this.session?.referees ?? [],
             ...(arena.status === 'finished' && {
               nextMatch: this.peekNextMatch(data.arenaId),
             }),
@@ -1632,6 +1635,8 @@ export class RemoteScoreServer {
       winner?: 'A' | 'B';
       overtimeType?: string | null;
       isVoluntary?: boolean;
+      matchId?: string;
+      refereeId?: string;
       announcement?: {
         fencer: 'A' | 'B';
         fencerName: string;
@@ -1873,6 +1878,25 @@ export class RemoteScoreServer {
           status: arena.status,
         });
         break;
+      case 'change_referee': {
+        if (!data.matchId || !data.refereeId || !arena.currentMatch) break;
+        if (arena.currentMatch.id !== data.matchId) break;
+        this.db.updateMatch(data.matchId, { refereeId: data.refereeId });
+        // Mettre à jour sessionMatches en mémoire
+        const idx = this.sessionMatches.findIndex((m: any) => m.id === data.matchId);
+        if (idx >= 0) this.sessionMatches[idx] = { ...this.sessionMatches[idx], refereeId: data.refereeId };
+        // Mettre à jour l'ArenaMatch courant
+        const resolvedRef = this.resolveReferee(data.refereeId);
+        arena.currentMatch = { ...arena.currentMatch, ...(resolvedRef ? { referee: resolvedRef } : {}) };
+        this.broadcastArenaUpdate(data.arenaId, {
+          arenaId: data.arenaId,
+          match: arena.currentMatch,
+          scoreA: arena.currentMatch.scoreA,
+          scoreB: arena.currentMatch.scoreB,
+          status: arena.status,
+        });
+        break;
+      }
       default:
         socket.emit('error', { message: 'Action non reconnue' });
     }
@@ -2508,6 +2532,12 @@ export class RemoteScoreServer {
     }, 3000);
   }
 
+  private resolveReferee(refereeId?: string | null): { id: string; name: string } | null {
+    if (!refereeId || !this.session) return null;
+    const ref = this.session.referees.find(r => r.id === refereeId);
+    return ref ? { id: ref.id, name: ref.name } : null;
+  }
+
   private peekNextMatch(arenaId: string): ArenaMatch | null {
     const arena = this.arenas.get(arenaId);
     if (!arena || !this.session) return null;
@@ -2530,6 +2560,7 @@ export class RemoteScoreServer {
       );
       const nextMatch = poolMatches.find(m => m.id !== currentMatchId);
       if (nextMatch) {
+        const nextReferee = this.resolveReferee(nextMatch.refereeId);
         return {
           id: nextMatch.id,
           poolId: currentPoolId,
@@ -2540,6 +2571,7 @@ export class RemoteScoreServer {
           status: 'not_started',
           startTime: null,
           endTime: null,
+          ...(nextReferee ? { referee: nextReferee } : {}),
         };
       }
     }
@@ -2740,6 +2772,8 @@ export class RemoteScoreServer {
       cardAnnounce: this.sessionCardAnnounce,
       theme: override?.theme ?? this.sessionTheme,
       customTheme: override?.customTheme,
+      refereeFeatureEnabled: this.sessionRefereeFeatureEnabled,
+      referees: this.session?.referees ?? [],
     };
 
     // Stocker dans le buffer de replay (TTL + max size)
@@ -2891,6 +2925,9 @@ export class RemoteScoreServer {
 
     // Stocker le réglage d'annonce de carton
     this.sessionCardAnnounce = cardAnnounce ?? false;
+
+    // Stocker l'activation de la gestion des arbitres
+    this.sessionRefereeFeatureEnabled = competition.settings?.refereeFeatureEnabled ?? false;
 
     // Stocker les vues kiosk activées
     this.sessionKioskViews = kioskViews ?? {
@@ -3147,13 +3184,21 @@ export class RemoteScoreServer {
 
     // Créer la session - utiliser allMatches au lieu de pendingMatches
     const assignedMatchCount = Math.min(allMatches.length, strips);
+    const dbReferees = this.db.getRefereesByCompetition(competitionId);
+    const sessionReferees = dbReferees.map(r => ({
+      id: r.id,
+      name: `${r.firstName} ${r.lastName}`.trim(),
+      code: r.license ?? r.ref.toString(),
+      isActive: r.status !== 'unavailable',
+      lastActivity: r.updatedAt,
+    }));
     this.session = {
       competitionId,
       strips: Array.from({ length: strips }, (_, i) => ({
         number: i + 1,
         status: i < assignedMatchCount ? 'occupied' : 'available',
       })),
-      referees: [],
+      referees: sessionReferees,
       activeMatches: [],
       isRunning: true,
       startTime: new Date(),
