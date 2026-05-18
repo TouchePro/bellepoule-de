@@ -199,7 +199,9 @@ export const usePoolManagement = ({
         const pool = { ...updatedPools[poolIndex] };
         const match = { ...pool.matches[matchIndex] };
 
-        match.status = MatchStatus.CANCELLED;
+        match.scoreA = null;
+        match.scoreB = null;
+        match.status = MatchStatus.NOT_STARTED;
         match.updatedAt = new Date();
 
         pool.matches = [...pool.matches];

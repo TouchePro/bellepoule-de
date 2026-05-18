@@ -1096,7 +1096,12 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                           }
                         }}
                         onMatchCancel={(matchIndex) => {
+                          const match = pool.matches[matchIndex];
+                          if (!match) return;
                           cancelMatch(poolIndex, matchIndex);
+                          if (competition?.id) {
+                            window.electronAPI.remote.resetPoolMatch(competition.id, match.id).catch(() => {});
+                          }
                         }}
                         onFencerStatusChange={(fencerId, status) => {
                           if (
