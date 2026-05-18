@@ -1291,6 +1291,28 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                     {fencerBAbandoned && ' ✕'}
                     {match.scoreB?.isVictory && !isAbandonMatch ? ' ✓' : ''}
                   </span>
+                  {!isAbandonMatch && onMatchReset && (
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        onMatchReset(index);
+                      }}
+                      title="Annuler ce résultat"
+                      style={{
+                        marginLeft: '0.5rem',
+                        padding: '0.25rem 0.5rem',
+                        fontSize: '0.75rem',
+                        background: 'rgba(239,68,68,0.1)',
+                        border: '1px solid rgba(239,68,68,0.3)',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        color: '#dc2626',
+                        flexShrink: 0,
+                      }}
+                    >
+                      ↺
+                    </button>
+                  )}
                 </div>
               );
             })}
