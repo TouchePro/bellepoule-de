@@ -1714,7 +1714,7 @@ export class RemoteScoreServer {
           mainWin.webContents.send('remote:dt_call', {
             arenaId: data.arenaId,
             arenaNumber: arena.number,
-            matchNumber: arena.currentMatch?.number ?? null,
+            matchNumber: null,
             competitionId: this.session?.competitionId ?? null,
             timestamp: Date.now(),
           });
