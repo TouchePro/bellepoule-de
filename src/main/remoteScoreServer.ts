@@ -2560,7 +2560,7 @@ export class RemoteScoreServer {
       );
       const nextMatch = poolMatches.find(m => m.id !== currentMatchId);
       if (nextMatch) {
-        const nextReferee = this.resolveReferee(nextMatch.refereeId);
+        const nextReferee = this.resolveReferee((nextMatch as any).refereeId ?? nextMatch.referee?.id);
         return {
           id: nextMatch.id,
           poolId: currentPoolId,
