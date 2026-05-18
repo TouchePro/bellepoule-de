@@ -277,6 +277,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
         snapshots
       ),
     getAbandonSnapshot: (fencerId: string) => ipcRenderer.invoke('db:getAbandonSnapshot', fencerId),
+    getScoreAuditLogByCompetition: (competitionId: string) =>
+      ipcRenderer.invoke('db:getScoreAuditLogByCompetition', competitionId),
     deleteAbandonSnapshot: (fencerId: string) =>
       ipcRenderer.invoke('db:deleteAbandonSnapshot', fencerId),
   },
@@ -497,6 +499,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const handler = (_: any, data: any) => callback(data);
     ipcRenderer.on('remote:dt_call', handler);
     return () => ipcRenderer.removeListener('remote:dt_call', handler);
+  },
+
+  onScoreIpConflict: (callback: (data: any) => void) => {
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on('score:ip-conflict', handler);
+    return () => ipcRenderer.removeListener('score:ip-conflict', handler);
   },
 
   getLogo: () => ipcRenderer.invoke('app:getLogo'),

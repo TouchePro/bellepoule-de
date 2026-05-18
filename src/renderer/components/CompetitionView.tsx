@@ -38,6 +38,7 @@ import { PresentationMode } from './PresentationMode';
 import KioskDisplay from './KioskDisplay';
 import { FencerPhoto } from './FencerPhoto';
 import QuestPhaseView from './QuestPhaseView';
+import { ScoreAuditLog } from './ScoreAuditLog';
 
 interface CompetitionViewProps {
   competition: Competition;
@@ -742,6 +743,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       disabled: false,
       title: undefined as string | undefined,
     },
+    {
+      id: 'logs',
+      label: t('phases.logs'),
+      icon: '📜',
+      disabled: false,
+      title: undefined as string | undefined,
+    },
   ];
 
   const getPoolsNextAction = () => {
@@ -1171,6 +1179,10 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             onStopRemote={() => setIsRemoteActive(false)}
             isRemoteActive={isRemoteActive}
           />
+        )}
+
+        {currentPhase === 'logs' && (
+          <ScoreAuditLog competitionId={competition.id} />
         )}
       </div>
 

@@ -103,7 +103,8 @@
     "ranking": "Classement",
     "tableau": "Tableau",
     "results": "Résultats",
-    "remote": "Saisie distante"
+    "remote": "Saisie distante",
+    "logs": "Historique"
   },
   "pools": {
     "generate": "Générer les poules",

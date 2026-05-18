@@ -9,7 +9,7 @@ import { Pool, PoolRanking } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
 import { TableauMatch, FinalResult } from '../components/TableauView';
 
-export type Phase = 'checkin' | 'poolprep' | 'pools' | 'ranking' | 'quest' | 'tableau' | 'results' | 'remote';
+export type Phase = 'checkin' | 'poolprep' | 'pools' | 'ranking' | 'quest' | 'tableau' | 'results' | 'remote' | 'logs';
 
 interface SessionState {
   currentPhase: number;
@@ -68,6 +68,7 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
     tableau: 5,
     results: 6,
     remote: 7,
+    logs: 8,
   };
 
   const numberToPhase: Record<number, Phase> = {
@@ -79,6 +80,7 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
     5: 'tableau',
     6: 'results',
     7: 'remote',
+    8: 'logs',
   };
 
   // Sauvegarder l'état - lit depuis propsRef pour rester stable (pas de re-création à chaque render)
@@ -167,7 +169,7 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
       const p = propsRef.current;
       const phaseMap: Record<Phase, number> = {
         checkin: 0, poolprep: 1, pools: 2, ranking: 3,
-        quest: 4, tableau: 5, results: 6, remote: 7,
+        quest: 4, tableau: 5, results: 6, remote: 7, logs: 8,
       };
       window.electronAPI.db.saveSessionStateSync(p.competitionId, {
         currentPhase: phaseMap[p.currentPhase],
