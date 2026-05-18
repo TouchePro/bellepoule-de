@@ -928,6 +928,21 @@
 
       .next-referee-name.hidden { display: none; }
 
+      /* Bandeau arbitre – bas de l'écran prochain combat */
+      .idle-referee-banner {
+        width: 100%;
+        padding: 0.45rem 1.5rem;
+        background: rgba(0, 0, 0, 0.35);
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        text-align: center;
+        font-size: clamp(0.85rem, 1.8vw, 1.1rem);
+        color: rgba(255, 255, 255, 0.7);
+        letter-spacing: 0.06em;
+        flex-shrink: 0;
+      }
+
+      .idle-referee-banner.hidden { display: none; }
+
       /* Responsive portrait/mobile */
       @media (max-width: 768px) {
         .fencers-row {
@@ -1169,6 +1184,7 @@
               <div class="intro-fencer-club" id="idle-club-b"></div>
             </div>
           </div>
+          <div class="idle-referee-banner hidden" id="idle-referee-banner">⚖️ Arbitre : <span id="idle-referee-label"></span></div>
         </div>
         <!-- Grand numéro (visible quand pas de nextMatch) -->
         <div class="arena-idle-number" id="arena-idle-number">1</div>
@@ -1860,11 +1876,15 @@
 
           const refEl = document.getElementById('next-referee-name');
           const refLabel = document.getElementById('next-referee-label');
-          if (this.refereeFeatureEnabled && this.nextMatch.referee && refEl && refLabel) {
-            refLabel.textContent = this.nextMatch.referee.name;
-            refEl.classList.remove('hidden');
-          } else if (refEl) {
-            refEl.classList.add('hidden');
+          const idleBanner = document.getElementById('idle-referee-banner');
+          const idleLabel = document.getElementById('idle-referee-label');
+          if (this.refereeFeatureEnabled && this.nextMatch.referee) {
+            const refName = this.nextMatch.referee.name;
+            if (refEl && refLabel) { refLabel.textContent = refName; refEl.classList.remove('hidden'); }
+            if (idleBanner && idleLabel) { idleLabel.textContent = refName; idleBanner.classList.remove('hidden'); }
+          } else {
+            if (refEl) refEl.classList.add('hidden');
+            if (idleBanner) idleBanner.classList.add('hidden');
           }
         }
 
