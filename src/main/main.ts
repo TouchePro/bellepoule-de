@@ -509,6 +509,30 @@ function createWindow(): void {
     mainWindow = null;
   });
 
+  // Reload renderer when it crashes (blank screen symptom)
+  mainWindow.webContents.on('render-process-gone', (_event, details) => {
+    console.error('[Main] Renderer process gone:', details.reason, details.exitCode);
+    if (details.reason !== 'clean-exit') {
+      setTimeout(() => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          if (process.env.NODE_ENV === 'development') {
+            mainWindow.loadURL('http://localhost:8066');
+          } else {
+            mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
+          }
+        }
+      }, 500);
+    }
+  });
+
+  mainWindow.webContents.on('unresponsive', () => {
+    console.warn('[Main] Renderer became unresponsive');
+  });
+
+  mainWindow.webContents.on('responsive', () => {
+    console.log('[Main] Renderer became responsive again');
+  });
+
   // Create application menu using saved language preference
   mainWindow.webContents.once('did-finish-load', async () => {
     try {
