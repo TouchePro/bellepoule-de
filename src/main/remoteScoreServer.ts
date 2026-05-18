@@ -1708,6 +1708,19 @@ export class RemoteScoreServer {
             });
         }
         break;
+      case 'dt_call': {
+        const mainWin = (global as any).mainWindow;
+        if (mainWin) {
+          mainWin.webContents.send('remote:dt_call', {
+            arenaId: data.arenaId,
+            arenaNumber: arena.number,
+            matchNumber: arena.currentMatch?.number ?? null,
+            competitionId: this.session?.competitionId ?? null,
+            timestamp: Date.now(),
+          });
+        }
+        break;
+      }
       case 'next':
         this.loadNextMatch(data.arenaId);
         this.arenaCards.set(data.arenaId, { cardsA: [], cardsB: [] });
@@ -3452,6 +3465,10 @@ export class RemoteScoreServer {
   public clearOrgNote(): void {
     this.orgNote = null;
     this.io.emit('kiosk:note', null);
+  }
+
+  public acknowledgeDTCall(arenaId: string): void {
+    this.io.to(`arena:${arenaId}`).emit(`arena:${arenaId}:dt_call_ack`);
   }
 
   public setLogo(logo: string | null): void {

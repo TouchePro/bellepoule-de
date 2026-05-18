@@ -1706,6 +1706,18 @@ ipcMain.handle('remote:clearOrgNote', async (_event, competitionId: string) => {
   }
 });
 
+ipcMain.handle('remote:acknowledgeDTCall', async (_, competitionId: string, arenaId: string) => {
+  try {
+    const entry = remoteServers.get(competitionId);
+    if (!entry) return { success: false, error: 'Serveur non démarré' };
+    entry.server.acknowledgeDTCall(arenaId);
+    return { success: true };
+  } catch (error) {
+    console.error('Error acknowledging DT call:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
 ipcMain.handle('remote:updateLogo', async (_, logo: string | null) => {
   try {
     const logoPath = path.join(app.getPath('userData'), 'logo.dat');
