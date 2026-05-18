@@ -171,7 +171,7 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
       const p = propsRef.current;
       const phaseMap: Record<Phase, number> = {
         checkin: 0, poolprep: 1, pools: 2, ranking: 3,
-        quest: 4, tableau: 5, results: 6, remote: 7, logs: 8,
+        quest: 4, tableau: 5, results: 6, remote: 7, logs: 8, referees: 9,
       };
       window.electronAPI.db.saveSessionStateSync(p.competitionId, {
         currentPhase: phaseMap[p.currentPhase],
