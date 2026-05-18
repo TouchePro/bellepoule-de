@@ -808,10 +808,11 @@ export class RemoteScoreServer {
       if (!/^[0-9a-f-]{36}$/i.test(matchId) && !/^[0-9a-f-]{36}$/i.test(poolId)) {
         // Accepter aussi des IDs non-UUID (matchs en mémoire) - on valide le format souple
       }
-      const { scoreA, scoreB, specialStatus } = req.body as {
+      const { scoreA, scoreB, specialStatus, refereeId: bodyRefereeId } = req.body as {
         scoreA: number;
         scoreB: number;
         specialStatus?: string;
+        refereeId?: string;
       };
       // Validation des scores
       const sA = Number(scoreA);
@@ -843,6 +844,34 @@ export class RemoteScoreServer {
           isForfait: specialStatus === 'forfait_B',
         };
         const previousMatch = this.db.getMatch(matchId);
+        const resolvedRef = this.resolveReferee(bodyRefereeId ?? previousMatch?.referee?.id ?? null);
+
+        // Détection conflit IP : alerte si une IP différente tente de modifier un score déjà saisi
+        try {
+          const existingLog = this.db.getScoreAuditLog(matchId);
+          if (existingLog.length > 0) {
+            const lastEntry = existingLog[existingLog.length - 1];
+            if (lastEntry.ipAddress && lastEntry.ipAddress !== clientIp) {
+              const mainWin = (global as any).mainWindow;
+              if (mainWin) {
+                mainWin.webContents.send('score:ip-conflict', {
+                  matchId,
+                  poolId,
+                  matchNumber: lastEntry.matchNumber,
+                  poolNumber: lastEntry.poolNumber,
+                  originalIp: lastEntry.ipAddress,
+                  originalReferee: lastEntry.refereeName ?? lastEntry.changedBy,
+                  attemptIp: clientIp,
+                  attemptReferee: resolvedRef?.name ?? 'inconnu',
+                  timestamp: new Date().toISOString(),
+                });
+              }
+            }
+          }
+        } catch {
+          /* non bloquant */
+        }
+
         this.db.updateMatch(matchId, {
           scoreA: scoreAObj,
           scoreB: scoreBObj,
@@ -852,12 +881,16 @@ export class RemoteScoreServer {
         try {
           this.db.logScoreChange({
             matchId,
+            poolId,
             previousScoreA: previousMatch?.scoreA ?? null,
             previousScoreB: previousMatch?.scoreB ?? null,
             newScoreA: scoreAObj,
             newScoreB: scoreBObj,
-            changedBy: 'referee',
+            changedBy: resolvedRef?.name ?? bodyRefereeId ?? 'referee',
             reason: 'pool_remote_entry',
+            refereeId: resolvedRef?.id ?? bodyRefereeId,
+            refereeName: resolvedRef?.name,
+            ipAddress: clientIp,
           });
         } catch {
           /* non bloquant */

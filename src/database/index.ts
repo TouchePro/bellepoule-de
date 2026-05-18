@@ -2211,13 +2211,17 @@ export class DatabaseManager {
     newScoreB: any;
     changedBy: string;
     reason?: string;
+    refereeId?: string;
+    refereeName?: string;
+    ipAddress?: string;
+    poolId?: string;
   }): void {
     if (!this.db) throw new Error('Database not open');
     const { v4: uuidv4gen } = require('uuid');
     this.run(
       `INSERT INTO score_audit_log
-        (id, match_id, arena_id, previous_score_a, previous_score_b, new_score_a, new_score_b, changed_by, changed_at, reason)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (id, match_id, arena_id, previous_score_a, previous_score_b, new_score_a, new_score_b, changed_by, changed_at, reason, referee_id, referee_name, ip_address, pool_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         uuidv4gen(),
         entry.matchId,
@@ -2229,32 +2233,69 @@ export class DatabaseManager {
         entry.changedBy,
         new Date().toISOString(),
         entry.reason ?? null,
+        entry.refereeId ?? null,
+        entry.refereeName ?? null,
+        entry.ipAddress ?? null,
+        entry.poolId ?? null,
       ]
     );
     this.save();
   }
 
+  private parseAuditRow(r: any) {
+    return {
+      id: r.id as string,
+      matchId: r.match_id as string,
+      arenaId: r.arena_id as string | null,
+      poolId: r.pool_id as string | null,
+      matchNumber: r.match_number != null ? Number(r.match_number) : null,
+      poolNumber: r.pool_number != null ? Number(r.pool_number) : null,
+      previousScoreA: r.previous_score_a ? JSON.parse(r.previous_score_a as string) : null,
+      previousScoreB: r.previous_score_b ? JSON.parse(r.previous_score_b as string) : null,
+      newScoreA: JSON.parse(r.new_score_a as string),
+      newScoreB: JSON.parse(r.new_score_b as string),
+      changedBy: r.changed_by as string,
+      changedAt: r.changed_at as string,
+      reason: r.reason as string | null,
+      refereeId: r.referee_id as string | null,
+      refereeName: r.referee_name as string | null,
+      ipAddress: r.ip_address as string | null,
+    };
+  }
+
   public getScoreAuditLog(matchId: string): any[] {
     if (!this.db) throw new Error('Database not open');
     const stmt = this.db.prepare(
-      `SELECT * FROM score_audit_log WHERE match_id=? ORDER BY changed_at ASC`
+      `SELECT sal.*, m.number as match_number, p.number as pool_number
+       FROM score_audit_log sal
+       LEFT JOIN matches m ON sal.match_id = m.id
+       LEFT JOIN pools p ON m.pool_id = p.id
+       WHERE sal.match_id=? ORDER BY sal.changed_at ASC`
     );
     stmt.bind([matchId]);
     const rows: any[] = [];
     while (stmt.step()) {
-      const r = stmt.getAsObject();
-      rows.push({
-        id: r.id,
-        matchId: r.match_id,
-        arenaId: r.arena_id,
-        previousScoreA: r.previous_score_a ? JSON.parse(r.previous_score_a as string) : null,
-        previousScoreB: r.previous_score_b ? JSON.parse(r.previous_score_b as string) : null,
-        newScoreA: JSON.parse(r.new_score_a as string),
-        newScoreB: JSON.parse(r.new_score_b as string),
-        changedBy: r.changed_by,
-        changedAt: r.changed_at,
-        reason: r.reason,
-      });
+      rows.push(this.parseAuditRow(stmt.getAsObject()));
+    }
+    stmt.free();
+    return rows;
+  }
+
+  public getScoreAuditLogByCompetition(competitionId: string): any[] {
+    if (!this.db) throw new Error('Database not open');
+    const stmt = this.db.prepare(
+      `SELECT sal.*, m.number as match_number, p.number as pool_number
+       FROM score_audit_log sal
+       JOIN matches m ON sal.match_id = m.id
+       JOIN pools p ON m.pool_id = p.id
+       JOIN phases ph ON p.phase_id = ph.id
+       WHERE ph.competition_id = ?
+       ORDER BY sal.changed_at DESC`
+    );
+    stmt.bind([competitionId]);
+    const rows: any[] = [];
+    while (stmt.step()) {
+      rows.push(this.parseAuditRow(stmt.getAsObject()));
     }
     stmt.free();
     return rows;

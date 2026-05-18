@@ -248,4 +248,16 @@ export const ALL_MIGRATIONS: Migration[] = [
       db.run(`CREATE INDEX IF NOT EXISTS idx_arena_exits_fencer ON match_arena_exits(fencer_id)`);
     },
   },
+
+  {
+    version: 6,
+    description: 'Enrichissement score_audit_log : arbitre, IP, poule',
+    up(db) {
+      try { db.run(`ALTER TABLE score_audit_log ADD COLUMN referee_id TEXT`); } catch { /* */ }
+      try { db.run(`ALTER TABLE score_audit_log ADD COLUMN referee_name TEXT`); } catch { /* */ }
+      try { db.run(`ALTER TABLE score_audit_log ADD COLUMN ip_address TEXT`); } catch { /* */ }
+      try { db.run(`ALTER TABLE score_audit_log ADD COLUMN pool_id TEXT`); } catch { /* */ }
+      db.run(`CREATE INDEX IF NOT EXISTS idx_audit_pool ON score_audit_log(pool_id)`);
+    },
+  },
 ];

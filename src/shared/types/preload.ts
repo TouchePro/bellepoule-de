@@ -558,6 +558,9 @@ export interface DatabaseAPI {
   ) => Promise<void>;
   getAbandonSnapshot: (fencerId: string) => Promise<AbandonSnapshot | null>;
   deleteAbandonSnapshot: (fencerId: string) => Promise<void>;
+
+  // Score audit log
+  getScoreAuditLogByCompetition: (competitionId: string) => Promise<ScoreAuditEntry[]>;
 }
 
 export interface FileAPI {
@@ -640,6 +643,37 @@ export interface ScoreAuditLogEntry {
   newValue: string | null; // JSON
 }
 
+export interface ScoreAuditEntry {
+  id: string;
+  matchId: string;
+  arenaId: string | null;
+  poolId: string | null;
+  matchNumber: number | null;
+  poolNumber: number | null;
+  previousScoreA: any | null;
+  previousScoreB: any | null;
+  newScoreA: any;
+  newScoreB: any;
+  changedBy: string;
+  changedAt: string; // ISO 8601
+  reason: string | null;
+  refereeId: string | null;
+  refereeName: string | null;
+  ipAddress: string | null;
+}
+
+export interface ScoreIpConflict {
+  matchId: string;
+  poolId: string;
+  matchNumber: number | null;
+  poolNumber: number | null;
+  originalIp: string;
+  originalReferee: string | null;
+  attemptIp: string;
+  attemptReferee: string;
+  timestamp: string; // ISO 8601
+}
+
 // ============================================================================
 // Arena State Types
 // ============================================================================
@@ -668,6 +702,7 @@ export interface ElectronAPI extends MenuAPI, UtilityAPI {
   onDTCall: (
     callback: (data: { arenaId: string; arenaNumber: number; matchNumber: number | null; competitionId: string | null; timestamp: number }) => void
   ) => () => void;
+  onScoreIpConflict: (callback: (data: ScoreIpConflict) => void) => () => void;
   notifyLanguageChanged: (lang: string) => void;
   getLogo: () => Promise<string | null>;
   onLogoLoaded: (callback: (logo: string | null) => void) => () => void;

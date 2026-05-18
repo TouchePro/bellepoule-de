@@ -1081,6 +1081,10 @@ ipcMain.handle('db:deleteAbandonSnapshot', async (_, fencerId) => {
   db.deleteAbandonSnapshot(fencerId);
 });
 
+ipcMain.handle('db:getScoreAuditLogByCompetition', async (_, competitionId) => {
+  return db.getScoreAuditLogByCompetition(competitionId);
+});
+
 // File handlers
 ipcMain.handle('file:export', async (_, filepath) => {
   db.exportToFile(filepath);

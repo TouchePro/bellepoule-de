@@ -103,7 +103,8 @@
     "ranking": "Rangliste",
     "tableau": "Tabelle",
     "results": "Ergebnisse",
-    "remote": "Ferne Eingabe"
+    "remote": "Ferne Eingabe",
+    "logs": "Verlauf"
   },
   "pools": {
     "generate": "Pools Generieren",

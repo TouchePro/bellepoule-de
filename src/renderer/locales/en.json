@@ -103,7 +103,8 @@
     "ranking": "Ranking",
     "tableau": "Table",
     "results": "Results",
-    "remote": "Remote Entry"
+    "remote": "Remote Entry",
+    "logs": "History"
   },
   "pools": {
     "generate": "Generate Pools",
