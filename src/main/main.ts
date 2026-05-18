@@ -1867,8 +1867,10 @@ ipcMain.handle('updater:installPendingUpdate', async () => {
 
 // VMware/ARM sans accélération 3D : forcer rendu logiciel
 if (process.platform === 'linux') {
+  app.disableHardwareAcceleration();
   app.commandLine.appendSwitch('disable-gpu');
   app.commandLine.appendSwitch('disable-gpu-sandbox');
+  app.commandLine.appendSwitch('use-gl', 'swiftshader');
 }
 
 app.whenReady().then(async () => {
