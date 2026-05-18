@@ -503,6 +503,12 @@ export interface DatabaseAPI {
   getRefereesByCompetition: (competitionId: string) => Promise<Referee[]>;
   updateReferee: (id: string, updates: Record<string, string | undefined>) => Promise<void>;
   deleteReferee: (id: string) => Promise<void>;
+  getMatchesWithReferees: (competitionId: string) => Promise<Array<{
+    matchId: string; matchNumber: number; poolName: string | null;
+    fencerAName: string; fencerBName: string;
+    scoreA: number | null; scoreB: number | null; status: string;
+    refereeId: string | null; refereeName: string | null;
+  }>>;
 
   // Touch / Card read
   getTouches: (matchId: string) => Promise<

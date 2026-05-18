@@ -463,6 +463,7 @@ export interface CompetitionSettings {
   randomScore: boolean; // Scores aléatoires (pour tests)
   minTeamSize: number; // Taille min équipe (compétitions par équipes)
   questConfig?: QuestPhaseConfig; // Configuration du Tour Quest (Sabre Laser uniquement)
+  refereeFeatureEnabled?: boolean; // Activer la gestion des arbitres sur arènes et saisie distante
 }
 
 export interface Phase extends BaseEntity {

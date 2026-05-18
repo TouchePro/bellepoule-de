@@ -1024,6 +1024,9 @@ ipcMain.handle('db:updateReferee', async (_, id, updates) => {
 ipcMain.handle('db:deleteReferee', async (_, id) => {
   return db.deleteReferee(id);
 });
+ipcMain.handle('db:getMatchesWithReferees', async (_, competitionId) => {
+  return db.getMatchesWithReferees(competitionId);
+});
 
 // Touch / Card read handlers
 ipcMain.handle('db:getTouches', async (_, matchId) => {

@@ -40,6 +40,10 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
     competition.settings?.thirdPlaceMatch ?? false
   );
 
+  const [refereeFeatureEnabled, setRefereeFeatureEnabled] = useState(
+    competition.settings?.refereeFeatureEnabled ?? false
+  );
+
   // Tour Quest (Sabre Laser)
   const existingQuest = competition.settings?.questConfig;
   const [questEnabled, setQuestEnabled] = useState(existingQuest?.enabled ?? false);
@@ -92,6 +96,7 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
       randomScore: competition.settings?.randomScore ?? false,
       minTeamSize: competition.settings?.minTeamSize ?? 3,
       questConfig,
+      refereeFeatureEnabled,
     };
 
     onSave({
@@ -482,6 +487,34 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
               )}
             </div>
           )}
+
+          {/* Gestion des arbitres */}
+          <div style={{ marginBottom: '1rem' }}>
+            <h3
+              style={{
+                fontSize: '0.875rem',
+                fontWeight: '600',
+                color: '#6b7280',
+                marginBottom: '0.75rem',
+                textTransform: 'uppercase',
+              }}
+            >
+              Arbitrage
+            </h3>
+            <div className="form-group">
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={refereeFeatureEnabled}
+                  onChange={e => setRefereeFeatureEnabled(e.target.checked)}
+                />
+                Activer la gestion des arbitres
+              </label>
+              <small style={{ color: '#6b7280', fontSize: '0.75rem', marginLeft: '1.5rem' }}>
+                Affiche le nom de l'arbitre sur l'arène et permet de le changer depuis la saisie distante
+              </small>
+            </div>
+          </div>
 
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary" onClick={onClose}>

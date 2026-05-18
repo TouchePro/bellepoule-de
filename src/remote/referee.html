@@ -546,6 +546,64 @@
       .control-buttons-dt {
         margin-top: 0.5rem;
       }
+
+      .referee-bar {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.6rem;
+        padding: 0.5rem 0.75rem;
+        background: rgba(255,255,255,0.06);
+        border-radius: 0.5rem;
+        font-size: 0.85rem;
+      }
+
+      .referee-bar.hidden { display: none; }
+
+      .referee-bar-label {
+        font-weight: 600;
+        opacity: 0.75;
+        white-space: nowrap;
+      }
+
+      .referee-bar-name {
+        flex: 1;
+        font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .referee-change-btn {
+        padding: 0.3rem 0.7rem;
+        border: 1px solid rgba(255,255,255,0.3);
+        border-radius: 0.4rem;
+        background: transparent;
+        color: inherit;
+        font-size: 0.8rem;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      .referee-change-btn:active { opacity: 0.7; }
+
+      .referee-selector {
+        width: 100%;
+        margin-top: 0.25rem;
+      }
+
+      .referee-selector.hidden { display: none; }
+
+      .referee-selector select {
+        width: 100%;
+        padding: 0.5rem;
+        border-radius: 0.4rem;
+        border: 1px solid rgba(255,255,255,0.3);
+        background: #1f2937;
+        color: white;
+        font-size: 0.9rem;
+      }
         opacity: 0.6;
       }
 
@@ -1138,6 +1196,18 @@
             <span id="btn-dt-label" data-i18n="referee.dt_call">📣 Appel DT</span>
           </button>
         </div>
+
+        <!-- Barre arbitre (visible si refereeFeatureEnabled) -->
+        <div class="referee-bar hidden" id="referee-bar">
+          <div class="referee-bar-label">⚖️ Arbitre :</div>
+          <div class="referee-bar-name" id="referee-bar-name">—</div>
+          <button class="referee-change-btn" id="referee-change-btn" onclick="refereeApp.toggleRefereeSelector()">Changer</button>
+          <div class="referee-selector hidden" id="referee-selector">
+            <select id="referee-select" onchange="refereeApp.changeReferee(this.value)">
+              <option value="">— Sélectionner un arbitre —</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <!-- Écran de sélection de match -->
@@ -1398,6 +1468,8 @@
           this.coinFlipWinner = null; // 'A' | 'B' | null — vainqueur par tirage au sort
           this.actionHistory = []; // Historique pour undo (max 10)
           this.cardAnnounceEnabled = false; // Réglé depuis les paramètres de saisie distante
+          this.refereeFeatureEnabled = false; // Fonctionnalité gestion arbitres
+          this.refereesList = []; // Liste des arbitres de la compétition
           this.swapped = false;
           this.pausedForModal = false;
           this.offlineQueue = new OfflineQueueInline();
@@ -1776,6 +1848,9 @@
 
           // Afficher le panneau de match
           document.getElementById('active-match').classList.add('visible');
+
+          // Mettre à jour la barre arbitre
+          this.updateRefereeBar();
 
           // Informer le serveur
           this.socket.emit('arena_control', {
@@ -2721,6 +2796,14 @@
             this.cardAnnounceEnabled = data.cardAnnounce;
           }
 
+          if (data.refereeFeatureEnabled !== undefined) {
+            this.refereeFeatureEnabled = data.refereeFeatureEnabled;
+          }
+          if (data.referees !== undefined) {
+            this.refereesList = data.referees;
+          }
+          this.updateRefereeBar();
+
           // Nouveau match prêt côté serveur (chargement automatique après fin de match)
           if (data.status === 'ready' && data.match && data.match.id) {
             // Ignorer si c'est déjà notre match actuel
@@ -2756,6 +2839,56 @@
             this.loadNextMatches();
             this.showNotification('⏭️ Match suivant disponible !');
           }
+        }
+
+        updateRefereeBar() {
+          const bar = document.getElementById('referee-bar');
+          if (!bar) return;
+          if (!this.refereeFeatureEnabled) {
+            bar.classList.add('hidden');
+            return;
+          }
+          bar.classList.remove('hidden');
+
+          const nameEl = document.getElementById('referee-bar-name');
+          const ref = this.currentMatch?.referee;
+          if (nameEl) nameEl.textContent = ref ? ref.name : '—';
+
+          const sel = document.getElementById('referee-select');
+          if (sel) {
+            sel.innerHTML = '<option value="">— Sélectionner un arbitre —</option>';
+            for (const r of (this.refereesList || [])) {
+              const opt = document.createElement('option');
+              opt.value = r.id;
+              opt.textContent = r.name;
+              if (ref && r.id === ref.id) opt.selected = true;
+              sel.appendChild(opt);
+            }
+          }
+        }
+
+        toggleRefereeSelector() {
+          const sel = document.getElementById('referee-selector');
+          if (sel) sel.classList.toggle('hidden');
+        }
+
+        changeReferee(refereeId) {
+          if (!refereeId || !this.currentMatch) return;
+          this.socket.emit('arena_control', {
+            arenaId: this.arenaId,
+            action: 'change_referee',
+            matchId: this.currentMatch.id,
+            refereeId,
+          });
+          const ref = (this.refereesList || []).find(r => r.id === refereeId);
+          if (ref) {
+            this.currentMatch.referee = { id: ref.id, name: ref.name };
+            const nameEl = document.getElementById('referee-bar-name');
+            if (nameEl) nameEl.textContent = ref.name;
+          }
+          const sel = document.getElementById('referee-selector');
+          if (sel) sel.classList.add('hidden');
+          this.showNotification('✅ Arbitre mis à jour');
         }
 
         showNextMatchesScreen() {
