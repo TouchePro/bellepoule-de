@@ -73,6 +73,8 @@ const makeCompetition = (): Competition => ({
   settings: {
     defaultPoolMaxScore: 5,
     defaultTableMaxScore: 10,
+    defaultPoolTimerSeconds: 180,
+    defaultTableTimerSeconds: 180,
     poolRounds: 1,
     hasDirectElimination: true,
     thirdPlaceMatch: false,
