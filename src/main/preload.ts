@@ -183,6 +183,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       return ipcRenderer.invoke('db:updatePool', pool);
     },
     getPoolsByPhase: (phaseId: string) => ipcRenderer.invoke('db:getPoolsByPhase', phaseId),
+    getPoolSignatures: (poolId: string) => ipcRenderer.invoke('db:getPoolSignatures', poolId),
 
     // Phases
     createPhase: (competitionId: string, type: string, order: number, name: string) =>

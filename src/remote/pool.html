@@ -530,6 +530,99 @@
 
       .fin-overlay .fin-icon { font-size: 4rem; }
 
+      /* ── Bouton signature ── */
+      .sig-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(99, 102, 241, 0.2);
+        color: #a5b4fc;
+        font-size: 0.85rem;
+        cursor: pointer;
+        margin-left: 0.4rem;
+        flex-shrink: 0;
+        transition: background 0.2s, color 0.2s;
+        vertical-align: middle;
+      }
+      .sig-btn:hover:not(:disabled) {
+        background: rgba(99, 102, 241, 0.45);
+        color: #fff;
+      }
+      .sig-btn:disabled {
+        opacity: 0.3;
+        cursor: default;
+      }
+      .sig-btn.signed {
+        background: rgba(34, 197, 94, 0.2);
+        border-color: rgba(34, 197, 94, 0.4);
+        color: #86efac;
+      }
+      .sig-btn.signed:hover {
+        background: rgba(34, 197, 94, 0.4);
+        color: #fff;
+      }
+
+      /* ── Modal signature ── */
+      .sig-modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 150;
+        align-items: center;
+        justify-content: center;
+      }
+      .sig-modal-overlay.visible { display: flex; }
+      .sig-modal {
+        background: #1e293b;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        width: 400px;
+        max-width: 96vw;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+      }
+      .sig-modal h2 {
+        font-size: 0.95rem;
+        color: #94a3b8;
+        text-align: center;
+        font-weight: 500;
+        margin: 0;
+      }
+      .sig-modal h2 strong {
+        color: #e2e8f0;
+        display: block;
+        font-size: 1.05rem;
+        margin-top: 0.15rem;
+      }
+      .sig-instructions {
+        font-size: 0.8rem;
+        color: #64748b;
+        text-align: center;
+        margin: 0;
+      }
+      #sig-canvas {
+        background: #fff;
+        border-radius: 0.5rem;
+        cursor: crosshair;
+        touch-action: none;
+        display: block;
+        width: 100%;
+        height: 180px;
+      }
+      .sig-modal-actions {
+        display: flex;
+        gap: 0.6rem;
+        justify-content: center;
+      }
+
       /* ── Responsive ── */
       @media (max-width: 480px) {
         .pool-container { padding: 0.75rem; }
@@ -589,6 +682,20 @@
       <h1 data-i18n="pool.finished">POULE TERMINÉE</h1>
     </div>
 
+    <!-- Modal signature -->
+    <div class="sig-modal-overlay" id="sig-modal-overlay">
+      <div class="sig-modal">
+        <h2>Signature<strong id="sig-modal-name"></strong></h2>
+        <p class="sig-instructions">Signez dans le cadre ci-dessous</p>
+        <canvas id="sig-canvas"></canvas>
+        <div class="sig-modal-actions">
+          <button class="btn btn-secondary" id="sig-btn-clear">Effacer</button>
+          <button class="btn btn-secondary" id="sig-btn-cancel">Annuler</button>
+          <button class="btn btn-primary" id="sig-btn-submit">Valider</button>
+        </div>
+      </div>
+    </div>
+
     <script>
       window.initRemoteI18n().catch(() => {});
 
@@ -601,6 +708,8 @@
       let poolData = null;
       let pendingMatch = null;
       let currentTab = 'tableau';
+      let signaturesData = {};   // { fencerId: dataURL }
+      let signingFencer = null;
 
       // ── Onglets ──
       function switchTab(tab) {
@@ -627,6 +736,7 @@
 
       socket.on(`pool:${arenaId}:update`, data => {
         poolData = data;
+        if (data.signatures) signaturesData = data.signatures;
         renderAll(data);
       });
 
@@ -640,6 +750,7 @@
             return;
           }
           poolData = await res.json();
+          if (poolData.signatures) signaturesData = poolData.signatures;
           renderAll(poolData);
         } catch (e) {
           showStatusMessage(window.T('pool.error_connection'));
@@ -720,6 +831,27 @@
           th.appendChild(rank);
           th.appendChild(lastName);
           th.appendChild(firstName);
+
+          // Bouton signature
+          const sigBtn = document.createElement('button');
+          sigBtn.className = 'sig-btn';
+          const isDone = fencerFinishedAll(rowFencer, matches);
+          const isSigned = !!signaturesData[rowFencer.id];
+          if (!isDone) {
+            sigBtn.disabled = true;
+            sigBtn.title = 'Matchs non terminés';
+            sigBtn.textContent = '✍';
+          } else {
+            sigBtn.textContent = isSigned ? '✓' : '✍';
+            sigBtn.title = isSigned ? 'Re-signer' : 'Signer';
+            if (isSigned) sigBtn.classList.add('signed');
+            sigBtn.addEventListener('click', e => {
+              e.stopPropagation();
+              openSignatureModal(rowFencer);
+            });
+          }
+          th.appendChild(sigBtn);
+
           tr.appendChild(th);
 
           fencers.forEach((colFencer, colIdx) => {
@@ -913,6 +1045,110 @@
         const last = (f.lastName || f.last_name || '').toUpperCase();
         const first = f.firstName || f.first_name || '';
         return `${last} ${first}`.trim();
+      }
+
+      // ── Helpers signature ──
+      function fencerFinishedAll(fencer, matches) {
+        const mine = matches.filter(m =>
+          (m.fencerA?.id === fencer.id || m.fencerAId === fencer.id) ||
+          (m.fencerB?.id === fencer.id || m.fencerBId === fencer.id)
+        );
+        return mine.length > 0 && mine.every(m => m.status === 'finished');
+      }
+
+      // ── Signature canvas ──
+      const sigOverlay = document.getElementById('sig-modal-overlay');
+      const sigCanvas = document.getElementById('sig-canvas');
+      const sigCtx = sigCanvas.getContext('2d');
+      let isDrawing = false;
+
+      function resizeCanvas() {
+        const rect = sigCanvas.getBoundingClientRect();
+        sigCanvas.width = rect.width * window.devicePixelRatio;
+        sigCanvas.height = rect.height * window.devicePixelRatio;
+        sigCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        sigCtx.strokeStyle = '#1e293b';
+        sigCtx.lineWidth = 2.5;
+        sigCtx.lineCap = 'round';
+        sigCtx.lineJoin = 'round';
+      }
+
+      function clearCanvas() {
+        const rect = sigCanvas.getBoundingClientRect();
+        sigCtx.clearRect(0, 0, rect.width, rect.height);
+      }
+
+      function getPos(e) {
+        const rect = sigCanvas.getBoundingClientRect();
+        return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      }
+
+      sigCanvas.addEventListener('pointerdown', e => {
+        isDrawing = true;
+        const pos = getPos(e);
+        sigCtx.beginPath();
+        sigCtx.moveTo(pos.x, pos.y);
+        sigCanvas.setPointerCapture(e.pointerId);
+      });
+
+      sigCanvas.addEventListener('pointermove', e => {
+        if (!isDrawing) return;
+        const pos = getPos(e);
+        sigCtx.lineTo(pos.x, pos.y);
+        sigCtx.stroke();
+      });
+
+      sigCanvas.addEventListener('pointerup', () => { isDrawing = false; });
+      sigCanvas.addEventListener('pointercancel', () => { isDrawing = false; });
+
+      function openSignatureModal(fencer) {
+        signingFencer = fencer;
+        document.getElementById('sig-modal-name').textContent = fullName(fencer);
+        sigOverlay.classList.add('visible');
+        resizeCanvas();
+        clearCanvas();
+        sigCtx.strokeStyle = '#1e293b';
+        sigCtx.lineWidth = 2.5;
+        sigCtx.lineCap = 'round';
+        sigCtx.lineJoin = 'round';
+      }
+
+      function closeSignatureModal() {
+        signingFencer = null;
+        sigOverlay.classList.remove('visible');
+      }
+
+      document.getElementById('sig-btn-clear').addEventListener('click', clearCanvas);
+      document.getElementById('sig-btn-cancel').addEventListener('click', closeSignatureModal);
+      document.getElementById('sig-btn-submit').addEventListener('click', submitSignature);
+
+      async function submitSignature() {
+        if (!signingFencer || !poolData) return;
+        const dataURL = sigCanvas.toDataURL('image/png');
+        const submitBtn = document.getElementById('sig-btn-submit');
+        submitBtn.disabled = true;
+        try {
+          const res = await fetch(
+            `/api/pools/${poolData.poolId}/fencers/${signingFencer.id}/signature`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ signatureData: dataURL }),
+            }
+          );
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            alert(err.error || 'Erreur lors de la sauvegarde de la signature.');
+            return;
+          }
+          signaturesData[signingFencer.id] = dataURL;
+          closeSignatureModal();
+          if (poolData) renderAll(poolData);
+        } catch {
+          alert('Erreur réseau.');
+        } finally {
+          submitBtn.disabled = false;
+        }
       }
 
       // ── Modal ──

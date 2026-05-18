@@ -2385,6 +2385,33 @@ export class DatabaseManager {
     this.run(`DELETE FROM arena_state WHERE competition_id=?`, [competitionId]);
     this.save();
   }
+
+  public savePoolSignature(poolId: string, fencerId: string, signatureData: string): void {
+    if (!this.db) throw new Error('Database not open');
+    const now = new Date().toISOString();
+    this.run(
+      `INSERT INTO pool_signatures (id, pool_id, fencer_id, signature_data, signed_at)
+       VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT(pool_id, fencer_id) DO UPDATE SET
+         signature_data = excluded.signature_data,
+         signed_at = excluded.signed_at`,
+      [uuidv4(), poolId, fencerId, signatureData, now]
+    );
+    this.save();
+  }
+
+  public getPoolSignatures(poolId: string): { fencerId: string; signatureData: string }[] {
+    if (!this.db) throw new Error('Database not open');
+    const result = this.db.exec(
+      `SELECT fencer_id, signature_data FROM pool_signatures WHERE pool_id = ?`,
+      [poolId]
+    );
+    if (!result.length || !result[0].values.length) return [];
+    return result[0].values.map(([fencerId, signatureData]) => ({
+      fencerId: fencerId as string,
+      signatureData: signatureData as string,
+    }));
+  }
 }
 
 export const db = new DatabaseManager();

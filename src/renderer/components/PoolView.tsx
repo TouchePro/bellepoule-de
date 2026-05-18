@@ -464,6 +464,8 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   const handleExportPDF = async () => {
     try {
       const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
+      const sigsArray = await window.electronAPI.db.getPoolSignatures(pool.id);
+      const signatures = Object.fromEntries(sigsArray.map(s => [s.fencerId, s.signatureData]));
       await exportPoolToPDF(
         pool,
         {
@@ -474,6 +476,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           logoBase64: logo,
           competitionName,
           visibleColumns: getVisibleColumns('pool'),
+          signatures,
         },
         poolTemplate
       );
