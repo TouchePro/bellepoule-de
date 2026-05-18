@@ -13,6 +13,7 @@ import NewCompetitionModal from './components/NewCompetitionModal';
 import ReportIssueModal from './components/ReportIssueModal';
 import UpdateNotification from './components/UpdateNotification';
 import SettingsModal from './components/SettingsModal';
+import DTCallNotification from './components/DTCallNotification';
 import { ToastProvider, useToast } from './components/Toast';
 import { ConfirmProvider, useConfirm } from './components/ConfirmDialog';
 import { TranslationProvider, useTranslation } from './contexts/TranslationContext';
@@ -254,6 +255,7 @@ const AppContent: React.FC = () => {
   return (
     <>
       <UpdateNotification />
+      <DTCallNotification />
       <div className="app">
         <header className="header">
           <div className="header-title">

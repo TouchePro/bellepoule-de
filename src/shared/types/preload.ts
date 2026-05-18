@@ -412,6 +412,10 @@ export interface RemoteServerAPI {
     competitionId: string,
     newPort: number
   ) => Promise<{ success: boolean; serverInfo?: RemoteServerInfo; error?: string }>;
+  acknowledgeDTCall: (
+    competitionId: string,
+    arenaId: string
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 // ============================================================================
@@ -654,6 +658,9 @@ export interface ElectronAPI extends MenuAPI, UtilityAPI {
   onRemoteMatchFinished: (callback: (data: any) => void) => void;
   onKioskNoteUpdate: (
     callback: (note: import('../types/remote').OrgNote | null) => void
+  ) => () => void;
+  onDTCall: (
+    callback: (data: { arenaId: string; arenaNumber: number; matchNumber: number | null; competitionId: string | null; timestamp: number }) => void
   ) => () => void;
   notifyLanguageChanged: (lang: string) => void;
   getLogo: () => Promise<string | null>;

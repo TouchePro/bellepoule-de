@@ -475,6 +475,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('remote:setWallpaper', competitionId, wallpaper),
     changePort: (competitionId: string, newPort: number) =>
       ipcRenderer.invoke('remote:changePort', competitionId, newPort),
+    acknowledgeDTCall: (competitionId: string, arenaId: string) =>
+      ipcRenderer.invoke('remote:acknowledgeDTCall', competitionId, arenaId),
   },
 
   // Remote event listeners (for real-time updates)
@@ -488,6 +490,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const handler = (_: any, note: any) => callback(note);
     ipcRenderer.on('kiosk:note', handler);
     return () => ipcRenderer.removeListener('kiosk:note', handler);
+  },
+  onDTCall: (callback: (data: { arenaId: string; arenaNumber: number; matchNumber: number | null; competitionId: string | null; timestamp: number }) => void) => {
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on('remote:dt_call', handler);
+    return () => ipcRenderer.removeListener('remote:dt_call', handler);
   },
 
   getLogo: () => ipcRenderer.invoke('app:getLogo'),

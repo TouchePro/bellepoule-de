@@ -521,6 +521,31 @@
       .btn-undo:disabled {
         background: #6b7280;
         cursor: not-allowed;
+      }
+
+      .btn-dt-call {
+        background: linear-gradient(135deg, #f97316, #ea580c);
+        color: white;
+        font-size: 0.85rem;
+        padding: 0.65rem 0.4rem;
+        min-height: 48px;
+        width: 100%;
+      }
+
+      .btn-dt-call.dt-active {
+        background: linear-gradient(135deg, #6b7280, #4b5563);
+        cursor: not-allowed;
+        opacity: 0.85;
+      }
+
+      .btn-dt-call.dt-ack {
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        cursor: default;
+      }
+
+      .control-buttons-dt {
+        margin-top: 0.5rem;
+      }
         opacity: 0.6;
       }
 
@@ -1103,6 +1128,16 @@
             <span data-i18n="referee.exit_green">🚪 Sortie verte</span>
           </button>
         </div>
+        <!-- Bouton appel Directeur Technique -->
+        <div class="control-buttons-dt">
+          <button
+            class="control-btn btn-dt-call"
+            id="btn-dt-call"
+            onclick="refereeApp.callDT()"
+          >
+            <span id="btn-dt-label" data-i18n="referee.dt_call">📣 Appel DT</span>
+          </button>
+        </div>
       </div>
 
       <!-- Écran de sélection de match -->
@@ -1630,6 +1665,19 @@
           this.socket.on(`arena:${this.arenaId}:score_limit_reached`, () => {
             this.showFinishModal();
           });
+
+          this.socket.on(`arena:${this.arenaId}:dt_call_ack`, () => {
+            const btn = document.getElementById('btn-dt-call');
+            const label = document.getElementById('btn-dt-label');
+            if (btn) {
+              btn.classList.remove('dt-active');
+              btn.classList.add('dt-ack');
+              btn.disabled = true;
+              if (label) label.textContent = window.T('referee.dt_en_route');
+            }
+            this.showNotification('✅ DT en route !');
+            setTimeout(() => this._resetDTButton(), 10000);
+          });
         }
 
         setupTimerInteractions() {
@@ -1946,6 +1994,26 @@
           this.actionHistory.push(snapshot);
           if (this.actionHistory.length > 10) this.actionHistory.shift();
           document.getElementById('btn-undo').disabled = false;
+        }
+
+        callDT() {
+          const btn = document.getElementById('btn-dt-call');
+          const label = document.getElementById('btn-dt-label');
+          if (!btn || btn.classList.contains('dt-active') || btn.classList.contains('dt-ack')) return;
+          btn.classList.add('dt-active');
+          btn.disabled = true;
+          if (label) label.textContent = window.T('referee.dt_called');
+          this.socket.emit('arena_control', { arenaId: this.arenaId, action: 'dt_call' });
+          this.showNotification(window.T('referee.dt_called'));
+        }
+
+        _resetDTButton() {
+          const btn = document.getElementById('btn-dt-call');
+          const label = document.getElementById('btn-dt-label');
+          if (!btn) return;
+          btn.classList.remove('dt-active', 'dt-ack');
+          btn.disabled = false;
+          if (label) label.textContent = window.T('referee.dt_call');
         }
 
         undoLastAction() {
