@@ -9,7 +9,7 @@ import { Pool, PoolRanking } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
 import { TableauMatch, FinalResult } from '../components/TableauView';
 
-export type Phase = 'checkin' | 'poolprep' | 'pools' | 'ranking' | 'quest' | 'tableau' | 'results' | 'remote' | 'logs';
+export type Phase = 'checkin' | 'poolprep' | 'pools' | 'ranking' | 'quest' | 'tableau' | 'results' | 'remote' | 'logs' | 'referees';
 
 interface SessionState {
   currentPhase: number;
@@ -69,6 +69,7 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
     results: 6,
     remote: 7,
     logs: 8,
+    referees: 9,
   };
 
   const numberToPhase: Record<number, Phase> = {
@@ -81,6 +82,7 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
     6: 'results',
     7: 'remote',
     8: 'logs',
+    9: 'referees',
   };
 
   // Sauvegarder l'état - lit depuis propsRef pour rester stable (pas de re-création à chaque render)
