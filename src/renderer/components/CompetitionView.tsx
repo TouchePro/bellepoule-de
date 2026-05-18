@@ -129,6 +129,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     setOverallRanking,
     generatePools: generatePoolsHook,
     updateScore,
+    resetMatch,
     updateMatchFromRemote,
     computePoolRanking,
     computeOverallRanking,
@@ -1081,6 +1082,14 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                         onScoreUpdate={(matchIndex, scoreA, scoreB, winner, specialStatus) =>
                           updateScore(poolIndex, matchIndex, scoreA, scoreB, winner, specialStatus)
                         }
+                        onMatchReset={(matchIndex) => {
+                          const match = pool.matches[matchIndex];
+                          if (!match) return;
+                          resetMatch(poolIndex, matchIndex);
+                          if (competition?.id) {
+                            window.electronAPI.remote.resetPoolMatch(competition.id, match.id).catch(() => {});
+                          }
+                        }}
                         onFencerStatusChange={(fencerId, status) => {
                           if (
                             status === 'abandon' ||

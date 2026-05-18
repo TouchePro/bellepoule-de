@@ -28,6 +28,7 @@ interface PoolViewProps {
     winnerOverride?: 'A' | 'B',
     specialStatus?: 'abandon' | 'forfait' | 'exclusion'
   ) => void;
+  onMatchReset?: (matchIndex: number) => void;
   onFencerChangePool?: (fencer: Fencer) => void;
   onFencerStatusChange?: (fencerId: string, status: 'abandon' | 'forfait' | 'exclusion') => void;
 }
@@ -40,6 +41,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   weapon,
   competitionName,
   onScoreUpdate,
+  onMatchReset,
   onFencerChangePool,
   onFencerStatusChange,
 }) => {
@@ -843,6 +845,10 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
       toggleColumn={toggleColumn}
       onCellClick={handleCellClick}
       onFencerChangePool={onFencerChangePool}
+      onMatchReset={onMatchReset ? (rowFencer, colFencer) => {
+        const matchIndex = getMatchIndex(rowFencer, colFencer);
+        if (matchIndex !== -1) onMatchReset(matchIndex);
+      } : undefined}
     />
   );
 
