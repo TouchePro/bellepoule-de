@@ -104,7 +104,8 @@
     "tableau": "Tableau",
     "results": "Résultats",
     "remote": "Saisie distante",
-    "logs": "Historique"
+    "logs": "Historique",
+    "referees": "Arbitres"
   },
   "pools": {
     "generate": "Générer les poules",

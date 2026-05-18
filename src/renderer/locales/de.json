@@ -104,7 +104,8 @@
     "tableau": "Tabelle",
     "results": "Ergebnisse",
     "remote": "Ferne Eingabe",
-    "logs": "Verlauf"
+    "logs": "Verlauf",
+    "referees": "Schiedsrichter"
   },
   "pools": {
     "generate": "Pools Generieren",

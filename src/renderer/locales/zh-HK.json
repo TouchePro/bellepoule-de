@@ -103,7 +103,8 @@
     "ranking": "排名",
     "tableau": "淘汰賽",
     "results": "成績",
-    "remote": "遠程輸入"
+    "remote": "遠程輸入",
+    "referees": "裁判"
   },
   "pools": {
     "generate": "生成分組",

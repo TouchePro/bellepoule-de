@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Competition, Fencer, FencerStatus, Match, MatchStatus, Weapon, QuestPhaseConfig } from '../../shared/types';
+import { Competition, Fencer, FencerStatus, Match, MatchStatus, Weapon, QuestPhaseConfig, Referee } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
 import { RankingImportResult } from '../../shared/utils/fileParser';
 import FencerList from './FencerList';
@@ -39,6 +39,7 @@ import KioskDisplay from './KioskDisplay';
 import { FencerPhoto } from './FencerPhoto';
 import QuestPhaseView from './QuestPhaseView';
 import { ScoreAuditLog } from './ScoreAuditLog';
+import { RefereeManagerComponent } from './RefereeManager';
 
 interface CompetitionViewProps {
   competition: Competition;
@@ -88,6 +89,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [showPresentation, setShowPresentation] = useState(false);
   const [showKioskDisplay, setShowKioskDisplay] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
+  const [referees, setReferees] = useState<Referee[]>([]);
 
   // Paramètres de préparation des poules (persistés entre les phases)
   const [minFencersPerPool, setMinFencersPerPool] = useState<number>(5);
@@ -219,6 +221,14 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   useEffect(() => {
     loadFencers();
   }, [loadFencers]);
+
+  // Charger les arbitres si la fonction est activée
+  useEffect(() => {
+    if (!competition.settings?.refereeFeatureEnabled) return;
+    window.electronAPI.db.getRefereesByCompetition(competition.id)
+      .then((rows: Referee[]) => setReferees(rows))
+      .catch(() => {});
+  }, [competition.id, competition.settings?.refereeFeatureEnabled]);
 
   // Synchroniser les photos/données tireurs dans les matches de poule à chaque mise à jour
   useEffect(() => {
@@ -750,6 +760,17 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       disabled: false,
       title: undefined as string | undefined,
     },
+    ...(competition.settings?.refereeFeatureEnabled
+      ? [
+          {
+            id: 'referees',
+            label: t('phases.referees') || 'Arbitres',
+            icon: '🧑‍⚖️',
+            disabled: false,
+            title: undefined as string | undefined,
+          },
+        ]
+      : []),
   ];
 
   const getPoolsNextAction = () => {
@@ -1183,6 +1204,17 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
         {currentPhase === 'logs' && (
           <ScoreAuditLog competitionId={competition.id} />
+        )}
+
+        {currentPhase === 'referees' && competition.settings?.refereeFeatureEnabled && (
+          <RefereeManagerComponent
+            competition={competition}
+            referees={referees}
+            pools={pools}
+            matches={pools.flatMap(p => p.matches ?? [])}
+            onRefereesChange={setReferees}
+            onAssignmentsChange={() => {}}
+          />
         )}
       </div>
 

@@ -104,7 +104,8 @@
     "tableau": "Table",
     "results": "Results",
     "remote": "Remote Entry",
-    "logs": "History"
+    "logs": "History",
+    "referees": "Referees"
   },
   "pools": {
     "generate": "Generate Pools",
