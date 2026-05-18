@@ -1478,6 +1478,7 @@
           this.faultHistoryA = { 1: 0, 2: 0, 3: 0 };
           this.faultHistoryB = { 1: 0, 2: 0, 3: 0 };
           this.matchStatus = 'not_started';
+          this.defaultTimerSeconds = 180; // durée par défaut, mise à jour depuis les settings
           this.timerSeconds = 180; // 3 minutes
           this.timerInterval = null;
           this.timerRunning = false;
@@ -1814,13 +1815,14 @@
         setupTimerInteractions() {
           const timerDisplay = document.getElementById('timer-display');
 
-          // Click simple : play/pause
+          // Click simple : démarre le match si pas encore commencé, sinon play/pause
           timerDisplay.addEventListener('click', e => {
             if (this.longPressTimer) {
               clearTimeout(this.longPressTimer);
               this.longPressTimer = null;
+              return;
             }
-            this.toggleTimer();
+            this.handleStartPauseClick();
           });
 
           // Appui long : reset
@@ -1889,7 +1891,7 @@
           this.touchesB = [];
           this.faultHistoryA = { 1: 0, 2: 0, 3: 0 };
           this.faultHistoryB = { 1: 0, 2: 0, 3: 0 };
-          this.timerSeconds = 180;
+          this.timerSeconds = this.defaultTimerSeconds;
           this.isSuddenDeath = false;
           this.waitingOvertimeStart = false;
           this.overtimeType = null;
@@ -2466,7 +2468,7 @@
           this.isSuddenDeath = false;
           this.waitingOvertimeStart = false;
           this.overtimeType = null;
-          this.timerSeconds = 180;
+          this.timerSeconds = this.defaultTimerSeconds;
           this.updateTimerDisplay();
           this.broadcastTimerUpdate();
           this.updateSuddenDeathUI();
@@ -2594,7 +2596,7 @@
               this.faultHistoryB = { 1: 0, 2: 0, 3: 0 };
               this.coinFlipWinner = null;
               this.matchStatus = 'not_started';
-              this.timerSeconds = 180;
+              this.timerSeconds = this.defaultTimerSeconds;
               this.updateTimerDisplay();
               document.getElementById('active-match').classList.remove('visible');
               this.showNextMatchesScreen();
@@ -2617,7 +2619,7 @@
           timerEl.className = 'timer-display';
           if (this.timerRunning) {
             timerEl.classList.add('running');
-          } else if (this.timerSeconds < 180) {
+          } else if (this.timerSeconds < this.defaultTimerSeconds) {
             timerEl.classList.add('paused');
           }
 
@@ -2771,7 +2773,7 @@
               this.faultHistoryA = { 1: 0, 2: 0, 3: 0 };
               this.faultHistoryB = { 1: 0, 2: 0, 3: 0 };
               this.matchStatus = 'not_started';
-              this.timerSeconds = 180;
+              this.timerSeconds = this.defaultTimerSeconds;
               this.isSuddenDeath = false;
               this.waitingOvertimeStart = false;
               this.overtimeType = null;
@@ -2853,6 +2855,10 @@
         }
 
         handleArenaUpdate(data) {
+          if (data.timerDuration !== undefined && data.timerDuration > 0) {
+            this.defaultTimerSeconds = data.timerDuration;
+          }
+
           if (data.cardAnnounce !== undefined) {
             this.cardAnnounceEnabled = data.cardAnnounce;
           }

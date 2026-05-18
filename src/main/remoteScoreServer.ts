@@ -36,6 +36,8 @@ export class RemoteScoreServer {
   private arenas: Map<string, Arena> = new Map();
   private arenaCount: number = 4; // Nombre d'arènes par défaut
   private sessionWeapon: string | null = null; // Type d'arme de la compétition (L = Laser)
+  private sessionPoolTimerSeconds: number = 180; // Durée chrono poules
+  private sessionTableTimerSeconds: number = 180; // Durée chrono tableau
   private sessionMatches: any[] = []; // Matches passés depuis le renderer
   private arenaNextMatchIndex: Map<string, number> = new Map(); // Index du prochain match par arène
   private arenaMatchQueue: Map<string, ArenaMatch[]> = new Map(); // File d'attente DE par arène
@@ -1580,6 +1582,7 @@ export class RemoteScoreServer {
           }
 
           // Sinon : état courant complet
+          const isPoolMatch = !!(arena.currentMatch?.poolId);
           socket.emit(`arena:${data.arenaId}:update`, {
             arenaId: data.arenaId,
             match: arena.currentMatch,
@@ -1595,6 +1598,7 @@ export class RemoteScoreServer {
             fencerB: arena.currentMatch?.fencerB,
             refereeFeatureEnabled: this.sessionRefereeFeatureEnabled,
             referees: this.session?.referees ?? [],
+            timerDuration: isPoolMatch ? this.sessionPoolTimerSeconds : this.sessionTableTimerSeconds,
             ...(arena.status === 'finished' && {
               nextMatch: this.peekNextMatch(data.arenaId),
             }),
@@ -2805,6 +2809,7 @@ export class RemoteScoreServer {
   private broadcastArenaUpdate(arenaId: string, update: ArenaUpdate): void {
     const arena = this.getArena(arenaId);
     const override = this.arenaThemeOverrides.get(arenaId);
+    const isPoolMatch = !!(arena?.currentMatch?.poolId);
     const updateWithPhotos: ArenaUpdate = {
       ...update,
       swapped: arena?.swapped ?? false,
@@ -2814,6 +2819,7 @@ export class RemoteScoreServer {
       customTheme: override?.customTheme,
       refereeFeatureEnabled: this.sessionRefereeFeatureEnabled,
       referees: this.session?.referees ?? [],
+      timerDuration: isPoolMatch ? this.sessionPoolTimerSeconds : this.sessionTableTimerSeconds,
     };
 
     // Stocker dans le buffer de replay (TTL + max size)
@@ -2979,6 +2985,8 @@ export class RemoteScoreServer {
 
     // Stocker le type d'arme pour l'arrêt automatique à 15 points en Laser Sabre
     this.sessionWeapon = competition.weapon || null;
+    this.sessionPoolTimerSeconds = competition.settings?.defaultPoolTimerSeconds ?? 180;
+    this.sessionTableTimerSeconds = competition.settings?.defaultTableTimerSeconds ?? 180;
     console.log(`[RemoteScoreServer] Type d'arme de la compétition: ${this.sessionWeapon}`);
 
     // Auto-detect number of strips from pool count if not specified or too small.

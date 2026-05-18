@@ -162,6 +162,7 @@ export interface ArenaUpdate {
   swapped?: boolean;
   refereeFeatureEnabled?: boolean; // fonctionnalité arbitres activée
   referees?: RemoteReferee[]; // liste de tous les arbitres de la compétition
+  timerDuration?: number; // durée du chrono en secondes pour ce match
 }
 
 export interface RefereeControl {

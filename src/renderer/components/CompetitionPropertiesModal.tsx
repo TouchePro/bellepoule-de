@@ -40,6 +40,13 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
     competition.settings?.thirdPlaceMatch ?? false
   );
 
+  const [poolTimerSeconds, setPoolTimerSeconds] = useState(
+    competition.settings?.defaultPoolTimerSeconds ?? 180
+  );
+  const [tableTimerSeconds, setTableTimerSeconds] = useState(
+    competition.settings?.defaultTableTimerSeconds ?? 180
+  );
+
   const [refereeFeatureEnabled, setRefereeFeatureEnabled] = useState(
     competition.settings?.refereeFeatureEnabled ?? false
   );
@@ -91,6 +98,8 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
       thirdPlaceMatch,
       defaultPoolMaxScore: poolMaxScore,
       defaultTableMaxScore: tableMaxScore,
+      defaultPoolTimerSeconds: poolTimerSeconds,
+      defaultTableTimerSeconds: tableTimerSeconds,
       manualRanking: competition.settings?.manualRanking ?? false,
       defaultRanking: competition.settings?.defaultRanking ?? 9999,
       randomScore: competition.settings?.randomScore ?? false,
@@ -338,6 +347,22 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
                 </small>
               </div>
 
+              <div className="form-group">
+                <label htmlFor="poolTimerSeconds">Chrono poules (secondes)</label>
+                <input
+                  type="number"
+                  id="poolTimerSeconds"
+                  className="form-input"
+                  value={poolTimerSeconds}
+                  onChange={e => setPoolTimerSeconds(Math.max(1, parseInt(e.target.value) || 180))}
+                  min="1"
+                  placeholder="180"
+                />
+                <small style={{ color: '#6b7280', fontSize: '0.75rem' }}>
+                  {`${Math.floor(poolTimerSeconds / 60)}min ${poolTimerSeconds % 60}s par match de poule`}
+                </small>
+              </div>
+
               {hasDirectElimination && (
                 <>
                   <div className="form-group">
@@ -355,6 +380,22 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
                       {tableMaxScore === 0
                         ? '0 = illimité (pas de limite)'
                         : `${tableMaxScore} touches pour gagner`}
+                    </small>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="tableTimerSeconds">Chrono tableau (secondes)</label>
+                    <input
+                      type="number"
+                      id="tableTimerSeconds"
+                      className="form-input"
+                      value={tableTimerSeconds}
+                      onChange={e => setTableTimerSeconds(Math.max(1, parseInt(e.target.value) || 180))}
+                      min="1"
+                      placeholder="180"
+                    />
+                    <small style={{ color: '#6b7280', fontSize: '0.75rem' }}>
+                      {`${Math.floor(tableTimerSeconds / 60)}min ${tableTimerSeconds % 60}s par match tableau`}
                     </small>
                   </div>
 

@@ -455,6 +455,8 @@ export interface QuestPhaseConfig {
 export interface CompetitionSettings {
   defaultPoolMaxScore: number; // Score max en poules (défaut: 5)
   defaultTableMaxScore: number; // Score max en tableau (défaut: 10 ou 15)
+  defaultPoolTimerSeconds: number; // Durée chrono poules en secondes (défaut: 180)
+  defaultTableTimerSeconds: number; // Durée chrono tableau en secondes (défaut: 180)
   poolRounds: number; // Nombre de tours de poules (défaut: 1)
   hasDirectElimination: boolean; // Phase d'élimination directe activée (défaut: true)
   thirdPlaceMatch: boolean; // Match pour la 3ème place activé (défaut: false)
