@@ -1108,10 +1108,13 @@ ipcMain.handle('file:exportPhotos', async (_, competitionId: string, filepath: s
   const photos = db.getFencerPhotos(competitionId);
   const zip = new JSZip();
 
-  for (const { license, photo } of photos) {
+  for (const { id, license, lastName, firstName, photo } of photos) {
     const base64 = photo.replace(/^data:image\/\w+;base64,/, '');
     const buffer = Buffer.from(base64, 'base64');
-    zip.file(`${license}.jpg`, buffer);
+    const filename = license
+      ? license
+      : `${lastName}_${firstName}_${id.slice(0, 8)}`.replace(/[^a-zA-Z0-9_\-]/g, '_');
+    zip.file(`${filename}.jpg`, buffer);
   }
 
   const content = await zip.generateAsync({ type: 'nodebuffer' });

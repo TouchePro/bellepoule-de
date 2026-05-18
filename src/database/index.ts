@@ -571,16 +571,30 @@ export class DatabaseManager {
     return results;
   }
 
-  public getFencerPhotos(competitionId: string): { license: string; photo: string }[] {
+  public getFencerPhotos(
+    competitionId: string
+  ): { id: string; license: string | null; lastName: string; firstName: string; photo: string }[] {
     if (!this.db) throw new Error('Database not open');
-    const results: { license: string; photo: string }[] = [];
+    const results: {
+      id: string;
+      license: string | null;
+      lastName: string;
+      firstName: string;
+      photo: string;
+    }[] = [];
     const stmt = this.db.prepare(
-      "SELECT license, photo FROM fencers WHERE competition_id = ? AND photo IS NOT NULL AND license IS NOT NULL AND license != ''"
+      'SELECT id, license, last_name, first_name, photo FROM fencers WHERE competition_id = ? AND photo IS NOT NULL'
     );
     stmt.bind([competitionId]);
     while (stmt.step()) {
       const row = stmt.getAsObject();
-      results.push({ license: row.license as string, photo: row.photo as string });
+      results.push({
+        id: row.id as string,
+        license: (row.license as string | null) || null,
+        lastName: row.last_name as string,
+        firstName: row.first_name as string,
+        photo: row.photo as string,
+      });
     }
     stmt.free();
     return results;
