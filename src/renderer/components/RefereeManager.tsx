@@ -33,7 +33,9 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
   });
   const [assignments, setAssignments] = useState<Map<string, Referee>>(new Map());
   const [showReport, setShowReport] = useState(false);
-  const [activeTab, setActiveTab] = useState<'assignments' | 'history'>('assignments');
+  const [activeTab, setActiveTab] = useState<'referees' | 'assignments' | 'history'>('referees');
+  const [newReferee, setNewReferee] = useState({ name: '', club: '', license: '', category: '', nationality: 'FRA' });
+  const [addError, setAddError] = useState('');
   const [historyRows, setHistoryRows] = useState<Array<{
     matchId: string; matchNumber: number; poolName: string | null;
     fencerAName: string; fencerBName: string;
@@ -116,7 +118,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
 
       {/* Onglets */}
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-        {(['assignments', 'history'] as const).map(tab => (
+        {(['referees', 'assignments', 'history'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -130,10 +132,118 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
               color: activeTab === tab ? 'white' : '#374151',
             }}
           >
-            {tab === 'assignments' ? '📋 Assignations' : '📜 Historique'}
+            {tab === 'referees' ? '👥 Arbitres' : tab === 'assignments' ? '📋 Assignations' : '📜 Historique'}
           </button>
         ))}
       </div>
+
+      {activeTab === 'referees' && (
+        <div>
+          {/* Formulaire ajout */}
+          <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '1rem', marginBottom: '1.5rem' }}>
+            <h3 style={{ marginBottom: '0.75rem', fontSize: '1rem', color: '#374151' }}>Ajouter un arbitre</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem', marginBottom: '0.75rem' }}>
+              <input
+                placeholder="Prénom Nom *"
+                value={newReferee.name}
+                onChange={e => setNewReferee({ ...newReferee, name: e.target.value })}
+                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #d1d5db' }}
+              />
+              <input
+                placeholder="Club"
+                value={newReferee.club}
+                onChange={e => setNewReferee({ ...newReferee, club: e.target.value })}
+                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #d1d5db' }}
+              />
+              <input
+                placeholder="Licence"
+                value={newReferee.license}
+                onChange={e => setNewReferee({ ...newReferee, license: e.target.value })}
+                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #d1d5db' }}
+              />
+              <input
+                placeholder="Catégorie (Régional…)"
+                value={newReferee.category}
+                onChange={e => setNewReferee({ ...newReferee, category: e.target.value })}
+                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #d1d5db' }}
+              />
+              <input
+                placeholder="Nationalité (FRA)"
+                value={newReferee.nationality}
+                onChange={e => setNewReferee({ ...newReferee, nationality: e.target.value })}
+                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #d1d5db' }}
+              />
+            </div>
+            {addError && <p style={{ color: '#dc2626', fontSize: '0.875rem', marginBottom: '0.5rem' }}>{addError}</p>}
+            <button
+              onClick={async () => {
+                if (!newReferee.name.trim()) { setAddError('Le nom est obligatoire'); return; }
+                try {
+                  const created = await window.electronAPI.db.createReferee(competition.id, {
+                    name: newReferee.name.trim(),
+                    club: newReferee.club || undefined,
+                    license: newReferee.license || undefined,
+                    category: newReferee.category || undefined,
+                    nationality: newReferee.nationality || 'FRA',
+                  });
+                  onRefereesChange([...referees, created]);
+                  setNewReferee({ name: '', club: '', license: '', category: '', nationality: 'FRA' });
+                  setAddError('');
+                } catch (e: any) { setAddError(e?.message ?? 'Erreur'); }
+              }}
+              style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.5rem 1.25rem', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' }}
+            >
+              ＋ Ajouter
+            </button>
+          </div>
+
+          {/* Liste arbitres */}
+          {referees.length === 0 ? (
+            <p style={{ color: '#6b7280', fontStyle: 'italic' }}>Aucun arbitre enregistré.</p>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+              <thead>
+                <tr style={{ background: '#f3f4f6' }}>
+                  {['#', 'Nom', 'Club', 'Licence', 'Catégorie', 'Nationalité', 'Statut', ''].map(h => (
+                    <th key={h} style={{ padding: '0.5rem 0.75rem', textAlign: 'left', borderBottom: '2px solid #e5e7eb' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {referees.map(ref => (
+                  <tr key={ref.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                    <td style={{ padding: '0.45rem 0.75rem', color: '#9ca3af' }}>{ref.ref}</td>
+                    <td style={{ padding: '0.45rem 0.75rem', fontWeight: '500' }}>{ref.firstName} {ref.lastName}</td>
+                    <td style={{ padding: '0.45rem 0.75rem' }}>{ref.club ?? '—'}</td>
+                    <td style={{ padding: '0.45rem 0.75rem' }}>{ref.license ?? '—'}</td>
+                    <td style={{ padding: '0.45rem 0.75rem' }}>{ref.category ?? '—'}</td>
+                    <td style={{ padding: '0.45rem 0.75rem' }}>{ref.nationality}</td>
+                    <td style={{ padding: '0.45rem 0.75rem' }}>
+                      <span style={{ color: ref.status === 'available' ? '#166534' : '#9ca3af' }}>
+                        {ref.status === 'available' ? '✓ Disponible' : ref.status}
+                      </span>
+                    </td>
+                    <td style={{ padding: '0.45rem 0.75rem' }}>
+                      <button
+                        onClick={async () => {
+                          try {
+                            await window.electronAPI.db.deleteReferee(ref.id);
+                            onRefereesChange(referees.filter(r => r.id !== ref.id));
+                          } catch { /* silencieux */ }
+                        }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: '1rem' }}
+                        title="Supprimer"
+                      >
+                        🗑
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
 
       {activeTab === 'history' && (
         <div>
