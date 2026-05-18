@@ -2407,9 +2407,9 @@ export class DatabaseManager {
       [poolId]
     );
     if (!result.length || !result[0].values.length) return [];
-    return result[0].values.map(([fencerId, signatureData]) => ({
-      fencerId: fencerId as string,
-      signatureData: signatureData as string,
+    return result[0].values.map((row: any[]) => ({
+      fencerId: row[0] as string,
+      signatureData: row[1] as string,
     }));
   }
 }
