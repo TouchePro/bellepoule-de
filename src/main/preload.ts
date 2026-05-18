@@ -500,6 +500,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('remote:dt_call', handler);
     return () => ipcRenderer.removeListener('remote:dt_call', handler);
   },
+  onDTCallCancel: (callback: (data: { arenaId: string }) => void) => {
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on('remote:dt_cancel', handler);
+    return () => ipcRenderer.removeListener('remote:dt_cancel', handler);
+  },
 
   onScoreIpConflict: (callback: (data: any) => void) => {
     const handler = (_: any, data: any) => callback(data);

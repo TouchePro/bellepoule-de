@@ -56,6 +56,14 @@ const DTCallNotification: React.FC = () => {
     return unsub;
   }, []);
 
+  useEffect(() => {
+    if (!window.electronAPI?.onDTCallCancel) return;
+    const unsub = window.electronAPI.onDTCallCancel((data) => {
+      setCalls(prev => prev.filter(c => c.arenaId !== data.arenaId));
+    });
+    return unsub;
+  }, []);
+
   const acknowledge = useCallback(async (call: DTCallEntry) => {
     setCalls(prev => prev.map(c => c.id === call.id ? { ...c, acknowledging: true } : c));
     if (call.competitionId) {
