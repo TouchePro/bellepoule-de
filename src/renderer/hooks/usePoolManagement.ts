@@ -192,6 +192,32 @@ export const usePoolManagement = ({
   );
 
   // Annuler un match terminé pour le remettre à NOT_STARTED
+  const cancelMatch = useCallback(
+    (poolIndex: number, matchIndex: number) => {
+      setPools(prevPools => {
+        const updatedPools = [...prevPools];
+        const pool = { ...updatedPools[poolIndex] };
+        const match = { ...pool.matches[matchIndex] };
+
+        match.status = MatchStatus.CANCELLED;
+        match.updatedAt = new Date();
+
+        pool.matches = [...pool.matches];
+        pool.matches[matchIndex] = match;
+        pool.updatedAt = new Date();
+        pool.ranking = computePoolRanking(pool);
+
+        updatedPools[poolIndex] = pool;
+
+        const newOverallRanking = computeOverallRankingAllRounds(updatedPools);
+        setOverallRanking(newOverallRanking);
+
+        return updatedPools;
+      });
+    },
+    [computePoolRanking, computeOverallRankingAllRounds]
+  );
+
   const resetMatch = useCallback(
     (poolIndex: number, matchIndex: number) => {
       setPools(prevPools => {
@@ -651,6 +677,7 @@ export const usePoolManagement = ({
     generatePools,
     updateScore,
     resetMatch,
+    cancelMatch,
     updateMatchFromRemote,
     nextPoolRound,
     areAllPoolsComplete,
