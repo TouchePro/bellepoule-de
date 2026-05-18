@@ -483,6 +483,7 @@ export interface DatabaseAPI {
   getPoolFencers: (poolId: string) => Promise<Fencer[]>;
   getPoolsByPhase: (phaseId: string) => Promise<Pool[]>;
   updatePool: (pool: Pool) => Promise<void>;
+  getPoolSignatures: (poolId: string) => Promise<{ fencerId: string; signatureData: string }[]>;
 
   // Phases
   createPhase: (competitionId: string, type: string, order: number, name: string) => Promise<Phase>;

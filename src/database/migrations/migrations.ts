@@ -260,4 +260,22 @@ export const ALL_MIGRATIONS: Migration[] = [
       db.run(`CREATE INDEX IF NOT EXISTS idx_audit_pool ON score_audit_log(pool_id)`);
     },
   },
+
+  {
+    version: 7,
+    description: 'Table pool_signatures pour signatures numériques des combattants',
+    up(db) {
+      db.run(`
+        CREATE TABLE IF NOT EXISTS pool_signatures (
+          id TEXT PRIMARY KEY,
+          pool_id TEXT NOT NULL,
+          fencer_id TEXT NOT NULL,
+          signature_data TEXT NOT NULL,
+          signed_at TEXT NOT NULL,
+          UNIQUE(pool_id, fencer_id)
+        )
+      `);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_pool_sigs_pool ON pool_signatures(pool_id)`);
+    },
+  },
 ];

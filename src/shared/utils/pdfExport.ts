@@ -17,6 +17,7 @@ export interface PoolExportOptions {
   includePoolStats?: boolean;
   logoBase64?: string;
   visibleColumns?: string[];
+  signatures?: Record<string, string>; // fencerId → data URL PNG
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -292,13 +293,17 @@ export function generatePoolHTML(pool: Pool, options: PoolExportOptions, templat
       return `<td class="${s.isVictory ? 'cell-victory' : 'cell-defeat'}">${s.display}</td>`;
     }).join('');
     const statCells = activeCols.map(c => `<td class="${c.cls}">${c.render(data)}</td>`).join('');
+    const sig = options.signatures?.[fencer.id];
+    const sigCell = sig
+      ? `<td class="sig-cell"><img src="${sig}" style="max-height:12mm;max-width:30mm;display:block;margin:auto;" /></td>`
+      : `<td class="sig-cell"></td>`;
     return `
       <tr>
         <td class="num-cell">${row + 1}</td>
         <td class="name-cell">${fencer.lastName.toUpperCase()} ${fencer.firstName?.charAt(0) ?? ''}.</td>
         ${cells}
         ${statCells}
-        <td class="sig-cell"></td>
+        ${sigCell}
       </tr>`;
   }).join('');
 
@@ -444,6 +449,9 @@ export function generatePoolHTML(pool: Pool, options: PoolExportOptions, templat
     .score-grid .sig-cell {
       min-width: 32mm;
       border-left: 2px solid var(--border) !important;
+      text-align: center;
+      vertical-align: middle;
+      padding: 1mm !important;
     }
     .score-grid thead .sig-header {
       min-width: 32mm;

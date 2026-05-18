@@ -76,6 +76,9 @@ export class RemoteScoreServer {
   // Rate limiting pour les soumissions de score : { ip → { count, resetAt } }
   private scoreRateLimiter: Map<string, { count: number; resetAt: number }> = new Map();
   private readonly SCORE_RATE_LIMIT = 30; // soumissions par minute par IP
+  // Signatures numériques par poule : poolId → (fencerId → base64PNG)
+  private poolSignaturesCache: Map<string, Map<string, string>> = new Map();
+
   // Buffer d'événements par arène pour la reconnexion WebSocket (replay)
   private arenaEventBuffer: Map<string, Array<{ event: ArenaUpdate; timestamp: number }>> =
     new Map();
@@ -787,7 +790,17 @@ export class RemoteScoreServer {
           return allPools.find(p => p.id === poolId)?.name ?? 'Poule';
         })();
 
-        res.json({ poolId, poolName, arenaId, fencers, matches, isComplete });
+        const cachedSigs = this.poolSignaturesCache.get(poolId);
+        const signatures: Record<string, string> = cachedSigs
+          ? Object.fromEntries(cachedSigs)
+          : Object.fromEntries(
+              this.db.getPoolSignatures(poolId).map(s => [s.fencerId, s.signatureData])
+            );
+        if (!cachedSigs && Object.keys(signatures).length > 0) {
+          this.poolSignaturesCache.set(poolId, new Map(Object.entries(signatures)));
+        }
+
+        res.json({ poolId, poolName, arenaId, fencers, matches, isComplete, signatures });
       } catch (err) {
         console.error('[RemoteScoreServer] Erreur pool-data:', err);
         res.status(500).json({ error: 'Erreur interne' });
@@ -920,11 +933,13 @@ export class RemoteScoreServer {
           return this.db.getMatchesByPool(poolId);
         })();
         const isComplete = matches.every((m: any) => m.status === MatchStatus.FINISHED);
+        const sigMap = this.poolSignaturesCache.get(poolId);
+        const signatures: Record<string, string> = sigMap ? Object.fromEntries(sigMap) : {};
         for (const [aId, arena] of this.arenas) {
           if (arena.currentMatch?.poolId === poolId) {
             this.io
               .to(`pool:${aId}`)
-              .emit(`pool:${aId}:update`, { poolId, fencers, matches, isComplete });
+              .emit(`pool:${aId}:update`, { poolId, fencers, matches, isComplete, signatures });
             break;
           }
         }
@@ -946,6 +961,75 @@ export class RemoteScoreServer {
       } catch (err) {
         console.error('[RemoteScoreServer] Erreur score poule:', err);
         res.status(500).json({ error: 'Erreur enregistrement score' });
+      }
+    });
+
+    // API: signature numérique d'un combattant pour une poule
+    this.app.post('/api/pools/:poolId/fencers/:fencerId/signature', (req, res) => {
+      if (!this.hasAnyValidToken(req.headers.cookie)) {
+        return res.status(401).json({ error: 'Non authentifié' });
+      }
+      const { poolId, fencerId } = req.params;
+      const { signatureData } = req.body as { signatureData: string };
+
+      if (!signatureData || !signatureData.startsWith('data:image/png;base64,')) {
+        return res.status(400).json({ error: 'Données de signature invalides' });
+      }
+      if (signatureData.length > 200_000) {
+        return res.status(400).json({ error: 'Signature trop volumineuse (max 150 Ko)' });
+      }
+
+      // Vérifier que le combattant a terminé tous ses matchs
+      const allMatches = (() => {
+        const inMemory = this.sessionMatches
+          .filter(m => (m.poolId || m.pool?.id || `pool-${m.poolNumber || m.number}`) === poolId);
+        if (inMemory.length > 0) {
+          return inMemory.map(m => {
+            const upd = this.sessionMatchScores.get(m.id);
+            return upd ? { ...m, ...upd } : m;
+          });
+        }
+        return this.db.getMatchesByPool(poolId);
+      })();
+
+      const fencerMatches = allMatches.filter((m: any) =>
+        m.fencerA?.id === fencerId || m.fencerAId === fencerId ||
+        m.fencerB?.id === fencerId || m.fencerBId === fencerId
+      );
+
+      if (fencerMatches.length === 0) {
+        return res.status(404).json({ error: 'Combattant introuvable dans cette poule' });
+      }
+      const allDone = fencerMatches.every((m: any) => m.status === MatchStatus.FINISHED);
+      if (!allDone) {
+        return res.status(403).json({ error: 'Matchs non terminés pour ce combattant' });
+      }
+
+      try {
+        this.db.savePoolSignature(poolId, fencerId, signatureData);
+
+        if (!this.poolSignaturesCache.has(poolId)) {
+          this.poolSignaturesCache.set(poolId, new Map());
+        }
+        this.poolSignaturesCache.get(poolId)!.set(fencerId, signatureData);
+
+        // Broadcaster la mise à jour avec signatures
+        const fencers = this.poolFencersCache.get(poolId) ?? this.db.getPoolFencers(poolId);
+        const signatures = Object.fromEntries(this.poolSignaturesCache.get(poolId)!);
+        const isComplete = allMatches.every((m: any) => m.status === MatchStatus.FINISHED);
+        for (const [aId, arena] of this.arenas) {
+          if (arena.currentMatch?.poolId === poolId) {
+            this.io
+              .to(`pool:${aId}`)
+              .emit(`pool:${aId}:update`, { poolId, fencers, matches: allMatches, isComplete, signatures });
+            break;
+          }
+        }
+
+        res.json({ success: true });
+      } catch (err) {
+        console.error('[RemoteScoreServer] Erreur signature:', err);
+        res.status(500).json({ error: 'Erreur enregistrement signature' });
       }
     });
 
