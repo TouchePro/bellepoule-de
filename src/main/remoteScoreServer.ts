@@ -1759,6 +1759,13 @@ export class RemoteScoreServer {
         }
         break;
       }
+      case 'dt_cancel': {
+        const mainWin = (global as any).mainWindow;
+        if (mainWin) {
+          mainWin.webContents.send('remote:dt_cancel', { arenaId: data.arenaId });
+        }
+        break;
+      }
       case 'next':
         this.loadNextMatch(data.arenaId);
         this.arenaCards.set(data.arenaId, { cardsA: [], cardsB: [] });

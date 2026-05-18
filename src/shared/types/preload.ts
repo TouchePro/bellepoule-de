@@ -702,6 +702,7 @@ export interface ElectronAPI extends MenuAPI, UtilityAPI {
   onDTCall: (
     callback: (data: { arenaId: string; arenaNumber: number; matchNumber: number | null; competitionId: string | null; timestamp: number }) => void
   ) => () => void;
+  onDTCallCancel: (callback: (data: { arenaId: string }) => void) => () => void;
   onScoreIpConflict: (callback: (data: ScoreIpConflict) => void) => () => void;
   notifyLanguageChanged: (lang: string) => void;
   getLogo: () => Promise<string | null>;
