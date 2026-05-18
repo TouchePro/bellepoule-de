@@ -29,6 +29,7 @@ interface PoolViewProps {
     specialStatus?: 'abandon' | 'forfait' | 'exclusion'
   ) => void;
   onMatchReset?: (matchIndex: number) => void;
+  onMatchCancel?: (matchIndex: number) => void;
   onFencerChangePool?: (fencer: Fencer) => void;
   onFencerStatusChange?: (fencerId: string, status: 'abandon' | 'forfait' | 'exclusion') => void;
 }
@@ -42,6 +43,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   competitionName,
   onScoreUpdate,
   onMatchReset,
+  onMatchCancel,
   onFencerChangePool,
   onFencerStatusChange,
 }) => {
@@ -94,15 +96,19 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   // Raccourcis clavier
 
   const orderedMatches = useMemo(() => {
+    const cancelled = pool.matches
+      .map((m, idx) => ({ match: m, index: idx }))
+      .filter(({ match }) => match.status === MatchStatus.CANCELLED);
+
     const pending = pool.matches
       .map((m, idx) => ({ match: m, index: idx }))
-      .filter(({ match }) => match.status !== MatchStatus.FINISHED);
+      .filter(({ match }) => match.status !== MatchStatus.FINISHED && match.status !== MatchStatus.CANCELLED);
 
     const finished = pool.matches
       .map((m, idx) => ({ match: m, index: idx }))
       .filter(({ match }) => match.status === MatchStatus.FINISHED);
 
-    if (pending.length === 0) return { pending: [], finished };
+    if (pending.length === 0) return { pending: [], finished, cancelled };
 
     // Algorithme pour éviter qu'un tireur combatte 2 fois d'affilée
     const ordered: typeof pending = [];
@@ -150,7 +156,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
       if (chosen.match.fencerB) lastFencerIds.add(chosen.match.fencerB.id);
     }
 
-    return { pending: ordered, finished };
+    return { pending: ordered, finished, cancelled };
   }, [pool.matches.length, pool.matches.map(m => m.status).join(',')]);
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -812,6 +818,24 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               >
                 🚫 Exclusion
               </button>
+              {onMatchCancel && editingMatch !== null && (
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    if (editingMatch === null) return;
+                    onMatchCancel(editingMatch);
+                    setEditingMatch(null);
+                    setIsMatchInverted(false);
+                    setEditScoreA('');
+                    setEditScoreB('');
+                    setVictoryA(false);
+                    setVictoryB(false);
+                  }}
+                  style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
+                >
+                  ⏸ Annuler match
+                </button>
+              )}
             </div>
           </div>
           <div
@@ -1320,8 +1344,58 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         </div>
       )}
 
+      {/* Matches annulés */}
+      {orderedMatches.cancelled.length > 0 && (
+        <div style={{ marginBottom: '1.5rem' }}>
+          <h4 style={{ fontSize: '0.875rem', fontWeight: '600', marginBottom: '0.5rem', color: '#6b7280' }}>
+            Matches annulés ({orderedMatches.cancelled.length})
+          </h4>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {orderedMatches.cancelled.map(({ match, index }) => (
+              <div
+                key={index}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '0.75rem 1rem',
+                  background: '#f3f4f6',
+                  borderRadius: '6px',
+                  border: '1px dashed #d1d5db',
+                  opacity: 0.8,
+                }}
+              >
+                <span style={{ color: '#9ca3af', fontSize: '0.875rem', minWidth: '30px' }}>⏸</span>
+                <span style={{ flex: 1, textAlign: 'center', color: '#6b7280', textDecoration: 'line-through' }}>
+                  {match.fencerA?.lastName} vs {match.fencerB?.lastName}
+                </span>
+                {onMatchReset && (
+                  <button
+                    onClick={() => onMatchReset(index)}
+                    title="Relancer ce match"
+                    style={{
+                      marginLeft: '0.5rem',
+                      padding: '0.25rem 0.5rem',
+                      fontSize: '0.75rem',
+                      background: 'rgba(59,130,246,0.1)',
+                      border: '1px solid rgba(59,130,246,0.3)',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      color: '#2563eb',
+                      flexShrink: 0,
+                    }}
+                  >
+                    ▶ Relancer
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Poule terminée */}
-      {orderedMatches.pending.length === 0 && (
+      {orderedMatches.pending.length === 0 && orderedMatches.cancelled.length === 0 && (
         <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
           <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🏁</div>
           <div style={{ fontWeight: '600' }}>Poule terminée !</div>
