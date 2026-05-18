@@ -458,7 +458,11 @@ function createWindow(): void {
     icon: path.join(__dirname, '../../resources/icons/icon.png'),
   });
 
+  const showFallback = setTimeout(() => {
+    if (mainWindow && !mainWindow.isVisible()) mainWindow.show();
+  }, 10000);
   mainWindow.once('ready-to-show', () => {
+    clearTimeout(showFallback);
     mainWindow?.show();
   });
 
@@ -1857,6 +1861,12 @@ ipcMain.handle('updater:installPendingUpdate', async () => {
 // ============================================================================
 // App Lifecycle
 // ============================================================================
+
+// VMware/ARM sans accélération 3D : forcer rendu logiciel
+if (process.platform === 'linux') {
+  app.commandLine.appendSwitch('disable-gpu');
+  app.commandLine.appendSwitch('disable-gpu-sandbox');
+}
 
 app.whenReady().then(async () => {
   // Initialize database dans un répertoire inscriptible (userData)
