@@ -329,6 +329,8 @@ export class DatabaseManager {
       let settings: CompetitionSettings = {
         defaultPoolMaxScore: 5,
         defaultTableMaxScore: 21,
+        defaultPoolTimerSeconds: 180,
+        defaultTableTimerSeconds: 180,
         poolRounds: 1,
         hasDirectElimination: true,
         thirdPlaceMatch: true,
