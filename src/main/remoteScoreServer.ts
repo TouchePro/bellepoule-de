@@ -2149,6 +2149,11 @@ export class RemoteScoreServer {
   }
 
   // Méthode publique pour mettre à jour le nombre d'arènes
+  public resetPoolMatch(matchId: string): void {
+    this.sessionMatchScores.delete(matchId);
+    this.io.emit('match:reset', { matchId });
+  }
+
   public setLanguage(lang: string): void {
     this.currentLang = lang;
   }

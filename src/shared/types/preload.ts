@@ -416,6 +416,10 @@ export interface RemoteServerAPI {
     competitionId: string,
     arenaId: string
   ) => Promise<{ success: boolean; error?: string }>;
+  resetPoolMatch: (
+    competitionId: string,
+    matchId: string
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 // ============================================================================

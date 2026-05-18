@@ -1537,6 +1537,17 @@ ipcMain.handle('remote:refreshDeMatches', async (_, competitionId: string, match
   }
 });
 
+ipcMain.handle('remote:resetPoolMatch', async (_, competitionId: string, matchId: string) => {
+  try {
+    const entry = remoteServers.get(competitionId);
+    if (!entry) return { success: true };
+    entry.server.resetPoolMatch(matchId);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur' };
+  }
+});
+
 ipcMain.handle('remote:stopSession', async (_event, competitionId: string) => {
   try {
     const entry = remoteServers.get(competitionId);
