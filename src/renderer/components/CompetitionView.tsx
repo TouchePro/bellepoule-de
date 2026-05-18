@@ -300,11 +300,15 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         const prevMatch = prev[pIdx]?.matches[mIdx];
         if (!prevMatch) return;
         if (match.status !== prevMatch.status || match.scoreA !== prevMatch.scoreA || match.scoreB !== prevMatch.scoreB) {
-          window.electronAPI!.db!.updateMatch(match.id, {
-            scoreA: match.scoreA ?? undefined,
-            scoreB: match.scoreB ?? undefined,
-            status: match.status,
-          }).catch((e: unknown) => logger.warn(LogCategory.DATABASE, 'updateMatch pool failed', e instanceof Error ? e : undefined));
+          try {
+            window.electronAPI!.db!.updateMatch(match.id, {
+              scoreA: match.scoreA ?? undefined,
+              scoreB: match.scoreB ?? undefined,
+              status: match.status,
+            }).catch((e: unknown) => logger.warn(LogCategory.DATABASE, 'updateMatch pool failed', e instanceof Error ? e : undefined));
+          } catch (e: unknown) {
+            logger.warn(LogCategory.DATABASE, 'updateMatch pool failed', e instanceof Error ? e : undefined);
+          }
         }
       });
     });
