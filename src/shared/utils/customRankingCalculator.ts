@@ -6,6 +6,7 @@
 
 import {
   AdvancementRule,
+  CustomDEConfig,
   CustomFormulaConfig,
   CustomPoolRoundConfig,
   FormulaPhaseSimulation,
@@ -161,7 +162,7 @@ export function calculateOverallRankingCustom(
   allRankings.sort(comparator);
 
   allRankings.forEach((r, i) => {
-    r.overallRank = i + 1;
+    (r as PoolRanking & { overallRank: number }).overallRank = i + 1;
   });
 
   return allRankings;
