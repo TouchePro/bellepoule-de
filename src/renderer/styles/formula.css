@@ -1,0 +1,688 @@
+/* ============================================================
+   BellePoule Modern — Formula Builder Styles
+   ============================================================ */
+
+/* ── FormulaBuilder ─────────────────────────────────────── */
+
+.formula-builder {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.formula-builder-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.75rem;
+  background: var(--color-surface, #f9fafb);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 8px;
+}
+
+.formula-name-input {
+  flex: 1;
+  min-width: 180px;
+  font-weight: 600;
+}
+
+.formula-add-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.formula-add-btn {
+  font-size: 0.8rem;
+}
+
+.pool-add { color: #3B82F6; border-color: #3B82F6; }
+.de-add   { color: #EF4444; border-color: #EF4444; }
+.class-add { color: #10B981; border-color: #10B981; }
+
+.formula-template-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.formula-builder-content {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .formula-builder-content {
+    grid-template-columns: 1fr;
+  }
+}
+
+.formula-pipeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.formula-empty-state {
+  padding: 2rem;
+  text-align: center;
+  color: var(--color-text-secondary, #6b7280);
+  border: 2px dashed var(--color-border, #e5e7eb);
+  border-radius: 8px;
+}
+
+.phase-connector {
+  text-align: center;
+  color: var(--color-text-secondary, #6b7280);
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0.25rem 0;
+}
+
+/* ── FormulaPhaseCard ───────────────────────────────────── */
+
+.formula-phase-card {
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-left: 4px solid #3B82F6;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--color-bg, #fff);
+}
+
+.phase-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.75rem;
+  background: var(--color-surface, #f9fafb);
+  gap: 0.5rem;
+}
+
+.phase-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.phase-type-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fff;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.phase-label-input {
+  flex: 1;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: none;
+  background: transparent;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  min-width: 0;
+}
+
+.phase-label-input:focus {
+  background: var(--color-bg, #fff);
+  outline: 2px solid var(--color-primary, #3B82F6);
+}
+
+.phase-card-actions {
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+.phase-card-body {
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.phase-config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.classification-hint {
+  color: var(--color-text-secondary, #6b7280);
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+/* ── RankingCriteriaEditor ──────────────────────────────── */
+
+.ranking-criteria-editor {
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.ranking-criteria-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.ranking-criterion-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  transition: background 0.1s;
+  cursor: default;
+}
+
+.ranking-criterion-row:last-child {
+  border-bottom: none;
+}
+
+.ranking-criterion-row.disabled {
+  opacity: 0.45;
+}
+
+.ranking-criterion-row.drag-over {
+  background: var(--color-primary-light, #eff6ff);
+  border-top: 2px solid var(--color-primary, #3B82F6);
+}
+
+.ranking-criterion-row[draggable="true"] {
+  cursor: grab;
+}
+
+.criterion-grip {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 32px;
+}
+
+.criterion-priority {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-primary, #3B82F6);
+  min-width: 16px;
+  text-align: center;
+}
+
+.grip-icon {
+  color: var(--color-text-secondary, #9ca3af);
+  font-size: 0.75rem;
+  cursor: grab;
+}
+
+.criterion-label {
+  flex: 1;
+  font-size: 0.8rem;
+}
+
+.btn-direction {
+  background: var(--color-surface, #f3f4f6);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  min-width: 26px;
+  text-align: center;
+}
+
+.btn-direction:hover {
+  background: var(--color-border, #e5e7eb);
+}
+
+.criterion-toggle {
+  position: relative;
+  display: inline-block;
+  width: 32px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.criterion-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: #ccc;
+  border-radius: 18px;
+  transition: 0.2s;
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  left: 2px;
+  bottom: 2px;
+  background: white;
+  border-radius: 50%;
+  transition: 0.2s;
+}
+
+.criterion-toggle input:checked + .toggle-slider {
+  background: var(--color-primary, #3B82F6);
+}
+
+.criterion-toggle input:checked + .toggle-slider::before {
+  transform: translateX(14px);
+}
+
+/* ── AdvancementRuleEditor ──────────────────────────────── */
+
+.advancement-rule-editor {
+  padding: 0.5rem;
+  background: var(--color-surface, #f9fafb);
+  border-radius: 6px;
+  border: 1px solid var(--color-border, #e5e7eb);
+}
+
+.advancement-mode-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.advancement-mode-select {
+  min-width: 130px;
+}
+
+.advancement-value-group {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.advancement-value-input {
+  width: 70px;
+}
+
+.advancement-unit {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.advancement-preview {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary, #6b7280);
+  margin-left: auto;
+}
+
+.advancement-preview strong {
+  color: var(--color-primary, #3B82F6);
+}
+
+/* ── ScoringZoneEditor ──────────────────────────────────── */
+
+.scoring-zone-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.scoring-type-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.scoring-type-option {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.zones-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.5rem;
+  background: var(--color-surface, #f9fafb);
+  border-radius: 6px;
+  border: 1px solid var(--color-border, #e5e7eb);
+}
+
+.zone-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.zone-color-picker {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 4px;
+  padding: 2px;
+  cursor: pointer;
+  background: none;
+}
+
+.zone-label-input {
+  flex: 1;
+}
+
+.zone-points-input {
+  width: 60px;
+}
+
+.zone-pts-label {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.zone-remove-btn {
+  padding: 0.2rem 0.4rem;
+  font-size: 0.75rem;
+}
+
+.zone-add-btn {
+  align-self: flex-start;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
+.zone-preview-text {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary, #6b7280);
+  margin: 0;
+}
+
+/* ── FormulaSimulationPreview ───────────────────────────── */
+
+.formula-simulation-preview {
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 8px;
+  padding: 1rem;
+  background: var(--color-bg, #fff);
+  position: sticky;
+  top: 1rem;
+}
+
+.simulation-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem;
+  color: var(--color-text-secondary, #6b7280);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.simulation-flowchart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 1rem;
+}
+
+.sim-arrow {
+  font-size: 1.2rem;
+  color: var(--color-text-secondary, #9ca3af);
+  line-height: 1.2;
+}
+
+.sim-node {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.sim-node-input {
+  background: var(--color-surface, #f3f4f6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-weight: 600;
+}
+
+.sim-fencer-count {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--color-primary, #3B82F6);
+}
+
+.sim-node-pool_round {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+}
+
+.sim-node-direct_elimination {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.sim-node-classification {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+}
+
+.sim-phase-name {
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+
+.sim-phase-detail,
+.sim-pool-sizes {
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+
+.sim-match-count {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+.sim-advancing {
+  font-size: 0.8rem;
+  margin-top: 0.2rem;
+  font-style: italic;
+}
+
+.simulation-totals {
+  display: flex;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--color-border, #e5e7eb);
+  margin-top: 0.5rem;
+}
+
+.sim-total-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  gap: 0.1rem;
+}
+
+.sim-total-label {
+  font-size: 0.7rem;
+  color: var(--color-text-secondary, #6b7280);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.simulation-warnings {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sim-warning {
+  font-size: 0.75rem;
+  color: #92400e;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 4px;
+  padding: 0.25rem 0.4rem;
+}
+
+.formula-notes-group {
+  margin-top: 0.75rem;
+}
+
+.formula-notes-input {
+  resize: vertical;
+  font-size: 0.8rem;
+}
+
+/* ── FormulaTemplateModal ───────────────────────────────── */
+
+.template-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.template-empty {
+  text-align: center;
+  color: var(--color-text-secondary, #6b7280);
+  padding: 1rem;
+}
+
+.template-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 6px;
+  gap: 0.5rem;
+}
+
+.template-entry-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.template-entry-date,
+.template-entry-phases {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.template-entry-actions {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.btn-sm {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+}
+
+.template-import-section {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border, #e5e7eb);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* ── Input utilities ────────────────────────────────────── */
+
+.input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.checkbox-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.hidden {
+  display: none;
+}
+
+.form-error {
+  color: #ef4444;
+  font-size: 0.8rem;
+  margin: 0.25rem 0 0;
+}
+
+/* ── Custom formula section in modal ────────────────────── */
+
+.custom-formula-section {
+  border-top: 1px solid var(--color-border, #e5e7eb);
+  padding-top: 1rem;
+  margin-top: 0.5rem;
+}
+
+/* ── Dark theme overrides ───────────────────────────────── */
+
+.theme-dark .formula-builder-toolbar,
+.theme-dark .formula-simulation-preview,
+.theme-dark .formula-phase-card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+.theme-dark .phase-card-header {
+  background: var(--color-bg);
+}
+
+.theme-dark .ranking-criteria-editor,
+.theme-dark .advancement-rule-editor,
+.theme-dark .zones-list {
+  background: var(--color-bg);
+  border-color: var(--color-border);
+}
+
+.theme-dark .sim-node-pool_round {
+  background: #1e3a5f;
+  border-color: #2563eb;
+  color: #93c5fd;
+}
+
+.theme-dark .sim-node-direct_elimination {
+  background: #4c1d1d;
+  border-color: #dc2626;
+  color: #fca5a5;
+}
+
+.theme-dark .sim-node-classification {
+  background: #14311f;
+  border-color: #16a34a;
+  color: #86efac;
+}
