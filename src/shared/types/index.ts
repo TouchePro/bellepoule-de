@@ -74,6 +74,19 @@ export interface Card {
   resultingExclusion: boolean;
 }
 
+export interface WeaponCardScoreImpact {
+  white: number;
+  yellow: number;
+  red: number;
+  black: number;
+}
+
+export interface WeaponCardConfig {
+  availableReasons: CardReason[];
+  reasonToGroup: Partial<Record<CardReason, CardGroup>>;
+  scoreImpact: WeaponCardScoreImpact;
+}
+
 // ============================================================================
 // Match Mode (Sudden Death)
 // ============================================================================
