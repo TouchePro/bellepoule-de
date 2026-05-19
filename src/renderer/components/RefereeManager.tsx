@@ -103,6 +103,22 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
     return null;
   };
 
+  const handleExportFile = useCallback(() => {
+    if (referees.length === 0) return;
+    const lines = referees.map(r => {
+      const sexe = r.gender === 'F' ? 'F' : 'M';
+      return [r.lastName, r.firstName, sexe, r.category ?? '', r.club ?? '', r.region ?? '', r.nationality].join(';');
+    });
+    const content = 'NOM;Prenom;Sexe;Categorie;Club;Region;Nationalite\n' + lines.join('\n');
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'arbitres.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [referees]);
+
   const handleImportFile = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -242,6 +258,14 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
               style={{ background: '#6d28d9', color: 'white', border: 'none', padding: '0.5rem 1.25rem', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' }}
             >
               📂 Importer fichier Arbitres
+            </button>
+            <button
+              onClick={handleExportFile}
+              disabled={referees.length === 0}
+              title="Exporte la liste en CSV — même format que l'import : NOM;Prénom;Sexe(M/F);Catégorie;Club;Région;Nationalité"
+              style={{ background: '#059669', color: 'white', border: 'none', padding: '0.5rem 1.25rem', borderRadius: '6px', cursor: referees.length === 0 ? 'not-allowed' : 'pointer', fontWeight: '500', opacity: referees.length === 0 ? 0.5 : 1 }}
+            >
+              💾 Exporter fichier Arbitres
             </button>
             {importStatus && (
               <span style={{ fontSize: '0.875rem', color: importStatus.errors.length ? '#dc2626' : '#166534' }}>
