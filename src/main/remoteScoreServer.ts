@@ -2477,8 +2477,8 @@ export class RemoteScoreServer {
           reason: 'remote_entry',
         });
       }
-    } catch {
-      /* non bloquant */
+    } catch (e) {
+      console.warn('[RemoteScoreServer] logScoreChange (updateArenaScore) failed:', e);
     }
 
     // Envoyer la mise à jour via WebSocket
@@ -2628,6 +2628,49 @@ export class RemoteScoreServer {
       fencerB: arena.currentMatch?.fencerB,
       nextMatch,
     });
+
+    // Persister le score final dans la DB et dans l'audit log
+    try {
+      const finalMatchId = finishedMatch.id;
+      const dbMatch = this.db.getMatch(finalMatchId);
+      if (dbMatch && !finishedMatch.isTableau) {
+        const winner =
+          finishedMatch.scoreA > finishedMatch.scoreB ? 'A' :
+          finishedMatch.scoreB > finishedMatch.scoreA ? 'B' : null;
+        const scoreAObj = {
+          value: finishedMatch.scoreA,
+          isVictory: winner === 'A',
+          isAbstention: false,
+          isExclusion: false,
+          isForfait: false,
+        };
+        const scoreBObj = {
+          value: finishedMatch.scoreB,
+          isVictory: winner === 'B',
+          isAbstention: false,
+          isExclusion: false,
+          isForfait: false,
+        };
+        this.db.updateMatch(finalMatchId, {
+          scoreA: scoreAObj,
+          scoreB: scoreBObj,
+          status: MatchStatus.FINISHED,
+        });
+        this.db.logScoreChange({
+          matchId: finalMatchId,
+          arenaId,
+          previousScoreA: dbMatch.scoreA ?? null,
+          previousScoreB: dbMatch.scoreB ?? null,
+          newScoreA: scoreAObj,
+          newScoreB: scoreBObj,
+          changedBy: 'referee',
+          reason: 'arena_finish',
+          poolId: finishedMatch.poolId,
+        });
+      }
+    } catch (e) {
+      console.warn('[RemoteScoreServer] logScoreChange (finishArenaMatch) failed:', e);
+    }
 
     // Émettre l'event pour le renderer (pour sauvegarder le score dans les pools)
     const mainWindow = (global as any).mainWindow;
