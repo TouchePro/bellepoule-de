@@ -97,6 +97,7 @@ export interface Arena {
   name: string;
   number: number;
   currentMatch: ArenaMatch | null;
+  activePoolId?: string; // dernière poule assignée (persiste après currentMatch=null)
   status: 'idle' | 'ready' | 'in_progress' | 'finished';
   startTime: Date | null;
   settings: ArenaSettings;
