@@ -150,7 +150,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     const fingerprint = pools
       .map(
         p =>
-          `${p.id}:${(p.matches ?? []).map((m: any) => `${m.id}=${m.status}|${m.scoreA ?? ''}-${m.scoreB ?? ''}`).join(',')}`
+          `${p.id}:${(p.matches ?? []).map((m: any) => `${m.id}=${m.status}|${m.scoreA ?? ''}-${m.scoreB ?? ''}|${m.refereeId ?? ''}`).join(',')}`
       )
       .join('|');
     if (!isRemoteActive || !session) {

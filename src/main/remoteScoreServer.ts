@@ -2245,6 +2245,28 @@ export class RemoteScoreServer {
   public resetPoolMatch(matchId: string): void {
     this.sessionMatchScores.delete(matchId);
     this.io.emit('match:reset', { matchId });
+
+    const match = this.sessionMatches.find((m: any) => m.id === matchId);
+    const poolId = match?.poolId ?? match?.pool?.id;
+    if (!poolId) return;
+
+    const fencers = this.poolFencersCache.get(poolId) ?? this.db.getPoolFencers(poolId);
+    const poolMatches = this.sessionMatches
+      .filter((m: any) => !m.isTableau && (m.poolId ?? m.pool?.id) === poolId)
+      .sort((a: any, b: any) => (a.number || 0) - (b.number || 0))
+      .map((m: any) => {
+        const u = this.sessionMatchScores.get(m.id);
+        return u ? { ...m, ...u } : m;
+      });
+    const isComplete =
+      poolMatches.length > 0 && poolMatches.every((m: any) => m.status === MatchStatus.FINISHED);
+    for (const [aId, arena] of this.arenas) {
+      if ((arena.currentMatch?.poolId ?? arena.activePoolId) === poolId) {
+        this.io
+          .to(`pool:${aId}`)
+          .emit(`pool:${aId}:update`, { poolId, fencers, matches: poolMatches, isComplete });
+      }
+    }
   }
 
   public setLanguage(lang: string): void {
@@ -3615,6 +3637,24 @@ export class RemoteScoreServer {
         poolMatches.length > 0 && poolMatches.every((m: any) => m.status === MatchStatus.FINISHED);
       for (const [aId, arena] of this.arenas) {
         if ((arena.currentMatch?.poolId ?? arena.activePoolId) !== poolId) continue;
+        if (arena.currentMatch) {
+          const updatedMatch = this.sessionMatches.find((m: any) => m.id === arena.currentMatch!.id);
+          if (updatedMatch?.refereeId && updatedMatch.refereeId !== arena.currentMatch.refereeId) {
+            const resolvedRef = this.resolveReferee(updatedMatch.refereeId);
+            arena.currentMatch = {
+              ...arena.currentMatch,
+              ...(resolvedRef ? { referee: resolvedRef } : {}),
+              refereeId: updatedMatch.refereeId,
+            };
+            this.broadcastArenaUpdate(aId, {
+              arenaId: aId,
+              match: arena.currentMatch,
+              scoreA: arena.currentMatch.scoreA,
+              scoreB: arena.currentMatch.scoreB,
+              status: arena.status,
+            });
+          }
+        }
         this.io
           .to(`pool:${aId}`)
           .emit(`pool:${aId}:update`, { poolId, fencers, matches: poolMatches, isComplete });
