@@ -268,6 +268,12 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         setCommittedCount(count);
         onArenaCountChange?.(count);
         showToast('Saisie distante démarrée', 'success');
+        // Envoyer les matchs DE avec leurs pistes au serveur (la clé ref est déjà stockée
+        // avant que session/isRemoteActive soient prêts, donc l'effet ne se déclenche pas).
+        if (deMatches.length > 0) {
+          await window.electronAPI.remote.refreshDeMatches(competition.id, deMatches);
+          prevDeMatchesKeyRef.current = deMatches.map((m: any) => m.id).join(',');
+        }
       } else {
         showToast(`Erreur session: ${result.error}`, 'error');
       }
