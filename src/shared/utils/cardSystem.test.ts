@@ -10,10 +10,14 @@ import {
   getReasonsByGroup,
   getCardsForFencer,
   isFencerExcluded,
+  getWeaponCardConfig,
+  getAvailableReasons,
+  getReasonsByGroupForWeapon,
+  WEAPON_CARD_CONFIGS,
   CARD_REASON_LABELS,
   CARD_GROUP_LABELS,
 } from './cardSystem';
-import { Card, CardGroup, CardReason } from '../types';
+import { Card, CardGroup, CardReason, Weapon } from '../types';
 import { CardType } from '../../features/penalties/types/penalty.types';
 
 // ============================================================================
@@ -339,5 +343,120 @@ describe('Labels français', () => {
     expect(CARD_REASON_LABELS[CardReason.EARLY_START]).toBe('Départ anticipé');
     expect(CARD_REASON_LABELS[CardReason.CHEATING]).toBe('Tricherie');
     expect(CARD_GROUP_LABELS[CardGroup.GROUP_1]).toContain('Jaune');
+  });
+});
+
+// ============================================================================
+// Tests dissociation par arme
+// ============================================================================
+
+describe('Dissociation par arme', () => {
+  describe('getWeaponCardConfig', () => {
+    it('retourne une config pour chaque arme', () => {
+      for (const weapon of Object.values(Weapon)) {
+        const config = getWeaponCardConfig(weapon);
+        expect(config).toBeDefined();
+        expect(config.availableReasons.length).toBeGreaterThan(0);
+        expect(config.scoreImpact).toBeDefined();
+      }
+    });
+
+    it('chaque arme a une config indépendante (pas de référence partagée)', () => {
+      const laserConfig = getWeaponCardConfig(Weapon.LASER);
+      const epeeConfig = getWeaponCardConfig(Weapon.EPEE);
+      expect(laserConfig).not.toBe(epeeConfig);
+    });
+  });
+
+  describe('getAvailableReasons', () => {
+    it('retourne toutes les raisons pour le Sabre Laser', () => {
+      const reasons = getAvailableReasons(Weapon.LASER);
+      expect(reasons).toContain(CardReason.EARLY_START);
+      expect(reasons).toContain(CardReason.CHEATING);
+      expect(reasons.length).toBe(Object.values(CardReason).length);
+    });
+
+    it('retourne des raisons pour l\'épée', () => {
+      const reasons = getAvailableReasons(Weapon.EPEE);
+      expect(reasons.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('getReasonsByGroupForWeapon', () => {
+    it('retourne les 4 groupes pour le Laser', () => {
+      const groups = getReasonsByGroupForWeapon(Weapon.LASER);
+      expect(groups[CardGroup.GROUP_1].length).toBeGreaterThan(0);
+      expect(groups[CardGroup.GROUP_4]).toContain(CardReason.CHEATING);
+    });
+
+    it('retourne les 4 groupes pour l\'épée', () => {
+      const groups = getReasonsByGroupForWeapon(Weapon.EPEE);
+      expect(Object.keys(groups)).toHaveLength(4);
+    });
+  });
+
+  describe('determineCardType avec weapon param', () => {
+    it('comportement identique avec ou sans weapon (config actuelle identique)', () => {
+      const withoutWeapon = determineCardType(CardReason.EARLY_START, []);
+      const withLaser = determineCardType(CardReason.EARLY_START, [], Weapon.LASER);
+      expect(withoutWeapon.type).toBe(withLaser.type);
+      expect(withoutWeapon.points).toBe(withLaser.points);
+    });
+
+    it('scoreImpact yellow reflète la config arme', () => {
+      const result = determineCardType(CardReason.ESTOC, [], Weapon.LASER);
+      expect(result.type).toBe(CardType.YELLOW);
+      expect(result.points).toBe(WEAPON_CARD_CONFIGS[Weapon.LASER].scoreImpact.yellow);
+    });
+
+    it('scoreImpact personnalisable par arme', () => {
+      // Simule une config épée avec impact yellow différent
+      const originalConfig = { ...WEAPON_CARD_CONFIGS[Weapon.EPEE] };
+      WEAPON_CARD_CONFIGS[Weapon.EPEE] = {
+        ...originalConfig,
+        scoreImpact: { white: 0, yellow: 2, red: 2, black: 0 },
+      };
+
+      const result = determineCardType(CardReason.ESTOC, [], Weapon.EPEE);
+      expect(result.points).toBe(2);
+
+      // Restore
+      WEAPON_CARD_CONFIGS[Weapon.EPEE] = originalConfig;
+    });
+
+    it('raison non applicable retourne BLANC (0 point)', () => {
+      // Simule une arme dont COUNTER_ATTACK n'est pas dans le reasonToGroup
+      const originalConfig = { ...WEAPON_CARD_CONFIGS[Weapon.EPEE] };
+      const reasonToGroupWithout: Partial<Record<CardReason, CardGroup>> = {
+        ...originalConfig.reasonToGroup,
+      };
+      delete reasonToGroupWithout[CardReason.COUNTER_ATTACK];
+
+      WEAPON_CARD_CONFIGS[Weapon.EPEE] = {
+        ...originalConfig,
+        availableReasons: originalConfig.availableReasons.filter(r => r !== CardReason.COUNTER_ATTACK),
+        reasonToGroup: reasonToGroupWithout,
+      };
+
+      const result = determineCardType(CardReason.COUNTER_ATTACK, [], Weapon.EPEE);
+      expect(result.type).toBe(CardType.WHITE);
+      expect(result.points).toBe(0);
+      expect(result.shouldExclude).toBe(false);
+
+      // Restore
+      WEAPON_CARD_CONFIGS[Weapon.EPEE] = originalConfig;
+    });
+  });
+
+  describe('createCard avec weapon param', () => {
+    it('crée un carton avec l\'arme courante', () => {
+      const card = createCard('m1', 'f1', CardReason.ESTOC, [], Weapon.LASER);
+      expect(card.group).toBe(CardGroup.GROUP_2);
+    });
+
+    it('reste compatible sans weapon param', () => {
+      const card = createCard('m1', 'f1', CardReason.ESTOC, []);
+      expect(card.group).toBe(CardGroup.GROUP_2);
+    });
   });
 });
