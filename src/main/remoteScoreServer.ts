@@ -3150,8 +3150,9 @@ export class RemoteScoreServer {
     // Configurer le nombre d'arènes
     this.setArenaCount(strips);
 
-    // Réinitialiser le cache tireurs pour éviter toute pollution d'une session précédente
+    // Réinitialiser les caches pour éviter toute pollution d'une session précédente
     this.poolFencersCache.clear();
+    this.poolSignaturesCache.clear();
 
     // Utiliser les matches passés depuis le renderer si disponibles, sinon chercher dans la DB
     let allMatches: any[] = [];
@@ -3425,6 +3426,7 @@ export class RemoteScoreServer {
     this.arenaMatchQueue.clear();
     this.arenaNextMatchIndex.clear();
     this.poolFencersCache.clear();
+    this.poolSignaturesCache.clear();
     this.sessionMatchScores.clear();
     this.arenaTokens.clear();
   }
