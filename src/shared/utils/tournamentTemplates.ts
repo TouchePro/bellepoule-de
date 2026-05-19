@@ -6,6 +6,7 @@
 
 import {
   Competition,
+  CustomFormulaConfig,
   Weapon,
   Gender,
   Category,
@@ -339,4 +340,123 @@ export function createCompetitionFromTemplate(
   if (!template) return null;
 
   return applyTemplate(template, customTitle);
+}
+
+// ============================================================================
+// Custom Formula Template Management (Formule à la carte)
+// ============================================================================
+
+const FORMULA_STORAGE_KEY = 'bellepoule-formula-templates';
+
+export interface FormulaTemplateEntry {
+  name: string;
+  formula: CustomFormulaConfig;
+  savedAt: string;
+}
+
+/**
+ * Formule par défaut : 1 tour de poules (top 80%) → DE → Classification
+ */
+export function createDefaultCustomFormula(): CustomFormulaConfig {
+  return {
+    version: 1,
+    formulaName: 'Formule personnalisée',
+    phases: [
+      {
+        id: `pool_round_${Date.now()}`,
+        type: 'pool_round',
+        label: 'Tour de poules',
+        config: {
+          roundIndex: 0,
+          minPoolSize: 5,
+          maxPoolSize: 8,
+          balanced: true,
+          seeding: 'serpentine',
+          separation: { byClub: true, byRegion: false, byNation: false },
+          maxScore: 5,
+          timerSeconds: 180,
+          scoring: { type: 'standard', maxScore: 5 },
+          rankingCriteria: [
+            { id: 'vm_ratio', direction: 'desc', enabled: true },
+            { id: 'index', direction: 'desc', enabled: true },
+            { id: 'direct_bout', direction: 'desc', enabled: true },
+            { id: 'initial_ranking', direction: 'asc', enabled: true },
+          ],
+          advancementRule: { mode: 'percentage', percentage: 80 },
+        },
+      },
+      {
+        id: `de_${Date.now() + 1}`,
+        type: 'direct_elimination',
+        label: 'Élimination directe',
+        config: {
+          maxScore: 15,
+          timerSeconds: 180,
+          thirdPlaceMatch: true,
+          placesToFence: [1, 3],
+          scoring: { type: 'standard', maxScore: 15 },
+        },
+      },
+      {
+        id: `classification_${Date.now() + 2}`,
+        type: 'classification',
+        label: 'Classement final',
+        config: {
+          maxScore: 15,
+          timerSeconds: 180,
+          thirdPlaceMatch: false,
+          placesToFence: [],
+          scoring: { type: 'standard', maxScore: 15 },
+        },
+      },
+    ],
+  };
+}
+
+export function getCustomFormulaTemplates(): FormulaTemplateEntry[] {
+  try {
+    const stored = localStorage.getItem(FORMULA_STORAGE_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch {
+    // ignore
+  }
+  return [];
+}
+
+export function saveCustomFormulaTemplate(name: string, formula: CustomFormulaConfig): boolean {
+  try {
+    const templates = getCustomFormulaTemplates();
+    const existing = templates.findIndex(t => t.name === name);
+    const entry: FormulaTemplateEntry = { name, formula, savedAt: new Date().toISOString() };
+    if (existing >= 0) templates[existing] = entry;
+    else templates.push(entry);
+    localStorage.setItem(FORMULA_STORAGE_KEY, JSON.stringify(templates));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function deleteCustomFormulaTemplate(name: string): boolean {
+  try {
+    const templates = getCustomFormulaTemplates().filter(t => t.name !== name);
+    localStorage.setItem(FORMULA_STORAGE_KEY, JSON.stringify(templates));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function exportFormulaAsJSON(formula: CustomFormulaConfig): string {
+  return JSON.stringify(formula, null, 2);
+}
+
+export function importFormulaFromJSON(json: string): CustomFormulaConfig | null {
+  try {
+    const parsed = JSON.parse(json) as CustomFormulaConfig;
+    if (parsed.version !== 1 || !Array.isArray(parsed.phases)) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
 }

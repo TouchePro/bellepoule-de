@@ -4,8 +4,10 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Competition, Weapon, Gender, Category, CompetitionSettings, QuestPhaseConfig } from '../../shared/types';
+import { Competition, CustomFormulaConfig, Weapon, Gender, Category, CompetitionSettings, QuestPhaseConfig } from '../../shared/types';
 import { useTranslation } from '../hooks/useTranslation';
+import { createDefaultCustomFormula } from '../../shared/utils/tournamentTemplates';
+import { FormulaBuilder } from './formula/FormulaBuilder';
 
 interface CompetitionPropertiesModalProps {
   competition: Competition;
@@ -49,6 +51,11 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
 
   const [refereeFeatureEnabled, setRefereeFeatureEnabled] = useState(
     competition.settings?.refereeFeatureEnabled ?? false
+  );
+
+  // Formule personnalisée (arme CUSTOM)
+  const [customFormula, setCustomFormula] = useState<CustomFormulaConfig>(
+    competition.settings?.customFormula ?? createDefaultCustomFormula()
   );
 
   // Tour Quest (Sabre Laser)
@@ -106,6 +113,7 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
       minTeamSize: competition.settings?.minTeamSize ?? 3,
       questConfig,
       refereeFeatureEnabled,
+      ...(weapon === Weapon.CUSTOM ? { customFormula } : {}),
     };
 
     onSave({
@@ -121,9 +129,139 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
     onClose();
   };
 
+  const isCustomWeapon = weapon === Weapon.CUSTOM;
+
+  function renderStandardFormula() {
+    if (isCustomWeapon) return null;
+    return (
+      <React.Fragment>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          {(!questEnabled || questHasPools) && (
+            <div className="form-group">
+              <label htmlFor="poolRounds">Tours de poules</label>
+              <select
+                id="poolRounds"
+                className="form-input form-select"
+                value={questEnabled && questHasPools ? 1 : poolRounds}
+                onChange={e => setPoolRounds(parseInt(e.target.value))}
+                disabled={questEnabled && questHasPools}
+              >
+                <option value="1">1 tour</option>
+                <option value="2">2 tours</option>
+                <option value="3">3 tours</option>
+              </select>
+              <small style={{ color: '#6b7280', fontSize: '0.75rem' }}>
+                {questEnabled && questHasPools
+                  ? '1 tour imposé avant le Tour Quest'
+                  : 'Nombre de phases de poules avant le tableau'}
+              </small>
+            </div>
+          )}
+          <div className="form-group">
+            <label htmlFor="hasDirectElimination">Élimination directe</label>
+            <select
+              id="hasDirectElimination"
+              className="form-input form-select"
+              value={hasDirectElimination ? 'true' : 'false'}
+              onChange={e => setHasDirectElimination(e.target.value === 'true')}
+            >
+              <option value="true">Activée</option>
+              <option value="false">Désactivée</option>
+            </select>
+            <small style={{ color: '#6b7280', fontSize: '0.75rem' }}>
+              {hasDirectElimination ? 'Tableau après les poules' : 'Classement final sur les poules'}
+            </small>
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+          <div className="form-group">
+            <label htmlFor="poolMaxScore">Score max poules</label>
+            <input
+              type="number"
+              id="poolMaxScore"
+              className="form-input"
+              value={poolMaxScore}
+              onChange={e => setPoolMaxScore(Math.max(1, parseInt(e.target.value) || 1))}
+              min="1"
+              placeholder="21"
+            />
+            <small style={{ color: '#6b7280', fontSize: '0.75rem' }}>Touches pour gagner un match de poule</small>
+          </div>
+          <div className="form-group">
+            <label htmlFor="poolTimerSeconds">Chrono poules (secondes)</label>
+            <input
+              type="number"
+              id="poolTimerSeconds"
+              className="form-input"
+              value={poolTimerSeconds}
+              onChange={e => setPoolTimerSeconds(Math.max(1, parseInt(e.target.value) || 180))}
+              min="1"
+              placeholder="180"
+            />
+            <small style={{ color: '#6b7280', fontSize: '0.75rem' }}>
+              {`${Math.floor(poolTimerSeconds / 60)}min ${poolTimerSeconds % 60}s par match de poule`}
+            </small>
+          </div>
+          {hasDirectElimination && (
+            <>
+              <div className="form-group">
+                <label htmlFor="tableMaxScore">Score max tableau élimination</label>
+                <input
+                  type="number"
+                  id="tableMaxScore"
+                  className="form-input"
+                  value={tableMaxScore}
+                  onChange={e => setTableMaxScore(parseInt(e.target.value) || 0)}
+                  min="0"
+                  placeholder="21"
+                />
+                <small style={{ color: '#6b7280', fontSize: '0.75rem' }}>
+                  {tableMaxScore === 0 ? '0 = illimité (pas de limite)' : `${tableMaxScore} touches pour gagner`}
+                </small>
+              </div>
+              <div className="form-group">
+                <label htmlFor="tableTimerSeconds">Chrono tableau (secondes)</label>
+                <input
+                  type="number"
+                  id="tableTimerSeconds"
+                  className="form-input"
+                  value={tableTimerSeconds}
+                  onChange={e => setTableTimerSeconds(Math.max(1, parseInt(e.target.value) || 180))}
+                  min="1"
+                  placeholder="180"
+                />
+                <small style={{ color: '#6b7280', fontSize: '0.75rem' }}>
+                  {`${Math.floor(tableTimerSeconds / 60)}min ${tableTimerSeconds % 60}s par match tableau`}
+                </small>
+              </div>
+              <div className="form-group">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={thirdPlaceMatch}
+                    onChange={e => setThirdPlaceMatch(e.target.checked)}
+                    style={{ marginRight: '0.5rem' }}
+                  />
+                  {t('competition.third_place_match_label')}
+                </label>
+                <small style={{ color: '#6b7280', fontSize: '0.75rem', marginLeft: '1.5rem' }}>
+                  {t('competition.third_place_match_description')}
+                </small>
+              </div>
+            </>
+          )}
+        </div>
+      </React.Fragment>
+    );
+  }
+
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '550px' }}>
+      <div
+        className="modal"
+        onClick={e => e.stopPropagation()}
+        style={{ maxWidth: weapon === Weapon.CUSTOM ? '92vw' : '550px', width: weapon === Weapon.CUSTOM ? '1100px' : undefined }}
+      >
         <div className="modal-header">
           <h2>Propriétés de la compétition</h2>
           <button className="btn-close" onClick={onClose}>
@@ -226,6 +364,7 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
                   <option value="F">Fleuret</option>
                   <option value="S">Sabre</option>
                   <option value="L">Sabre Laser</option>
+                  <option value="C">À la carte (formule personnalisée)</option>
                 </select>
               </div>
 
@@ -280,142 +419,16 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
               Formule de compétition
             </h3>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              {/* Tours de poules — masqué en mode Quest sans poules préliminaires */}
-              {(!questEnabled || questHasPools) && (
-                <div className="form-group">
-                  <label htmlFor="poolRounds">Tours de poules</label>
-                  <select
-                    id="poolRounds"
-                    className="form-input form-select"
-                    value={questEnabled && questHasPools ? 1 : poolRounds}
-                    onChange={e => setPoolRounds(parseInt(e.target.value))}
-                    disabled={questEnabled && questHasPools}
-                  >
-                    <option value="1">1 tour</option>
-                    <option value="2">2 tours</option>
-                    <option value="3">3 tours</option>
-                  </select>
-                  <small style={{ color: '#6b7280', fontSize: '0.75rem' }}>
-                    {questEnabled && questHasPools
-                      ? '1 tour imposé avant le Tour Quest'
-                      : 'Nombre de phases de poules avant le tableau'}
-                  </small>
-                </div>
-              )}
+            {/* Formule à la carte — remplace tout le reste pour arme CUSTOM */}
+            {isCustomWeapon && (
+              <FormulaBuilder
+                formula={customFormula}
+                fencerCount={32}
+                onChange={setCustomFormula}
+              />
+            )}
 
-              <div className="form-group">
-                <label htmlFor="hasDirectElimination">Élimination directe</label>
-                <select
-                  id="hasDirectElimination"
-                  className="form-input form-select"
-                  value={hasDirectElimination ? 'true' : 'false'}
-                  onChange={e => setHasDirectElimination(e.target.value === 'true')}
-                >
-                  <option value="true">Activée</option>
-                  <option value="false">Désactivée</option>
-                </select>
-                <small style={{ color: '#6b7280', fontSize: '0.75rem' }}>
-                  {hasDirectElimination
-                    ? 'Tableau après les poules'
-                    : 'Classement final sur les poules'}
-                </small>
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '1rem',
-                marginTop: '1rem',
-              }}
-            >
-              <div className="form-group">
-                <label htmlFor="poolMaxScore">Score max poules</label>
-                <input
-                  type="number"
-                  id="poolMaxScore"
-                  className="form-input"
-                  value={poolMaxScore}
-                  onChange={e => setPoolMaxScore(Math.max(1, parseInt(e.target.value) || 1))}
-                  min="1"
-                  placeholder="21"
-                />
-                <small style={{ color: '#6b7280', fontSize: '0.75rem' }}>
-                  Touches pour gagner un match de poule
-                </small>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="poolTimerSeconds">Chrono poules (secondes)</label>
-                <input
-                  type="number"
-                  id="poolTimerSeconds"
-                  className="form-input"
-                  value={poolTimerSeconds}
-                  onChange={e => setPoolTimerSeconds(Math.max(1, parseInt(e.target.value) || 180))}
-                  min="1"
-                  placeholder="180"
-                />
-                <small style={{ color: '#6b7280', fontSize: '0.75rem' }}>
-                  {`${Math.floor(poolTimerSeconds / 60)}min ${poolTimerSeconds % 60}s par match de poule`}
-                </small>
-              </div>
-
-              {hasDirectElimination && (
-                <>
-                  <div className="form-group">
-                    <label htmlFor="tableMaxScore">Score max tableau élimination</label>
-                    <input
-                      type="number"
-                      id="tableMaxScore"
-                      className="form-input"
-                      value={tableMaxScore}
-                      onChange={e => setTableMaxScore(parseInt(e.target.value) || 0)}
-                      min="0"
-                      placeholder="21"
-                    />
-                    <small style={{ color: '#6b7280', fontSize: '0.75rem' }}>
-                      {tableMaxScore === 0
-                        ? '0 = illimité (pas de limite)'
-                        : `${tableMaxScore} touches pour gagner`}
-                    </small>
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="tableTimerSeconds">Chrono tableau (secondes)</label>
-                    <input
-                      type="number"
-                      id="tableTimerSeconds"
-                      className="form-input"
-                      value={tableTimerSeconds}
-                      onChange={e => setTableTimerSeconds(Math.max(1, parseInt(e.target.value) || 180))}
-                      min="1"
-                      placeholder="180"
-                    />
-                    <small style={{ color: '#6b7280', fontSize: '0.75rem' }}>
-                      {`${Math.floor(tableTimerSeconds / 60)}min ${tableTimerSeconds % 60}s par match tableau`}
-                    </small>
-                  </div>
-
-                  <div className="form-group">
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={thirdPlaceMatch}
-                        onChange={e => setThirdPlaceMatch(e.target.checked)}
-                        style={{ marginRight: '0.5rem' }}
-                      />
-                      {t('competition.third_place_match_label')}
-                    </label>
-                    <small style={{ color: '#6b7280', fontSize: '0.75rem', marginLeft: '1.5rem' }}>
-                      {t('competition.third_place_match_description')}
-                    </small>
-                  </div>
-                </>
-              )}
-            </div>
+            {renderStandardFormula()}
           </div>
 
           {/* Tour Quest — visible uniquement pour Sabre Laser */}

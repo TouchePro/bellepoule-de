@@ -13,6 +13,7 @@ export enum Weapon {
   FOIL = 'F',
   SABRE = 'S',
   LASER = 'L', // Sabre Laser
+  CUSTOM = 'C', // Formule à la carte
 }
 
 export enum Gender {
@@ -378,6 +379,96 @@ export interface PoolPhaseConfig {
 }
 
 // ============================================================================
+// Custom Formula Types (Arme CUSTOM — Formule à la carte)
+// ============================================================================
+
+export type RankingCriterionId =
+  | 'vm_ratio'
+  | 'index'
+  | 'touches_scored'
+  | 'touches_received'
+  | 'direct_bout'
+  | 'initial_ranking'
+  | 'custom_points';
+
+export interface RankingCriterion {
+  id: RankingCriterionId;
+  direction: 'asc' | 'desc';
+  enabled: boolean;
+}
+
+export type AdvancementMode = 'all' | 'percentage' | 'fixed_count' | 'fixed_bracket';
+
+export interface AdvancementRule {
+  mode: AdvancementMode;
+  percentage?: number; // 0-100, utilisé si mode === 'percentage'
+  count?: number; // utilisé si mode === 'fixed_count' ou 'fixed_bracket'
+}
+
+export interface CustomTouchZone {
+  id: string;
+  label: string; // ex: "Tête", "Corps", "Bras"
+  points: number; // ex: 3, 2, 1
+  color?: string; // couleur pour l'UI
+}
+
+export interface CustomScoringConfig {
+  type: 'standard' | 'zones';
+  maxScore: number;
+  zones?: CustomTouchZone[]; // si type === 'zones'
+}
+
+export interface CustomPoolRoundConfig extends PoolPhaseConfig {
+  roundIndex: number;
+  maxScore: number;
+  timerSeconds: number;
+  scoring: CustomScoringConfig;
+  rankingCriteria: RankingCriterion[];
+  advancementRule: AdvancementRule;
+}
+
+export interface CustomDEConfig extends DirectEliminationConfig {
+  timerSeconds: number;
+  bracketSizeOverride?: number; // forcer 32/64/etc au lieu d'auto
+  fifthPlaceMatch?: boolean;
+  scoring: CustomScoringConfig;
+}
+
+export type FormulaPhaseNodeType = 'pool_round' | 'direct_elimination' | 'classification';
+
+export interface FormulaPhaseNode {
+  id: string;
+  type: FormulaPhaseNodeType;
+  label?: string;
+  config: CustomPoolRoundConfig | CustomDEConfig;
+}
+
+export interface CustomFormulaConfig {
+  version: 1;
+  phases: FormulaPhaseNode[];
+  formulaName?: string;
+  notes?: string;
+}
+
+export interface FormulaPhaseSimulation {
+  phaseIndex: number;
+  type: FormulaPhaseNodeType;
+  inputFencers: number;
+  poolCount?: number;
+  poolSizes?: number[];
+  matchCount?: number;
+  advancingFencers?: number;
+  bracketSize?: number;
+}
+
+export interface FormulaSimulation {
+  phases: FormulaPhaseSimulation[];
+  totalMatches: number;
+  estimatedDurationMinutes: number;
+  warnings: string[];
+}
+
+// ============================================================================
 // Direct Elimination Table (Tableau)
 // ============================================================================
 
@@ -479,6 +570,7 @@ export interface CompetitionSettings {
   minTeamSize: number; // Taille min équipe (compétitions par équipes)
   questConfig?: QuestPhaseConfig; // Configuration du Tour Quest (Sabre Laser uniquement)
   refereeFeatureEnabled?: boolean; // Activer la gestion des arbitres sur arènes et saisie distante
+  customFormula?: CustomFormulaConfig; // Formule à la carte (arme CUSTOM uniquement)
 }
 
 export interface Phase extends BaseEntity {

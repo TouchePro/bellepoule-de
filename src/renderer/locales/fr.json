@@ -38,7 +38,8 @@
     "epee": "Épée",
     "foil": "Fleuret",
     "sabre": "Sabre",
-    "laser": "Sabre Laser"
+    "laser": "Sabre Laser",
+    "custom": "À la carte"
   },
   "genders": {
     "male": "Masculin",
@@ -351,5 +352,31 @@
     "timer": "Démarrer/Pause le chronomètre",
     "nav_list": "Naviguer dans la liste",
     "validate": "Valider / Ouvrir"
+  },
+  "formula": {
+    "builder_title": "Constructeur de formule",
+    "add_pool_round": "Ajouter un tour de poules",
+    "add_de": "Ajouter élimination directe",
+    "add_classification": "Ajouter classement",
+    "save_template": "Enregistrer comme modèle",
+    "load_template": "Charger un modèle",
+    "advancement_rule": "Règle d'avancement",
+    "advancement_all": "Tous avancent",
+    "advancement_percent": "Top %",
+    "advancement_fixed": "Nombre fixe",
+    "advancement_bracket": "Tableau suivant",
+    "ranking_criteria": "Critères de classement",
+    "criterion_vm": "V/M (ratio victoires)",
+    "criterion_index": "Indice (TD−TR)",
+    "criterion_td": "Touches données",
+    "criterion_tr": "Touches reçues",
+    "criterion_direct": "Confrontation directe",
+    "criterion_initial": "Classement initial",
+    "simulation_title": "Simulation",
+    "pool_round_n": "Tour de poules {{n}}",
+    "scoring_standard": "Standard (1 touche = 1 pt)",
+    "scoring_zones": "Zones personnalisées",
+    "zone_label": "Zone",
+    "zone_points": "Points"
   }
 }
