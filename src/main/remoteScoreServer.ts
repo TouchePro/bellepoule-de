@@ -1058,14 +1058,18 @@ export class RemoteScoreServer {
 
         const arena = this.arenas.get(arenaId);
 
-        // Si l'arène a un pool associé, retourner TOUS les matchs en attente du pool
-        // (pas seulement le match courant) pour que l'arbitre voie les prochains matchs.
+        // Si l'arène a un pool associé, retourner les matchs NON TERMINÉS du pool.
+        // On exclut les matchs finis pour que, en fin de poule, le fallthrough
+        // atteigne la file d'attente DE (Tier 3) au lieu de bloquer dessus.
         const currentPoolId = arena?.currentMatch?.poolId;
         if (currentPoolId && this.sessionMatches.length > 0) {
           const rawPoolMatches = this.sessionMatches
             .filter((m: any) => {
               const matchPoolId = m.poolId || m.pool?.id || `pool-${m.poolNumber || m.number}`;
-              return matchPoolId === currentPoolId;
+              if (matchPoolId !== currentPoolId) return false;
+              const scoreUpdate = this.sessionMatchScores.get(m.id);
+              const effectiveStatus = scoreUpdate?.status ?? m.status;
+              return effectiveStatus !== MatchStatus.FINISHED;
             })
             .map((m: any) => {
               const scoreUpdate = this.sessionMatchScores.get(m.id);
@@ -1073,15 +1077,16 @@ export class RemoteScoreServer {
             });
           const poolMatches = this.applySmartMatchOrder(rawPoolMatches as Match[]);
           console.log(
-            `[RemoteScoreServer] ${poolMatches.length} matchs de pool pour arène ${arenaId} (pool ${currentPoolId})`
+            `[RemoteScoreServer] ${poolMatches.length} matchs de pool non terminés pour arène ${arenaId} (pool ${currentPoolId})`
           );
           if (poolMatches.length > 0) {
             return res.json({ matches: poolMatches, poolId: currentPoolId, poolName: null });
           }
         }
 
-        // Fallback: match courant seul
-        if (arena?.currentMatch) {
+        // Fallback: match courant seul — ignoré s'il est terminé pour éviter
+        // de bloquer l'accès à la file d'attente DE (Tier 3).
+        if (arena?.currentMatch && arena.currentMatch.status !== MatchStatus.FINISHED) {
           console.log(
             `[RemoteScoreServer] Fallback match courant pour arène ${arenaId}: ${arena.currentMatch.id}`
           );
