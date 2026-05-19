@@ -148,10 +148,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     showToast,
   });
 
-  // Synchroniser le nombre d'arènes avec le nombre de poules (seed initial uniquement)
+  // Synchroniser le nombre d'arènes avec le nombre de poules (seed initial uniquement, pas de valeur restaurée)
   useEffect(() => {
-    if (pools.length > 0 && remoteArenaCount === 1) setRemoteArenaCount(pools.length);
-  }, [pools.length]);
+    if (!isLoaded) return;
+    if (pools.length > 0 && remoteArenaCount === 1 && !restoredState?.remoteArenaCount) {
+      setRemoteArenaCount(pools.length);
+    }
+  }, [isLoaded, pools.length]);
 
   const poolPrepParams = useMemo(() => ({
     poolCount: pools.length,
@@ -170,6 +173,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     tableauMatches,
     finalResults,
     skipPoolPhase,
+    remoteArenaCount,
     poolPrepParams,
   });
 
@@ -202,6 +206,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         setMaxFencersPerPool(restoredState.poolPrepParams.maxFencersPerPool);
       }
       if (restoredState.skipPoolPhase) setSkipPoolPhase(restoredState.skipPoolPhase);
+      if (restoredState.remoteArenaCount != null) setRemoteArenaCount(restoredState.remoteArenaCount);
     }
   }, [restoredState, isLoaded]);
 
