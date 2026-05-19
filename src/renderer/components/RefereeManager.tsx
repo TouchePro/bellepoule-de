@@ -4,9 +4,10 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Referee, Match, Pool, Competition } from '../../shared/types';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { Referee, Match, Pool, Competition, MatchStatus } from '../../shared/types';
 import { RefereeManager, RefereeRotationConfig } from '../../shared/services/refereeManager';
+import { parseEngardeRefereeFile } from '../../shared/utils/fileParser';
 
 interface RefereeManagerProps {
   competition: Competition;
@@ -36,6 +37,8 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
   const [activeTab, setActiveTab] = useState<'referees' | 'assignments' | 'history'>('referees');
   const [newReferee, setNewReferee] = useState({ name: '', club: '', license: '', category: '', nationality: 'FRA' });
   const [addError, setAddError] = useState('');
+  const [importStatus, setImportStatus] = useState<{ count: number; errors: string[] } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [historyRows, setHistoryRows] = useState<Array<{
     matchId: string; matchNumber: number; poolName: string | null;
     fencerAName: string; fencerBName: string;
@@ -65,7 +68,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
   };
 
   const handleAutoAssign = () => {
-    const newAssignments = manager.assignRefereesToMatches(matches, pools);
+    const newAssignments = manager.assignRefereesToMatches(pendingMatches, pools);
     setAssignments(newAssignments);
     onAssignmentsChange(newAssignments);
     persistAssignments(newAssignments);
@@ -99,6 +102,39 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
     }
     return null;
   };
+
+  const handleImportFile = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const content = await file.text();
+    const parsed = parseEngardeRefereeFile(content);
+    let count = 0;
+    const errors: string[] = [...parsed.errors];
+    for (const ref of parsed.referees) {
+      try {
+        const name = `${ref.firstName} ${ref.lastName}`.trim();
+        const created = await window.electronAPI.db.createReferee(competition.id, {
+          name,
+          club: ref.club,
+          license: ref.license,
+          category: ref.category,
+          nationality: ref.nationality,
+          gender: ref.gender,
+        });
+        onRefereesChange([...referees, created]);
+        count++;
+      } catch (err: any) {
+        errors.push(err?.message ?? 'Erreur import');
+      }
+    }
+    setImportStatus({ count, errors });
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }, [competition.id, referees, onRefereesChange]);
+
+  const pendingMatches = useMemo(
+    () => matches.filter(m => m.status !== MatchStatus.FINISHED && m.status !== MatchStatus.CANCELLED),
+    [matches]
+  );
 
   return (
     <div
@@ -195,6 +231,23 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
             >
               ＋ Ajouter
             </button>
+          </div>
+
+          {/* Import fichier Engarde */}
+          <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <input ref={fileInputRef} type="file" accept=".txt,.csv" style={{ display: 'none' }} onChange={handleImportFile} />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              style={{ background: '#6d28d9', color: 'white', border: 'none', padding: '0.5rem 1.25rem', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' }}
+            >
+              📂 Importer fichier Engarde
+            </button>
+            {importStatus && (
+              <span style={{ fontSize: '0.875rem', color: importStatus.errors.length ? '#dc2626' : '#166534' }}>
+                {importStatus.count} arbitre(s) importé(s)
+                {importStatus.errors.length > 0 && ` — ${importStatus.errors.length} erreur(s)`}
+              </span>
+            )}
           </div>
 
           {/* Liste arbitres */}
@@ -515,8 +568,11 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
       {/* Match Assignments */}
       <div>
         <h3 style={{ marginBottom: '1rem', color: '#374151' }}>Assignations des Matchs</h3>
+        {pendingMatches.length === 0 && (
+          <p style={{ color: '#6b7280', fontStyle: 'italic' }}>Aucun match en attente d'arbitre.</p>
+        )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          {matches.map(match => {
+          {pendingMatches.map(match => {
             const assignedReferee = assignments.get(match.id);
             const conflictWarning = assignedReferee
               ? getConflictWarning(match, assignedReferee)
