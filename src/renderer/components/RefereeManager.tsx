@@ -233,14 +233,15 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
             </button>
           </div>
 
-          {/* Import fichier Engarde */}
+          {/* Import fichier Arbitres */}
           <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <input ref={fileInputRef} type="file" accept=".txt,.csv" style={{ display: 'none' }} onChange={handleImportFile} />
             <button
               onClick={() => fileInputRef.current?.click()}
+              title="Format attendu : NOM;Prénom;Sexe(M/F);Catégorie;Club;Région;Nationalité — une ligne par arbitre, séparateur « ; », .txt ou .csv"
               style={{ background: '#6d28d9', color: 'white', border: 'none', padding: '0.5rem 1.25rem', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' }}
             >
-              📂 Importer fichier Engarde
+              📂 Importer fichier Arbitres
             </button>
             {importStatus && (
               <span style={{ fontSize: '0.875rem', color: importStatus.errors.length ? '#dc2626' : '#166534' }}>
