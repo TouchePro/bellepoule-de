@@ -505,30 +505,31 @@
         min-height: 1.2rem;
       }
 
-      /* ── FIN overlay ── */
+      /* ── FIN bandeau ── */
       .fin-overlay {
         display: none;
-        position: fixed;
-        inset: 0;
-        background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
-        z-index: 200;
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: linear-gradient(90deg, #1e3a5f 0%, #0f172a 100%);
+        padding: 0.5rem 1rem;
         align-items: center;
         justify-content: center;
-        flex-direction: column;
-        gap: 1.5rem;
+        gap: 0.75rem;
         text-align: center;
       }
 
       .fin-overlay.visible { display: flex; }
 
       .fin-overlay h1 {
-        font-size: clamp(1.8rem, 5vw, 3.5rem);
+        font-size: 1rem;
         font-weight: 800;
         color: #e2e8f0;
         letter-spacing: 0.02em;
+        margin: 0;
       }
 
-      .fin-overlay .fin-icon { font-size: 4rem; }
+      .fin-overlay .fin-icon { font-size: 1.2rem; }
 
       /* ── Bouton signature ── */
       .sig-btn {
@@ -678,8 +679,9 @@
 
     <!-- Overlay fin de poule -->
     <div class="fin-overlay" id="fin-overlay">
-      <div class="fin-icon">🏆</div>
+      <span class="fin-icon">🏆</span>
       <h1 data-i18n="pool.finished">POULE TERMINÉE</h1>
+      <span style="color:#94a3b8;font-size:0.85rem;font-weight:500;">— Phase de signature</span>
     </div>
 
     <!-- Modal signature -->
@@ -764,11 +766,13 @@
 
       // ── Rendu principal ──
       function renderAll(data) {
-        if (data.isComplete) {
-          document.getElementById('fin-overlay').classList.add('visible');
-          return;
+        const isComplete = !!data.isComplete;
+        const finBanner = document.getElementById('fin-overlay');
+        if (isComplete) {
+          finBanner.classList.add('visible');
+        } else {
+          finBanner.classList.remove('visible');
         }
-        document.getElementById('fin-overlay').classList.remove('visible');
 
         document.getElementById('pool-title').textContent =
           `${data.poolName || 'Poule'} — Piste ${arenaNumber}`;
@@ -780,14 +784,14 @@
         badge.textContent = `${done}/${total}`;
 
         if (currentTab === 'tableau') {
-          renderGrid(data.fencers, data.matches);
+          renderGrid(data.fencers, data.matches, isComplete);
         } else {
-          renderMatchesList(data.fencers, data.matches);
+          renderMatchesList(data.fencers, data.matches, isComplete);
         }
       }
 
       // ── Grille NxN avec colonnes numérotées ──
-      function renderGrid(fencers, matches) {
+      function renderGrid(fencers, matches, locked) {
         const container = document.getElementById('pool-container');
 
         const table = document.createElement('table');
@@ -862,7 +866,7 @@
               td.classList.add('diagonal');
             } else {
               const match = findMatch(matches, rowFencer.id, colFencer.id);
-              renderCell(td, match, rowFencer, colFencer);
+              renderCell(td, match, rowFencer, colFencer, locked);
             }
 
             tr.appendChild(td);
@@ -881,7 +885,7 @@
       }
 
       // ── Liste des matchs ──
-      function renderMatchesList(fencers, matches) {
+      function renderMatchesList(fencers, matches, locked) {
         const container = document.getElementById('pool-container');
         container.innerHTML = '';
 
@@ -897,7 +901,7 @@
           lbl.className = 'section-label';
           lbl.textContent = `À jouer (${pending.length})`;
           view.appendChild(lbl);
-          pending.forEach((m, i) => view.appendChild(buildMatchItem(m, fencers, i + 1, false)));
+          pending.forEach((m, i) => view.appendChild(buildMatchItem(m, fencers, i + 1, false, locked)));
         }
 
         if (finished.length > 0) {
@@ -905,7 +909,7 @@
           lbl.className = 'section-label';
           lbl.textContent = `Terminés (${finished.length})`;
           view.appendChild(lbl);
-          finished.forEach((m, i) => view.appendChild(buildMatchItem(m, fencers, i + 1, true)));
+          finished.forEach((m, i) => view.appendChild(buildMatchItem(m, fencers, i + 1, true, locked)));
         }
 
         if (matches.length === 0) {
@@ -918,7 +922,7 @@
         container.appendChild(view);
       }
 
-      function buildMatchItem(match, fencers, idx, isFinished) {
+      function buildMatchItem(match, fencers, idx, isFinished, locked) {
         const item = document.createElement('div');
         item.className = 'match-item' + (isFinished ? ' finished' : '');
 
@@ -969,13 +973,15 @@
         fencersDiv.appendChild(nameB);
         item.appendChild(fencersDiv);
 
-        if (!isFinished && fA && fB) {
-          item.addEventListener('click', () => openModal(match, fA, fB));
-        } else if (isFinished) {
-          item.addEventListener('click', () => {
-            if (fA && fB) openModal(match, fA, fB);
-          });
-          item.style.cursor = 'pointer';
+        if (!locked) {
+          if (!isFinished && fA && fB) {
+            item.addEventListener('click', () => openModal(match, fA, fB));
+          } else if (isFinished) {
+            item.addEventListener('click', () => {
+              if (fA && fB) openModal(match, fA, fB);
+            });
+            item.style.cursor = 'pointer';
+          }
         }
 
         return item;
@@ -1004,7 +1010,7 @@
         ) || null;
       }
 
-      function renderCell(td, match, rowFencer, colFencer) {
+      function renderCell(td, match, rowFencer, colFencer, locked) {
         if (!match) {
           td.classList.add('not-played');
           return;
@@ -1015,7 +1021,7 @@
 
         if (!scoreForRow || match.status !== 'finished') {
           td.classList.add('not-played');
-          td.addEventListener('click', () => openModal(match, rowFencer, colFencer));
+          if (!locked) td.addEventListener('click', () => openModal(match, rowFencer, colFencer));
           return;
         }
 
@@ -1031,8 +1037,10 @@
           td.classList.add('defeat'); td.textContent = `D${scoreForRow.value ?? ''}`;
         }
 
-        td.style.cursor = 'pointer';
-        td.addEventListener('click', () => openModal(match, rowFencer, colFencer));
+        if (!locked) {
+          td.style.cursor = 'pointer';
+          td.addEventListener('click', () => openModal(match, rowFencer, colFencer));
+        }
       }
 
       function shortName(f) {
