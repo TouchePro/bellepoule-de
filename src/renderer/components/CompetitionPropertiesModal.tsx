@@ -41,6 +41,9 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
   const [thirdPlaceMatch, setThirdPlaceMatch] = useState(
     competition.settings?.thirdPlaceMatch ?? false
   );
+  const [playAllPositions, setPlayAllPositions] = useState(
+    competition.settings?.playAllPositions ?? false
+  );
 
   const [poolTimerSeconds, setPoolTimerSeconds] = useState(
     competition.settings?.defaultPoolTimerSeconds ?? 180
@@ -103,6 +106,7 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
       poolRounds,
       hasDirectElimination,
       thirdPlaceMatch,
+      playAllPositions,
       defaultPoolMaxScore: poolMaxScore,
       defaultTableMaxScore: tableMaxScore,
       defaultPoolTimerSeconds: poolTimerSeconds,
@@ -246,6 +250,20 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
                 </label>
                 <small style={{ color: '#6b7280', fontSize: '0.75rem', marginLeft: '1.5rem' }}>
                   {t('competition.third_place_match_description')}
+                </small>
+              </div>
+              <div className="form-group">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={playAllPositions}
+                    onChange={e => setPlayAllPositions(e.target.checked)}
+                    style={{ marginRight: '0.5rem' }}
+                  />
+                  Jouer toutes les places
+                </label>
+                <small style={{ color: '#6b7280', fontSize: '0.75rem', marginLeft: '1.5rem' }}>
+                  Les perdants de chaque tour forment un tableau de classement
                 </small>
               </div>
             </>
