@@ -392,6 +392,12 @@ export class DatabaseManager {
 
   public deleteCompetition(id: string): void {
     if (!this.db) throw new Error('Database not open');
+    this.run(
+      `DELETE FROM pool_signatures WHERE pool_id IN (
+         SELECT p.id FROM pools p JOIN phases ph ON p.phase_id = ph.id WHERE ph.competition_id = ?
+       )`,
+      [id]
+    );
     this.run('DELETE FROM fencers WHERE competition_id = ?', [id]);
     this.run('DELETE FROM competitions WHERE id = ?', [id]);
     this.save();
@@ -1337,6 +1343,7 @@ export class DatabaseManager {
 
   public clearPoolsForPhase(phaseId: string): void {
     if (!this.db) throw new Error('Database not open');
+    this.run('DELETE FROM pool_signatures WHERE pool_id IN (SELECT id FROM pools WHERE phase_id = ?)', [phaseId]);
     this.run('DELETE FROM matches WHERE pool_id IN (SELECT id FROM pools WHERE phase_id = ?)', [phaseId]);
     this.run('DELETE FROM pool_fencers WHERE pool_id IN (SELECT id FROM pools WHERE phase_id = ?)', [phaseId]);
     this.run('DELETE FROM pools WHERE phase_id = ?', [phaseId]);
@@ -1490,6 +1497,10 @@ export class DatabaseManager {
 
   public deletePhase(id: string): void {
     if (!this.db) throw new Error('Database not open');
+    this.run('DELETE FROM pool_signatures WHERE pool_id IN (SELECT id FROM pools WHERE phase_id = ?)', [id]);
+    this.run('DELETE FROM matches WHERE pool_id IN (SELECT id FROM pools WHERE phase_id = ?)', [id]);
+    this.run('DELETE FROM pool_fencers WHERE pool_id IN (SELECT id FROM pools WHERE phase_id = ?)', [id]);
+    this.run('DELETE FROM pools WHERE phase_id = ?', [id]);
     this.run('DELETE FROM phases WHERE id = ?', [id]);
     this.save();
   }
