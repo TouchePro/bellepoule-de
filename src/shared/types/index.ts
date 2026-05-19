@@ -571,6 +571,7 @@ export interface CompetitionSettings {
   questConfig?: QuestPhaseConfig; // Configuration du Tour Quest (Sabre Laser uniquement)
   refereeFeatureEnabled?: boolean; // Activer la gestion des arbitres sur arènes et saisie distante
   customFormula?: CustomFormulaConfig; // Formule à la carte (arme CUSTOM uniquement)
+  playAllPositions?: boolean; // Jouer toutes les places (tableaux de classement)
 }
 
 export interface Phase extends BaseEntity {
