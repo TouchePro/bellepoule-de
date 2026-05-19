@@ -1084,27 +1084,36 @@ export class RemoteScoreServer {
           }
         }
 
-        // Fallback: match courant seul — ignoré s'il est terminé pour éviter
-        // de bloquer l'accès à la file d'attente DE (Tier 3).
-        if (arena?.currentMatch && arena.currentMatch.status !== MatchStatus.FINISHED) {
-          console.log(
-            `[RemoteScoreServer] Fallback match courant pour arène ${arenaId}: ${arena.currentMatch.id}`
-          );
-          return res.json({
-            matches: [
-              {
-                id: arena.currentMatch.id,
-                poolId: arena.currentMatch.poolId,
-                fencerA: arena.currentMatch.fencerA,
-                fencerB: arena.currentMatch.fencerB,
-                scoreA: arena.currentMatch.scoreA,
-                scoreB: arena.currentMatch.scoreB,
-                status: arena.currentMatch.status,
-              },
-            ],
-            poolId: null,
-            poolName: null,
-          });
+        // Fallback: match courant seul.
+        // On utilise sessionMatches comme source de vérité pour le statut : en "fast poule",
+        // les scores sont saisis via l'UI principale sans passer par finishArenaMatch, donc
+        // arena.currentMatch.status reste 'not_started' en mémoire alors que le match est
+        // réellement terminé dans sessionMatches.
+        if (arena?.currentMatch) {
+          const scoreUpdate = this.sessionMatchScores.get(arena.currentMatch.id);
+          const inSession = this.sessionMatches.find((m: any) => m.id === arena.currentMatch!.id);
+          const effectiveStatus =
+            scoreUpdate?.status ?? inSession?.status ?? arena.currentMatch.status;
+          if (effectiveStatus !== MatchStatus.FINISHED) {
+            console.log(
+              `[RemoteScoreServer] Fallback match courant pour arène ${arenaId}: ${arena.currentMatch.id}`
+            );
+            return res.json({
+              matches: [
+                {
+                  id: arena.currentMatch.id,
+                  poolId: arena.currentMatch.poolId,
+                  fencerA: arena.currentMatch.fencerA,
+                  fencerB: arena.currentMatch.fencerB,
+                  scoreA: arena.currentMatch.scoreA,
+                  scoreB: arena.currentMatch.scoreB,
+                  status: effectiveStatus,
+                },
+              ],
+              poolId: null,
+              poolName: null,
+            });
+          }
         }
 
         // File d'attente DE
@@ -3721,7 +3730,24 @@ export class RemoteScoreServer {
       const arena = this.arenas.get(arenaId);
       if (!arena) continue;
       const existing = this.arenaMatchQueue.get(arenaId) || [];
-      if (!arena.currentMatch && queue.length > 0) {
+
+      // Déterminer si l'arène est effectivement libre : en fast-poule les scores sont
+      // saisis via l'UI principale, donc arena.currentMatch.status reste 'not_started'
+      // alors que le match est terminé dans sessionMatches. On vérifie sessionMatches.
+      let arenaEffectivelyFree = !arena.currentMatch;
+      if (!arenaEffectivelyFree && arena.currentMatch) {
+        const scoreUpdate = this.sessionMatchScores.get(arena.currentMatch.id);
+        const inSession = this.sessionMatches.find((m: any) => m.id === arena.currentMatch!.id);
+        const effectiveStatus =
+          scoreUpdate?.status ?? inSession?.status ?? arena.currentMatch.status;
+        if (effectiveStatus === MatchStatus.FINISHED) {
+          arena.currentMatch = null;
+          arena.status = 'idle';
+          arenaEffectivelyFree = true;
+        }
+      }
+
+      if (arenaEffectivelyFree && queue.length > 0) {
         this.assignMatchToArena(arenaId, queue[0]);
         this.arenaMatchQueue.set(arenaId, [...existing, ...queue.slice(1)]);
       } else {
