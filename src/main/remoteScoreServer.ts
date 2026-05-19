@@ -762,7 +762,7 @@ export class RemoteScoreServer {
       const arenaId = rawId.startsWith('arena') ? rawId : `arena${rawId}`;
       try {
         const arena = this.arenas.get(arenaId);
-        const poolId = arena?.currentMatch?.poolId;
+        const poolId = arena?.currentMatch?.poolId ?? arena?.activePoolId;
         if (!poolId) {
           return res.status(404).json({ error: 'Aucune poule assignée à cette arène' });
         }
@@ -936,11 +936,10 @@ export class RemoteScoreServer {
         const sigMap = this.poolSignaturesCache.get(poolId);
         const signatures: Record<string, string> = sigMap ? Object.fromEntries(sigMap) : {};
         for (const [aId, arena] of this.arenas) {
-          if (arena.currentMatch?.poolId === poolId) {
+          if ((arena.currentMatch?.poolId ?? arena.activePoolId) === poolId) {
             this.io
               .to(`pool:${aId}`)
               .emit(`pool:${aId}:update`, { poolId, fencers, matches, isComplete, signatures });
-            break;
           }
         }
 
@@ -1018,11 +1017,10 @@ export class RemoteScoreServer {
         const signatures = Object.fromEntries(this.poolSignaturesCache.get(poolId)!);
         const isComplete = allMatches.every((m: any) => m.status === MatchStatus.FINISHED);
         for (const [aId, arena] of this.arenas) {
-          if (arena.currentMatch?.poolId === poolId) {
+          if ((arena.currentMatch?.poolId ?? arena.activePoolId) === poolId) {
             this.io
               .to(`pool:${aId}`)
               .emit(`pool:${aId}:update`, { poolId, fencers, matches: allMatches, isComplete, signatures });
-            break;
           }
         }
 
@@ -2301,6 +2299,7 @@ export class RemoteScoreServer {
 
     arena.currentMatch = match;
     arena.status = 'ready';
+    if (match.poolId) arena.activePoolId = match.poolId;
 
     this.updateArena(arenaId, {
       status: 'ready',
@@ -3552,29 +3551,28 @@ export class RemoteScoreServer {
     }
 
     for (const poolId of updatedPoolIds) {
+      const fencers = this.poolFencersCache.get(poolId) ?? this.db.getPoolFencers(poolId);
+      const inMemory = this.sessionMatches
+        .filter(
+          (m: any) =>
+            !m.isTableau &&
+            (m.poolId || m.pool?.id || `pool-${m.poolNumber || m.number}`) === poolId
+        )
+        .sort((a: any, b: any) => (a.number || 0) - (b.number || 0));
+      const poolMatches =
+        inMemory.length > 0
+          ? inMemory.map((m: any) => {
+              const u = this.sessionMatchScores.get(m.id);
+              return u ? { ...m, ...u } : m;
+            })
+          : this.db.getMatchesByPool(poolId);
+      const isComplete =
+        poolMatches.length > 0 && poolMatches.every((m: any) => m.status === MatchStatus.FINISHED);
       for (const [aId, arena] of this.arenas) {
-        if (arena.currentMatch?.poolId !== poolId) continue;
-        const fencers = this.poolFencersCache.get(poolId) ?? this.db.getPoolFencers(poolId);
-        const inMemory = this.sessionMatches
-          .filter(
-            (m: any) =>
-              !m.isTableau &&
-              (m.poolId || m.pool?.id || `pool-${m.poolNumber || m.number}`) === poolId
-          )
-          .sort((a: any, b: any) => (a.number || 0) - (b.number || 0));
-        const poolMatches =
-          inMemory.length > 0
-            ? inMemory.map((m: any) => {
-                const u = this.sessionMatchScores.get(m.id);
-                return u ? { ...m, ...u } : m;
-              })
-            : this.db.getMatchesByPool(poolId);
-        const isComplete =
-          poolMatches.length > 0 && poolMatches.every((m: any) => m.status === MatchStatus.FINISHED);
+        if ((arena.currentMatch?.poolId ?? arena.activePoolId) !== poolId) continue;
         this.io
           .to(`pool:${aId}`)
           .emit(`pool:${aId}:update`, { poolId, fencers, matches: poolMatches, isComplete });
-        break;
       }
     }
   }
