@@ -53,6 +53,11 @@ export const WEAPON_CARD_CONFIGS: Record<Weapon, WeaponCardConfig> = {
     reasonToGroup: REASON_TO_GROUP,
     scoreImpact: { white: 0, yellow: 1, red: 1, black: 0 },
   },
+  [Weapon.CUSTOM]: {
+    availableReasons: ALL_REASONS,
+    reasonToGroup: REASON_TO_GROUP,
+    scoreImpact: CLASSICAL_SCORE_IMPACT,
+  },
 };
 
 export function getWeaponCardConfig(weapon: Weapon): WeaponCardConfig {
