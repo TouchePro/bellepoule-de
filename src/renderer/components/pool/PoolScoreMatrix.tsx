@@ -11,6 +11,7 @@ interface PoolScoreMatrixProps {
   onCellClick: (rowFencer: Fencer, colFencer: Fencer) => void;
   onFencerChangePool?: (fencer: Fencer) => void;
   onMatchReset?: (rowFencer: Fencer, colFencer: Fencer) => void;
+  isLocked?: boolean;
 }
 
 const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
@@ -21,6 +22,7 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
   onCellClick,
   onFencerChangePool,
   onMatchReset,
+  isLocked = false,
 }) => {
   const fencers = pool.fencers;
 
@@ -213,8 +215,8 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
                 <div
                   key={colIndex}
                   className={`pool-cell ${cellClass}`}
-                  onClick={() => onCellClick(rowFencer, colFencer)}
-                  style={{ cursor: 'pointer', position: 'relative' }}
+                  onClick={() => !isLocked && onCellClick(rowFencer, colFencer)}
+                  style={{ cursor: isLocked ? 'default' : 'pointer', position: 'relative' }}
                 >
                   {score ? (
                     <>

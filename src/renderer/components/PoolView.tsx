@@ -67,6 +67,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   const { addAction, undo, redo, canUndo, canRedo } = useHistory();
 
   const isLaserSabre = weapon === Weapon.LASER;
+  const isLocked = pool.fencers.length > 0 && signedFencerIds.filter(id => pool.fencers.some(f => f.id === id)).length >= pool.fencers.length;
   const fencers = pool.fencers;
 
   const isVisible = useCallback(
@@ -227,16 +228,18 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           target.tagName !== 'TEXTAREA'
         ) {
           e.preventDefault();
-          const firstPending = orderedMatches.pending[0];
-          if (firstPending) {
-            openScoreModal(firstPending.index);
-            setKeyboardFocusField('A');
+          if (!isLocked) {
+            const firstPending = orderedMatches.pending[0];
+            if (firstPending) {
+              openScoreModal(firstPending.index);
+              setKeyboardFocusField('A');
+            }
           }
           return;
         }
         if (e.key === 'z' && e.ctrlKey && !e.shiftKey) {
           e.preventDefault();
-          undo();
+          if (!isLocked) undo();
           return;
         }
         if (
@@ -245,7 +248,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           (e.key === 'Z' && e.ctrlKey && e.shiftKey)
         ) {
           e.preventDefault();
-          redo();
+          if (!isLocked) redo();
           return;
         }
       }
@@ -288,6 +291,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   };
 
   const handleCellClick = (rowFencer: Fencer, colFencer: Fencer) => {
+    if (isLocked) return;
     if (rowFencer.id === colFencer.id) return;
     const matchIndex = getMatchIndex(rowFencer, colFencer);
     if (matchIndex === -1) return;
@@ -886,7 +890,8 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
       toggleColumn={toggleColumn}
       onCellClick={handleCellClick}
       onFencerChangePool={onFencerChangePool}
-      onMatchReset={onMatchReset ? (rowFencer, colFencer) => {
+      isLocked={isLocked}
+      onMatchReset={!isLocked && onMatchReset ? (rowFencer, colFencer) => {
         const matchIndex = getMatchIndex(rowFencer, colFencer);
         if (matchIndex !== -1) onMatchReset(matchIndex);
       } : undefined}
@@ -1332,7 +1337,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                     {fencerBAbandoned && ' ✕'}
                     {match.scoreB?.isVictory && !isAbandonMatch ? ' ✓' : ''}
                   </span>
-                  {!isAbandonMatch && onMatchReset && (
+                  {!isAbandonMatch && !isLocked && onMatchReset && (
                     <button
                       onClick={e => {
                         e.stopPropagation();
@@ -1424,6 +1429,23 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
 
   return (
     <div className="card">
+      {isLocked && (
+        <div style={{
+          background: '#fef2f2',
+          border: '1px solid #fca5a5',
+          borderRadius: '6px',
+          padding: '0.5rem 1rem',
+          marginBottom: '0.5rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          color: '#991b1b',
+          fontWeight: 600,
+          fontSize: '0.875rem',
+        }}>
+          🔒 Feuille signée par tous les combattants — scores verrouillés
+        </div>
+      )}
       <div
         className="card-header"
         style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
