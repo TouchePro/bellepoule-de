@@ -3638,13 +3638,13 @@ export class RemoteScoreServer {
       for (const [aId, arena] of this.arenas) {
         if ((arena.currentMatch?.poolId ?? arena.activePoolId) !== poolId) continue;
         if (arena.currentMatch) {
-          const updatedMatch = this.sessionMatches.find((m: any) => m.id === arena.currentMatch!.id);
-          if (updatedMatch?.refereeId && updatedMatch.refereeId !== arena.currentMatch.refereeId) {
+          const currentMatch = arena.currentMatch;
+          const updatedMatch = this.sessionMatches.find((m: any) => m.id === currentMatch.id);
+          if (updatedMatch?.refereeId && updatedMatch.refereeId !== currentMatch.referee?.id) {
             const resolvedRef = this.resolveReferee(updatedMatch.refereeId);
             arena.currentMatch = {
-              ...arena.currentMatch,
+              ...currentMatch,
               ...(resolvedRef ? { referee: resolvedRef } : {}),
-              refereeId: updatedMatch.refereeId,
             };
             this.broadcastArenaUpdate(aId, {
               arenaId: aId,
