@@ -1026,6 +1026,17 @@ export class RemoteScoreServer {
           }
         }
 
+        const mainWin = (global as any).mainWindow;
+        if (mainWin) {
+          const sigs = this.poolSignaturesCache.get(poolId)!;
+          const poolFencers = this.poolFencersCache.get(poolId) ?? this.db.getPoolFencers(poolId);
+          mainWin.webContents.send('pool:signature:updated', {
+            poolId,
+            signedFencerIds: Array.from(sigs.keys()),
+            totalFencers: poolFencers.length,
+          });
+        }
+
         res.json({ success: true });
       } catch (err) {
         console.error('[RemoteScoreServer] Erreur signature:', err);

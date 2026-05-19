@@ -62,6 +62,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   const [victoryB, setVictoryB] = useState(false);
   const [matchesUpdateTrigger, setMatchesUpdateTrigger] = useState(0);
   const [keyboardFocusField, setKeyboardFocusField] = useState<'A' | 'B'>('A');
+  const [signedFencerIds, setSignedFencerIds] = useState<string[]>([]);
 
   const { addAction, undo, redo, canUndo, canRedo } = useHistory();
 
@@ -92,6 +93,19 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showColumnMenu]);
+
+  // Charger les signatures au montage et écouter les mises à jour en temps réel
+  useEffect(() => {
+    window.electronAPI.db.getPoolSignatures(pool.id).then(sigs => {
+      setSignedFencerIds(sigs.map(s => s.fencerId));
+    });
+    const unsub = window.electronAPI.onPoolSignatureUpdated(data => {
+      if (data.poolId === pool.id) {
+        setSignedFencerIds(data.signedFencerIds);
+      }
+    });
+    return unsub;
+  }, [pool.id]);
 
   // Raccourcis clavier
 
@@ -1419,6 +1433,31 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           <span className={`badge ${pool.isComplete ? 'badge-success' : 'badge-warning'}`}>
             {pool.isComplete ? 'Terminée' : `${finishedCount}/${totalMatches}`}
           </span>
+          {(() => {
+            const total = pool.fencers.length;
+            const signed = signedFencerIds.filter(id => pool.fencers.some(f => f.id === id)).length;
+            const allSigned = signed === total && total > 0;
+            const noneSigned = signed === 0;
+            return (
+              <span
+                title={allSigned ? 'Tous les combattants ont signé — PDF disponible' : `${signed}/${total} signature(s)`}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.25rem',
+                  padding: '0.2rem 0.5rem',
+                  borderRadius: '12px',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  background: allSigned ? '#d1fae5' : noneSigned ? '#f3f4f6' : '#fef3c7',
+                  color: allSigned ? '#065f46' : noneSigned ? '#6b7280' : '#92400e',
+                  border: `1px solid ${allSigned ? '#6ee7b7' : noneSigned ? '#e5e7eb' : '#fcd34d'}`,
+                }}
+              >
+                ✍️ {signed}/{total}
+              </span>
+            );
+          })()}
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button

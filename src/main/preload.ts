@@ -515,6 +515,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('score:ip-conflict', handler);
   },
 
+  onPoolSignatureUpdated: (callback: (data: { poolId: string; signedFencerIds: string[]; totalFencers: number }) => void) => {
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on('pool:signature:updated', handler);
+    return () => ipcRenderer.removeListener('pool:signature:updated', handler);
+  },
+
   getLogo: () => ipcRenderer.invoke('app:getLogo'),
   onLogoLoaded: (callback: (logo: string | null) => void) => {
     const handler = (_: any, logo: string | null) => callback(logo);
