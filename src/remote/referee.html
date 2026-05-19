@@ -638,6 +638,12 @@
         filter: grayscale(1);
       }
 
+      .card-btn:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+        filter: grayscale(1);
+      }
+
       .control-btn {
         padding: 1rem;
         min-height: 48px;
@@ -1927,6 +1933,10 @@
 
         addScore(fencer, points) {
           if (!this.currentMatch) return;
+          if (this.matchStatus === 'not_started') {
+            this.showNotification('⏱ Démarrez le match pour saisir des touches');
+            return;
+          }
           if (this.matchStatus === 'finished') return;
 
           // En mort subite challenger (10-10), seule la zone C (+5) est autorisée
@@ -1971,6 +1981,10 @@
 
         addCard(fencer, cardType) {
           if (!this.currentMatch) return;
+          if (this.matchStatus === 'not_started') {
+            this.showNotification('⏱ Démarrez le match pour saisir des touches');
+            return;
+          }
           if (this.matchStatus === 'finished') return;
 
           this.pushHistory('card');
@@ -2212,6 +2226,7 @@
 
         arenaExit(fencer) {
           if (!this.currentMatch) return;
+          if (this.matchStatus === 'not_started') return;
           if (this.matchStatus === 'finished') return;
 
           this.pushHistory('arena_exit');
@@ -2250,6 +2265,7 @@
         // Retirer des points (appui long)
         removeScore(fencer, points) {
           if (!this.currentMatch) return;
+          if (this.matchStatus === 'not_started') return;
           if (this.matchStatus === 'finished') return;
 
           const ef = this._effectiveFencer(fencer);
@@ -2288,6 +2304,7 @@
         // Retirer le dernier carton (appui long sur n'importe quel bouton carton)
         removeLastCard(fencer) {
           if (!this.currentMatch) return;
+          if (this.matchStatus === 'not_started') return;
           if (this.matchStatus === 'finished') return;
 
           const ef = this._effectiveFencer(fencer);
@@ -2801,6 +2818,7 @@
             startBtn.textContent = '⏱ Lancer 30s';
             startBtn.className = 'control-btn btn-launch-overtime';
             if (finishBtn) finishBtn.disabled = false;
+            this.updateScoreButtons();
             return;
           }
 
@@ -2826,6 +2844,14 @@
           }
 
           finishBtn.disabled = this.matchStatus !== 'in_progress';
+          this.updateScoreButtons();
+        }
+
+        updateScoreButtons() {
+          const locked = this.matchStatus === 'not_started' || this.matchStatus === 'finished';
+          document.querySelectorAll('.score-btn, .card-btn').forEach(btn => {
+            btn.disabled = locked;
+          });
         }
 
         handleStartPauseClick() {
