@@ -12,6 +12,7 @@ import { logger, LogCategory } from '@shared/services/logger';
 
 const LOGO_STORAGE_KEY = 'bellepoule-logo';
 const WEBHOOK_STORAGE_KEY = 'bellepoule-webhook-url';
+const AUDIT_LOG_KEY = 'bellepoule-audit-log-enabled';
 
 function isWebhookUrlSafe(rawUrl: string): boolean {
   try {
@@ -76,6 +77,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [logoError, setLogoError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [auditLogEnabled, setAuditLogEnabled] = useState<boolean>(
+    () => localStorage.getItem(AUDIT_LOG_KEY) === 'true'
+  );
 
   const [webhookUrl, setWebhookUrl] = useState<string>(
     () => localStorage.getItem(WEBHOOK_STORAGE_KEY) ?? ''
@@ -194,6 +199,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
     }
   };
 
+  const handleAuditLogChange = (enabled: boolean) => {
+    setAuditLogEnabled(enabled);
+    localStorage.setItem(AUDIT_LOG_KEY, String(enabled));
+  };
+
   const handleSave = () => {
     if (settings.language !== language) {
       changeLanguage(settings.language);
@@ -304,6 +314,22 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
             >
               {t('pdfTemplate.openButton')}
             </button>
+          </div>
+
+          {/* Journal des scores */}
+          <div className="form-group" style={{ marginTop: '1rem', borderTop: '1px solid var(--border, #e5e7eb)', paddingTop: '1rem' }}>
+            <label style={{ fontWeight: 600 }}>Journal des scores</label>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted, #6b7280)', marginBottom: '0.5rem' }}>
+              Active l'onglet "Historique des scores" dans la vue compétition.
+            </p>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={auditLogEnabled}
+                onChange={e => handleAuditLogChange(e.target.checked)}
+              />
+              <span style={{ fontSize: '0.875rem' }}>Activer le journal d'audit des scores</span>
+            </label>
           </div>
 
           {/* Notifications webhook */}

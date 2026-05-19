@@ -60,6 +60,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const tableMaxScore = competition.settings?.defaultTableMaxScore ?? 0;
   const isLaserSabre = competition.weapon === Weapon.LASER;
 
+  const auditLogEnabled = localStorage.getItem('bellepoule-audit-log-enabled') === 'true';
+
   // États locaux
   const [currentPhase, setCurrentPhase] = useState<Phase>('checkin');
 
@@ -759,13 +761,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       disabled: false,
       title: undefined as string | undefined,
     },
-    {
+    ...(auditLogEnabled ? [{
       id: 'logs',
       label: t('phases.logs'),
       icon: '📜',
       disabled: false,
       title: undefined as string | undefined,
-    },
+    }] : []),
     ...(competition.settings?.refereeFeatureEnabled
       ? [
           {
