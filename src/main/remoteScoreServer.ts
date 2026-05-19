@@ -3190,7 +3190,7 @@ export class RemoteScoreServer {
       allMatches = realMatches.filter(
         m =>
           m.isTableau
-            ? m.status === 'not_started' || m.status === 'in_progress'
+            ? !m.status || m.status === 'not_started' || m.status === 'in_progress'
             : true // Tous les matchs de poule, y compris finished (nécessaires pour la grille)
       );
       console.log(`[RemoteScoreServer] ${allMatches.length} matchs après filtrage`);
