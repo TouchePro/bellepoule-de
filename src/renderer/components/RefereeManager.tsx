@@ -132,12 +132,12 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
     if (!file) return;
     const content = await file.text();
     const parsed = parseEngardeRefereeFile(content);
-    let count = 0;
     const errors: string[] = [...parsed.errors];
+    const created: typeof referees = [];
     for (const ref of parsed.referees) {
       try {
         const name = `${ref.firstName} ${ref.lastName}`.trim();
-        const created = await window.electronAPI.db.createReferee(competition.id, {
+        const newRef = await window.electronAPI.db.createReferee(competition.id, {
           name,
           club: ref.club,
           license: ref.license,
@@ -145,13 +145,13 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
           nationality: ref.nationality,
           gender: ref.gender,
         });
-        onRefereesChange([...referees, created]);
-        count++;
+        created.push(newRef);
       } catch (err: any) {
         errors.push(err?.message ?? 'Erreur import');
       }
     }
-    setImportStatus({ count, errors });
+    if (created.length > 0) onRefereesChange([...referees, ...created]);
+    setImportStatus({ count: created.length, errors });
     if (fileInputRef.current) fileInputRef.current.value = '';
   }, [competition.id, referees, onRefereesChange]);
 
