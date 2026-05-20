@@ -9,6 +9,7 @@ import App from './App';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import './styles/main.css';
 import './styles/formula.css';
+import './styles/design.css';
 /// <reference path="./types.d.ts" />
 
 // Log unhandled rejections so they appear in DevTools console and don't silently crash
