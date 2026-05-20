@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-import { Fencer, FencerStatus, Gender } from '../types';
+import { Fencer, FencerStatus, Gender, Referee } from '../types';
 import { logger, LogCategory } from '../services/logger';
 
 export interface ImportResult {
@@ -140,6 +140,11 @@ function parseTXTLine(line: string, lineNumber: number): Partial<Fencer> | null 
   if (bestParts.length < 2) {
     logger.warn(LogCategory.BUSINESS, `Line ${lineNumber}: Not enough parts to extract name`, { parts: bestParts.length });
     return null;
+  }
+
+  // Sauter le premier champ s'il est purement numérique (colonne N° du format TXT BellePoule)
+  if (/^\d+$/.test(bestParts[0]) && bestParts.length >= 3) {
+    bestParts = bestParts.slice(1);
   }
 
   const lastName = bestParts[0]?.toUpperCase().trim();
@@ -766,21 +771,20 @@ function parseFFELine(
       region = (parts[9] || '').trim() || undefined;
       club = (parts[10] || '').trim() || undefined;
 
-      // La position finale est dans la section positionInfo (indice 14)
-      // Format: "Position,Statut" (ex: "2,t")
-      const positionField = (parts[14] || '').trim();
-      if (positionField && positionField !== '?') {
-        const parsedRanking = parseInt(positionField);
+      // Le classement FFE est à l'index 11 (4e champ de section2: Licence,Ligue,Club,Classement,...)
+      // NE PAS utiliser parts[14] (position séquentielle "1,t","2,t"...) comme classement
+      const rankingAtIdx11 = (parts[11] || '').trim();
+      if (rankingAtIdx11 && rankingAtIdx11 !== '?') {
+        const parsedRanking = parseInt(rankingAtIdx11);
         if (!isNaN(parsedRanking) && parsedRanking > 0) {
           ranking = parsedRanking;
         }
       }
 
-      // Fallback: si pas de position finale trouvée, chercher dans clubInfo
-      // Le classement est à l'index 10 (4ème position dans section 2: Licence,Ligue,Club,Classement,?,?)
+      // Fallback: certains formats placent le classement en parts[10] (3e champ section2)
       if (ranking === undefined) {
         const rankingField = (parts[10] || '').trim();
-        if (rankingField && rankingField !== '?') {
+        if (rankingField && rankingField !== '?' && !/^[A-Za-zÀ-ÿ]/.test(rankingField)) {
           const parsedRanking = parseInt(rankingField);
           if (!isNaN(parsedRanking) && parsedRanking > 0 && parsedRanking < 10000) {
             ranking = parsedRanking;
@@ -795,10 +799,10 @@ function parseFFELine(
       region = (parts[9] || '').trim() || undefined;
       club = (parts[10] || '').trim() || undefined;
 
-      // Chercher le classement à l'index 10 (4ème position dans section 2: Licence,Ligue,Club,Classement,?,?)
-      const rankingField = (parts[10] || '').trim();
-      if (rankingField && rankingField !== '?') {
-        const parsedRanking = parseInt(rankingField);
+      // Classement à l'index 11 (4e champ section2: Licence,Ligue,Club,Classement,...)
+      const rankingField11 = (parts[11] || '').trim();
+      if (rankingField11 && rankingField11 !== '?') {
+        const parsedRanking = parseInt(rankingField11);
         if (!isNaN(parsedRanking) && parsedRanking > 0 && parsedRanking < 10000) {
           ranking = parsedRanking;
         }
@@ -1262,4 +1266,60 @@ function normalizeName(name: string): string {
     .replace(/[\u0300-\u036f]/g, '') // Supprime les accents
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+// ============================================================================
+// Import arbitres Engarde
+// ============================================================================
+
+export interface RefereeImportResult {
+  referees: Array<Omit<Referee, 'id' | 'ref' | 'createdAt' | 'updatedAt' | 'status'>>;
+  errors: string[];
+  skipped: number;
+}
+
+/**
+ * Parse un fichier arbitres au format Engarde (TXT semicolon-separated).
+ * En-tête attendu: nom;prenom;sexe;categorie;club;ligue;nation;date_nais;licence_fie;licence;
+ */
+export function parseEngardeRefereeFile(content: string): RefereeImportResult {
+  const result: RefereeImportResult = { referees: [], errors: [], skipped: 0 };
+
+  let clean = content;
+  if (clean.charCodeAt(0) === 0xfeff) clean = clean.slice(1);
+
+  const lines = clean.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (lines.length === 0) {
+    result.errors.push('Fichier vide');
+    return result;
+  }
+
+  // Détecter et sauter l'en-tête
+  const firstLower = lines[0].toLowerCase();
+  const startIdx = firstLower.includes('nom') || firstLower.includes('prenom') || firstLower.includes('sexe') ? 1 : 0;
+
+  for (let i = startIdx; i < lines.length; i++) {
+    const parts = lines[i].split(';');
+    if (parts.length < 2) { result.skipped++; continue; }
+
+    const lastName = parts[0]?.trim() || '';
+    const firstName = parts[1]?.trim() || '';
+    if (!lastName && !firstName) { result.skipped++; continue; }
+
+    const sexe = parts[2]?.trim().toUpperCase();
+    const gender: Gender = sexe === 'M' ? Gender.MALE : Gender.FEMALE;
+    const category = parts[3]?.trim() || undefined;
+    const club = parts[4]?.trim() || undefined;
+    const region = parts[5]?.trim() || undefined;
+    const nationality = parts[6]?.trim() || 'FRA';
+    // date_nais ignoré pour les arbitres
+    // licence_fie = parts[8], licence FFE = parts[9]
+    const licenseFIE = parts[8]?.trim() || '';
+    const licenseFFE = parts[9]?.trim() || '';
+    const license = licenseFFE || licenseFIE || undefined;
+
+    result.referees.push({ lastName, firstName, gender, nationality, club, region, license, category });
+  }
+
+  return result;
 }

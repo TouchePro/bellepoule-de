@@ -412,6 +412,14 @@ export interface RemoteServerAPI {
     competitionId: string,
     newPort: number
   ) => Promise<{ success: boolean; serverInfo?: RemoteServerInfo; error?: string }>;
+  acknowledgeDTCall: (
+    competitionId: string,
+    arenaId: string
+  ) => Promise<{ success: boolean; error?: string }>;
+  resetPoolMatch: (
+    competitionId: string,
+    matchId: string
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 // ============================================================================
@@ -475,6 +483,7 @@ export interface DatabaseAPI {
   getPoolFencers: (poolId: string) => Promise<Fencer[]>;
   getPoolsByPhase: (phaseId: string) => Promise<Pool[]>;
   updatePool: (pool: Pool) => Promise<void>;
+  getPoolSignatures: (poolId: string) => Promise<{ fencerId: string; signatureData: string }[]>;
 
   // Phases
   createPhase: (competitionId: string, type: string, order: number, name: string) => Promise<Phase>;
@@ -499,6 +508,12 @@ export interface DatabaseAPI {
   getRefereesByCompetition: (competitionId: string) => Promise<Referee[]>;
   updateReferee: (id: string, updates: Record<string, string | undefined>) => Promise<void>;
   deleteReferee: (id: string) => Promise<void>;
+  getMatchesWithReferees: (competitionId: string) => Promise<Array<{
+    matchId: string; matchNumber: number; poolName: string | null;
+    fencerAName: string; fencerBName: string;
+    scoreA: number | null; scoreB: number | null; status: string;
+    refereeId: string | null; refereeName: string | null;
+  }>>;
 
   // Touch / Card read
   getTouches: (matchId: string) => Promise<
@@ -548,6 +563,9 @@ export interface DatabaseAPI {
   ) => Promise<void>;
   getAbandonSnapshot: (fencerId: string) => Promise<AbandonSnapshot | null>;
   deleteAbandonSnapshot: (fencerId: string) => Promise<void>;
+
+  // Score audit log
+  getScoreAuditLogByCompetition: (competitionId: string) => Promise<ScoreAuditEntry[]>;
 }
 
 export interface FileAPI {
@@ -630,6 +648,37 @@ export interface ScoreAuditLogEntry {
   newValue: string | null; // JSON
 }
 
+export interface ScoreAuditEntry {
+  id: string;
+  matchId: string;
+  arenaId: string | null;
+  poolId: string | null;
+  matchNumber: number | null;
+  poolNumber: number | null;
+  previousScoreA: any | null;
+  previousScoreB: any | null;
+  newScoreA: any;
+  newScoreB: any;
+  changedBy: string;
+  changedAt: string; // ISO 8601
+  reason: string | null;
+  refereeId: string | null;
+  refereeName: string | null;
+  ipAddress: string | null;
+}
+
+export interface ScoreIpConflict {
+  matchId: string;
+  poolId: string;
+  matchNumber: number | null;
+  poolNumber: number | null;
+  originalIp: string;
+  originalReferee: string | null;
+  attemptIp: string;
+  attemptReferee: string;
+  timestamp: string; // ISO 8601
+}
+
 // ============================================================================
 // Arena State Types
 // ============================================================================
@@ -655,6 +704,12 @@ export interface ElectronAPI extends MenuAPI, UtilityAPI {
   onKioskNoteUpdate: (
     callback: (note: import('../types/remote').OrgNote | null) => void
   ) => () => void;
+  onDTCall: (
+    callback: (data: { arenaId: string; arenaNumber: number; matchNumber: number | null; competitionId: string | null; timestamp: number }) => void
+  ) => () => void;
+  onDTCallCancel: (callback: (data: { arenaId: string }) => void) => () => void;
+  onScoreIpConflict: (callback: (data: ScoreIpConflict) => void) => () => void;
+  onPoolSignatureUpdated: (callback: (data: { poolId: string; signedFencerIds: string[]; totalFencers: number }) => void) => () => void;
   notifyLanguageChanged: (lang: string) => void;
   getLogo: () => Promise<string | null>;
   onLogoLoaded: (callback: (logo: string | null) => void) => () => void;

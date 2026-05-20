@@ -48,6 +48,9 @@
       'referee.match_resumed': '▶️ Combat repris',
       'referee.error_save': "❌ Erreur lors de l'enregistrement",
       'referee.arena_exit_notif': '🚪 Sortie d\'arène {{label}} — +{{points}} pts adversaire',
+      'referee.dt_call': '📣 Appel DT',
+      'referee.dt_called': '⏳ DT appelé...',
+      'referee.dt_en_route': '✅ DT en route',
       /* arena / public */
       'arena.title': 'Arène BellePoule',
       'arena.invert': '⇄ Inverser',
@@ -143,6 +146,9 @@
       'referee.match_resumed': '▶️ Match resumed',
       'referee.error_save': '❌ Error saving result',
       'referee.arena_exit_notif': '🚪 Arena exit {{label}} — +{{points}} pts opponent',
+      'referee.dt_call': '📣 Call DT',
+      'referee.dt_called': '⏳ DT called...',
+      'referee.dt_en_route': '✅ DT on the way',
       /* arena / public */
       'arena.title': 'BellePoule Arena',
       'arena.invert': '⇄ Invert',
@@ -237,6 +243,9 @@
       'referee.match_paused': '⏸ 比賽暫停',
       'referee.match_resumed': '▶️ 比賽繼續',
       'referee.error_save': '❌ 儲存結果時發生錯誤',
+      'referee.dt_call': '📣 呼叫DT',
+      'referee.dt_called': '⏳ 已呼叫DT...',
+      'referee.dt_en_route': '✅ DT正在前來',
       'referee.arena_exit_notif': '🚪 場地離場 {{label}} — +{{points}} 分對手',
       /* arena / public */
       'arena.title': 'BellePoule 場地',

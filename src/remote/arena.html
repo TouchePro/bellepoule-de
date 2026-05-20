@@ -918,6 +918,31 @@
         flex-shrink: 0;
       }
 
+      .next-referee-name {
+        font-size: 0.72rem;
+        color: rgba(255, 255, 255, 0.55);
+        white-space: nowrap;
+        flex-shrink: 0;
+        margin-left: 0.25rem;
+      }
+
+      .next-referee-name.hidden { display: none; }
+
+      /* Bandeau arbitre – bas de l'écran prochain combat */
+      .idle-referee-banner {
+        width: 100%;
+        padding: 0.45rem 1.5rem;
+        background: rgba(0, 0, 0, 0.35);
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        text-align: center;
+        font-size: clamp(0.85rem, 1.8vw, 1.1rem);
+        color: rgba(255, 255, 255, 0.7);
+        letter-spacing: 0.06em;
+        flex-shrink: 0;
+      }
+
+      .idle-referee-banner.hidden { display: none; }
+
       /* Responsive portrait/mobile */
       @media (max-width: 768px) {
         .fencers-row {
@@ -1159,6 +1184,7 @@
               <div class="intro-fencer-club" id="idle-club-b"></div>
             </div>
           </div>
+          <div class="idle-referee-banner hidden" id="idle-referee-banner">⚖️ Arbitre : <span id="idle-referee-label"></span></div>
         </div>
         <!-- Grand numéro (visible quand pas de nextMatch) -->
         <div class="arena-idle-number" id="arena-idle-number">1</div>
@@ -1269,6 +1295,7 @@
               <span class="next-fighter-name" id="next-name-b">-</span>
             </div>
           </div>
+          <div class="next-referee-name hidden" id="next-referee-name">⚖️ <span id="next-referee-label"></span></div>
         </div>
       </div>
     </div>
@@ -1290,6 +1317,7 @@
           this.waitingOvertime = false;
           this.inversionEnabled = localStorage.getItem('inversionEnabled') === 'true';
           this.showPhotos = false;
+          this.refereeFeatureEnabled = false;
           this.theme = localStorage.getItem('displayTheme') || 'dark';
           this.currentCustomTheme = null;
 
@@ -1552,6 +1580,11 @@
           // Mise à jour du réglage photos
           if (data.showPhotos !== undefined) {
             this.showPhotos = data.showPhotos;
+          }
+
+          // Mise à jour flag gestion arbitres
+          if (data.refereeFeatureEnabled !== undefined) {
+            this.refereeFeatureEnabled = data.refereeFeatureEnabled;
           }
 
           // Mise à jour état d'inversion (synchronisé avec le serveur)
@@ -1840,6 +1873,19 @@
 
           this.setNextFencerPhoto('a', left.photo);
           this.setNextFencerPhoto('b', right.photo);
+
+          const refEl = document.getElementById('next-referee-name');
+          const refLabel = document.getElementById('next-referee-label');
+          const idleBanner = document.getElementById('idle-referee-banner');
+          const idleLabel = document.getElementById('idle-referee-label');
+          if (this.refereeFeatureEnabled && this.nextMatch.referee) {
+            const refName = this.nextMatch.referee.name;
+            if (refEl && refLabel) { refLabel.textContent = refName; refEl.classList.remove('hidden'); }
+            if (idleBanner && idleLabel) { idleLabel.textContent = refName; idleBanner.classList.remove('hidden'); }
+          } else {
+            if (refEl) refEl.classList.add('hidden');
+            if (idleBanner) idleBanner.classList.add('hidden');
+          }
         }
 
         setNextFencerPhoto(side, photoBase64) {

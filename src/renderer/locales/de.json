@@ -103,7 +103,9 @@
     "ranking": "Rangliste",
     "tableau": "Tabelle",
     "results": "Ergebnisse",
-    "remote": "Ferne Eingabe"
+    "remote": "Ferne Eingabe",
+    "logs": "Verlauf",
+    "referees": "Schiedsrichter"
   },
   "pools": {
     "generate": "Pools Generieren",

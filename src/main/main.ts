@@ -458,7 +458,11 @@ function createWindow(): void {
     icon: path.join(__dirname, '../../resources/icons/icon.png'),
   });
 
+  const showFallback = setTimeout(() => {
+    if (mainWindow && !mainWindow.isVisible()) mainWindow.show();
+  }, 10000);
   mainWindow.once('ready-to-show', () => {
+    clearTimeout(showFallback);
     mainWindow?.show();
   });
 
@@ -503,6 +507,30 @@ function createWindow(): void {
 
   mainWindow.on('closed', () => {
     mainWindow = null;
+  });
+
+  // Reload renderer when it crashes (blank screen symptom)
+  mainWindow.webContents.on('render-process-gone', (_event, details) => {
+    console.error('[Main] Renderer process gone:', details.reason, details.exitCode);
+    if (details.reason !== 'clean-exit') {
+      setTimeout(() => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          if (process.env.NODE_ENV === 'development') {
+            mainWindow.loadURL('http://localhost:8066');
+          } else {
+            mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
+          }
+        }
+      }, 500);
+    }
+  });
+
+  mainWindow.webContents.on('unresponsive', () => {
+    console.warn('[Main] Renderer became unresponsive');
+  });
+
+  mainWindow.webContents.on('responsive', () => {
+    console.log('[Main] Renderer became responsive again');
   });
 
   // Create application menu using saved language preference
@@ -935,7 +963,28 @@ ipcMain.handle('db:getMatchesByPool', async (_, poolId) => {
 });
 
 ipcMain.handle('db:updateMatch', async (_, id, updates) => {
-  return db.updateMatch(id, updates);
+  const hasScore = updates.scoreA !== undefined || updates.scoreB !== undefined;
+  if (hasScore) {
+    try {
+      const prev = db.getMatch(id);
+      db.updateMatch(id, updates);
+      if (prev) {
+        db.logScoreChange({
+          matchId: id,
+          poolId: prev.poolId ?? undefined,
+          previousScoreA: prev.scoreA,
+          previousScoreB: prev.scoreB,
+          newScoreA: updates.scoreA ?? prev.scoreA,
+          newScoreB: updates.scoreB ?? prev.scoreB,
+          changedBy: 'ui',
+        });
+      }
+    } catch {
+      db.updateMatch(id, updates);
+    }
+  } else {
+    db.updateMatch(id, updates);
+  }
 });
 
 ipcMain.handle('db:upsertTableauMatch', async (_, params) => {
@@ -990,6 +1039,9 @@ ipcMain.handle('db:getPoolFencers', async (_, poolId) => {
 ipcMain.handle('db:getPoolsByPhase', async (_, phaseId) => {
   return db.getPoolsByPhase(phaseId);
 });
+ipcMain.handle('db:getPoolSignatures', async (_, poolId: string) => {
+  return db.getPoolSignatures(poolId);
+});
 
 // Phase handlers
 ipcMain.handle('db:createPhase', async (_, competitionId, type, order, name) => {
@@ -1023,6 +1075,9 @@ ipcMain.handle('db:updateReferee', async (_, id, updates) => {
 });
 ipcMain.handle('db:deleteReferee', async (_, id) => {
   return db.deleteReferee(id);
+});
+ipcMain.handle('db:getMatchesWithReferees', async (_, competitionId) => {
+  return db.getMatchesWithReferees(competitionId);
 });
 
 // Touch / Card read handlers
@@ -1078,6 +1133,10 @@ ipcMain.handle('db:deleteAbandonSnapshot', async (_, fencerId) => {
   db.deleteAbandonSnapshot(fencerId);
 });
 
+ipcMain.handle('db:getScoreAuditLogByCompetition', async (_, competitionId) => {
+  return db.getScoreAuditLogByCompetition(competitionId);
+});
+
 // File handlers
 ipcMain.handle('file:export', async (_, filepath) => {
   db.exportToFile(filepath);
@@ -1097,10 +1156,13 @@ ipcMain.handle('file:exportPhotos', async (_, competitionId: string, filepath: s
   const photos = db.getFencerPhotos(competitionId);
   const zip = new JSZip();
 
-  for (const { license, photo } of photos) {
+  for (const { id, license, lastName, firstName, photo } of photos) {
     const base64 = photo.replace(/^data:image\/\w+;base64,/, '');
     const buffer = Buffer.from(base64, 'base64');
-    zip.file(`${license}.jpg`, buffer);
+    const filename = license
+      ? license
+      : `${lastName}_${firstName}_${id.slice(0, 8)}`.replace(/[^a-zA-Z0-9_\-]/g, '_');
+    zip.file(`${filename}.jpg`, buffer);
   }
 
   const content = await zip.generateAsync({ type: 'nodebuffer' });
@@ -1523,6 +1585,17 @@ ipcMain.handle('remote:refreshDeMatches', async (_, competitionId: string, match
   }
 });
 
+ipcMain.handle('remote:resetPoolMatch', async (_, competitionId: string, matchId: string) => {
+  try {
+    const entry = remoteServers.get(competitionId);
+    if (!entry) return { success: true };
+    entry.server.resetPoolMatch(matchId);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur' };
+  }
+});
+
 ipcMain.handle('remote:stopSession', async (_event, competitionId: string) => {
   try {
     const entry = remoteServers.get(competitionId);
@@ -1706,6 +1779,18 @@ ipcMain.handle('remote:clearOrgNote', async (_event, competitionId: string) => {
   }
 });
 
+ipcMain.handle('remote:acknowledgeDTCall', async (_, competitionId: string, arenaId: string) => {
+  try {
+    const entry = remoteServers.get(competitionId);
+    if (!entry) return { success: false, error: 'Serveur non démarré' };
+    entry.server.acknowledgeDTCall(arenaId);
+    return { success: true };
+  } catch (error) {
+    console.error('Error acknowledging DT call:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
 ipcMain.handle('remote:updateLogo', async (_, logo: string | null) => {
   try {
     const logoPath = path.join(app.getPath('userData'), 'logo.dat');
@@ -1838,6 +1923,14 @@ ipcMain.handle('updater:installPendingUpdate', async () => {
 // ============================================================================
 // App Lifecycle
 // ============================================================================
+
+// VMware/ARM sans accélération 3D : forcer rendu logiciel
+if (process.platform === 'linux') {
+  app.disableHardwareAcceleration();
+  app.commandLine.appendSwitch('disable-gpu');
+  app.commandLine.appendSwitch('disable-gpu-sandbox');
+  app.commandLine.appendSwitch('use-gl', 'swiftshader');
+}
 
 app.whenReady().then(async () => {
   // Initialize database dans un répertoire inscriptible (userData)

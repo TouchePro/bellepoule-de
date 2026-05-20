@@ -5,7 +5,7 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import { Card, CardGroup, CardReason, Match, Fencer } from '../types';
+import { Card, CardGroup, CardReason, Weapon, WeaponCardConfig } from '../types';
 import { CardType } from '../../features/penalties/types/penalty.types';
 
 const REASON_TO_GROUP: Record<CardReason, CardGroup> = {
@@ -27,6 +27,61 @@ const REASON_TO_GROUP: Record<CardReason, CardGroup> = {
   [CardReason.UNSPORTSMANLIKE]: CardGroup.GROUP_4,
   [CardReason.CHEATING]: CardGroup.GROUP_4,
 };
+
+const ALL_REASONS = Object.values(CardReason);
+
+const CLASSICAL_SCORE_IMPACT = { white: 0, yellow: 1, red: 1, black: 0 };
+
+export const WEAPON_CARD_CONFIGS: Record<Weapon, WeaponCardConfig> = {
+  [Weapon.EPEE]: {
+    availableReasons: ALL_REASONS,
+    reasonToGroup: REASON_TO_GROUP,
+    scoreImpact: CLASSICAL_SCORE_IMPACT,
+  },
+  [Weapon.FOIL]: {
+    availableReasons: ALL_REASONS,
+    reasonToGroup: REASON_TO_GROUP,
+    scoreImpact: CLASSICAL_SCORE_IMPACT,
+  },
+  [Weapon.SABRE]: {
+    availableReasons: ALL_REASONS,
+    reasonToGroup: REASON_TO_GROUP,
+    scoreImpact: CLASSICAL_SCORE_IMPACT,
+  },
+  [Weapon.LASER]: {
+    availableReasons: ALL_REASONS,
+    reasonToGroup: REASON_TO_GROUP,
+    scoreImpact: { white: 0, yellow: 1, red: 1, black: 0 },
+  },
+  [Weapon.CUSTOM]: {
+    availableReasons: ALL_REASONS,
+    reasonToGroup: REASON_TO_GROUP,
+    scoreImpact: CLASSICAL_SCORE_IMPACT,
+  },
+};
+
+export function getWeaponCardConfig(weapon: Weapon): WeaponCardConfig {
+  return WEAPON_CARD_CONFIGS[weapon];
+}
+
+export function getAvailableReasons(weapon: Weapon): CardReason[] {
+  return WEAPON_CARD_CONFIGS[weapon].availableReasons;
+}
+
+export function getReasonsByGroupForWeapon(weapon: Weapon): Record<CardGroup, CardReason[]> {
+  const config = WEAPON_CARD_CONFIGS[weapon];
+  const grouped: Record<CardGroup, CardReason[]> = {
+    [CardGroup.GROUP_1]: [],
+    [CardGroup.GROUP_2]: [],
+    [CardGroup.GROUP_3]: [],
+    [CardGroup.GROUP_4]: [],
+  };
+  for (const reason of config.availableReasons) {
+    const group = config.reasonToGroup[reason];
+    if (group !== undefined) grouped[group].push(reason);
+  }
+  return grouped;
+}
 
 export const CARD_REASON_LABELS: Record<CardReason, string> = {
   [CardReason.EARLY_START]: 'Départ anticipé',
@@ -61,29 +116,41 @@ export interface CardResult {
   points: number;
 }
 
-export function determineCardType(reason: CardReason, previousCards: Card[]): CardResult {
-  const group = REASON_TO_GROUP[reason];
+export function determineCardType(
+  reason: CardReason,
+  previousCards: Card[],
+  weapon?: Weapon
+): CardResult {
+  const config = weapon !== undefined ? WEAPON_CARD_CONFIGS[weapon] : null;
+  const reasonToGroup = config?.reasonToGroup ?? REASON_TO_GROUP;
+  const si = config?.scoreImpact ?? { white: 0, yellow: 1, red: 1, black: 0 };
+
+  const group = reasonToGroup[reason];
+  if (group === undefined) {
+    return { type: CardType.WHITE, shouldExclude: false, points: 0 };
+  }
+
   const sameGroupCards = previousCards.filter(c => c.group === group);
   const count = sameGroupCards.length;
 
   switch (group) {
     case CardGroup.GROUP_1:
-      if (count === 0) return { type: CardType.WHITE,  shouldExclude: false, points: 0 };
-      return { type: CardType.YELLOW, shouldExclude: false, points: 1 };
+      if (count === 0) return { type: CardType.WHITE,  shouldExclude: false, points: si.white };
+      return { type: CardType.YELLOW, shouldExclude: false, points: si.yellow };
 
     case CardGroup.GROUP_2:
-      if (count === 0) return { type: CardType.YELLOW, shouldExclude: false, points: 1 };
-      return { type: CardType.RED, shouldExclude: false, points: 1 };
+      if (count === 0) return { type: CardType.YELLOW, shouldExclude: false, points: si.yellow };
+      return { type: CardType.RED, shouldExclude: false, points: si.red };
 
     case CardGroup.GROUP_3:
-      if (count === 0) return { type: CardType.RED, shouldExclude: false, points: 1 };
-      return { type: CardType.BLACK, shouldExclude: true, points: 0 };
+      if (count === 0) return { type: CardType.RED, shouldExclude: false, points: si.red };
+      return { type: CardType.BLACK, shouldExclude: true, points: si.black };
 
     case CardGroup.GROUP_4:
-      return { type: CardType.BLACK, shouldExclude: true, points: 0 };
+      return { type: CardType.BLACK, shouldExclude: true, points: si.black };
 
     default:
-      return { type: CardType.WHITE, shouldExclude: false, points: 0 };
+      return { type: CardType.WHITE, shouldExclude: false, points: si.white };
   }
 }
 
@@ -91,9 +158,12 @@ export function createCard(
   matchId: string,
   fencerId: string,
   reason: CardReason,
-  previousCards: Card[]
+  previousCards: Card[],
+  weapon?: Weapon
 ): Card {
-  const { type, shouldExclude, points } = determineCardType(reason, previousCards);
+  const config = weapon !== undefined ? WEAPON_CARD_CONFIGS[weapon] : null;
+  const reasonToGroup = config?.reasonToGroup ?? REASON_TO_GROUP;
+  const { type, shouldExclude, points } = determineCardType(reason, previousCards, weapon);
 
   return {
     id: uuidv4(),
@@ -101,7 +171,7 @@ export function createCard(
     fencerId,
     type,
     reason,
-    group: REASON_TO_GROUP[reason],
+    group: reasonToGroup[reason] ?? REASON_TO_GROUP[reason],
     timestamp: new Date(),
     pointsAwarded: points,
     resultingExclusion: shouldExclude,
@@ -122,6 +192,7 @@ export function getReasonsByGroup(): Record<CardGroup, CardReason[]> {
 
   return grouped;
 }
+
 
 export function getCardsForFencer(fencerId: string, matchCards: Card[]): Card[] {
   return matchCards.filter(card => card.fencerId === fencerId);

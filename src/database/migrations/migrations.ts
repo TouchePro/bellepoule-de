@@ -248,4 +248,53 @@ export const ALL_MIGRATIONS: Migration[] = [
       db.run(`CREATE INDEX IF NOT EXISTS idx_arena_exits_fencer ON match_arena_exits(fencer_id)`);
     },
   },
+
+  {
+    version: 6,
+    description: 'Enrichissement score_audit_log : arbitre, IP, poule',
+    up(db) {
+      try { db.run(`ALTER TABLE score_audit_log ADD COLUMN referee_id TEXT`); } catch { /* */ }
+      try { db.run(`ALTER TABLE score_audit_log ADD COLUMN referee_name TEXT`); } catch { /* */ }
+      try { db.run(`ALTER TABLE score_audit_log ADD COLUMN ip_address TEXT`); } catch { /* */ }
+      try { db.run(`ALTER TABLE score_audit_log ADD COLUMN pool_id TEXT`); } catch { /* */ }
+      db.run(`CREATE INDEX IF NOT EXISTS idx_audit_pool ON score_audit_log(pool_id)`);
+    },
+  },
+
+  {
+    version: 7,
+    description: 'Table pool_signatures pour signatures numériques des combattants',
+    up(db) {
+      db.run(`
+        CREATE TABLE IF NOT EXISTS pool_signatures (
+          id TEXT PRIMARY KEY,
+          pool_id TEXT NOT NULL,
+          fencer_id TEXT NOT NULL,
+          signature_data TEXT NOT NULL,
+          signed_at TEXT NOT NULL,
+          UNIQUE(pool_id, fencer_id)
+        )
+      `);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_pool_sigs_pool ON pool_signatures(pool_id)`);
+    },
+  },
+  {
+    version: 8,
+    description: 'Index weapon + table formula_snapshots pour formule personnalisée (arme CUSTOM)',
+    up(db) {
+      db.run(`CREATE INDEX IF NOT EXISTS idx_competitions_weapon ON competitions(weapon)`);
+      db.run(`
+        CREATE TABLE IF NOT EXISTS formula_snapshots (
+          id TEXT PRIMARY KEY,
+          competition_id TEXT NOT NULL,
+          snapshot_name TEXT NOT NULL,
+          formula_json TEXT NOT NULL,
+          fencer_count_at_save INTEGER,
+          created_at TEXT NOT NULL,
+          FOREIGN KEY (competition_id) REFERENCES competitions(id) ON DELETE CASCADE
+        )
+      `);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_formula_snapshots_comp ON formula_snapshots(competition_id)`);
+    },
+  },
 ];

@@ -10,6 +10,8 @@ interface PoolScoreMatrixProps {
   toggleColumn: (context: 'pool' | 'ranking', columnId: ColumnId) => void;
   onCellClick: (rowFencer: Fencer, colFencer: Fencer) => void;
   onFencerChangePool?: (fencer: Fencer) => void;
+  onMatchReset?: (rowFencer: Fencer, colFencer: Fencer) => void;
+  isLocked?: boolean;
 }
 
 const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
@@ -19,6 +21,8 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
   toggleColumn,
   onCellClick,
   onFencerChangePool,
+  onMatchReset,
+  isLocked = false,
 }) => {
   const fencers = pool.fencers;
 
@@ -211,14 +215,45 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
                 <div
                   key={colIndex}
                   className={`pool-cell ${cellClass}`}
-                  onClick={() => onCellClick(rowFencer, colFencer)}
-                  style={{ cursor: 'pointer' }}
+                  onClick={() => !isLocked && onCellClick(rowFencer, colFencer)}
+                  style={{ cursor: isLocked ? 'default' : 'pointer', position: 'relative' }}
                 >
                   {score ? (
-                    <span>
-                      {score.isVictory ? 'V' : ''}
-                      {score.value}
-                    </span>
+                    <>
+                      <span>
+                        {score.isVictory ? 'V' : ''}
+                        {score.value}
+                      </span>
+                      {onMatchReset && (
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            onMatchReset(rowFencer, colFencer);
+                          }}
+                          title="Annuler ce résultat"
+                          className="pool-cell-reset-btn"
+                          style={{
+                            position: 'absolute',
+                            top: '1px',
+                            right: '1px',
+                            padding: '0 2px',
+                            fontSize: '0.55rem',
+                            lineHeight: 1,
+                            background: 'rgba(239,68,68,0.15)',
+                            border: 'none',
+                            borderRadius: '2px',
+                            cursor: 'pointer',
+                            opacity: 0,
+                            transition: 'opacity 0.15s',
+                            color: '#dc2626',
+                          }}
+                          onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+                          onMouseLeave={e => (e.currentTarget.style.opacity = '0')}
+                        >
+                          ↺
+                        </button>
+                      )}
+                    </>
                   ) : (
                     <span style={{ color: '#9CA3AF' }}>-</span>
                   )}

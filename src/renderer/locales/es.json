@@ -103,7 +103,8 @@
     "ranking": "Clasificación",
     "tableau": "Cuadro",
     "results": "Resultados",
-    "remote": "Entrada Remota"
+    "remote": "Entrada Remota",
+    "referees": "Árbitros"
   },
   "pools": {
     "generate": "Generar Poules",

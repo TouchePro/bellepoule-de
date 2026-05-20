@@ -9,7 +9,7 @@ import { Pool, PoolRanking } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
 import { TableauMatch, FinalResult } from '../components/TableauView';
 
-export type Phase = 'checkin' | 'poolprep' | 'pools' | 'ranking' | 'quest' | 'tableau' | 'results' | 'remote';
+export type Phase = 'checkin' | 'poolprep' | 'pools' | 'ranking' | 'quest' | 'tableau' | 'results' | 'remote' | 'logs' | 'referees';
 
 interface SessionState {
   currentPhase: number;
@@ -20,6 +20,7 @@ interface SessionState {
   finalResults: FinalResult[];
   currentPoolRound: number;
   skipPoolPhase: boolean;
+  remoteArenaCount?: number;
   poolPrepParams: {
     poolCount: number;
     minFencersPerPool: number;
@@ -42,6 +43,7 @@ interface UseCompetitionSessionProps {
   tableauMatches: TableauMatch[];
   finalResults: FinalResult[];
   skipPoolPhase: boolean;
+  remoteArenaCount: number;
   poolPrepParams: {
     poolCount: number;
     minFencersPerPool: number;
@@ -68,6 +70,8 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
     tableau: 5,
     results: 6,
     remote: 7,
+    logs: 8,
+    referees: 9,
   };
 
   const numberToPhase: Record<number, Phase> = {
@@ -79,6 +83,8 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
     5: 'tableau',
     6: 'results',
     7: 'remote',
+    8: 'logs',
+    9: 'referees',
   };
 
   // Sauvegarder l'état - lit depuis propsRef pour rester stable (pas de re-création à chaque render)
@@ -95,6 +101,7 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
       finalResults: p.finalResults,
       currentPoolRound: p.currentPoolRound,
       skipPoolPhase: p.skipPoolPhase,
+      remoteArenaCount: p.remoteArenaCount,
       poolPrepParams: {
         poolCount: p.poolPrepParams?.poolCount || 0,
         minFencersPerPool: p.poolPrepParams?.minFencersPerPool || 5,
@@ -136,6 +143,7 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
           finalResults: typedState.finalResults || [],
           currentPoolRound: typedState.uiState?.currentPoolRound || 1,
           skipPoolPhase: typedState.skipPoolPhase ?? false,
+          remoteArenaCount: typedState.remoteArenaCount,
           poolPrepParams: typedState.poolPrepParams || {
             poolCount: 0,
             minFencersPerPool: 5,
@@ -167,7 +175,7 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
       const p = propsRef.current;
       const phaseMap: Record<Phase, number> = {
         checkin: 0, poolprep: 1, pools: 2, ranking: 3,
-        quest: 4, tableau: 5, results: 6, remote: 7,
+        quest: 4, tableau: 5, results: 6, remote: 7, logs: 8, referees: 9,
       };
       window.electronAPI.db.saveSessionStateSync(p.competitionId, {
         currentPhase: phaseMap[p.currentPhase],
@@ -178,6 +186,7 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
         finalResults: p.finalResults,
         currentPoolRound: p.currentPoolRound,
         skipPoolPhase: p.skipPoolPhase,
+        remoteArenaCount: p.remoteArenaCount,
         poolPrepParams: p.poolPrepParams,
         uiState: {
           currentPhase: p.currentPhase,
@@ -215,6 +224,7 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
     props.tableauMatches,
     props.finalResults,
     props.skipPoolPhase,
+    props.remoteArenaCount,
     props.poolPrepParams,
     saveState,
   ]);

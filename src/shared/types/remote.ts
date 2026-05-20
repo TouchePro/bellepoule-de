@@ -97,6 +97,7 @@ export interface Arena {
   name: string;
   number: number;
   currentMatch: ArenaMatch | null;
+  activePoolId?: string; // dernière poule assignée (persiste après currentMatch=null)
   status: 'idle' | 'ready' | 'in_progress' | 'finished';
   startTime: Date | null;
   settings: ArenaSettings;
@@ -136,6 +137,7 @@ export interface ArenaMatch {
   startTime: Date | null;
   endTime: Date | null;
   duration?: number; // in seconds
+  referee?: { id: string; name: string }; // Arbitre assigné au match
 }
 
 export interface ArenaUpdate {
@@ -159,6 +161,9 @@ export interface ArenaUpdate {
   customTheme?: CustomTheme; // thème personnalisé (si theme === 'custom')
   nextMatch?: ArenaMatch | null; // prochain combat (affiché quand status=finished)
   swapped?: boolean;
+  refereeFeatureEnabled?: boolean; // fonctionnalité arbitres activée
+  referees?: RemoteReferee[]; // liste de tous les arbitres de la compétition
+  timerDuration?: number; // durée du chrono en secondes pour ce match
 }
 
 export interface RefereeControl {

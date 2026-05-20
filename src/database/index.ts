@@ -329,6 +329,8 @@ export class DatabaseManager {
       let settings: CompetitionSettings = {
         defaultPoolMaxScore: 5,
         defaultTableMaxScore: 21,
+        defaultPoolTimerSeconds: 180,
+        defaultTableTimerSeconds: 180,
         poolRounds: 1,
         hasDirectElimination: true,
         thirdPlaceMatch: true,
@@ -390,6 +392,12 @@ export class DatabaseManager {
 
   public deleteCompetition(id: string): void {
     if (!this.db) throw new Error('Database not open');
+    this.run(
+      `DELETE FROM pool_signatures WHERE pool_id IN (
+         SELECT p.id FROM pools p JOIN phases ph ON p.phase_id = ph.id WHERE ph.competition_id = ?
+       )`,
+      [id]
+    );
     this.run('DELETE FROM fencers WHERE competition_id = ?', [id]);
     this.run('DELETE FROM competitions WHERE id = ?', [id]);
     this.save();
@@ -571,16 +579,30 @@ export class DatabaseManager {
     return results;
   }
 
-  public getFencerPhotos(competitionId: string): { license: string; photo: string }[] {
+  public getFencerPhotos(
+    competitionId: string
+  ): { id: string; license: string | null; lastName: string; firstName: string; photo: string }[] {
     if (!this.db) throw new Error('Database not open');
-    const results: { license: string; photo: string }[] = [];
+    const results: {
+      id: string;
+      license: string | null;
+      lastName: string;
+      firstName: string;
+      photo: string;
+    }[] = [];
     const stmt = this.db.prepare(
-      "SELECT license, photo FROM fencers WHERE competition_id = ? AND photo IS NOT NULL AND license IS NOT NULL AND license != ''"
+      'SELECT id, license, last_name, first_name, photo FROM fencers WHERE competition_id = ? AND photo IS NOT NULL'
     );
     stmt.bind([competitionId]);
     while (stmt.step()) {
       const row = stmt.getAsObject();
-      results.push({ license: row.license as string, photo: row.photo as string });
+      results.push({
+        id: row.id as string,
+        license: (row.license as string | null) || null,
+        lastName: row.last_name as string,
+        firstName: row.first_name as string,
+        photo: row.photo as string,
+      });
     }
     stmt.free();
     return results;
@@ -952,6 +974,7 @@ export class DatabaseManager {
       poolId: row.pool_id as string,
       tableId: row.table_id as string,
       round: row.round as number,
+      referee: row.referee_id ? (this.getReferee(row.referee_id as string) ?? undefined) : undefined,
       createdAt: new Date(row.created_at as string),
       updatedAt: new Date(row.updated_at as string),
     };
@@ -998,6 +1021,23 @@ export class DatabaseManager {
       fStmt.free();
     }
 
+    // Batch-fetch referees referenced by these matches
+    const refereeIds = new Set<string>();
+    for (const row of matchRows) {
+      if (row.referee_id) refereeIds.add(row.referee_id as string);
+    }
+    const refereesById = new Map<string, Referee>();
+    if (refereeIds.size > 0) {
+      const placeholders = Array.from({ length: refereeIds.size }, () => '?').join(',');
+      const rStmt = this.db.prepare(`SELECT * FROM referees WHERE id IN (${placeholders})`);
+      rStmt.bind(Array.from(refereeIds));
+      while (rStmt.step()) {
+        const rRow = rStmt.getAsObject();
+        refereesById.set(rRow.id as string, this.rowToReferee(rRow));
+      }
+      rStmt.free();
+    }
+
     return matchRows.map(row => ({
       id: row.id as string,
       number: row.number as number,
@@ -1010,6 +1050,7 @@ export class DatabaseManager {
       poolId: row.pool_id as string,
       tableId: row.table_id as string,
       round: row.round as number,
+      referee: row.referee_id ? (refereesById.get(row.referee_id as string) ?? undefined) : undefined,
       createdAt: new Date(row.created_at as string),
       updatedAt: new Date(row.updated_at as string),
     }));
@@ -1321,6 +1362,7 @@ export class DatabaseManager {
 
   public clearPoolsForPhase(phaseId: string): void {
     if (!this.db) throw new Error('Database not open');
+    this.run('DELETE FROM pool_signatures WHERE pool_id IN (SELECT id FROM pools WHERE phase_id = ?)', [phaseId]);
     this.run('DELETE FROM matches WHERE pool_id IN (SELECT id FROM pools WHERE phase_id = ?)', [phaseId]);
     this.run('DELETE FROM pool_fencers WHERE pool_id IN (SELECT id FROM pools WHERE phase_id = ?)', [phaseId]);
     this.run('DELETE FROM pools WHERE phase_id = ?', [phaseId]);
@@ -1474,6 +1516,10 @@ export class DatabaseManager {
 
   public deletePhase(id: string): void {
     if (!this.db) throw new Error('Database not open');
+    this.run('DELETE FROM pool_signatures WHERE pool_id IN (SELECT id FROM pools WHERE phase_id = ?)', [id]);
+    this.run('DELETE FROM matches WHERE pool_id IN (SELECT id FROM pools WHERE phase_id = ?)', [id]);
+    this.run('DELETE FROM pool_fencers WHERE pool_id IN (SELECT id FROM pools WHERE phase_id = ?)', [id]);
+    this.run('DELETE FROM pools WHERE phase_id = ?', [id]);
     this.run('DELETE FROM phases WHERE id = ?', [id]);
     this.save();
   }
@@ -1582,6 +1628,52 @@ export class DatabaseManager {
       createdAt: new Date(row.created_at as string),
       updatedAt: new Date(row.updated_at as string),
     } as Referee;
+  }
+
+  public getMatchesWithReferees(competitionId: string): Array<{
+    matchId: string; matchNumber: number; poolName: string | null;
+    fencerAName: string; fencerBName: string;
+    scoreA: number | null; scoreB: number | null; status: string;
+    refereeId: string | null; refereeName: string | null;
+  }> {
+    if (!this.db) return [];
+    const results: any[] = [];
+    const stmt = this.db.prepare(`
+      SELECT m.id AS match_id, m.number AS match_number,
+             p.name AS pool_name,
+             fa.last_name || ' ' || fa.first_name AS fencer_a_name,
+             fb.last_name || ' ' || fb.first_name AS fencer_b_name,
+             m.score_a, m.score_b, m.status,
+             r.id AS referee_id, r.name AS referee_name
+      FROM matches m
+      LEFT JOIN pools p ON m.pool_id = p.id
+      LEFT JOIN phases ph ON p.phase_id = ph.id
+      LEFT JOIN fencers fa ON m.fencer_a_id = fa.id
+      LEFT JOIN fencers fb ON m.fencer_b_id = fb.id
+      LEFT JOIN referees r ON m.referee_id = r.id
+      WHERE ph.competition_id = ? AND m.referee_id IS NOT NULL
+      ORDER BY p.name, m.number
+    `);
+    stmt.bind([competitionId]);
+    while (stmt.step()) {
+      const row = stmt.getAsObject();
+      const scoreARaw = row.score_a ? JSON.parse(row.score_a as string) : null;
+      const scoreBRaw = row.score_b ? JSON.parse(row.score_b as string) : null;
+      results.push({
+        matchId: row.match_id as string,
+        matchNumber: row.match_number as number,
+        poolName: (row.pool_name as string) ?? null,
+        fencerAName: (row.fencer_a_name as string) ?? '?',
+        fencerBName: (row.fencer_b_name as string) ?? '?',
+        scoreA: scoreARaw?.value ?? null,
+        scoreB: scoreBRaw?.value ?? null,
+        status: row.status as string,
+        refereeId: (row.referee_id as string) ?? null,
+        refereeName: (row.referee_name as string) ?? null,
+      });
+    }
+    stmt.free();
+    return results;
   }
 
   // ─── Touch / Card read methods ───────────────────────────────────────────────
@@ -2165,13 +2257,17 @@ export class DatabaseManager {
     newScoreB: any;
     changedBy: string;
     reason?: string;
+    refereeId?: string;
+    refereeName?: string;
+    ipAddress?: string;
+    poolId?: string;
   }): void {
     if (!this.db) throw new Error('Database not open');
     const { v4: uuidv4gen } = require('uuid');
     this.run(
       `INSERT INTO score_audit_log
-        (id, match_id, arena_id, previous_score_a, previous_score_b, new_score_a, new_score_b, changed_by, changed_at, reason)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (id, match_id, arena_id, previous_score_a, previous_score_b, new_score_a, new_score_b, changed_by, changed_at, reason, referee_id, referee_name, ip_address, pool_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         uuidv4gen(),
         entry.matchId,
@@ -2183,32 +2279,69 @@ export class DatabaseManager {
         entry.changedBy,
         new Date().toISOString(),
         entry.reason ?? null,
+        entry.refereeId ?? null,
+        entry.refereeName ?? null,
+        entry.ipAddress ?? null,
+        entry.poolId ?? null,
       ]
     );
     this.save();
   }
 
+  private parseAuditRow(r: any) {
+    return {
+      id: r.id as string,
+      matchId: r.match_id as string,
+      arenaId: r.arena_id as string | null,
+      poolId: r.pool_id as string | null,
+      matchNumber: r.match_number != null ? Number(r.match_number) : null,
+      poolNumber: r.pool_number != null ? Number(r.pool_number) : null,
+      previousScoreA: r.previous_score_a ? JSON.parse(r.previous_score_a as string) : null,
+      previousScoreB: r.previous_score_b ? JSON.parse(r.previous_score_b as string) : null,
+      newScoreA: JSON.parse(r.new_score_a as string),
+      newScoreB: JSON.parse(r.new_score_b as string),
+      changedBy: r.changed_by as string,
+      changedAt: r.changed_at as string,
+      reason: r.reason as string | null,
+      refereeId: r.referee_id as string | null,
+      refereeName: r.referee_name as string | null,
+      ipAddress: r.ip_address as string | null,
+    };
+  }
+
   public getScoreAuditLog(matchId: string): any[] {
     if (!this.db) throw new Error('Database not open');
     const stmt = this.db.prepare(
-      `SELECT * FROM score_audit_log WHERE match_id=? ORDER BY changed_at ASC`
+      `SELECT sal.*, m.number as match_number, p.number as pool_number
+       FROM score_audit_log sal
+       LEFT JOIN matches m ON sal.match_id = m.id
+       LEFT JOIN pools p ON m.pool_id = p.id
+       WHERE sal.match_id=? ORDER BY sal.changed_at ASC`
     );
     stmt.bind([matchId]);
     const rows: any[] = [];
     while (stmt.step()) {
-      const r = stmt.getAsObject();
-      rows.push({
-        id: r.id,
-        matchId: r.match_id,
-        arenaId: r.arena_id,
-        previousScoreA: r.previous_score_a ? JSON.parse(r.previous_score_a as string) : null,
-        previousScoreB: r.previous_score_b ? JSON.parse(r.previous_score_b as string) : null,
-        newScoreA: JSON.parse(r.new_score_a as string),
-        newScoreB: JSON.parse(r.new_score_b as string),
-        changedBy: r.changed_by,
-        changedAt: r.changed_at,
-        reason: r.reason,
-      });
+      rows.push(this.parseAuditRow(stmt.getAsObject()));
+    }
+    stmt.free();
+    return rows;
+  }
+
+  public getScoreAuditLogByCompetition(competitionId: string): any[] {
+    if (!this.db) throw new Error('Database not open');
+    const stmt = this.db.prepare(
+      `SELECT sal.*, m.number as match_number, p.number as pool_number
+       FROM score_audit_log sal
+       JOIN matches m ON sal.match_id = m.id
+       JOIN pools p ON m.pool_id = p.id
+       JOIN phases ph ON p.phase_id = ph.id
+       WHERE ph.competition_id = ?
+       ORDER BY sal.changed_at DESC`
+    );
+    stmt.bind([competitionId]);
+    const rows: any[] = [];
+    while (stmt.step()) {
+      rows.push(this.parseAuditRow(stmt.getAsObject()));
     }
     stmt.free();
     return rows;
@@ -2281,6 +2414,33 @@ export class DatabaseManager {
     if (!this.db) throw new Error('Database not open');
     this.run(`DELETE FROM arena_state WHERE competition_id=?`, [competitionId]);
     this.save();
+  }
+
+  public savePoolSignature(poolId: string, fencerId: string, signatureData: string): void {
+    if (!this.db) throw new Error('Database not open');
+    const now = new Date().toISOString();
+    this.run(
+      `INSERT INTO pool_signatures (id, pool_id, fencer_id, signature_data, signed_at)
+       VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT(pool_id, fencer_id) DO UPDATE SET
+         signature_data = excluded.signature_data,
+         signed_at = excluded.signed_at`,
+      [uuidv4(), poolId, fencerId, signatureData, now]
+    );
+    this.save();
+  }
+
+  public getPoolSignatures(poolId: string): { fencerId: string; signatureData: string }[] {
+    if (!this.db) throw new Error('Database not open');
+    const result = this.db.exec(
+      `SELECT fencer_id, signature_data FROM pool_signatures WHERE pool_id = ?`,
+      [poolId]
+    );
+    if (!result.length || !result[0].values.length) return [];
+    return result[0].values.map((row: any[]) => ({
+      fencerId: row[0] as string,
+      signatureData: row[1] as string,
+    }));
   }
 }
 

@@ -183,6 +183,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       return ipcRenderer.invoke('db:updatePool', pool);
     },
     getPoolsByPhase: (phaseId: string) => ipcRenderer.invoke('db:getPoolsByPhase', phaseId),
+    getPoolSignatures: (poolId: string) => ipcRenderer.invoke('db:getPoolSignatures', poolId),
 
     // Phases
     createPhase: (competitionId: string, type: string, order: number, name: string) =>
@@ -212,6 +213,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     updateReferee: (id: string, updates: Record<string, string | undefined>) =>
       ipcRenderer.invoke('db:updateReferee', id, updates),
     deleteReferee: (id: string) => ipcRenderer.invoke('db:deleteReferee', id),
+    getMatchesWithReferees: (competitionId: string) =>
+      ipcRenderer.invoke('db:getMatchesWithReferees', competitionId),
 
     // Touch / Card read
     getTouches: (matchId: string) => ipcRenderer.invoke('db:getTouches', matchId),
@@ -275,6 +278,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
         snapshots
       ),
     getAbandonSnapshot: (fencerId: string) => ipcRenderer.invoke('db:getAbandonSnapshot', fencerId),
+    getScoreAuditLogByCompetition: (competitionId: string) =>
+      ipcRenderer.invoke('db:getScoreAuditLogByCompetition', competitionId),
     deleteAbandonSnapshot: (fencerId: string) =>
       ipcRenderer.invoke('db:deleteAbandonSnapshot', fencerId),
   },
@@ -475,6 +480,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('remote:setWallpaper', competitionId, wallpaper),
     changePort: (competitionId: string, newPort: number) =>
       ipcRenderer.invoke('remote:changePort', competitionId, newPort),
+    acknowledgeDTCall: (competitionId: string, arenaId: string) =>
+      ipcRenderer.invoke('remote:acknowledgeDTCall', competitionId, arenaId),
+    resetPoolMatch: (competitionId: string, matchId: string) =>
+      ipcRenderer.invoke('remote:resetPoolMatch', competitionId, matchId),
   },
 
   // Remote event listeners (for real-time updates)
@@ -488,6 +497,28 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const handler = (_: any, note: any) => callback(note);
     ipcRenderer.on('kiosk:note', handler);
     return () => ipcRenderer.removeListener('kiosk:note', handler);
+  },
+  onDTCall: (callback: (data: { arenaId: string; arenaNumber: number; matchNumber: number | null; competitionId: string | null; timestamp: number }) => void) => {
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on('remote:dt_call', handler);
+    return () => ipcRenderer.removeListener('remote:dt_call', handler);
+  },
+  onDTCallCancel: (callback: (data: { arenaId: string }) => void) => {
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on('remote:dt_cancel', handler);
+    return () => ipcRenderer.removeListener('remote:dt_cancel', handler);
+  },
+
+  onScoreIpConflict: (callback: (data: any) => void) => {
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on('score:ip-conflict', handler);
+    return () => ipcRenderer.removeListener('score:ip-conflict', handler);
+  },
+
+  onPoolSignatureUpdated: (callback: (data: { poolId: string; signedFencerIds: string[]; totalFencers: number }) => void) => {
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on('pool:signature:updated', handler);
+    return () => ipcRenderer.removeListener('pool:signature:updated', handler);
   },
 
   getLogo: () => ipcRenderer.invoke('app:getLogo'),

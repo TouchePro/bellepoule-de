@@ -38,7 +38,8 @@
     "epee": "Epee",
     "foil": "Foil",
     "sabre": "Sabre",
-    "laser": "Laser Sabre"
+    "laser": "Laser Sabre",
+    "custom": "Custom formula"
   },
   "genders": {
     "male": "Male",
@@ -103,7 +104,9 @@
     "ranking": "Ranking",
     "tableau": "Table",
     "results": "Results",
-    "remote": "Remote Entry"
+    "remote": "Remote Entry",
+    "logs": "History",
+    "referees": "Referees"
   },
   "pools": {
     "generate": "Generate Pools",
@@ -332,5 +335,31 @@
     "timer": "Start/Pause timer",
     "nav_list": "Navigate in list",
     "validate": "Validate / Open"
+  },
+  "formula": {
+    "builder_title": "Formula builder",
+    "add_pool_round": "Add pool round",
+    "add_de": "Add direct elimination",
+    "add_classification": "Add classification",
+    "save_template": "Save as template",
+    "load_template": "Load template",
+    "advancement_rule": "Advancement rule",
+    "advancement_all": "All advance",
+    "advancement_percent": "Top %",
+    "advancement_fixed": "Fixed count",
+    "advancement_bracket": "Next bracket",
+    "ranking_criteria": "Ranking criteria",
+    "criterion_vm": "V/M (victory ratio)",
+    "criterion_index": "Index (TD−TR)",
+    "criterion_td": "Touches scored",
+    "criterion_tr": "Touches received",
+    "criterion_direct": "Direct bout",
+    "criterion_initial": "Initial ranking",
+    "simulation_title": "Simulation",
+    "pool_round_n": "Pool round {{n}}",
+    "scoring_standard": "Standard (1 touch = 1 pt)",
+    "scoring_zones": "Custom zones",
+    "zone_label": "Zone",
+    "zone_points": "Points"
   }
 }

@@ -505,30 +505,138 @@
         min-height: 1.2rem;
       }
 
-      /* ── FIN overlay ── */
+      /* ── FIN bandeau ── */
       .fin-overlay {
         display: none;
-        position: fixed;
-        inset: 0;
-        background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
-        z-index: 200;
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: linear-gradient(90deg, #1e3a5f 0%, #0f172a 100%);
+        padding: 0.5rem 1rem;
         align-items: center;
         justify-content: center;
-        flex-direction: column;
-        gap: 1.5rem;
+        gap: 0.75rem;
         text-align: center;
       }
 
       .fin-overlay.visible { display: flex; }
 
       .fin-overlay h1 {
-        font-size: clamp(1.8rem, 5vw, 3.5rem);
+        font-size: 1rem;
         font-weight: 800;
         color: #e2e8f0;
         letter-spacing: 0.02em;
+        margin: 0;
       }
 
-      .fin-overlay .fin-icon { font-size: 4rem; }
+      .fin-overlay .fin-icon { font-size: 1.2rem; }
+
+      /* ── Bouton signature ── */
+      .sig-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(99, 102, 241, 0.2);
+        color: #a5b4fc;
+        font-size: 0.85rem;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: background 0.2s, color 0.2s;
+        vertical-align: middle;
+      }
+      .sig-btn:hover:not(:disabled) {
+        background: rgba(99, 102, 241, 0.45);
+        color: #fff;
+      }
+      .sig-btn:disabled {
+        opacity: 0.3;
+        cursor: default;
+      }
+      .sig-btn.signed {
+        background: rgba(34, 197, 94, 0.2);
+        border-color: rgba(34, 197, 94, 0.4);
+        color: #86efac;
+      }
+      .sig-btn.signed:hover {
+        background: rgba(34, 197, 94, 0.4);
+        color: #fff;
+      }
+
+      table.pool-grid .sig-header {
+        background: rgba(0, 0, 0, 0.25);
+        width: 36px;
+        min-width: 36px;
+        padding: 0;
+      }
+      table.pool-grid .sig-cell {
+        background: rgba(30, 60, 120, 0.3);
+        width: 36px;
+        min-width: 36px;
+        padding: 0;
+        text-align: center;
+        vertical-align: middle;
+      }
+
+      /* ── Modal signature ── */
+      .sig-modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 150;
+        align-items: center;
+        justify-content: center;
+      }
+      .sig-modal-overlay.visible { display: flex; }
+      .sig-modal {
+        background: #1e293b;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        width: 400px;
+        max-width: 96vw;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+      }
+      .sig-modal h2 {
+        font-size: 0.95rem;
+        color: #94a3b8;
+        text-align: center;
+        font-weight: 500;
+        margin: 0;
+      }
+      .sig-modal h2 strong {
+        color: #e2e8f0;
+        display: block;
+        font-size: 1.05rem;
+        margin-top: 0.15rem;
+      }
+      .sig-instructions {
+        font-size: 0.8rem;
+        color: #64748b;
+        text-align: center;
+        margin: 0;
+      }
+      #sig-canvas {
+        background: #fff;
+        border-radius: 0.5rem;
+        cursor: crosshair;
+        touch-action: none;
+        display: block;
+        width: 100%;
+        height: 180px;
+      }
+      .sig-modal-actions {
+        display: flex;
+        gap: 0.6rem;
+        justify-content: center;
+      }
 
       /* ── Responsive ── */
       @media (max-width: 480px) {
@@ -585,8 +693,23 @@
 
     <!-- Overlay fin de poule -->
     <div class="fin-overlay" id="fin-overlay">
-      <div class="fin-icon">🏆</div>
+      <span class="fin-icon">🏆</span>
       <h1 data-i18n="pool.finished">POULE TERMINÉE</h1>
+      <span style="color:#94a3b8;font-size:0.85rem;font-weight:500;">— Phase de signature</span>
+    </div>
+
+    <!-- Modal signature -->
+    <div class="sig-modal-overlay" id="sig-modal-overlay">
+      <div class="sig-modal">
+        <h2>Signature<strong id="sig-modal-name"></strong></h2>
+        <p class="sig-instructions">Signez dans le cadre ci-dessous</p>
+        <canvas id="sig-canvas"></canvas>
+        <div class="sig-modal-actions">
+          <button class="btn btn-secondary" id="sig-btn-clear">Effacer</button>
+          <button class="btn btn-secondary" id="sig-btn-cancel">Annuler</button>
+          <button class="btn btn-primary" id="sig-btn-submit">Valider</button>
+        </div>
+      </div>
     </div>
 
     <script>
@@ -601,6 +724,8 @@
       let poolData = null;
       let pendingMatch = null;
       let currentTab = 'tableau';
+      let signaturesData = {};   // { fencerId: dataURL }
+      let signingFencer = null;
 
       // ── Onglets ──
       function switchTab(tab) {
@@ -627,6 +752,7 @@
 
       socket.on(`pool:${arenaId}:update`, data => {
         poolData = data;
+        if (data.signatures) signaturesData = data.signatures;
         renderAll(data);
       });
 
@@ -640,6 +766,7 @@
             return;
           }
           poolData = await res.json();
+          if (poolData.signatures) signaturesData = poolData.signatures;
           renderAll(poolData);
         } catch (e) {
           showStatusMessage(window.T('pool.error_connection'));
@@ -653,11 +780,13 @@
 
       // ── Rendu principal ──
       function renderAll(data) {
-        if (data.isComplete) {
-          document.getElementById('fin-overlay').classList.add('visible');
-          return;
+        const isComplete = !!data.isComplete;
+        const finBanner = document.getElementById('fin-overlay');
+        if (isComplete) {
+          finBanner.classList.add('visible');
+        } else {
+          finBanner.classList.remove('visible');
         }
-        document.getElementById('fin-overlay').classList.remove('visible');
 
         document.getElementById('pool-title').textContent =
           `${data.poolName || 'Poule'} — Piste ${arenaNumber}`;
@@ -669,14 +798,14 @@
         badge.textContent = `${done}/${total}`;
 
         if (currentTab === 'tableau') {
-          renderGrid(data.fencers, data.matches);
+          renderGrid(data.fencers, data.matches, isComplete);
         } else {
-          renderMatchesList(data.fencers, data.matches);
+          renderMatchesList(data.fencers, data.matches, isComplete);
         }
       }
 
       // ── Grille NxN avec colonnes numérotées ──
-      function renderGrid(fencers, matches) {
+      function renderGrid(fencers, matches, locked) {
         const container = document.getElementById('pool-container');
 
         const table = document.createElement('table');
@@ -685,6 +814,10 @@
         // En-tête (numéros de colonnes)
         const thead = document.createElement('thead');
         const headerRow = document.createElement('tr');
+
+        const sigHeader = document.createElement('th');
+        sigHeader.className = 'sig-header';
+        headerRow.appendChild(sigHeader);
 
         const corner = document.createElement('th');
         corner.className = 'corner-cell';
@@ -720,6 +853,30 @@
           th.appendChild(rank);
           th.appendChild(lastName);
           th.appendChild(firstName);
+
+          // Colonne signature dédiée (avant le nom)
+          const sigCell = document.createElement('td');
+          sigCell.className = 'sig-cell';
+          const sigBtn = document.createElement('button');
+          sigBtn.className = 'sig-btn';
+          const isDone = fencerFinishedAll(rowFencer, matches);
+          const isSigned = !!signaturesData[rowFencer.id];
+          if (!isDone) {
+            sigBtn.disabled = true;
+            sigBtn.title = 'Matchs non terminés';
+            sigBtn.textContent = '✍';
+          } else {
+            sigBtn.textContent = isSigned ? '✓' : '✍';
+            sigBtn.title = isSigned ? 'Re-signer' : 'Signer';
+            if (isSigned) sigBtn.classList.add('signed');
+            sigBtn.addEventListener('click', e => {
+              e.stopPropagation();
+              openSignatureModal(rowFencer);
+            });
+          }
+          sigCell.appendChild(sigBtn);
+
+          tr.appendChild(sigCell);
           tr.appendChild(th);
 
           fencers.forEach((colFencer, colIdx) => {
@@ -730,7 +887,7 @@
               td.classList.add('diagonal');
             } else {
               const match = findMatch(matches, rowFencer.id, colFencer.id);
-              renderCell(td, match, rowFencer, colFencer);
+              renderCell(td, match, rowFencer, colFencer, locked);
             }
 
             tr.appendChild(td);
@@ -749,7 +906,7 @@
       }
 
       // ── Liste des matchs ──
-      function renderMatchesList(fencers, matches) {
+      function renderMatchesList(fencers, matches, locked) {
         const container = document.getElementById('pool-container');
         container.innerHTML = '';
 
@@ -765,7 +922,7 @@
           lbl.className = 'section-label';
           lbl.textContent = `À jouer (${pending.length})`;
           view.appendChild(lbl);
-          pending.forEach((m, i) => view.appendChild(buildMatchItem(m, fencers, i + 1, false)));
+          pending.forEach((m, i) => view.appendChild(buildMatchItem(m, fencers, i + 1, false, locked)));
         }
 
         if (finished.length > 0) {
@@ -773,7 +930,7 @@
           lbl.className = 'section-label';
           lbl.textContent = `Terminés (${finished.length})`;
           view.appendChild(lbl);
-          finished.forEach((m, i) => view.appendChild(buildMatchItem(m, fencers, i + 1, true)));
+          finished.forEach((m, i) => view.appendChild(buildMatchItem(m, fencers, i + 1, true, locked)));
         }
 
         if (matches.length === 0) {
@@ -786,7 +943,7 @@
         container.appendChild(view);
       }
 
-      function buildMatchItem(match, fencers, idx, isFinished) {
+      function buildMatchItem(match, fencers, idx, isFinished, locked) {
         const item = document.createElement('div');
         item.className = 'match-item' + (isFinished ? ' finished' : '');
 
@@ -837,13 +994,15 @@
         fencersDiv.appendChild(nameB);
         item.appendChild(fencersDiv);
 
-        if (!isFinished && fA && fB) {
-          item.addEventListener('click', () => openModal(match, fA, fB));
-        } else if (isFinished) {
-          item.addEventListener('click', () => {
-            if (fA && fB) openModal(match, fA, fB);
-          });
-          item.style.cursor = 'pointer';
+        if (!locked) {
+          if (!isFinished && fA && fB) {
+            item.addEventListener('click', () => openModal(match, fA, fB));
+          } else if (isFinished) {
+            item.addEventListener('click', () => {
+              if (fA && fB) openModal(match, fA, fB);
+            });
+            item.style.cursor = 'pointer';
+          }
         }
 
         return item;
@@ -872,7 +1031,7 @@
         ) || null;
       }
 
-      function renderCell(td, match, rowFencer, colFencer) {
+      function renderCell(td, match, rowFencer, colFencer, locked) {
         if (!match) {
           td.classList.add('not-played');
           return;
@@ -883,7 +1042,7 @@
 
         if (!scoreForRow || match.status !== 'finished') {
           td.classList.add('not-played');
-          td.addEventListener('click', () => openModal(match, rowFencer, colFencer));
+          if (!locked) td.addEventListener('click', () => openModal(match, rowFencer, colFencer));
           return;
         }
 
@@ -899,8 +1058,10 @@
           td.classList.add('defeat'); td.textContent = `D${scoreForRow.value ?? ''}`;
         }
 
-        td.style.cursor = 'pointer';
-        td.addEventListener('click', () => openModal(match, rowFencer, colFencer));
+        if (!locked) {
+          td.style.cursor = 'pointer';
+          td.addEventListener('click', () => openModal(match, rowFencer, colFencer));
+        }
       }
 
       function shortName(f) {
@@ -913,6 +1074,110 @@
         const last = (f.lastName || f.last_name || '').toUpperCase();
         const first = f.firstName || f.first_name || '';
         return `${last} ${first}`.trim();
+      }
+
+      // ── Helpers signature ──
+      function fencerFinishedAll(fencer, matches) {
+        const mine = matches.filter(m =>
+          (m.fencerA?.id === fencer.id || m.fencerAId === fencer.id) ||
+          (m.fencerB?.id === fencer.id || m.fencerBId === fencer.id)
+        );
+        return mine.length > 0 && mine.every(m => m.status === 'finished');
+      }
+
+      // ── Signature canvas ──
+      const sigOverlay = document.getElementById('sig-modal-overlay');
+      const sigCanvas = document.getElementById('sig-canvas');
+      const sigCtx = sigCanvas.getContext('2d');
+      let isDrawing = false;
+
+      function resizeCanvas() {
+        const rect = sigCanvas.getBoundingClientRect();
+        sigCanvas.width = rect.width * window.devicePixelRatio;
+        sigCanvas.height = rect.height * window.devicePixelRatio;
+        sigCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        sigCtx.strokeStyle = '#1e293b';
+        sigCtx.lineWidth = 2.5;
+        sigCtx.lineCap = 'round';
+        sigCtx.lineJoin = 'round';
+      }
+
+      function clearCanvas() {
+        const rect = sigCanvas.getBoundingClientRect();
+        sigCtx.clearRect(0, 0, rect.width, rect.height);
+      }
+
+      function getPos(e) {
+        const rect = sigCanvas.getBoundingClientRect();
+        return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      }
+
+      sigCanvas.addEventListener('pointerdown', e => {
+        isDrawing = true;
+        const pos = getPos(e);
+        sigCtx.beginPath();
+        sigCtx.moveTo(pos.x, pos.y);
+        sigCanvas.setPointerCapture(e.pointerId);
+      });
+
+      sigCanvas.addEventListener('pointermove', e => {
+        if (!isDrawing) return;
+        const pos = getPos(e);
+        sigCtx.lineTo(pos.x, pos.y);
+        sigCtx.stroke();
+      });
+
+      sigCanvas.addEventListener('pointerup', () => { isDrawing = false; });
+      sigCanvas.addEventListener('pointercancel', () => { isDrawing = false; });
+
+      function openSignatureModal(fencer) {
+        signingFencer = fencer;
+        document.getElementById('sig-modal-name').textContent = fullName(fencer);
+        sigOverlay.classList.add('visible');
+        resizeCanvas();
+        clearCanvas();
+        sigCtx.strokeStyle = '#1e293b';
+        sigCtx.lineWidth = 2.5;
+        sigCtx.lineCap = 'round';
+        sigCtx.lineJoin = 'round';
+      }
+
+      function closeSignatureModal() {
+        signingFencer = null;
+        sigOverlay.classList.remove('visible');
+      }
+
+      document.getElementById('sig-btn-clear').addEventListener('click', clearCanvas);
+      document.getElementById('sig-btn-cancel').addEventListener('click', closeSignatureModal);
+      document.getElementById('sig-btn-submit').addEventListener('click', submitSignature);
+
+      async function submitSignature() {
+        if (!signingFencer || !poolData) return;
+        const dataURL = sigCanvas.toDataURL('image/png');
+        const submitBtn = document.getElementById('sig-btn-submit');
+        submitBtn.disabled = true;
+        try {
+          const res = await fetch(
+            `/api/pools/${poolData.poolId}/fencers/${signingFencer.id}/signature`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ signatureData: dataURL }),
+            }
+          );
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            alert(err.error || 'Erreur lors de la sauvegarde de la signature.');
+            return;
+          }
+          signaturesData[signingFencer.id] = dataURL;
+          closeSignatureModal();
+          if (poolData) renderAll(poolData);
+        } catch {
+          alert('Erreur réseau.');
+        } finally {
+          submitBtn.disabled = false;
+        }
       }
 
       // ── Modal ──

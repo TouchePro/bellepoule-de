@@ -28,6 +28,8 @@ interface PoolViewProps {
     winnerOverride?: 'A' | 'B',
     specialStatus?: 'abandon' | 'forfait' | 'exclusion'
   ) => void;
+  onMatchReset?: (matchIndex: number) => void;
+  onMatchCancel?: (matchIndex: number) => void;
   onFencerChangePool?: (fencer: Fencer) => void;
   onFencerStatusChange?: (fencerId: string, status: 'abandon' | 'forfait' | 'exclusion') => void;
 }
@@ -40,6 +42,8 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   weapon,
   competitionName,
   onScoreUpdate,
+  onMatchReset,
+  onMatchCancel,
   onFencerChangePool,
   onFencerStatusChange,
 }) => {
@@ -58,10 +62,12 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   const [victoryB, setVictoryB] = useState(false);
   const [matchesUpdateTrigger, setMatchesUpdateTrigger] = useState(0);
   const [keyboardFocusField, setKeyboardFocusField] = useState<'A' | 'B'>('A');
+  const [signedFencerIds, setSignedFencerIds] = useState<string[]>([]);
 
   const { addAction, undo, redo, canUndo, canRedo } = useHistory();
 
   const isLaserSabre = weapon === Weapon.LASER;
+  const isLocked = pool.fencers.length > 0 && signedFencerIds.filter(id => pool.fencers.some(f => f.id === id)).length >= pool.fencers.length;
   const fencers = pool.fencers;
 
   const isVisible = useCallback(
@@ -89,18 +95,35 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     };
   }, [showColumnMenu]);
 
+  // Charger les signatures au montage et écouter les mises à jour en temps réel
+  useEffect(() => {
+    window.electronAPI.db.getPoolSignatures(pool.id).then(sigs => {
+      setSignedFencerIds(sigs.map(s => s.fencerId));
+    });
+    const unsub = window.electronAPI.onPoolSignatureUpdated(data => {
+      if (data.poolId === pool.id) {
+        setSignedFencerIds(data.signedFencerIds);
+      }
+    });
+    return unsub;
+  }, [pool.id]);
+
   // Raccourcis clavier
 
   const orderedMatches = useMemo(() => {
+    const cancelled = pool.matches
+      .map((m, idx) => ({ match: m, index: idx }))
+      .filter(({ match }) => match.status === MatchStatus.CANCELLED);
+
     const pending = pool.matches
       .map((m, idx) => ({ match: m, index: idx }))
-      .filter(({ match }) => match.status !== MatchStatus.FINISHED);
+      .filter(({ match }) => match.status !== MatchStatus.FINISHED && match.status !== MatchStatus.CANCELLED);
 
     const finished = pool.matches
       .map((m, idx) => ({ match: m, index: idx }))
       .filter(({ match }) => match.status === MatchStatus.FINISHED);
 
-    if (pending.length === 0) return { pending: [], finished };
+    if (pending.length === 0) return { pending: [], finished, cancelled };
 
     // Algorithme pour éviter qu'un tireur combatte 2 fois d'affilée
     const ordered: typeof pending = [];
@@ -148,7 +171,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
       if (chosen.match.fencerB) lastFencerIds.add(chosen.match.fencerB.id);
     }
 
-    return { pending: ordered, finished };
+    return { pending: ordered, finished, cancelled };
   }, [pool.matches.length, pool.matches.map(m => m.status).join(',')]);
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -205,16 +228,18 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           target.tagName !== 'TEXTAREA'
         ) {
           e.preventDefault();
-          const firstPending = orderedMatches.pending[0];
-          if (firstPending) {
-            openScoreModal(firstPending.index);
-            setKeyboardFocusField('A');
+          if (!isLocked) {
+            const firstPending = orderedMatches.pending[0];
+            if (firstPending) {
+              openScoreModal(firstPending.index);
+              setKeyboardFocusField('A');
+            }
           }
           return;
         }
         if (e.key === 'z' && e.ctrlKey && !e.shiftKey) {
           e.preventDefault();
-          undo();
+          if (!isLocked) undo();
           return;
         }
         if (
@@ -223,7 +248,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           (e.key === 'Z' && e.ctrlKey && e.shiftKey)
         ) {
           e.preventDefault();
-          redo();
+          if (!isLocked) redo();
           return;
         }
       }
@@ -266,6 +291,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   };
 
   const handleCellClick = (rowFencer: Fencer, colFencer: Fencer) => {
+    if (isLocked) return;
     if (rowFencer.id === colFencer.id) return;
     const matchIndex = getMatchIndex(rowFencer, colFencer);
     if (matchIndex === -1) return;
@@ -456,6 +482,8 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   const handleExportPDF = async () => {
     try {
       const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
+      const sigsArray = await window.electronAPI.db.getPoolSignatures(pool.id);
+      const signatures = Object.fromEntries(sigsArray.map(s => [s.fencerId, s.signatureData]));
       await exportPoolToPDF(
         pool,
         {
@@ -466,6 +494,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           logoBase64: logo,
           competitionName,
           visibleColumns: getVisibleColumns('pool'),
+          signatures,
         },
         poolTemplate
       );
@@ -810,6 +839,24 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               >
                 🚫 Exclusion
               </button>
+              {onMatchCancel && editingMatch !== null && (
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    if (editingMatch === null) return;
+                    onMatchCancel(editingMatch);
+                    setEditingMatch(null);
+                    setIsMatchInverted(false);
+                    setEditScoreA('');
+                    setEditScoreB('');
+                    setVictoryA(false);
+                    setVictoryB(false);
+                  }}
+                  style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
+                >
+                  ⏸ Annuler match
+                </button>
+              )}
             </div>
           </div>
           <div
@@ -843,6 +890,11 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
       toggleColumn={toggleColumn}
       onCellClick={handleCellClick}
       onFencerChangePool={onFencerChangePool}
+      isLocked={isLocked}
+      onMatchReset={!isLocked && onMatchReset ? (rowFencer, colFencer) => {
+        const matchIndex = getMatchIndex(rowFencer, colFencer);
+        if (matchIndex !== -1) onMatchReset(matchIndex);
+      } : undefined}
     />
   );
 
@@ -1215,7 +1267,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               return (
                 <div
                   key={index}
-                  onClick={() => !isAbandonMatch && openScoreModal(index)}
+                  onClick={() => !isAbandonMatch && !isLocked && openScoreModal(index)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -1227,7 +1279,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                         ? '#f0fdf4'
                         : '#fef2f2',
                     borderRadius: '6px',
-                    cursor: isAbandonMatch ? 'not-allowed' : 'pointer',
+                    cursor: isAbandonMatch || isLocked ? 'not-allowed' : 'pointer',
                     border: isAbandonMatch ? '1px dashed #9ca3af' : '1px solid #e5e7eb',
                     opacity: isAbandonMatch ? 0.5 : 1,
                   }}
@@ -1285,6 +1337,28 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                     {fencerBAbandoned && ' ✕'}
                     {match.scoreB?.isVictory && !isAbandonMatch ? ' ✓' : ''}
                   </span>
+                  {!isAbandonMatch && !isLocked && onMatchReset && (
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        onMatchReset(index);
+                      }}
+                      title="Annuler ce résultat"
+                      style={{
+                        marginLeft: '0.5rem',
+                        padding: '0.25rem 0.5rem',
+                        fontSize: '0.75rem',
+                        background: 'rgba(239,68,68,0.1)',
+                        border: '1px solid rgba(239,68,68,0.3)',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        color: '#dc2626',
+                        flexShrink: 0,
+                      }}
+                    >
+                      ↺
+                    </button>
+                  )}
                 </div>
               );
             })}
@@ -1292,8 +1366,58 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         </div>
       )}
 
+      {/* Matches annulés */}
+      {orderedMatches.cancelled.length > 0 && (
+        <div style={{ marginBottom: '1.5rem' }}>
+          <h4 style={{ fontSize: '0.875rem', fontWeight: '600', marginBottom: '0.5rem', color: '#6b7280' }}>
+            Matches annulés ({orderedMatches.cancelled.length})
+          </h4>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {orderedMatches.cancelled.map(({ match, index }) => (
+              <div
+                key={index}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '0.75rem 1rem',
+                  background: '#f3f4f6',
+                  borderRadius: '6px',
+                  border: '1px dashed #d1d5db',
+                  opacity: 0.8,
+                }}
+              >
+                <span style={{ color: '#9ca3af', fontSize: '0.875rem', minWidth: '30px' }}>⏸</span>
+                <span style={{ flex: 1, textAlign: 'center', color: '#6b7280', textDecoration: 'line-through' }}>
+                  {match.fencerA?.lastName} vs {match.fencerB?.lastName}
+                </span>
+                {!isLocked && onMatchReset && (
+                  <button
+                    onClick={() => onMatchReset(index)}
+                    title="Relancer ce match"
+                    style={{
+                      marginLeft: '0.5rem',
+                      padding: '0.25rem 0.5rem',
+                      fontSize: '0.75rem',
+                      background: 'rgba(59,130,246,0.1)',
+                      border: '1px solid rgba(59,130,246,0.3)',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      color: '#2563eb',
+                      flexShrink: 0,
+                    }}
+                  >
+                    ▶ Relancer
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Poule terminée */}
-      {orderedMatches.pending.length === 0 && (
+      {orderedMatches.pending.length === 0 && orderedMatches.cancelled.length === 0 && (
         <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
           <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🏁</div>
           <div style={{ fontWeight: '600' }}>Poule terminée !</div>
@@ -1305,6 +1429,23 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
 
   return (
     <div className="card">
+      {isLocked && (
+        <div style={{
+          background: '#fef2f2',
+          border: '1px solid #fca5a5',
+          borderRadius: '6px',
+          padding: '0.5rem 1rem',
+          marginBottom: '0.5rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          color: '#991b1b',
+          fontWeight: 600,
+          fontSize: '0.875rem',
+        }}>
+          🔒 Feuille signée par tous les combattants — scores verrouillés
+        </div>
+      )}
       <div
         className="card-header"
         style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
@@ -1314,6 +1455,31 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           <span className={`badge ${pool.isComplete ? 'badge-success' : 'badge-warning'}`}>
             {pool.isComplete ? 'Terminée' : `${finishedCount}/${totalMatches}`}
           </span>
+          {(() => {
+            const total = pool.fencers.length;
+            const signed = signedFencerIds.filter(id => pool.fencers.some(f => f.id === id)).length;
+            const allSigned = signed === total && total > 0;
+            const noneSigned = signed === 0;
+            return (
+              <span
+                title={allSigned ? 'Tous les combattants ont signé — PDF disponible' : `${signed}/${total} signature(s)`}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.25rem',
+                  padding: '0.2rem 0.5rem',
+                  borderRadius: '12px',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  background: allSigned ? '#d1fae5' : noneSigned ? '#f3f4f6' : '#fef3c7',
+                  color: allSigned ? '#065f46' : noneSigned ? '#6b7280' : '#92400e',
+                  border: `1px solid ${allSigned ? '#6ee7b7' : noneSigned ? '#e5e7eb' : '#fcd34d'}`,
+                }}
+              >
+                ✍️ {signed}/{total}
+              </span>
+            );
+          })()}
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button
