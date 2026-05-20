@@ -1006,8 +1006,47 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         </div>
       </div>
 
-      {/* Content */}
-      <div style={{ flex: 1, overflow: 'auto' }}>
+      {/* Stats bar */}
+      {(pools.length > 0 || tableauMatches.length > 0 || fencers.length > 0) && (
+        <div className="comp-stats-bar">
+          <div className="comp-stats-bar-item">
+            <span className="comp-stats-bar-icon">🤺</span>
+            <span>{getCheckedInFencers().length}/{fencers.length} tireurs</span>
+          </div>
+          {pools.length > 0 && (
+            <>
+              <div className="comp-stats-bar-sep" />
+              <div className="comp-stats-bar-item">
+                <span className="comp-stats-bar-icon">🎯</span>
+                <span>{pools.filter(p => p.isComplete).length}/{pools.length} poules</span>
+              </div>
+              <div className="comp-stats-bar-sep" />
+              <div className="comp-stats-bar-item">
+                <span className="comp-stats-bar-icon">⚡</span>
+                <span>
+                  {pools.reduce((s, p) => s + p.matches.filter(m => m.status === MatchStatus.FINISHED).length, 0)}/
+                  {pools.reduce((s, p) => s + p.matches.length, 0)} matchs
+                </span>
+              </div>
+            </>
+          )}
+          {tableauMatches.length > 0 && (
+            <>
+              <div className="comp-stats-bar-sep" />
+              <div className="comp-stats-bar-item">
+                <span className="comp-stats-bar-icon">🏆</span>
+                <span>
+                  {tableauMatches.filter(m => m.status === MatchStatus.FINISHED).length}/
+                  {tableauMatches.filter(m => m.fencerA && m.fencerB).length} tableau
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Content — keyed pour animation de transition */}
+      <div key={currentPhase} className="phase-content" style={{ flex: 1, overflow: 'auto' }}>
         {currentPhase === 'checkin' && (
           <FencerList
             fencers={fencers}
