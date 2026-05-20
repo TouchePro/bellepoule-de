@@ -917,3 +917,231 @@ select:focus {
   background: var(--color-bg);
   border-color: var(--color-border-dark);
 }
+
+/* ============================================================
+   COMPETITION HEADER — glassmorphism redesign
+   ============================================================ */
+
+.comp-header {
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.comp-header-bg {
+  position: absolute;
+  inset: 0;
+  background: var(--comp-color, #3B5BDB);
+  /* Rich gradient overlay */
+}
+
+.comp-header-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(135deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.15) 60%, rgba(255,255,255,0.04) 100%);
+}
+
+.comp-header-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.25rem 1.5rem 1rem;
+  color: #fff;
+}
+
+.comp-header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.comp-header-pills {
+  display: flex;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+}
+
+.comp-header-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.comp-header-title {
+  font-size: 1.625rem;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+  color: #fff;
+  margin: 0;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.25);
+}
+
+.comp-header-meta {
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.75);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.comp-header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+/* Stats cluster */
+.comp-header-stats {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-lg);
+  padding: 0.5rem 1rem;
+}
+
+.comp-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  padding: 0 0.625rem;
+}
+
+.comp-stat-value {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+}
+
+.comp-stat-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.comp-stat-sep {
+  width: 1px;
+  height: 2rem;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Actions dropdown */
+.comp-header-actions {
+  position: relative;
+}
+
+.comp-header-menu-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--duration-fast) ease;
+  letter-spacing: 0;
+}
+
+.comp-header-menu-btn:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.comp-header-dropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  min-width: 200px;
+  overflow: hidden;
+  z-index: 500;
+  animation: modal-in 0.2s var(--ease-spring);
+}
+
+.comp-header-dropdown-item {
+  width: 100%;
+  padding: 0.625rem 1rem;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 0.875rem;
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background var(--duration-fast) ease;
+}
+
+.comp-header-dropdown-item:hover {
+  background: var(--color-bg);
+}
+
+.comp-header-dropdown-sep {
+  height: 1px;
+  background: var(--color-border);
+  margin: 0.25rem 0;
+}
+
+/* Progress bar */
+.comp-header-progress {
+  position: relative;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  z-index: 1;
+}
+
+.comp-header-progress-fill {
+  height: 100%;
+  background: rgba(255, 255, 255, 0.85);
+  transition: width 0.6s var(--ease-out);
+  border-radius: 0 2px 2px 0;
+  box-shadow: 0 0 8px rgba(255,255,255,0.5);
+}
+
+/* Dark mode */
+.theme-dark .comp-header-dropdown {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+.theme-dark .comp-header-dropdown-item:hover {
+  background: var(--color-surface-2);
+}
+
+.theme-dark .comp-header-dropdown-sep {
+  background: var(--color-border);
+}

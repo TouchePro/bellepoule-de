@@ -15,6 +15,7 @@ import { useColumnVisibility, POOL_COLUMNS, ColumnId } from '../hooks/useColumnV
 import { usePdfTemplateStore } from '../../features/pdfTemplates/hooks/usePdfTemplateStore';
 import { useHistory } from '../hooks/useHistory';
 import PoolScoreMatrix from './pool/PoolScoreMatrix';
+import Confetti from './Confetti';
 
 interface PoolViewProps {
   pool: Pool;
@@ -65,6 +66,16 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   const [signedFencerIds, setSignedFencerIds] = useState<string[]>([]);
 
   const { addAction, undo, redo, canUndo, canRedo } = useHistory();
+  const [showPoolConfetti, setShowPoolConfetti] = useState(false);
+  const prevIsComplete = useRef(pool.isComplete);
+
+  useEffect(() => {
+    if (pool.isComplete && !prevIsComplete.current) {
+      setShowPoolConfetti(true);
+      setTimeout(() => setShowPoolConfetti(false), 3000);
+    }
+    prevIsComplete.current = pool.isComplete;
+  }, [pool.isComplete]);
 
   const isLaserSabre = weapon === Weapon.LASER;
   const isLocked = pool.fencers.length > 0 && signedFencerIds.filter(id => pool.fencers.some(f => f.id === id)).length >= pool.fencers.length;
@@ -1429,6 +1440,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
 
   return (
     <div className="card">
+      <Confetti active={showPoolConfetti} particleCount={100} origin={{ x: 0.5, y: 0.5 }} />
       {isLocked && (
         <div style={{
           background: '#fef2f2',

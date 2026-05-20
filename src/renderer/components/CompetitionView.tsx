@@ -9,6 +9,7 @@ import { logger, LogCategory } from '@shared/services/logger';
 import { RankingImportResult } from '../../shared/utils/fileParser';
 import FencerList from './FencerList';
 import PoolView from './PoolView';
+import Confetti from './Confetti';
 import TableauView, { TableauMatch, FinalResult, propagateWinners, ConsolationBracket } from './TableauView';
 import PoolRankingView from './PoolRankingView';
 import ResultsView from './ResultsView';
@@ -808,145 +809,152 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
   const poolsNextAction = getPoolsNextAction();
 
+  // Confetti + menu état
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [showActionsMenu, setShowActionsMenu] = useState(false);
+  const prevAllPoolsComplete = useRef(false);
+  const prevChampion = useRef<string | null>(null);
+  const actionsMenuRef = useRef<HTMLDivElement>(null);
+
+  // Détecter complétion des poules → confetti
+  useEffect(() => {
+    const allDone = canAdvanceFromPools && pools.length > 0;
+    if (allDone && !prevAllPoolsComplete.current) {
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 3200);
+    }
+    prevAllPoolsComplete.current = allDone;
+  }, [canAdvanceFromPools, pools.length]);
+
+  // Fermer le menu actions au clic extérieur
+  useEffect(() => {
+    if (!showActionsMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (actionsMenuRef.current && !actionsMenuRef.current.contains(e.target as Node)) {
+        setShowActionsMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showActionsMenu]);
+
+  // Calcul progression matchs
+  const matchProgress = useMemo(() => {
+    if (pools.length === 0 && tableauMatches.length === 0) return null;
+    if (pools.length > 0) {
+      const total = pools.reduce((s, p) => s + p.matches.length, 0);
+      const done = pools.reduce((s, p) => s + p.matches.filter(m => m.status === MatchStatus.FINISHED).length, 0);
+      return { done, total, label: 'poules' };
+    }
+    if (tableauMatches.length > 0) {
+      const total = tableauMatches.filter(m => m.fencerA && m.fencerB).length;
+      const done = tableauMatches.filter(m => m.status === MatchStatus.FINISHED).length;
+      return { done, total, label: 'tableau' };
+    }
+    return null;
+  }, [pools, tableauMatches]);
+
   return (
     <div style={{ display: 'flex', flex: 1, flexDirection: 'column', overflow: 'hidden' }}>
-      {/* Header */}
-      <div
-        style={{
-          padding: '1rem',
-          background: competition.color,
-          color: 'white',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.25rem' }}>
-            {competition.title}
-          </h1>
-          <p style={{ opacity: 0.9, fontSize: '0.875rem' }}>
-            {new Date(competition.date).toLocaleDateString(language === 'zh-HK' ? 'zh-HK' : language, {
-              weekday: 'long',
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric',
-            })}
-            {competition.location && ` • ${competition.location}`}
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <span className="badge" style={{ background: 'rgba(255,255,255,0.2)' }}>
-            {fencers.length} {t('fencer.label')}
-          </span>
-          <span className="badge" style={{ background: 'rgba(255,255,255,0.2)' }}>
-            {getCheckedInFencers().length} {t('fencer.present_label')}
-          </span>
-          <button
-            onClick={() => setShowFencerComparison(true)}
-            style={{
-              background: 'rgba(255,255,255,0.2)',
-              border: 'none',
-              color: 'white',
-              padding: '0.5rem 1rem',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-            }}
-          >
-            ⚔️ {t('competition.comparisons')}
-          </button>
-          <button
-            onClick={() => setShowAnalytics(true)}
-            style={{
-              background: 'rgba(255,255,255,0.2)',
-              border: 'none',
-              color: 'white',
-              padding: '0.5rem 1rem',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-            }}
-          >
-            📊 {t('competition.analytics')}
-          </button>
-          <button
-            onClick={() => setShowQRCode(true)}
-            style={{
-              background: 'rgba(255,255,255,0.2)',
-              border: 'none',
-              color: 'white',
-              padding: '0.5rem 1rem',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-            }}
-          >
-            📱 Partager
-          </button>
-          {currentPhase === 'pools' && pools.length > 0 && (
-            <>
+      <Confetti active={showConfetti} />
+      {/* Header — glassmorphism redesign */}
+      <div className="comp-header" style={{ '--comp-color': competition.color } as React.CSSProperties}>
+        <div className="comp-header-bg" />
+        <div className="comp-header-content">
+          {/* Infos */}
+          <div className="comp-header-info">
+            <div className="comp-header-pills">
+              <span className="comp-header-pill">{competition.weapon}</span>
+              <span className="comp-header-pill">{competition.category}</span>
+              <span className="comp-header-pill">{competition.gender}</span>
+            </div>
+            <h1 className="comp-header-title">{competition.title}</h1>
+            <p className="comp-header-meta">
+              {new Date(competition.date).toLocaleDateString(language === 'zh-HK' ? 'zh-HK' : language, {
+                weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+              })}
+              {competition.location && ` · ${competition.location}`}
+            </p>
+          </div>
+
+          {/* Stats + actions */}
+          <div className="comp-header-right">
+            {/* Stats */}
+            <div className="comp-header-stats">
+              <div className="comp-stat">
+                <span className="comp-stat-value">{fencers.length}</span>
+                <span className="comp-stat-label">{t('fencer.label')}</span>
+              </div>
+              <div className="comp-stat-sep" />
+              <div className="comp-stat">
+                <span className="comp-stat-value">{getCheckedInFencers().length}</span>
+                <span className="comp-stat-label">{t('fencer.present_label')}</span>
+              </div>
+              {matchProgress && (
+                <>
+                  <div className="comp-stat-sep" />
+                  <div className="comp-stat">
+                    <span className="comp-stat-value">{matchProgress.done}/{matchProgress.total}</span>
+                    <span className="comp-stat-label">matchs</span>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Menu actions ⋯ */}
+            <div className="comp-header-actions" ref={actionsMenuRef}>
               <button
-                onClick={() => setShowPresentation(true)}
-                style={{
-                  background: 'rgba(255,255,255,0.2)',
-                  border: 'none',
-                  color: 'white',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                }}
+                className="comp-header-menu-btn"
+                onClick={() => setShowActionsMenu(v => !v)}
+                title="Actions"
               >
-                🖥️ Mode Présentation
+                ⋯
               </button>
-              <button
-                onClick={() => setShowKiosk(true)}
-                style={{
-                  background: 'rgba(255,255,255,0.2)',
-                  border: 'none',
-                  color: 'white',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                }}
-              >
-                📱 Mode Kiosk
-              </button>
-            </>
-          )}
-          {(pools.length > 0 || tableauMatches.length > 0) && (
-            <button
-              onClick={() => setShowKioskDisplay(true)}
-              style={{
-                background: 'rgba(255,255,255,0.2)',
-                border: 'none',
-                color: 'white',
-                padding: '0.5rem 1rem',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '0.875rem',
-              }}
-            >
-              🖥️ Kiosk Public
-            </button>
-          )}
-          <button
-            onClick={() => setShowPropertiesModal(true)}
-            style={{
-              background: 'rgba(255,255,255,0.2)',
-              border: 'none',
-              color: 'white',
-              padding: '0.5rem 1rem',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-            }}
-          >
-            ⚙️ Propriétés
-          </button>
+              {showActionsMenu && (
+                <div className="comp-header-dropdown">
+                  <button className="comp-header-dropdown-item" onClick={() => { setShowFencerComparison(true); setShowActionsMenu(false); }}>
+                    ⚔️ {t('competition.comparisons')}
+                  </button>
+                  <button className="comp-header-dropdown-item" onClick={() => { setShowAnalytics(true); setShowActionsMenu(false); }}>
+                    📊 {t('competition.analytics')}
+                  </button>
+                  <button className="comp-header-dropdown-item" onClick={() => { setShowQRCode(true); setShowActionsMenu(false); }}>
+                    📱 Partager
+                  </button>
+                  {currentPhase === 'pools' && pools.length > 0 && (
+                    <>
+                      <button className="comp-header-dropdown-item" onClick={() => { setShowPresentation(true); setShowActionsMenu(false); }}>
+                        🖥️ Mode Présentation
+                      </button>
+                      <button className="comp-header-dropdown-item" onClick={() => { setShowKiosk(true); setShowActionsMenu(false); }}>
+                        📱 Mode Kiosk
+                      </button>
+                    </>
+                  )}
+                  {(pools.length > 0 || tableauMatches.length > 0) && (
+                    <button className="comp-header-dropdown-item" onClick={() => { setShowKioskDisplay(true); setShowActionsMenu(false); }}>
+                      🖥️ Kiosk Public
+                    </button>
+                  )}
+                  <div className="comp-header-dropdown-sep" />
+                  <button className="comp-header-dropdown-item" onClick={() => { setShowPropertiesModal(true); setShowActionsMenu(false); }}>
+                    ⚙️ Propriétés
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
+
+        {/* Barre de progression matchs */}
+        {matchProgress && matchProgress.total > 0 && (
+          <div className="comp-header-progress">
+            <div
+              className="comp-header-progress-fill"
+              style={{ width: `${(matchProgress.done / matchProgress.total) * 100}%` }}
+            />
+          </div>
+        )}
       </div>
 
       {/* Navigation */}
