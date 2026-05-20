@@ -314,25 +314,27 @@ jobs:
       - name: List downloaded files
         run: find builds -type f
 
-      - name: Delete all existing releases
+      - name: Delete old releases (keep last 3)
         run: |
-          # Supprimer toutes les releases pour ne conserver que la nouvelle
           tags=$(gh release list --repo "${{ github.repository }}" --json tagName -q '.[].tagName' 2>/dev/null || true)
+          count=0
           if [ -n "$tags" ]; then
             echo "$tags" | while read -r tag; do
-              echo "Suppression de la release: $tag"
-              gh release delete "$tag" --repo "${{ github.repository }}" --yes --cleanup-tag 2>/dev/null || true
+              count=$((count + 1))
+              if [ $count -gt 3 ]; then
+                echo "Suppression de la release: $tag"
+                gh release delete "$tag" --repo "${{ github.repository }}" --yes --cleanup-tag 2>/dev/null || true
+              fi
             done
           fi
-          # Nettoyer le tag 'latest' orphelin s'il reste
-          gh api -X DELETE "repos/${{ github.repository }}/git/refs/tags/latest" 2>/dev/null || true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: latest
+          tag_name: 'v${{ needs.increment-version.outputs.version }}-build.${{ needs.increment-version.outputs.build }}'
+          make_latest: true
           name: '🚀 BellePoule Modern v${{ needs.increment-version.outputs.version }} Build #${{ needs.increment-version.outputs.build }}'
           body: |
             ## BellePoule Modern
