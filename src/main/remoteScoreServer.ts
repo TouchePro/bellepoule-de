@@ -2799,7 +2799,21 @@ export class RemoteScoreServer {
     }
 
     const deQueue = this.arenaMatchQueue.get(arenaId) || [];
-    if (deQueue.length > 0) return deQueue[0];
+    if (deQueue.length > 0) {
+      const nextDeMatch = deQueue[0];
+      const nextMatchData = this.sessionMatches.find((m: any) => m.id === nextDeMatch.id);
+      if (nextMatchData?.round !== undefined) {
+        const blockedByEarlierRound = this.sessionMatches.some(
+          (m: any) =>
+            !m.poolId &&
+            m.round !== undefined &&
+            m.round > nextMatchData.round &&
+            m.status !== MatchStatus.FINISHED
+        );
+        if (blockedByEarlierRound) return null;
+      }
+      return nextDeMatch;
+    }
 
     return null;
   }
@@ -2885,6 +2899,28 @@ export class RemoteScoreServer {
     const deQueue = this.arenaMatchQueue.get(arenaId) || [];
     if (deQueue.length > 0) {
       const nextDeMatch = deQueue[0];
+
+      // Bloquer si des matchs d'un round antérieur (valeur plus grande) sont encore en cours
+      const nextMatchData = this.sessionMatches.find((m: any) => m.id === nextDeMatch.id);
+      if (nextMatchData?.round !== undefined) {
+        const blockedByEarlierRound = this.sessionMatches.some(
+          (m: any) =>
+            !m.poolId &&
+            m.round !== undefined &&
+            m.round > nextMatchData.round &&
+            m.status !== MatchStatus.FINISHED
+        );
+        if (blockedByEarlierRound) {
+          console.log(
+            `[RemoteScoreServer] Match DE ${nextDeMatch.id} (round ${nextMatchData.round}) bloqué — round antérieur encore en cours`
+          );
+          arena.currentMatch = null;
+          arena.status = 'idle';
+          this.updateArena(arenaId, { currentMatch: null, status: 'idle' });
+          return;
+        }
+      }
+
       this.arenaMatchQueue.set(arenaId, deQueue.slice(1));
       console.log(
         `[RemoteScoreServer] Match DE suivant ${nextDeMatch.id} chargé depuis la file sur arène ${arenaId}`
@@ -3342,9 +3378,10 @@ export class RemoteScoreServer {
     }
 
     // Distribuer les matchs d'élimination directe (sans poolId) dans les files par arène
+    // Tri décroissant : 8ès en premier, finale en dernier → pistes chargées dans l'ordre logique
     const deMatches = allMatches
       .filter(m => !m.poolId && (m.round !== undefined || m.isTableau))
-      .sort((a: any, b: any) => (a.round || 0) - (b.round || 0));
+      .sort((a: any, b: any) => (b.round || 0) - (a.round || 0));
 
     if (deMatches.length > 0) {
       console.log(
