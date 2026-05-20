@@ -142,6 +142,11 @@ function parseTXTLine(line: string, lineNumber: number): Partial<Fencer> | null 
     return null;
   }
 
+  // Sauter le premier champ s'il est purement numérique (colonne N° du format TXT BellePoule)
+  if (/^\d+$/.test(bestParts[0]) && bestParts.length >= 3) {
+    bestParts = bestParts.slice(1);
+  }
+
   const lastName = bestParts[0]?.toUpperCase().trim();
   const firstName = bestParts[1]?.trim();
 
@@ -766,21 +771,20 @@ function parseFFELine(
       region = (parts[9] || '').trim() || undefined;
       club = (parts[10] || '').trim() || undefined;
 
-      // La position finale est dans la section positionInfo (indice 14)
-      // Format: "Position,Statut" (ex: "2,t")
-      const positionField = (parts[14] || '').trim();
-      if (positionField && positionField !== '?') {
-        const parsedRanking = parseInt(positionField);
+      // Le classement FFE est à l'index 11 (4e champ de section2: Licence,Ligue,Club,Classement,...)
+      // NE PAS utiliser parts[14] (position séquentielle "1,t","2,t"...) comme classement
+      const rankingAtIdx11 = (parts[11] || '').trim();
+      if (rankingAtIdx11 && rankingAtIdx11 !== '?') {
+        const parsedRanking = parseInt(rankingAtIdx11);
         if (!isNaN(parsedRanking) && parsedRanking > 0) {
           ranking = parsedRanking;
         }
       }
 
-      // Fallback: si pas de position finale trouvée, chercher dans clubInfo
-      // Le classement est à l'index 10 (4ème position dans section 2: Licence,Ligue,Club,Classement,?,?)
+      // Fallback: certains formats placent le classement en parts[10] (3e champ section2)
       if (ranking === undefined) {
         const rankingField = (parts[10] || '').trim();
-        if (rankingField && rankingField !== '?') {
+        if (rankingField && rankingField !== '?' && !/^[A-Za-zÀ-ÿ]/.test(rankingField)) {
           const parsedRanking = parseInt(rankingField);
           if (!isNaN(parsedRanking) && parsedRanking > 0 && parsedRanking < 10000) {
             ranking = parsedRanking;
@@ -795,10 +799,10 @@ function parseFFELine(
       region = (parts[9] || '').trim() || undefined;
       club = (parts[10] || '').trim() || undefined;
 
-      // Chercher le classement à l'index 10 (4ème position dans section 2: Licence,Ligue,Club,Classement,?,?)
-      const rankingField = (parts[10] || '').trim();
-      if (rankingField && rankingField !== '?') {
-        const parsedRanking = parseInt(rankingField);
+      // Classement à l'index 11 (4e champ section2: Licence,Ligue,Club,Classement,...)
+      const rankingField11 = (parts[11] || '').trim();
+      if (rankingField11 && rankingField11 !== '?') {
+        const parsedRanking = parseInt(rankingField11);
         if (!isNaN(parsedRanking) && parsedRanking > 0 && parsedRanking < 10000) {
           ranking = parsedRanking;
         }

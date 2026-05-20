@@ -453,8 +453,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         filters: [{ name: 'XML BellePoule', extensions: ['xml', 'cotcot'] }],
       },
       fff: {
-        title: 'Importer une liste FFE',
-        filters: [{ name: 'Fichiers FFE', extensions: ['fff', 'csv', 'txt'] }],
+        title: 'Importer une liste FFE (.fff, .csv, .txt)',
+        filters: [{ name: 'Fichiers FFE / TXT', extensions: ['fff', 'csv', 'txt'] }],
       },
       ranking: {
         title: 'Importer un classement FFE',
