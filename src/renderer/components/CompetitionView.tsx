@@ -9,7 +9,7 @@ import { logger, LogCategory } from '@shared/services/logger';
 import { RankingImportResult } from '../../shared/utils/fileParser';
 import FencerList from './FencerList';
 import PoolView from './PoolView';
-import TableauView, { TableauMatch, FinalResult, propagateWinners } from './TableauView';
+import TableauView, { TableauMatch, FinalResult, propagateWinners, ConsolationBracket } from './TableauView';
 import PoolRankingView from './PoolRankingView';
 import ResultsView from './ResultsView';
 import AddFencerModal from './AddFencerModal';
@@ -84,6 +84,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [remoteArenaCount, setRemoteArenaCount] = useState<number>(1);
   const [showThirdPlaceDialog, setShowThirdPlaceDialog] = useState(false);
   const [tableauMatches, setTableauMatches] = useState<TableauMatch[]>([]);
+  const [consolationBrackets, setConsolationBrackets] = useState<ConsolationBracket[]>([]);
   const [finalResults, setFinalResults] = useState<FinalResult[]>([]);
   const [showFencerComparison, setShowFencerComparison] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
@@ -562,6 +563,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     // Si le classement a changé, réinitialiser les matches du tableau
     if (rankingChanged) {
       setTableauMatches([]);
+      setConsolationBrackets([]);
       setRankingChanged(false);
       showToast("Le classement a changé. Le tableau d'élimination va être régénéré.", 'warning');
     }
@@ -584,6 +586,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
     onUpdate(updatedCompetition);
     setTableauMatches([]);
+    setConsolationBrackets([]);
     setCurrentPhase('tableau');
     setShowThirdPlaceDialog(false);
   };
@@ -1188,6 +1191,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             ranking={overallRanking}
             matches={tableauMatches}
             onMatchesChange={setTableauMatches}
+            consolationBrackets={consolationBrackets}
+            onConsolationBracketsChange={setConsolationBrackets}
             maxScore={tableMaxScore === 0 ? 999 : tableMaxScore}
             thirdPlaceMatch={thirdPlaceMatch}
             playAllPositions={playAllPositions}
