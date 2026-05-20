@@ -3,12 +3,13 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useEffect, useCallback } from 'react';
-import { Competition } from '../shared/types';
+import React, { useEffect, useCallback, useState } from 'react';
+import { Competition, PhaseType } from '../shared/types';
 import type { CompetitionCreateData } from '../shared/types/preload';
 import { logger, LogCategory } from '@shared/services/logger';
 import CompetitionList from './components/CompetitionList';
 import CompetitionView from './components/CompetitionView';
+import CommandPalette from './components/CommandPalette';
 import NewCompetitionModal from './components/NewCompetitionModal';
 import ReportIssueModal from './components/ReportIssueModal';
 import UpdateNotification from './components/UpdateNotification';
@@ -16,14 +17,26 @@ import SettingsModal from './components/SettingsModal';
 import DTCallNotification from './components/DTCallNotification';
 import { ToastProvider, useToast } from './components/Toast';
 import { ConfirmProvider, useConfirm } from './components/ConfirmDialog';
-import { TranslationProvider, useTranslation } from './contexts/TranslationContext';
+import { TranslationProvider, useTranslation, Theme } from './contexts/TranslationContext';
 import { ErrorBoundary, CompetitionErrorBoundary } from './components/ErrorBoundary';
 import { useAppState } from './hooks/useAppState';
 
+const PHASE_BADGE: Record<string, { label: string; cls: string }> = {
+  [PhaseType.CHECKIN]: { label: 'Appel', cls: 'badge-checkin' },
+  [PhaseType.POOL]: { label: 'Poules', cls: 'badge-pool' },
+  [PhaseType.QUEST]: { label: 'Quest', cls: 'badge-pool' },
+  [PhaseType.DIRECT_ELIMINATION]: { label: 'Tableau', cls: 'badge-tableau' },
+  [PhaseType.CLASSIFICATION]: { label: 'Résultats', cls: 'badge-results' },
+};
+
+const THEME_ICONS: Record<string, string> = { default: '🌓', light: '☀️', dark: '🌙' };
+const THEME_CYCLE: Theme[] = ['default', 'light', 'dark'];
+
 const AppContent: React.FC = () => {
-  const { t, isLoading: translationLoading } = useTranslation();
+  const { t, isLoading: translationLoading, theme, changeTheme } = useTranslation();
   const { showToast } = useToast();
   const { confirm } = useConfirm();
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
 
   const {
     view,
@@ -96,6 +109,18 @@ const AppContent: React.FC = () => {
         window.electronAPI.removeAllListeners('autosave:failed');
       }
     };
+  }, []);
+
+  // Ctrl+K → command palette
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowCommandPalette(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
   }, []);
 
   // Sync logo from disk to localStorage so PDF exports always find it
@@ -302,6 +327,16 @@ const AppContent: React.FC = () => {
               </button>
             )}
             <button
+              className="btn-theme-toggle"
+              onClick={() => {
+                const next = THEME_CYCLE[(THEME_CYCLE.indexOf(theme) + 1) % THEME_CYCLE.length];
+                changeTheme(next);
+              }}
+              title={`Thème : ${theme}`}
+            >
+              {THEME_ICONS[theme]}
+            </button>
+            <button
               className="btn btn-secondary"
               onClick={() => setShowSettingsModal(true)}
               title={t('settings.title')}
@@ -423,6 +458,13 @@ const AppContent: React.FC = () => {
                   {openComp.isDirty && (
                     <span style={{ color: '#ef4444', marginLeft: '0.25rem' }}>●</span>
                   )}
+                  {(() => {
+                    const phase = openComp.competition.phases?.[openComp.competition.currentPhaseIndex];
+                    const badge = phase ? PHASE_BADGE[phase.type] : null;
+                    return badge ? (
+                      <span className={`tab-phase-badge ${badge.cls}`}>{badge.label}</span>
+                    ) : null;
+                  })()}
                 </span>
                 <button
                   onClick={e => handleTabClose(openComp.competition.id, e)}
@@ -501,6 +543,25 @@ const AppContent: React.FC = () => {
 
         {showSettingsModal && (
           <SettingsModal onClose={() => setShowSettingsModal(false)} onSave={handleSettingsSave} />
+        )}
+
+        {showCommandPalette && (
+          <CommandPalette
+            competitions={competitions}
+            onClose={() => setShowCommandPalette(false)}
+            onSelectCompetition={id => {
+              setShowCommandPalette(false);
+              handleTabSwitch(id);
+            }}
+            onNewCompetition={() => {
+              setShowCommandPalette(false);
+              setShowNewCompetitionModal(true);
+            }}
+            onOpenSettings={() => {
+              setShowCommandPalette(false);
+              setShowSettingsModal(true);
+            }}
+          />
         )}
       </div>
     </>
