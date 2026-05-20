@@ -37,6 +37,7 @@ const AppContent: React.FC = () => {
   const { showToast } = useToast();
   const { confirm } = useConfirm();
   const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
 
   const {
     view,
@@ -299,6 +300,15 @@ const AppContent: React.FC = () => {
             </svg>
             {t('app.title')}
           </div>
+          {/* Ctrl+K hint — clickable */}
+          <button
+            className="header-search-hint"
+            onClick={() => setShowCommandPalette(true)}
+            title="Ouvrir la palette de commandes (Ctrl+K)"
+          >
+            <span>Rechercher…</span>
+            <kbd>Ctrl K</kbd>
+          </button>
           <div className="header-nav">
             {openCompetitions.length > 0 && view === 'competition' && (
               <button
@@ -411,7 +421,25 @@ const AppContent: React.FC = () => {
             {openCompetitions.map(openComp => (
               <div
                 key={openComp.competition.id}
-                className={`tab ${activeTabId === openComp.competition.id ? 'tab-active' : ''}`}
+                className={`tab ${activeTabId === openComp.competition.id ? 'tab-active' : ''} ${draggedTabId === openComp.competition.id ? 'tab-dragging' : ''}`}
+                draggable
+                onDragStart={() => setDraggedTabId(openComp.competition.id)}
+                onDragEnd={() => setDraggedTabId(null)}
+                onDragOver={e => e.preventDefault()}
+                onDrop={e => {
+                  e.preventDefault();
+                  if (!draggedTabId || draggedTabId === openComp.competition.id) return;
+                  setOpenCompetitions(prev => {
+                    const from = prev.findIndex(o => o.competition.id === draggedTabId);
+                    const to = prev.findIndex(o => o.competition.id === openComp.competition.id);
+                    if (from === -1 || to === -1) return prev;
+                    const next = [...prev];
+                    const [moved] = next.splice(from, 1);
+                    next.splice(to, 0, moved);
+                    return next;
+                  });
+                  setDraggedTabId(null);
+                }}
                 onClick={() => handleTabSwitch(openComp.competition.id)}
                 style={{
                   display: 'flex',
@@ -419,18 +447,15 @@ const AppContent: React.FC = () => {
                   gap: '0.5rem',
                   padding: '0.75rem 1rem',
                   borderRadius: '8px 8px 0 0',
-                  cursor: 'pointer',
+                  cursor: 'grab',
                   background: activeTabId === openComp.competition.id ? 'white' : 'transparent',
-                  border:
-                    activeTabId === openComp.competition.id
-                      ? '1px solid #e5e7eb'
-                      : '1px solid transparent',
-                  borderBottom:
-                    activeTabId === openComp.competition.id ? '1px solid white' : 'none',
+                  border: activeTabId === openComp.competition.id ? '1px solid #e5e7eb' : '1px solid transparent',
+                  borderBottom: activeTabId === openComp.competition.id ? '1px solid white' : 'none',
                   marginBottom: activeTabId === openComp.competition.id ? '-1px' : '0',
                   transition: 'all 0.15s ease',
                   position: 'relative',
                   minWidth: '150px',
+                  opacity: draggedTabId === openComp.competition.id ? 0.4 : 1,
                 }}
                 onMouseEnter={e => {
                   if (activeTabId !== openComp.competition.id) {
@@ -443,6 +468,12 @@ const AppContent: React.FC = () => {
                   }
                 }}
               >
+                {/* Dot coloré de la compétition */}
+                <span style={{
+                  width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                  background: openComp.competition.color || '#3B5BDB',
+                  boxShadow: `0 0 0 2px ${(openComp.competition.color || '#3B5BDB')}33`,
+                }} />
                 <span
                   style={{
                     fontWeight: activeTabId === openComp.competition.id ? '600' : '400',
@@ -469,25 +500,12 @@ const AppContent: React.FC = () => {
                 <button
                   onClick={e => handleTabClose(openComp.competition.id, e)}
                   style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#6b7280',
-                    cursor: 'pointer',
-                    padding: '0.125rem',
-                    borderRadius: '3px',
-                    fontSize: '0.75rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    background: 'none', border: 'none', color: '#6b7280',
+                    cursor: 'pointer', padding: '0.125rem', borderRadius: '3px',
+                    fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.background = '#e5e7eb';
-                    e.currentTarget.style.color = '#374151';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.background = 'none';
-                    e.currentTarget.style.color = '#6b7280';
-                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#e5e7eb'; e.currentTarget.style.color = '#374151'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280'; }}
                   title={t('app.close_tab')}
                 >
                   ×
