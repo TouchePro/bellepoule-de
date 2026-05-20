@@ -1516,7 +1516,49 @@ export class RemoteScoreServer {
               });
             }
           }
-        } else if (this.sessionMatches.length > 0) {
+        }
+
+        // Matchs du tableau d'élimination directe (toutes phases confondues)
+        const tableauMatches: any[] = sessionState?.tableauMatches || [];
+        if (tableauMatches.length > 0) {
+          const roundLabels: Record<number, string> = {
+            2: 'Finale',
+            3: 'Petite finale',
+            4: 'Demi-finales',
+            8: 'Quarts de finale',
+            16: 'Tableau de 16',
+            32: 'Tableau de 32',
+            64: 'Tableau de 64',
+            128: 'Tableau de 128',
+          };
+          const pendingTableau = tableauMatches
+            .filter((m: any) => m.fencerA && m.fencerB && !m.isBye && !m.winner)
+            .sort((a: any, b: any) => a.round - b.round || a.position - b.position);
+          for (const m of pendingTableau) {
+            const inArena = arenaByMatchId.has(m.id);
+            upcoming.push({
+              id: m.id,
+              number: m.position,
+              poolName: roundLabels[m.round] || `Tour de ${m.round}`,
+              poolNumber: null,
+              fencerA: {
+                lastName: m.fencerA.lastName,
+                firstName: m.fencerA.firstName,
+                club: m.fencerA.club ?? '',
+              },
+              fencerB: {
+                lastName: m.fencerB.lastName,
+                firstName: m.fencerB.firstName,
+                club: m.fencerB.club ?? '',
+              },
+              status: inArena ? 'in_progress' : 'not_started',
+              arenaName: arenaByMatchId.get(m.id) ?? null,
+              isTableau: true,
+            });
+          }
+        }
+
+        if (upcoming.length === 0 && this.sessionMatches.length > 0) {
           // Fallback : matchs en mémoire passés depuis le renderer
           const pending = (this.sessionMatches as any[])
             .filter((m: any) => m.status !== MatchStatus.FINISHED && m.status !== 'finished')
