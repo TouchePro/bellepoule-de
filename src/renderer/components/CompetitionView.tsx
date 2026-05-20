@@ -848,7 +848,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     }
     if (tableauMatches.length > 0) {
       const total = tableauMatches.filter(m => m.fencerA && m.fencerB).length;
-      const done = tableauMatches.filter(m => m.status === MatchStatus.FINISHED).length;
+      const done = tableauMatches.filter(m => m.winner !== null).length;
       return { done, total, label: 'tableau' };
     }
     return null;
