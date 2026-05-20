@@ -1267,7 +1267,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               return (
                 <div
                   key={index}
-                  onClick={() => !isAbandonMatch && openScoreModal(index)}
+                  onClick={() => !isAbandonMatch && !isLocked && openScoreModal(index)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -1279,7 +1279,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                         ? '#f0fdf4'
                         : '#fef2f2',
                     borderRadius: '6px',
-                    cursor: isAbandonMatch ? 'not-allowed' : 'pointer',
+                    cursor: isAbandonMatch || isLocked ? 'not-allowed' : 'pointer',
                     border: isAbandonMatch ? '1px dashed #9ca3af' : '1px solid #e5e7eb',
                     opacity: isAbandonMatch ? 0.5 : 1,
                   }}
@@ -1391,7 +1391,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                 <span style={{ flex: 1, textAlign: 'center', color: '#6b7280', textDecoration: 'line-through' }}>
                   {match.fencerA?.lastName} vs {match.fencerB?.lastName}
                 </span>
-                {onMatchReset && (
+                {!isLocked && onMatchReset && (
                   <button
                     onClick={() => onMatchReset(index)}
                     title="Relancer ce match"
