@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Pool, Fencer, Score, MatchStatus, FencerStatus } from '../../../shared/types';
 import { formatRatio, formatIndex } from '../../../shared/utils/poolCalculations';
 import { ColumnId } from '../../hooks/useColumnVisibility';
@@ -25,6 +25,22 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
   isLocked = false,
 }) => {
   const fencers = pool.fencers;
+  const [flashCell, setFlashCell] = useState<string | null>(null);
+  const prevMatchesRef = useRef<typeof pool.matches>(pool.matches);
+
+  useEffect(() => {
+    const prev = prevMatchesRef.current;
+    for (const match of pool.matches) {
+      const old = prev.find(m => m.id === match.id);
+      if (old && match.status === MatchStatus.FINISHED && old.status !== MatchStatus.FINISHED) {
+        const key = `${match.fencerA?.id}-${match.fencerB?.id}`;
+        setFlashCell(key);
+        setTimeout(() => setFlashCell(null), 900);
+        break;
+      }
+    }
+    prevMatchesRef.current = pool.matches;
+  }, [pool.matches]);
 
   const getScore = (fencerA: Fencer, fencerB: Fencer): Score | null => {
     const match = pool.matches.find(
@@ -211,10 +227,14 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
                   : 'pool-cell-defeat'
                 : 'pool-cell-editable';
 
+              const cellKey = `${rowFencer.id}-${colFencer.id}`;
+              const mirrorKey = `${colFencer.id}-${rowFencer.id}`;
+              const isFlashing = flashCell === cellKey || flashCell === mirrorKey;
+
               return (
                 <div
                   key={colIndex}
-                  className={`pool-cell ${cellClass}`}
+                  className={`pool-cell ${cellClass} ${isFlashing ? 'pool-cell-flash' : ''}`}
                   onClick={() => !isLocked && onCellClick(rowFencer, colFencer)}
                   style={{ cursor: isLocked ? 'default' : 'pointer', position: 'relative' }}
                 >
