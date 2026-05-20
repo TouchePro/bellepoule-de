@@ -54,6 +54,14 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
   }, [competition.id]);
 
   useEffect(() => {
+    const initial = new Map<string, Referee>();
+    for (const m of matches) {
+      if (m.referee) initial.set(m.id, m.referee);
+    }
+    setAssignments(initial);
+  }, [matches]);
+
+  useEffect(() => {
     if (activeTab === 'history') loadHistory();
   }, [activeTab, loadHistory]);
 
