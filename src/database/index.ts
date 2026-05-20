@@ -974,6 +974,7 @@ export class DatabaseManager {
       poolId: row.pool_id as string,
       tableId: row.table_id as string,
       round: row.round as number,
+      referee: row.referee_id ? (this.getReferee(row.referee_id as string) ?? undefined) : undefined,
       createdAt: new Date(row.created_at as string),
       updatedAt: new Date(row.updated_at as string),
     };
@@ -1020,6 +1021,23 @@ export class DatabaseManager {
       fStmt.free();
     }
 
+    // Batch-fetch referees referenced by these matches
+    const refereeIds = new Set<string>();
+    for (const row of matchRows) {
+      if (row.referee_id) refereeIds.add(row.referee_id as string);
+    }
+    const refereesById = new Map<string, Referee>();
+    if (refereeIds.size > 0) {
+      const placeholders = Array.from({ length: refereeIds.size }, () => '?').join(',');
+      const rStmt = this.db.prepare(`SELECT * FROM referees WHERE id IN (${placeholders})`);
+      rStmt.bind(Array.from(refereeIds));
+      while (rStmt.step()) {
+        const rRow = rStmt.getAsObject();
+        refereesById.set(rRow.id as string, this.rowToReferee(rRow));
+      }
+      rStmt.free();
+    }
+
     return matchRows.map(row => ({
       id: row.id as string,
       number: row.number as number,
@@ -1032,6 +1050,7 @@ export class DatabaseManager {
       poolId: row.pool_id as string,
       tableId: row.table_id as string,
       round: row.round as number,
+      referee: row.referee_id ? (refereesById.get(row.referee_id as string) ?? undefined) : undefined,
       createdAt: new Date(row.created_at as string),
       updatedAt: new Date(row.updated_at as string),
     }));
