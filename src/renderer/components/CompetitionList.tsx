@@ -117,10 +117,7 @@ const CompetitionListComponent: React.FC<CompetitionListProps> = ({
             key={competition.id}
             className="card competition-card"
             onClick={() => onSelect(competition)}
-            style={{
-              background: competition.color || '#3B82F6',
-              borderLeft: `4px solid ${competition.color || '#3B82F6'}`,
-            }}
+            style={{ '--card-accent': competition.color || '#3B5BDB' } as React.CSSProperties}
           >
             <div className="card-body">
               <div className="card-header">
