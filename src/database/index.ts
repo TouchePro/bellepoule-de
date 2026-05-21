@@ -1407,22 +1407,36 @@ export class DatabaseManager {
     if (existingFencers.some(f => f.id === fencerId)) {
       throw new Error('Fencer already in this pool');
     }
-    const nextPosition = existingFencers.length;
-    this.addFencerToPool(poolId, fencerId, nextPosition);
 
-    const maxNumRow = this.db.exec(
-      `SELECT COALESCE(MAX(number), 0) AS max_num FROM matches WHERE pool_id = '${poolId}'`
-    );
-    let nextMatchNumber: number =
-      (maxNumRow[0]?.values[0]?.[0] as number | null) ?? 0;
-
-    for (const existing of existingFencers) {
-      nextMatchNumber += 1;
-      this.createMatch(
-        { number: nextMatchNumber, fencerA: { id: fencerId } as any, fencerB: { id: existing.id } as any, maxScore },
-        poolId
+    this.db.run('BEGIN');
+    try {
+      const nextPosition = existingFencers.length;
+      this.run(
+        `INSERT OR REPLACE INTO pool_fencers (pool_id, fencer_id, position) VALUES (?, ?, ?)`,
+        [poolId, fencerId, nextPosition]
       );
+
+      const maxNumRow = this.db.exec(
+        `SELECT COALESCE(MAX(number), 0) AS max_num FROM matches WHERE pool_id = '${poolId}'`
+      );
+      let nextMatchNumber: number =
+        (maxNumRow[0]?.values[0]?.[0] as number | null) ?? 0;
+
+      const now = new Date().toISOString();
+      for (const existing of existingFencers) {
+        nextMatchNumber += 1;
+        const matchId = uuidv4();
+        this.run(
+          `INSERT INTO matches (id, number, pool_id, fencer_a_id, fencer_b_id, max_score, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [matchId, nextMatchNumber, poolId, fencerId, existing.id, maxScore, 'not_started', now, now]
+        );
+      }
+      this.db.run('COMMIT');
+    } catch (err) {
+      this.db.run('ROLLBACK');
+      throw err;
     }
+
     this.save();
     const phaseId = this.db.exec(`SELECT phase_id FROM pools WHERE id = '${poolId}'`)[0]?.values[0]?.[0] as string | undefined;
     if (!phaseId) throw new Error(`Pool ${poolId} introuvable après ajout`);
