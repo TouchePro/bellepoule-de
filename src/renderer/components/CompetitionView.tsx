@@ -50,6 +50,35 @@ interface CompetitionViewProps {
   onPhaseApplied?: () => void;
 }
 
+// ─── Static style constants ───────────────────────────────────────────────────
+
+const CV_STYLES = {
+  root: { display: 'flex', flex: 1, flexDirection: 'column' as const, overflow: 'hidden' } satisfies React.CSSProperties,
+  thirdPlaceOverlay: { position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 } satisfies React.CSSProperties,
+  thirdPlaceModal: { backgroundColor: 'white', padding: '2rem', borderRadius: '8px', boxShadow: '0 10px 25px rgba(0, 0, 0, 0.25)', maxWidth: '500px', width: '90%' } satisfies React.CSSProperties,
+  thirdPlaceTitle: { margin: '0 0 1rem 0', color: '#1f2937' } satisfies React.CSSProperties,
+  thirdPlaceBtnRow: { display: 'flex', gap: '1rem', justifyContent: 'flex-end' as const, marginTop: '1.5rem' } satisfies React.CSSProperties,
+  kioskOverlay: { position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, background: '#f3f4f6', overflow: 'auto' as const } satisfies React.CSSProperties,
+  kioskCloseWrapper: { position: 'sticky' as const, top: '1rem', right: '1rem', float: 'right' as const, zIndex: 10000, margin: '1rem' } satisfies React.CSSProperties,
+  kioskCloseBtn: { background: '#ef4444', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '8px', cursor: 'pointer', fontSize: '1rem', fontWeight: 'bold' as const } satisfies React.CSSProperties,
+  kioskContent: { padding: '2rem' } satisfies React.CSSProperties,
+  kioskHeading: { marginBottom: '2rem', color: '#1f2937' } satisfies React.CSSProperties,
+  kioskPoolCard: { marginBottom: '3rem', background: 'white', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' } satisfies React.CSSProperties,
+  kioskPoolTitle: { marginBottom: '1rem', color: '#374151', borderBottom: '2px solid #e5e7eb', paddingBottom: '0.5rem' } satisfies React.CSSProperties,
+  kioskMatchGrid: { display: 'grid', gap: '1rem' } satisfies React.CSSProperties,
+  kioskMatchFencerA: { display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 } satisfies React.CSSProperties,
+  kioskMatchScores: { display: 'flex', alignItems: 'center', gap: '1rem' } satisfies React.CSSProperties,
+  kioskMatchScoreInput: { width: '60px', padding: '0.5rem', fontSize: '1.25rem', textAlign: 'center' as const, border: '2px solid #d1d5db', borderRadius: '6px' } satisfies React.CSSProperties,
+  kioskMatchSep: { fontSize: '1.5rem', fontWeight: 'bold' as const, color: '#6b7280' } satisfies React.CSSProperties,
+  kioskMatchFencerB: { display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, justifyContent: 'flex-end' as const } satisfies React.CSSProperties,
+  kioskMatchName: { fontWeight: 'bold' as const } satisfies React.CSSProperties,
+  kioskFinishRow: { textAlign: 'center' as const, marginTop: '2rem' } satisfies React.CSSProperties,
+  kioskFinishBtn: { background: '#10b981', color: 'white', border: 'none', padding: '1rem 2rem', borderRadius: '8px', cursor: 'pointer', fontSize: '1.25rem', fontWeight: 'bold' as const } satisfies React.CSSProperties,
+  poolsExportRow: { textAlign: 'center' as const, marginBottom: '2rem' } satisfies React.CSSProperties,
+  questWrapper: { display: 'none' } satisfies React.CSSProperties,
+  phaseContent: { flex: 1, overflow: 'auto' as const } satisfies React.CSSProperties,
+} satisfies Record<string, React.CSSProperties>;
+
 const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate, requestPhase, onPhaseApplied }) => {
   const { showToast } = useToast();
   const { t, language } = useTranslation();
@@ -856,7 +885,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   }, [pools, tableauMatches]);
 
   return (
-    <div style={{ display: 'flex', flex: 1, flexDirection: 'column', overflow: 'hidden' }}>
+    <div style={CV_STYLES.root}>
       <CompetitionHeader
         competition={competition}
         language={language}
@@ -898,7 +927,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       />
 
       {/* Content — keyed pour animation de transition */}
-      <div key={currentPhase} className="phase-content" style={{ flex: 1, overflow: 'auto' }}>
+      <div key={currentPhase} className="phase-content" style={CV_STYLES.phaseContent}>
         {currentPhase === 'checkin' && (
           <FencerList
             fencers={fencers}
@@ -972,7 +1001,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             ) : (
               <>
                 {pools.length > 1 && (
-                  <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                  <div style={CV_STYLES.poolsExportRow}>
                     <button className="btn btn-success" onClick={handleExportAllPoolsPDF}>
                       📄 Exporter toutes les poules en PDF
                     </button>
@@ -1057,7 +1086,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         )}
 
         {questEnabled && questConfig && (
-          <div style={{ display: currentPhase === 'quest' ? undefined : 'none' }}>
+          <div style={currentPhase === 'quest' ? undefined : CV_STYLES.questWrapper}>
             <QuestPhaseView
               fencers={(() => {
                 const checked = getCheckedInFencers();
@@ -1195,42 +1224,12 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       )}
 
       {showThirdPlaceDialog && (
-        <div
-          className="modal-overlay"
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: 'white',
-              padding: '2rem',
-              borderRadius: '8px',
-              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.25)',
-              maxWidth: '500px',
-              width: '90%',
-            }}
-          >
-            <h3 style={{ margin: '0 0 1rem 0', color: '#1f2937' }}>
+        <div className="modal-overlay" style={CV_STYLES.thirdPlaceOverlay}>
+          <div style={CV_STYLES.thirdPlaceModal}>
+            <h3 style={CV_STYLES.thirdPlaceTitle}>
               {t('competition.third_place_match_dialog')}
             </h3>
-            <div
-              style={{
-                display: 'flex',
-                gap: '1rem',
-                justifyContent: 'flex-end',
-                marginTop: '1.5rem',
-              }}
-            >
+            <div style={CV_STYLES.thirdPlaceBtnRow}>
               <button className="btn btn-secondary" onClick={() => handleThirdPlaceDecision(false)}>
                 Non
               </button>
@@ -1286,70 +1285,18 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
       {/* Mode Kiosk - Interface tablette arbitre */}
       {showKiosk && pools.length > 0 && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 9999,
-            background: '#f3f4f6',
-            overflow: 'auto',
-          }}
-        >
-          <div
-            style={{
-              position: 'sticky',
-              top: '1rem',
-              right: '1rem',
-              float: 'right',
-              zIndex: 10000,
-              margin: '1rem',
-            }}
-          >
-            <button
-              onClick={() => setShowKiosk(false)}
-              style={{
-                background: '#ef4444',
-                color: 'white',
-                border: 'none',
-                padding: '0.75rem 1.5rem',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '1rem',
-                fontWeight: 'bold',
-              }}
-            >
+        <div style={CV_STYLES.kioskOverlay}>
+          <div style={CV_STYLES.kioskCloseWrapper}>
+            <button onClick={() => setShowKiosk(false)} style={CV_STYLES.kioskCloseBtn}>
               ✕ Quitter Mode Kiosk
             </button>
           </div>
-          <div style={{ padding: '2rem' }}>
-            <h2 style={{ marginBottom: '2rem', color: '#1f2937' }}>
-              Mode Kiosk - Saisie des scores
-            </h2>
+          <div style={CV_STYLES.kioskContent}>
+            <h2 style={CV_STYLES.kioskHeading}>Mode Kiosk - Saisie des scores</h2>
             {pools.map((pool, poolIndex) => (
-              <div
-                key={pool.id}
-                style={{
-                  marginBottom: '3rem',
-                  background: 'white',
-                  borderRadius: '12px',
-                  padding: '1.5rem',
-                  boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                }}
-              >
-                <h3
-                  style={{
-                    marginBottom: '1rem',
-                    color: '#374151',
-                    borderBottom: '2px solid #e5e7eb',
-                    paddingBottom: '0.5rem',
-                  }}
-                >
-                  Poule {pool.number}
-                </h3>
-                <div style={{ display: 'grid', gap: '1rem' }}>
+              <div key={pool.id} style={CV_STYLES.kioskPoolCard}>
+                <h3 style={CV_STYLES.kioskPoolTitle}>Poule {pool.number}</h3>
+                <div style={CV_STYLES.kioskMatchGrid}>
                   {pool.matches.map(
                     (match, matchIndex) =>
                       match.status !== 'finished' && (
@@ -1368,9 +1315,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                                 : '1px solid #e5e7eb',
                           }}
                         >
-                          <div
-                            style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}
-                          >
+                          <div style={CV_STYLES.kioskMatchFencerA}>
                             <FencerPhoto
                               photo={match.fencerA?.photo}
                               firstName={match.fencerA?.firstName || ''}
@@ -1378,24 +1323,17 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                               size="medium"
                               editable={false}
                             />
-                            <span style={{ fontWeight: 'bold' }}>
+                            <span style={CV_STYLES.kioskMatchName}>
                               {match.fencerA?.firstName} {match.fencerA?.lastName}
                             </span>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                          <div style={CV_STYLES.kioskMatchScores}>
                             <input
                               type="number"
                               min="0"
                               max={poolMaxScore}
                               defaultValue={match.scoreA?.value || 0}
-                              style={{
-                                width: '60px',
-                                padding: '0.5rem',
-                                fontSize: '1.25rem',
-                                textAlign: 'center',
-                                border: '2px solid #d1d5db',
-                                borderRadius: '6px',
-                              }}
+                              style={CV_STYLES.kioskMatchScoreInput}
                               onChange={e => {
                                 const scoreA = parseInt(e.target.value) || 0;
                                 const scoreB = match.scoreB?.value || 0;
@@ -1404,24 +1342,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                                 }
                               }}
                             />
-                            <span
-                              style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#6b7280' }}
-                            >
-                              -
-                            </span>
+                            <span style={CV_STYLES.kioskMatchSep}>-</span>
                             <input
                               type="number"
                               min="0"
                               max={poolMaxScore}
                               defaultValue={match.scoreB?.value || 0}
-                              style={{
-                                width: '60px',
-                                padding: '0.5rem',
-                                fontSize: '1.25rem',
-                                textAlign: 'center',
-                                border: '2px solid #d1d5db',
-                                borderRadius: '6px',
-                              }}
+                              style={CV_STYLES.kioskMatchScoreInput}
                               onChange={e => {
                                 const scoreB = parseInt(e.target.value) || 0;
                                 const scoreA = match.scoreA?.value || 0;
@@ -1431,16 +1358,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                               }}
                             />
                           </div>
-                          <div
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '1rem',
-                              flex: 1,
-                              justifyContent: 'flex-end',
-                            }}
-                          >
-                            <span style={{ fontWeight: 'bold' }}>
+                          <div style={CV_STYLES.kioskMatchFencerB}>
+                            <span style={CV_STYLES.kioskMatchName}>
                               {match.fencerB?.firstName} {match.fencerB?.lastName}
                             </span>
                             <FencerPhoto
@@ -1458,22 +1377,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               </div>
             ))}
             {areAllPoolsComplete() && (
-              <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+              <div style={CV_STYLES.kioskFinishRow}>
                 <button
                   onClick={() => {
                     setShowKiosk(false);
                     handleGoToRanking();
                   }}
-                  style={{
-                    background: '#10b981',
-                    color: 'white',
-                    border: 'none',
-                    padding: '1rem 2rem',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontSize: '1.25rem',
-                    fontWeight: 'bold',
-                  }}
+                  style={CV_STYLES.kioskFinishBtn}
                 >
                   ✓ Tous les matchs sont terminés - Voir le classement
                 </button>
