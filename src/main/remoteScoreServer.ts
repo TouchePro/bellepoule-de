@@ -1533,7 +1533,7 @@ export class RemoteScoreServer {
           };
           const pendingTableau = tableauMatches
             .filter((m: any) => m.fencerA && m.fencerB && !m.isBye && !m.winner)
-            .sort((a: any, b: any) => a.round - b.round || a.position - b.position);
+            .sort((a: any, b: any) => b.round - a.round || a.position - b.position);
           for (const m of pendingTableau) {
             const inArena = arenaByMatchId.has(m.id);
             upcoming.push({
