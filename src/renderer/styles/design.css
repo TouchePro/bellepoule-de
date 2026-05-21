@@ -924,7 +924,7 @@ select:focus {
 
 .comp-header {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   flex-shrink: 0;
 }
 

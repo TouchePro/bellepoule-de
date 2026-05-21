@@ -58,8 +58,10 @@ const FencerListComponent: React.FC<FencerListProps> = ({
   const [editingFencer, setEditingFencer] = useState<Fencer | null>(null);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
+  const [exportMenuPos, setExportMenuPos] = useState({ top: 0, right: 0 });
   const [importMenuOpen, setImportMenuOpen] = useState(false);
   const importMenuRef = useRef<HTMLDivElement>(null);
+  const [importMenuPos, setImportMenuPos] = useState({ top: 0, left: 0 });
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -302,16 +304,20 @@ const FencerListComponent: React.FC<FencerListProps> = ({
             <div ref={importMenuRef} style={{ position: 'relative', display: 'inline-block' }}>
               <button
                 className="btn btn-secondary"
-                onClick={() => setImportMenuOpen(o => !o)}
+                onClick={() => {
+                  const rect = importMenuRef.current?.getBoundingClientRect();
+                  if (rect) setImportMenuPos({ top: rect.bottom + 4, left: rect.left });
+                  setImportMenuOpen(o => !o);
+                }}
                 title="Importer"
               >
                 📥 Importer ▾
               </button>
               {importMenuOpen && (
                 <div style={{
-                  position: 'absolute',
-                  top: '100%',
-                  left: 0,
+                  position: 'fixed',
+                  top: importMenuPos.top,
+                  left: importMenuPos.left,
                   zIndex: 9999,
                   background: 'var(--bg-secondary, #2a2a3e)',
                   border: '1px solid var(--border-color, #444)',
@@ -366,16 +372,20 @@ const FencerListComponent: React.FC<FencerListProps> = ({
           <div ref={exportMenuRef} style={{ position: 'relative', display: 'inline-block' }}>
             <button
               className="btn btn-secondary"
-              onClick={() => setExportMenuOpen(o => !o)}
+              onClick={() => {
+                const rect = exportMenuRef.current?.getBoundingClientRect();
+                if (rect) setExportMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+                setExportMenuOpen(o => !o);
+              }}
               title="Exporter"
             >
               📤 Exporter ▾
             </button>
             {exportMenuOpen && (
               <div style={{
-                position: 'absolute',
-                top: '100%',
-                right: 0,
+                position: 'fixed',
+                top: exportMenuPos.top,
+                right: exportMenuPos.right,
                 zIndex: 9999,
                 background: 'var(--bg-secondary, #2a2a3e)',
                 border: '1px solid var(--border-color, #444)',
