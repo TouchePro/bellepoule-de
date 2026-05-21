@@ -480,6 +480,7 @@ export interface DatabaseAPI {
   createPool: (phaseId: string, number: number, poolId?: string) => Promise<Pool>;
   clearPoolsForPhase: (phaseId: string) => Promise<void>;
   addFencerToPool: (poolId: string, fencerId: string, position: number) => Promise<void>;
+  addFencerToPoolMidCompetition: (poolId: string, fencerId: string, maxScore?: number) => Promise<Pool>;
   getPoolFencers: (poolId: string) => Promise<Fencer[]>;
   getPoolsByPhase: (phaseId: string) => Promise<Pool[]>;
   updatePool: (pool: Pool) => Promise<void>;

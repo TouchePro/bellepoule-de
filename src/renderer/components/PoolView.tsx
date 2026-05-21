@@ -16,12 +16,14 @@ import { usePdfTemplateStore } from '../../features/pdfTemplates/hooks/usePdfTem
 import { useHistory } from '../hooks/useHistory';
 import PoolScoreMatrix from './pool/PoolScoreMatrix';
 import Confetti from './Confetti';
+import AddFencerToPoolModal from './AddFencerToPoolModal';
 
 interface PoolViewProps {
   pool: Pool;
   maxScore?: number;
   weapon?: Weapon;
   competitionName?: string;
+  competitionId?: string;
   onScoreUpdate: (
     matchIndex: number,
     scoreA: number,
@@ -33,6 +35,7 @@ interface PoolViewProps {
   onMatchCancel?: (matchIndex: number) => void;
   onFencerChangePool?: (fencer: Fencer) => void;
   onFencerStatusChange?: (fencerId: string, status: 'abandon' | 'forfait' | 'exclusion') => void;
+  onFencerAdded?: (updatedPool: Pool) => void;
 }
 
 type ViewMode = 'grid' | 'matches';
@@ -42,11 +45,13 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   maxScore = 5,
   weapon,
   competitionName,
+  competitionId,
   onScoreUpdate,
   onMatchReset,
   onMatchCancel,
   onFencerChangePool,
   onFencerStatusChange,
+  onFencerAdded,
 }) => {
   const { showToast } = useToast();
   const { confirm } = useConfirm();
@@ -67,6 +72,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
 
   const { addAction, undo, redo, canUndo, canRedo } = useHistory();
   const [showPoolConfetti, setShowPoolConfetti] = useState(false);
+  const [showAddFencerModal, setShowAddFencerModal] = useState(false);
   const prevIsComplete = useRef(pool.isComplete);
 
   useEffect(() => {
@@ -1439,6 +1445,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   );
 
   return (
+    <>
     <div className="card">
       <Confetti active={showPoolConfetti} particleCount={100} origin={{ x: 0.5, y: 0.5 }} />
       {isLocked && (
@@ -1556,6 +1563,23 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           >
             📄 PDF
           </button>
+          {competitionId && (
+            <button
+              onClick={() => setShowAddFencerModal(true)}
+              style={{
+                padding: '0.375rem 0.75rem',
+                fontSize: '0.75rem',
+                background: '#e5e7eb',
+                color: '#374151',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+              }}
+              title="Ajouter un tireur à cette poule"
+            >
+              ➕ Tireur
+            </button>
+          )}
           <div style={{ position: 'relative' }} ref={columnMenuRef}>
             <button
               onClick={() => setShowColumnMenu(!showColumnMenu)}
@@ -1670,6 +1694,19 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         {renderScoreModal()}
       </div>
     </div>
+    {showAddFencerModal && competitionId && (
+      <AddFencerToPoolModal
+        pool={pool}
+        competitionId={competitionId}
+        maxScore={maxScore}
+        onConfirm={updatedPool => {
+          setShowAddFencerModal(false);
+          onFencerAdded?.(updatedPool);
+        }}
+        onClose={() => setShowAddFencerModal(false)}
+      />
+    )}
+    </>
   );
 };
 
