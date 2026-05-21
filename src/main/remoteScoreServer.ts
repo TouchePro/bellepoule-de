@@ -2490,14 +2490,8 @@ export class RemoteScoreServer {
     if (!toArenaObj.currentMatch) {
       // Arène libre → le match devient le currentMatch visible immédiatement
       this.assignMatchToArena(toArenaId, matchToMove);
-    } else if (toArenaObj.currentMatch.status !== 'in_progress') {
-      // currentMatch non démarré → le déplacer en tête de file, afficher le nouveau
-      const displaced = toArenaObj.currentMatch;
-      const toQueue = this.arenaMatchQueue.get(toArenaId) || [];
-      this.arenaMatchQueue.set(toArenaId, [displaced, ...toQueue]);
-      this.assignMatchToArena(toArenaId, matchToMove);
     } else {
-      // Match en cours → ajouter en fin de file
+      // Arène occupée (match en cours ou non démarré) → ajouter en fin de file (FIFO)
       const toQueue = this.arenaMatchQueue.get(toArenaId) || [];
       this.arenaMatchQueue.set(toArenaId, [...toQueue, matchToMove]);
       this.updateArena(toArenaId, { status: toArenaObj.status });
@@ -3779,7 +3773,7 @@ export class RemoteScoreServer {
     // Build the new DE match list, excluding already-active matches
     const deMatches = matchesFromRenderer
       .filter(m => !m.__poolFencers && m.isTableau && m.fencerA && m.fencerB)
-      .sort((a: any, b: any) => (a.round || 0) - (b.round || 0));
+      .sort((a: any, b: any) => (b.round || 0) - (a.round || 0));
 
     // Replace DE entries in sessionMatches (keep pool matches intact)
     this.sessionMatches = this.sessionMatches.filter((m: any) => !m.isTableau);
@@ -3830,6 +3824,7 @@ export class RemoteScoreServer {
           arena.currentMatch = null;
           arena.status = 'idle';
           arenaEffectivelyFree = true;
+          this.updateArena(arenaId, { status: 'idle', currentMatch: null });
         } else {
           // Cas 2 : score remote ou fast-poule → vérifier le statut effectif
           const scoreUpdate = this.sessionMatchScores.get(arena.currentMatch.id);
