@@ -4,10 +4,10 @@
  */
 
 import React from 'react';
-import { Score, FencerStatus, MatchStatus } from '../../../shared/types';
+import { Match, FencerStatus, MatchStatus } from '../../../shared/types';
 
 interface OrderedMatchEntry {
-  match: Score;
+  match: Match;
   index: number;
 }
 

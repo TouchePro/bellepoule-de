@@ -38,7 +38,7 @@ interface CompetitionNavProps {
   currentPhase: Phase;
   setCurrentPhase: (phase: Phase) => void;
   language: string;
-  t: (key: string, params?: Record<string, unknown>) => string;
+  t: (key: string, params?: { [key: string]: string | number }) => string;
   handleGoBack: () => void;
   handleGeneratePools: () => void;
   poolsNextAction: PoolsNextAction | null;
