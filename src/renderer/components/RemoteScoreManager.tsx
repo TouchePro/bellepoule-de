@@ -444,6 +444,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     displayUrl: `${serverUrl}/arene${i + 1}`,
     poolUrl: `${serverUrl}/arene${i + 1}/poule`,
     publicUrl: `${serverUrl}/arene${i + 1}/public`,
+    overlayUrl: `${serverUrl}/arene${i + 1}/overlay`,
   }));
 
   // Contrôles +/− communs aux deux vues (pending uniquement, sans appel IPC direct)
@@ -976,6 +977,29 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                       setActiveQR({
                         url: arena.publicUrl,
                         label: `Piste ${arena.number} – Public`,
+                      })
+                    }
+                    title="QR code"
+                  >
+                    📱
+                  </button>
+                </div>
+                <div className="arena-url-row">
+                  <span className="arena-url-label" title="À coller dans OBS > Sources > Navigateur">🎥 Overlay</span>
+                  <code className="arena-url-value">{arena.overlayUrl}</code>
+                  <button
+                    className="btn-copy"
+                    onClick={() => copyToClipboard(arena.overlayUrl, arena.number * 10 + 4)}
+                    title="Copier l'URL overlay (OBS Browser Source)"
+                  >
+                    {copiedIndex === arena.number * 10 + 4 ? '✓' : '📋'}
+                  </button>
+                  <button
+                    className="btn-qr"
+                    onClick={() =>
+                      setActiveQR({
+                        url: arena.overlayUrl,
+                        label: `Piste ${arena.number} – Overlay stream`,
                       })
                     }
                     title="QR code"

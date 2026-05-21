@@ -142,6 +142,7 @@ export class RemoteScoreServer {
       'kiosk.html',
       'login.html',
       'public.html',
+      'overlay.html',
     ];
 
     // Essayer plusieurs chemins pour trouver les fichiers
@@ -660,6 +661,16 @@ export class RemoteScoreServer {
         );
       }
       this.sendHtmlFromMemory('referee.html', res);
+    });
+
+    // Overlay de score pour streaming (OBS, vMix…) — lecture seule, aucune auth requise
+    this.app.get('/arene:arenaId/overlay', (req, res) => {
+      console.log(`[RemoteScoreServer] Accès overlay /arene${req.params.arenaId}/overlay`);
+      this.sendHtmlFromMemory('overlay.html', res);
+    });
+    this.app.get('/arena:arenaId/overlay', (req, res) => {
+      console.log(`[RemoteScoreServer] Accès overlay /arena${req.params.arenaId}/overlay`);
+      this.sendHtmlFromMemory('overlay.html', res);
     });
 
     // Vue publique par arène (lecture seule, pas d'authentification requise)
