@@ -76,6 +76,49 @@ interface TableauViewProps {
   onConsolationBracketsChange?: (brackets: ConsolationBracket[]) => void;
 }
 
+// ─── Static style constants ───────────────────────────────────────────────────
+
+const TV_STYLES = {
+  root: { padding: '1rem' } satisfies React.CSSProperties,
+  scrollArea: { padding: '1rem', background: '#f9fafb', borderRadius: '8px', maxHeight: '70vh', overflowY: 'auto' as const } satisfies React.CSSProperties,
+  pendingOrderRow: { marginBottom: '0.75rem', display: 'flex', justifyContent: 'flex-end' as const } satisfies React.CSSProperties,
+  pendingOrderBtn: { background: '#e5e7eb', border: 'none', padding: '0.375rem 0.75rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.875rem', fontWeight: '500', color: '#374151', display: 'flex', alignItems: 'center', gap: '0.25rem' } satisfies React.CSSProperties,
+  summaryBox: { marginTop: '1rem', padding: '0.75rem', background: '#f3f4f6', borderRadius: '8px' } satisfies React.CSSProperties,
+  summaryTitle: { fontSize: '0.875rem', fontWeight: '600', marginBottom: '0.5rem' } satisfies React.CSSProperties,
+  summaryFlex: { display: 'flex', flexWrap: 'wrap' as const, gap: '0.5rem' } satisfies React.CSSProperties,
+  summaryItemBase: { padding: '0.5rem 0.75rem', borderRadius: '4px', fontSize: '0.75rem', border: '1px solid #e5e7eb' } satisfies React.CSSProperties,
+  pendingEmpty: { padding: '2rem', textAlign: 'center' as const, color: '#6b7280' } satisfies React.CSSProperties,
+  roundCol: { display: 'flex', flexDirection: 'column' as const, justifyContent: 'flex-start', minWidth: '200px' } satisfies React.CSSProperties,
+  roundHeader: { textAlign: 'center' as const, fontWeight: '600', marginBottom: '0.5rem', color: '#374151', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', userSelect: 'none' as const } satisfies React.CSSProperties,
+  roundHeaderChevron: { fontSize: '1rem', fontWeight: 'bold', marginRight: '0.25rem' } satisfies React.CSSProperties,
+  fullRoundsRow: { display: 'flex', gap: '1rem', overflowX: 'auto' as const } satisfies React.CSSProperties,
+  barragesBox: { marginBottom: '1rem', padding: '0.75rem', background: '#eff6ff', borderRadius: '8px', border: '1px solid #bfdbfe' } satisfies React.CSSProperties,
+  barragesTitle: { fontWeight: 600, marginBottom: '0.5rem', color: '#1e40af' } satisfies React.CSSProperties,
+  barragesFlex: { display: 'flex', gap: '0.5rem', flexWrap: 'wrap' as const } satisfies React.CSSProperties,
+  consolationSection: { marginTop: '1.5rem' } satisfies React.CSSProperties,
+  consolationCard: { background: '#f9fafb', borderRadius: '8px', padding: '1rem', marginBottom: '1rem', border: '1px solid #e5e7eb' } satisfies React.CSSProperties,
+  consolationHeader: { display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' } satisfies React.CSSProperties,
+  consolationTitle: { margin: 0, fontSize: '1rem', fontWeight: 600, color: '#374151' } satisfies React.CSSProperties,
+  consolationDoneBadge: { background: '#d1fae5', color: '#065f46', padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 500 } satisfies React.CSSProperties,
+  consolationWinnerBadge: { background: '#fef3c7', padding: '0.25rem 0.75rem', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 600 } satisfies React.CSSProperties,
+  consolationRoundsRow: { display: 'flex', gap: '1rem', overflowX: 'auto' as const } satisfies React.CSSProperties,
+  consolationRoundCol: { display: 'flex', flexDirection: 'column' as const, minWidth: '200px' } satisfies React.CSSProperties,
+  consolationRoundTitle: { textAlign: 'center' as const, fontWeight: 600, marginBottom: '0.5rem', color: '#374151', fontSize: '0.875rem' } satisfies React.CSSProperties,
+  consolationRoundMatches: { display: 'flex', flexDirection: 'column' as const, gap: '0.5rem' } satisfies React.CSSProperties,
+  pdfModalBody: { padding: '1.5rem' } satisfies React.CSSProperties,
+  pdfModalHint: { marginBottom: '1rem', color: '#6b7280', fontSize: '0.875rem' } satisfies React.CSSProperties,
+  pdfModalLabel: { display: 'block', fontWeight: '600', marginBottom: '0.5rem' } satisfies React.CSSProperties,
+  pdfModalMaxHint: { fontWeight: '400', color: '#6b7280' } satisfies React.CSSProperties,
+  pdfModalBtnRow: { display: 'flex', gap: '0.5rem', alignItems: 'center' } satisfies React.CSSProperties,
+  pdfModalCountHint: { marginTop: '0.75rem', fontSize: '0.8rem', color: '#9ca3af' } satisfies React.CSSProperties,
+  pdfModalFooter: { display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' as const } satisfies React.CSSProperties,
+  arenaModalBody: { padding: '1.5rem' } satisfies React.CSSProperties,
+  arenaModalHint: { marginBottom: '1rem', color: '#6b7280' } satisfies React.CSSProperties,
+  arenaModalGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' } satisfies React.CSSProperties,
+  arenaModalNoArenaBtn: { padding: '0.75rem' } satisfies React.CSSProperties,
+  arenaQueueHint: { fontSize: '0.7rem', marginLeft: '0.3rem', color: '#6b7280' } satisfies React.CSSProperties,
+} satisfies Record<string, React.CSSProperties>;
+
 const BASE_MATCH_HEIGHT = 100;
 const SLOT_HEIGHT = BASE_MATCH_HEIGHT + 50; // hauteur d'un créneau dans la première colonne
 
@@ -1283,31 +1326,9 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     const isExpanded = expandedRounds.size === 0 || expandedRounds.has(round);
 
     return (
-      <div
-        key={round}
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'flex-start',
-          minWidth: '200px',
-        }}
-      >
-        <div
-          onClick={() => toggleRoundExpansion(round)}
-          style={{
-            textAlign: 'center',
-            fontWeight: '600',
-            marginBottom: '0.5rem',
-            color: '#374151',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '0.5rem',
-            userSelect: 'none',
-          }}
-        >
-          <span style={{ fontSize: '1rem', fontWeight: 'bold', marginRight: '0.25rem' }}>
+      <div key={round} style={TV_STYLES.roundCol}>
+        <div onClick={() => toggleRoundExpansion(round)} style={TV_STYLES.roundHeader}>
+          <span style={TV_STYLES.roundHeaderChevron}>
             {isExpanded ? '▼' : '▶'}
           </span>
           {getRoundName(round)}
@@ -1446,7 +1467,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   };
 
   return (
-    <div style={{ padding: '1rem' }}>
+    <div style={TV_STYLES.root}>
       <TableauToolbar
         tableauSize={tableauSize}
         rankingCount={ranking.length}
@@ -1463,34 +1484,14 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         champion={champion}
       />
 
-      <div
-        style={{
-          padding: '1rem',
-          background: '#f9fafb',
-          borderRadius: '8px',
-          maxHeight: '70vh',
-          overflowY: 'auto',
-        }}
-      >
+      <div style={TV_STYLES.scrollArea}>
         {viewMode === 'pending' ? (
           pendingViewRounds.length > 0 ? (
             <>
-              <div style={{ marginBottom: '0.75rem', display: 'flex', justifyContent: 'flex-end' }}>
+              <div style={TV_STYLES.pendingOrderRow}>
                 <button
                   onClick={() => setPendingOrder(prev => (prev === 'asc' ? 'desc' : 'asc'))}
-                  style={{
-                    background: '#e5e7eb',
-                    border: 'none',
-                    padding: '0.375rem 0.75rem',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '0.875rem',
-                    fontWeight: '500',
-                    color: '#374151',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.25rem',
-                  }}
+                  style={TV_STYLES.pendingOrderBtn}
                   title={pendingOrder === 'asc' ? 'Affichage croissant' : 'Affichage décroissant'}
                 >
                   {pendingOrder === 'asc' ? '🔼 Croissant' : '🔽 Décroissant'}
@@ -1507,18 +1508,9 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                 />
               ))}
 
-              <div
-                style={{
-                  marginTop: '1rem',
-                  padding: '0.75rem',
-                  background: '#f3f4f6',
-                  borderRadius: '8px',
-                }}
-              >
-                <h4 style={{ fontSize: '0.875rem', fontWeight: '600', marginBottom: '0.5rem' }}>
-                  Résumé des pistes
-                </h4>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <div style={TV_STYLES.summaryBox}>
+                <h4 style={TV_STYLES.summaryTitle}>Résumé des pistes</h4>
+                <div style={TV_STYLES.summaryFlex}>
                   {Array.from({ length: arenaCount }, (_, i) => i + 1).map(arenaNum => {
                     const arenaMatches = pendingMatches.filter(m => m.arena === arenaNum);
                     return (
@@ -1554,18 +1546,16 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
               </div>
             </>
           ) : (
-            <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
-              ✓ Tous les matches sont terminés
-            </div>
+            <div style={TV_STYLES.pendingEmpty}>✓ Tous les matches sont terminés</div>
           )
         ) : pyramidViewMode ? (
           <Bracket matches={convertToBracketMatches()} tableSize={tableauSize} />
         ) : (
           <>
             {playAllPositions && matches.some(m => m.round === tableauSize * 2) && (
-              <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#eff6ff', borderRadius: '8px', border: '1px solid #bfdbfe' }}>
-                <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: '#1e40af' }}>Barrages</div>
-                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <div style={TV_STYLES.barragesBox}>
+                <div style={TV_STYLES.barragesTitle}>Barrages</div>
+                <div style={TV_STYLES.barragesFlex}>
                   {matches.filter(m => m.round === tableauSize * 2).sort((a, b) => a.position - b.position).map(match => (
                     <MatchCard
                       key={match.id}
@@ -1579,7 +1569,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                 </div>
               </div>
             )}
-            <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto' }}>
+            <div style={TV_STYLES.fullRoundsRow}>
               {rounds.map(round => renderRound(round))}
             </div>
           </>
@@ -1590,7 +1580,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
       {/* Brackets de consolation (mode Jouer toutes les places) */}
       {playAllPositions && consolationBrackets.length > 0 && (
-        <div style={{ marginTop: '1.5rem' }}>
+        <div style={TV_STYLES.consolationSection}>
           {consolationBrackets
             .sort((a, b) => a.firstPlace - b.firstPlace)
             .map(bracket => {
@@ -1603,41 +1593,26 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                 if (fi !== -1) bracketRounds.splice(fi, 0, 3);
               }
               return (
-                <div
-                  key={bracket.id}
-                  style={{
-                    background: '#f9fafb',
-                    borderRadius: '8px',
-                    padding: '1rem',
-                    marginBottom: '1rem',
-                    border: '1px solid #e5e7eb',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
-                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: '#374151' }}>
-                      🥋 {bracket.name}
-                    </h3>
+                <div key={bracket.id} style={TV_STYLES.consolationCard}>
+                  <div style={TV_STYLES.consolationHeader}>
+                    <h3 style={TV_STYLES.consolationTitle}>🥋 {bracket.name}</h3>
                     {bracket.isComplete && (
-                      <span style={{ background: '#d1fae5', color: '#065f46', padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 500 }}>
-                        Terminé
-                      </span>
+                      <span style={TV_STYLES.consolationDoneBadge}>Terminé</span>
                     )}
                     {finalM?.winner && (
-                      <span style={{ background: '#fef3c7', padding: '0.25rem 0.75rem', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 600 }}>
+                      <span style={TV_STYLES.consolationWinnerBadge}>
                         🏆 {finalM.winner.lastName} {finalM.winner.firstName}
                       </span>
                     )}
                   </div>
-                  <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto' }}>
+                  <div style={TV_STYLES.consolationRoundsRow}>
                     {bracketRounds.map(round => {
                       const roundMatches = bracket.matches.filter(m => m.round === round).sort((a, b) => a.position - b.position);
                       const roundName = round === 3 ? 'Petite finale' : round === 2 ? 'Finale' : round === 4 ? 'Demi-finales' : round === 8 ? 'Quarts' : `Tableau de ${round}`;
                       return (
-                        <div key={round} style={{ display: 'flex', flexDirection: 'column', minWidth: '200px' }}>
-                          <div style={{ textAlign: 'center', fontWeight: 600, marginBottom: '0.5rem', color: '#374151', fontSize: '0.875rem' }}>
-                            {roundName}
-                          </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <div key={round} style={TV_STYLES.consolationRoundCol}>
+                          <div style={TV_STYLES.consolationRoundTitle}>{roundName}</div>
+                          <div style={TV_STYLES.consolationRoundMatches}>
                             {roundMatches.map(match => (
                               <MatchCard
                                 key={match.id}
@@ -1692,18 +1667,16 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                 &times;
               </button>
             </div>
-            <div className="modal-body" style={{ padding: '1.5rem' }}>
-              <p style={{ marginBottom: '1rem', color: '#6b7280', fontSize: '0.875rem' }}>
+            <div className="modal-body" style={TV_STYLES.pdfModalBody}>
+              <p style={TV_STYLES.pdfModalHint}>
                 Chaque fiche contient le nom complet des combattants, une case score et une case
                 signature.
               </p>
-              <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem' }}>
+              <label style={TV_STYLES.pdfModalLabel}>
                 Matchs par feuille A4{' '}
-                <span style={{ fontWeight: '400', color: '#6b7280' }}>
-                  (max {MAX_MATCHES_PER_PAGE_TABLEAU})
-                </span>
+                <span style={TV_STYLES.pdfModalMaxHint}>(max {MAX_MATCHES_PER_PAGE_TABLEAU})</span>
               </label>
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <div style={TV_STYLES.pdfModalBtnRow}>
                 {Array.from({ length: MAX_MATCHES_PER_PAGE_TABLEAU }, (_, i) => i + 1).map(n => (
                   <button
                     key={n}
@@ -1724,7 +1697,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                   </button>
                 ))}
               </div>
-              <p style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: '#9ca3af' }}>
+              <p style={TV_STYLES.pdfModalCountHint}>
                 {matches.filter(m => !m.isBye && m.fencerA && m.fencerB).length} matchs →{' '}
                 {Math.ceil(
                   matches.filter(m => !m.isBye && m.fencerA && m.fencerB).length / pdfMatchesPerPage
@@ -1737,10 +1710,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                   : ''}
               </p>
             </div>
-            <div
-              className="modal-footer"
-              style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}
-            >
+            <div className="modal-footer" style={TV_STYLES.pdfModalFooter}>
               <button className="btn btn-secondary" onClick={() => setShowPdfModal(false)}>
                 Annuler
               </button>
@@ -1761,13 +1731,9 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                 &times;
               </button>
             </div>
-            <div className="modal-body" style={{ padding: '1.5rem' }}>
-              <p style={{ marginBottom: '1rem', color: '#6b7280' }}>
-                Sélectionnez la piste pour ce match :
-              </p>
-              <div
-                style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}
-              >
+            <div className="modal-body" style={TV_STYLES.arenaModalBody}>
+              <p style={TV_STYLES.arenaModalHint}>Sélectionnez la piste pour ce match :</p>
+              <div style={TV_STYLES.arenaModalGrid}>
                 <button
                   className={`btn ${!matches.find(m => m.id === selectedMatchForArena)?.arena ? 'btn-primary' : 'btn-secondary'}`}
                   onClick={() => {
@@ -1781,7 +1747,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                     setShowArenaModal(false);
                     setSelectedMatchForArena(null);
                   }}
-                  style={{ padding: '0.75rem' }}
+                  style={TV_STYLES.arenaModalNoArenaBtn}
                 >
                   -
                 </button>
@@ -1808,9 +1774,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                     >
                       Piste {arenaNum}
                       {queueCount > 0 && (
-                        <span
-                          style={{ fontSize: '0.7rem', marginLeft: '0.3rem', color: '#6b7280' }}
-                        >
+                        <span style={TV_STYLES.arenaQueueHint}>
                           (+{queueCount})
                         </span>
                       )}
