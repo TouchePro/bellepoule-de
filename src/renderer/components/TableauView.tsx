@@ -356,6 +356,8 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   // playAllPositions : déclencher onComplete quand le tableau principal ET tous les brackets de consolation sont terminés
   useEffect(() => {
     if (!playAllPositions || !onComplete || matches.length === 0) return;
+    // Ignorer au montage (données déjà complètes restaurées depuis DB)
+    if (matches === mountMatchesRef.current) return;
     const mainFinalDone = !!matches.find(m => m.round === 2)?.winner;
     const mainThirdEntry = matches.find(m => m.round === 3);
     const mainThirdDone = !mainThirdEntry || !!mainThirdEntry.winner;
