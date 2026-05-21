@@ -1073,6 +1073,31 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
 
         <div className="arena-url-card" style={RSM_STYLES.kioskCard}>
           <div className="arena-url-header">
+            <strong>🎥 Overlay streaming (OBS / vMix)</strong>
+          </div>
+          <div className="arena-url-row">
+            <span className="arena-url-label" title="Configurateur visuel pour générer l'URL OBS">Configurateur</span>
+            <code className="arena-url-value">{serverUrl}/overlay-config</code>
+            <button
+              className="btn-copy"
+              onClick={() => copyToClipboard(`${serverUrl}/overlay-config`, 998)}
+              title="Copier l'URL du configurateur"
+            >
+              {copiedIndex === 998 ? '✓' : '📋'}
+            </button>
+            <button
+              className="btn-ghost"
+              style={{ fontSize: '13px', padding: '2px 8px', borderRadius: 4, border: '1px solid #ccc', cursor: 'pointer', background: 'transparent' }}
+              onClick={() => window.open(`${serverUrl}/overlay-config`, '_blank')}
+              title="Ouvrir le configurateur"
+            >
+              ↗
+            </button>
+          </div>
+        </div>
+
+        <div className="arena-url-card" style={RSM_STYLES.kioskCard}>
+          <div className="arena-url-header">
             <strong>🖥️ Kiosk (affichage public)</strong>
           </div>
           <div className="arena-url-row">

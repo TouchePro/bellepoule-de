@@ -143,6 +143,7 @@ export class RemoteScoreServer {
       'login.html',
       'public.html',
       'overlay.html',
+      'overlay-config.html',
     ];
 
     // Essayer plusieurs chemins pour trouver les fichiers
@@ -661,6 +662,11 @@ export class RemoteScoreServer {
         );
       }
       this.sendHtmlFromMemory('referee.html', res);
+    });
+
+    // Configurateur d'overlay (interface graphique pour générer l'URL OBS)
+    this.app.get('/overlay-config', (req, res) => {
+      this.sendHtmlFromMemory('overlay-config.html', res);
     });
 
     // Overlay de score pour streaming (OBS, vMix…) — lecture seule, aucune auth requise
