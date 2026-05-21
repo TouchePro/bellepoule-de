@@ -325,6 +325,8 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                   boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
                   minWidth: '230px',
                   padding: '4px 0',
+                  maxHeight: `calc(100vh - ${importMenuPos.top}px - 8px)`,
+                  overflowY: 'auto',
                 }}>
                   <button
                     className="btn btn-ghost"
@@ -393,6 +395,8 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                 boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
                 minWidth: '160px',
                 padding: '4px 0',
+                maxHeight: `calc(100vh - ${exportMenuPos.top}px - 8px)`,
+                overflowY: 'auto',
               }}>
                 <button
                   className="btn btn-ghost"
