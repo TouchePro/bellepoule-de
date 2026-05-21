@@ -780,6 +780,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
     if (!confirmed) return;
 
+    const effectiveMax = isUnlimitedScore ? 15 : maxScore;
     // Copier les matchs actuels
     const updatedMatches = [...matches];
     let filledCount = 0;
@@ -795,16 +796,16 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
       for (const match of roundMatches) {
         // Générer des scores aléatoires
-        let scoreA = Math.floor(Math.random() * (maxScore + 1));
-        let scoreB = Math.floor(Math.random() * (maxScore + 1));
+        let scoreA = Math.floor(Math.random() * (effectiveMax + 1));
+        let scoreB = Math.floor(Math.random() * (effectiveMax + 1));
 
-        // Éviter les égalités en élimination directe sans dépasser maxScore
+        // Éviter les égalités en élimination directe sans dépasser effectiveMax
         if (scoreA === scoreB) {
           if (Math.random() > 0.5) {
-            if (scoreA < maxScore) scoreA += 1;
+            if (scoreA < effectiveMax) scoreA += 1;
             else scoreB -= 1;
           } else {
-            if (scoreB < maxScore) scoreB += 1;
+            if (scoreB < effectiveMax) scoreB += 1;
             else scoreA -= 1;
           }
         }
@@ -837,15 +838,15 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
       thirdPlaceMatch.fencerB &&
       !thirdPlaceMatch.winner
     ) {
-      let scoreA = Math.floor(Math.random() * (maxScore + 1));
-      let scoreB = Math.floor(Math.random() * (maxScore + 1));
+      let scoreA = Math.floor(Math.random() * (effectiveMax + 1));
+      let scoreB = Math.floor(Math.random() * (effectiveMax + 1));
 
       if (scoreA === scoreB) {
         if (Math.random() > 0.5) {
-          if (scoreA < maxScore) scoreA += 1;
+          if (scoreA < effectiveMax) scoreA += 1;
           else scoreB -= 1;
         } else {
-          if (scoreB < maxScore) scoreB += 1;
+          if (scoreB < effectiveMax) scoreB += 1;
           else scoreA -= 1;
         }
       }
