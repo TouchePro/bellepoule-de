@@ -1047,7 +1047,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           })}
         </div>
 
-        <div className="arena-url-card" style={{ marginTop: '1rem' }}>
+        <div className="arena-url-card" style={RSM_STYLES.kioskCard}>
           <div className="arena-url-header">
             <strong>🖥️ Kiosk (affichage public)</strong>
           </div>
@@ -1104,19 +1104,9 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             {qrDataUrl ? (
               <img src={qrDataUrl} alt="QR code" width={220} height={220} />
             ) : (
-              <div
-                style={{
-                  width: 220,
-                  height: 220,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                Génération…
-              </div>
+              <div style={RSM_STYLES.qrSpinner}>Génération…</div>
             )}
-            <code style={{ fontSize: '0.75rem', wordBreak: 'break-all', textAlign: 'center' }}>
+            <code style={RSM_STYLES.qrCode}>
               {activeQR.url}
             </code>
             <button className="btn btn-secondary" onClick={() => setActiveQR(null)}>
