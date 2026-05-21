@@ -149,9 +149,27 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
       {fencers.map((rowFencer, rowIndex) => {
         const stats = calculateFencerStats(rowFencer);
         const rankEntry = pool.ranking.find(r => r.fencer.id === rowFencer.id);
+        const rankRatio = (rankEntry?.rank ?? fencers.length) / fencers.length;
+        const rowBg =
+          rankRatio <= 0.7
+            ? 'rgba(16,185,129,0.08)'
+            : rankRatio <= 0.9
+              ? 'rgba(245,158,11,0.10)'
+              : 'rgba(239,68,68,0.08)';
+
+        const fencerMatches = pool.matches.filter(
+          m =>
+            m.status === MatchStatus.FINISHED &&
+            (m.fencerA?.id === rowFencer.id || m.fencerB?.id === rowFencer.id)
+        );
+        const sparkBars = fencerMatches.map(m => {
+          const isA = m.fencerA?.id === rowFencer.id;
+          const won = isA ? m.scoreA?.isVictory : m.scoreB?.isVictory;
+          return won;
+        });
 
         return (
-          <div key={rowFencer.id} className="pool-row">
+          <div key={rowFencer.id} className="pool-row" style={{ backgroundColor: rowBg }}>
             <div
               className="pool-cell pool-cell-header pool-cell-name"
               title={`${rowFencer.firstName} ${rowFencer.lastName}`}
@@ -164,6 +182,20 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
                   {rowFencer.firstName}
                 </span>
               </span>
+              {sparkBars.length > 0 && (
+                <svg width="16" height="10" style={{ flexShrink: 0 }} aria-hidden="true">
+                  {sparkBars.map((won, i) => (
+                    <rect
+                      key={i}
+                      x={i * (16 / sparkBars.length)}
+                      y={won ? 0 : 4}
+                      width={Math.max(1, 16 / sparkBars.length - 1)}
+                      height={won ? 10 : 6}
+                      fill={won ? '#22c55e' : '#ef4444'}
+                    />
+                  ))}
+                </svg>
+              )}
               {onFencerChangePool && (
                 <button
                   onClick={e => {

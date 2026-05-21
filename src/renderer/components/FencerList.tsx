@@ -430,6 +430,24 @@ const FencerListComponent: React.FC<FencerListProps> = ({
         </div>
       )}
 
+      {fencers.length > 0 && (
+        <div style={{ marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted, #6b7280)', marginBottom: '4px' }}>
+            <span>Pointage</span>
+            <span>{checkedInCount} / {fencers.length}</span>
+          </div>
+          <div style={{ height: '6px', background: 'var(--border-color, #e5e7eb)', borderRadius: '3px', overflow: 'hidden' }}>
+            <div style={{
+              height: '100%',
+              width: fencers.length > 0 ? `${(checkedInCount / fencers.length) * 100}%` : '0%',
+              background: checkedInCount === fencers.length && fencers.length > 0 ? '#22c55e' : '#3b82f6',
+              borderRadius: '3px',
+              transition: 'width 0.4s ease',
+            }} />
+          </div>
+        </div>
+      )}
+
       <div className="card mb-4">
         <div className="card-body flex gap-4">
           <input
