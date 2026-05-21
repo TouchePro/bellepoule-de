@@ -2,7 +2,7 @@
  * BellePoule Modern - Éditeur de règle d'avancement inter-phases
  */
 
-import React from 'react';
+import React, { memo } from 'react';
 import { AdvancementMode, AdvancementRule } from '../../../shared/types';
 
 interface Props {
@@ -35,7 +35,7 @@ const MODE_LABELS: Record<AdvancementMode, string> = {
   fixed_bracket: 'Tableau suivant',
 };
 
-export const AdvancementRuleEditor: React.FC<Props> = ({
+const AdvancementRuleEditor_: React.FC<Props> = ({
   rule,
   onChange,
   inputFencers,
@@ -108,3 +108,5 @@ export const AdvancementRuleEditor: React.FC<Props> = ({
     </div>
   );
 };
+
+export const AdvancementRuleEditor = memo(AdvancementRuleEditor_);

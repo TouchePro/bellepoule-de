@@ -15,7 +15,7 @@ interface AddFencerToPoolModalProps {
   onClose: () => void;
 }
 
-const AddFencerToPoolModal: React.FC<AddFencerToPoolModalProps> = ({
+const AddFencerToPoolModalComponent: React.FC<AddFencerToPoolModalProps> = ({
   pool,
   competitionId,
   maxScore = 5,
@@ -187,4 +187,5 @@ const AddFencerToPoolModal: React.FC<AddFencerToPoolModalProps> = ({
   );
 };
 
+const AddFencerToPoolModal = React.memo(AddFencerToPoolModalComponent);
 export default AddFencerToPoolModal;

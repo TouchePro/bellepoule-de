@@ -190,4 +190,4 @@ const tdStyle: React.CSSProperties = {
   textAlign: 'center',
 };
 
-export default LiveInterPoolRanking;
+export default React.memo(LiveInterPoolRanking);

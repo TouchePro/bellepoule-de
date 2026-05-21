@@ -243,4 +243,4 @@ const TiebreakerAnimation: React.FC<TiebreakerAnimationProps> = ({
   );
 };
 
-export default TiebreakerAnimation;
+export default React.memo(TiebreakerAnimation);

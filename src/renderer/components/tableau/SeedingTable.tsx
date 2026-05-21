@@ -51,4 +51,4 @@ const SeedingTable: React.FC<SeedingTableProps> = ({ ranking, tableauSize }) => 
   </div>
 );
 
-export default SeedingTable;
+export default React.memo(SeedingTable);

@@ -227,4 +227,4 @@ const FFEConnectModal: React.FC<FFEConnectModalProps> = ({ onImport, onClose }) 
   );
 };
 
-export default FFEConnectModal;
+export default React.memo(FFEConnectModal);

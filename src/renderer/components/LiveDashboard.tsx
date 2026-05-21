@@ -738,4 +738,4 @@ const FinalRankingView: React.FC<{ results: any[] }> = ({ results }) => {
   );
 };
 
-export default LiveDashboard;
+export default React.memo(LiveDashboard);

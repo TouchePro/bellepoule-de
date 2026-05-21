@@ -2,7 +2,7 @@
  * BellePoule Modern - Aperçu temps réel de la simulation de formule
  */
 
-import React from 'react';
+import React, { memo } from 'react';
 import { FormulaSimulation } from '../../../shared/types';
 
 interface Props {
@@ -23,7 +23,7 @@ function phaseLabel(type: string, index: number): string {
   return 'Classement final';
 }
 
-export const FormulaSimulationPreview: React.FC<Props> = ({ simulation, fencerCount }) => {
+const FormulaSimulationPreview_: React.FC<Props> = ({ simulation, fencerCount }) => {
   return (
     <div className="formula-simulation-preview">
       <h4 className="simulation-title">Simulation — {fencerCount} tireurs</h4>
@@ -97,3 +97,5 @@ export const FormulaSimulationPreview: React.FC<Props> = ({ simulation, fencerCo
     </div>
   );
 };
+
+export const FormulaSimulationPreview = memo(FormulaSimulationPreview_);

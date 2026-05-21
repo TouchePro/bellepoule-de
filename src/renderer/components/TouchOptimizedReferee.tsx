@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback , memo} from 'react';
 import { Fencer, Match, MatchStatus, TargetZone, MatchMode } from '../../shared/types';
 import {
   checkTimeoutSuddenDeath,
@@ -32,7 +32,7 @@ const ZONES = [
   { zone: TargetZone.ZONE_C, points: 5, label: 'C', desc: 'Tête', color: 'bg-pink-500' },
 ];
 
-export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
+const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
   match,
   fencerA,
   fencerB,
@@ -576,3 +576,5 @@ export const TouchOptimizedReferee: React.FC<TouchOptimizedRefereeProps> = ({
     </div>
   );
 };
+
+export const TouchOptimizedReferee = memo(TouchOptimizedReferee_);

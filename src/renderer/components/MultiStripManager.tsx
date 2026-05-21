@@ -198,4 +198,4 @@ export const MultiStripManager: React.FC<MultiStripManagerProps> = ({
   );
 };
 
-export default MultiStripManager;
+export default React.memo(MultiStripManager);

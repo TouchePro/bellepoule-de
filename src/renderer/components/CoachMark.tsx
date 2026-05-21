@@ -76,4 +76,4 @@ const CoachMark: React.FC<CoachMarkProps> = ({ id, message, position = 'bottom',
   );
 };
 
-export default CoachMark;
+export default React.memo(CoachMark);

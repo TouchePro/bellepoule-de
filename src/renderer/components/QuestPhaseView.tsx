@@ -565,4 +565,4 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
   );
 };
 
-export default QuestPhaseView;
+export default React.memo(QuestPhaseView);

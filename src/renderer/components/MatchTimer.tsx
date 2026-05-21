@@ -117,4 +117,4 @@ export const MatchTimer: React.FC<MatchTimerProps> = ({
   );
 };
 
-export default MatchTimer;
+export default React.memo(MatchTimer);

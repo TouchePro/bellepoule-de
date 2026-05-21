@@ -423,4 +423,4 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
   );
 };
 
-export default ResultsView;
+export default React.memo(ResultsView);

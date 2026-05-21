@@ -622,4 +622,4 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
   );
 };
 
-export default PoolRankingView;
+export default React.memo(PoolRankingView);

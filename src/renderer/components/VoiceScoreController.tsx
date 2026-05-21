@@ -273,4 +273,4 @@ export const VoiceScoreController: React.FC<{
   );
 };
 
-export default VoiceScoreController;
+export default React.memo(VoiceScoreController);

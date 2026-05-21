@@ -195,4 +195,4 @@ export const CardModal: React.FC<CardModalProps> = ({
   );
 };
 
-export default CardModal;
+export default React.memo(CardModal);

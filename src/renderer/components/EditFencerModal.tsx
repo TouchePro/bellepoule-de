@@ -194,4 +194,4 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
   );
 };
 
-export default EditFencerModal;
+export default React.memo(EditFencerModal);

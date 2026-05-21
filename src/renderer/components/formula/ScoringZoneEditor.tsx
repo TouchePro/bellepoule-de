@@ -2,7 +2,7 @@
  * BellePoule Modern - Éditeur de zones de score personnalisées
  */
 
-import React from 'react';
+import React, { memo } from 'react';
 import { CustomScoringConfig, CustomTouchZone } from '../../../shared/types';
 
 interface Props {
@@ -25,7 +25,7 @@ function newZone(index: number): CustomTouchZone {
   };
 }
 
-export const ScoringZoneEditor: React.FC<Props> = ({ scoring, onChange, readOnly }) => {
+const ScoringZoneEditor_: React.FC<Props> = ({ scoring, onChange, readOnly }) => {
   const setType = (type: 'standard' | 'zones') => {
     if (type === 'zones') {
       onChange({
@@ -150,3 +150,5 @@ export const ScoringZoneEditor: React.FC<Props> = ({ scoring, onChange, readOnly
     </div>
   );
 };
+
+export const ScoringZoneEditor = memo(ScoringZoneEditor_);

@@ -280,4 +280,4 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
   );
 };
 
-export default PhotoBooth;
+export default React.memo(PhotoBooth);

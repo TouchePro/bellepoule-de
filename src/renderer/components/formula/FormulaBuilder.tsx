@@ -3,7 +3,7 @@
  * Composant principal du créateur de formule à la carte.
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState , memo} from 'react';
 import {
   CustomDEConfig,
   CustomFormulaConfig,
@@ -89,7 +89,7 @@ function computeInputFencers(phases: FormulaPhaseNode[], index: number, initial:
   return count;
 }
 
-export const FormulaBuilder: React.FC<Props> = ({
+const FormulaBuilder_: React.FC<Props> = ({
   formula,
   fencerCount = 32,
   onChange,
@@ -276,3 +276,5 @@ export const FormulaBuilder: React.FC<Props> = ({
     </div>
   );
 };
+
+export const FormulaBuilder = memo(FormulaBuilder_);
