@@ -1098,6 +1098,15 @@ export class RemoteScoreServer {
             console.log(
               `[RemoteScoreServer] Fallback match courant pour arène ${arenaId}: ${arena.currentMatch.id}`
             );
+            const queueMatches = (this.arenaMatchQueue.get(arenaId) || []).map(m => ({
+              id: m.id,
+              poolId: m.poolId,
+              fencerA: m.fencerA,
+              fencerB: m.fencerB,
+              scoreA: m.scoreA ?? 0,
+              scoreB: m.scoreB ?? 0,
+              status: m.status,
+            }));
             return res.json({
               matches: [
                 {
@@ -1109,6 +1118,7 @@ export class RemoteScoreServer {
                   scoreB: arena.currentMatch.scoreB,
                   status: effectiveStatus,
                 },
+                ...queueMatches,
               ],
               poolId: null,
               poolName: null,
@@ -1116,7 +1126,7 @@ export class RemoteScoreServer {
           }
         }
 
-        // File d'attente DE
+        // File d'attente DE (currentMatch nul ou terminé)
         const arenaQueue = this.arenaMatchQueue.get(arenaId) || [];
         if (arenaQueue.length > 0) {
           console.log(
@@ -1533,7 +1543,7 @@ export class RemoteScoreServer {
           };
           const pendingTableau = tableauMatches
             .filter((m: any) => m.fencerA && m.fencerB && !m.isBye && !m.winner)
-            .sort((a: any, b: any) => a.round - b.round || a.position - b.position);
+            .sort((a: any, b: any) => b.round - a.round || a.position - b.position);
           for (const m of pendingTableau) {
             const inArena = arenaByMatchId.has(m.id);
             upcoming.push({
@@ -3815,14 +3825,22 @@ export class RemoteScoreServer {
       // alors que le match est terminé dans sessionMatches. On vérifie sessionMatches.
       let arenaEffectivelyFree = !arena.currentMatch;
       if (!arenaEffectivelyFree && arena.currentMatch) {
-        const scoreUpdate = this.sessionMatchScores.get(arena.currentMatch.id);
-        const inSession = this.sessionMatches.find((m: any) => m.id === arena.currentMatch!.id);
-        const effectiveStatus =
-          scoreUpdate?.status ?? inSession?.status ?? arena.currentMatch.status;
-        if (effectiveStatus === MatchStatus.FINISHED) {
+        // Cas 1 : match tableau scoré manuellement depuis l'appli → il n'est plus dans deMatches
+        if (arena.currentMatch.isTableau && !deMatches.some(m => m.id === arena.currentMatch!.id)) {
           arena.currentMatch = null;
           arena.status = 'idle';
           arenaEffectivelyFree = true;
+        } else {
+          // Cas 2 : score remote ou fast-poule → vérifier le statut effectif
+          const scoreUpdate = this.sessionMatchScores.get(arena.currentMatch.id);
+          const inSession = this.sessionMatches.find((m: any) => m.id === arena.currentMatch!.id);
+          const effectiveStatus =
+            scoreUpdate?.status ?? inSession?.status ?? arena.currentMatch.status;
+          if (effectiveStatus === MatchStatus.FINISHED) {
+            arena.currentMatch = null;
+            arena.status = 'idle';
+            arenaEffectivelyFree = true;
+          }
         }
       }
 
