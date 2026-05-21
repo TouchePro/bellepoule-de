@@ -360,7 +360,12 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     const mainThirdEntry = matches.find(m => m.round === 3);
     const mainThirdDone = !mainThirdEntry || !!mainThirdEntry.winner;
     if (!mainFinalDone || !mainThirdDone) return;
-    if (consolationBrackets.length === 0) return; // les brackets ne sont pas encore créés
+    // Des brackets de consolation sont attendus quand tableauSize >= 8 (rounds > 4)
+    // ou quand il y a des barrages. Pour tableauSize <= 4, aucun bracket de consolation
+    // n'est créé (les demi-finalistes perdants vont directement à la petite finale).
+    const hasBarrages = matches.some(m => m.round === tableauSize * 2);
+    const needsConsolation = tableauSize >= 8 || hasBarrages;
+    if (needsConsolation && consolationBrackets.length === 0) return; // pas encore créés
     if (consolationBrackets.some(b => !b.isComplete)) return;
     onComplete(buildCombinedResults(matches, consolationBrackets));
     // eslint-disable-next-line react-hooks/exhaustive-deps
