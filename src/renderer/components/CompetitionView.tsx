@@ -13,6 +13,7 @@ import Confetti from './Confetti';
 import TableauView, { TableauMatch, FinalResult, propagateWinners, ConsolationBracket } from './TableauView';
 import PoolRankingView from './PoolRankingView';
 import ResultsView from './ResultsView';
+import CoachMark from './CoachMark';
 import AddFencerModal from './AddFencerModal';
 import CompetitionPropertiesModal from './CompetitionPropertiesModal';
 import ImportModal from './ImportModal';
@@ -903,13 +904,15 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
             {/* Menu actions ⋯ */}
             <div className="comp-header-actions" ref={actionsMenuRef}>
-              <button
-                className="comp-header-menu-btn"
-                onClick={() => setShowActionsMenu(v => !v)}
-                title="Actions"
-              >
-                ⋯
-              </button>
+              <CoachMark id="actions-menu" message="Comparaison, analytiques, partage QR..." position="left">
+                <button
+                  className="comp-header-menu-btn"
+                  onClick={() => setShowActionsMenu(v => !v)}
+                  title="Actions"
+                >
+                  ⋯
+                </button>
+              </CoachMark>
               {showActionsMenu && (
                 <div className="comp-header-dropdown">
                   <button className="comp-header-dropdown-item" onClick={() => { setShowFencerComparison(true); setShowActionsMenu(false); }}>
@@ -957,6 +960,15 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         )}
       </div>
 
+      {/* Breadcrumb */}
+      <div style={{ padding: '0.25rem 1rem', fontSize: '0.75rem', color: 'var(--text-muted, #6b7280)', borderBottom: '1px solid var(--border-color, rgba(255,255,255,0.1))', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <span style={{ fontWeight: 500, opacity: 0.7 }}>{competition.title}</span>
+        <span>›</span>
+        <span style={{ fontWeight: 600, color: 'var(--text-primary, #f3f4f6)' }}>
+          {phases.find(p => p.id === currentPhase)?.label ?? currentPhase}
+        </span>
+      </div>
+
       {/* Navigation */}
       <div className="phase-nav">
         {phases.map((phase, index) => (
@@ -990,13 +1002,15 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             </button>
           )}
           {currentPhase === 'checkin' && (!questEnabled || questConfig?.hasPreliminaryPools) && (
-            <button
-              className="btn btn-primary"
-              onClick={handleGeneratePools}
-              disabled={getCheckedInFencers().length < 4}
-            >
-              Générer les poules →
-            </button>
+            <CoachMark id="generate-pools" message="Cliquez ici après avoir pointé tous vos tireurs" position="bottom">
+              <button
+                className="btn btn-primary"
+                onClick={handleGeneratePools}
+                disabled={getCheckedInFencers().length < 4}
+              >
+                Générer les poules →
+              </button>
+            </CoachMark>
           )}
           {currentPhase === 'pools' && poolsNextAction && (
             <button className="btn btn-primary" onClick={poolsNextAction.action}>

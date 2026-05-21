@@ -1014,6 +1014,16 @@
         border-color: #7c3aed;
         color: #fff;
       }
+      @media (prefers-color-scheme: dark) {
+        .active-match { background: rgba(30,30,40,0.97); color: #f3f4f6; }
+        .fencer-box { background: #1f2937; color: #f9fafb; }
+        .fencer-box.red-side { background: linear-gradient(135deg, #3b0a0a 0%, #4c1010 100%); }
+        .fencer-box.green-side { background: linear-gradient(135deg, #0a2e1a 0%, #103d22 100%); }
+        .fencer-club { color: #9ca3af; }
+        .modal-content { background: #1f2937; color: #f3f4f6; }
+        .final-score { background: #111827; color: #f3f4f6; }
+        .next-matches-screen { background: rgba(0,0,0,0.5); }
+      }
     </style>
   </head>
   <body>
@@ -1950,6 +1960,7 @@
           }
 
           this.pushHistory('score');
+          if (navigator.vibrate) navigator.vibrate(points === 5 ? 120 : points === 3 ? 80 : 40);
 
           const ef = this._effectiveFencer(fencer);
           const zone = points === 1 ? 'A' : points === 3 ? 'B' : 'C';
@@ -1988,6 +1999,7 @@
           if (this.matchStatus === 'finished') return;
 
           this.pushHistory('card');
+          if (navigator.vibrate) navigator.vibrate(cardType === 'red' ? [100,50,100] : cardType === 'yellow' ? 80 : 40);
 
           const ef = this._effectiveFencer(fencer);
           const cards = ef === 'A' ? this.cardsA : this.cardsB;
@@ -2198,6 +2210,7 @@
           this.overtimeType = this.overtimeType === 'supplementary'
             ? 'challenger_supplementary'
             : 'challenger';
+          if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
           this.updateSuddenDeathUI();
           this.showNotification(
             '⚡ MORT SUBITE – Les deux tireurs ont 10 pts ! Zone C uniquement.'
@@ -2518,6 +2531,7 @@
           } else {
             this.overtimeType = 'supplementary';
           }
+          if (navigator.vibrate) navigator.vibrate([150, 80, 150, 80, 400]);
           this.timerSeconds = 30;
           this.updateTimerDisplay();
           this.broadcastTimerUpdate();
@@ -2730,6 +2744,8 @@
 
         showFinishModal() {
           if (!this.currentMatch || this.matchStatus !== 'in_progress') return;
+
+          if (navigator.vibrate) navigator.vibrate([100, 60, 100, 60, 600]);
 
           if (this.timerRunning) {
             this.pauseTimer();
