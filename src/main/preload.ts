@@ -170,6 +170,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }
       return ipcRenderer.invoke('db:addFencerToPool', poolId, fencerId, position);
     },
+    addFencerToPoolMidCompetition: (poolId: string, fencerId: string, maxScore?: number) => {
+      if (!poolId || typeof poolId !== 'string') {
+        throw new Error('Pool ID is required and must be a string');
+      }
+      if (!fencerId || typeof fencerId !== 'string') {
+        throw new Error('Fencer ID is required and must be a string');
+      }
+      return ipcRenderer.invoke('db:addFencerToPoolMidCompetition', poolId, fencerId, maxScore);
+    },
     getPoolFencers: (poolId: string) => {
       if (!poolId || typeof poolId !== 'string') {
         throw new Error('Pool ID is required and must be a string');

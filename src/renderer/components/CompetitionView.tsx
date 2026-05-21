@@ -1142,6 +1142,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                         weapon={competition.weapon}
                         competitionName={competition.title}
                         maxScore={poolMaxScore}
+                        competitionId={competition.id}
                         onScoreUpdate={(matchIndex, scoreA, scoreB, winner, specialStatus) =>
                           updateScore(poolIndex, matchIndex, scoreA, scoreB, winner, specialStatus)
                         }
@@ -1169,6 +1170,11 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                           ) {
                             handleFencerForfeit(fencerId, status);
                           }
+                        }}
+                        onFencerAdded={updatedPool => {
+                          setPools(prev =>
+                            prev.map(p => (p.id === updatedPool.id ? updatedPool : p))
+                          );
                         }}
                       />
                     </div>

@@ -1033,6 +1033,9 @@ ipcMain.handle('db:clearPoolsForPhase', async (_, phaseId) => {
 ipcMain.handle('db:addFencerToPool', async (_, poolId, fencerId, position) => {
   return db.addFencerToPool(poolId, fencerId, position);
 });
+ipcMain.handle('db:addFencerToPoolMidCompetition', async (_, poolId, fencerId, maxScore) => {
+  return db.addFencerToPoolMidCompetition(poolId, fencerId, maxScore ?? 5);
+});
 ipcMain.handle('db:getPoolFencers', async (_, poolId) => {
   return db.getPoolFencers(poolId);
 });
