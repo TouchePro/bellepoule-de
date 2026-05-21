@@ -1067,265 +1067,87 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
             </div>
           ) : (
             /* Tableau terminé – podium + classement */
-            <div
-              style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                minHeight: 0,
-                gap: '24px',
-              }}
-            >
+            <div style={KIOSK_STYLES.finishedWrapper}>
               {/* Titre */}
-              <div
-                style={{
-                  textAlign: 'center',
-                  fontSize: '1.4rem',
-                  fontWeight: 700,
-                  color: '#fbbf24',
-                  letterSpacing: '0.05em',
-                  flexShrink: 0,
-                }}
-              >
+              <div style={KIOSK_STYLES.finishedTitle}>
                 🏆 RÉSULTATS FINAUX
               </div>
 
               {/* Podium visuel */}
               {podium ? (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-end',
-                    justifyContent: 'center',
-                    gap: '16px',
-                    flexShrink: 0,
-                  }}
-                >
+                <div style={KIOSK_STYLES.podiumRow}>
                   {/* 2e place */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '8px',
-                    }}
-                  >
-                    <div style={{ fontSize: '2.2rem' }}>🥈</div>
-                    <div
-                      style={{
-                        fontWeight: 700,
-                        fontSize: '1.2rem',
-                        textAlign: 'center',
-                        maxWidth: '200px',
-                      }}
-                    >
+                  <div style={KIOSK_STYLES.podiumCol}>
+                    <div style={KIOSK_STYLES.podiumMedal2}>🥈</div>
+                    <div style={KIOSK_STYLES.podiumName2}>
                       {podium.second ? `${podium.second.lastName} ${podium.second.firstName}` : '–'}
                     </div>
                     {podium.second?.club && (
-                      <div style={{ fontSize: '0.85rem', color: '#94a3b8', textAlign: 'center' }}>
-                        {podium.second.club}
-                      </div>
+                      <div style={KIOSK_STYLES.podiumClub2}>{podium.second.club}</div>
                     )}
-                    <div
-                      style={{
-                        width: '180px',
-                        height: '80px',
-                        backgroundColor: '#475569',
-                        borderRadius: '6px 6px 0 0',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '1.4rem',
-                        fontWeight: 800,
-                        color: '#94a3b8',
-                      }}
-                    >
-                      2
-                    </div>
+                    <div style={KIOSK_STYLES.podiumBlock2}>2</div>
                   </div>
                   {/* 1re place */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '8px',
-                    }}
-                  >
-                    <div style={{ fontSize: '3rem' }}>🥇</div>
-                    <div
-                      style={{
-                        fontWeight: 800,
-                        fontSize: '1.5rem',
-                        textAlign: 'center',
-                        maxWidth: '220px',
-                        color: '#fbbf24',
-                      }}
-                    >
+                  <div style={KIOSK_STYLES.podiumCol}>
+                    <div style={KIOSK_STYLES.podiumMedal1}>🥇</div>
+                    <div style={KIOSK_STYLES.podiumName1}>
                       {podium.first.lastName} {podium.first.firstName}
                     </div>
                     {podium.first.club && (
-                      <div
-                        style={{
-                          fontSize: '0.9rem',
-                          color: '#fbbf24',
-                          opacity: 0.8,
-                          textAlign: 'center',
-                        }}
-                      >
-                        {podium.first.club}
-                      </div>
+                      <div style={KIOSK_STYLES.podiumClub1}>{podium.first.club}</div>
                     )}
-                    <div
-                      style={{
-                        width: '200px',
-                        height: '120px',
-                        backgroundColor: '#b45309',
-                        borderRadius: '6px 6px 0 0',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '2rem',
-                        fontWeight: 800,
-                        color: '#fbbf24',
-                      }}
-                    >
-                      1
-                    </div>
+                    <div style={KIOSK_STYLES.podiumBlock1}>1</div>
                   </div>
                   {/* 3e place */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '8px',
-                    }}
-                  >
-                    <div style={{ fontSize: '2.2rem' }}>🥉</div>
-                    <div
-                      style={{
-                        fontWeight: 700,
-                        fontSize: '1.2rem',
-                        textAlign: 'center',
-                        maxWidth: '200px',
-                      }}
-                    >
+                  <div style={KIOSK_STYLES.podiumCol}>
+                    <div style={KIOSK_STYLES.podiumMedal3}>🥉</div>
+                    <div style={KIOSK_STYLES.podiumName3}>
                       {podium.third ? `${podium.third.lastName} ${podium.third.firstName}` : '–'}
                     </div>
                     {podium.third?.club && (
-                      <div style={{ fontSize: '0.85rem', color: '#94a3b8', textAlign: 'center' }}>
-                        {podium.third.club}
-                      </div>
+                      <div style={KIOSK_STYLES.podiumClub3}>{podium.third.club}</div>
                     )}
-                    <div
-                      style={{
-                        width: '180px',
-                        height: '60px',
-                        backgroundColor: '#713f12',
-                        borderRadius: '6px 6px 0 0',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '1.4rem',
-                        fontWeight: 800,
-                        color: '#d97706',
-                      }}
-                    >
-                      3
-                    </div>
+                    <div style={KIOSK_STYLES.podiumBlock3}>3</div>
                   </div>
                 </div>
               ) : (
-                <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: '1.3rem' }}>
-                  Tableau terminé
-                </div>
+                <div style={KIOSK_STYLES.podiumEmpty}>Tableau terminé</div>
               )}
 
               {/* Classement général */}
               {elimRanking.length > 0 && (
-                <div
-                  ref={tableauScrollRef}
-                  style={{
-                    flex: 1,
-                    overflowY: 'hidden',
-                    borderTop: '1px solid #334155',
-                    paddingTop: '16px',
-                  }}
-                >
-                  <div
-                    style={{
-                      color: '#64748b',
-                      fontSize: '0.85rem',
-                      fontWeight: 600,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.08em',
-                      marginBottom: '10px',
-                      paddingLeft: '4px',
-                    }}
-                  >
-                    Classement général
-                  </div>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '1rem' }}>
+                <div ref={tableauScrollRef} style={KIOSK_STYLES.elimRankingWrapper}>
+                  <div style={KIOSK_STYLES.elimRankingLabel}>Classement général</div>
+                  <table style={KIOSK_STYLES.elimTable}>
                     <thead>
-                      <tr
-                        style={{
-                          color: '#64748b',
-                          textAlign: 'left',
-                          borderBottom: '1px solid #334155',
-                        }}
-                      >
-                        <th style={{ padding: '6px 10px', width: '50px' }}>Rg</th>
-                        <th style={{ padding: '6px 10px' }}>Nom</th>
-                        <th style={{ padding: '6px 10px' }}>Prénom</th>
-                        <th style={{ padding: '6px 10px' }}>Club</th>
-                        <th style={{ padding: '6px 10px', color: '#475569', fontStyle: 'italic' }}>
-                          Éliminé en
-                        </th>
+                      <tr style={KIOSK_STYLES.elimThead}>
+                        <th style={KIOSK_STYLES.elimThRg}>Rg</th>
+                        <th style={KIOSK_STYLES.elimThName}>Nom</th>
+                        <th style={KIOSK_STYLES.elimThName}>Prénom</th>
+                        <th style={KIOSK_STYLES.elimThName}>Club</th>
+                        <th style={KIOSK_STYLES.elimThElimAt}>Éliminé en</th>
                       </tr>
                     </thead>
                     <tbody>
                       {elimRanking.map(r => {
                         const medals: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
-                        const isTop3 = r.place <= 3;
                         return (
                           <tr
                             key={r.fencer.id}
                             style={{
                               borderBottom: '1px solid #1e293b',
-                              backgroundColor: isTop3 ? 'rgba(251,191,36,0.06)' : 'transparent',
+                              backgroundColor: r.place <= 3 ? 'rgba(251,191,36,0.06)' : 'transparent',
                             }}
                           >
-                            <td
-                              style={{
-                                padding: '8px 10px',
-                                fontWeight: 'bold',
-                                fontSize: '1.1rem',
-                              }}
-                            >
+                            <td style={KIOSK_STYLES.elimTdRank}>
                               {medals[r.place] ?? (
-                                <span style={{ color: '#64748b' }}>{r.place}</span>
+                                <span style={KIOSK_STYLES.elimTdRankSmall}>{r.place}</span>
                               )}
                             </td>
-                            <td style={{ padding: '8px 10px', fontWeight: 600 }}>
-                              {r.fencer.lastName}
-                            </td>
-                            <td style={{ padding: '8px 10px' }}>{r.fencer.firstName}</td>
-                            <td
-                              style={{ padding: '8px 10px', color: '#94a3b8', fontSize: '0.9rem' }}
-                            >
-                              {r.fencer.club || '–'}
-                            </td>
-                            <td
-                              style={{
-                                padding: '8px 10px',
-                                color: '#475569',
-                                fontSize: '0.85rem',
-                                fontStyle: 'italic',
-                              }}
-                            >
-                              {r.eliminatedAt}
-                            </td>
+                            <td style={KIOSK_STYLES.elimTdLast}>{r.fencer.lastName}</td>
+                            <td style={KIOSK_STYLES.elimTdFirst}>{r.fencer.firstName}</td>
+                            <td style={KIOSK_STYLES.elimTdClub}>{r.fencer.club || '–'}</td>
+                            <td style={KIOSK_STYLES.elimTdElimAt}>{r.eliminatedAt}</td>
                           </tr>
                         );
                       })}
@@ -1340,38 +1162,18 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
 
       {/* ===== OVERLAY NOTE D'ORGANISATION ===== */}
       {orgNote && (
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            zIndex: 10500,
-            background: 'rgba(2, 6, 23, 0.88)',
-            backdropFilter: 'blur(6px)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'space-evenly',
-            textAlign: 'center',
-            padding: '3rem',
-          }}
-        >
-          <div style={{ fontSize: 'clamp(2rem, 5vw, 4rem)', color: '#64748b', fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase' }}>
-            ⏸ Pause
-          </div>
+        <div style={KIOSK_STYLES.orgNoteOverlay}>
+          <div style={KIOSK_STYLES.orgNotePauseLabel}>⏸ Pause</div>
           {orgNote.type === 'target_time' && orgNote.targetTime && (
             <>
-              <div style={{ fontSize: 'clamp(4rem, 14vw, 12rem)', fontWeight: 700, color: '#f1f5f9' }}>
+              <div style={KIOSK_STYLES.orgNoteResumeTime}>
                 Reprise à {orgNote.targetTime.replace(':', 'h')}
               </div>
-              <div style={{ fontSize: 'clamp(3rem, 10vw, 8rem)', fontWeight: 800, color: '#3b82f6', fontVariantNumeric: 'tabular-nums' }}>
-                dans {orgNoteCountdown}
-              </div>
+              <div style={KIOSK_STYLES.orgNoteCountdown}>dans {orgNoteCountdown}</div>
             </>
           )}
           {orgNote.message && (
-            <div style={{ fontSize: 'clamp(2rem, 7vw, 6rem)', color: '#94a3b8', fontStyle: 'italic' }}>
-              «&nbsp;{orgNote.message}&nbsp;»
-            </div>
+            <div style={KIOSK_STYLES.orgNoteMessage}>«&nbsp;{orgNote.message}&nbsp;»</div>
           )}
         </div>
       )}
