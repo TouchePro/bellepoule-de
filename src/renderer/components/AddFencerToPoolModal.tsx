@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Fencer, Pool } from '../../shared/types';
+import { useToast } from './Toast';
 
 interface AddFencerToPoolModalProps {
   pool: Pool;
@@ -22,6 +23,7 @@ const AddFencerToPoolModalComponent: React.FC<AddFencerToPoolModalProps> = ({
   onConfirm,
   onClose,
 }) => {
+  const { showToast } = useToast();
   const [allFencers, setAllFencers] = useState<Fencer[]>([]);
   const [allPoolFencerIds, setAllPoolFencerIds] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
@@ -70,6 +72,11 @@ const AddFencerToPoolModalComponent: React.FC<AddFencerToPoolModalProps> = ({
         maxScore
       );
       onConfirm(updatedPool);
+    } catch (err) {
+      showToast(
+        "Erreur lors de l'ajout : " + (err instanceof Error ? err.message : 'Erreur inconnue'),
+        'error'
+      );
     } finally {
       setIsLoading(false);
     }

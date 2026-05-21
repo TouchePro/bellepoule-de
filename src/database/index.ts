@@ -1424,9 +1424,11 @@ export class DatabaseManager {
       );
     }
     this.save();
-    return this.getPoolsByPhase(
-      (this.db.exec(`SELECT phase_id FROM pools WHERE id = '${poolId}'`)[0]?.values[0]?.[0] as string)
-    ).find(p => p.id === poolId)!;
+    const phaseId = this.db.exec(`SELECT phase_id FROM pools WHERE id = '${poolId}'`)[0]?.values[0]?.[0] as string | undefined;
+    if (!phaseId) throw new Error(`Pool ${poolId} introuvable après ajout`);
+    const updated = this.getPoolsByPhase(phaseId).find(p => p.id === poolId);
+    if (!updated) throw new Error(`Poule mise à jour introuvable`);
+    return updated;
   }
 
   public getPoolsByPhase(phaseId: string): Pool[] {
