@@ -18,12 +18,12 @@ interface MatchProgress {
 interface CompetitionHeaderProps {
   competition: Competition;
   language: string;
-  t: (key: string, params?: Record<string, unknown>) => string;
+  t: (key: string, params?: { [key: string]: string | number }) => string;
   matchProgress: MatchProgress | null;
   showConfetti: boolean;
   showActionsMenu: boolean;
   setShowActionsMenu: React.Dispatch<React.SetStateAction<boolean>>;
-  actionsMenuRef: React.RefObject<HTMLDivElement>;
+  actionsMenuRef: React.RefObject<HTMLDivElement | null>;
   currentPhase: Phase;
   pools: Array<{ matches: Array<{ status: MatchStatus }> }>;
   tableauMatches: Array<unknown>;
