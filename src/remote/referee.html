@@ -2210,6 +2210,7 @@
           this.overtimeType = this.overtimeType === 'supplementary'
             ? 'challenger_supplementary'
             : 'challenger';
+          if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
           this.updateSuddenDeathUI();
           this.showNotification(
             '⚡ MORT SUBITE – Les deux tireurs ont 10 pts ! Zone C uniquement.'
@@ -2530,6 +2531,7 @@
           } else {
             this.overtimeType = 'supplementary';
           }
+          if (navigator.vibrate) navigator.vibrate([150, 80, 150, 80, 400]);
           this.timerSeconds = 30;
           this.updateTimerDisplay();
           this.broadcastTimerUpdate();
@@ -2742,6 +2744,8 @@
 
         showFinishModal() {
           if (!this.currentMatch || this.matchStatus !== 'in_progress') return;
+
+          if (navigator.vibrate) navigator.vibrate([100, 60, 100, 60, 600]);
 
           if (this.timerRunning) {
             this.pauseTimer();
