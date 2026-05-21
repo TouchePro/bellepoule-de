@@ -197,7 +197,7 @@
 
     iframe#preview {
       display: block;
-      width: 100%;
+      flex-shrink: 0;
       border: none;
       transform-origin: top left;
     }
@@ -317,6 +317,21 @@
       </div>
     </div>
 
+    <!-- Position du score -->
+    <div class="section">
+      <div class="section-header">Position du score</div>
+      <div class="section-body">
+        <div class="chips">
+          <label class="chip active" id="chip-scores-inner" onclick="setScorePos('inner')">
+            <span>◀ Score ▶ côté centre</span>
+          </label>
+          <label class="chip" id="chip-scores-outer" onclick="setScorePos('outer')">
+            <span>◀ Score ▶ côté extérieur</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
     <!-- Logo -->
     <div class="section">
       <div class="section-header">Logo compétition (optionnel)</div>
@@ -371,32 +386,36 @@
     height: 160,
     hide: new Set(),
     logo: '',
+    scoresOuter: false,
   };
 
-  /* ── Initialisation des pistes depuis l'API ── */
+  /* ── Initialisation des pistes ── */
+  /* Priorité : ?arenas=N (passé par BPM depuis Electron) puis fetch /api/arenas */
   async function initArenas() {
-    try {
-      const res  = await fetch('/api/arenas');
-      const data = await res.json();
-      const count = Array.isArray(data) ? data.length : 4;
-      const pills = document.getElementById('arena-pills');
-      for (let i = 1; i <= count; i++) {
-        const btn = document.createElement('button');
-        btn.className = 'arena-pill' + (i === 1 ? ' active' : '');
-        btn.textContent = 'Piste ' + i;
-        btn.onclick = () => selectArena(i);
-        pills.appendChild(btn);
-      }
-    } catch {
-      // Fallback 4 pistes si le serveur ne répond pas
-      const pills = document.getElementById('arena-pills');
-      for (let i = 1; i <= 4; i++) {
-        const btn = document.createElement('button');
-        btn.className = 'arena-pill' + (i === 1 ? ' active' : '');
-        btn.textContent = 'Piste ' + i;
-        btn.onclick = () => selectArena(i);
-        pills.appendChild(btn);
-      }
+    const urlParams = new URLSearchParams(window.location.search);
+    const fromUrl   = parseInt(urlParams.get('arenas') || '0');
+
+    let count = fromUrl || 0;
+
+    if (!count) {
+      try {
+        const res  = await fetch('/api/arenas');
+        const data = await res.json();
+        // L'API peut retourner un tableau ou un objet {arenaId: arena}
+        count = Array.isArray(data) ? data.length : Object.keys(data).length;
+      } catch { /* ignore */ }
+    }
+
+    if (!count || count < 1) count = 4; // fallback ultime
+
+    const pills = document.getElementById('arena-pills');
+    pills.innerHTML = '';
+    for (let i = 1; i <= count; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'arena-pill' + (i === 1 ? ' active' : '');
+      btn.textContent = 'Piste ' + i;
+      btn.onclick = () => selectArena(i);
+      pills.appendChild(btn);
     }
   }
 
@@ -410,23 +429,17 @@
   /* ── Listeners ── */
   document.getElementById('theme').addEventListener('change', e => {
     state.theme = e.target.value;
-    const checker = document.getElementById('checker');
-    checker.classList.toggle('opaque-bg', state.theme !== 'transparent');
+    document.getElementById('checker').classList.toggle('opaque-bg', state.theme !== 'transparent');
     refresh();
   });
-
   document.getElementById('width').addEventListener('input', e => {
-    state.width = parseInt(e.target.value) || 1280;
-    refresh();
+    state.width = parseInt(e.target.value) || 1280; refresh();
   });
   document.getElementById('height').addEventListener('input', e => {
-    state.height = parseInt(e.target.value) || 160;
-    refresh();
+    state.height = parseInt(e.target.value) || 160; refresh();
   });
-
   document.getElementById('logo-url').addEventListener('input', e => {
-    state.logo = e.target.value.trim();
-    refresh();
+    state.logo = e.target.value.trim(); refresh();
   });
 
   function setSize(w, h) {
@@ -437,14 +450,15 @@
   }
 
   function toggleHide(key, cb) {
-    const chip = document.getElementById('chip-' + key);
-    if (cb.checked) {
-      state.hide.delete(key);
-      chip.classList.add('active');
-    } else {
-      state.hide.add(key);
-      chip.classList.remove('active');
-    }
+    if (cb.checked) { state.hide.delete(key); document.getElementById('chip-' + key).classList.add('active'); }
+    else            { state.hide.add(key);    document.getElementById('chip-' + key).classList.remove('active'); }
+    refresh();
+  }
+
+  function setScorePos(pos) {
+    state.scoresOuter = pos === 'outer';
+    document.getElementById('chip-scores-inner').classList.toggle('active', !state.scoresOuter);
+    document.getElementById('chip-scores-outer').classList.toggle('active',  state.scoresOuter);
     refresh();
   }
 
@@ -455,55 +469,51 @@
     if (state.theme !== 'transparent') params.set('theme', state.theme);
     params.set('w', state.width);
     params.set('h', state.height);
-    if (state.hide.size > 0) params.set('hide', [...state.hide].join(','));
-    if (state.logo) params.set('logo', state.logo);
+    if (state.hide.size > 0)   params.set('hide', [...state.hide].join(','));
+    if (state.logo)             params.set('logo', state.logo);
+    if (state.scoresOuter)      params.set('scores', 'outer');
     return `${base}/arene${state.arena}/overlay?${params.toString()}`;
   }
 
-  /* ── Mise à jour de la prévisualisation ── */
+  /* ── Prévisualisation avec scaling correct ── */
   let refreshTimer = null;
   function refresh() {
-    const url = buildUrl();
+    const url    = buildUrl();
     document.getElementById('generated-url').textContent = url;
 
-    // Scale l'iframe pour qu'elle tienne dans le conteneur
-    const wrapper   = document.querySelector('.preview-wrapper');
-    const maxW      = wrapper.clientWidth || 860;
-    const scale     = Math.min(1, (maxW - 32) / state.width);
-    const iframe    = document.getElementById('preview');
-    const checker   = document.getElementById('checker');
+    const wrapper  = document.querySelector('.preview-wrapper');
+    const maxW     = wrapper.clientWidth - 4;
+    const scale    = Math.min(1, maxW / state.width);
+    const iframe   = document.getElementById('preview');
+    const checker  = document.getElementById('checker');
 
-    iframe.style.width  = state.width  + 'px';
-    iframe.style.height = state.height + 'px';
+    // L'iframe a sa taille réelle; transform-origin: top left + scale la ramène dans le cadre
+    iframe.style.width     = state.width  + 'px';
+    iframe.style.height    = state.height + 'px';
     iframe.style.transform = `scale(${scale})`;
-    checker.style.height = (state.height * scale) + 'px';
 
-    // Debounce le rechargement de l'iframe pour éviter le clignotement
+    // Le checker doit avoir exactement la taille visible (scalée)
+    checker.style.width  = (state.width  * scale) + 'px';
+    checker.style.height = (state.height * scale) + 'px';
+    checker.style.overflow = 'hidden';
+
     clearTimeout(refreshTimer);
-    refreshTimer = setTimeout(() => { iframe.src = url; }, 400);
+    refreshTimer = setTimeout(() => { iframe.src = url; }, 450);
   }
 
-  /* ── Copier URL ── */
+  /* ── Actions ── */
   function copyUrl() {
-    const url = buildUrl();
-    navigator.clipboard.writeText(url).then(() => {
+    navigator.clipboard.writeText(buildUrl()).then(() => {
       const btn = document.getElementById('copy-btn');
       btn.textContent = '✓ Copié !';
       btn.classList.add('copied');
-      setTimeout(() => {
-        btn.textContent = '📋 Copier l\'URL';
-        btn.classList.remove('copied');
-      }, 2000);
+      setTimeout(() => { btn.textContent = '📋 Copier l\'URL'; btn.classList.remove('copied'); }, 2000);
     });
   }
-
-  function openPreviewTab() {
-    window.open(buildUrl(), '_blank');
-  }
+  function openPreviewTab() { window.open(buildUrl(), '_blank'); }
 
   /* ── Boot ── */
   initArenas().then(() => refresh());
-
   window.addEventListener('resize', () => refresh());
 </script>
 </body>

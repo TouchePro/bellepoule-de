@@ -1088,7 +1088,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             <button
               className="btn-ghost"
               style={{ fontSize: '13px', padding: '2px 8px', borderRadius: 4, border: '1px solid #ccc', cursor: 'pointer', background: 'transparent' }}
-              onClick={() => window.open(`${serverUrl}/overlay-config`, '_blank')}
+              onClick={() => window.open(`${serverUrl}/overlay-config?arenas=${arenaCount}`, '_blank')}
               title="Ouvrir le configurateur"
             >
               ↗
