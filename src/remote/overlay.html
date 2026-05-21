@@ -114,6 +114,10 @@
         background: var(--bg);
         font-family: system-ui, sans-serif;
         color: var(--name-color);
+        /* Centrage universel : le contenu reste centré quelle que soit la résolution OBS */
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
       /* ── Layout principal ── */
@@ -122,7 +126,9 @@
         grid-template-columns: 1fr auto 1fr;
         align-items: center;
         width: 100%;
+        max-width: var(--ov-w, 1280px);
         height: 100%;
+        max-height: var(--ov-h, 160px);
         gap: 6px;
         padding: 8px 12px;
       }
@@ -140,12 +146,20 @@
         height: 100%;
         overflow: hidden;
       }
+      /* side-a : [nom/club] [score] — score côté centre (droite) */
       .fencer-row {
         display: flex;
         align-items: center;
         gap: 8px;
       }
+      /* Côté A : info à gauche, score à droite (vers le centre) */
+      .fencer-panel.side-a .fencer-row { flex-direction: row; }
+      /* Côté B : score à gauche (vers le centre), info à droite */
       .fencer-panel.side-b .fencer-row { flex-direction: row-reverse; }
+      /* Alignement texte du panneau B vers la droite */
+      .fencer-panel.side-b .fencer-info { text-align: right; }
+      /* Cartons B alignés à droite */
+      .fencer-panel.side-b .cards-row { flex-direction: row-reverse; justify-content: flex-start; }
 
       .score-box {
         flex-shrink: 0;
@@ -200,7 +214,7 @@
         gap: 4px;
         flex-wrap: wrap;
       }
-      .fencer-panel.side-b .cards-row { flex-direction: row-reverse; }
+
 
       .card-badge {
         display: inline-flex;
@@ -223,19 +237,28 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 4px;
+        gap: 3px;
         background: var(--timer-bg);
         border-radius: var(--panel-border-radius);
         border: 1px solid var(--overlay-border);
-        padding: 6px 14px;
+        padding: 4px 12px;
         height: 100%;
-        min-width: clamp(80px, 10vw, 160px);
+        min-width: clamp(70px, 8vw, 130px);
       }
+
+      /* Zone logo au-dessus du timer (vide par défaut, peut être peuplée via ?logo=url) */
+      .center-logo {
+        display: none;
+        max-height: 30%;
+        max-width: 80%;
+        object-fit: contain;
+      }
+      .center-logo.visible { display: block; }
 
       .timer-display {
         font-family: 'DSEG7Classic', monospace;
         font-weight: bold;
-        font-size: clamp(1.4rem, 3.5vw, 2.8rem);
+        font-size: clamp(1rem, 2.5vw, 1.9rem);
         color: var(--timer-color);
         text-shadow: 0 0 10px var(--timer-glow), 0 0 22px var(--timer-glow);
         letter-spacing: 0.04em;
@@ -309,8 +332,9 @@
         <div class="cards-row" id="cards-a"></div>
       </div>
 
-      <!-- Panneau central (timer + phase) -->
+      <!-- Panneau central (logo optionnel + timer + phase) -->
       <div class="center-panel">
+        <img class="center-logo" id="center-logo" alt="logo" />
         <div class="timer-display" id="timer">03:00</div>
         <div class="phase-label" id="phase-label">Piste 1</div>
         <div class="sd-badge" id="sd-badge">⚡ Mort subite</div>
@@ -355,6 +379,14 @@
         /* Masques de contenu */
         const root = document.getElementById('overlay-root');
         hidden.forEach(key => root.classList.add('hide-' + key));
+
+        /* Logo personnalisé dans le panneau central (?logo=https://...) */
+        const logoUrl = params.get('logo');
+        if (logoUrl) {
+          const logoEl = document.getElementById('center-logo');
+          logoEl.src = logoUrl;
+          logoEl.classList.add('visible');
+        }
 
         /* ── Extraction de l'arenaId depuis l'URL ou le query param ── */
         function getArenaId() {
