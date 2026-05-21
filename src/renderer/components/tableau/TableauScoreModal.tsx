@@ -15,7 +15,7 @@ interface TableauScoreModalProps {
   setEditScoreB: (v: string) => void;
   maxScore: number;
   isUnlimitedScore: boolean;
-  modalRef: React.RefObject<HTMLDivElement>;
+  modalRef: React.RefObject<HTMLDivElement | null>;
   onClose: () => void;
   onSubmit: () => void;
   onSpecialStatus: (status: 'abandon' | 'forfait' | 'exclusion') => void;
