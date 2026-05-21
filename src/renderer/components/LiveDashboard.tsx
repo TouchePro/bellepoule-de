@@ -271,7 +271,7 @@ export const LiveDashboard: React.FC<LiveDashboardProps> = ({
 };
 
 // Live Match Card Component
-const LiveMatchCard: React.FC<{ match: Match; index: number }> = ({ match, index }) => {
+const LiveMatchCard_: React.FC<{ match: Match; index: number }> = ({ match, index }) => {
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
@@ -351,7 +351,7 @@ const LiveMatchCard: React.FC<{ match: Match; index: number }> = ({ match, index
 };
 
 // Pool Results Card Component
-const PoolResultsCard: React.FC<{ pool: Pool; isLaserSabre?: boolean }> = ({
+const PoolResultsCard_: React.FC<{ pool: Pool; isLaserSabre?: boolean }> = ({
   pool,
   isLaserSabre = false,
 }) => {
@@ -531,7 +531,7 @@ const PoolResultsCard: React.FC<{ pool: Pool; isLaserSabre?: boolean }> = ({
 };
 
 // Tableau View Component
-const TableauView: React.FC<{ matches: Match[] }> = ({ matches }) => {
+const TableauView_: React.FC<{ matches: Match[] }> = ({ matches }) => {
   const rounds = [128, 64, 32, 16, 8, 4, 2, 1];
 
   return (
@@ -641,7 +641,7 @@ const TableauView: React.FC<{ matches: Match[] }> = ({ matches }) => {
 };
 
 // Final Ranking View
-const FinalRankingView: React.FC<{ results: any[] }> = ({ results }) => {
+const FinalRankingView_: React.FC<{ results: any[] }> = ({ results }) => {
   return (
     <div
       style={{
@@ -737,5 +737,10 @@ const FinalRankingView: React.FC<{ results: any[] }> = ({ results }) => {
     </div>
   );
 };
+
+const LiveMatchCard = React.memo(LiveMatchCard_);
+const PoolResultsCard = React.memo(PoolResultsCard_);
+const TableauView = React.memo(TableauView_);
+const FinalRankingView = React.memo(FinalRankingView_);
 
 export default React.memo(LiveDashboard);
