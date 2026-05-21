@@ -15,7 +15,7 @@ interface StatCardProps {
   color: 'blue' | 'green' | 'orange' | 'purple' | 'red';
 }
 
-export const ModernStatCard: React.FC<StatCardProps> = ({ title, value, icon, trend, color }) => {
+const ModernStatCard_: React.FC<StatCardProps> = ({ title, value, icon, trend, color }) => {
   const colors = {
     blue: { bg: '#eff6ff', icon: '#3b82f6', text: '#1e40af' },
     green: { bg: '#f0fdf4', icon: '#10b981', text: '#065f46' },
@@ -87,7 +87,7 @@ interface TimelineItem {
   color: string;
 }
 
-export const ActivityTimeline: React.FC<{ items: TimelineItem[] }> = ({ items }) => {
+const ActivityTimeline_: React.FC<{ items: TimelineItem[] }> = ({ items }) => {
   return (
     <div style={{ padding: '20px' }}>
       {items.map((item, index) => (
@@ -141,7 +141,7 @@ export const ActivityTimeline: React.FC<{ items: TimelineItem[] }> = ({ items })
 };
 
 // Mini Chart (Sparkline)
-export const Sparkline: React.FC<{
+const Sparkline_: React.FC<{
   data: number[];
   color?: string;
   height?: number;
@@ -173,7 +173,7 @@ export const Sparkline: React.FC<{
 };
 
 // Comparison Bar
-export const ComparisonBar: React.FC<{
+const ComparisonBar_: React.FC<{
   label: string;
   valueA: number;
   valueB: number;
@@ -244,7 +244,7 @@ export const ComparisonBar: React.FC<{
 };
 
 // Leaderboard Item
-export const LeaderboardItem: React.FC<{
+const LeaderboardItem_: React.FC<{
   rank: number;
   name: string;
   score: number;
@@ -344,7 +344,7 @@ export const LeaderboardItem: React.FC<{
 };
 
 // Empty State Illustration
-export const EmptyState: React.FC<{
+const EmptyState_: React.FC<{
   icon: string;
   title: string;
   description: string;
@@ -412,7 +412,7 @@ export const EmptyState: React.FC<{
 };
 
 // Weather/Condition Widget
-export const ConditionWidget: React.FC<{
+const ConditionWidget_: React.FC<{
   condition: 'excellent' | 'good' | 'fair' | 'poor';
   label: string;
   value: string;
@@ -464,6 +464,14 @@ export const ConditionWidget: React.FC<{
     </div>
   );
 };
+
+export const ModernStatCard = React.memo(ModernStatCard_);
+export const ActivityTimeline = React.memo(ActivityTimeline_);
+export const Sparkline = React.memo(Sparkline_);
+export const ComparisonBar = React.memo(ComparisonBar_);
+export const LeaderboardItem = React.memo(LeaderboardItem_);
+export const EmptyState = React.memo(EmptyState_);
+export const ConditionWidget = React.memo(ConditionWidget_);
 
 export default {
   ModernStatCard,

@@ -3,18 +3,18 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState, Suspense } from 'react';
 import { Competition, PhaseType } from '../shared/types';
 import type { CompetitionCreateData } from '../shared/types/preload';
 import { logger, LogCategory } from '@shared/services/logger';
 import CompetitionList from './components/CompetitionList';
 import CompetitionView from './components/CompetitionView';
-import CommandPalette from './components/CommandPalette';
-import NewCompetitionModal from './components/NewCompetitionModal';
-import ReportIssueModal from './components/ReportIssueModal';
-import UpdateNotification from './components/UpdateNotification';
-import SettingsModal from './components/SettingsModal';
-import DTCallNotification from './components/DTCallNotification';
+const CommandPalette = React.lazy(() => import('./components/CommandPalette'));
+const NewCompetitionModal = React.lazy(() => import('./components/NewCompetitionModal'));
+const ReportIssueModal = React.lazy(() => import('./components/ReportIssueModal'));
+const SettingsModal = React.lazy(() => import('./components/SettingsModal'));
+const DTCallNotification = React.lazy(() => import('./components/DTCallNotification'));
+const UpdateNotification = React.lazy(() => import('./components/UpdateNotification'));
 import { ToastProvider, useToast } from './components/Toast';
 import { ConfirmProvider, useConfirm } from './components/ConfirmDialog';
 import { TranslationProvider, useTranslation, Theme } from './contexts/TranslationContext';
@@ -280,8 +280,8 @@ const AppContent: React.FC = () => {
 
   return (
     <>
-      <UpdateNotification />
-      <DTCallNotification />
+      <Suspense fallback={null}><UpdateNotification /></Suspense>
+      <Suspense fallback={null}><DTCallNotification /></Suspense>
       <div className="app">
         <header className="header">
           <div className="header-title">
@@ -549,37 +549,45 @@ const AppContent: React.FC = () => {
         </main>
 
         {showNewCompetitionModal && (
-          <NewCompetitionModal
-            onClose={() => setShowNewCompetitionModal(false)}
-            onCreate={handleCreateCompetition}
-          />
+          <Suspense fallback={null}>
+            <NewCompetitionModal
+              onClose={() => setShowNewCompetitionModal(false)}
+              onCreate={handleCreateCompetition}
+            />
+          </Suspense>
         )}
 
         {showReportIssueModal && (
-          <ReportIssueModal onClose={() => setShowReportIssueModal(false)} />
+          <Suspense fallback={null}>
+            <ReportIssueModal onClose={() => setShowReportIssueModal(false)} />
+          </Suspense>
         )}
 
         {showSettingsModal && (
-          <SettingsModal onClose={() => setShowSettingsModal(false)} onSave={handleSettingsSave} />
+          <Suspense fallback={null}>
+            <SettingsModal onClose={() => setShowSettingsModal(false)} onSave={handleSettingsSave} />
+          </Suspense>
         )}
 
         {showCommandPalette && (
-          <CommandPalette
-            competitions={competitions}
-            onClose={() => setShowCommandPalette(false)}
-            onSelectCompetition={id => {
-              setShowCommandPalette(false);
-              handleTabSwitch(id);
-            }}
-            onNewCompetition={() => {
-              setShowCommandPalette(false);
-              setShowNewCompetitionModal(true);
-            }}
-            onOpenSettings={() => {
-              setShowCommandPalette(false);
-              setShowSettingsModal(true);
-            }}
-          />
+          <Suspense fallback={null}>
+            <CommandPalette
+              competitions={competitions}
+              onClose={() => setShowCommandPalette(false)}
+              onSelectCompetition={id => {
+                setShowCommandPalette(false);
+                handleTabSwitch(id);
+              }}
+              onNewCompetition={() => {
+                setShowCommandPalette(false);
+                setShowNewCompetitionModal(true);
+              }}
+              onOpenSettings={() => {
+                setShowCommandPalette(false);
+                setShowSettingsModal(true);
+              }}
+            />
+          </Suspense>
         )}
       </div>
     </>

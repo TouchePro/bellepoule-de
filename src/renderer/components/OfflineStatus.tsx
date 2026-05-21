@@ -14,7 +14,7 @@ interface OfflineStatusProps {
   className?: string;
 }
 
-export const OfflineStatus: React.FC<OfflineStatusProps> = ({ className = '' }) => {
+const OfflineStatus_: React.FC<OfflineStatusProps> = ({ className = '' }) => {
   const [isOnline, setIsOnline] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState({
@@ -217,3 +217,4 @@ export const OfflineStatus: React.FC<OfflineStatusProps> = ({ className = '' }) 
     </>
   );
 };
+export const OfflineStatus = React.memo(OfflineStatus_);

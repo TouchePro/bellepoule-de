@@ -13,6 +13,9 @@ import { exportTableauToPDF, printTableauHTML, MAX_MATCHES_PER_PAGE_TABLEAU } fr
 import { usePdfTemplateStore } from '../../features/pdfTemplates/hooks/usePdfTemplateStore';
 import MatchCard from './tableau/MatchCard';
 import SeedingTable from './tableau/SeedingTable';
+import TableauScoreModal from './tableau/TableauScoreModal';
+import TableauPendingSection from './tableau/TableauPendingSection';
+import TableauToolbar from './tableau/TableauToolbar';
 
 interface BracketMatch {
   id: string;
@@ -1444,161 +1447,21 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
   return (
     <div style={{ padding: '1rem' }}>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '1rem',
-        }}
-      >
-        <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>
-          Tableau de {tableauSize} - {ranking.length} qualifiés
-        </h2>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          {arenaCount > 0 && (
-            <label
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                fontSize: '0.875rem',
-                color: '#374151',
-                cursor: 'pointer',
-                padding: '0.5rem 0.75rem',
-                background: autoAssignArenas ? '#eff6ff' : '#f3f4f6',
-                border: `1px solid ${autoAssignArenas ? '#3b82f6' : '#d1d5db'}`,
-                borderRadius: '6px',
-                userSelect: 'none',
-              }}
-              title="Assigne automatiquement les matchs aux arènes disponibles en round-robin"
-            >
-              <input
-                type="checkbox"
-                checked={autoAssignArenas}
-                onChange={e => handleAutoAssignToggle(e.target.checked)}
-                style={{ cursor: 'pointer' }}
-              />
-              <span>🏟️ Assignation auto</span>
-            </label>
-          )}
-          <button
-            onClick={handleAutoFillScores}
-            style={{
-              background: '#f59e0b',
-              color: 'white',
-              border: 'none',
-              padding: '0.5rem 1rem',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: '500',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.25rem',
-            }}
-          >
-            🎲 Remplir auto
-          </button>
-          <button
-            onClick={() => setViewMode(viewMode === 'full' ? 'pending' : 'full')}
-            style={{
-              background: viewMode === 'pending' ? '#3b82f6' : '#e5e7eb',
-              color: viewMode === 'pending' ? 'white' : '#374151',
-              border: 'none',
-              padding: '0.5rem 0.75rem',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: '500',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.25rem',
-            }}
-            title={
-              viewMode === 'full'
-                ? 'Afficher les matches en attente'
-                : 'Afficher le tableau complet'
-            }
-          >
-            {viewMode === 'full' ? '📋 Matchs en attente' : '📊 Tableau complet'}
-          </button>
-          <button
-            onClick={() => setPyramidViewMode(!pyramidViewMode)}
-            style={{
-              background: pyramidViewMode ? '#8b5cf6' : '#e5e7eb',
-              color: pyramidViewMode ? 'white' : '#374151',
-              border: 'none',
-              padding: '0.5rem 0.75rem',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: '500',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.25rem',
-            }}
-            title={pyramidViewMode ? 'Vue tableau' : 'Vue pyramidale'}
-          >
-            {pyramidViewMode ? '🔲 Tableau' : '🔺 Pyramide'}
-          </button>
-          <button
-            onClick={() => { setPdfMode('print'); setShowPdfModal(true); }}
-            style={{
-              background: '#6366f1',
-              color: 'white',
-              border: 'none',
-              padding: '0.5rem 0.75rem',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: '500',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.25rem',
-            }}
-            title="Imprimer les feuilles de match"
-          >
-            🖨️ Imprimer
-          </button>
-          <button
-            onClick={() => { setPdfMode('pdf'); setShowPdfModal(true); }}
-            style={{
-              background: '#10b981',
-              color: 'white',
-              border: 'none',
-              padding: '0.5rem 0.75rem',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: '500',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.25rem',
-            }}
-            title="Exporter les feuilles de match en PDF"
-          >
-            📄 Export PDF
-          </button>
-          {champion && (
-            <div
-              style={{
-                background: '#fef3c7',
-                padding: '0.5rem 1rem',
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-              }}
-            >
-              <span style={{ fontSize: '1.5rem' }}>🏆</span>
-              <span style={{ fontWeight: '600' }}>
-                {champion.lastName} {champion.firstName}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
+      <TableauToolbar
+        tableauSize={tableauSize}
+        rankingCount={ranking.length}
+        arenaCount={arenaCount}
+        autoAssignArenas={autoAssignArenas}
+        onAutoAssignToggle={handleAutoAssignToggle}
+        onAutoFillScores={handleAutoFillScores}
+        viewMode={viewMode}
+        onViewModeToggle={() => setViewMode(viewMode === 'full' ? 'pending' : 'full')}
+        pyramidViewMode={pyramidViewMode}
+        onPyramidViewModeToggle={() => setPyramidViewMode(!pyramidViewMode)}
+        onPrintClick={() => { setPdfMode('print'); setShowPdfModal(true); }}
+        onExportPdfClick={() => { setPdfMode('pdf'); setShowPdfModal(true); }}
+        champion={champion}
+      />
 
       <div
         style={{
@@ -1633,7 +1496,16 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                   {pendingOrder === 'asc' ? '🔼 Croissant' : '🔽 Décroissant'}
                 </button>
               </div>
-              {pendingViewRounds.map(round => renderPendingSection(round))}
+              {pendingViewRounds.map(round => (
+                <TableauPendingSection
+                  key={round}
+                  round={round}
+                  matches={matches}
+                  isExpanded={expandedRounds.has(round)}
+                  onToggle={toggleRoundExpansion}
+                  renderMatch={renderMatch}
+                />
+              ))}
 
               <div
                 style={{
@@ -1788,223 +1660,27 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
       )}
 
       {/* Score Modal */}
-      {(() => {
-        if (!showScoreModal || !editingMatch) return null;
-
+      {showScoreModal && editingMatch && (() => {
         const match = editingConsolationId
           ? consolationBrackets.find(b => b.id === editingConsolationId)?.matches.find(m => m.id === editingMatch)
           : matches.find(m => m.id === editingMatch);
         if (!match) return null;
-
-        const scoreModal = (
-          <div className="modal-overlay" onClick={() => setShowScoreModal(false)}>
-            <div
-              ref={modalRef}
-              className="modal resizable"
-              style={{
-                maxWidth: '900px',
-                width: '95%',
-                minHeight: '400px',
-              }}
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="modal-header" style={{ cursor: 'move' }}>
-                <h3 className="modal-title">{getRoundName(match.round)} - Saisie rapide</h3>
-              </div>
-              <div className="modal-body" style={{ padding: '2rem' }}>
-                {/* Ligne unique avec les deux tireurs côte à côte */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '1.5rem',
-                    marginBottom: '1.5rem',
-                  }}
-                >
-                  {/* Tireur A */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'flex-end',
-                      flex: 1,
-                      minWidth: '200px',
-                    }}
-                  >
-                    <div style={{ fontSize: '1.5rem', fontWeight: 600, textAlign: 'right' }}>
-                      {match.fencerA?.lastName}
-                    </div>
-                    <div style={{ fontSize: '1rem', color: '#6b7280', textAlign: 'right' }}>
-                      {match.fencerA?.firstName} {match.fencerA?.club && `(${match.fencerA.club})`}
-                    </div>
-                  </div>
-
-                  {/* Input Score A */}
-                  <input
-                    type="number"
-                    className="form-input"
-                    style={{
-                      width: '120px',
-                      textAlign: 'center',
-                      fontSize: '3rem',
-                      padding: '0.75rem',
-                      borderColor:
-                        (parseInt(editScoreA, 10) || 0) > (isUnlimitedScore ? 999 : maxScore)
-                          ? '#ef4444'
-                          : undefined,
-                      borderWidth:
-                        (parseInt(editScoreA, 10) || 0) > (isUnlimitedScore ? 999 : maxScore)
-                          ? '2px'
-                          : undefined,
-                    }}
-                    value={editScoreA}
-                    onChange={e => setEditScoreA(e.target.value)}
-                    min="0"
-                    max={isUnlimitedScore ? undefined : maxScore}
-                    autoFocus
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleScoreSubmit();
-                      } else if (e.key === 'Tab' && !e.shiftKey) {
-                        e.preventDefault();
-                        const modalBody = e.currentTarget.closest('.modal-body');
-                        if (modalBody) {
-                          const inputs = modalBody.querySelectorAll('input[type="number"]');
-                          if (inputs.length > 1) {
-                            const nextInput = inputs[1] as HTMLInputElement;
-                            nextInput.focus();
-                            nextInput.select();
-                          }
-                        }
-                      }
-                    }}
-                  />
-
-                  {/* Séparateur */}
-                  <span style={{ fontSize: '3rem', fontWeight: 'bold', color: '#9ca3af' }}>:</span>
-
-                  {/* Input Score B */}
-                  <input
-                    type="number"
-                    className="form-input"
-                    style={{
-                      width: '120px',
-                      textAlign: 'center',
-                      fontSize: '3rem',
-                      padding: '0.75rem',
-                      borderColor:
-                        (parseInt(editScoreB, 10) || 0) > (isUnlimitedScore ? 999 : maxScore)
-                          ? '#ef4444'
-                          : undefined,
-                      borderWidth:
-                        (parseInt(editScoreB, 10) || 0) > (isUnlimitedScore ? 999 : maxScore)
-                          ? '2px'
-                          : undefined,
-                    }}
-                    value={editScoreB}
-                    onChange={e => setEditScoreB(e.target.value)}
-                    min="0"
-                    max={isUnlimitedScore ? undefined : maxScore}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleScoreSubmit();
-                      } else if (e.key === 'Tab' && e.shiftKey) {
-                        e.preventDefault();
-                        const modalBody = e.currentTarget.closest('.modal-body');
-                        if (modalBody) {
-                          const inputs = modalBody.querySelectorAll('input[type="number"]');
-                          if (inputs.length > 0) {
-                            const prevInput = inputs[0] as HTMLInputElement;
-                            prevInput.focus();
-                            prevInput.select();
-                          }
-                        }
-                      }
-                    }}
-                  />
-
-                  {/* Tireur B */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'flex-start',
-                      flex: 1,
-                      minWidth: '200px',
-                    }}
-                  >
-                    <div style={{ fontSize: '1.5rem', fontWeight: 600, textAlign: 'left' }}>
-                      {match.fencerB?.lastName}
-                    </div>
-                    <div style={{ fontSize: '1rem', color: '#6b7280', textAlign: 'left' }}>
-                      {match.fencerB?.firstName} {match.fencerB?.club && `(${match.fencerB.club})`}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Info score max */}
-                {!isUnlimitedScore && maxScore > 0 && (
-                  <p
-                    className="text-sm text-muted"
-                    style={{ textAlign: 'center', marginBottom: '1rem', fontSize: '1rem' }}
-                  >
-                    💡 Score maximum : {maxScore} touches
-                  </p>
-                )}
-
-                {/* Boutons spéciaux sur une ligne */}
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: '0.5rem',
-                    justifyContent: 'center',
-                    borderTop: '1px solid #e5e7eb',
-                    paddingTop: '1rem',
-                    marginTop: '1rem',
-                  }}
-                >
-                  <button
-                    className="btn btn-warning"
-                    onClick={() => handleSpecialStatus('abandon')}
-                    style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
-                  >
-                    🚴 Abandon
-                  </button>
-                  <button
-                    className="btn btn-warning"
-                    onClick={() => handleSpecialStatus('forfait')}
-                    style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
-                  >
-                    📋 Forfait
-                  </button>
-                  <button
-                    className="btn btn-danger"
-                    onClick={() => handleSpecialStatus('exclusion')}
-                    style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
-                  >
-                    🚫 Exclusion
-                  </button>
-                </div>
-              </div>
-              <div
-                className="modal-footer"
-                style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}
-              >
-                <button className="btn btn-secondary" onClick={() => setShowScoreModal(false)}>
-                  Annuler
-                </button>
-                <button className="btn btn-primary" onClick={handleScoreSubmit}>
-                  Valider
-                </button>
-              </div>
-            </div>
-          </div>
+        return (
+          <TableauScoreModal
+            match={match}
+            editScoreA={editScoreA}
+            setEditScoreA={setEditScoreA}
+            editScoreB={editScoreB}
+            setEditScoreB={setEditScoreB}
+            maxScore={maxScore}
+            isUnlimitedScore={isUnlimitedScore}
+            modalRef={modalRef}
+            onClose={() => setShowScoreModal(false)}
+            onSubmit={handleScoreSubmit}
+            onSpecialStatus={handleSpecialStatus}
+            getRoundName={getRoundName}
+          />
         );
-
-        return scoreModal;
       })()}
 
       {showPdfModal && (
