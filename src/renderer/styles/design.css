@@ -1121,7 +1121,7 @@ select:focus {
   position: relative;
   height: 4px;
   background: rgba(255, 255, 255, 0.15);
-  z-index: 1;
+  z-index: 0;
 }
 
 .comp-header-progress-fill {
@@ -1152,7 +1152,7 @@ select:focus {
 
 @keyframes phase-slide-in {
   from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: none; }
 }
 
 .phase-content {
