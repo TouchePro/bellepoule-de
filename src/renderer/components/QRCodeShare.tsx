@@ -3,7 +3,7 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect , memo} from 'react';
 import QRCode from 'qrcode';
 import { logger, LogCategory } from '@shared/services/logger';
 import { Competition } from '../../shared/types';
@@ -16,7 +16,7 @@ interface QRCodeShareProps {
   mode?: QRMode;
 }
 
-export const QRCodeShare: React.FC<QRCodeShareProps> = ({ competition, onClose, mode: initialMode = 'results' }) => {
+const QRCodeShare_: React.FC<QRCodeShareProps> = ({ competition, onClose, mode: initialMode = 'results' }) => {
   const [activeMode, setActiveMode] = useState<QRMode>(initialMode);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(true);
@@ -170,3 +170,5 @@ export const QRCodeShare: React.FC<QRCodeShareProps> = ({ competition, onClose, 
     </div>
   );
 };
+
+export const QRCodeShare = memo(QRCodeShare_);

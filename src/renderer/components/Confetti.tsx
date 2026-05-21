@@ -144,4 +144,4 @@ const Confetti: React.FC<ConfettiProps> = ({
   );
 };
 
-export default Confetti;
+export default React.memo(Confetti);

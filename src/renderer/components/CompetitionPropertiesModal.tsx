@@ -602,4 +602,4 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
   );
 };
 
-export default CompetitionPropertiesModal;
+export default React.memo(CompetitionPropertiesModal);

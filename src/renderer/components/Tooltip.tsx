@@ -293,4 +293,4 @@ export const HelpTooltip: React.FC<HelpTooltipProps> = ({ text }) => {
   );
 };
 
-export default Tooltip;
+export default React.memo(Tooltip);

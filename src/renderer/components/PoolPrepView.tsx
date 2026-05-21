@@ -798,4 +798,4 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
   );
 };
 
-export default PoolPrepView;
+export default React.memo(PoolPrepView);

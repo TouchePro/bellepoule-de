@@ -297,4 +297,4 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
   );
 };
 
-export default FencerPhoto;
+export default React.memo(FencerPhoto);

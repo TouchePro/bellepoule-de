@@ -9,11 +9,9 @@ import { logger, LogCategory } from '@shared/services/logger';
 import { RankingImportResult } from '../../shared/utils/fileParser';
 import FencerList from './FencerList';
 import PoolView from './PoolView';
-import Confetti from './Confetti';
 import TableauView, { TableauMatch, FinalResult, propagateWinners, ConsolationBracket } from './TableauView';
 import PoolRankingView from './PoolRankingView';
 import ResultsView from './ResultsView';
-import CoachMark from './CoachMark';
 import AddFencerModal from './AddFencerModal';
 import CompetitionPropertiesModal from './CompetitionPropertiesModal';
 import ImportModal from './ImportModal';
@@ -42,6 +40,8 @@ import { FencerPhoto } from './FencerPhoto';
 import QuestPhaseView from './QuestPhaseView';
 import { ScoreAuditLog } from './ScoreAuditLog';
 import { RefereeManagerComponent } from './RefereeManager';
+import CompetitionHeader from './competition/CompetitionHeader';
+import CompetitionNav from './competition/CompetitionNav';
 
 interface CompetitionViewProps {
   competition: Competition;
@@ -857,207 +857,45 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
   return (
     <div style={{ display: 'flex', flex: 1, flexDirection: 'column', overflow: 'hidden' }}>
-      <Confetti active={showConfetti} />
-      {/* Header — glassmorphism redesign */}
-      <div className="comp-header" style={{ '--comp-color': competition.color } as React.CSSProperties}>
-        <div className="comp-header-bg" />
-        <div className="comp-header-content">
-          {/* Infos */}
-          <div className="comp-header-info">
-            <div className="comp-header-pills">
-              <span className="comp-header-pill">{competition.weapon}</span>
-              <span className="comp-header-pill">{competition.category}</span>
-              <span className="comp-header-pill">{competition.gender}</span>
-            </div>
-            <h1 className="comp-header-title">{competition.title}</h1>
-            <p className="comp-header-meta">
-              {new Date(competition.date).toLocaleDateString(language === 'zh-HK' ? 'zh-HK' : language, {
-                weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-              })}
-              {competition.location && ` · ${competition.location}`}
-            </p>
-          </div>
-
-          {/* Stats + actions */}
-          <div className="comp-header-right">
-            {/* Stats */}
-            <div className="comp-header-stats">
-              <div className="comp-stat">
-                <span className="comp-stat-value">{fencers.length}</span>
-                <span className="comp-stat-label">{t('fencer.label')}</span>
-              </div>
-              <div className="comp-stat-sep" />
-              <div className="comp-stat">
-                <span className="comp-stat-value">{getCheckedInFencers().length}</span>
-                <span className="comp-stat-label">{t('fencer.present_label')}</span>
-              </div>
-              {matchProgress && (
-                <>
-                  <div className="comp-stat-sep" />
-                  <div className="comp-stat">
-                    <span className="comp-stat-value">{matchProgress.done}/{matchProgress.total}</span>
-                    <span className="comp-stat-label">matchs</span>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Menu actions ⋯ */}
-            <div className="comp-header-actions" ref={actionsMenuRef}>
-              <CoachMark id="actions-menu" message="Comparaison, analytiques, partage QR..." position="left">
-                <button
-                  className="comp-header-menu-btn"
-                  onClick={() => setShowActionsMenu(v => !v)}
-                  title="Actions"
-                >
-                  ⋯
-                </button>
-              </CoachMark>
-              {showActionsMenu && (
-                <div className="comp-header-dropdown">
-                  <button className="comp-header-dropdown-item" onClick={() => { setShowFencerComparison(true); setShowActionsMenu(false); }}>
-                    ⚔️ {t('competition.comparisons')}
-                  </button>
-                  <button className="comp-header-dropdown-item" onClick={() => { setShowAnalytics(true); setShowActionsMenu(false); }}>
-                    📊 {t('competition.analytics')}
-                  </button>
-                  <button className="comp-header-dropdown-item" onClick={() => { setShowQRCode(true); setShowActionsMenu(false); }}>
-                    📱 Partager
-                  </button>
-                  {currentPhase === 'pools' && pools.length > 0 && (
-                    <>
-                      <button className="comp-header-dropdown-item" onClick={() => { setShowPresentation(true); setShowActionsMenu(false); }}>
-                        🖥️ Mode Présentation
-                      </button>
-                      <button className="comp-header-dropdown-item" onClick={() => { setShowKiosk(true); setShowActionsMenu(false); }}>
-                        📱 Mode Kiosk
-                      </button>
-                    </>
-                  )}
-                  {(pools.length > 0 || tableauMatches.length > 0) && (
-                    <button className="comp-header-dropdown-item" onClick={() => { setShowKioskDisplay(true); setShowActionsMenu(false); }}>
-                      🖥️ Kiosk Public
-                    </button>
-                  )}
-                  <div className="comp-header-dropdown-sep" />
-                  <button className="comp-header-dropdown-item" onClick={() => { setShowPropertiesModal(true); setShowActionsMenu(false); }}>
-                    ⚙️ Propriétés
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Barre de progression matchs */}
-        {matchProgress && matchProgress.total > 0 && (
-          <div className="comp-header-progress">
-            <div
-              className="comp-header-progress-fill"
-              style={{ width: `${(matchProgress.done / matchProgress.total) * 100}%` }}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Breadcrumb */}
-      <div style={{ padding: '0.25rem 1rem', fontSize: '0.75rem', color: 'var(--text-muted, #6b7280)', borderBottom: '1px solid var(--border-color, rgba(255,255,255,0.1))', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <span style={{ fontWeight: 500, opacity: 0.7 }}>{competition.title}</span>
-        <span>›</span>
-        <span style={{ fontWeight: 600, color: 'var(--text-primary, #f3f4f6)' }}>
-          {phases.find(p => p.id === currentPhase)?.label ?? currentPhase}
-        </span>
-      </div>
-
-      {/* Navigation */}
-      <div className="phase-nav">
-        {phases.map((phase, index) => (
-          <React.Fragment key={phase.id}>
-            <div
-              className={`phase-step ${currentPhase === phase.id ? 'phase-step-active' : ''} ${phase.disabled ? 'phase-step-disabled' : ''}`}
-              onClick={() => !phase.disabled && setCurrentPhase(phase.id as Phase)}
-              title={phase.title ?? (phase.disabled ? 'Section non disponible' : undefined)}
-            >
-              <span className="phase-step-number">{phase.icon}</span>
-              <span>{phase.label}</span>
-            </div>
-            {index < phases.length - 1 && (
-              <div style={{ display: 'flex', alignItems: 'center', color: '#9CA3AF' }}>→</div>
-            )}
-          </React.Fragment>
-        ))}
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          {currentPhase !== 'checkin' && (
-            <button className="btn btn-secondary" onClick={handleGoBack}>
-              ← Retour
-            </button>
-          )}
-          {currentPhase === 'checkin' && questEnabled && !questConfig?.hasPreliminaryPools && (
-            <button
-              className="btn btn-primary"
-              onClick={() => setCurrentPhase('quest')}
-              disabled={getCheckedInFencers().length < 2}
-            >
-              Tour Quest →
-            </button>
-          )}
-          {currentPhase === 'checkin' && (!questEnabled || questConfig?.hasPreliminaryPools) && (
-            <CoachMark id="generate-pools" message="Cliquez ici après avoir pointé tous vos tireurs" position="bottom">
-              <button
-                className="btn btn-primary"
-                onClick={handleGeneratePools}
-                disabled={getCheckedInFencers().length < 4}
-              >
-                Générer les poules →
-              </button>
-            </CoachMark>
-          )}
-          {currentPhase === 'pools' && poolsNextAction && (
-            <button className="btn btn-primary" onClick={poolsNextAction.action}>
-              {poolsNextAction.label}
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Stats bar */}
-      {(pools.length > 0 || tableauMatches.length > 0 || fencers.length > 0) && (
-        <div className="comp-stats-bar">
-          <div className="comp-stats-bar-item">
-            <span className="comp-stats-bar-icon">🤺</span>
-            <span>{getCheckedInFencers().length}/{fencers.length} tireurs</span>
-          </div>
-          {pools.length > 0 && (
-            <>
-              <div className="comp-stats-bar-sep" />
-              <div className="comp-stats-bar-item">
-                <span className="comp-stats-bar-icon">🎯</span>
-                <span>{pools.filter(p => p.isComplete).length}/{pools.length} poules</span>
-              </div>
-              <div className="comp-stats-bar-sep" />
-              <div className="comp-stats-bar-item">
-                <span className="comp-stats-bar-icon">⚡</span>
-                <span>
-                  {pools.reduce((s, p) => s + p.matches.filter(m => m.status === MatchStatus.FINISHED).length, 0)}/
-                  {pools.reduce((s, p) => s + p.matches.length, 0)} matchs
-                </span>
-              </div>
-            </>
-          )}
-          {tableauMatches.length > 0 && (
-            <>
-              <div className="comp-stats-bar-sep" />
-              <div className="comp-stats-bar-item">
-                <span className="comp-stats-bar-icon">🏆</span>
-                <span>
-                  {tableauMatches.filter(m => m.winner !== null).length}/
-                  {tableauMatches.filter(m => m.fencerA && m.fencerB).length} tableau
-                </span>
-              </div>
-            </>
-          )}
-        </div>
-      )}
+      <CompetitionHeader
+        competition={competition}
+        language={language}
+        t={t}
+        matchProgress={matchProgress}
+        showConfetti={showConfetti}
+        showActionsMenu={showActionsMenu}
+        setShowActionsMenu={setShowActionsMenu}
+        actionsMenuRef={actionsMenuRef}
+        currentPhase={currentPhase}
+        pools={pools}
+        tableauMatches={tableauMatches}
+        fencersCount={fencers.length}
+        checkedInCount={getCheckedInFencers().length}
+        setShowFencerComparison={setShowFencerComparison}
+        setShowAnalytics={setShowAnalytics}
+        setShowQRCode={setShowQRCode}
+        setShowPresentation={setShowPresentation}
+        setShowKiosk={setShowKiosk}
+        setShowKioskDisplay={setShowKioskDisplay}
+        setShowPropertiesModal={setShowPropertiesModal}
+      />
+      <CompetitionNav
+        competition={competition}
+        phases={phases}
+        currentPhase={currentPhase}
+        setCurrentPhase={setCurrentPhase}
+        language={language}
+        t={t}
+        handleGoBack={handleGoBack}
+        handleGeneratePools={handleGeneratePools}
+        poolsNextAction={poolsNextAction}
+        questEnabled={questEnabled}
+        questConfig={questConfig}
+        fencers={fencers}
+        getCheckedInFencers={getCheckedInFencers}
+        pools={pools}
+        tableauMatches={tableauMatches}
+      />
 
       {/* Content — keyed pour animation de transition */}
       <div key={currentPhase} className="phase-content" style={{ flex: 1, overflow: 'auto' }}>

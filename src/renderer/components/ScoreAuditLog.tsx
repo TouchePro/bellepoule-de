@@ -3,7 +3,7 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback , memo} from 'react';
 import { ScoreAuditEntry, ScoreIpConflict } from '../../shared/types/preload';
 import { useToast } from './Toast';
 
@@ -20,7 +20,7 @@ function formatScore(score: any): string {
   return String(v);
 }
 
-export const ScoreAuditLog: React.FC<Props> = ({ competitionId }) => {
+const ScoreAuditLog_: React.FC<Props> = ({ competitionId }) => {
   const { showToast } = useToast();
   const [entries, setEntries] = useState<ScoreAuditEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -196,3 +196,5 @@ const td: React.CSSProperties = {
   padding: '0.4rem 0.75rem',
   whiteSpace: 'nowrap',
 };
+
+export const ScoreAuditLog = memo(ScoreAuditLog_);

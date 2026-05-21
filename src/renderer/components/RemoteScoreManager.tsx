@@ -1224,4 +1224,4 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   );
 };
 
-export default RemoteScoreManager;
+export default React.memo(RemoteScoreManager);

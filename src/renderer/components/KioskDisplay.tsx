@@ -1244,4 +1244,4 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
   );
 };
 
-export default KioskDisplay;
+export default React.memo(KioskDisplay);

@@ -14,7 +14,7 @@ interface AddFencerModalProps {
   onAdd: (fencer: Partial<Fencer>) => void;
 }
 
-const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
+const AddFencerModalComponent: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
   const { showToast } = useToast();
   const { t } = useTranslation();
   const [lastName, setLastName] = useState('');
@@ -189,4 +189,5 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
   );
 };
 
+const AddFencerModal = React.memo(AddFencerModalComponent);
 export default AddFencerModal;

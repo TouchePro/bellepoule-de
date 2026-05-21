@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo , memo} from 'react';
 import { Competition, Fencer, Pool, Match, MatchStatus } from '../../shared/types';
 import { FencerStatsTable } from '../../features/analytics/components/FencerStatsTable';
 
@@ -262,7 +262,7 @@ function getFormColor(form: string): string {
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
-export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
+const AnalyticsDashboard_: React.FC<AnalyticsDashboardProps> = ({
   competition,
   pools,
   matches,
@@ -459,3 +459,5 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     </div>
   );
 };
+
+export const AnalyticsDashboard = memo(AnalyticsDashboard_);

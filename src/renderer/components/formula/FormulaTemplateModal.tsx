@@ -2,7 +2,7 @@
  * BellePoule Modern - Modal Save/Load de formules nommées
  */
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState , memo} from 'react';
 import { CustomFormulaConfig } from '../../../shared/types';
 import {
   deleteCustomFormulaTemplate,
@@ -19,7 +19,7 @@ interface Props {
   onClose: () => void;
 }
 
-export const FormulaTemplateModal: React.FC<Props> = ({
+const FormulaTemplateModal_: React.FC<Props> = ({
   mode,
   currentFormula,
   onLoad,
@@ -184,3 +184,5 @@ export const FormulaTemplateModal: React.FC<Props> = ({
     </div>
   );
 };
+
+export const FormulaTemplateModal = memo(FormulaTemplateModal_);

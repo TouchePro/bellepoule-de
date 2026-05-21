@@ -394,4 +394,4 @@ const ImportModal: React.FC<ImportModalProps> = ({
   );
 };
 
-export default ImportModal;
+export default React.memo(ImportModal);

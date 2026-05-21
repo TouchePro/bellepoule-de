@@ -85,4 +85,4 @@ const PdfTemplateModal: React.FC<Props> = ({ onClose }) => {
   );
 };
 
-export default PdfTemplateModal;
+export default React.memo(PdfTemplateModal);

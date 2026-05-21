@@ -392,4 +392,4 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
   );
 };
 
-export default SettingsModal;
+export default React.memo(SettingsModal);

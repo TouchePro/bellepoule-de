@@ -348,4 +348,4 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
   );
 };
 
-export default PoolScoreMatrix;
+export default React.memo(PoolScoreMatrix);
