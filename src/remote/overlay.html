@@ -152,14 +152,19 @@
         align-items: center;
         gap: 8px;
       }
-      /* Côté A : info à gauche, score à droite (vers le centre) */
+      /* Score côté CENTRE (défaut) : A → [nom][score▶] · B → [◀score][nom] */
       .fencer-panel.side-a .fencer-row { flex-direction: row; }
-      /* Côté B : score à gauche (vers le centre), info à droite */
       .fencer-panel.side-b .fencer-row { flex-direction: row-reverse; }
-      /* Alignement texte du panneau B vers la droite */
       .fencer-panel.side-b .fencer-info { text-align: right; }
-      /* Cartons B alignés à droite */
-      .fencer-panel.side-b .cards-row { flex-direction: row-reverse; justify-content: flex-start; }
+      .fencer-panel.side-b .cards-row  { flex-direction: row-reverse; justify-content: flex-start; }
+
+      /* Score côté EXTÉRIEUR (?scores=outer) : A → [◀score][nom] · B → [nom][score▶] */
+      .scores-outer .fencer-panel.side-a .fencer-row { flex-direction: row-reverse; }
+      .scores-outer .fencer-panel.side-a .fencer-info { text-align: right; }
+      .scores-outer .fencer-panel.side-a .cards-row   { flex-direction: row-reverse; justify-content: flex-start; }
+      .scores-outer .fencer-panel.side-b .fencer-row  { flex-direction: row; }
+      .scores-outer .fencer-panel.side-b .fencer-info { text-align: left; }
+      .scores-outer .fencer-panel.side-b .cards-row   { flex-direction: row; }
 
       .score-box {
         flex-shrink: 0;
@@ -272,12 +277,14 @@
       @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
 
       .phase-label {
-        font-size: clamp(0.55rem, 0.9vw, 0.75rem);
-        color: var(--phase-color);
+        font-size: clamp(0.6rem, 1vw, 0.8rem);
+        color: rgba(255,255,255,0.85);
         text-transform: uppercase;
         letter-spacing: 0.08em;
         white-space: nowrap;
+        font-weight: 600;
       }
+      [data-theme="light"] .phase-label { color: rgba(0,0,0,0.65); }
 
       .sd-badge {
         display: none;
@@ -379,6 +386,9 @@
         /* Masques de contenu */
         const root = document.getElementById('overlay-root');
         hidden.forEach(key => root.classList.add('hide-' + key));
+
+        /* Position du score : outer = score côté extérieur */
+        if (params.get('scores') === 'outer') root.classList.add('scores-outer');
 
         /* Logo personnalisé dans le panneau central (?logo=https://...) */
         const logoUrl = params.get('logo');
