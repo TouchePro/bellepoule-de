@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   Pool,
   Fencer,
@@ -71,6 +71,13 @@ export const usePoolManagement = ({
       return computeOverallRanking(allPools);
     },
     [poolHistory, computeOverallRanking]
+  );
+
+  // Classement global courant mémoïsé — recalculé seulement quand pools ou poolHistory change
+  const currentOverallRanking = useMemo(
+    () => computeOverallRankingAllRounds(pools),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [pools, poolHistory, isLaserSabre]
   );
 
   // Générer les poules
@@ -687,6 +694,7 @@ export const usePoolManagement = ({
     computePoolRanking,
     computeOverallRanking,
     computeOverallRankingAllRounds,
+    currentOverallRanking,
     handleFencerForfeit,
     handleUndoAbandon,
     syncFencersToPool,

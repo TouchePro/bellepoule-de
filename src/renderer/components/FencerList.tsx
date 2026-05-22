@@ -3,7 +3,8 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useVirtualList } from '../../shared/services/performanceService';
 import QRCode from 'qrcode';
 import { Fencer, FencerStatus } from '../../shared/types';
 import EditFencerModal from './EditFencerModal';
@@ -120,6 +121,18 @@ const FencerListComponent: React.FC<FencerListProps> = ({
           return 0;
       }
     }), [fencers, searchTerm, sortBy]);
+
+  const VIRTUAL_THRESHOLD = 50;
+  const ROW_HEIGHT = 52;
+  const CONTAINER_HEIGHT = 520;
+
+  const virtual = useVirtualList(filteredFencers, {
+    itemHeight: ROW_HEIGHT,
+    overscan: 5,
+    containerHeight: CONTAINER_HEIGHT,
+  });
+
+  const useVirtual = filteredFencers.length > VIRTUAL_THRESHOLD;
 
   const checkedInCount = useMemo(
     () => fencers.filter(f => f.status === FencerStatus.CHECKED_IN).length,
@@ -560,7 +573,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
         </div>
       ) : (
         <div className="card">
-          <table className="table">
+          <table className="table" style={useVirtual ? { tableLayout: 'fixed' } : undefined}>
             <thead>
               <tr>
                 <th style={{ width: '50px' }}>N°</th>
@@ -573,8 +586,18 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                 <th style={{ width: '250px' }}>Actions</th>
               </tr>
             </thead>
+          </table>
+          <div
+            ref={useVirtual ? virtual.containerRef : undefined}
+            onScroll={useVirtual ? virtual.onScroll : undefined}
+            style={useVirtual ? { height: CONTAINER_HEIGHT, overflowY: 'auto' } : undefined}
+          >
+            <table className="table" style={useVirtual ? { tableLayout: 'fixed' } : undefined}>
             <tbody>
-              {filteredFencers.map(fencer => (
+              {useVirtual && virtual.state.offsetY > 0 && (
+                <tr style={{ height: virtual.state.offsetY }}><td colSpan={8} /></tr>
+              )}
+              {(useVirtual ? virtual.visibleItems : filteredFencers).map(fencer => (
                 <tr key={fencer.id}>
                   <td className="text-muted">{fencer.ref}</td>
                   <td className="font-medium">{fencer.lastName}</td>
@@ -683,8 +706,13 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                   </td>
                 </tr>
               ))}
+              {useVirtual && (() => {
+                const bottomHeight = virtual.state.totalHeight - virtual.state.offsetY - (virtual.visibleItems.length * ROW_HEIGHT);
+                return bottomHeight > 0 ? <tr style={{ height: bottomHeight }}><td colSpan={8} /></tr> : null;
+              })()}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
