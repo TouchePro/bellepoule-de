@@ -70,7 +70,7 @@
         --sd-color: #ff6b35;
         --phase-color: rgba(255,255,255,0.55);
         --name-shadow: 0 2px 6px rgba(0,0,0,0.8);
-        --panel-bg: rgba(0,0,0,0.55);
+        --panel-bg: rgba(0,0,0,0.60);
         --panel-border-radius: 12px;
       }
       [data-theme="dark"] {
@@ -225,11 +225,11 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: clamp(14px, 1.5vw, 20px);
-        height: clamp(18px, 2vw, 26px);
+        width: clamp(10px, min(1.5vw, 3vh), 18px);
+        height: clamp(13px, min(2vw, 4vh), 22px);
         border-radius: 3px;
         font-weight: 700;
-        font-size: clamp(0.5rem, 0.8vw, 0.7rem);
+        font-size: clamp(0.4rem, min(0.8vw, 1.5vh), 0.65rem);
         line-height: 1;
       }
       .card-badge.white  { background: var(--card-white-bg);  color: var(--card-white-fg);  }
@@ -420,6 +420,10 @@
         let matchStatus   = 'idle';
         let phaseLabel    = 'Piste ' + arenaNumber;
 
+        const holdResultSec = parseInt(params.get('holdresult') || '5', 10);
+        let pendingMatchData = null;
+        let pendingMatchTimer = null;
+
         /* ── DOM ── */
         const elScoreA  = document.getElementById('score-a');
         const elScoreB  = document.getElementById('score-b');
@@ -462,7 +466,7 @@
           elIdle.classList.toggle('hidden', active);
         }
 
-        function applyUpdate(data) {
+        function applyMatchData(data) {
           if (data.status)          { matchStatus = data.status; renderVisibility(); }
           if (data.match) {
             const fA = data.match.fencerA || {};
@@ -489,6 +493,21 @@
             isSuddenDeath = !!(data.suddenDeath || data.overtimeType);
             elSDBadge.classList.toggle('visible', isSuddenDeath);
           }
+        }
+
+        function applyUpdate(data) {
+          /* Gel du résultat : si on reçoit un nouveau match alors que le précédent vient de se
+             terminer, on attend holdResultSec avant d'afficher les nouvelles infos. */
+          const isNewMatch = data.match && matchStatus === 'finished';
+          if (isNewMatch && holdResultSec > 0) {
+            clearTimeout(pendingMatchTimer);
+            pendingMatchData = data;
+            pendingMatchTimer = setTimeout(() => {
+              if (pendingMatchData) { applyMatchData(pendingMatchData); pendingMatchData = null; }
+            }, holdResultSec * 1000);
+            return;
+          }
+          applyMatchData(data);
         }
 
         /* ── Initialisation depuis l'API REST ── */

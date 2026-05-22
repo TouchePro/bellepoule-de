@@ -187,8 +187,7 @@
         linear-gradient(-45deg, transparent 75%, #555 75%);
       background-size: 16px 16px;
       background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
-      width: 100%;
-      max-width: 900px;
+      /* La taille est gérée en JS via style.width/height — pas de max-width CSS */
     }
     .checkerboard.opaque-bg {
       background-image: none;
@@ -323,10 +322,10 @@
       <div class="section-body">
         <div class="chips">
           <label class="chip active" id="chip-scores-inner" onclick="setScorePos('inner')">
-            <span>◀ Score ▶ côté centre</span>
+            <span>[Nom·Score] ⬛ [Score·Nom] — côté extérieur</span>
           </label>
           <label class="chip" id="chip-scores-outer" onclick="setScorePos('outer')">
-            <span>◀ Score ▶ côté extérieur</span>
+            <span>[Score·Nom] ⬛ [Nom·Score] — côté centre</span>
           </label>
         </div>
       </div>
@@ -481,8 +480,8 @@
     const url    = buildUrl();
     document.getElementById('generated-url').textContent = url;
 
-    const wrapper  = document.querySelector('.preview-wrapper');
-    const maxW     = wrapper.clientWidth - 4;
+    const area     = document.querySelector('.preview-area');
+    const maxW     = (area ? area.clientWidth : wrapper.clientWidth) - 48;
     const scale    = Math.min(1, maxW / state.width);
     const iframe   = document.getElementById('preview');
     const checker  = document.getElementById('checker');
