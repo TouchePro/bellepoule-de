@@ -3908,4 +3908,33 @@ export class RemoteScoreServer {
       `[RemoteScoreServer] Mot de passe ${password ? 'défini' : 'supprimé'} pour ${fullId}`
     );
   }
+
+  public assignRefereeToMatch(matchId: string, refereeId: string): void {
+    if (!this.session) return;
+
+    // Mettre à jour sessionMatches
+    const idx = this.sessionMatches.findIndex((m: any) => m.id === matchId);
+    if (idx >= 0) {
+      this.sessionMatches[idx] = { ...this.sessionMatches[idx], refereeId };
+    }
+
+    const resolvedRef = this.resolveReferee(refereeId);
+
+    // Mettre à jour les arènes ayant ce match en cours
+    for (const [aId, arena] of this.arenas) {
+      if (arena.currentMatch?.id === matchId) {
+        arena.currentMatch = {
+          ...arena.currentMatch,
+          ...(resolvedRef ? { referee: resolvedRef } : {}),
+        };
+        this.broadcastArenaUpdate(aId, {
+          arenaId: aId,
+          match: arena.currentMatch,
+          scoreA: arena.currentMatch.scoreA,
+          scoreB: arena.currentMatch.scoreB,
+          status: arena.status,
+        });
+      }
+    }
+  }
 }
