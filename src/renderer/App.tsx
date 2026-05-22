@@ -227,6 +227,9 @@ const AppContent: React.FC = () => {
       }
     }
 
+    localStorage.removeItem(`bellepoule-remote-launched-${competitionId}`);
+    localStorage.removeItem(`bellepoule-remote-port-${competitionId}`);
+
     const newOpenCompetitions = openCompetitions.filter(
       open => open.competition.id !== competitionId
     );
@@ -249,6 +252,8 @@ const AppContent: React.FC = () => {
     try {
       if (window.electronAPI) {
         await window.electronAPI.db.deleteCompetition(id);
+        localStorage.removeItem(`bellepoule-remote-launched-${id}`);
+        localStorage.removeItem(`bellepoule-remote-port-${id}`);
         setCompetitions(prev => prev.filter(c => c.id !== id));
 
         // Supprimer l'onglet ouvert pour cette compétition (évite le tab fantôme)
