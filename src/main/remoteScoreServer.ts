@@ -65,6 +65,9 @@ export class RemoteScoreServer {
     suivants: true,
   };
 
+  // Inscription distante : actif pendant la phase CHECKIN, désactivé après génération des poules
+  private registrationEnabled: boolean = true;
+
   // Stocker le contenu des fichiers HTML en mémoire pour éviter les problèmes de chemin
   private htmlFiles: Map<string, string> = new Map();
 
@@ -144,6 +147,7 @@ export class RemoteScoreServer {
       'public.html',
       'overlay.html',
       'overlay-config.html',
+      'register.html',
     ];
 
     // Essayer plusieurs chemins pour trouver les fichiers
@@ -714,6 +718,84 @@ export class RemoteScoreServer {
     // Page de connexion pour les pages protégées par mot de passe
     this.app.get('/login', (_req, res) => {
       this.sendHtmlFromMemory('login.html', res);
+    });
+
+    // ── Auto-inscription tireur (phase CHECKIN) ────────────────────────────
+    this.app.get('/register', (_req, res) => {
+      this.sendHtmlFromMemory('register.html', res);
+    });
+
+    this.app.get('/inscription', (_req, res) => {
+      this.sendHtmlFromMemory('register.html', res);
+    });
+
+    this.app.get('/api/register/status', (_req, res) => {
+      res.json({ open: this.registrationEnabled });
+    });
+
+    this.app.post('/api/register', (req, res) => {
+      if (!this.registrationEnabled) {
+        return res.status(403).json({ registrationClosed: true, error: 'Inscription fermée' });
+      }
+
+      const ip =
+        (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+        req.socket.remoteAddress ||
+        'unknown';
+
+      // Rate limit : 5 inscriptions par IP par minute
+      if (!this.checkRegistrationRateLimit(ip)) {
+        return res.status(429).json({ error: 'Trop de demandes. Réessayez dans 1 minute.' });
+      }
+
+      const { lastName, firstName, gender, club, license, nationality, birthDate, photo } =
+        req.body as Record<string, string | null | undefined>;
+
+      if (!lastName || typeof lastName !== 'string' || lastName.trim() === '') {
+        return res.status(400).json({ error: 'Nom obligatoire' });
+      }
+      if (!firstName || typeof firstName !== 'string' || firstName.trim() === '') {
+        return res.status(400).json({ error: 'Prénom obligatoire' });
+      }
+      if (!gender || !['M', 'F', 'X'].includes(gender)) {
+        return res.status(400).json({ error: 'Genre invalide' });
+      }
+
+      const competitionId = this.session?.competitionId;
+      if (!competitionId) {
+        return res.status(503).json({ error: 'Aucune compétition active' });
+      }
+
+      // Valider la taille de la photo (base64, max ~500 KB → ~667 KB en base64)
+      if (photo && typeof photo === 'string' && photo.length > 700_000) {
+        return res.status(400).json({ error: 'Photo trop volumineuse (max 500 KB)' });
+      }
+
+      try {
+        const strip = (s: string | null | undefined, max = 100) =>
+          s ? s.replace(/<[^>]*>/g, '').trim().substring(0, max) : undefined;
+
+        const fencerData = {
+          lastName: strip(lastName, 100)!.toUpperCase(),
+          firstName: strip(firstName, 100)!,
+          gender,
+          club: strip(club) || undefined,
+          license: strip(license, 50) || undefined,
+          nationality: strip(nationality, 3) || 'FRA',
+          birthDate: birthDate ? new Date(birthDate) : undefined,
+          photo: photo && typeof photo === 'string' && photo.startsWith('data:image/')
+            ? photo
+            : undefined,
+          status: 'N', // NOT_CHECKED_IN
+        };
+
+        const newFencer = this.db.addFencer(competitionId, fencerData as any);
+        console.log(`[RemoteScoreServer] Inscription tireur: ${fencerData.lastName} ${fencerData.firstName} (id=${newFencer.id})`);
+        res.json({ success: true, fencerRef: newFencer.ref, fencerId: newFencer.id });
+      } catch (err) {
+        console.error('[RemoteScoreServer] Erreur inscription tireur:', err);
+        res.status(500).json({ error: 'Erreur lors de l\'inscription' });
+      }
     });
 
     // API: authentification par mot de passe pour une arène
@@ -3139,6 +3221,25 @@ export class RemoteScoreServer {
     } catch (err) {
       console.error(`[RemoteScoreServer] Erreur persistance arène ${arenaId}:`, err);
     }
+  }
+
+  public setRegistrationEnabled(enabled: boolean): void {
+    this.registrationEnabled = enabled;
+    console.log(`[RemoteScoreServer] Inscription distante ${enabled ? 'activée' : 'désactivée'}`);
+  }
+
+  private registrationRateLimiter: Map<string, { count: number; resetAt: number }> = new Map();
+
+  private checkRegistrationRateLimit(ip: string): boolean {
+    const now = Date.now();
+    const entry = this.registrationRateLimiter.get(ip);
+    if (!entry || now > entry.resetAt) {
+      this.registrationRateLimiter.set(ip, { count: 1, resetAt: now + 60_000 });
+      return true;
+    }
+    if (entry.count >= 5) return false;
+    entry.count++;
+    return true;
   }
 
   private checkScoreRateLimit(ip: string): boolean {

@@ -112,6 +112,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     content: string;
   } | null>(null);
   const [isRemoteActive, setIsRemoteActive] = useState(false);
+  const [remoteServerUrl, setRemoteServerUrl] = useState<string | null>(null);
   const [remoteArenaCount, setRemoteArenaCount] = useState<number>(1);
   const [showThirdPlaceDialog, setShowThirdPlaceDialog] = useState(false);
   const [tableauMatches, setTableauMatches] = useState<TableauMatch[]>([]);
@@ -294,9 +295,22 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     window.electronAPI.remote.getServerInfo(competition.id).then((res: any) => {
       if (res?.success && res.serverInfo) {
         setIsRemoteActive(true);
+        setRemoteServerUrl(res.serverInfo.url);
       }
     });
   }, [competition.id]);
+
+  // Mettre à jour l'URL du serveur distant quand il devient actif
+  useEffect(() => {
+    if (!isRemoteActive || !window.electronAPI?.remote) return;
+    // Petit délai pour laisser le serveur démarrer si besoin
+    const timer = setTimeout(() => {
+      window.electronAPI.remote.getServerInfo(competition.id).then((res: any) => {
+        if (res?.success && res.serverInfo) setRemoteServerUrl(res.serverInfo.url);
+      });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [isRemoteActive, competition.id]);
 
   // Écouter les mises à jour des matches distants
   // Note: pas de garde sur currentPhase car la phase 'remote' affiche le panel de saisie distante
@@ -479,6 +493,10 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     const newPools = generatePoolsHook(checkedIn);
     if (newPools) {
       await persistPoolsToDB(newPools);
+      // Fermer l'inscription distante dès que les poules sont générées
+      if (isRemoteActive && window.electronAPI?.remote?.setRegistrationEnabled) {
+        window.electronAPI.remote.setRegistrationEnabled(competition.id, false).catch(() => {});
+      }
       setCurrentPhase('poolprep');
     }
   };
@@ -697,6 +715,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       setCurrentPhase('checkin');
     }
   }, [phaseOrder]);
+
+  // Synchroniser l'état d'inscription distante avec la phase courante
+  useEffect(() => {
+    if (!isRemoteActive || !window.electronAPI?.remote?.setRegistrationEnabled) return;
+    const enabled = currentPhase === 'checkin';
+    window.electronAPI.remote.setRegistrationEnabled(competition.id, enabled).catch(() => {});
+  }, [currentPhase, isRemoteActive, competition.id]);
 
   const handleGoBack = () => {
     if (skipPoolPhase && currentPhase === 'ranking') {
@@ -943,6 +968,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             competitionId={competition.id}
             onCheckIn={handleCheckInFencer}
             onAddFencer={() => setShowAddFencerModal(true)}
+            registerUrl={isRemoteActive && remoteServerUrl ? `${remoteServerUrl}/register` : undefined}
+            onFencersChanged={loadFencers}
             onEditFencer={updateFencer}
             onDeleteFencer={deleteFencer}
             onDeleteAllFencers={deleteAllFencers}

@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import QRCode from 'qrcode';
 import { Fencer, FencerStatus } from '../../shared/types';
 import EditFencerModal from './EditFencerModal';
 import { useTranslation } from '../hooks/useTranslation';
@@ -23,6 +24,10 @@ interface FencerListProps {
   onSetFencerStatus?: (id: string, status: FencerStatus) => void;
   onImport?: (type: 'xml' | 'fff' | 'ranking') => void;
   onFencersImported?: () => void;
+  /** URL de la page d'inscription distante (ex: http://192.168.x.x:8066/register) */
+  registerUrl?: string;
+  /** Callback pour recharger la liste après inscription distante */
+  onFencersChanged?: () => void;
 }
 
 const FencerListComponent: React.FC<FencerListProps> = ({
@@ -38,6 +43,8 @@ const FencerListComponent: React.FC<FencerListProps> = ({
   onSetFencerStatus,
   onImport,
   onFencersImported,
+  registerUrl,
+  onFencersChanged,
 }) => {
   const { t } = useTranslation();
   const { confirm } = useConfirm();
@@ -60,6 +67,8 @@ const FencerListComponent: React.FC<FencerListProps> = ({
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const [importMenuOpen, setImportMenuOpen] = useState(false);
   const importMenuRef = useRef<HTMLDivElement>(null);
+  const [showRegisterQR, setShowRegisterQR] = useState(false);
+  const [registerQRDataUrl, setRegisterQRDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -73,6 +82,21 @@ const FencerListComponent: React.FC<FencerListProps> = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Générer le QR code quand l'URL d'inscription change
+  useEffect(() => {
+    if (!registerUrl) { setRegisterQRDataUrl(null); return; }
+    QRCode.toDataURL(registerUrl, { width: 220, margin: 1 })
+      .then(setRegisterQRDataUrl)
+      .catch(() => setRegisterQRDataUrl(null));
+  }, [registerUrl]);
+
+  // Recharger la liste toutes les 5 s si le modal QR est ouvert (inscription en cours)
+  useEffect(() => {
+    if (!showRegisterQR || !onFencersChanged) return;
+    const id = setInterval(onFencersChanged, 5000);
+    return () => clearInterval(id);
+  }, [showRegisterQR, onFencersChanged]);
   const filteredFencers = useMemo(() => fencers
     .filter(f => {
       const search = searchTerm.toLowerCase();
@@ -421,11 +445,62 @@ const FencerListComponent: React.FC<FencerListProps> = ({
               </div>
             )}
           </div>
+          {registerUrl && (
+            <button
+              className="btn btn-secondary"
+              title={`Inscription tablette : ${registerUrl}`}
+              onClick={() => setShowRegisterQR(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+            >
+              <span>📱</span> QR Inscription
+            </button>
+          )}
           <button className="btn btn-primary" onClick={onAddFencer}>
             + {t('fencer.add')}
           </button>
         </div>
       </div>
+
+      {/* Modal QR code inscription distante */}
+      {showRegisterQR && registerUrl && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+          }}
+          onClick={() => setShowRegisterQR(false)}
+        >
+          <div
+            style={{
+              background: 'var(--surface, #1e293b)', borderRadius: 16, padding: '2rem',
+              textAlign: 'center', maxWidth: 300, width: '90%',
+              border: '1px solid var(--border-color, #334155)',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 style={{ marginBottom: '0.75rem', fontSize: '1.1rem', fontWeight: 700 }}>
+              📱 Inscription tireur
+            </h3>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted, #94a3b8)', marginBottom: '1rem' }}>
+              Scannez ce QR code avec la tablette pour accéder au formulaire d&apos;inscription
+            </p>
+            {registerQRDataUrl
+              ? <img src={registerQRDataUrl} alt="QR code inscription" width={220} height={220} style={{ borderRadius: 8 }} />
+              : <div style={{ width: 220, height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>Génération…</div>
+            }
+            <code style={{ display: 'block', marginTop: '0.75rem', fontSize: '0.7rem', wordBreak: 'break-all', color: 'var(--text-muted, #94a3b8)' }}>
+              {registerUrl}
+            </code>
+            <button
+              className="btn btn-secondary"
+              style={{ marginTop: '1rem', width: '100%' }}
+              onClick={() => setShowRegisterQR(false)}
+            >
+              Fermer
+            </button>
+          </div>
+        </div>
+      )}
 
       {photoMessage && (
         <div
