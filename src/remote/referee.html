@@ -1030,7 +1030,7 @@
     <div class="header">
       <h1>
         <span>⚔️</span>
-        <span>Arène <span id="arena-number">1</span></span>
+        <span><span id="arena-label">Arène</span> <span id="arena-number">1</span></span>
       </h1>
       <div class="connection-status">
         <button id="btn-swap" class="swap-btn" onclick="refereeApp.toggleSwap()" data-i18n-title="referee.swap_colors" title="Inverser rouge/vert">⇄</button>
@@ -1536,7 +1536,14 @@
           fetch('/api/session')
             .then(r => (r.ok ? r.json() : null))
             .then(s => {
-              if (s) this.isLaserSabre = s.weapon === 'L';
+              if (s) {
+              this.isLaserSabre = s.weapon === 'L';
+              this.isModernFencing = ['E', 'F', 'S'].includes(s.weapon);
+              if (this.isModernFencing) {
+                document.getElementById('arena-label').textContent = 'Piste';
+                document.querySelectorAll('.btn-plus-3, .btn-plus-5').forEach(b => (b.style.display = 'none'));
+              }
+            }
             })
             .catch(() => {});
           // Service Worker PWA
@@ -2015,7 +2022,14 @@
 
           cards.push(cardType);
 
-          if (cardType === 'yellow') {
+          if (this.isModernFencing) {
+            if (cardType === 'red') {
+              if (ef === 'A') this.scoreB += 1;
+              else this.scoreA += 1;
+              this.showNotification("🟥 +1 point pour l'adversaire");
+            }
+            // jaune = avertissement sans point en escrime moderne
+          } else if (cardType === 'yellow') {
             if (ef === 'A') this.scoreB += 3;
             else this.scoreA += 3;
             this.showNotification("🟨 +3 points pour l'adversaire");

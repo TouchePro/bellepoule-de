@@ -1119,13 +1119,13 @@
     <div id="card-announcement-banner" class="card-announcement-banner"></div>
 
     <div class="arena-number-strip">
-      Arène <span id="arena-strip-number">1</span>
+      <span class="arena-word-label">Arène</span> <span id="arena-strip-number">1</span>
     </div>
 
     <div class="header">
       <div class="arena-title">
         <span>⚔️</span>
-        <span>Arène <span id="arena-number">1</span></span>
+        <span><span class="arena-word-label">Arène</span> <span id="arena-number">1</span></span>
       </div>
       <div class="status-section">
         <div class="inversion-toggle">
@@ -1188,7 +1188,7 @@
         </div>
         <!-- Grand numéro (visible quand pas de nextMatch) -->
         <div class="arena-idle-number" id="arena-idle-number">1</div>
-        <div class="arena-idle-label" data-i18n="remote.arena">Arène</div>
+        <div class="arena-idle-label arena-word-label" data-i18n="remote.arena">Arène</div>
       </div>
 
       <!-- Écran d'intro photo (affiché quand showPhotos=true et statut ready) -->
@@ -1342,6 +1342,14 @@
           this.applyTheme(this.theme);
           this.setupHeaderAutoHide();
           this.setupSocketListeners();
+          fetch('/api/session')
+            .then(r => (r.ok ? r.json() : null))
+            .then(s => {
+              if (s && ['E', 'F', 'S'].includes(s.weapon)) {
+                document.querySelectorAll('.arena-word-label').forEach(el => (el.textContent = 'Piste'));
+              }
+            })
+            .catch(() => {});
         }
 
         applyTheme(theme, customTheme) {
