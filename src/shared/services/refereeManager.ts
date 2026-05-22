@@ -18,6 +18,8 @@ export interface RefereeRotationConfig {
   minRestTimeMinutes: number;
   avoidSameClub: boolean;
   balanceAssignment: boolean;
+  maxRefereesPerPool?: number;
+  maxRefereesPerMatch?: number;
 }
 
 export class RefereeManager {
@@ -65,9 +67,28 @@ export class RefereeManager {
     pools: Pool[],
     currentAssignments: Map<string, Referee>
   ): Referee | null {
-    const availableReferees = this.referees.filter(referee =>
+    let availableReferees = this.referees.filter(referee =>
       this.isRefereeAvailable(referee, match, currentAssignments)
     );
+
+    // Respecte maxRefereesPerPool : si la poule a déjà atteint la limite,
+    // seuls les arbitres déjà assignés à cette poule peuvent être utilisés.
+    const maxPerPool = this.config.maxRefereesPerPool;
+    if (maxPerPool && match.poolId) {
+      const pool = pools.find(p => p.id === match.poolId);
+      if (pool) {
+        const poolMatchIds = pool.matches.map(m => m.id);
+        const assignedInPool = new Set(
+          poolMatchIds
+            .map(id => currentAssignments.get(id))
+            .filter((r): r is Referee => r !== undefined)
+            .map(r => r.id)
+        );
+        if (assignedInPool.size >= maxPerPool) {
+          availableReferees = availableReferees.filter(r => assignedInPool.has(r.id));
+        }
+      }
+    }
 
     if (availableReferees.length === 0) return null;
 
