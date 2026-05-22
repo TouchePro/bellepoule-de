@@ -1629,11 +1629,11 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                                 viewMode="full"
                                 baseMatchHeight={BASE_MATCH_HEIGHT}
                                 onMatchClick={m => openScoreModal(m, bracket.id)}
-                                onArenaClick={arenaCount > 0 && match.winner === null ? m => {
-                                  setSelectedMatchForArena(m.id);
+                                onArenaClick={arenaCount > 0 && match.winner === null ? () => {
+                                  setSelectedMatchForArena(match.id);
                                   setSelectedMatchConsolationBracketId(bracket.id);
                                   setShowArenaModal(true);
-                                } : undefined}
+                                } : () => {}}
                               />
                             ))}
                           </div>
