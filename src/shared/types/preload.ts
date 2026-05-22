@@ -420,6 +420,10 @@ export interface RemoteServerAPI {
     competitionId: string,
     matchId: string
   ) => Promise<{ success: boolean; error?: string }>;
+  setRegistrationEnabled: (
+    competitionId: string,
+    enabled: boolean
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 // ============================================================================

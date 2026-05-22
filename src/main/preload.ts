@@ -493,6 +493,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('remote:acknowledgeDTCall', competitionId, arenaId),
     resetPoolMatch: (competitionId: string, matchId: string) =>
       ipcRenderer.invoke('remote:resetPoolMatch', competitionId, matchId),
+    setRegistrationEnabled: (competitionId: string, enabled: boolean) =>
+      ipcRenderer.invoke('remote:setRegistrationEnabled', competitionId, enabled),
   },
 
   // Remote event listeners (for real-time updates)
