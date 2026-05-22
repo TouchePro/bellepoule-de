@@ -58,10 +58,8 @@ const FencerListComponent: React.FC<FencerListProps> = ({
   const [editingFencer, setEditingFencer] = useState<Fencer | null>(null);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
-  const [exportMenuPos, setExportMenuPos] = useState({ top: 0, right: 0 });
   const [importMenuOpen, setImportMenuOpen] = useState(false);
   const importMenuRef = useRef<HTMLDivElement>(null);
-  const [importMenuPos, setImportMenuPos] = useState({ top: 0, left: 0 });
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -304,20 +302,17 @@ const FencerListComponent: React.FC<FencerListProps> = ({
             <div ref={importMenuRef} style={{ position: 'relative', display: 'inline-block' }}>
               <button
                 className="btn btn-secondary"
-                onClick={() => {
-                  const rect = importMenuRef.current?.getBoundingClientRect();
-                  if (rect) setImportMenuPos({ top: rect.bottom + 4, left: rect.left });
-                  setImportMenuOpen(o => !o);
-                }}
+                onClick={() => setImportMenuOpen(o => !o)}
                 title="Importer"
               >
                 📥 Importer ▾
               </button>
               {importMenuOpen && (
                 <div style={{
-                  position: 'fixed',
-                  top: importMenuPos.top,
-                  left: importMenuPos.left,
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  marginTop: '4px',
                   zIndex: 9999,
                   background: 'var(--bg-secondary, #2a2a3e)',
                   border: '1px solid var(--border-color, #444)',
@@ -325,7 +320,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                   boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
                   minWidth: '230px',
                   padding: '4px 0',
-                  maxHeight: `calc(100vh - ${importMenuPos.top}px - 8px)`,
+                  maxHeight: '60vh',
                   overflowY: 'auto',
                 }}>
                   <button
@@ -374,20 +369,17 @@ const FencerListComponent: React.FC<FencerListProps> = ({
           <div ref={exportMenuRef} style={{ position: 'relative', display: 'inline-block' }}>
             <button
               className="btn btn-secondary"
-              onClick={() => {
-                const rect = exportMenuRef.current?.getBoundingClientRect();
-                if (rect) setExportMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
-                setExportMenuOpen(o => !o);
-              }}
+              onClick={() => setExportMenuOpen(o => !o)}
               title="Exporter"
             >
               📤 Exporter ▾
             </button>
             {exportMenuOpen && (
               <div style={{
-                position: 'fixed',
-                top: exportMenuPos.top,
-                right: exportMenuPos.right,
+                position: 'absolute',
+                top: '100%',
+                right: 0,
+                marginTop: '4px',
                 zIndex: 9999,
                 background: 'var(--bg-secondary, #2a2a3e)',
                 border: '1px solid var(--border-color, #444)',
@@ -395,7 +387,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                 boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
                 minWidth: '160px',
                 padding: '4px 0',
-                maxHeight: `calc(100vh - ${exportMenuPos.top}px - 8px)`,
+                maxHeight: '60vh',
                 overflowY: 'auto',
               }}>
                 <button
