@@ -1244,14 +1244,18 @@ export class RemoteScoreServer {
             status: MatchStatus.FINISHED,
           });
           // Mettre à jour le score en mémoire de l'arène pour que le broadcast
-          // finishArenaMatch envoie le vrai score (pas 0-0) à l'affichage
-          for (const [, arena] of this.arenas) {
+          // finishArenaMatch envoie le vrai score (pas 0-0) à l'affichage, puis
+          // libérer l'arène exactement comme le fait la console arbitre.
+          let arenaToFinish: string | null = null;
+          for (const [arenaId, arena] of this.arenas) {
             if (arena.currentMatch && arena.currentMatch.id === matchId) {
               arena.currentMatch.scoreA = scoreA;
               arena.currentMatch.scoreB = scoreB;
+              arenaToFinish = arenaId;
               break;
             }
           }
+          if (arenaToFinish) this.finishArenaMatch(arenaToFinish);
         } else {
           // Match en mémoire uniquement (poule non persistée)
           // Synchroniser les scores dans l'arène et déclencher l'IPC vers le renderer
@@ -2460,10 +2464,13 @@ export class RemoteScoreServer {
     if (!matchToMove) {
       const sm = this.sessionMatches.find((m: any) => m.id === matchId);
       if (sm) {
+        // Mettre à jour les données de tireurs si le renderer fournit des données plus récentes
+        if (fencerA) sm.fencerA = fencerA;
+        if (fencerB) sm.fencerB = fencerB;
         matchToMove = {
           id: sm.id,
-          fencerA: sm.fencerA,
-          fencerB: sm.fencerB,
+          fencerA: fencerA ?? sm.fencerA,
+          fencerB: fencerB ?? sm.fencerB,
           scoreA: 0,
           scoreB: 0,
           status: 'not_started',
@@ -3810,7 +3817,14 @@ export class RemoteScoreServer {
     for (let i = 1; i <= strips; i++) queuesByArena.set(`arena${i}`, []);
 
     for (const match of pending) {
-      const preferred = match.arena ? `arena${match.arena}` : `arena${(rrIndex % strips) + 1}`;
+      // Ne distribuer automatiquement que les matchs explicitement assignés à une piste.
+      // Les matchs sans piste restent dans sessionMatches mais ne sont pas auto-assignés
+      // (le DT les assignera manuellement depuis l'interface tableau).
+      if (!match.arena) {
+        rrIndex++;
+        continue;
+      }
+      const preferred = `arena${match.arena}`;
       const targetId = this.arenas.has(preferred) ? preferred : `arena${(rrIndex % strips) + 1}`;
       queuesByArena.get(targetId)!.push({
         id: match.id,

@@ -259,6 +259,15 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     return () => { cancelled = true; };
   }, [isLoaded, pools.length, competition.id]);
 
+  // Rétablir isRemoteActive si une session est déjà en cours (ex: rechargement après phase poules)
+  useEffect(() => {
+    window.electronAPI.remote.getSession(competition.id)
+      .then((result: any) => {
+        if (result?.success && result?.session) setIsRemoteActive(true);
+      })
+      .catch(() => {});
+  }, [competition.id]);
+
   // Charger les tireurs au montage
   useEffect(() => {
     loadFencers();
@@ -1135,7 +1144,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               setFinalResults(results);
               setCurrentPhase('results');
             }}
-            onMatchArenaChange={(matchId, oldArena, newArena) => {
+            onMatchArenaChange={(matchId, oldArena, newArena, fencerAParam, fencerBParam) => {
               if (isRemoteActive) {
                 const match = tableauMatches.find(m => m.id === matchId);
                 window.electronAPI.remote.updateMatchArena(
@@ -1143,8 +1152,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                   matchId,
                   oldArena,
                   newArena,
-                  match?.fencerA ?? null,
-                  match?.fencerB ?? null
+                  fencerAParam ?? match?.fencerA ?? null,
+                  fencerBParam ?? match?.fencerB ?? null
                 );
               }
             }}
@@ -1164,6 +1173,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             competition={competition}
             pools={pools}
             tableauMatches={tableauMatches}
+            consolationBrackets={consolationBrackets}
             initialStripCount={remoteArenaCount}
             onArenaCountChange={setRemoteArenaCount}
             onStartRemote={() => setIsRemoteActive(true)}

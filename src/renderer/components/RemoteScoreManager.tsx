@@ -8,7 +8,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import QRCode from 'qrcode';
 import { Competition, Pool } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
-import { TableauMatch } from './TableauView';
+import { TableauMatch, ConsolationBracket } from './TableauView';
 import { useToast } from './Toast';
 import ThemeEditor from './ThemeEditor';
 import { CustomTheme, DisplayTheme } from '../../shared/types/remote';
@@ -17,6 +17,7 @@ interface RemoteScoreManagerProps {
   competition: Competition;
   pools: Pool[];
   tableauMatches?: TableauMatch[];
+  consolationBrackets?: ConsolationBracket[];
   onArenaCountChange?: (count: number) => void;
   onStartRemote: () => void;
   onStopRemote: () => void;
@@ -92,6 +93,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   competition,
   pools,
   tableauMatches,
+  consolationBrackets,
   onArenaCountChange,
   onStartRemote,
   onStopRemote,
@@ -225,11 +227,13 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   // sans avoir à arrêter/relancer la saisie distante (transition poules → tableau).
   const prevDeMatchesKeyRef = useRef<string>('');
   const pendingDeMatches = useMemo(
-    () =>
-      (tableauMatches || [])
-        .filter(m => m.winner === null && m.fencerA && m.fencerB)
-        .map(m => ({ ...m, isTableau: true })),
-    [tableauMatches]
+    () => [
+      ...(tableauMatches || []),
+      ...(consolationBrackets || []).flatMap(b => b.matches || []),
+    ]
+      .filter(m => m.winner === null && m.fencerA && m.fencerB)
+      .map(m => ({ ...m, isTableau: true })),
+    [tableauMatches, consolationBrackets]
   );
   useEffect(() => {
     const key = pendingDeMatches.map(m => m.id).join(',');
@@ -299,7 +303,10 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         },
         ...(pool.matches || []),
       ]);
-      const deMatches = (tableauMatches || [])
+      const deMatches = [
+        ...(tableauMatches || []),
+        ...(consolationBrackets || []).flatMap(b => b.matches || []),
+      ]
         .filter(m => m.winner === null && m.fencerA && m.fencerB)
         .map(m => ({ ...m, isTableau: true }));
       const allMatches = [...poolMatches, ...deMatches];
