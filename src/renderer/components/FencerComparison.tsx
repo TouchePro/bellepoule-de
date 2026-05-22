@@ -5,7 +5,7 @@
 
 import React, { useState, useMemo , memo} from 'react';
 import { Fencer, Pool } from '../../shared/types';
-import { TableauMatch } from './TableauView';
+import { TableauMatch } from './tableau/tableauTypes';
 import { FencerStatsCalculator } from '../../shared/utils/fencerStatsCalculator';
 
 interface FencerComparisonProps {

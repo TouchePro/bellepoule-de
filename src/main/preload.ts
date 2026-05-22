@@ -406,6 +406,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('file:saved', (_, filepath) => callback(filepath)),
   onAutosaveCompleted: (callback: () => void) => ipcRenderer.on('autosave:completed', callback),
   onAutosaveFailed: (callback: () => void) => ipcRenderer.on('autosave:failed', callback),
+  onDbReady: (callback: () => void) => ipcRenderer.once('db:ready', callback),
 
   // Utility functions
   print: () => ipcRenderer.invoke('window:print'),

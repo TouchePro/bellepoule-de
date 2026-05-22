@@ -613,6 +613,7 @@ export interface MenuAPI {
   onFileSaved: (callback: (filepath: string) => void) => void;
   onAutosaveCompleted: (callback: () => void) => void;
   onAutosaveFailed: (callback: () => void) => void;
+  onDbReady: (callback: () => void) => void;
 }
 
 export interface UtilityAPI {

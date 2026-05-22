@@ -7,7 +7,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Pool, PoolRanking } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
-import { TableauMatch, FinalResult } from '../components/TableauView';
+import { TableauMatch, FinalResult } from '../components/tableau/tableauTypes';
 
 export type Phase = 'checkin' | 'poolprep' | 'pools' | 'ranking' | 'quest' | 'tableau' | 'results' | 'remote' | 'logs' | 'referees';
 

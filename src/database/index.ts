@@ -29,6 +29,14 @@ import { MigrationManager } from './migrations';
 import { ALL_MIGRATIONS } from './migrations/migrations';
 
 let SQL: any = null;
+let sqlInitPromise: Promise<any> | null = null;
+
+/** Démarre le chargement du WASM sql.js en avance, sans bloquer. */
+export function prewarmSqlJs(): void {
+  if (!sqlInitPromise) {
+    sqlInitPromise = initSqlJs().then(s => { SQL = s; return s; });
+  }
+}
 
 export class DatabaseManager {
   private db: any = null;
@@ -48,21 +56,21 @@ export class DatabaseManager {
     if (dbPath) this.dbPath = dbPath;
 
     if (!SQL) {
-      SQL = await initSqlJs();
+      SQL = sqlInitPromise ? await sqlInitPromise : await initSqlJs();
     }
 
     const dir = path.dirname(this.dbPath);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
     if (fs.existsSync(this.dbPath)) {
-      const fileBuffer = fs.readFileSync(this.dbPath);
+      const fileBuffer = await fs.promises.readFile(this.dbPath);
       this.db = new SQL.Database(fileBuffer);
     } else {
       this.db = new SQL.Database();
     }
 
-    this.runMigrations();
-    this.save();
+    const migrationsApplied = this.runMigrations();
+    if (migrationsApplied > 0) this.save();
   }
 
   public close(): void {
@@ -219,9 +227,9 @@ export class DatabaseManager {
     return this.db !== null;
   }
 
-  private runMigrations(): void {
+  private runMigrations(): number {
     if (!this.db) throw new Error('Database not open');
-    new MigrationManager(this.db).run(ALL_MIGRATIONS);
+    return new MigrationManager(this.db).run(ALL_MIGRATIONS);
   }
 
   // Session State Management

@@ -3,20 +3,18 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
 import { Competition, Fencer, FencerStatus, Match, MatchStatus, Weapon, QuestPhaseConfig, Referee } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
 import { RankingImportResult } from '../../shared/utils/fileParser';
 import FencerList from './FencerList';
-import PoolView from './PoolView';
-import TableauView, { TableauMatch, FinalResult, propagateWinners, ConsolationBracket } from './TableauView';
+import { TableauMatch, FinalResult, propagateWinners, ConsolationBracket } from './tableau/tableauTypes';
 import PoolRankingView from './PoolRankingView';
 import ResultsView from './ResultsView';
 import AddFencerModal from './AddFencerModal';
 import CompetitionPropertiesModal from './CompetitionPropertiesModal';
 import ImportModal from './ImportModal';
 import PoolPrepView from './PoolPrepView';
-import RemoteScoreManager from './RemoteScoreManager';
 import { useToast } from './Toast';
 import { useTranslation } from '../hooks/useTranslation';
 import { useCompetitionSession, Phase } from '../hooks/useCompetitionSession';
@@ -30,18 +28,22 @@ import {
   generatePoolMatchOrder,
   generateInitialRanking,
 } from '../../shared/utils/poolCalculations';
-import { FencerComparison } from './FencerComparison';
-import { AnalyticsDashboard } from './AnalyticsDashboard';
 import { QRCodeShare } from './QRCodeShare';
 import { TouchOptimizedReferee } from './TouchOptimizedReferee';
-import { PresentationMode } from './PresentationMode';
-import KioskDisplay from './KioskDisplay';
 import { FencerPhoto } from './FencerPhoto';
-import QuestPhaseView from './QuestPhaseView';
 import { ScoreAuditLog } from './ScoreAuditLog';
 import { RefereeManagerComponent } from './RefereeManager';
 import CompetitionHeader from './competition/CompetitionHeader';
 import CompetitionNav from './competition/CompetitionNav';
+
+const PoolView = React.lazy(() => import('./PoolView'));
+const TableauView = React.lazy(() => import('./TableauView'));
+const RemoteScoreManager = React.lazy(() => import('./RemoteScoreManager'));
+const KioskDisplay = React.lazy(() => import('./KioskDisplay'));
+const FencerComparison = React.lazy(() => import('./FencerComparison').then(m => ({ default: m.FencerComparison })));
+const AnalyticsDashboard = React.lazy(() => import('./AnalyticsDashboard').then(m => ({ default: m.AnalyticsDashboard })));
+const PresentationMode = React.lazy(() => import('./PresentationMode').then(m => ({ default: m.PresentationMode })));
+const QuestPhaseView = React.lazy(() => import('./QuestPhaseView'));
 
 interface CompetitionViewProps {
   competition: Competition;
@@ -1054,6 +1056,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                     gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${Math.max(480, 280 + (pools[0]?.fencers?.length ?? 6) * 38)}px), 1fr))`,
                   }}
                 >
+                  <Suspense fallback={null}>
                   {pools.map((pool, poolIndex) => (
                     <div key={pool.id} style={{ minWidth: 0, overflow: 'auto' }}>
                       <PoolView
@@ -1099,6 +1102,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                       />
                     </div>
                   ))}
+                  </Suspense>
                 </div>
               </>
             )}
@@ -1126,6 +1130,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
         {questEnabled && questConfig && (
           <div style={currentPhase === 'quest' ? undefined : CV_STYLES.questWrapper}>
+            <Suspense fallback={null}>
             <QuestPhaseView
               fencers={(() => {
                 const checked = getCheckedInFencers();
@@ -1156,10 +1161,12 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               }}
               onConfigUpdate={handleQuestConfigUpdate}
             />
+            </Suspense>
           </div>
         )}
 
         {currentPhase === 'tableau' && (
+          <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Chargement tableau…</div>}>
           <TableauView
             ranking={overallRanking}
             matches={tableauMatches}
@@ -1188,6 +1195,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               }
             }}
           />
+          </Suspense>
         )}
 
         {currentPhase === 'results' && (
@@ -1198,7 +1206,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
           />
         )}
 
-        <div style={{ display: currentPhase === 'remote' ? '' : 'none' }}>
+        {currentPhase === 'remote' && (
+          <Suspense fallback={null}>
           <RemoteScoreManager
             competition={competition}
             pools={pools}
@@ -1210,7 +1219,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             onStopRemote={() => setIsRemoteActive(false)}
             isRemoteActive={isRemoteActive}
           />
-        </div>
+          </Suspense>
+        )}
 
         {currentPhase === 'logs' && (
           <ScoreAuditLog competitionId={competition.id} />
@@ -1291,44 +1301,52 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
       {/* Nouveaux modals */}
       {showFencerComparison && (
-        <FencerComparison
-          fencers={fencers}
-          pools={pools}
-          tableauMatches={tableauMatches}
-          onClose={() => setShowFencerComparison(false)}
-        />
+        <Suspense fallback={null}>
+          <FencerComparison
+            fencers={fencers}
+            pools={pools}
+            tableauMatches={tableauMatches}
+            onClose={() => setShowFencerComparison(false)}
+          />
+        </Suspense>
       )}
 
       {showAnalytics && (
-        <AnalyticsDashboard
-          competition={competition}
-          pools={pools}
-          matches={pools.flatMap(p => p.matches ?? [])}
-          fencers={fencers}
-          onClose={() => setShowAnalytics(false)}
-        />
+        <Suspense fallback={null}>
+          <AnalyticsDashboard
+            competition={competition}
+            pools={pools}
+            matches={pools.flatMap(p => p.matches ?? [])}
+            fencers={fencers}
+            onClose={() => setShowAnalytics(false)}
+          />
+        </Suspense>
       )}
 
       {showQRCode && <QRCodeShare competition={competition} onClose={() => setShowQRCode(false)} />}
 
       {/* Mode Présentation */}
       {showPresentation && (
-        <PresentationMode
-          competition={competition}
-          pools={pools}
-          onClose={() => setShowPresentation(false)}
-        />
+        <Suspense fallback={null}>
+          <PresentationMode
+            competition={competition}
+            pools={pools}
+            onClose={() => setShowPresentation(false)}
+          />
+        </Suspense>
       )}
 
       {/* Mode Kiosk Public - Affichage grand écran */}
       {showKioskDisplay && (
-        <KioskDisplay
-          competition={competition}
-          pools={pools}
-          weapon={competition.weapon}
-          tableauMatches={tableauMatches}
-          onClose={() => setShowKioskDisplay(false)}
-        />
+        <Suspense fallback={null}>
+          <KioskDisplay
+            competition={competition}
+            pools={pools}
+            weapon={competition.weapon}
+            tableauMatches={tableauMatches}
+            onClose={() => setShowKioskDisplay(false)}
+          />
+        </Suspense>
       )}
 
       {/* Mode Kiosk - Interface tablette arbitre */}
