@@ -208,7 +208,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   // Synchroniser le nombre d'arènes avec le nombre de poules (seed initial uniquement, pas de valeur restaurée)
   useEffect(() => {
     if (!isLoaded) return;
-    if (pools.length > 0 && remoteArenaCount === 1 && !restoredState?.remoteArenaCount) {
+    if (pools.length > 0 && !restoredState?.remoteArenaCount) {
       setRemoteArenaCount(pools.length);
     }
   }, [isLoaded, pools.length]);
