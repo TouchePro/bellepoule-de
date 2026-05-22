@@ -795,6 +795,88 @@ body {
 .theme-dark table { color: var(--color-text); }
 .theme-dark th { background: var(--color-bg); color: var(--color-text-light); border-color: var(--color-border); }
 .theme-dark td { border-color: var(--color-border); }
+
+/* PoolPrepView dark mode */
+.pool-prep-config { background: var(--color-surface-2, #f9fafb); }
+.theme-dark .pool-prep-config { background: var(--color-surface-2); }
+
+.pool-prep-card {
+  background: white;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  padding: 1rem;
+  min-height: 200px;
+}
+.theme-dark .pool-prep-card {
+  background: var(--color-surface);
+  border-color: var(--color-border-dark);
+}
+.pool-prep-card-active { border-color: #e5e7eb !important; }
+.theme-dark .pool-prep-card-active { border-color: var(--color-border) !important; }
+
+.pool-prep-card-header {
+  border-bottom: 1px solid #e5e7eb;
+}
+.theme-dark .pool-prep-card-header { border-color: var(--color-border); }
+
+.pool-prep-fencer-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: #f3f4f6;
+  border-radius: 4px;
+  cursor: move;
+  font-size: 0.875rem;
+}
+.theme-dark .pool-prep-fencer-row { background: var(--color-surface-2); color: var(--color-text); }
+.pool-prep-fencer-row-dragging { background: #dbeafe !important; }
+.theme-dark .pool-prep-fencer-row-dragging { background: rgba(59,91,219,0.2) !important; color: var(--color-text) !important; }
+
+.pool-prep-btn-move {
+  padding: 0.125rem 0.375rem;
+  font-size: 0.75rem;
+  background: #dbeafe;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  color: #1d4ed8;
+}
+.theme-dark .pool-prep-btn-move { background: rgba(59,91,219,0.2); color: #93c5fd; }
+
+.pool-prep-btn-shift {
+  padding: 0.125rem 0.375rem;
+  font-size: 0.75rem;
+  background: #e5e7eb;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  color: #374151;
+}
+.theme-dark .pool-prep-btn-shift { background: var(--color-surface-2); color: var(--color-text); }
+
+.pool-prep-badge-unique {
+  font-size: 0.7rem;
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+  font-weight: 500;
+}
+.theme-dark .pool-prep-badge-unique { background: rgba(59,91,219,0.2); color: #93c5fd; }
+
+.pool-prep-hint {
+  background: #eff6ff;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  color: #1e40af;
+}
+.theme-dark .pool-prep-hint { background: rgba(59,91,219,0.12); color: #93c5fd; }
+
+.pool-prep-footer { border-top: 1px solid #e5e7eb; }
+.theme-dark .pool-prep-footer { border-color: var(--color-border); }
 .theme-dark tr:hover td { background: rgba(255,255,255,0.04); }
 .theme-dark select { background: var(--color-bg); color: var(--color-text); border-color: var(--color-border); }
 .theme-dark input[type="text"],

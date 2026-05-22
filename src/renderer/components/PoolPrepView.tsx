@@ -398,8 +398,8 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
     <div style={{ padding: '1rem', height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Configuration Panel */}
       <div
+        className="pool-prep-config"
         style={{
-          background: '#f9fafb',
           padding: '1rem',
           borderRadius: '8px',
           marginBottom: '1rem',
@@ -579,36 +579,24 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
             key={pool.id}
             onDragOver={handleDragOver}
             onDrop={e => handleDrop(e, poolIndex)}
-            style={{
-              background: 'white',
-              border: `2px dashed ${draggedFencer?.poolIndex === poolIndex ? '#e5e7eb' : '#d1d5db'}`,
-              borderRadius: '8px',
-              padding: '1rem',
-              minHeight: '200px',
-            }}
+            className={`pool-prep-card${draggedFencer?.poolIndex === poolIndex ? ' pool-prep-card-active' : ''}`}
+          style={{ borderRadius: '8px', padding: '1rem', minHeight: '200px' }}
           >
             <div
+              className="pool-prep-card-header"
               style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 marginBottom: '0.75rem',
                 paddingBottom: '0.5rem',
-                borderBottom: '1px solid #e5e7eb',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                 <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>Poule {pool.number}</h3>
                 {pools.length === 1 && (
                   <span
-                    style={{
-                      fontSize: '0.7rem',
-                      background: '#dbeafe',
-                      color: '#1d4ed8',
-                      borderRadius: '4px',
-                      padding: '0.1rem 0.4rem',
-                      fontWeight: 500,
-                    }}
+                    className="pool-prep-badge-unique"
                   >
                     Poule unique
                   </span>
@@ -653,16 +641,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
                   key={fencer.id}
                   draggable
                   onDragStart={() => handleDragStart(fencer, poolIndex)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    padding: '0.5rem',
-                    background: draggedFencer?.fencer.id === fencer.id ? '#dbeafe' : '#f3f4f6',
-                    borderRadius: '4px',
-                    cursor: 'move',
-                    fontSize: '0.875rem',
-                  }}
+                  className={`pool-prep-fencer-row${draggedFencer?.fencer.id === fencer.id ? ' pool-prep-fencer-row-dragging' : ''}`}
                 >
                   <span style={{ fontWeight: 500, minWidth: '1.5rem' }}>{fencerIndex + 1}.</span>
                   <span style={{ flex: 1 }}>
@@ -675,14 +654,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
                       <button
                         onClick={() => handleMoveFencerUp(poolIndex, fencerIndex)}
                         title="Monter dans l'ordre"
-                        style={{
-                          padding: '0.125rem 0.375rem',
-                          fontSize: '0.75rem',
-                          background: '#dbeafe',
-                          border: 'none',
-                          borderRadius: '3px',
-                          cursor: 'pointer',
-                        }}
+                        className="pool-prep-btn-move"
                       >
                         ↑
                       </button>
@@ -691,14 +663,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
                       <button
                         onClick={() => handleMoveFencerDown(poolIndex, fencerIndex)}
                         title="Descendre dans l'ordre"
-                        style={{
-                          padding: '0.125rem 0.375rem',
-                          fontSize: '0.75rem',
-                          background: '#dbeafe',
-                          border: 'none',
-                          borderRadius: '3px',
-                          cursor: 'pointer',
-                        }}
+                        className="pool-prep-btn-move"
                       >
                         ↓
                       </button>
@@ -707,14 +672,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
                       <button
                         onClick={() => handleMoveFencer(fencer.id, poolIndex, poolIndex - 1)}
                         title="Déplacer vers la poule précédente"
-                        style={{
-                          padding: '0.125rem 0.375rem',
-                          fontSize: '0.75rem',
-                          background: '#e5e7eb',
-                          border: 'none',
-                          borderRadius: '3px',
-                          cursor: 'pointer',
-                        }}
+                        className="pool-prep-btn-shift"
                       >
                         ←
                       </button>
@@ -723,14 +681,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
                       <button
                         onClick={() => handleMoveFencer(fencer.id, poolIndex, poolIndex + 1)}
                         title="Déplacer vers la poule suivante"
-                        style={{
-                          padding: '0.125rem 0.375rem',
-                          fontSize: '0.75rem',
-                          background: '#e5e7eb',
-                          border: 'none',
-                          borderRadius: '3px',
-                          cursor: 'pointer',
-                        }}
+                        className="pool-prep-btn-shift"
                       >
                         →
                       </button>
@@ -758,14 +709,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
 
       {/* Instructions */}
       <div
-        style={{
-          background: '#eff6ff',
-          padding: '0.75rem 1rem',
-          borderRadius: '6px',
-          marginTop: '1rem',
-          fontSize: '0.875rem',
-          color: '#1e40af',
-        }}
+        className="pool-prep-hint"
       >
         💡 <strong>Astuce :</strong> Glissez-déposez les tireurs entre les poules ou utilisez les
         flèches (← →) pour les déplacer entre poules. Utilisez les flèches (↑ ↓) pour changer
@@ -774,13 +718,13 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
 
       {/* Action Buttons */}
       <div
+        className="pool-prep-footer"
         style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           marginTop: '1rem',
           paddingTop: '1rem',
-          borderTop: '1px solid #e5e7eb',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
