@@ -71,7 +71,7 @@ interface TableauViewProps {
   thirdPlaceMatch?: boolean;
   playAllPositions?: boolean;
   arenaCount?: number;
-  onMatchArenaChange?: (matchId: string, oldArena: number | null, newArena: number | null) => void;
+  onMatchArenaChange?: (matchId: string, oldArena: number | null, newArena: number | null, fencerA?: any, fencerB?: any) => void;
   consolationBrackets?: ConsolationBracket[];
   onConsolationBracketsChange?: (brackets: ConsolationBracket[]) => void;
 }
@@ -233,6 +233,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   const [expandedRounds, setExpandedRounds] = useState<Set<number>>(new Set());
   const [showArenaModal, setShowArenaModal] = useState(false);
   const [selectedMatchForArena, setSelectedMatchForArena] = useState<string | null>(null);
+  const [selectedMatchConsolationBracketId, setSelectedMatchConsolationBracketId] = useState<string | null>(null);
   const [pyramidViewMode, setPyramidViewMode] = useState<boolean>(false);
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [pdfMode, setPdfMode] = useState<'print' | 'pdf'>('pdf');
@@ -1628,7 +1629,11 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                                 viewMode="full"
                                 baseMatchHeight={BASE_MATCH_HEIGHT}
                                 onMatchClick={m => openScoreModal(m, bracket.id)}
-                                onArenaClick={() => {}}
+                                onArenaClick={arenaCount > 0 && match.winner === null ? m => {
+                                  setSelectedMatchForArena(m.id);
+                                  setSelectedMatchConsolationBracketId(bracket.id);
+                                  setShowArenaModal(true);
+                                } : undefined}
                               />
                             ))}
                           </div>
@@ -1730,70 +1735,90 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         </div>
       )}
 
-      {showArenaModal && selectedMatchForArena && (
-        <div className="modal-overlay" onClick={() => setShowArenaModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
-            <div className="modal-header">
-              <h3 className="modal-title">Assigner à une piste</h3>
-              <button className="btn-close" onClick={() => setShowArenaModal(false)}>
-                &times;
-              </button>
-            </div>
-            <div className="modal-body" style={TV_STYLES.arenaModalBody}>
-              <p style={TV_STYLES.arenaModalHint}>Sélectionnez la piste pour ce match :</p>
-              <div style={TV_STYLES.arenaModalGrid}>
-                <button
-                  className={`btn ${!matches.find(m => m.id === selectedMatchForArena)?.arena ? 'btn-primary' : 'btn-secondary'}`}
-                  onClick={() => {
-                    const oldArena =
-                      matches.find(m => m.id === selectedMatchForArena)?.arena ?? null;
-                    const updatedMatches = matches.map(m =>
-                      m.id === selectedMatchForArena ? { ...m, arena: null } : m
-                    );
-                    onMatchesChange(updatedMatches);
-                    onMatchArenaChange?.(selectedMatchForArena!, oldArena, null);
-                    setShowArenaModal(false);
-                    setSelectedMatchForArena(null);
-                  }}
-                  style={TV_STYLES.arenaModalNoArenaBtn}
-                >
-                  -
+      {showArenaModal && selectedMatchForArena && (() => {
+        const isConsolation = !!selectedMatchConsolationBracketId;
+        const consolationBracket = isConsolation
+          ? consolationBrackets.find(b => b.id === selectedMatchConsolationBracketId)
+          : null;
+        const currentArena = isConsolation
+          ? (consolationBracket?.matches.find(m => m.id === selectedMatchForArena)?.arena ?? null)
+          : (matches.find(m => m.id === selectedMatchForArena)?.arena ?? null);
+
+        const closeModal = () => {
+          setShowArenaModal(false);
+          setSelectedMatchForArena(null);
+          setSelectedMatchConsolationBracketId(null);
+        };
+
+        const assignArena = (arenaNum: number | null) => {
+          const oldArena = currentArena;
+          if (isConsolation && consolationBracket) {
+            const updatedBracket = {
+              ...consolationBracket,
+              matches: consolationBracket.matches.map(m =>
+                m.id === selectedMatchForArena ? { ...m, arena: arenaNum } : m
+              ),
+            };
+            setConsolationBrackets(prev =>
+              prev.map(b => b.id === consolationBracket.id ? updatedBracket : b)
+            );
+            const consolMatch = consolationBracket.matches.find(m => m.id === selectedMatchForArena);
+            onMatchArenaChange?.(selectedMatchForArena!, oldArena, arenaNum, consolMatch?.fencerA ?? null, consolMatch?.fencerB ?? null);
+          } else {
+            const updatedMatches = matches.map(m =>
+              m.id === selectedMatchForArena ? { ...m, arena: arenaNum } : m
+            );
+            onMatchesChange(updatedMatches);
+            onMatchArenaChange?.(selectedMatchForArena!, oldArena, arenaNum);
+          }
+          closeModal();
+        };
+
+        return (
+          <div className="modal-overlay" onClick={closeModal}>
+            <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+              <div className="modal-header">
+                <h3 className="modal-title">Assigner à une piste</h3>
+                <button className="btn-close" onClick={closeModal}>
+                  &times;
                 </button>
-                {Array.from({ length: arenaCount }, (_, i) => i + 1).map(arenaNum => {
-                  const queueCount = matches.filter(
-                    m => m.arena === arenaNum && m.id !== selectedMatchForArena && m.winner === null
-                  ).length;
-                  return (
-                    <button
-                      key={arenaNum}
-                      className={`btn ${matches.find(m => m.id === selectedMatchForArena)?.arena === arenaNum ? 'btn-primary' : 'btn-secondary'}`}
-                      onClick={() => {
-                        const oldArena =
-                          matches.find(m => m.id === selectedMatchForArena)?.arena ?? null;
-                        const updatedMatches = matches.map(m =>
-                          m.id === selectedMatchForArena ? { ...m, arena: arenaNum } : m
-                        );
-                        onMatchesChange(updatedMatches);
-                        onMatchArenaChange?.(selectedMatchForArena!, oldArena, arenaNum);
-                        setShowArenaModal(false);
-                        setSelectedMatchForArena(null);
-                      }}
-                      style={{ padding: '0.75rem', position: 'relative' }}
-                    >
-                      Piste {arenaNum}
-                      {queueCount > 0 && (
-                        <span style={TV_STYLES.arenaQueueHint}>
-                          (+{queueCount})
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
+              </div>
+              <div className="modal-body" style={TV_STYLES.arenaModalBody}>
+                <p style={TV_STYLES.arenaModalHint}>Sélectionnez la piste pour ce match :</p>
+                <div style={TV_STYLES.arenaModalGrid}>
+                  <button
+                    className={`btn ${!currentArena ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => assignArena(null)}
+                    style={TV_STYLES.arenaModalNoArenaBtn}
+                  >
+                    -
+                  </button>
+                  {Array.from({ length: arenaCount }, (_, i) => i + 1).map(arenaNum => {
+                    const queueCount = matches.filter(
+                      m => m.arena === arenaNum && m.id !== selectedMatchForArena && m.winner === null
+                    ).length;
+                    return (
+                      <button
+                        key={arenaNum}
+                        className={`btn ${currentArena === arenaNum ? 'btn-primary' : 'btn-secondary'}`}
+                        onClick={() => assignArena(arenaNum)}
+                        style={{ padding: '0.75rem', position: 'relative' }}
+                      >
+                        Piste {arenaNum}
+                        {queueCount > 0 && (
+                          <span style={TV_STYLES.arenaQueueHint}>
+                            (+{queueCount})
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 };
