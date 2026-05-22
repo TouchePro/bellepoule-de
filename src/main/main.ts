@@ -985,6 +985,13 @@ ipcMain.handle('db:updateMatch', async (_, id, updates) => {
   } else {
     db.updateMatch(id, updates);
   }
+
+  // Propager l'assignation d'arbitre au serveur distant
+  if (updates.refereeId) {
+    for (const { server } of remoteServers.values()) {
+      try { server.assignRefereeToMatch(id, updates.refereeId); } catch { /* non bloquant */ }
+    }
+  }
 });
 
 ipcMain.handle('db:upsertTableauMatch', async (_, params) => {

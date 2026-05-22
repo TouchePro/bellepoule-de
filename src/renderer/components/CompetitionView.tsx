@@ -1183,7 +1183,15 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             pools={pools}
             matches={pools.flatMap(p => p.matches ?? [])}
             onRefereesChange={setReferees}
-            onAssignmentsChange={() => {}}
+            onAssignmentsChange={(assignments) => {
+              setPools(prev => prev.map(pool => ({
+                ...pool,
+                matches: (pool.matches ?? []).map(m => {
+                  const ref = assignments.get(m.id);
+                  return ref !== undefined ? { ...m, referee: ref } : m;
+                }),
+              })));
+            }}
           />
         )}
       </div>
