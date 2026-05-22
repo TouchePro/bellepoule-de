@@ -148,7 +148,7 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
 
       {fencers.map((rowFencer, rowIndex) => {
         const stats = calculateFencerStats(rowFencer);
-        const rankEntry = pool.ranking.find(r => r.fencer.id === rowFencer.id);
+        const rankEntry = pool.ranking?.find(r => r.fencer.id === rowFencer.id);
         const rankRatio = (rankEntry?.rank ?? fencers.length) / fencers.length;
         const rowBg =
           rankRatio <= 0.7

@@ -1089,6 +1089,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                           }
                         }}
                         onFencerAdded={updatedPool => {
+                          updatedPool.ranking = computePoolRanking(updatedPool);
                           setPools(prev =>
                             prev.map(p => (p.id === updatedPool.id ? updatedPool : p))
                           );
