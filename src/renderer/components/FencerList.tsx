@@ -259,7 +259,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
 
   return (
     <div className="content">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-4" style={{ position: 'relative', zIndex: 2 }}>
         <div>
           <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>{t('fencer.add')}</h2>
           <p className="text-sm text-muted">
