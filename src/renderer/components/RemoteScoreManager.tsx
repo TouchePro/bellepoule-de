@@ -19,7 +19,7 @@ interface RemoteScoreManagerProps {
   tableauMatches?: TableauMatch[];
   consolationBrackets?: ConsolationBracket[];
   onArenaCountChange?: (count: number) => void;
-  onStartRemote: (serverUrl?: string) => void;
+  onStartRemote: () => void;
   onStopRemote: () => void;
   isRemoteActive?: boolean;
   initialStripCount?: number;
