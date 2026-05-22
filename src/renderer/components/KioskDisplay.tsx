@@ -8,7 +8,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Competition, Pool, Weapon, MatchStatus, Fencer } from '../../shared/types';
 import { OrgNote } from '../../shared/types/remote';
-import { TableauMatch } from './TableauView';
+import { TableauMatch } from './tableau/tableauTypes';
 import {
   calculateOverallRanking,
   calculateOverallRankingQuest,

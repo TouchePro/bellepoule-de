@@ -8,7 +8,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import QRCode from 'qrcode';
 import { Competition, Pool } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
-import { TableauMatch, ConsolationBracket } from './TableauView';
+import { TableauMatch, ConsolationBracket } from './tableau/tableauTypes';
 import { useToast } from './Toast';
 import ThemeEditor from './ThemeEditor';
 import { CustomTheme, DisplayTheme } from '../../shared/types/remote';

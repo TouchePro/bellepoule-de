@@ -1,5 +1,5 @@
 import React from 'react';
-import { TableauMatch } from '../TableauView';
+import { TableauMatch } from './tableauTypes';
 
 interface MatchCardProps {
   match: TableauMatch;

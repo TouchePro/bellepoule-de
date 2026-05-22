@@ -8,7 +8,7 @@ import { Competition, PhaseType } from '../shared/types';
 import type { CompetitionCreateData } from '../shared/types/preload';
 import { logger, LogCategory } from '@shared/services/logger';
 import CompetitionList from './components/CompetitionList';
-import CompetitionView from './components/CompetitionView';
+const CompetitionView = React.lazy(() => import('./components/CompetitionView'));
 const CommandPalette = React.lazy(() => import('./components/CommandPalette'));
 const NewCompetitionModal = React.lazy(() => import('./components/NewCompetitionModal'));
 const ReportIssueModal = React.lazy(() => import('./components/ReportIssueModal'));
@@ -66,11 +66,23 @@ const AppContent: React.FC = () => {
     handleTabSwitch,
   } = useAppState(showToast);
 
-  // Load competitions on mount
+  // Load competitions on mount — attendre db:ready si la fenêtre s'ouvre avant la DB
   useEffect(() => {
-    loadCompetitions();
+    if (window.electronAPI?.onDbReady) {
+      // Si la DB n'est pas encore prête, attendre l'event puis charger
+      let loaded = false;
+      const tryLoad = () => { if (!loaded) { loaded = true; loadCompetitions(); } };
+      window.electronAPI.onDbReady(tryLoad);
+      // Charger quand même après 1s au cas où db:ready est déjà passé
+      const fallback = setTimeout(tryLoad, 1000);
+      return () => clearTimeout(fallback);
+    } else {
+      loadCompetitions();
+    }
+  }, []);
 
-    // Listen for menu events
+  // Listen for menu events
+  useEffect(() => {
     if (window.electronAPI) {
       window.electronAPI.onMenuNewCompetition(() => setShowNewCompetitionModal(true));
       window.electronAPI.onMenuReportIssue(() => setShowReportIssueModal(true));
@@ -543,12 +555,14 @@ const AppContent: React.FC = () => {
 
           {view === 'competition' && currentCompetition && activeTabId && (
             <CompetitionErrorBoundary key={currentCompetition.id}>
-              <CompetitionView
-                competition={currentCompetition}
-                onUpdate={handleUpdateCompetition}
-                requestPhase={requestedPhase ?? undefined}
-                onPhaseApplied={() => setRequestedPhase(null)}
-              />
+              <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Chargement…</div>}>
+                <CompetitionView
+                  competition={currentCompetition}
+                  onUpdate={handleUpdateCompetition}
+                  requestPhase={requestedPhase ?? undefined}
+                  onPhaseApplied={() => setRequestedPhase(null)}
+                />
+              </Suspense>
             </CompetitionErrorBoundary>
           )}
         </main>

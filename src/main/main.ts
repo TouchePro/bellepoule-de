@@ -8,7 +8,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 import JSZip from 'jszip';
-import { DatabaseManager } from '../database';
+import { DatabaseManager, prewarmSqlJs } from '../database';
 import { RemoteScoreServer } from './remoteScoreServer';
 import { AutoUpdater } from './autoUpdater';
 import { Competition, Fencer, FencerStatus, Match, MatchStatus, Pool } from '../shared/types';
@@ -1954,6 +1954,9 @@ if (process.platform === 'linux') {
 }
 
 app.whenReady().then(async () => {
+  // Préchauffer sql.js WASM en parallèle avec la création de la fenêtre
+  prewarmSqlJs();
+
   // Initialize database dans un répertoire inscriptible (userData)
   // Sur Windows, process.cwd() peut pointer vers C:\Windows\System32 (non inscriptible)
   const userDataPath = app.getPath('userData');
@@ -1971,10 +1974,14 @@ app.whenReady().then(async () => {
     }
   }
 
+  // Créer la fenêtre immédiatement pendant que la DB se charge
+  createWindow();
+
   await db.open(dbPath);
   console.log('Base de données ouverte:', db.getPath());
 
-  createWindow();
+  // Signaler au renderer que la DB est prête
+  mainWindow?.webContents.send('db:ready');
 
   // Initialize auto updater
   if (mainWindow) {

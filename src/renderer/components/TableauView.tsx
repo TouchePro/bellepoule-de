@@ -6,6 +6,8 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Fencer, FencerStatus, PoolRanking } from '../../shared/types';
+export { TableauMatch, FinalResult, ConsolationBracket, propagateWinners } from './tableau/tableauTypes';
+import { TableauMatch, FinalResult, ConsolationBracket, propagateWinners } from './tableau/tableauTypes';
 import { useToast } from './Toast';
 import { useModalResize } from '../hooks/useModalResize';
 import Bracket from './Bracket';
@@ -29,38 +31,6 @@ interface BracketMatch {
   isBye?: boolean;
 }
 
-export interface TableauMatch {
-  id: string;
-  round: number;
-  position: number;
-  fencerA: Fencer | null;
-  fencerB: Fencer | null;
-  scoreA: number | null;
-  scoreB: number | null;
-  winner: Fencer | null;
-  isBye: boolean;
-  arena?: number | null;
-}
-
-export interface FinalResult {
-  rank: number;
-  fencer: Fencer;
-  eliminatedAt: string;
-  poolTouches?: number; // Touches marquées en poules
-  tableTouches?: number; // Touches marquées en tableau
-  totalTouches?: number; // Total pour départage (poules + tableau)
-}
-
-export interface ConsolationBracket {
-  id: string;
-  name: string;
-  firstPlace: number;
-  matches: TableauMatch[];
-  size: number;
-  isComplete: boolean;
-  sourceRound: number; // round du bracket parent qui a généré ce bracket
-  parentBracketId: string; // 'main' ou id d'un bracket de consolation
-}
 
 interface TableauViewProps {
   ranking: PoolRanking[];
@@ -122,88 +92,6 @@ const TV_STYLES = {
 const BASE_MATCH_HEIGHT = 100;
 const SLOT_HEIGHT = BASE_MATCH_HEIGHT + 50; // hauteur d'un créneau dans la première colonne
 
-export function propagateWinners(matchList: TableauMatch[], size: number): void {
-  let currentRound = size;
-
-  while (currentRound > 2) {
-    const nextRound = currentRound / 2;
-    const currentMatches = matchList.filter(m => m.round === currentRound);
-    const nextMatches = matchList.filter(m => m.round === nextRound);
-
-    // Première passe : propager tous les gagnants (y compris les exempts)
-    currentMatches.forEach((match, idx) => {
-      if (match.winner) {
-        const nextMatchIdx = Math.floor(idx / 2);
-        const nextMatch = nextMatches[nextMatchIdx];
-        if (nextMatch) {
-          if (idx % 2 === 0) {
-            nextMatch.fencerA = match.winner;
-          } else {
-            nextMatch.fencerB = match.winner;
-          }
-        }
-      }
-    });
-
-    // Deuxième passe : vérifier les exempts au tour suivant
-    nextMatches.forEach((nextMatch, nextIdx) => {
-      // Ne pas modifier les matchs déjà joués
-      if (nextMatch.scoreA !== null && nextMatch.scoreB !== null) return;
-
-      const feederA = currentMatches[nextIdx * 2];
-      const feederB = currentMatches[nextIdx * 2 + 1];
-
-      // Vérifier si les deux matchs sources sont résolus
-      const feederAResolved =
-        !feederA ||
-        feederA.winner !== null ||
-        (feederA.isBye && !feederA.fencerA && !feederA.fencerB);
-      const feederBResolved =
-        !feederB ||
-        feederB.winner !== null ||
-        (feederB.isBye && !feederB.fencerA && !feederB.fencerB);
-
-      if (feederAResolved && feederBResolved) {
-        if (nextMatch.fencerA && !nextMatch.fencerB) {
-          nextMatch.winner = nextMatch.fencerA;
-          nextMatch.isBye = true;
-        } else if (!nextMatch.fencerA && nextMatch.fencerB) {
-          nextMatch.winner = nextMatch.fencerB;
-          nextMatch.isBye = true;
-        } else if (nextMatch.fencerA && nextMatch.fencerB) {
-          nextMatch.isBye = false;
-          nextMatch.winner = null;
-        }
-      }
-    });
-
-    currentRound = nextRound;
-  }
-
-  // Gérer le match de 3ème place si présent dans matchList
-  const thirdPlaceMatchEntry = matchList.find(m => m.round === 3);
-  if (thirdPlaceMatchEntry && size >= 4) {
-    const semiFinalMatches = matchList.filter(m => m.round === 4);
-
-    if (semiFinalMatches.length === 2) {
-      // Assigner les perdants des demi-finales au match de 3ème place
-      const losers: Fencer[] = [];
-
-      semiFinalMatches.forEach(semiFinal => {
-        if (semiFinal.winner) {
-          const loser =
-            semiFinal.fencerA?.id === semiFinal.winner.id ? semiFinal.fencerB : semiFinal.fencerA;
-          if (loser) losers.push(loser);
-        }
-      });
-
-      if (losers.length === 2) {
-        thirdPlaceMatchEntry.fencerA = losers[0];
-        thirdPlaceMatchEntry.fencerB = losers[1];
-      }
-    }
-  }
-}
 
 const TableauViewComponent: React.FC<TableauViewProps> = ({
   ranking,
