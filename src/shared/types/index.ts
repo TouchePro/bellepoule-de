@@ -572,6 +572,9 @@ export interface CompetitionSettings {
   refereeFeatureEnabled?: boolean; // Activer la gestion des arbitres sur arènes et saisie distante
   customFormula?: CustomFormulaConfig; // Formule à la carte (arme CUSTOM uniquement)
   playAllPositions?: boolean; // Jouer toutes les places (tableaux de classement)
+  expertMode?: boolean; // Mode expert : édition avancée des pistes et arbitres
+  maxRefereesPerPool?: number; // Nombre max d'arbitres par poule (mode expert)
+  maxRefereesPerMatch?: number; // Nombre max d'arbitres par match DE (mode expert)
 }
 
 export interface Phase extends BaseEntity {

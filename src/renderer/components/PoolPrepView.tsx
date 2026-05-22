@@ -18,6 +18,7 @@ interface PoolPrepViewProps {
   maxScore: number;
   minFencersPerPool?: number;
   maxFencersPerPool?: number;
+  expertMode?: boolean;
   onPoolsConfirm: (pools: Pool[]) => void;
   onSkipPools?: () => void;
   onSettingsChange?: (min: number, max: number) => void;
@@ -37,6 +38,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
   maxScore,
   minFencersPerPool: initialMin = 5,
   maxFencersPerPool: initialMax = 7,
+  expertMode = false,
   onPoolsConfirm,
   onSkipPools,
   onSettingsChange,
@@ -375,6 +377,10 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
     setPools(updatedPools);
   };
 
+  const handleStripChange = (poolIndex: number, strip: number | undefined) => {
+    setPools(pools.map((p, i) => (i === poolIndex ? { ...p, strip } : p)));
+  };
+
   const getFencerCountStats = () => {
     if (pools.length === 0) return { min: 0, max: 0, avg: 0 };
 
@@ -608,19 +614,37 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
                   </span>
                 )}
               </div>
-              <span
-                style={{
-                  fontSize: '0.875rem',
-                  color:
-                    pools.length > 1 &&
-                    (pool.fencers.length < minFencersPerPool ||
-                      pool.fencers.length > maxFencersPerPool)
-                      ? '#dc2626'
-                      : '#6b7280',
-                }}
-              >
-                {pool.fencers.length} tireurs
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                {expertMode && (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: '#6b7280' }}>
+                    Piste
+                    <input
+                      type="number"
+                      min={1}
+                      value={pool.strip ?? ''}
+                      placeholder="–"
+                      onChange={e => {
+                        const val = e.target.value;
+                        handleStripChange(poolIndex, val === '' ? undefined : Math.max(1, parseInt(val)));
+                      }}
+                      style={{ width: '52px', padding: '0.1rem 0.3rem', fontSize: '0.8rem', border: '1px solid #d1d5db', borderRadius: '4px' }}
+                    />
+                  </label>
+                )}
+                <span
+                  style={{
+                    fontSize: '0.875rem',
+                    color:
+                      pools.length > 1 &&
+                      (pool.fencers.length < minFencersPerPool ||
+                        pool.fencers.length > maxFencersPerPool)
+                        ? '#dc2626'
+                        : '#6b7280',
+                  }}
+                >
+                  {pool.fencers.length} tireurs
+                </span>
+              </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>

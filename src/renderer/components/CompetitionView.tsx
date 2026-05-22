@@ -91,6 +91,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const poolMaxScore = competition.settings?.defaultPoolMaxScore ?? 21;
   const tableMaxScore = competition.settings?.defaultTableMaxScore ?? 0;
   const isLaserSabre = competition.weapon === Weapon.LASER;
+  const expertMode = competition.settings?.expertMode ?? false;
 
   const auditLogEnabled = localStorage.getItem('bellepoule-audit-log-enabled') === 'true';
 
@@ -1008,6 +1009,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             maxScore={poolMaxScore}
             minFencersPerPool={minFencersPerPool}
             maxFencersPerPool={maxFencersPerPool}
+            expertMode={expertMode}
             onPoolsConfirm={confirmedPools => {
               setPools(confirmedPools);
               setSkipPoolPhase(false);
