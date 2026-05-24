@@ -126,6 +126,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [pdfMode, setPdfMode] = useState<'print' | 'pdf'>('pdf');
   const [pdfMatchesPerPage, setPdfMatchesPerPage] = useState<number>(MAX_MATCHES_PER_PAGE_TABLEAU);
+  const [selectedRounds, setSelectedRounds] = useState<Set<number>>(new Set());
   const [autoAssignArenas, setAutoAssignArenas] = useState(true);
   const isUnlimitedScore = maxScore === 999;
   const prevMatchesLengthRef = useRef(0);
@@ -892,13 +893,18 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
   const handleExportPDF = async () => {
     const perPage = Math.max(1, Math.min(pdfMatchesPerPage, MAX_MATCHES_PER_PAGE_TABLEAU));
-    const title = `Tableau de ${tableauSize}`;
+    const filteredMatches = matches.filter(m => selectedRounds.has(m.round));
+    const roundLabel = [...selectedRounds]
+      .sort((a, b) => b - a)
+      .map(r => getRoundName(r))
+      .join(', ');
+    const title = `Tableau de ${tableauSize}${roundLabel ? ` — ${roundLabel}` : ''}`;
     const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
     try {
       if (pdfMode === 'print') {
-        await printTableauHTML(matches, perPage, title, logo, tableauTemplate);
+        await printTableauHTML(filteredMatches, perPage, title, logo, tableauTemplate);
       } else {
-        await exportTableauToPDF(matches, perPage, title, logo, tableauTemplate);
+        await exportTableauToPDF(filteredMatches, perPage, title, logo, tableauTemplate);
       }
       setShowPdfModal(false);
     } catch (e) {
@@ -1376,8 +1382,18 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         onViewModeToggle={() => setViewMode(viewMode === 'full' ? 'pending' : 'full')}
         pyramidViewMode={pyramidViewMode}
         onPyramidViewModeToggle={() => setPyramidViewMode(!pyramidViewMode)}
-        onPrintClick={() => { setPdfMode('print'); setShowPdfModal(true); }}
-        onExportPdfClick={() => { setPdfMode('pdf'); setShowPdfModal(true); }}
+        onPrintClick={() => {
+          setPdfMode('print');
+          const rounds = [...new Set(matches.filter(m => m.fencerA && m.fencerB && !m.isBye).map(m => m.round))].sort((a, b) => b - a);
+          setSelectedRounds(new Set(rounds));
+          setShowPdfModal(true);
+        }}
+        onExportPdfClick={() => {
+          setPdfMode('pdf');
+          const rounds = [...new Set(matches.filter(m => m.fencerA && m.fencerB && !m.isBye).map(m => m.round))].sort((a, b) => b - a);
+          setSelectedRounds(new Set(rounds));
+          setShowPdfModal(true);
+        }}
         champion={champion}
       />
 
@@ -1598,24 +1614,47 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                   </button>
                 ))}
               </div>
-              <p style={TV_STYLES.pdfModalCountHint}>
-                {matches.filter(m => !m.isBye && m.fencerA && m.fencerB).length} matchs →{' '}
-                {Math.ceil(
-                  matches.filter(m => !m.isBye && m.fencerA && m.fencerB).length / pdfMatchesPerPage
-                )}{' '}
-                feuille
-                {Math.ceil(
-                  matches.filter(m => !m.isBye && m.fencerA && m.fencerB).length / pdfMatchesPerPage
-                ) > 1
-                  ? 's'
-                  : ''}
-              </p>
+              <label style={{ ...TV_STYLES.pdfModalLabel, marginTop: '1rem' }}>
+                Phases à inclure
+              </label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '0.75rem' }}>
+                {[...new Set(matches.filter(m => m.fencerA && m.fencerB && !m.isBye).map(m => m.round))]
+                  .sort((a, b) => b - a)
+                  .map(round => (
+                    <label key={round} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.875rem' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedRounds.has(round)}
+                        onChange={e => {
+                          const next = new Set(selectedRounds);
+                          if (e.target.checked) next.add(round); else next.delete(round);
+                          setSelectedRounds(next);
+                        }}
+                      />
+                      {getRoundName(round)}
+                      <span style={{ color: '#9ca3af', fontSize: '0.75rem' }}>
+                        ({matches.filter(m => m.round === round && m.fencerA && m.fencerB && !m.isBye).length} match
+                        {matches.filter(m => m.round === round && m.fencerA && m.fencerB && !m.isBye).length > 1 ? 's' : ''})
+                      </span>
+                    </label>
+                  ))}
+              </div>
+              {(() => {
+                const count = matches.filter(m => selectedRounds.has(m.round) && !m.isBye && m.fencerA && m.fencerB).length;
+                return (
+                  <p style={TV_STYLES.pdfModalCountHint}>
+                    {count} match{count > 1 ? 's' : ''} →{' '}
+                    {Math.ceil(count / pdfMatchesPerPage)} feuille
+                    {Math.ceil(count / pdfMatchesPerPage) > 1 ? 's' : ''}
+                  </p>
+                );
+              })()}
             </div>
             <div className="modal-footer" style={TV_STYLES.pdfModalFooter}>
               <button className="btn btn-secondary" onClick={() => setShowPdfModal(false)}>
                 Annuler
               </button>
-              <button className="btn btn-primary" onClick={handleExportPDF}>
+              <button className="btn btn-primary" onClick={handleExportPDF} disabled={selectedRounds.size === 0}>
                 {pdfMode === 'print' ? '🖨️ Imprimer' : '📄 Générer PDF'}
               </button>
             </div>
