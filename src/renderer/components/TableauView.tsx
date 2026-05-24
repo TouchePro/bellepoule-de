@@ -202,6 +202,16 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     [arenaCount, distributeArenasRoundRobin, matches, onMatchesChange, onMatchArenaChange]
   );
 
+  const handleBulkDeassign = useCallback(() => {
+    const updated = matches.map(m => ({ ...m, arena: null as number | null }));
+    onMatchesChange(updated);
+    matches.forEach(m => {
+      if (m.arena != null) {
+        onMatchArenaChange?.(m.id, m.arena, null);
+      }
+    });
+  }, [matches, onMatchesChange, onMatchArenaChange]);
+
   useEffect(() => {
     const eligibleCount = ranking.filter(
       r =>
@@ -1387,6 +1397,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         arenaCount={arenaCount}
         autoAssignArenas={autoAssignArenas}
         onAutoAssignToggle={handleAutoAssignToggle}
+        onBulkDeassign={handleBulkDeassign}
         onAutoFillScores={handleAutoFillScores}
         viewMode={viewMode}
         onViewModeToggle={() => setViewMode(viewMode === 'full' ? 'pending' : 'full')}
