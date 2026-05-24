@@ -3937,13 +3937,6 @@ export class RemoteScoreServer {
     for (let i = 1; i <= strips; i++) queuesByArena.set(`arena${i}`, []);
 
     for (const match of pending) {
-      // Ne distribuer automatiquement que les matchs explicitement assignés à une piste.
-      // Les matchs sans piste restent dans sessionMatches mais ne sont pas auto-assignés
-      // (le DT les assignera manuellement depuis l'interface tableau).
-      if (!match.arena) {
-        rrIndex++;
-        continue;
-      }
       const preferred = `arena${match.arena}`;
       const targetId = this.arenas.has(preferred) ? preferred : `arena${(rrIndex % strips) + 1}`;
       queuesByArena.get(targetId)!.push({
