@@ -307,7 +307,7 @@ export function generatePoolHTML(pool: Pool, options: PoolExportOptions, templat
     return `
       <tr>
         <td class="num-cell">${row + 1}</td>
-        <td class="name-cell">(${data.rank}) ${fencer.lastName.toUpperCase()} ${fencer.firstName ?? ''}</td>
+        <td class="name-cell">${fencer.lastName.toUpperCase()} ${fencer.firstName ?? ''}</td>
         ${cells}
         ${statCells}
         ${sigCell}
@@ -320,7 +320,9 @@ export function generatePoolHTML(pool: Pool, options: PoolExportOptions, templat
     <div class="match-grid">
       ${pending.map(m => {
         const idx = matches.indexOf(m) + 1;
-        return `<div class="match-item match-pending">${idx}. ${m.fencerA?.lastName ?? '?'} — ${m.fencerB?.lastName ?? '?'}</div>`;
+        const rA = rankMap.get(m.fencerA?.id ?? '')?.rank ?? '?';
+        const rB = rankMap.get(m.fencerB?.id ?? '')?.rank ?? '?';
+        return `<div class="match-item match-pending">${idx}. (${rA}) ${m.fencerA?.lastName ?? '?'} — (${rB}) ${m.fencerB?.lastName ?? '?'}</div>`;
       }).join('')}
     </div>`;
 
