@@ -664,9 +664,14 @@ export function generateTableauHTML(
 
   let globalMatchNum = 0;
   const pagesHTML = pages.map((page, pageIdx) => {
+    let lastRound: number | null = null;
     const cards = page.matches.map(match => {
       globalMatchNum++;
-      return renderMatchCard(match, globalMatchNum);
+      const roundHeader = match.round !== lastRound
+        ? `<div class="round-sub-header">${getTableauRoundName(match.round)}</div>`
+        : '';
+      lastRound = match.round;
+      return roundHeader + renderMatchCard(match, globalMatchNum);
     }).join('');
 
     const sectionHeader = page.label
@@ -723,6 +728,17 @@ export function generateTableauHTML(
       padding: 2mm 4mm;
       border-radius: 4px;
       margin-bottom: 4mm;
+    }
+
+    .round-sub-header {
+      color: var(--navy);
+      font-weight: 600;
+      font-size: 9pt;
+      letter-spacing: 0.3px;
+      padding: 1mm 3mm;
+      margin-top: 3mm;
+      margin-bottom: 2mm;
+      border-left: 3px solid var(--gold);
     }
 
     .match-card {
