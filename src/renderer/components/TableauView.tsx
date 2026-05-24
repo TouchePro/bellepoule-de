@@ -11,7 +11,7 @@ import { TableauMatch, FinalResult, ConsolationBracket, propagateWinners } from 
 import { useToast } from './Toast';
 import { useModalResize } from '../hooks/useModalResize';
 import Bracket from './Bracket';
-import { exportTableauToPDF, printTableauHTML, MAX_MATCHES_PER_PAGE_TABLEAU } from '../../shared/utils/pdfExport';
+import { exportTableauToPDF, printTableauHTML, MAX_MATCHES_PER_PAGE_TABLEAU, exportBracketTreeToPDF } from '../../shared/utils/pdfExport';
 import { usePdfTemplateStore } from '../../features/pdfTemplates/hooks/usePdfTemplateStore';
 import MatchCard from './tableau/MatchCard';
 import SeedingTable from './tableau/SeedingTable';
@@ -912,6 +912,16 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     }
   };
 
+  const handleExportTree = async () => {
+    const title = `Arbre — Tableau de ${tableauSize}`;
+    const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
+    try {
+      await exportBracketTreeToPDF(matches, title, logo, tableauTemplate);
+    } catch (e) {
+      showToast((e as Error).message, 'error');
+    }
+  };
+
   const handleSpecialStatus = (status: 'abandon' | 'forfait' | 'exclusion') => {
     if (!editingMatch) return;
 
@@ -1394,6 +1404,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           setSelectedRounds(new Set(rounds));
           setShowPdfModal(true);
         }}
+        onExportTreeClick={handleExportTree}
         champion={champion}
       />
 
