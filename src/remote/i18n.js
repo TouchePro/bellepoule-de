@@ -87,6 +87,8 @@
       'kiosk.pause': '⏸ Pause',
       'kiosk.resume_at': 'Reprise',
       'kiosk.countdown_prefix': 'dans',
+      'kiosk.rotation_label': 'Rafraîchissement',
+      'kiosk.rotation_unit': 's',
       /* dashboard */
       'dashboard.pools': 'Poules',
       'dashboard.ranking': 'Classement Général',
@@ -185,6 +187,8 @@
       'kiosk.pause': '⏸ Break',
       'kiosk.resume_at': 'Resume',
       'kiosk.countdown_prefix': 'in',
+      'kiosk.rotation_label': 'Rotation interval',
+      'kiosk.rotation_unit': 's',
       /* dashboard */
       'dashboard.pools': 'Pools',
       'dashboard.ranking': 'Overall Ranking',
@@ -283,6 +287,8 @@
       'kiosk.pause': '⏸ 休息',
       'kiosk.resume_at': '恢復',
       'kiosk.countdown_prefix': '還有',
+      'kiosk.rotation_label': '輪換間隔',
+      'kiosk.rotation_unit': '秒',
       /* dashboard */
       'dashboard.pools': '小組賽',
       'dashboard.ranking': '總體排名',
