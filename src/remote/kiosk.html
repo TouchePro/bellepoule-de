@@ -717,6 +717,13 @@
           <label class="settings-item">
             <input type="checkbox" id="cb-suivants" checked> Matchs suivants
           </label>
+          <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:0.5rem 0">
+          <div class="settings-title" data-i18n="kiosk.rotation_label">Rafraîchissement</div>
+          <div class="settings-item">
+            <input type="number" id="rotation-input" min="3" max="300" value="15"
+              style="width:56px;background:#0f172a;border:1px solid rgba(255,255,255,0.2);border-radius:0.4rem;color:#e2e8f0;padding:0.2rem 0.4rem;font-size:0.875rem">
+            <span data-i18n="kiosk.rotation_unit">s</span>
+          </div>
         </div>
       </div>
       <div class="menu-status">
@@ -979,6 +986,16 @@
         return null;
       }
 
+      // ─── Configuration locale du délai de rotation ───────────────────────────
+      function saveLocalRotation(sec) {
+        localStorage.setItem('kioskRotationSec', String(sec));
+      }
+
+      function loadLocalRotation() {
+        const v = parseInt(localStorage.getItem('kioskRotationSec'), 10);
+        return (!isNaN(v) && v >= 3) ? v : 15;
+      }
+
       function applyLocalViews() {
         const enabled = ALL_VIEWS.filter(v => document.getElementById('cb-' + v).checked);
         state.views = enabled.length > 0 ? enabled : ALL_VIEWS.slice();
@@ -1019,6 +1036,17 @@
           applyLocalViews();
           clearTimeout(state.menuTimer); // garder le menu visible pendant la config
         });
+      });
+
+      // Changement du délai de rotation
+      document.getElementById('rotation-input').addEventListener('change', () => {
+        const raw = parseInt(document.getElementById('rotation-input').value, 10);
+        const sec = (!isNaN(raw) && raw >= 3) ? Math.min(raw, 300) : 15;
+        document.getElementById('rotation-input').value = sec;
+        state.rotationMs = sec * 1000;
+        saveLocalRotation(sec);
+        startRotation();
+        clearTimeout(state.menuTimer);
       });
 
       // ─── Statut connexion ────────────────────────────────────────────────────
@@ -1392,6 +1420,12 @@
       // ─── Init ─────────────────────────────────────────────────────────────────
       window.addEventListener('DOMContentLoaded', async () => {
         await window.initRemoteI18n();
+
+        // Restaurer et appliquer le délai de rotation depuis localStorage
+        const savedSec = loadLocalRotation();
+        state.rotationMs = savedSec * 1000;
+        document.getElementById('rotation-input').value = savedSec;
+
         fetchData();
         fetchLogo();
         setInterval(fetchData, 15000);
