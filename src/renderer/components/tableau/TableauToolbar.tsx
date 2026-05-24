@@ -20,6 +20,7 @@ interface TableauToolbarProps {
   onPyramidViewModeToggle: () => void;
   onPrintClick: () => void;
   onExportPdfClick: () => void;
+  onExportTreeClick: () => void;
   champion: Fencer | null | undefined;
 }
 
@@ -36,6 +37,7 @@ const TableauToolbarComponent: React.FC<TableauToolbarProps> = ({
   onPyramidViewModeToggle,
   onPrintClick,
   onExportPdfClick,
+  onExportTreeClick,
   champion,
 }) => {
   return (
@@ -174,6 +176,25 @@ const TableauToolbarComponent: React.FC<TableauToolbarProps> = ({
           title="Exporter les feuilles de match en PDF"
         >
           📄 Export PDF
+        </button>
+        <button
+          onClick={onExportTreeClick}
+          style={{
+            background: '#0d9488',
+            color: 'white',
+            border: 'none',
+            padding: '0.5rem 0.75rem',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '0.875rem',
+            fontWeight: '500',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.25rem',
+          }}
+          title="Exporter l'arbre du tableau en PDF"
+        >
+          🌲 Arbre PDF
         </button>
         {champion && (
           <div
