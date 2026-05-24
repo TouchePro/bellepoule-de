@@ -15,7 +15,8 @@ export type ColumnId =
   | 'firstName'
   | 'lastName'
   | 'club'
-  | 'nation';
+  | 'nation'
+  | 'region';
 
 export interface ColumnDefinition {
   id: ColumnId;
@@ -33,6 +34,7 @@ export const POOL_COLUMNS: ColumnDefinition[] = [
   { id: 'rank',   label: 'Rang',           labelShort: 'Rg' },
   { id: 'club',   label: 'Club',           labelShort: 'Club' },
   { id: 'nation', label: 'Nation',         labelShort: 'Nat' },
+  { id: 'region', label: 'Région',         labelShort: 'Rég' },
 ];
 
 export const RANKING_COLUMNS: ColumnDefinition[] = [

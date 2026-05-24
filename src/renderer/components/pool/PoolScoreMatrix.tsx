@@ -162,6 +162,15 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
             Nat
           </div>
         )}
+        {isVisible('region') && (
+          <div
+            className="pool-cell pool-cell-header"
+            onContextMenu={e => { e.preventDefault(); toggleColumn('pool', 'region'); }}
+            title="Clic droit pour masquer"
+          >
+            Rég
+          </div>
+        )}
       </div>
 
       {fencers.map((rowFencer, rowIndex) => {
@@ -367,6 +376,11 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
             {isVisible('nation') && (
               <div className="pool-cell" style={{ fontWeight: 600, textTransform: 'uppercase' }}>
                 {rowFencer.nationality ?? ''}
+              </div>
+            )}
+            {isVisible('region') && (
+              <div className="pool-cell" style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                {rowFencer.region ?? ''}
               </div>
             )}
           </div>
