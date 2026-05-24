@@ -652,18 +652,25 @@ export function generateTableauHTML(
       }
     }
   } else {
-    // No arenas: simple chunking, first page gets one fewer match to account for the doc header
-    const firstPageCount = Math.max(1, matchesPerPage - 1);
     const sorted = [...real].sort((a, b) => b.round - a.round || a.position - b.position);
-    let i = 0;
-    if (sorted.length > 0) {
-      pages.push({ matches: sorted.slice(0, firstPageCount) });
-      i = firstPageCount;
-    }
-    for (; i < sorted.length; i += matchesPerPage) {
+    for (let i = 0; i < sorted.length; i += matchesPerPage) {
       pages.push({ matches: sorted.slice(i, i + matchesPerPage) });
     }
   }
+
+  const effectiveTitle = template?.customTitle?.trim() || title;
+  const cssOverrides = template ? buildCssOverrides(template) : '';
+
+  const pageHeaderHTML = `
+  <div class="doc-header doc-header--compact">
+    ${logoBase64 ? `<img class="doc-header-logo" src="${logoBase64}" alt="Logo" />` : ''}
+    <div class="doc-header-left">
+      <h1>${effectiveTitle}</h1>
+      <div class="subtitle">Feuilles d'arbitrage — Élimination directe</div>
+    </div>
+    <div class="doc-header-badge">ED</div>
+  </div>
+  <div class="gold-bar"></div>`;
 
   let globalMatchNum = 0;
   const pagesHTML = pages.map((page, pageIdx) => {
@@ -682,23 +689,10 @@ export function generateTableauHTML(
       : '';
 
     const isLast = pageIdx === pages.length - 1;
-    return `<div class="page${isLast ? '' : ' page-break'}">${sectionHeader}${cards}</div>`;
+    return `<div class="page${isLast ? '' : ' page-break'}">${pageHeaderHTML}${sectionHeader}${cards}</div>`;
   }).join('');
 
-  const effectiveTitle = template?.customTitle?.trim() || title;
-  const cssOverrides = template ? buildCssOverrides(template) : '';
-
   const sections: Record<string, string> = {
-    'header': `
-  <div class="doc-header">
-    ${logoBase64 ? `<img class="doc-header-logo" src="${logoBase64}" alt="Logo" />` : ''}
-    <div class="doc-header-left">
-      <h1>${effectiveTitle}</h1>
-      <div class="subtitle">Feuilles d'arbitrage — Élimination directe</div>
-    </div>
-    <div class="doc-header-badge" style="font-size:11pt">ED</div>
-  </div>`,
-    'gold-bar': `  <div class="gold-bar"></div>`,
     'match-cards': `  ${pagesHTML}`,
     'footer': `
   <div class="doc-footer">
@@ -707,7 +701,7 @@ export function generateTableauHTML(
   </div>`,
   };
 
-  const defaultOrder = ['header', 'gold-bar', 'match-cards', 'footer'];
+  const defaultOrder = ['match-cards', 'footer'];
   const body = assembleBody(sections, template, defaultOrder);
 
   return `<!DOCTYPE html>
@@ -721,6 +715,25 @@ export function generateTableauHTML(
     @page { size: A4; margin: 12mm 10mm; }
 
     .page-break { page-break-after: always; }
+
+    .doc-header--compact {
+      padding: 2.5mm 4mm;
+    }
+    .doc-header--compact .doc-header-left h1 {
+      font-size: 11pt;
+    }
+    .doc-header--compact .doc-header-badge {
+      font-size: 9pt;
+      min-width: 10mm;
+      height: 10mm;
+    }
+    .doc-header--compact .doc-header-logo {
+      max-height: 7mm;
+    }
+    .doc-header--compact .subtitle {
+      font-size: 7.5pt;
+      margin-top: 0.8mm;
+    }
 
     .piste-section-header {
       background: var(--navy);
