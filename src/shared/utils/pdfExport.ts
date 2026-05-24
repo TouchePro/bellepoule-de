@@ -259,6 +259,7 @@ const STAT_COLS: { id: string; header: string; cls: string; render: (d: RankData
   { id: 'quest',     header: 'Quest',  cls: 'stat-cell', render: d => `${d.questPoints}` },
   { id: 'club',      header: 'Club',   cls: 'name-cell', render: d => d.fencer.club ?? '' },
   { id: 'nation',    header: 'Nation', cls: 'stat-cell', render: d => d.fencer.nationality ?? '' },
+  { id: 'region',    header: 'Région', cls: 'name-cell', render: d => d.fencer.region ?? '' },
 ];
 
 export function generatePoolHTML(pool: Pool, options: PoolExportOptions, template?: PdfTemplate): string {
