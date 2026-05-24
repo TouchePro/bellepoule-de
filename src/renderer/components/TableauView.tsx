@@ -127,7 +127,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   const [pdfMode, setPdfMode] = useState<'print' | 'pdf'>('pdf');
   const [pdfMatchesPerPage, setPdfMatchesPerPage] = useState<number>(MAX_MATCHES_PER_PAGE_TABLEAU);
   const [selectedRounds, setSelectedRounds] = useState<Set<number>>(new Set());
-  const [autoAssignArenas, setAutoAssignArenas] = useState(true);
+  const [autoAssignArenas, setAutoAssignArenas] = useState(false);
   const isUnlimitedScore = maxScore === 999;
   const prevMatchesLengthRef = useRef(0);
   const mountMatchesRef = useRef(matches);
