@@ -1135,7 +1135,8 @@
 
         container.innerHTML = pools.map(pool => {
           const rankings = pool.rankings || [];
-          const isComplete = rankings.every(r => (r.matchCount || 0) > 0);
+          const expectedMatches = Math.max(0, rankings.length - 1);
+          const isComplete = rankings.length > 0 && rankings.every(r => (r.matchesPlayed || 0) >= expectedMatches);
           const rows = rankings.map((r, i) => {
             const ind = (r.index >= 0 ? '+' : '') + (r.index || 0);
             const rankClass = i < 3 ? ' rank-' + (i + 1) : '';
