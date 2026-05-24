@@ -23,6 +23,7 @@ interface RemoteScoreManagerProps {
   onStopRemote: () => void;
   isRemoteActive?: boolean;
   initialStripCount?: number;
+  isVisible?: boolean;
 }
 
 interface RemoteSession {
@@ -99,6 +100,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   onStopRemote,
   isRemoteActive = false,
   initialStripCount,
+  isVisible = false,
 }) => {
   const { showToast } = useToast();
   const [session, setSession] = useState<RemoteSession | null>(null);
@@ -489,6 +491,9 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       </button>
     </div>
   );
+
+  // Tous les hooks ont été appelés — retour null si l'onglet n'est pas visible
+  if (!isVisible) return null;
 
   if (!isRemoteActive) {
     return (
