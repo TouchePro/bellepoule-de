@@ -2927,12 +2927,31 @@
           }
           this.updateRefereeBar();
 
+          // Arène libérée par le serveur (match saisi depuis l'application principale)
+          if (data.status === 'idle') {
+            if (this.matchStatus === 'in_progress') {
+              this.showNotification('⚠️ Match clôturé depuis l\'application principale');
+              this.stopTimer();
+              setTimeout(() => {
+                this._clearActiveMatch();
+                this.showNextMatchesScreen();
+              }, 2000);
+            } else {
+              this._clearActiveMatch();
+              this.showNextMatchesScreen();
+            }
+            return;
+          }
+
           // Nouveau match prêt côté serveur (chargement automatique après fin de match)
           if (data.status === 'ready' && data.match && data.match.id) {
             // Ignorer si c'est déjà notre match actuel
             if (this.currentMatch && this.currentMatch.id === data.match.id) return;
-            // Ne pas écraser un match en cours
-            if (this.matchStatus === 'in_progress') return;
+            // Notifier sans interrompre un match en cours
+            if (this.matchStatus === 'in_progress') {
+              this.showNotification('⏭️ Prochain match disponible après ce match');
+              return;
+            }
 
             const fencerA = data.fencerA || data.match.fencerA;
             const fencerB = data.fencerB || data.match.fencerB;
@@ -2958,10 +2977,38 @@
               this.matches.push(newMatch);
             }
 
-            // Toujours rafraîchir l'écran de sélection sans auto-sélectionner
+            // Si l'arbitre avait un ancien match ouvert, fermer le panneau pour revenir à la liste
+            const activePanel = document.getElementById('active-match');
+            if (activePanel && activePanel.classList.contains('visible')) {
+              this._clearActiveMatch();
+            }
+
+            // Rafraîchir et afficher l'écran de sélection
             this.loadNextMatches();
+            this.showNextMatchesScreen();
             this.showNotification('⏭️ Match suivant disponible !');
           }
+        }
+
+        _clearActiveMatch() {
+          this.currentMatch = null;
+          this.scoreA = 0;
+          this.scoreB = 0;
+          this.cardsA = [];
+          this.cardsB = [];
+          this.touchesA = [];
+          this.touchesB = [];
+          this.faultHistoryA = { 1: 0, 2: 0, 3: 0 };
+          this.faultHistoryB = { 1: 0, 2: 0, 3: 0 };
+          this.matchStatus = 'not_started';
+          this.isSuddenDeath = false;
+          this.waitingOvertimeStart = false;
+          this.overtimeType = null;
+          this.actionHistory = [];
+          this.timerSeconds = this.defaultTimerSeconds;
+          this.updateTimerDisplay();
+          document.getElementById('active-match').classList.remove('visible');
+          this.updateControlButtons();
         }
 
         updateRefereeBar() {
