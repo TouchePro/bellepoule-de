@@ -573,26 +573,64 @@ const FencerListComponent: React.FC<FencerListProps> = ({
         </div>
       ) : (
         <div className="card">
-          <table className="table" style={useVirtual ? { tableLayout: 'fixed' } : undefined}>
-            <thead>
-              <tr>
-                <th style={{ width: '50px' }}>N°</th>
-                <th>Nom</th>
-                <th>Prénom</th>
-                <th>Né(e)</th>
-                <th>Club</th>
-                <th>Classement</th>
-                <th>Statut</th>
-                <th style={{ width: '250px' }}>Actions</th>
-              </tr>
-            </thead>
-          </table>
+          {useVirtual && (
+            <table className="table" style={{ tableLayout: 'fixed' }}>
+              <colgroup>
+                <col style={{ width: '50px' }} />
+                <col />
+                <col />
+                <col style={{ width: '70px' }} />
+                <col />
+                <col style={{ width: '110px' }} />
+                <col style={{ width: '90px' }} />
+                <col style={{ width: '250px' }} />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>N°</th>
+                  <th>Nom</th>
+                  <th>Prénom</th>
+                  <th>Né(e)</th>
+                  <th>Club</th>
+                  <th>Classement</th>
+                  <th>Statut</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+            </table>
+          )}
           <div
             ref={useVirtual ? virtual.containerRef : undefined}
             onScroll={useVirtual ? virtual.onScroll : undefined}
             style={useVirtual ? { height: CONTAINER_HEIGHT, overflowY: 'auto' } : undefined}
           >
             <table className="table" style={useVirtual ? { tableLayout: 'fixed' } : undefined}>
+              {useVirtual && (
+                <colgroup>
+                  <col style={{ width: '50px' }} />
+                  <col />
+                  <col />
+                  <col style={{ width: '70px' }} />
+                  <col />
+                  <col style={{ width: '110px' }} />
+                  <col style={{ width: '90px' }} />
+                  <col style={{ width: '250px' }} />
+                </colgroup>
+              )}
+              {!useVirtual && (
+                <thead>
+                  <tr>
+                    <th style={{ width: '50px' }}>N°</th>
+                    <th>Nom</th>
+                    <th>Prénom</th>
+                    <th>Né(e)</th>
+                    <th>Club</th>
+                    <th>Classement</th>
+                    <th>Statut</th>
+                    <th style={{ width: '250px' }}>Actions</th>
+                  </tr>
+                </thead>
+              )}
             <tbody>
               {useVirtual && virtual.state.offsetY > 0 && (
                 <tr style={{ height: virtual.state.offsetY }}><td colSpan={8} /></tr>
