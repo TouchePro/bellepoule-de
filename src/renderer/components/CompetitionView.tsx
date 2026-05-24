@@ -1206,8 +1206,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
           />
         )}
 
-        {currentPhase === 'remote' && (
-          <Suspense fallback={null}>
+        <Suspense fallback={null}>
           <RemoteScoreManager
             competition={competition}
             pools={pools}
@@ -1218,9 +1217,9 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             onStartRemote={() => setIsRemoteActive(true)}
             onStopRemote={() => setIsRemoteActive(false)}
             isRemoteActive={isRemoteActive}
+            isVisible={currentPhase === 'remote'}
           />
-          </Suspense>
-        )}
+        </Suspense>
 
         {currentPhase === 'logs' && (
           <ScoreAuditLog competitionId={competition.id} />
