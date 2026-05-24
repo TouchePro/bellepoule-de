@@ -13,6 +13,7 @@ interface TableauToolbarProps {
   arenaCount: number;
   autoAssignArenas: boolean;
   onAutoAssignToggle: (enabled: boolean) => void;
+  onBulkDeassign: () => void;
   onAutoFillScores: () => void;
   viewMode: 'full' | 'pending';
   onViewModeToggle: () => void;
@@ -30,6 +31,7 @@ const TableauToolbarComponent: React.FC<TableauToolbarProps> = ({
   arenaCount,
   autoAssignArenas,
   onAutoAssignToggle,
+  onBulkDeassign,
   onAutoFillScores,
   viewMode,
   onViewModeToggle,
@@ -54,30 +56,51 @@ const TableauToolbarComponent: React.FC<TableauToolbarProps> = ({
       </h2>
       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
         {arenaCount > 0 && (
-          <label
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              fontSize: '0.875rem',
-              color: '#374151',
-              cursor: 'pointer',
-              padding: '0.5rem 0.75rem',
-              background: autoAssignArenas ? '#eff6ff' : '#f3f4f6',
-              border: `1px solid ${autoAssignArenas ? '#3b82f6' : '#d1d5db'}`,
-              borderRadius: '6px',
-              userSelect: 'none',
-            }}
-            title="Assigne automatiquement les matchs aux arènes disponibles en round-robin"
-          >
-            <input
-              type="checkbox"
-              checked={autoAssignArenas}
-              onChange={e => onAutoAssignToggle(e.target.checked)}
-              style={{ cursor: 'pointer' }}
-            />
-            <span>🏟️ Assignation auto</span>
-          </label>
+          <>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                fontSize: '0.875rem',
+                color: '#374151',
+                cursor: 'pointer',
+                padding: '0.5rem 0.75rem',
+                background: autoAssignArenas ? '#eff6ff' : '#f3f4f6',
+                border: `1px solid ${autoAssignArenas ? '#3b82f6' : '#d1d5db'}`,
+                borderRadius: '6px',
+                userSelect: 'none',
+              }}
+              title="Assigne automatiquement les matchs aux arènes disponibles en round-robin"
+            >
+              <input
+                type="checkbox"
+                checked={autoAssignArenas}
+                onChange={e => onAutoAssignToggle(e.target.checked)}
+                style={{ cursor: 'pointer' }}
+              />
+              <span>🏟️ Assignation auto</span>
+            </label>
+            <button
+              onClick={onBulkDeassign}
+              style={{
+                background: '#ef4444',
+                color: 'white',
+                border: 'none',
+                padding: '0.5rem 0.75rem',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.25rem',
+              }}
+              title="Désaffecter tous les matches de toutes les arènes"
+            >
+              ❌ Désaffecter tout
+            </button>
+          </>
         )}
         <button
           onClick={onAutoFillScores}
