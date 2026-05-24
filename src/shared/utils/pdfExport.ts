@@ -517,8 +517,8 @@ export interface TableauMatchForPDF {
   id: string;
   round: number;
   position: number;
-  fencerA: { firstName?: string; lastName: string } | null;
-  fencerB: { firstName?: string; lastName: string } | null;
+  fencerA: { firstName?: string; lastName: string; club?: string } | null;
+  fencerB: { firstName?: string; lastName: string; club?: string } | null;
   scoreA: number | null;
   scoreB: number | null;
   winner: { id: string } | null;
@@ -556,6 +556,8 @@ export function generateTableauHTML(
     const roundName = getTableauRoundName(match.round);
     const nameA = `${match.fencerA!.lastName.toUpperCase()} ${match.fencerA!.firstName ?? ''}`.trim();
     const nameB = `${match.fencerB!.lastName.toUpperCase()} ${match.fencerB!.firstName ?? ''}`.trim();
+    const clubA = match.fencerA!.club ?? '';
+    const clubB = match.fencerB!.club ?? '';
     const pisteLabel = match.arena != null ? `Piste ${match.arena}` : 'Piste ___';
     return `
 <div class="match-card">
@@ -581,13 +583,13 @@ export function generateTableauHTML(
     <tbody>
       <tr class="row-a">
         <td class="row-letter">A</td>
-        <td class="fencer-name">${nameA}</td>
+        <td class="fencer-name">${nameA}${clubA ? `<br><span class="fencer-club">${clubA}</span>` : ''}</td>
         <td class="score-box"></td>
         <td class="sig-box"></td>
       </tr>
       <tr class="row-b">
         <td class="row-letter">B</td>
-        <td class="fencer-name">${nameB}</td>
+        <td class="fencer-name">${nameB}${clubB ? `<br><span class="fencer-club">${clubB}</span>` : ''}</td>
         <td class="score-box"></td>
         <td class="sig-box"></td>
       </tr>
@@ -780,6 +782,11 @@ export function generateTableauHTML(
       font-weight: 700;
       letter-spacing: 0.2px;
       vertical-align: middle;
+    }
+    .fencer-club {
+      font-size: 8pt;
+      font-weight: 400;
+      color: var(--gray-dark);
     }
     .score-box {
       border-left: 1px solid var(--border);

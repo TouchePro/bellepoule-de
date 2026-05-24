@@ -68,7 +68,12 @@ const MatchCard: React.FC<MatchCardProps> = ({
       <div className={`match-fencer ${winnerA ? 'match-fencer-winner' : ''} ${!match.fencerA ? 'match-fencer-empty' : ''}`}>
         <div className="match-fencer-info">
           {winnerA && <span className="match-winner-crown">🥇</span>}
-          <span className="match-fencer-name">{fencerName(match.fencerA)}</span>
+          <div className="match-fencer-details">
+            <span className="match-fencer-name">{fencerName(match.fencerA)}</span>
+            {match.fencerA?.club && (
+              <span className="match-fencer-club">{match.fencerA.club}</span>
+            )}
+          </div>
           {match.fencerA?.ranking && (
             <span className="match-fencer-seed">#{match.fencerA.ranking}</span>
           )}
@@ -87,7 +92,12 @@ const MatchCard: React.FC<MatchCardProps> = ({
       <div className={`match-fencer ${winnerB ? 'match-fencer-winner' : ''} ${!match.fencerB ? 'match-fencer-empty' : ''}`}>
         <div className="match-fencer-info">
           {winnerB && <span className="match-winner-crown">🥇</span>}
-          <span className="match-fencer-name">{fencerName(match.fencerB)}</span>
+          <div className="match-fencer-details">
+            <span className="match-fencer-name">{fencerName(match.fencerB)}</span>
+            {match.fencerB?.club && (
+              <span className="match-fencer-club">{match.fencerB.club}</span>
+            )}
+          </div>
           {match.fencerB?.ranking && (
             <span className="match-fencer-seed">#{match.fencerB.ranking}</span>
           )}
