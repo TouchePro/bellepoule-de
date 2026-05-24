@@ -586,16 +586,20 @@ export class RemoteScoreServer {
     // Support both /arena1 and /arene1 formats
     this.app.get('/arena:arenaId', (req, res) => {
       const arenaId = req.params.arenaId;
+      if (!this.arenas.has(`arena${arenaId}`)) {
+        return res.status(404).send('Arène non trouvée');
+      }
       console.log(`[RemoteScoreServer] Accès à l'arène ${arenaId}`);
-
       this.sendHtmlFromMemory('arena.html', res);
     });
 
     // Alias /arene pour compatibilité française
     this.app.get('/arene:arenaId', (req, res) => {
       const arenaId = req.params.arenaId;
+      if (!this.arenas.has(`arena${arenaId}`)) {
+        return res.status(404).send('Arène non trouvée');
+      }
       console.log(`[RemoteScoreServer] Accès à l'arène (arene) ${arenaId}`);
-
       this.sendHtmlFromMemory('arena.html', res);
     });
 
@@ -2383,6 +2387,9 @@ export class RemoteScoreServer {
       if (arena.password) savedPasswords.set(id, arena.password);
     });
     this.arenas.clear();
+    this.arenaEventBuffer.clear();
+    this.arenaMatchQueue.clear();
+    this.arenaNextMatchIndex.clear();
 
     for (let i = 1; i <= arenaCount; i++) {
       const arena: Arena = {
@@ -2445,6 +2452,7 @@ export class RemoteScoreServer {
   public setArenaCount(count: number): void {
     console.log(`[RemoteScoreServer] Mise à jour du nombre d'arènes: ${count}`);
     this.initializeArenas(count);
+    this.io?.emit('arenas:updated', this.getAllArenas());
   }
 
   public getArenaCount(): number {
@@ -3714,6 +3722,17 @@ export class RemoteScoreServer {
       this.session.strips.forEach((strip, idx) => {
         strip.number = idx + 1;
       });
+
+      // Supprimer les arènes au-delà du nouveau count
+      for (let i = newCount + 1; i <= currentCount; i++) {
+        const arenaId = `arena${i}`;
+        this.arenas.delete(arenaId);
+        this.arenaMatchQueue.delete(arenaId);
+        this.arenaEventBuffer.delete(arenaId);
+        this.arenaNextMatchIndex.delete(arenaId);
+      }
+      this.arenaCount = newCount;
+      this.io?.emit('arenas:updated', this.getAllArenas());
     }
 
     return this.session;
