@@ -144,6 +144,24 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
             Rg
           </div>
         )}
+        {isVisible('club') && (
+          <div
+            className="pool-cell pool-cell-header"
+            onContextMenu={e => { e.preventDefault(); toggleColumn('pool', 'club'); }}
+            title="Clic droit pour masquer"
+          >
+            Club
+          </div>
+        )}
+        {isVisible('nation') && (
+          <div
+            className="pool-cell pool-cell-header"
+            onContextMenu={e => { e.preventDefault(); toggleColumn('pool', 'nation'); }}
+            title="Clic droit pour masquer"
+          >
+            Nat
+          </div>
+        )}
       </div>
 
       {fencers.map((rowFencer, rowIndex) => {
@@ -339,6 +357,16 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
             {isVisible('rank') && (
               <div className="pool-cell" style={{ fontWeight: 600 }}>
                 {rankEntry?.rank || '-'}
+              </div>
+            )}
+            {isVisible('club') && (
+              <div className="pool-cell" style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                {rowFencer.club ?? ''}
+              </div>
+            )}
+            {isVisible('nation') && (
+              <div className="pool-cell" style={{ fontWeight: 600, textTransform: 'uppercase' }}>
+                {rowFencer.nationality ?? ''}
               </div>
             )}
           </div>

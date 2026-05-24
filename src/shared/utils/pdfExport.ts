@@ -5,6 +5,7 @@
  */
 
 import { Pool, Match, MatchStatus, Fencer, PoolRanking, Weapon } from '../types';
+import { calculateFencerQuestStats } from './poolCalculations';
 import type { PdfTemplate } from '../types/pdfTemplate.types';
 
 export interface PoolExportOptions {
@@ -246,15 +247,18 @@ const BASE_CSS = `
 
 // ─── HTML Poule ───────────────────────────────────────────────────────────────
 
-type RankData = { fencer: Fencer; stats: ReturnType<typeof calculateFencerStats>; rank: number };
+type RankData = { fencer: Fencer; stats: ReturnType<typeof calculateFencerStats>; rank: number; questPoints: number };
 
 const STAT_COLS: { id: string; header: string; cls: string; render: (d: RankData) => string }[] = [
-  { id: 'victories', header: 'V',   cls: 'stat-cell', render: d => `${d.stats.v}` },
-  { id: 'ratio',     header: 'V/M', cls: 'stat-cell', render: d => d.stats.ratio.toFixed(2) },
-  { id: 'td',        header: 'TD',  cls: 'stat-cell', render: d => `${d.stats.td}` },
-  { id: 'tr',        header: 'TR',  cls: 'stat-cell', render: d => `${d.stats.tr}` },
-  { id: 'index',     header: 'Ind', cls: 'stat-cell', render: d => d.stats.ind >= 0 ? `+${d.stats.ind}` : `${d.stats.ind}` },
-  { id: 'rank',      header: 'Rg',  cls: 'rank-cell', render: d => `${d.rank}` },
+  { id: 'victories', header: 'V',      cls: 'stat-cell', render: d => `${d.stats.v}` },
+  { id: 'ratio',     header: 'V/M',    cls: 'stat-cell', render: d => d.stats.ratio.toFixed(2) },
+  { id: 'td',        header: 'TD',     cls: 'stat-cell', render: d => `${d.stats.td}` },
+  { id: 'tr',        header: 'TR',     cls: 'stat-cell', render: d => `${d.stats.tr}` },
+  { id: 'index',     header: 'Ind',    cls: 'stat-cell', render: d => d.stats.ind >= 0 ? `+${d.stats.ind}` : `${d.stats.ind}` },
+  { id: 'rank',      header: 'Rg',     cls: 'rank-cell', render: d => `${d.rank}` },
+  { id: 'quest',     header: 'Quest',  cls: 'stat-cell', render: d => `${d.questPoints}` },
+  { id: 'club',      header: 'Club',   cls: 'name-cell', render: d => d.fencer.club ?? '' },
+  { id: 'nation',    header: 'Nation', cls: 'stat-cell', render: d => d.fencer.nationality ?? '' },
 ];
 
 export function generatePoolHTML(pool: Pool, options: PoolExportOptions, template?: PdfTemplate): string {
@@ -266,13 +270,15 @@ export function generatePoolHTML(pool: Pool, options: PoolExportOptions, templat
   const finishedCount = matches.filter(m => m.status === MatchStatus.FINISHED).length;
   const now = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
 
+  const isLaserSabre = options.weapon === 'L';
   const activeCols = options.visibleColumns
-    ? STAT_COLS.filter(c => options.visibleColumns!.includes(c.id))
-    : STAT_COLS;
+    ? STAT_COLS.filter(c => options.visibleColumns!.includes(c.id) && (c.id !== 'quest' || isLaserSabre))
+    : STAT_COLS.filter(c => c.id !== 'quest' || isLaserSabre);
 
   const rankings = fencers.map(f => ({
     fencer: f,
     stats: calculateFencerStats(f, matches),
+    questPoints: calculateFencerQuestStats(f, matches).questPoints,
     rank: 0,
   }));
   rankings.sort((a, b) => {
@@ -300,7 +306,7 @@ export function generatePoolHTML(pool: Pool, options: PoolExportOptions, templat
     return `
       <tr>
         <td class="num-cell">${row + 1}</td>
-        <td class="name-cell">${fencer.lastName.toUpperCase()} ${fencer.firstName?.charAt(0) ?? ''}.</td>
+        <td class="name-cell">(${data.rank}) ${fencer.lastName.toUpperCase()} ${fencer.firstName ?? ''}</td>
         ${cells}
         ${statCells}
         ${sigCell}

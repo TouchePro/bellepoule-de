@@ -14,7 +14,8 @@ export type ColumnId =
   | 'rank'
   | 'firstName'
   | 'lastName'
-  | 'club';
+  | 'club'
+  | 'nation';
 
 export interface ColumnDefinition {
   id: ColumnId;
@@ -28,8 +29,10 @@ export const POOL_COLUMNS: ColumnDefinition[] = [
   { id: 'td', label: 'TD (Touches données)', labelShort: 'TD' },
   { id: 'tr', label: 'TR (Touches reçues)', labelShort: 'TR' },
   { id: 'quest', label: 'Quest', labelShort: 'Quest' },
-  { id: 'index', label: 'Indice (TD-TR)', labelShort: 'Ind' },
-  { id: 'rank', label: 'Rang', labelShort: 'Rg' },
+  { id: 'index',  label: 'Indice (TD-TR)', labelShort: 'Ind' },
+  { id: 'rank',   label: 'Rang',           labelShort: 'Rg' },
+  { id: 'club',   label: 'Club',           labelShort: 'Club' },
+  { id: 'nation', label: 'Nation',         labelShort: 'Nat' },
 ];
 
 export const RANKING_COLUMNS: ColumnDefinition[] = [
