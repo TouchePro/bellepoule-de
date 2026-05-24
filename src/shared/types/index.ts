@@ -218,6 +218,7 @@ export interface PoolStats {
   index: number; // Indice (TD - TR)
   matchesPlayed: number; // Matchs joués
   victoryRatio: number; // V/M (ratio victoires/matchs)
+  maxSingleMatchScore?: number; // Meilleur score marqué en un seul match
   poolRank?: number; // Rang dans la poule
   overallRank?: number; // Rang général après poules
 }
@@ -320,6 +321,7 @@ export interface PoolRanking {
   questVictories2?: number; // Nombre de victoires à 2 points (écart 4-7)
   questVictories1?: number; // Nombre de victoires à 1 point (écart ≤3)
   totalCards?: number;      // Nombre total de cartons reçus (critère de départage Quest)
+  maxSingleMatchScore?: number; // Meilleur score marqué en un seul match
 }
 
 // ============================================================================

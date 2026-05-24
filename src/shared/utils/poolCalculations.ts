@@ -161,6 +161,7 @@ export function calculateFencerPoolStats(fencer: Fencer, matches: Match[]): Pool
   let touchesScored = 0;
   let touchesReceived = 0;
   let matchesPlayed = 0;
+  let maxSingleMatchScore = 0;
 
   for (const match of matches) {
     // Vérifier si le tireur est dans ce match
@@ -186,6 +187,7 @@ export function calculateFencerPoolStats(fencer: Fencer, matches: Match[]): Pool
     }
 
     matchesPlayed++;
+    maxSingleMatchScore = Math.max(maxSingleMatchScore, myScore.value ?? 0);
 
     // Gestion des cas spéciaux
     if (myScore.isAbstention || myScore.isExclusion || myScore.isForfait) {
@@ -218,6 +220,7 @@ export function calculateFencerPoolStats(fencer: Fencer, matches: Match[]): Pool
     index,
     matchesPlayed,
     victoryRatio,
+    maxSingleMatchScore,
   };
 }
 
@@ -235,9 +238,9 @@ function assignRanks(rankings: PoolRanking[]): void {
       const sameVictories = prev.ratio === curr.ratio;
       const sameQuest = (prev.questPoints ?? 0) === (curr.questPoints ?? 0);
       const sameCards = (prev.totalCards ?? 0) === (curr.totalCards ?? 0);
-      const sameIndex = prev.index === curr.index;
+      const sameSingleMatch = (prev.maxSingleMatchScore ?? 0) === (curr.maxSingleMatchScore ?? 0);
 
-      if (sameVictories && sameQuest && sameCards && sameIndex) {
+      if (sameVictories && sameQuest && sameCards && sameSingleMatch) {
         rankings[i].rank = rankings[i - 1].rank;
       } else {
         rankings[i].rank = currentRank;
@@ -316,6 +319,7 @@ export function calculatePoolRanking(pool: Pool): PoolRanking[] {
       index: stats.index,
       ratio: stats.victoryRatio,
       questPoints: questStats.questPoints,
+      maxSingleMatchScore: stats.maxSingleMatchScore ?? 0,
     });
   }
 
@@ -343,9 +347,11 @@ export function calculatePoolRanking(pool: Pool): PoolRanking[] {
       return bQuest - aQuest;
     }
 
-    // 3. Indice (TD - TR) (décroissant)
-    if (a.index !== b.index) {
-      return b.index - a.index;
+    // 3. Meilleur score en un match (décroissant)
+    const aMax = a.maxSingleMatchScore ?? 0;
+    const bMax = b.maxSingleMatchScore ?? 0;
+    if (aMax !== bMax) {
+      return bMax - aMax;
     }
 
     // 4. Confrontation directe — O(1) grâce à la Map
@@ -899,6 +905,10 @@ function mergeFencerRankings(rankings: PoolRanking[]): PoolRanking[] {
       existing.index = existing.touchesScored - existing.touchesReceived;
       existing.ratio =
         existing.matchesPlayed > 0 ? existing.victories / existing.matchesPlayed : 0;
+      existing.maxSingleMatchScore = Math.max(
+        existing.maxSingleMatchScore ?? 0,
+        r.maxSingleMatchScore ?? 0
+      );
       existing.questPoints = (existing.questPoints ?? 0) + (r.questPoints ?? 0);
       existing.questVictories4 = (existing.questVictories4 ?? 0) + (r.questVictories4 ?? 0);
       existing.questVictories3 = (existing.questVictories3 ?? 0) + (r.questVictories3 ?? 0);
@@ -941,9 +951,11 @@ export function calculateOverallRanking(pools: Pool[]): PoolRanking[] {
     if (aQuest !== bQuest) {
       return bQuest - aQuest;
     }
-    // 3. Indice (TD-TR)
-    if (a.index !== b.index) {
-      return b.index - a.index;
+    // 3. Meilleur score en un match
+    const aMax = a.maxSingleMatchScore ?? 0;
+    const bMax = b.maxSingleMatchScore ?? 0;
+    if (aMax !== bMax) {
+      return bMax - aMax;
     }
     // 4. Égalité parfaite - garder l'ordre
     return 0;
