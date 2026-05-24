@@ -1069,12 +1069,12 @@
       <!-- Match actif -->
       <div class="active-match" id="active-match">
         <div class="fencers-container">
-          <!-- Tireur A (Vert) -->
-          <div class="fencer-box green-side" id="fencer-a-box">
+          <!-- Tireur A (Rouge) -->
+          <div class="fencer-box red-side" id="fencer-a-box">
             <div class="fencer-name" id="fencer-a-name">-</div>
             <div class="fencer-club" id="fencer-a-club">-</div>
             <div class="cards-display" id="fencer-a-cards"></div>
-            <div class="score-display green-score" id="score-a">0</div>
+            <div class="score-display red-score" id="score-a">0</div>
             <div class="score-buttons">
               <button id="btn-plus-1-a" class="score-btn btn-plus-1">+1</button>
               <button id="btn-plus-3-a" class="score-btn btn-plus-3">+3</button>
@@ -1111,12 +1111,12 @@
           <!-- VS -->
           <div class="vs-divider">VS</div>
 
-          <!-- Tireur B (Rouge) -->
-          <div class="fencer-box red-side" id="fencer-b-box">
+          <!-- Tireur B (Vert) -->
+          <div class="fencer-box green-side" id="fencer-b-box">
             <div class="fencer-name" id="fencer-b-name">-</div>
             <div class="fencer-club" id="fencer-b-club">-</div>
             <div class="cards-display" id="fencer-b-cards"></div>
-            <div class="score-display red-score" id="score-b">0</div>
+            <div class="score-display green-score" id="score-b">0</div>
             <div class="score-buttons">
               <button id="btn-plus-1-b" class="score-btn btn-plus-1">+1</button>
               <button id="btn-plus-3-b" class="score-btn btn-plus-3">+3</button>
@@ -2393,22 +2393,22 @@
         }
 
         _effectiveFencer(configFencer) {
-          return this.swapped ? (configFencer === 'A' ? 'B' : 'A') : configFencer;
+          return this.swapped ? configFencer : (configFencer === 'A' ? 'B' : 'A');
         }
 
         applySwapState() {
           const boxA = document.getElementById('fencer-a-box');
           const boxB = document.getElementById('fencer-b-box');
-          if (boxA) boxA.className = `fencer-box ${this.swapped ? 'red-side' : 'green-side'}`;
-          if (boxB) boxB.className = `fencer-box ${this.swapped ? 'green-side' : 'red-side'}`;
+          if (boxA) boxA.className = `fencer-box ${this.swapped ? 'green-side' : 'red-side'}`;
+          if (boxB) boxB.className = `fencer-box ${this.swapped ? 'red-side' : 'green-side'}`;
           const scoreA = document.getElementById('score-a');
           const scoreB = document.getElementById('score-b');
-          if (scoreA) scoreA.className = `score-display ${this.swapped ? 'red-score' : 'green-score'}`;
-          if (scoreB) scoreB.className = `score-display ${this.swapped ? 'green-score' : 'red-score'}`;
+          if (scoreA) scoreA.className = `score-display ${this.swapped ? 'green-score' : 'red-score'}`;
+          if (scoreB) scoreB.className = `score-display ${this.swapped ? 'red-score' : 'green-score'}`;
 
           if (this.currentMatch) {
-            const left = this.swapped ? this.currentMatch.fencerB : this.currentMatch.fencerA;
-            const right = this.swapped ? this.currentMatch.fencerA : this.currentMatch.fencerB;
+            const left = this.swapped ? this.currentMatch.fencerA : this.currentMatch.fencerB;
+            const right = this.swapped ? this.currentMatch.fencerB : this.currentMatch.fencerA;
             const leftName = `${left?.lastName || ''} ${left?.firstName || ''}`.trim();
             const rightName = `${right?.lastName || ''} ${right?.firstName || ''}`.trim();
             const nameElA = document.getElementById('fencer-a-name');
@@ -2435,8 +2435,8 @@
             scoreAEl.classList.add('not-started');
             scoreBEl.classList.add('not-started');
           } else {
-            scoreAEl.textContent = this.swapped ? this.scoreB : this.scoreA;
-            scoreBEl.textContent = this.swapped ? this.scoreA : this.scoreB;
+            scoreAEl.textContent = this.swapped ? this.scoreA : this.scoreB;
+            scoreBEl.textContent = this.swapped ? this.scoreB : this.scoreA;
             scoreAEl.classList.remove('not-started');
             scoreBEl.classList.remove('not-started');
           }
@@ -2451,8 +2451,8 @@
               )
               .join('');
 
-          document.getElementById('fencer-a-cards').innerHTML = renderCards(this.swapped ? this.cardsB : this.cardsA);
-          document.getElementById('fencer-b-cards').innerHTML = renderCards(this.swapped ? this.cardsA : this.cardsB);
+          document.getElementById('fencer-a-cards').innerHTML = renderCards(this.swapped ? this.cardsA : this.cardsB);
+          document.getElementById('fencer-b-cards').innerHTML = renderCards(this.swapped ? this.cardsB : this.cardsA);
         }
 
         toggleTimer() {
