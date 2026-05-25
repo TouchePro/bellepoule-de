@@ -419,7 +419,7 @@
         let isSuddenDeath = false;
         let matchStatus   = 'idle';
         let phaseLabel    = 'Piste ' + arenaNumber;
-        let swapped       = false;
+        let swapped       = params.get('swap') === '1';
         let currentFencerA = {}, currentFencerB = {};
 
         const holdResultSec = parseInt(params.get('holdresult') || '5', 10);
@@ -478,7 +478,6 @@
         }
 
         function applyMatchData(data) {
-          if (data.swapped !== undefined) swapped = data.swapped;
           if (data.status) { matchStatus = data.status; renderVisibility(); }
           if (data.match) {
             currentFencerA = data.match.fencerA || {};
@@ -526,7 +525,6 @@
               applyUpdate({
                 status:  arena.status,
                 match:   arena.currentMatch,
-                swapped: arena.swapped ?? false,
                 scoreA:  arena.scoreA,
                 scoreB:  arena.scoreB,
                 cardsA:  arena.cardsA || [],
