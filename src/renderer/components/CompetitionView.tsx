@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
 import { Competition, Fencer, FencerStatus, Match, MatchStatus, Weapon, QuestPhaseConfig, Referee } from '../../shared/types';
+import { Arena } from '../../shared/types/remote';
 import { logger, LogCategory } from '@shared/services/logger';
 import { RankingImportResult } from '../../shared/utils/fileParser';
 import FencerList from './FencerList';
@@ -117,6 +118,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [isRemoteActive, setIsRemoteActive] = useState(false);
   const [remoteServerUrl, setRemoteServerUrl] = useState<string | null>(null);
   const [remoteArenaCount, setRemoteArenaCount] = useState<number>(1);
+  const [arenaStates, setArenaStates] = useState<Arena[]>([]);
   const [showThirdPlaceDialog, setShowThirdPlaceDialog] = useState(false);
   const [tableauMatches, setTableauMatches] = useState<TableauMatch[]>([]);
   const [consolationBrackets, setConsolationBrackets] = useState<ConsolationBracket[]>([]);
@@ -318,6 +320,29 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       });
     }, 500);
     return () => clearTimeout(timer);
+  }, [isRemoteActive, competition.id]);
+
+  // Charger les arènes quand le serveur distant devient actif et s'abonner aux updates
+  useEffect(() => {
+    if (!isRemoteActive || !competition?.id || !window.electronAPI?.remote) return;
+    window.electronAPI.remote.getArenas(competition.id).then((res: any) => {
+      if (res?.success && res.arenas) setArenaStates(res.arenas);
+    }).catch(() => {});
+    if (window.electronAPI.onRemoteArenaUpdate) {
+      window.electronAPI.onRemoteArenaUpdate((data: any) => {
+        setArenaStates(prev => {
+          const idx = prev.findIndex((a: Arena) => a.id === data.arenaId);
+          if (idx === -1) return prev;
+          const updated = [...prev];
+          updated[idx] = {
+            ...updated[idx],
+            currentMatch: data.update?.match ?? updated[idx].currentMatch,
+            status: data.update?.status ?? updated[idx].status,
+          };
+          return updated;
+        });
+      });
+    }
   }, [isRemoteActive, competition.id]);
 
   // Écouter les mises à jour des matches distants
@@ -1103,6 +1128,20 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                           setPools(prev =>
                             prev.map(p => (p.id === updatedPool.id ? updatedPool : p))
                           );
+                        }}
+                        arenaCount={remoteArenaCount}
+                        arenas={arenaStates}
+                        isRemoteActive={isRemoteActive}
+                        onMatchArenaChange={(matchId, oldArena, newArena, fencerA, fencerB) => {
+                          if (!isRemoteActive || !competition?.id) return;
+                          window.electronAPI.remote.updateMatchArena(
+                            competition.id,
+                            matchId,
+                            oldArena,
+                            newArena,
+                            fencerA ?? undefined,
+                            fencerB ?? undefined
+                          ).catch(() => {});
                         }}
                       />
                     </div>

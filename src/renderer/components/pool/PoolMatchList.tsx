@@ -3,8 +3,9 @@
  * Licensed under GPL-3.0
  */
 
-import React from 'react';
-import { Match, FencerStatus, MatchStatus } from '../../../shared/types';
+import React, { useState } from 'react';
+import { Match, Fencer, FencerStatus } from '../../../shared/types';
+import { Arena } from '../../../shared/types/remote';
 
 interface OrderedMatchEntry {
   match: Match;
@@ -23,7 +24,81 @@ interface PoolMatchListProps {
   isLocked: boolean;
   openScoreModal: (index: number) => void;
   onMatchReset?: (index: number) => void;
+  defaultArena?: number;
+  arenaCount?: number;
+  arenas?: Arena[];
+  isRemoteActive?: boolean;
+  matchArenaOverrides?: Map<string, number>;
+  onMatchArenaChange?: (
+    matchId: string,
+    oldArena: number,
+    newArena: number | null,
+    fencerA?: Fencer | null,
+    fencerB?: Fencer | null
+  ) => void;
 }
+
+interface ArenaBadgeProps {
+  match: Match;
+  defaultArena: number;
+  matchArenaOverrides?: Map<string, number>;
+  isRemoteActive: boolean;
+  arenaCount: number;
+  dark?: boolean;
+  onClick: (e: React.MouseEvent) => void;
+}
+
+const ArenaBadge: React.FC<ArenaBadgeProps> = ({
+  match,
+  defaultArena,
+  matchArenaOverrides,
+  isRemoteActive,
+  arenaCount,
+  dark = false,
+  onClick,
+}) => {
+  if (arenaCount <= 0) return null;
+  const assignedArena = matchArenaOverrides?.get(match.id) ?? defaultArena;
+  const isOverridden = matchArenaOverrides?.has(match.id) ?? false;
+
+  const baseStyle: React.CSSProperties = {
+    padding: '0.15rem 0.45rem',
+    fontSize: '0.7rem',
+    fontWeight: '600',
+    borderRadius: '4px',
+    flexShrink: 0,
+    cursor: isRemoteActive ? 'pointer' : 'not-allowed',
+  };
+
+  const activeStyle: React.CSSProperties = dark
+    ? {
+        border: isOverridden ? '1px solid #f59e0b' : '1px solid rgba(255,255,255,0.4)',
+        background: isOverridden ? '#fef3c7' : 'rgba(255,255,255,0.2)',
+        color: isOverridden ? '#92400e' : 'white',
+      }
+    : {
+        border: isOverridden ? '1px solid #f59e0b' : '1px solid #d1d5db',
+        background: isOverridden ? '#fef3c7' : '#f3f4f6',
+        color: isOverridden ? '#92400e' : '#374151',
+      };
+
+  const inactiveStyle: React.CSSProperties = {
+    border: '1px solid #e5e7eb',
+    background: '#f9fafb',
+    color: '#9ca3af',
+  };
+
+  return (
+    <button
+      onClick={isRemoteActive ? onClick : undefined}
+      title={isRemoteActive ? `Piste ${assignedArena} — Cliquer pour réassigner` : 'Serveur distant non démarré'}
+      disabled={!isRemoteActive}
+      style={{ ...baseStyle, ...(isRemoteActive ? activeStyle : inactiveStyle) }}
+    >
+      🏟 {assignedArena}
+    </button>
+  );
+};
 
 const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
   orderedMatches,
@@ -31,7 +106,36 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
   isLocked,
   openScoreModal,
   onMatchReset,
-}) => (
+  defaultArena = 1,
+  arenaCount = 0,
+  arenas = [],
+  isRemoteActive = false,
+  matchArenaOverrides,
+  onMatchArenaChange,
+}) => {
+  const [showArenaModal, setShowArenaModal] = useState(false);
+  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
+
+  const openArenaModal = (match: Match, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isRemoteActive || arenaCount <= 0) return;
+    setSelectedMatch(match);
+    setShowArenaModal(true);
+  };
+
+  const closeArenaModal = () => {
+    setShowArenaModal(false);
+    setSelectedMatch(null);
+  };
+
+  const handleAssignArena = (arenaNum: number | null) => {
+    if (!selectedMatch) return;
+    const currentArena = matchArenaOverrides?.get(selectedMatch.id) ?? defaultArena;
+    onMatchArenaChange?.(selectedMatch.id, currentArena, arenaNum, selectedMatch.fencerA, selectedMatch.fencerB);
+    closeArenaModal();
+  };
+
+  return (
   <div>
     {/* Prochain match en gros */}
     {orderedMatches.pending.length > 0 &&
@@ -65,9 +169,12 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
                   textTransform: 'uppercase',
                   opacity: 0.8,
                   marginBottom: '0.5rem',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
                 }}
               >
-                ✕ Match non disputé
+                <span>✕ Match non disputé</span>
               </div>
               <div
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
@@ -126,9 +233,21 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
                 textTransform: 'uppercase',
                 opacity: 0.8,
                 marginBottom: '0.5rem',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
               }}
             >
-              ⚔️ Prochain match
+              <span>⚔️ Prochain match</span>
+              <ArenaBadge
+                match={nextMatch.match}
+                defaultArena={defaultArena}
+                matchArenaOverrides={matchArenaOverrides}
+                isRemoteActive={isRemoteActive}
+                arenaCount={arenaCount}
+                dark
+                onClick={e => openArenaModal(nextMatch.match, e)}
+              />
             </div>
             <div
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
@@ -187,7 +306,6 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
         </h4>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {orderedMatches.pending.slice(1).map(({ match, index }, i) => {
-            // Vérifier si l'un des tireurs a abandonné
             const fencerAAbandoned =
               match.fencerA?.status === FencerStatus.ABANDONED ||
               match.fencerA?.status === FencerStatus.FORFAIT ||
@@ -212,6 +330,7 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
                   cursor: isAbandonMatch ? 'not-allowed' : 'pointer',
                   border: isAbandonMatch ? '1px dashed #9ca3af' : '1px solid #e5e7eb',
                   opacity: isAbandonMatch ? 0.5 : 1,
+                  gap: '0.5rem',
                 }}
               >
                 <span style={{ color: '#9ca3af', fontSize: '0.875rem', minWidth: '30px' }}>
@@ -243,6 +362,14 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
                   {match.fencerB?.lastName}
                   {fencerBAbandoned && ' ✕'}
                 </span>
+                <ArenaBadge
+                  match={match}
+                  defaultArena={defaultArena}
+                  matchArenaOverrides={matchArenaOverrides}
+                  isRemoteActive={isRemoteActive}
+                  arenaCount={arenaCount}
+                  onClick={e => openArenaModal(match, e)}
+                />
               </div>
             );
           })}
@@ -265,7 +392,6 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
         </h4>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {orderedMatches.finished.map(({ match, index }) => {
-            // Vérifier si c'est un match avec abandon/forfait
             const fencerAAbandoned =
               match.fencerA?.status === FencerStatus.ABANDONED ||
               match.fencerA?.status === FencerStatus.FORFAIT ||
@@ -436,8 +562,56 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
         <div style={{ fontSize: '0.875rem' }}>Tous les matches ont été joués</div>
       </div>
     )}
+
+    {/* Modal d'assignation de piste */}
+    {showArenaModal && selectedMatch && (
+      <div className="modal-overlay" onClick={closeArenaModal}>
+        <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+          <div className="modal-header">
+            <h3 className="modal-title">Assigner à une piste</h3>
+            <button className="btn-close" onClick={closeArenaModal}>&times;</button>
+          </div>
+          <div className="modal-body" style={{ padding: '1.5rem' }}>
+            <p style={{ marginBottom: '1rem', color: '#6b7280', fontSize: '0.875rem' }}>
+              Sélectionnez la piste pour ce match :
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
+              <button
+                className={`btn ${!matchArenaOverrides?.has(selectedMatch.id) ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => handleAssignArena(null)}
+                style={{ padding: '0.75rem', gridColumn: '1 / -1', fontSize: '0.875rem' }}
+              >
+                ↩ Piste par défaut (Piste {defaultArena})
+              </button>
+              {Array.from({ length: arenaCount }, (_, i) => i + 1).map(arenaNum => {
+                const arenaObj = arenas.find(a => a.number === arenaNum);
+                const isCurrentArena = (matchArenaOverrides?.get(selectedMatch.id) ?? defaultArena) === arenaNum;
+                const statusIcon = arenaObj
+                  ? arenaObj.status === 'in_progress'
+                    ? ' ●'
+                    : arenaObj.status === 'ready'
+                      ? ' ○'
+                      : ''
+                  : '';
+                return (
+                  <button
+                    key={arenaNum}
+                    className={`btn ${isCurrentArena ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => handleAssignArena(arenaNum)}
+                    style={{ padding: '0.75rem', fontSize: '0.875rem' }}
+                  >
+                    Piste {arenaNum}{statusIcon}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
   </div>
-);
+  );
+};
 
 const PoolMatchList = React.memo(PoolMatchListComponent);
 export default PoolMatchList;
