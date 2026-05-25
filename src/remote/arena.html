@@ -1639,10 +1639,10 @@
 
           // Mise à jour des scores (respecte l'inversion)
           if (data.scoreA !== undefined) {
-            document.getElementById(this.inversionEnabled ? 'score-b' : 'score-a').textContent = data.scoreA;
+            document.getElementById(this.inversionEnabled ? 'score-a' : 'score-b').textContent = data.scoreA;
           }
           if (data.scoreB !== undefined) {
-            document.getElementById(this.inversionEnabled ? 'score-a' : 'score-b').textContent = data.scoreB;
+            document.getElementById(this.inversionEnabled ? 'score-b' : 'score-a').textContent = data.scoreB;
           }
 
           // Mise à jour des cartons
