@@ -3390,10 +3390,10 @@ export class RemoteScoreServer {
       matchesFromRenderer &&
       matchesFromRenderer.length > 0 &&
       matchesFromRenderer.every((m: any) => m.isTableau || m.__poolFencers);
-    if (!isDeOnlySession && (strips <= 0 || strips < poolCount)) {
+    if (!isDeOnlySession && strips <= 0) {
       const actualStrips = poolCount > 0 ? poolCount : 1;
       console.log(
-        `[RemoteScoreServer] Nombre de pistes ajusté: ${strips} -> ${actualStrips} (basé sur ${poolCount} poules)`
+        `[RemoteScoreServer] Strips invalide (${strips}), ajustement automatique: ${actualStrips} (basé sur ${poolCount} poules)`
       );
       strips = actualStrips;
     }

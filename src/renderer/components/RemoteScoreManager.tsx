@@ -169,13 +169,17 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       .catch(() => setQrDataUrl(null));
   }, [activeQR]);
 
-  // Initialisation : priorité à initialStripCount (persisté depuis parent), puis nombre de poules
+  // Initialisation : priorité localStorage → initialStripCount (parent) → nombre de poules
   useEffect(() => {
     if (pendingCount !== null) return;
-    const initial = initialStripCount ?? (pools.length > 0 ? pools.length : 1);
+    const lsKey = `bellepoule-remote-strips-${competition.id}`;
+    const lsSaved = localStorage.getItem(lsKey);
+    const initial = lsSaved
+      ? parseInt(lsSaved, 10)
+      : (initialStripCount ?? (pools.length > 0 ? pools.length : 1));
     setPendingCount(initial);
     setCommittedCount(initial);
-  }, [initialStripCount, pools.length]);
+  }, [initialStripCount, pools.length, competition.id]);
 
   const effectivePending = pendingCount ?? pools.length ?? 1;
   const effectiveCommitted = committedCount ?? pools.length ?? 1;
@@ -355,17 +359,20 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           setSession(result.session);
           setCommittedCount(newCount);
           onArenaCountChange?.(newCount);
+          localStorage.setItem(`bellepoule-remote-strips-${competition.id}`, String(newCount));
           showToast('Nombre de pistes mis à jour', 'success');
         } else {
           showToast(`Erreur: ${result.error}`, 'error');
         }
       } catch (error) {
         logger.error(LogCategory.UI, 'Failed to update strip count', error as Error);
+        showToast('Erreur lors de la mise à jour des pistes', 'error');
       }
     } else {
       // Serveur non démarré : persister la préférence
       setCommittedCount(newCount);
       onArenaCountChange?.(newCount);
+      localStorage.setItem(`bellepoule-remote-strips-${competition.id}`, String(newCount));
       showToast('Préférence sauvegardée', 'success');
     }
   };
