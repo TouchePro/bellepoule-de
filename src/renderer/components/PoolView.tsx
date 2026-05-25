@@ -87,7 +87,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   const [signedFencerIds, setSignedFencerIds] = useState<string[]>([]);
   const [matchArenaOverrides, setMatchArenaOverrides] = useState<Map<string, number>>(new Map());
 
-  const defaultArena = pool.strip ?? pool.number;
+  const defaultArena = (pool.strip != null && pool.strip > 0 ? pool.strip : pool.number) ?? 1;
 
   const handleMatchArenaChange = useCallback((
     matchId: string,

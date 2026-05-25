@@ -1261,7 +1261,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             initialStripCount={remoteArenaCount}
             onArenaCountChange={setRemoteArenaCount}
             onStartRemote={() => setIsRemoteActive(true)}
-            onStopRemote={() => setIsRemoteActive(false)}
+            onStopRemote={() => { setIsRemoteActive(false); setArenaStates([]); }}
             isRemoteActive={isRemoteActive}
             isVisible={currentPhase === 'remote'}
           />
