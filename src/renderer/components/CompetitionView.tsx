@@ -370,7 +370,12 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         const idx = prev.findIndex(m => m.id === matchId);
         if (idx === -1) return prev;
         const match = prev[idx];
-        const winner = scoreA > scoreB ? match.fencerA : scoreB > scoreA ? match.fencerB : null;
+        const winner =
+          scoreA > scoreB ? match.fencerA :
+          scoreB > scoreA ? match.fencerB :
+          winnerOverride === 'A' ? match.fencerA :
+          winnerOverride === 'B' ? match.fencerB :
+          null;
         const updated = prev.map((m, i) => (i === idx ? { ...m, scoreA, scoreB, winner } : m));
         const size = prev.length > 0 ? Math.max(...prev.map(m => m.round)) : 0;
         propagateWinners(updated, size);

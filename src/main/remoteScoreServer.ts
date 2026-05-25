@@ -2858,9 +2858,14 @@ export class RemoteScoreServer {
       const finalMatchId = finishedMatch.id;
       const dbMatch = this.db.getMatch(finalMatchId);
       if (dbMatch && !finishedMatch.isTableau) {
-        const winner =
+        let winner: 'A' | 'B' | null =
           finishedMatch.scoreA > finishedMatch.scoreB ? 'A' :
           finishedMatch.scoreB > finishedMatch.scoreA ? 'B' : null;
+        if (!winner) {
+          const mem = this.sessionMatchScores.get(finishedMatch.id);
+          if ((mem?.scoreA as any)?.isVictory) winner = 'A';
+          else if ((mem?.scoreB as any)?.isVictory) winner = 'B';
+        }
         const scoreAObj = {
           value: finishedMatch.scoreA,
           isVictory: winner === 'A',
