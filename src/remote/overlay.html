@@ -189,6 +189,14 @@
         color: var(--score-b-color);
         text-shadow: 0 0 12px var(--score-glow-b), 0 0 28px var(--score-glow-b);
       }
+      .swapped .side-a .score-box {
+        color: var(--score-b-color);
+        text-shadow: 0 0 12px var(--score-glow-b), 0 0 28px var(--score-glow-b);
+      }
+      .swapped .side-b .score-box {
+        color: var(--score-a-color);
+        text-shadow: 0 0 12px var(--score-glow-a), 0 0 28px var(--score-glow-a);
+      }
 
       .fencer-info {
         flex: 1;
@@ -389,6 +397,9 @@
 
         /* Position du score : outer = score côté extérieur */
         if (params.get('scores') === 'outer') root.classList.add('scores-outer');
+
+        /* Inversion vert/rouge (?swap=1) */
+        if (params.get('swap') === '1') root.classList.add('swapped');
 
         /* Logo personnalisé dans le panneau central (?logo=https://...) */
         const logoUrl = params.get('logo');
