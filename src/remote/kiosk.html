@@ -415,8 +415,10 @@
         text-align: center;
       }
 
-      .score-a { color: #10b981; }
-      .score-b { color: #ef4444; }
+      .score-a { color: #ef4444; }
+      .score-b { color: #10b981; }
+      .fencer-red { border-left: 3px solid #ef4444; padding-left: 0.5rem; }
+      .fencer-green { border-right: 3px solid #10b981; padding-right: 0.5rem; }
 
       .arena-vs {
         font-size: 1rem;
@@ -1342,7 +1344,7 @@
               <span class="arena-status-pill ${isActive ? 'in-progress' : ''}">${isActive ? 'En cours' : 'Assigné'}</span>
             </div>
             <div class="arena-matchup">
-              <div class="arena-fencer">
+              <div class="arena-fencer fencer-red">
                 <div class="fname">${escHtml(nameA)}</div>
                 <div class="fclub">${escHtml(clubA)}</div>
               </div>
@@ -1351,7 +1353,7 @@
                 <span class="arena-vs">-</span>
                 <span class="arena-score score-b" id="sb-${aid}">${scoreB}</span>
               </div>
-              <div class="arena-fencer">
+              <div class="arena-fencer fencer-green">
                 <div class="fname">${escHtml(nameB)}</div>
                 <div class="fclub">${escHtml(clubB)}</div>
               </div>
