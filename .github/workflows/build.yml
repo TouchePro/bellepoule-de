@@ -127,6 +127,22 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-npm-
 
+      - name: Cache Electron binaries
+        uses: actions/cache@v5
+        with:
+          path: ~/Library/Caches/electron
+          key: ${{ runner.os }}-electron-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-
+
+      - name: Cache electron-builder
+        uses: actions/cache@v5
+        with:
+          path: ~/Library/Caches/electron-builder
+          key: ${{ runner.os }}-electron-builder-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-builder-
+
       - name: Install Dependencies
         run: |
           for i in 1 2 3; do
@@ -140,9 +156,16 @@ jobs:
         run: npm run build:ci
 
       - name: Package with Electron Builder
-        run: npx electron-builder --mac --x64
+        run: |
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            npx electron-builder --mac --x64 && break
+            [ $i -lt 3 ] && sleep 30
+          done || exit 1
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ELECTRON_CACHE: ~/Library/Caches/electron
+          ELECTRON_BUILDER_CACHE: ~/Library/Caches/electron-builder
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v7
@@ -173,6 +196,22 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-npm-
 
+      - name: Cache Electron binaries
+        uses: actions/cache@v5
+        with:
+          path: ~/Library/Caches/electron
+          key: ${{ runner.os }}-electron-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-
+
+      - name: Cache electron-builder
+        uses: actions/cache@v5
+        with:
+          path: ~/Library/Caches/electron-builder
+          key: ${{ runner.os }}-electron-builder-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-builder-
+
       - name: Install Dependencies
         run: |
           for i in 1 2 3; do
@@ -186,9 +225,16 @@ jobs:
         run: npm run build:ci
 
       - name: Package with Electron Builder
-        run: npx electron-builder --mac --arm64
+        run: |
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            npx electron-builder --mac --arm64 && break
+            [ $i -lt 3 ] && sleep 30
+          done || exit 1
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ELECTRON_CACHE: ~/Library/Caches/electron
+          ELECTRON_BUILDER_CACHE: ~/Library/Caches/electron-builder
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v7
