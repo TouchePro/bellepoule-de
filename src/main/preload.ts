@@ -470,8 +470,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       direct: boolean;
       suivants: boolean;
     }) => ipcRenderer.invoke('remote:updateKioskViews', competitionId, views),
-    updateMatchArena: (competitionId: string, matchId: string, fromArena: number | null, toArena: number | null) =>
-      ipcRenderer.invoke('remote:updateMatchArena', competitionId, matchId, fromArena, toArena),
+    updateMatchArena: (competitionId: string, matchId: string, fromArena: number | null, toArena: number | null, fencerA?: any, fencerB?: any) =>
+      ipcRenderer.invoke('remote:updateMatchArena', competitionId, matchId, fromArena, toArena, fencerA, fencerB),
     updatePoolFencers: (competitionId: string, updates: Array<{ poolId: string; fencers: any[] }>) =>
       ipcRenderer.invoke('remote:updatePoolFencers', competitionId, updates),
     syncPoolMatches: (competitionId: string, poolsData: Array<{ poolId: string; matches: any[] }>) =>
