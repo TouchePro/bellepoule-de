@@ -3571,42 +3571,24 @@ export class RemoteScoreServer {
       console.log(
         `[RemoteScoreServer] ${deMatches.length} matchs DE à distribuer sur ${strips} arènes`
       );
-      let rrIndex = 0;
       const queuesByArena = new Map<string, ArenaMatch[]>();
       for (let i = 1; i <= strips; i++) queuesByArena.set(`arena${i}`, []);
 
       for (const match of deMatches) {
-        const targetArenaId = match.arena
-          ? `arena${match.arena}`
-          : `arena${(rrIndex % strips) + 1}`;
-        if (!queuesByArena.has(targetArenaId)) {
-          // arène hors plage → round-robin sur arènes disponibles
-          const fallbackId = `arena${(rrIndex % strips) + 1}`;
-          queuesByArena.get(fallbackId)!.push({
-            id: match.id,
-            fencerA: match.fencerA,
-            fencerB: match.fencerB,
-            scoreA: 0,
-            scoreB: 0,
-            status: 'not_started',
-            startTime: null,
-            endTime: null,
-            isTableau: true,
-          });
-        } else {
-          queuesByArena.get(targetArenaId)!.push({
-            id: match.id,
-            fencerA: match.fencerA,
-            fencerB: match.fencerB,
-            scoreA: 0,
-            scoreB: 0,
-            status: 'not_started',
-            startTime: null,
-            endTime: null,
-            isTableau: true,
-          });
-        }
-        rrIndex++;
+        if (!match.arena) continue; // pas d'arène assignée → attente d'affectation manuelle
+        const targetArenaId = `arena${match.arena}`;
+        if (!queuesByArena.has(targetArenaId)) continue; // hors plage → ignorer
+        queuesByArena.get(targetArenaId)!.push({
+          id: match.id,
+          fencerA: match.fencerA,
+          fencerB: match.fencerB,
+          scoreA: 0,
+          scoreB: 0,
+          status: 'not_started',
+          startTime: null,
+          endTime: null,
+          isTableau: true,
+        });
       }
 
       for (const [arenaId, queue] of queuesByArena) {
@@ -3940,14 +3922,14 @@ export class RemoteScoreServer {
     }
 
     const pending = deMatches.filter(m => !activeMatchIds.has(m.id));
-    let rrIndex = 0;
     const queuesByArena = new Map<string, ArenaMatch[]>();
     for (let i = 1; i <= strips; i++) queuesByArena.set(`arena${i}`, []);
 
     for (const match of pending) {
+      if (!match.arena) continue; // pas d'arène assignée → attente d'affectation manuelle
       const preferred = `arena${match.arena}`;
-      const targetId = this.arenas.has(preferred) ? preferred : `arena${(rrIndex % strips) + 1}`;
-      queuesByArena.get(targetId)!.push({
+      if (!this.arenas.has(preferred)) continue; // hors plage → ignorer
+      queuesByArena.get(preferred)!.push({
         id: match.id,
         fencerA: match.fencerA,
         fencerB: match.fencerB,
@@ -3958,7 +3940,6 @@ export class RemoteScoreServer {
         endTime: null,
         isTableau: true,
       });
-      rrIndex++;
     }
 
     for (const [arenaId, queue] of queuesByArena) {
