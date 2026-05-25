@@ -312,6 +312,9 @@
           <label class="chip active" id="chip-phase">
             <input type="checkbox" checked onchange="toggleHide('phase', this)" /> # Phase
           </label>
+          <label class="chip" id="chip-swap">
+            <input type="checkbox" onchange="toggleSwap(this)" /> ↔ Inverser vert/rouge
+          </label>
         </div>
       </div>
     </div>
@@ -386,6 +389,7 @@
     hide: new Set(),
     logo: '',
     scoresOuter: false,
+    swap: false,
   };
 
   /* ── Initialisation des pistes ── */
@@ -454,6 +458,12 @@
     refresh();
   }
 
+  function toggleSwap(cb) {
+    state.swap = cb.checked;
+    document.getElementById('chip-swap').classList.toggle('active', cb.checked);
+    refresh();
+  }
+
   function setScorePos(pos) {
     state.scoresOuter = pos === 'outer';
     document.getElementById('chip-scores-inner').classList.toggle('active', !state.scoresOuter);
@@ -471,6 +481,7 @@
     if (state.hide.size > 0)   params.set('hide', [...state.hide].join(','));
     if (state.logo)             params.set('logo', state.logo);
     if (state.scoresOuter)      params.set('scores', 'outer');
+    if (state.swap)             params.set('swap', '1');
     return `${base}/arene${state.arena}/overlay?${params.toString()}`;
   }
 

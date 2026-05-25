@@ -419,6 +419,8 @@
         let isSuddenDeath = false;
         let matchStatus   = 'idle';
         let phaseLabel    = 'Piste ' + arenaNumber;
+        let swapped       = params.get('swap') === '1';
+        let currentFencerA = {}, currentFencerB = {};
 
         const holdResultSec = parseInt(params.get('holdresult') || '5', 10);
         let pendingMatchData = null;
@@ -466,29 +468,34 @@
           elIdle.classList.toggle('hidden', active);
         }
 
-        function applyMatchData(data) {
-          if (data.status)          { matchStatus = data.status; renderVisibility(); }
-          if (data.match) {
-            const fA = data.match.fencerA || {};
-            const fB = data.match.fencerB || {};
-            elNameA.textContent = (`${fA.lastName||''} ${fA.firstName||''}`).trim() || '—';
-            elClubA.textContent = fA.club || '';
-            elNameB.textContent = (`${fB.lastName||''} ${fB.firstName||''}`).trim() || '—';
-            elClubB.textContent = fB.club || '';
+        function renderFencers() {
+          const dispA = swapped ? currentFencerB : currentFencerA;
+          const dispB = swapped ? currentFencerA : currentFencerB;
+          elNameA.textContent = (`${dispA.lastName||''} ${dispA.firstName||''}`).trim() || '—';
+          elClubA.textContent = dispA.club || '';
+          elNameB.textContent = (`${dispB.lastName||''} ${dispB.firstName||''}`).trim() || '—';
+          elClubB.textContent = dispB.club || '';
+        }
 
-            // Phase label depuis les métadonnées du match si disponibles
-            if (data.match.phaseName) {
-              phaseLabel = data.match.phaseName;
-            } else if (data.match.poolName) {
-              phaseLabel = data.match.poolName;
-            }
+        function applyMatchData(data) {
+          if (data.status) { matchStatus = data.status; renderVisibility(); }
+          if (data.match) {
+            currentFencerA = data.match.fencerA || {};
+            currentFencerB = data.match.fencerB || {};
+            renderFencers();
+            if (data.match.phaseName)     { phaseLabel = data.match.phaseName; }
+            else if (data.match.poolName) { phaseLabel = data.match.poolName; }
             elPhase.textContent = phaseLabel;
           }
-          if (data.scoreA !== undefined) { scoreA = data.scoreA; elScoreA.textContent = scoreA; }
-          if (data.scoreB !== undefined) { scoreB = data.scoreB; elScoreB.textContent = scoreB; }
-          if (data.cardsA)               { cardsA = data.cardsA; elCardsA.innerHTML  = renderCards(cardsA); }
-          if (data.cardsB)               { cardsB = data.cardsB; elCardsB.innerHTML  = renderCards(cardsB); }
-          if (data.time !== undefined)   { timerSec  = data.time; timerStat = data.timerStatus || timerStat; renderTimer(); }
+          if (data.scoreA !== undefined) scoreA = data.scoreA;
+          if (data.scoreB !== undefined) scoreB = data.scoreB;
+          elScoreA.textContent = swapped ? scoreB : scoreA;
+          elScoreB.textContent = swapped ? scoreA : scoreB;
+          if (data.cardsA) cardsA = data.cardsA;
+          if (data.cardsB) cardsB = data.cardsB;
+          elCardsA.innerHTML = renderCards(swapped ? cardsB : cardsA);
+          elCardsB.innerHTML = renderCards(swapped ? cardsA : cardsB);
+          if (data.time !== undefined) { timerSec = data.time; timerStat = data.timerStatus || timerStat; renderTimer(); }
           if (data.suddenDeath !== undefined || data.overtimeType !== undefined) {
             isSuddenDeath = !!(data.suddenDeath || data.overtimeType);
             elSDBadge.classList.toggle('visible', isSuddenDeath);
