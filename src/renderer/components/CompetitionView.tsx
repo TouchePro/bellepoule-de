@@ -205,13 +205,18 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     poolPrepParams,
   });
 
-  // Synchroniser le nombre d'arènes avec le nombre de poules (seed initial uniquement, pas de valeur restaurée)
+  // Synchroniser le nombre d'arènes avec le nombre de poules
   useEffect(() => {
     if (!isLoaded) return;
-    if (pools.length > 0 && !restoredState?.remoteArenaCount) {
-      setRemoteArenaCount(pools.length);
+    if (pools.length > 0) {
+      if (!restoredState?.remoteArenaCount) {
+        setRemoteArenaCount(pools.length);
+      } else if (remoteArenaCount > pools.length) {
+        // Les poules ont rétréci depuis le dernier run : clamp pour éviter des arènes fantômes.
+        setRemoteArenaCount(pools.length);
+      }
     }
-  }, [isLoaded, pools.length]);
+  }, [isLoaded, pools.length, remoteArenaCount]);
 
   // Restaurer l'état au chargement
   useEffect(() => {
