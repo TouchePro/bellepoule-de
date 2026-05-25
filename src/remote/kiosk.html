@@ -1209,14 +1209,10 @@
           return;
         }
 
-        const medals = ['🥇', '🥈', '🥉'];
         tbody.innerHTML = ranking.map((r, i) => {
           const ind = (r.index >= 0 ? '+' : '') + (r.index || 0);
-          const topClass = i < 3 ? ' class="top-row"' : '';
-          const rankDisplay = i < 3
-            ? `<span class="rank-medal">${medals[i]}</span>`
-            : `<span style="color:#64748b;font-weight:700">${i + 1}</span>`;
-          return `<tr${topClass}>
+          const rankDisplay = `<span style="color:#64748b;font-weight:700">${i + 1}</span>`;
+          return `<tr>
             <td>${rankDisplay}</td>
             <td>
               <div style="font-weight:500">${escHtml(r.lastName)} ${escHtml(r.firstName || '')}</div>
