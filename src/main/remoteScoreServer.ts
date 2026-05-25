@@ -41,6 +41,7 @@ export class RemoteScoreServer {
   private sessionMatches: any[] = []; // Matches passés depuis le renderer
   private arenaNextMatchIndex: Map<string, number> = new Map(); // Index du prochain match par arène
   private arenaMatchQueue: Map<string, ArenaMatch[]> = new Map(); // File d'attente DE par arène
+  private poolMatchArenaOverrides: Map<string, string> = new Map(); // matchId → arenaId (réassignation piste poule)
   private poolFencersCache: Map<string, any[]> = new Map(); // Tireurs par poolId (depuis le renderer)
   private sessionMatchScores: Map<string, { scoreA: any; scoreB: any; status: string }> = new Map(); // Scores en mémoire
   private sessionShowPhotos: boolean = false; // Afficher les photos des combattants avant le combat
@@ -2561,17 +2562,32 @@ export class RemoteScoreServer {
         // Mettre à jour les données de tireurs si le renderer fournit des données plus récentes
         if (fencerA) sm.fencerA = fencerA;
         if (fencerB) sm.fencerB = fencerB;
-        matchToMove = {
-          id: sm.id,
-          fencerA: fencerA ?? sm.fencerA,
-          fencerB: fencerB ?? sm.fencerB,
-          scoreA: 0,
-          scoreB: 0,
-          status: 'not_started',
-          startTime: null,
-          endTime: null,
-          isTableau: true,
-        };
+        if (sm.poolId) {
+          // Match de poule : conserver poolId, ne pas marquer isTableau
+          matchToMove = {
+            id: sm.id,
+            poolId: sm.poolId,
+            fencerA: fencerA ?? sm.fencerA,
+            fencerB: fencerB ?? sm.fencerB,
+            scoreA: 0,
+            scoreB: 0,
+            status: 'not_started',
+            startTime: null,
+            endTime: null,
+          };
+        } else {
+          matchToMove = {
+            id: sm.id,
+            fencerA: fencerA ?? sm.fencerA,
+            fencerB: fencerB ?? sm.fencerB,
+            scoreA: 0,
+            scoreB: 0,
+            status: 'not_started',
+            startTime: null,
+            endTime: null,
+            isTableau: true,
+          };
+        }
       } else if (fencerA && fencerB) {
         // Match DE non encore en session (ex: session de poule toujours active) → créer depuis les données passées
         matchToMove = {
@@ -2596,6 +2612,13 @@ export class RemoteScoreServer {
           `[RemoteScoreServer] Match DE ${matchId} ajouté à sessionMatches depuis updateMatchArena`
         );
       }
+    }
+
+    // Mettre à jour la map d'overrides pour les matchs de poule chargés on-demand
+    if (toArena !== null) {
+      this.poolMatchArenaOverrides.set(matchId, `arena${toArena}`);
+    } else {
+      this.poolMatchArenaOverrides.delete(matchId);
     }
 
     if (!matchToMove || !toArena) return;
@@ -2956,7 +2979,11 @@ export class RemoteScoreServer {
       const poolMatches = this.applySmartMatchOrder(rawPoolMatches as Match[]).filter(
         m => m.status !== MatchStatus.FINISHED && this.isMatchPlayable(m)
       );
-      const nextMatch = poolMatches.find(m => m.id !== currentMatchId);
+      const nextMatch = poolMatches.find(m => {
+        if (m.id === currentMatchId) return false;
+        const override = this.poolMatchArenaOverrides.get(m.id);
+        return !override || override === arenaId;
+      });
       if (nextMatch) {
         const nextReferee = this.resolveReferee((nextMatch as any).refereeId ?? nextMatch.referee?.id);
         return {
@@ -3038,7 +3065,18 @@ export class RemoteScoreServer {
         `[RemoteScoreServer] ${poolMatches.length} matches en attente dans le pool ${currentPoolId} (ordre smart)`
       );
 
-      const nextMatch = poolMatches.find(m => m.id !== currentMatchId);
+      // Respecter les overrides de piste : ignorer les matchs pré-assignés à une autre arène
+      let nextMatch = poolMatches.find(m => {
+        if (m.id === currentMatchId) return false;
+        const override = this.poolMatchArenaOverrides.get(m.id);
+        return !override || override === arenaId;
+      });
+      // Si rien de dispo pour cette arène, chercher un match explicitement redirigé ici
+      if (!nextMatch) {
+        nextMatch = poolMatches.find(m =>
+          m.id !== currentMatchId && this.poolMatchArenaOverrides.get(m.id) === arenaId
+        );
+      }
       if (nextMatch) {
         console.log(
           `[RemoteScoreServer] Chargement du match ${nextMatch.id} (pool ${currentPoolId}) sur arène ${arenaId}`
@@ -3667,6 +3705,7 @@ export class RemoteScoreServer {
     this.sessionMatches = [];
     this.arenaMatchQueue.clear();
     this.arenaNextMatchIndex.clear();
+    this.poolMatchArenaOverrides.clear();
     this.poolFencersCache.clear();
     this.poolSignaturesCache.clear();
     this.sessionMatchScores.clear();

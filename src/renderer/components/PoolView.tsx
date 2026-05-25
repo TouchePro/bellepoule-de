@@ -7,6 +7,7 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useModalResize } from '../hooks/useModalResize';
 import { Pool, Fencer, MatchStatus, Score, Weapon, FencerStatus } from '../../shared/types';
+import { Arena } from '../../shared/types/remote';
 import { logger, LogCategory } from '@shared/services/logger';
 import { useToast } from './Toast';
 import { useConfirm } from './ConfirmDialog';
@@ -37,6 +38,16 @@ interface PoolViewProps {
   onFencerChangePool?: (fencer: Fencer) => void;
   onFencerStatusChange?: (fencerId: string, status: 'abandon' | 'forfait' | 'exclusion') => void;
   onFencerAdded?: (updatedPool: Pool) => void;
+  arenaCount?: number;
+  arenas?: Arena[];
+  isRemoteActive?: boolean;
+  onMatchArenaChange?: (
+    matchId: string,
+    oldArena: number,
+    newArena: number | null,
+    fencerA?: Fencer | null,
+    fencerB?: Fencer | null
+  ) => void;
 }
 
 type ViewMode = 'grid' | 'matches';
@@ -53,6 +64,10 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   onFencerChangePool,
   onFencerStatusChange,
   onFencerAdded,
+  arenaCount,
+  arenas,
+  isRemoteActive,
+  onMatchArenaChange,
 }) => {
   const { showToast } = useToast();
   const { confirm } = useConfirm();
@@ -70,6 +85,29 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   const [matchesUpdateTrigger, setMatchesUpdateTrigger] = useState(0);
   const [keyboardFocusField, setKeyboardFocusField] = useState<'A' | 'B'>('A');
   const [signedFencerIds, setSignedFencerIds] = useState<string[]>([]);
+  const [matchArenaOverrides, setMatchArenaOverrides] = useState<Map<string, number>>(new Map());
+
+  const defaultArena = pool.strip ?? pool.number;
+
+  const handleMatchArenaChange = useCallback((
+    matchId: string,
+    oldArena: number,
+    newArena: number | null,
+    fencerA?: Fencer | null,
+    fencerB?: Fencer | null
+  ) => {
+    setMatchArenaOverrides(prev => {
+      const next = new Map(prev);
+      if (newArena === null) {
+        next.delete(matchId);
+      } else {
+        next.set(matchId, newArena);
+      }
+      return next;
+    });
+    onMatchArenaChange?.(matchId, oldArena, newArena, fencerA, fencerB);
+  }, [onMatchArenaChange]);
+
 
   const { addAction, undo, redo, canUndo, canRedo } = useHistory();
   const [showPoolConfetti, setShowPoolConfetti] = useState(false);
@@ -1288,6 +1326,12 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
             isLocked={isLocked}
             openScoreModal={openScoreModal}
             onMatchReset={onMatchReset}
+            defaultArena={defaultArena}
+            arenaCount={arenaCount}
+            arenas={arenas}
+            isRemoteActive={isRemoteActive}
+            matchArenaOverrides={matchArenaOverrides}
+            onMatchArenaChange={handleMatchArenaChange}
           />
 )}
         {renderScoreModal()}
