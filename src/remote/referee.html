@@ -2773,8 +2773,9 @@
             this.pausedForModal = true;
           }
 
-          document.getElementById('final-score-display').textContent =
-            `${this.scoreA} - ${this.scoreB}`;
+          document.getElementById('final-score-display').textContent = this.swapped
+            ? `${this.scoreA} - ${this.scoreB}`
+            : `${this.scoreB} - ${this.scoreA}`;
           document.getElementById('finish-modal').classList.add('active');
         }
 
