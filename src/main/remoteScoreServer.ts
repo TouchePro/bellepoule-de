@@ -1201,15 +1201,17 @@ export class RemoteScoreServer {
             console.log(
               `[RemoteScoreServer] Fallback match courant pour arène ${arenaId}: ${arena.currentMatch.id}`
             );
-            const queueMatches = (this.arenaMatchQueue.get(arenaId) || []).map(m => ({
-              id: m.id,
-              poolId: m.poolId,
-              fencerA: m.fencerA,
-              fencerB: m.fencerB,
-              scoreA: m.scoreA ?? 0,
-              scoreB: m.scoreB ?? 0,
-              status: m.status,
-            }));
+            const queueMatches = (this.arenaMatchQueue.get(arenaId) || [])
+              .filter(m => !m.isTableau || (m.fencerA && m.fencerB && !this.isDeMatchBlocked(m.id)))
+              .map(m => ({
+                id: m.id,
+                poolId: m.poolId,
+                fencerA: m.fencerA,
+                fencerB: m.fencerB,
+                scoreA: m.scoreA ?? 0,
+                scoreB: m.scoreB ?? 0,
+                status: m.status,
+              }));
             return res.json({
               matches: [
                 {
@@ -1235,15 +1237,17 @@ export class RemoteScoreServer {
           console.log(
             `[RemoteScoreServer] ${arenaQueue.length} matchs en file DE pour arène ${arenaId}`
           );
-          const queueMatches = arenaQueue.map(m => ({
-            id: m.id,
-            poolId: m.poolId,
-            fencerA: m.fencerA,
-            fencerB: m.fencerB,
-            scoreA: m.scoreA ?? 0,
-            scoreB: m.scoreB ?? 0,
-            status: m.status,
-          }));
+          const queueMatches = arenaQueue
+            .filter(m => !m.isTableau || (m.fencerA && m.fencerB && !this.isDeMatchBlocked(m.id)))
+            .map(m => ({
+              id: m.id,
+              poolId: m.poolId,
+              fencerA: m.fencerA,
+              fencerB: m.fencerB,
+              scoreA: m.scoreA ?? 0,
+              scoreB: m.scoreB ?? 0,
+              status: m.status,
+            }));
           return res.json({ matches: queueMatches, poolId: null, poolName: null });
         }
 
@@ -1678,7 +1682,7 @@ export class RemoteScoreServer {
         if (upcoming.length === 0 && this.sessionMatches.length > 0) {
           // Fallback : matchs en mémoire passés depuis le renderer
           const pending = (this.sessionMatches as any[])
-            .filter((m: any) => m.status !== MatchStatus.FINISHED && m.status !== 'finished')
+            .filter((m: any) => m.status !== MatchStatus.FINISHED && m.status !== 'finished' && m.fencerA && m.fencerB)
             .sort((a: any, b: any) => {
               const pA =
                 a.poolNumber ?? parseInt(String(a.poolId || '').replace(/\D/g, '') || '0', 10);
@@ -2595,6 +2599,7 @@ export class RemoteScoreServer {
     }
 
     if (!matchToMove || !toArena) return;
+    if (matchToMove.isTableau && (!matchToMove.fencerA || !matchToMove.fencerB)) return;
 
     // 2. Ajouter à la nouvelle arène
     const toArenaId = `arena${toArena}`;
@@ -2920,6 +2925,17 @@ export class RemoteScoreServer {
     return ref ? { id: ref.id, name: ref.name } : null;
   }
 
+  private isDeMatchBlocked(matchId: string): boolean {
+    const sm = this.sessionMatches.find((m: any) => m.id === matchId);
+    if (!sm?.round) return false;
+    return this.sessionMatches.some((m: any) => {
+      if (m.poolId || m.round === undefined || m.round <= sm.round) return false;
+      const scoreUpdate = this.sessionMatchScores.get(m.id);
+      const effectiveStatus = scoreUpdate?.status ?? m.status;
+      return effectiveStatus !== MatchStatus.FINISHED && effectiveStatus !== 'finished';
+    });
+  }
+
   private peekNextMatch(arenaId: string): ArenaMatch | null {
     const arena = this.arenas.get(arenaId);
     if (!arena || !this.session) return null;
@@ -2963,13 +2979,7 @@ export class RemoteScoreServer {
       const nextDeMatch = deQueue[0];
       const nextMatchData = this.sessionMatches.find((m: any) => m.id === nextDeMatch.id);
       if (nextMatchData?.round !== undefined) {
-        const blockedByEarlierRound = this.sessionMatches.some(
-          (m: any) =>
-            !m.poolId &&
-            m.round !== undefined &&
-            m.round > nextMatchData.round &&
-            m.status !== MatchStatus.FINISHED
-        );
+        const blockedByEarlierRound = this.isDeMatchBlocked(nextDeMatch.id);
         if (blockedByEarlierRound) return null;
       }
       return nextDeMatch;
@@ -3063,13 +3073,7 @@ export class RemoteScoreServer {
       // Bloquer si des matchs d'un round antérieur (valeur plus grande) sont encore en cours
       const nextMatchData = this.sessionMatches.find((m: any) => m.id === nextDeMatch.id);
       if (nextMatchData?.round !== undefined) {
-        const blockedByEarlierRound = this.sessionMatches.some(
-          (m: any) =>
-            !m.poolId &&
-            m.round !== undefined &&
-            m.round > nextMatchData.round &&
-            m.status !== MatchStatus.FINISHED
-        );
+        const blockedByEarlierRound = this.isDeMatchBlocked(nextDeMatch.id);
         if (blockedByEarlierRound) {
           console.log(
             `[RemoteScoreServer] Match DE ${nextDeMatch.id} (round ${nextMatchData.round}) bloqué — round antérieur encore en cours`
@@ -3441,7 +3445,8 @@ export class RemoteScoreServer {
       allMatches = realMatches.filter(
         m =>
           m.isTableau
-            ? !m.status || m.status === 'not_started' || m.status === 'in_progress'
+            ? (!m.status || m.status === 'not_started' || m.status === 'in_progress') &&
+              m.fencerA && m.fencerB
             : true // Tous les matchs de poule, y compris finished (nécessaires pour la grille)
       );
       console.log(`[RemoteScoreServer] ${allMatches.length} matchs après filtrage`);
@@ -3559,7 +3564,7 @@ export class RemoteScoreServer {
     // Distribuer les matchs d'élimination directe (sans poolId) dans les files par arène
     // Tri décroissant : 8ès en premier, finale en dernier → pistes chargées dans l'ordre logique
     const deMatches = allMatches
-      .filter(m => !m.poolId && (m.round !== undefined || m.isTableau))
+      .filter(m => !m.poolId && (m.round !== undefined || m.isTableau) && m.fencerA && m.fencerB)
       .sort((a: any, b: any) => (b.round || 0) - (a.round || 0));
 
     if (deMatches.length > 0) {
@@ -3607,15 +3612,18 @@ export class RemoteScoreServer {
       for (const [arenaId, queue] of queuesByArena) {
         const arena = this.arenas.get(arenaId);
         if (!arena) continue;
-        if (!arena.currentMatch && queue.length > 0) {
-          // Arène libre → charger le premier match directement
-          this.assignMatchToArena(arenaId, queue[0]);
-          this.arenaMatchQueue.set(arenaId, queue.slice(1));
+        const firstPlayable = !arena.currentMatch
+          ? queue.find(m => !m.isTableau || !this.isDeMatchBlocked(m.id))
+          : undefined;
+        if (firstPlayable) {
+          // Arène libre → charger le premier match non bloqué directement
+          this.assignMatchToArena(arenaId, firstPlayable);
+          this.arenaMatchQueue.set(arenaId, queue.filter(m => m.id !== firstPlayable.id));
           console.log(
-            `[RemoteScoreServer] Match DE ${queue[0].id} chargé sur arène ${arenaId}, ${queue.length - 1} en file`
+            `[RemoteScoreServer] Match DE ${firstPlayable.id} chargé sur arène ${arenaId}, ${queue.length - 1} en file`
           );
         } else {
-          // Arène occupée (match de poule en cours) → tout en file
+          // Arène occupée ou tous les matchs bloqués → tout en file
           const existing = this.arenaMatchQueue.get(arenaId) || [];
           this.arenaMatchQueue.set(arenaId, [...existing, ...queue]);
           console.log(
@@ -3983,9 +3991,13 @@ export class RemoteScoreServer {
         }
       }
 
-      if (arenaEffectivelyFree && queue.length > 0) {
-        this.assignMatchToArena(arenaId, queue[0]);
-        this.arenaMatchQueue.set(arenaId, [...existing, ...queue.slice(1)]);
+      const firstPlayable = arenaEffectivelyFree
+        ? queue.find(m => !m.isTableau || !this.isDeMatchBlocked(m.id))
+        : undefined;
+      if (firstPlayable) {
+        this.assignMatchToArena(arenaId, firstPlayable);
+        const rest = queue.filter(m => m.id !== firstPlayable.id);
+        this.arenaMatchQueue.set(arenaId, [...existing, ...rest]);
       } else {
         this.arenaMatchQueue.set(arenaId, [...existing, ...queue]);
       }
