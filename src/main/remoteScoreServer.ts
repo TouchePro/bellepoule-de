@@ -2622,7 +2622,7 @@ export class RemoteScoreServer {
     }
 
     if (!matchToMove || !toArena) return;
-    if (matchToMove.isTableau && (!matchToMove.fencerA || !matchToMove.fencerB)) return;
+    if (!matchToMove.fencerA || !matchToMove.fencerB) return;
 
     // 2. Ajouter à la nouvelle arène
     const toArenaId = `arena${toArena}`;
@@ -3066,17 +3066,11 @@ export class RemoteScoreServer {
       );
 
       // Respecter les overrides de piste : ignorer les matchs pré-assignés à une autre arène
-      let nextMatch = poolMatches.find(m => {
+      const nextMatch = poolMatches.find(m => {
         if (m.id === currentMatchId) return false;
         const override = this.poolMatchArenaOverrides.get(m.id);
         return !override || override === arenaId;
       });
-      // Si rien de dispo pour cette arène, chercher un match explicitement redirigé ici
-      if (!nextMatch) {
-        nextMatch = poolMatches.find(m =>
-          m.id !== currentMatchId && this.poolMatchArenaOverrides.get(m.id) === arenaId
-        );
-      }
       if (nextMatch) {
         console.log(
           `[RemoteScoreServer] Chargement du match ${nextMatch.id} (pool ${currentPoolId}) sur arène ${arenaId}`

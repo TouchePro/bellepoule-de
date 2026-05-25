@@ -328,8 +328,9 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     window.electronAPI.remote.getArenas(competition.id).then((res: any) => {
       if (res?.success && res.arenas) setArenaStates(res.arenas);
     }).catch(() => {});
+    let unlisten: (() => void) | undefined;
     if (window.electronAPI.onRemoteArenaUpdate) {
-      window.electronAPI.onRemoteArenaUpdate((data: any) => {
+      unlisten = window.electronAPI.onRemoteArenaUpdate((data: any) => {
         setArenaStates(prev => {
           const idx = prev.findIndex((a: Arena) => a.id === data.arenaId);
           if (idx === -1) return prev;
@@ -343,6 +344,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         });
       });
     }
+    return () => unlisten?.();
   }, [isRemoteActive, competition.id]);
 
   // Écouter les mises à jour des matches distants
