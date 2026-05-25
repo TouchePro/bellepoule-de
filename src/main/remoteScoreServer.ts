@@ -3612,15 +3612,18 @@ export class RemoteScoreServer {
       for (const [arenaId, queue] of queuesByArena) {
         const arena = this.arenas.get(arenaId);
         if (!arena) continue;
-        if (!arena.currentMatch && queue.length > 0) {
-          // Arène libre → charger le premier match directement
-          this.assignMatchToArena(arenaId, queue[0]);
-          this.arenaMatchQueue.set(arenaId, queue.slice(1));
+        const firstPlayable = !arena.currentMatch
+          ? queue.find(m => !m.isTableau || !this.isDeMatchBlocked(m.id))
+          : undefined;
+        if (firstPlayable) {
+          // Arène libre → charger le premier match non bloqué directement
+          this.assignMatchToArena(arenaId, firstPlayable);
+          this.arenaMatchQueue.set(arenaId, queue.filter(m => m.id !== firstPlayable.id));
           console.log(
-            `[RemoteScoreServer] Match DE ${queue[0].id} chargé sur arène ${arenaId}, ${queue.length - 1} en file`
+            `[RemoteScoreServer] Match DE ${firstPlayable.id} chargé sur arène ${arenaId}, ${queue.length - 1} en file`
           );
         } else {
-          // Arène occupée (match de poule en cours) → tout en file
+          // Arène occupée ou tous les matchs bloqués → tout en file
           const existing = this.arenaMatchQueue.get(arenaId) || [];
           this.arenaMatchQueue.set(arenaId, [...existing, ...queue]);
           console.log(
@@ -3988,9 +3991,13 @@ export class RemoteScoreServer {
         }
       }
 
-      if (arenaEffectivelyFree && queue.length > 0) {
-        this.assignMatchToArena(arenaId, queue[0]);
-        this.arenaMatchQueue.set(arenaId, [...existing, ...queue.slice(1)]);
+      const firstPlayable = arenaEffectivelyFree
+        ? queue.find(m => !m.isTableau || !this.isDeMatchBlocked(m.id))
+        : undefined;
+      if (firstPlayable) {
+        this.assignMatchToArena(arenaId, firstPlayable);
+        const rest = queue.filter(m => m.id !== firstPlayable.id);
+        this.arenaMatchQueue.set(arenaId, [...existing, ...rest]);
       } else {
         this.arenaMatchQueue.set(arenaId, [...existing, ...queue]);
       }
