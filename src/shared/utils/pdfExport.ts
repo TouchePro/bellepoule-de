@@ -1333,13 +1333,17 @@ export function generateBracketTreeMultiPageHTML(
     if (col < cols - 1) adj.push(`→ p.${row * cols + col + 2}`);
     if (row < rows - 1) adj.push(`↓ p.${(row + 1) * cols + col + 1}`);
 
+    const isFirst = i === 0;
     return `
 <div class="page${i === totalPages - 1 ? ' last' : ''}">
-  <div class="strip" style="background:${navy};">
-    <span class="strip-title">${title}</span>
+  <div class="strip${isFirst ? '' : ' strip--mini'}" style="background:${navy};">
+    ${isFirst
+      ? `<span class="strip-title">${title}</span>
     <span class="strip-sep">·</span>
     <span class="strip-page">${num}/${totalPages}&nbsp;·&nbsp;${desc}</span>
-    ${adj.length ? `<span class="strip-sep">·</span><span class="strip-adj">${adj.join('&nbsp;')}</span>` : ''}
+    ${adj.length ? `<span class="strip-sep">·</span><span class="strip-adj">${adj.join('&nbsp;')}</span>` : ''}`
+      : `<span class="strip-page strip-page--mini">${num}/${totalPages}&nbsp;·&nbsp;${desc}${adj.length ? '&nbsp;·&nbsp;' + adj.join('&nbsp;') : ''}</span>`
+    }
   </div>
   <div class="bracket-view">
     <svg xmlns="http://www.w3.org/2000/svg"
@@ -1382,6 +1386,8 @@ export function generateBracketTreeMultiPageHTML(
     .strip-page  { font-family: 'Segoe UI',Arial,sans-serif; font-size: 9pt; color: #f5e6a3; }
     .strip-sep   { font-family: 'Segoe UI',Arial,sans-serif; font-size: 9pt; color: #7a9bbf; }
     .strip-adj   { font-family: 'Segoe UI',Arial,sans-serif; font-size: 8pt; color: #a8c4d8; }
+    .strip--mini { flex: 0 0 4mm; padding: 0 6px; }
+    .strip-page--mini { font-family: 'Segoe UI',Arial,sans-serif; font-size: 6pt; color: #a8c4d8; }
     .bracket-view { flex: 1; overflow: hidden; }
     .bracket-view svg { display: block; width: 100%; height: 100%; }
   </style>
