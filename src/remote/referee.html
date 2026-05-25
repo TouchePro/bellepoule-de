@@ -2582,8 +2582,11 @@
         }
 
         showCoinFlipConfirm(winner) {
-          const nameEl = document.getElementById(`fencer-${winner.toLowerCase()}-name`);
-          const winnerName = nameEl ? nameEl.textContent.trim() : `Tireur ${winner}`;
+          const winnerFencer = winner === 'A' ? this.currentMatch?.fencerA : this.currentMatch?.fencerB;
+          const winnerName = winnerFencer
+            ? `${winnerFencer.lastName || ''} ${winnerFencer.firstName || ''}`.trim() || `Tireur ${winner}`
+            : `Tireur ${winner}`;
+          // fencerA est toujours côté VERT (logical), fencerB toujours ROUGE
           const colorLabel = winner === 'A' ? 'VERT' : 'ROUGE';
 
           const nameDisplay = document.getElementById('coin-flip-confirm-name');
