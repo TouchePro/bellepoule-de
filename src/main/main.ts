@@ -1147,6 +1147,14 @@ ipcMain.handle('db:getScoreAuditLogByCompetition', async (_, competitionId) => {
   return db.getScoreAuditLogByCompetition(competitionId);
 });
 
+ipcMain.handle('db:getMatchTimeline', async (_, matchId: string) => {
+  return db.getMatchTimeline(matchId);
+});
+
+ipcMain.handle('db:getCompetitionTimeline', async (_, competitionId: string) => {
+  return db.getCompetitionTimeline(competitionId);
+});
+
 // File handlers
 ipcMain.handle('file:export', async (_, filepath) => {
   db.exportToFile(filepath);

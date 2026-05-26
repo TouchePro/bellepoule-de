@@ -291,6 +291,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('db:getScoreAuditLogByCompetition', competitionId),
     deleteAbandonSnapshot: (fencerId: string) =>
       ipcRenderer.invoke('db:deleteAbandonSnapshot', fencerId),
+    getMatchTimeline: (matchId: string) =>
+      ipcRenderer.invoke('db:getMatchTimeline', matchId),
+    getCompetitionTimeline: (competitionId: string) =>
+      ipcRenderer.invoke('db:getCompetitionTimeline', competitionId),
   },
 
   // File operations with validation

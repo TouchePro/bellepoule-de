@@ -19,6 +19,7 @@ import PoolScoreMatrix from './pool/PoolScoreMatrix';
 import PoolMatchList from './pool/PoolMatchList';
 import Confetti from './Confetti';
 import AddFencerToPoolModal from './AddFencerToPoolModal';
+import { MatchAuditLog } from './MatchAuditLog';
 
 interface PoolViewProps {
   pool: Pool;
@@ -112,6 +113,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   const { addAction, undo, redo, canUndo, canRedo } = useHistory();
   const [showPoolConfetti, setShowPoolConfetti] = useState(false);
   const [showAddFencerModal, setShowAddFencerModal] = useState(false);
+  const [auditMatchId, setAuditMatchId] = useState<string | null>(null);
   const prevIsComplete = useRef(pool.isComplete);
 
   useEffect(() => {
@@ -1326,6 +1328,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
             isLocked={isLocked}
             openScoreModal={openScoreModal}
             onMatchReset={onMatchReset}
+            onShowMatchAudit={setAuditMatchId}
             defaultArena={defaultArena}
             arenaCount={arenaCount}
             arenas={arenas}
@@ -1348,6 +1351,11 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         }}
         onClose={() => setShowAddFencerModal(false)}
       />
+    )}
+    {auditMatchId && (
+      <React.Suspense fallback={null}>
+        <MatchAuditLog matchId={auditMatchId} onClose={() => setAuditMatchId(null)} />
+      </React.Suspense>
     )}
     </>
   );

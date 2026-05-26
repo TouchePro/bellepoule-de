@@ -24,6 +24,7 @@ interface PoolMatchListProps {
   isLocked: boolean;
   openScoreModal: (index: number) => void;
   onMatchReset?: (index: number) => void;
+  onShowMatchAudit?: (matchId: string) => void;
   defaultArena?: number;
   arenaCount?: number;
   arenas?: Arena[];
@@ -106,6 +107,7 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
   isLocked,
   openScoreModal,
   onMatchReset,
+  onShowMatchAudit,
   defaultArena = 1,
   arenaCount = 0,
   arenas = [],
@@ -475,6 +477,28 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
                   {fencerBAbandoned && ' ✕'}
                   {match.scoreB?.isVictory && !isAbandonMatch ? ' ✓' : ''}
                 </span>
+                {onShowMatchAudit && (
+                  <button
+                    onClick={e => {
+                      e.stopPropagation();
+                      onShowMatchAudit(match.id);
+                    }}
+                    title="Journal du match"
+                    style={{
+                      marginLeft: '0.5rem',
+                      padding: '0.25rem 0.5rem',
+                      fontSize: '0.75rem',
+                      background: 'rgba(139,92,246,0.1)',
+                      border: '1px solid rgba(139,92,246,0.3)',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      color: '#7c3aed',
+                      flexShrink: 0,
+                    }}
+                  >
+                    📋
+                  </button>
+                )}
                 {!isAbandonMatch && !isLocked && onMatchReset && (
                   <button
                     onClick={e => {

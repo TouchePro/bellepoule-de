@@ -571,6 +571,10 @@ export interface DatabaseAPI {
 
   // Score audit log
   getScoreAuditLogByCompetition: (competitionId: string) => Promise<ScoreAuditEntry[]>;
+
+  // Match timeline
+  getMatchTimeline: (matchId: string) => Promise<import('./index').MatchEventEntry[]>;
+  getCompetitionTimeline: (competitionId: string) => Promise<import('./index').MatchEventEntry[]>;
 }
 
 export interface FileAPI {
