@@ -2855,7 +2855,7 @@ export class RemoteScoreServer {
     }
 
     if (!matchToMove || !toArena) return;
-    if (matchToMove.isTableau && (!matchToMove.fencerA || !matchToMove.fencerB)) return;
+    if (!matchToMove.fencerA || !matchToMove.fencerB) return;
 
     // 2. Ajouter à la nouvelle arène
     const toArenaId = `arena${toArena}`;

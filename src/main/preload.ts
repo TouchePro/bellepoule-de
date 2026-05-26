@@ -504,7 +504,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Remote event listeners (for real-time updates)
   onRemoteArenaUpdate: (callback: (data: any) => void) => {
-    ipcRenderer.on('arena:update', (_, data) => callback(data));
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on('arena:update', handler);
+    return () => ipcRenderer.removeListener('arena:update', handler);
   },
   onRemoteMatchFinished: (callback: (data: any) => void) => {
     ipcRenderer.on('match:finished', (_, data) => callback(data));
