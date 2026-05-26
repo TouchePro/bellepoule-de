@@ -1505,6 +1505,16 @@ export class RemoteScoreServer {
               rankings,
             };
           });
+          const overallRanking = (sessionState?.overallRanking || []).map((r: any) => ({
+            id: r.fencer?.id ?? '',
+            lastName: r.fencer?.lastName ?? '',
+            firstName: r.fencer?.firstName ?? '',
+            club: r.fencer?.club ?? '',
+            victories: r.victories ?? 0,
+            index: r.index ?? 0,
+            touchesFor: r.touchesScored ?? 0,
+            touchesAgainst: r.touchesReceived ?? 0,
+          }));
           return res.json({
             competition: {
               id: competition.id,
@@ -1513,6 +1523,7 @@ export class RemoteScoreServer {
               weapon: competition.weapon,
             },
             pools: poolResults,
+            overallRanking,
           });
         }
 

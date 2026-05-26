@@ -636,8 +636,10 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   );
 
   const handleGoToRanking = () => {
-    const ranking = computeOverallRanking(pools);
-    setOverallRanking(ranking);
+    if (overallRanking.length === 0) {
+      const ranking = computeOverallRanking(pools);
+      setOverallRanking(ranking);
+    }
     setCurrentPhase('ranking');
   };
 
