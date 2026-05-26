@@ -1160,8 +1160,20 @@ export function generateBracketTreeMultiPageHTML(
   const firstRoundCount = tableauSize / 2;
   const USABLE_H = SVG_H - TOP_MARGIN - BOT_MARGIN;
   const SLOT_H   = USABLE_H / firstRoundCount;
-  const ROW_H    = Math.max(16, Math.min(32, Math.floor(SLOT_H * 0.55)));
+  const ROW_H    = Math.max(10, Math.min(32, Math.floor(SLOT_H * 0.45)));
   const MATCH_H  = ROW_H * 2;
+
+  // Snap page split to nearest inter-match gap to avoid cutting through match boxes
+  const splitIdx    = Math.round((qH - TOP_MARGIN) / SLOT_H - 0.5);
+  const nearMatchCY = TOP_MARGIN + (splitIdx + 0.5) * SLOT_H;
+  const cutY        = Math.abs(qH - nearMatchCY) < MATCH_H / 2
+    ? Math.round(
+        Math.abs(TOP_MARGIN + splitIdx * SLOT_H - qH) <=
+        Math.abs(TOP_MARGIN + (splitIdx + 1) * SLOT_H - qH)
+          ? TOP_MARGIN + splitIdx * SLOT_H
+          : TOP_MARGIN + (splitIdx + 1) * SLOT_H
+      )
+    : qH;
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
   const truncate = (s: string, n: number) => s.length > n ? s.slice(0, n - 1) + '…' : s;
@@ -1206,7 +1218,7 @@ export function generateBracketTreeMultiPageHTML(
   }).join('\n  ');
 
   const roundLabels = mkRoundLabels(TOP_MARGIN - 7)
-    + '\n  ' + mkRoundLabels(qH + LABEL_H - 5);
+    + '\n  ' + mkRoundLabels(cutY + LABEL_H - 5);
 
   const petiteFinaleLabel = petiteFinale ? `
   <text x="${colX(2) + MATCH_W / 2}" y="${SVG_H - BOT_MARGIN - MATCH_H - 10}"
@@ -1347,7 +1359,7 @@ export function generateBracketTreeMultiPageHTML(
   </div>
   <div class="bracket-view">
     <svg xmlns="http://www.w3.org/2000/svg"
-         viewBox="${col * qW} ${row * qH} ${qW} ${qH}"
+         viewBox="${col * qW} ${row === 0 ? 0 : cutY} ${qW} ${row === 0 ? cutY : SVG_H - cutY}"
          preserveAspectRatio="xMinYMin meet">
       ${svgContent}
     </svg>
