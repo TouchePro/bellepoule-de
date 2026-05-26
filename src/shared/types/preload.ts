@@ -709,7 +709,7 @@ export interface ElectronAPI extends MenuAPI, UtilityAPI {
   dialog: DialogAPI;
   updater: UpdaterAPI;
   remote: RemoteServerAPI;
-  onRemoteArenaUpdate: (callback: (data: any) => void) => void;
+  onRemoteArenaUpdate: (callback: (data: any) => void) => () => void;
   onRemoteMatchFinished: (callback: (data: any) => void) => void;
   onKioskNoteUpdate: (
     callback: (note: import('../types/remote').OrgNote | null) => void
