@@ -10,7 +10,20 @@ import { Fencer, FencerStatus } from '../../shared/types';
 import EditFencerModal from './EditFencerModal';
 import { useTranslation } from '../hooks/useTranslation';
 import { exportFencersToTXT, exportFencersToFFF } from '../../shared/utils/fencerExport';
+import { exportAppelToPDF } from '../../shared/utils/pdfExport';
 import { useConfirm } from './ConfirmDialog';
+
+type SortableCol = 'ref' | 'lastName' | 'firstName' | 'birthDate' | 'club' | 'ranking' | 'status';
+
+const COLUMNS = [
+  { id: 'ref'       as SortableCol, label: 'N°',         width: '50px'  },
+  { id: 'lastName'  as SortableCol, label: 'Nom'                         },
+  { id: 'firstName' as SortableCol, label: 'Prénom'                      },
+  { id: 'birthDate' as SortableCol, label: 'Né(e)',       width: '70px'  },
+  { id: 'club'      as SortableCol, label: 'Club'                        },
+  { id: 'ranking'   as SortableCol, label: 'Classement', width: '110px' },
+  { id: 'status'    as SortableCol, label: 'Statut',     width: '90px'  },
+];
 
 interface FencerListProps {
   fencers: Fencer[];
@@ -61,7 +74,11 @@ const FencerListComponent: React.FC<FencerListProps> = ({
   };
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState<'name' | 'club' | 'ranking' | 'age'>('ranking');
+  const [sortBy, setSortBy] = useState<SortableCol>('ranking');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set());
+  const [colMenuOpen, setColMenuOpen] = useState(false);
+  const colMenuRef = useRef<HTMLDivElement>(null);
   const [photoMessage, setPhotoMessage] = useState<string | null>(null);
   const [editingFencer, setEditingFencer] = useState<Fencer | null>(null);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
@@ -78,6 +95,9 @@ const FencerListComponent: React.FC<FencerListProps> = ({
       }
       if (importMenuRef.current && !importMenuRef.current.contains(e.target as Node)) {
         setImportMenuOpen(false);
+      }
+      if (colMenuRef.current && !colMenuRef.current.contains(e.target as Node)) {
+        setColMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -98,29 +118,30 @@ const FencerListComponent: React.FC<FencerListProps> = ({
     const id = setInterval(onFencersChanged, 5000);
     return () => clearInterval(id);
   }, [showRegisterQR, onFencersChanged]);
-  const filteredFencers = useMemo(() => fencers
-    .filter(f => {
-      const search = searchTerm.toLowerCase();
-      return (
-        f.lastName.toLowerCase().includes(search) ||
-        f.firstName.toLowerCase().includes(search) ||
-        f.club?.toLowerCase().includes(search)
-      );
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'name':
-          return a.lastName.localeCompare(b.lastName);
-        case 'club':
-          return (a.club || '').localeCompare(b.club || '');
-        case 'ranking':
-          return (a.ranking ?? 99999) - (b.ranking ?? 99999);
-        case 'age':
-          return new Date(a.birthDate ?? 0).getTime() - new Date(b.birthDate ?? 0).getTime();
-        default:
-          return 0;
-      }
-    }), [fencers, searchTerm, sortBy]);
+  const filteredFencers = useMemo(() => {
+    const dir = sortOrder === 'asc' ? 1 : -1;
+    return fencers
+      .filter(f => {
+        const search = searchTerm.toLowerCase();
+        return (
+          f.lastName.toLowerCase().includes(search) ||
+          f.firstName.toLowerCase().includes(search) ||
+          f.club?.toLowerCase().includes(search)
+        );
+      })
+      .sort((a, b) => {
+        switch (sortBy) {
+          case 'ref':       return dir * (a.ref - b.ref);
+          case 'lastName':  return dir * a.lastName.localeCompare(b.lastName);
+          case 'firstName': return dir * (a.firstName ?? '').localeCompare(b.firstName ?? '');
+          case 'birthDate': return dir * (new Date(a.birthDate ?? 0).getTime() - new Date(b.birthDate ?? 0).getTime());
+          case 'club':      return dir * (a.club || '').localeCompare(b.club || '');
+          case 'ranking':   return dir * ((a.ranking ?? 99999) - (b.ranking ?? 99999));
+          case 'status':    return dir * a.status.localeCompare(b.status);
+          default:          return 0;
+        }
+      });
+  }, [fencers, searchTerm, sortBy, sortOrder]);
 
   const VIRTUAL_THRESHOLD = 50;
   const ROW_HEIGHT = 52;
@@ -294,6 +315,23 @@ const FencerListComponent: React.FC<FencerListProps> = ({
     }
   };
 
+  const handleSort = useCallback((col: SortableCol) => {
+    if (sortBy === col) {
+      setSortOrder(o => o === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(col);
+      setSortOrder('asc');
+    }
+  }, [sortBy]);
+
+  const handleExportPDF = async () => {
+    const visibleColIds = COLUMNS.filter(c => !hiddenCols.has(c.id)).map(c => c.id);
+    await exportAppelToPDF(filteredFencers, visibleColIds);
+  };
+
+  const visibleCols = COLUMNS.filter(c => !hiddenCols.has(c.id));
+  const colSpanTotal = visibleCols.length + 1; // +1 for Actions
+
   return (
     <div className="content">
       <div className="flex justify-between items-center mb-4" style={{ position: 'relative', zIndex: 2 }}>
@@ -403,6 +441,58 @@ const FencerListComponent: React.FC<FencerListProps> = ({
               )}
             </div>
           )}
+          <div ref={colMenuRef} style={{ position: 'relative', display: 'inline-block' }}>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setColMenuOpen(o => !o)}
+              title="Afficher/masquer des colonnes"
+            >
+              ⚙ Colonnes ▾
+            </button>
+            {colMenuOpen && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                right: 0,
+                marginTop: '4px',
+                zIndex: 9999,
+                background: 'var(--bg-secondary, #2a2a3e)',
+                border: '1px solid var(--border-color, #444)',
+                borderRadius: '6px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                minWidth: '160px',
+                padding: '4px 0',
+              }}>
+                {COLUMNS.map(col => (
+                  <label
+                    key={col.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      padding: '6px 16px',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem',
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={!hiddenCols.has(col.id)}
+                      onChange={() => {
+                        setHiddenCols(prev => {
+                          const next = new Set(prev);
+                          if (next.has(col.id)) next.delete(col.id);
+                          else next.add(col.id);
+                          return next;
+                        });
+                      }}
+                    />
+                    {col.label}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
           <div ref={exportMenuRef} style={{ position: 'relative', display: 'inline-block' }}>
             <button
               className="btn btn-secondary"
@@ -427,6 +517,13 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                 maxHeight: '60vh',
                 overflowY: 'auto',
               }}>
+                <button
+                  className="btn btn-ghost"
+                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 16px', borderRadius: 0 }}
+                  onClick={() => { handleExportPDF(); setExportMenuOpen(false); }}
+                >
+                  Exporter PDF (appel)
+                </button>
                 <button
                   className="btn btn-ghost"
                   style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 16px', borderRadius: 0 }}
@@ -552,17 +649,6 @@ const FencerListComponent: React.FC<FencerListProps> = ({
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
           />
-          <select
-            className="form-input form-select"
-            style={{ width: '200px' }}
-            value={sortBy}
-            onChange={e => setSortBy(e.target.value as any)}
-          >
-            <option value="ranking">Par classement</option>
-            <option value="name">Par nom</option>
-            <option value="age">Par âge</option>
-            <option value="club">Par club</option>
-          </select>
         </div>
       </div>
 
@@ -576,24 +662,22 @@ const FencerListComponent: React.FC<FencerListProps> = ({
           {useVirtual && (
             <table className="table" style={{ tableLayout: 'fixed' }}>
               <colgroup>
-                <col style={{ width: '50px' }} />
-                <col />
-                <col />
-                <col style={{ width: '70px' }} />
-                <col />
-                <col style={{ width: '110px' }} />
-                <col style={{ width: '90px' }} />
+                {visibleCols.map(col => (
+                  <col key={col.id} style={col.width ? { width: col.width } : undefined} />
+                ))}
                 <col style={{ width: '250px' }} />
               </colgroup>
               <thead>
                 <tr>
-                  <th>N°</th>
-                  <th>Nom</th>
-                  <th>Prénom</th>
-                  <th>Né(e)</th>
-                  <th>Club</th>
-                  <th>Classement</th>
-                  <th>Statut</th>
+                  {visibleCols.map(col => (
+                    <th
+                      key={col.id}
+                      style={{ cursor: 'pointer', userSelect: 'none' }}
+                      onClick={() => handleSort(col.id)}
+                    >
+                      {col.label}{sortBy === col.id ? (sortOrder === 'asc' ? ' ▲' : ' ▼') : ''}
+                    </th>
+                  ))}
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -607,49 +691,46 @@ const FencerListComponent: React.FC<FencerListProps> = ({
             <table className="table" style={useVirtual ? { tableLayout: 'fixed' } : undefined}>
               {useVirtual && (
                 <colgroup>
-                  <col style={{ width: '50px' }} />
-                  <col />
-                  <col />
-                  <col style={{ width: '70px' }} />
-                  <col />
-                  <col style={{ width: '110px' }} />
-                  <col style={{ width: '90px' }} />
+                  {visibleCols.map(col => (
+                    <col key={col.id} style={col.width ? { width: col.width } : undefined} />
+                  ))}
                   <col style={{ width: '250px' }} />
                 </colgroup>
               )}
               {!useVirtual && (
                 <thead>
                   <tr>
-                    <th style={{ width: '50px' }}>N°</th>
-                    <th>Nom</th>
-                    <th>Prénom</th>
-                    <th>Né(e)</th>
-                    <th>Club</th>
-                    <th>Classement</th>
-                    <th>Statut</th>
+                    {visibleCols.map(col => (
+                      <th
+                        key={col.id}
+                        style={{ width: col.width, cursor: 'pointer', userSelect: 'none' }}
+                        onClick={() => handleSort(col.id)}
+                      >
+                        {col.label}{sortBy === col.id ? (sortOrder === 'asc' ? ' ▲' : ' ▼') : ''}
+                      </th>
+                    ))}
                     <th style={{ width: '250px' }}>Actions</th>
                   </tr>
                 </thead>
               )}
             <tbody>
               {useVirtual && virtual.state.offsetY > 0 && (
-                <tr style={{ height: virtual.state.offsetY }}><td colSpan={8} /></tr>
+                <tr style={{ height: virtual.state.offsetY }}><td colSpan={colSpanTotal} /></tr>
               )}
               {(useVirtual ? virtual.visibleItems : filteredFencers).map(fencer => (
                 <tr key={fencer.id}>
-                  <td className="text-muted">{fencer.ref}</td>
-                  <td className="font-medium">{fencer.lastName}</td>
-                  <td>{fencer.firstName}</td>
-                  <td className="text-sm text-muted">
-                    {fencer.birthDate ? new Date(fencer.birthDate).getFullYear() : '-'}
-                  </td>
-                  <td className="text-sm text-muted">{fencer.club || '-'}</td>
-                  <td className="text-sm">{fencer.ranking ? `#${fencer.ranking}` : '-'}</td>
-                  <td>
-                    <span className={`badge ${statusLabels[fencer.status].color}`}>
-                      {statusLabels[fencer.status].label}
-                    </span>
-                  </td>
+                  {visibleCols.map(col => {
+                    switch (col.id) {
+                      case 'ref':       return <td key="ref" className="text-muted">{fencer.ref}</td>;
+                      case 'lastName':  return <td key="lastName" className="font-medium">{fencer.lastName}</td>;
+                      case 'firstName': return <td key="firstName">{fencer.firstName}</td>;
+                      case 'birthDate': return <td key="birthDate" className="text-sm text-muted">{fencer.birthDate ? new Date(fencer.birthDate).getFullYear() : '-'}</td>;
+                      case 'club':      return <td key="club" className="text-sm text-muted">{fencer.club || '-'}</td>;
+                      case 'ranking':   return <td key="ranking" className="text-sm">{fencer.ranking ? `#${fencer.ranking}` : '-'}</td>;
+                      case 'status':    return <td key="status"><span className={`badge ${statusLabels[fencer.status].color}`}>{statusLabels[fencer.status].label}</span></td>;
+                      default:          return null;
+                    }
+                  })}
                   <td>
                     <div
                       style={{
@@ -746,7 +827,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
               ))}
               {useVirtual && (() => {
                 const bottomHeight = virtual.state.totalHeight - virtual.state.offsetY - (virtual.visibleItems.length * ROW_HEIGHT);
-                return bottomHeight > 0 ? <tr style={{ height: bottomHeight }}><td colSpan={8} /></tr> : null;
+                return bottomHeight > 0 ? <tr style={{ height: bottomHeight }}><td colSpan={colSpanTotal} /></tr> : null;
               })()}
             </tbody>
           </table>

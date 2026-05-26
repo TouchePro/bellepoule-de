@@ -56,11 +56,11 @@
         --overlay-border: rgba(255,255,255,0.15);
         --name-color: #ffffff;
         --club-color: rgba(255,255,255,0.75);
-        --score-a-color: #ff2200;
-        --score-b-color: #00e640;
+        --score-a-color: #00e640;
+        --score-b-color: #ff2200;
         --score-bg: rgba(0,0,0,0.65);
-        --score-glow-a: rgba(255,34,0,0.7);
-        --score-glow-b: rgba(0,230,64,0.7);
+        --score-glow-a: rgba(0,230,64,0.7);
+        --score-glow-b: rgba(255,34,0,0.7);
         --timer-color: #ffaa00;
         --timer-bg: rgba(0,0,0,0.6);
         --timer-glow: rgba(255,170,0,0.8);
@@ -78,10 +78,10 @@
       }
       [data-theme="neon"] {
         --bg: #0a0a0a;
-        --score-a-color: #ff4444;
-        --score-b-color: #00ff88;
-        --score-glow-a: rgba(255,68,68,0.8);
-        --score-glow-b: rgba(0,255,136,0.8);
+        --score-a-color: #00ff88;
+        --score-b-color: #ff4444;
+        --score-glow-a: rgba(0,255,136,0.8);
+        --score-glow-b: rgba(255,68,68,0.8);
         --timer-color: #00ccff;
         --timer-glow: rgba(0,204,255,0.9);
         --panel-bg: rgba(0,0,0,0.85);
@@ -91,10 +91,10 @@
         --bg: linear-gradient(135deg, #e8edf5 0%, #c8d8f0 100%);
         --name-color: #111827;
         --club-color: #374151;
-        --score-a-color: #dc2626;
-        --score-b-color: #059669;
-        --score-glow-a: rgba(220,38,38,0.5);
-        --score-glow-b: rgba(5,150,105,0.5);
+        --score-a-color: #059669;
+        --score-b-color: #dc2626;
+        --score-glow-a: rgba(5,150,105,0.5);
+        --score-glow-b: rgba(220,38,38,0.5);
         --timer-color: #d97706;
         --timer-glow: rgba(217,119,6,0.7);
         --score-bg: rgba(255,255,255,0.85);
@@ -188,6 +188,14 @@
       .side-b .score-box {
         color: var(--score-b-color);
         text-shadow: 0 0 12px var(--score-glow-b), 0 0 28px var(--score-glow-b);
+      }
+      .swapped .side-a .score-box {
+        color: var(--score-b-color);
+        text-shadow: 0 0 12px var(--score-glow-b), 0 0 28px var(--score-glow-b);
+      }
+      .swapped .side-b .score-box {
+        color: var(--score-a-color);
+        text-shadow: 0 0 12px var(--score-glow-a), 0 0 28px var(--score-glow-a);
       }
 
       .fencer-info {
@@ -390,6 +398,9 @@
         /* Position du score : outer = score côté extérieur */
         if (params.get('scores') === 'outer') root.classList.add('scores-outer');
 
+        /* Inversion vert/rouge (?swap=1) */
+        if (params.get('swap') === '1') root.classList.add('swapped');
+
         /* Logo personnalisé dans le panneau central (?logo=https://...) */
         const logoUrl = params.get('logo');
         if (logoUrl) {
@@ -419,6 +430,8 @@
         let isSuddenDeath = false;
         let matchStatus   = 'idle';
         let phaseLabel    = 'Piste ' + arenaNumber;
+        let swapped       = params.get('swap') === '1';
+        let currentFencerA = {}, currentFencerB = {};
 
         const holdResultSec = parseInt(params.get('holdresult') || '5', 10);
         let pendingMatchData = null;
@@ -466,29 +479,34 @@
           elIdle.classList.toggle('hidden', active);
         }
 
-        function applyMatchData(data) {
-          if (data.status)          { matchStatus = data.status; renderVisibility(); }
-          if (data.match) {
-            const fA = data.match.fencerA || {};
-            const fB = data.match.fencerB || {};
-            elNameA.textContent = (`${fA.lastName||''} ${fA.firstName||''}`).trim() || '—';
-            elClubA.textContent = fA.club || '';
-            elNameB.textContent = (`${fB.lastName||''} ${fB.firstName||''}`).trim() || '—';
-            elClubB.textContent = fB.club || '';
+        function renderFencers() {
+          const dispA = swapped ? currentFencerB : currentFencerA;
+          const dispB = swapped ? currentFencerA : currentFencerB;
+          elNameA.textContent = (`${dispA.lastName||''} ${dispA.firstName||''}`).trim() || '—';
+          elClubA.textContent = dispA.club || '';
+          elNameB.textContent = (`${dispB.lastName||''} ${dispB.firstName||''}`).trim() || '—';
+          elClubB.textContent = dispB.club || '';
+        }
 
-            // Phase label depuis les métadonnées du match si disponibles
-            if (data.match.phaseName) {
-              phaseLabel = data.match.phaseName;
-            } else if (data.match.poolName) {
-              phaseLabel = data.match.poolName;
-            }
+        function applyMatchData(data) {
+          if (data.status) { matchStatus = data.status; renderVisibility(); }
+          if (data.match) {
+            currentFencerA = data.match.fencerA || {};
+            currentFencerB = data.match.fencerB || {};
+            renderFencers();
+            if (data.match.phaseName)     { phaseLabel = data.match.phaseName; }
+            else if (data.match.poolName) { phaseLabel = data.match.poolName; }
             elPhase.textContent = phaseLabel;
           }
-          if (data.scoreA !== undefined) { scoreA = data.scoreA; elScoreA.textContent = scoreA; }
-          if (data.scoreB !== undefined) { scoreB = data.scoreB; elScoreB.textContent = scoreB; }
-          if (data.cardsA)               { cardsA = data.cardsA; elCardsA.innerHTML  = renderCards(cardsA); }
-          if (data.cardsB)               { cardsB = data.cardsB; elCardsB.innerHTML  = renderCards(cardsB); }
-          if (data.time !== undefined)   { timerSec  = data.time; timerStat = data.timerStatus || timerStat; renderTimer(); }
+          if (data.scoreA !== undefined) scoreA = data.scoreA;
+          if (data.scoreB !== undefined) scoreB = data.scoreB;
+          elScoreA.textContent = swapped ? scoreB : scoreA;
+          elScoreB.textContent = swapped ? scoreA : scoreB;
+          if (data.cardsA) cardsA = data.cardsA;
+          if (data.cardsB) cardsB = data.cardsB;
+          elCardsA.innerHTML = renderCards(swapped ? cardsB : cardsA);
+          elCardsB.innerHTML = renderCards(swapped ? cardsA : cardsB);
+          if (data.time !== undefined) { timerSec = data.time; timerStat = data.timerStatus || timerStat; renderTimer(); }
           if (data.suddenDeath !== undefined || data.overtimeType !== undefined) {
             isSuddenDeath = !!(data.suddenDeath || data.overtimeType);
             elSDBadge.classList.toggle('visible', isSuddenDeath);

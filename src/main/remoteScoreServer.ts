@@ -59,11 +59,13 @@ export class RemoteScoreServer {
     classement: boolean;
     direct: boolean;
     suivants: boolean;
+    tableau: boolean;
   } = {
     poules: true,
     classement: true,
     direct: true,
     suivants: true,
+    tableau: true,
   };
 
   // Inscription distante : actif pendant la phase CHECKIN, désactivé après génération des poules
@@ -1203,7 +1205,7 @@ export class RemoteScoreServer {
               `[RemoteScoreServer] Fallback match courant pour arène ${arenaId}: ${arena.currentMatch.id}`
             );
             const queueMatches = (this.arenaMatchQueue.get(arenaId) || [])
-              .filter(m => !m.isTableau || (m.fencerA && m.fencerB && !this.isDeMatchBlocked(m.id)))
+              .filter(m => m.fencerA && m.fencerB)
               .map(m => ({
                 id: m.id,
                 poolId: m.poolId,
@@ -1239,7 +1241,7 @@ export class RemoteScoreServer {
             `[RemoteScoreServer] ${arenaQueue.length} matchs en file DE pour arène ${arenaId}`
           );
           const queueMatches = arenaQueue
-            .filter(m => !m.isTableau || (m.fencerA && m.fencerB && !this.isDeMatchBlocked(m.id)))
+            .filter(m => m.fencerA && m.fencerB)
             .map(m => ({
               id: m.id,
               poolId: m.poolId,
@@ -1505,6 +1507,16 @@ export class RemoteScoreServer {
               rankings,
             };
           });
+          const overallRanking = (sessionState?.overallRanking || []).map((r: any) => ({
+            id: r.fencer?.id ?? '',
+            lastName: r.fencer?.lastName ?? '',
+            firstName: r.fencer?.firstName ?? '',
+            club: r.fencer?.club ?? '',
+            victories: r.victories ?? 0,
+            index: r.index ?? 0,
+            touchesFor: r.touchesScored ?? 0,
+            touchesAgainst: r.touchesReceived ?? 0,
+          }));
           return res.json({
             competition: {
               id: competition.id,
@@ -1513,6 +1525,7 @@ export class RemoteScoreServer {
               weapon: competition.weapon,
             },
             pools: poolResults,
+            overallRanking,
           });
         }
 
@@ -1726,6 +1739,97 @@ export class RemoteScoreServer {
       }
     });
 
+    // Données du tableau d'élimination directe pour le kiosk
+    this.app.get('/api/bracket', (req, res) => {
+      try {
+        if (!this.session) return res.status(404).json({ error: 'Aucune session active' });
+
+        const deMatches = (this.sessionMatches as any[]).filter((m: any) => m.isTableau);
+
+        if (deMatches.length === 0) {
+          return res.json({ tableSize: 0, currentRound: null, rounds: [] });
+        }
+
+        const roundLabels: Record<number, string> = {
+          1: 'Finale',
+          2: 'Demi-finales',
+          4: 'Quarts de finale',
+          8: '8èmes de finale',
+          16: '16èmes de finale',
+          32: '32èmes de finale',
+          64: '64èmes de finale',
+          128: '128èmes de finale',
+        };
+
+        // Arène par matchId pour l'affichage
+        const arenaByMatchId = new Map<string, string>();
+        for (const [arenaId, arena] of this.arenas.entries()) {
+          if (arena.currentMatch) {
+            const num = parseInt(arenaId.replace('arena', ''), 10);
+            arenaByMatchId.set(arena.currentMatch.id, `Piste ${num}`);
+          }
+        }
+
+        // Déterminer la taille du tableau (plus grande puissance de 2 couvrant tous les rounds)
+        // maxRound (sans petite finale round=3) = taille du tableau (puissance de 2)
+        const mainRounds = deMatches.filter((m: any) => m.round !== 3);
+        const maxRound = mainRounds.length > 0 ? Math.max(...mainRounds.map((m: any) => m.round || 1)) : 4;
+        const tableSize = maxRound;
+
+        // Grouper par round, enrichir avec scores live
+        const roundMap = new Map<number, any[]>();
+        for (const m of deMatches) {
+          const round = m.round || 1;
+          if (!roundMap.has(round)) roundMap.set(round, []);
+          const live = this.sessionMatchScores.get(m.id);
+          const isFinished =
+            (live?.status ?? m.status) === 'finished' ||
+            (live?.status ?? m.status) === MatchStatus.FINISHED ||
+            !!m.winner;
+          const isLive =
+            !isFinished &&
+            ((live?.status ?? m.status) === 'in_progress' ||
+              (live?.status ?? m.status) === MatchStatus.IN_PROGRESS ||
+              arenaByMatchId.has(m.id));
+          roundMap.get(round)!.push({
+            id: m.id,
+            position: m.position || 1,
+            fencerA: m.fencerA
+              ? { lastName: m.fencerA.lastName, firstName: m.fencerA.firstName, club: m.fencerA.club ?? '', id: m.fencerA.id }
+              : null,
+            fencerB: m.fencerB
+              ? { lastName: m.fencerB.lastName, firstName: m.fencerB.firstName, club: m.fencerB.club ?? '', id: m.fencerB.id }
+              : null,
+            scoreA: live?.scoreA ?? m.scoreA ?? null,
+            scoreB: live?.scoreB ?? m.scoreB ?? null,
+            winnerId: m.winner?.id ?? null,
+            status: isFinished ? 'finished' : isLive ? 'live' : 'pending',
+            isBye: !!m.isBye,
+            arenaName: arenaByMatchId.get(m.id) ?? null,
+          });
+        }
+
+        // Trier les rounds du plus grand (tour initial) au plus petit (finale)
+        const rounds = Array.from(roundMap.entries())
+          .sort(([a], [b]) => b - a)
+          .map(([round, matches]) => ({
+            round,
+            label: roundLabels[round] ?? `Tour de ${round}`,
+            matches: matches.sort((a: any, b: any) => a.position - b.position),
+          }));
+
+        // Round actif = premier round non entièrement terminé (du plus grand au plus petit)
+        const currentRound =
+          rounds.find(r => r.matches.some((m: any) => m.status !== 'finished' && !m.isBye))
+            ?.round ?? null;
+
+        res.json({ tableSize, currentRound, rounds });
+      } catch (error) {
+        console.error('[RemoteScoreServer] Erreur /api/bracket:', error);
+        res.status(500).json({ error: 'Erreur interne' });
+      }
+    });
+
     // Page HTML : résultats d'une compétition (pour les spectateurs)
     this.app.get('/competition/:competitionId/results', (req, res) => {
       const { competitionId } = req.params;
@@ -1810,6 +1914,135 @@ export class RemoteScoreServer {
     }
     load();
     setInterval(load, 30000);
+  </script>
+</body>
+</html>`;
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.send(html);
+    });
+
+    // Journal du match en cours (tablette arbitre - lecture seule)
+    this.app.get('/api/arena/:arenaId/current-match/events', (req, res) => {
+      const arena = this.arenas.get(req.params.arenaId);
+      if (!arena?.currentMatch?.id) {
+        return res.json({ success: true, events: [], matchId: null });
+      }
+      try {
+        const events = this.db.getMatchTimeline(arena.currentMatch.id);
+        res.json({ success: true, events, matchId: arena.currentMatch.id });
+      } catch (e) {
+        res.status(500).json({ success: false, error: String(e) });
+      }
+    });
+
+    // Page HTML journal (match en cours uniquement)
+    this.app.get('/arene:arenaId/journal', (req, res) => {
+      const arenaNum = req.params.arenaId;
+      const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Journal – Piste ${arenaNum}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; padding: 1rem; font-size: 14px; }
+    header { text-align: center; padding: 0.75rem 0 1rem; }
+    header h1 { font-size: 1.1rem; color: #f8fafc; }
+    #match-info { color: #94a3b8; font-size: 0.8rem; margin-top: 0.25rem; }
+    #status { text-align: center; color: #94a3b8; padding: 2rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    th { background: #1e293b; color: #94a3b8; padding: 0.45rem 0.6rem; text-align: left; font-weight: 600; position: sticky; top: 0; }
+    td { padding: 0.4rem 0.6rem; border-bottom: 1px solid #1e293b; }
+    tr:nth-child(even) td { background: rgba(255,255,255,0.03); }
+    .badge { padding: 0.1rem 0.4rem; border-radius: 999px; font-size: 0.7rem; font-weight: 700; }
+    .badge-score_change { background: #4c1d95; color: #c4b5fd; }
+    .badge-touch { background: #1e3a5f; color: #93c5fd; }
+    .badge-card { background: #450a0a; color: #fca5a5; }
+    .badge-arena_exit { background: #451a03; color: #fcd34d; }
+    .side-a { color: #60a5fa; font-weight: 600; }
+    .side-b { color: #f87171; font-weight: 600; }
+    .ts { font-family: monospace; color: #64748b; white-space: nowrap; }
+    #last-update { position: fixed; bottom: 0.5rem; right: 0.75rem; font-size: 0.7rem; color: #475569; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Journal — Piste ${arenaNum}</h1>
+    <div id="match-info">Chargement…</div>
+  </header>
+  <div id="status"></div>
+  <table id="log-table" style="display:none">
+    <thead><tr><th>Heure</th><th>Type</th><th>Tireur</th><th>Description</th></tr></thead>
+    <tbody id="log-body"></tbody>
+  </table>
+  <div id="last-update"></div>
+  <script>
+    const arenaId = 'arena${arenaNum}';
+    let baseTs = null;
+
+    function describeEvent(e) {
+      switch (e.eventType) {
+        case 'touch': return 'Zone ' + (e.zone || '?') + ' — ' + (e.points || 0) + ' pt(s)';
+        case 'card': return 'Carton ' + (e.cardType || '') + ' — ' + (e.cardReason || '') + (e.resultingExclusion ? ' (exclusion)' : '');
+        case 'arena_exit': return (e.exitType === 'arena_exit_voluntary' ? 'Sortie volontaire' : "Sortie d'arène") + ' — +' + (e.points || 0) + ' pts adv.';
+        case 'score_change': {
+          const pA = e.previousScoreA && e.previousScoreA.value != null ? e.previousScoreA.value : '?';
+          const pB = e.previousScoreB && e.previousScoreB.value != null ? e.previousScoreB.value : '?';
+          const nA = e.newScoreA && e.newScoreA.value != null ? e.newScoreA.value : '?';
+          const nB = e.newScoreB && e.newScoreB.value != null ? e.newScoreB.value : '?';
+          return pA + '/' + pB + ' → ' + nA + '/' + nB + ' (' + (e.refereeName || e.changedBy || '?') + ')';
+        }
+        default: return '';
+      }
+    }
+
+    function formatTs(ts) {
+      const d = new Date(ts);
+      const abs = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      if (!baseTs) return abs;
+      const diff = d.getTime() - new Date(baseTs).getTime();
+      if (diff < 0) return abs;
+      const s = Math.floor(diff / 1000) % 60;
+      const m = Math.floor(diff / 60000);
+      return abs + ' (+' + (m > 0 ? m + 'm' : '') + String(s).padStart(2,'0') + 's)';
+    }
+
+    async function refresh() {
+      try {
+        const r = await fetch('/api/arena/' + arenaId + '/current-match/events');
+        const data = await r.json();
+        const info = document.getElementById('match-info');
+        const status = document.getElementById('status');
+        const table = document.getElementById('log-table');
+        const body = document.getElementById('log-body');
+
+        if (!data.matchId || data.events.length === 0) {
+          info.textContent = 'Aucun match en cours';
+          status.textContent = data.matchId ? 'Aucun événement enregistré.' : '';
+          table.style.display = 'none';
+          baseTs = null;
+          return;
+        }
+
+        baseTs = data.events[0].timestamp;
+        info.textContent = 'Match en cours · ' + data.events.length + ' événement(s)';
+        status.textContent = '';
+        table.style.display = '';
+
+        body.innerHTML = data.events.map(e => {
+          const side = e.fencerSide ? ('<span class="side-' + e.fencerSide.toLowerCase() + '">' + e.fencerSide + ' — ' + (e.fencerLastName || '') + '</span>') : '<span style="color:#6b7280">Match</span>';
+          return '<tr><td class="ts">' + formatTs(e.timestamp) + '</td><td><span class="badge badge-' + e.eventType + '">' + e.eventType + '</span></td><td>' + side + '</td><td>' + describeEvent(e) + '</td></tr>';
+        }).reverse().join('');
+
+        document.getElementById('last-update').textContent = 'MàJ ' + new Date().toLocaleTimeString('fr-FR');
+      } catch(err) {
+        document.getElementById('status').textContent = 'Erreur de connexion';
+      }
+    }
+
+    refresh();
+    setInterval(refresh, 5000);
   </script>
 </body>
 </html>`;
@@ -2858,9 +3091,14 @@ export class RemoteScoreServer {
       const finalMatchId = finishedMatch.id;
       const dbMatch = this.db.getMatch(finalMatchId);
       if (dbMatch && !finishedMatch.isTableau) {
-        const winner =
+        let winner: 'A' | 'B' | null =
           finishedMatch.scoreA > finishedMatch.scoreB ? 'A' :
           finishedMatch.scoreB > finishedMatch.scoreA ? 'B' : null;
+        if (!winner) {
+          const mem = this.sessionMatchScores.get(finishedMatch.id);
+          if ((mem?.scoreA as any)?.isVictory) winner = 'A';
+          else if ((mem?.scoreB as any)?.isVictory) winner = 'B';
+        }
         const scoreAObj = {
           value: finishedMatch.scoreA,
           isVictory: winner === 'A',
@@ -3004,11 +3242,6 @@ export class RemoteScoreServer {
     const deQueue = this.arenaMatchQueue.get(arenaId) || [];
     if (deQueue.length > 0) {
       const nextDeMatch = deQueue[0];
-      const nextMatchData = this.sessionMatches.find((m: any) => m.id === nextDeMatch.id);
-      if (nextMatchData?.round !== undefined) {
-        const blockedByEarlierRound = this.isDeMatchBlocked(nextDeMatch.id);
-        if (blockedByEarlierRound) return null;
-      }
       return nextDeMatch;
     }
 
@@ -3066,11 +3299,17 @@ export class RemoteScoreServer {
       );
 
       // Respecter les overrides de piste : ignorer les matchs pré-assignés à une autre arène
-      const nextMatch = poolMatches.find(m => {
+      let nextMatch = poolMatches.find(m => {
         if (m.id === currentMatchId) return false;
         const override = this.poolMatchArenaOverrides.get(m.id);
         return !override || override === arenaId;
       });
+      // Si rien de dispo pour cette arène, chercher un match explicitement redirigé ici
+      if (!nextMatch) {
+        nextMatch = poolMatches.find(m =>
+          m.id !== currentMatchId && this.poolMatchArenaOverrides.get(m.id) === arenaId
+        );
+      }
       if (nextMatch) {
         console.log(
           `[RemoteScoreServer] Chargement du match ${nextMatch.id} (pool ${currentPoolId}) sur arène ${arenaId}`
@@ -3101,21 +3340,6 @@ export class RemoteScoreServer {
     const deQueue = this.arenaMatchQueue.get(arenaId) || [];
     if (deQueue.length > 0) {
       const nextDeMatch = deQueue[0];
-
-      // Bloquer si des matchs d'un round antérieur (valeur plus grande) sont encore en cours
-      const nextMatchData = this.sessionMatches.find((m: any) => m.id === nextDeMatch.id);
-      if (nextMatchData?.round !== undefined) {
-        const blockedByEarlierRound = this.isDeMatchBlocked(nextDeMatch.id);
-        if (blockedByEarlierRound) {
-          console.log(
-            `[RemoteScoreServer] Match DE ${nextDeMatch.id} (round ${nextMatchData.round}) bloqué — round antérieur encore en cours`
-          );
-          arena.currentMatch = null;
-          arena.status = 'idle';
-          this.updateArena(arenaId, { currentMatch: null, status: 'idle' });
-          return;
-        }
-      }
 
       this.arenaMatchQueue.set(arenaId, deQueue.slice(1));
       console.log(
@@ -3626,9 +3850,7 @@ export class RemoteScoreServer {
       for (const [arenaId, queue] of queuesByArena) {
         const arena = this.arenas.get(arenaId);
         if (!arena) continue;
-        const firstPlayable = !arena.currentMatch
-          ? queue.find(m => !m.isTableau || !this.isDeMatchBlocked(m.id))
-          : undefined;
+        const firstPlayable = !arena.currentMatch && queue.length > 0 ? queue[0] : undefined;
         if (firstPlayable) {
           // Arène libre → charger le premier match non bloqué directement
           this.assignMatchToArena(arenaId, firstPlayable);
@@ -3831,9 +4053,10 @@ export class RemoteScoreServer {
     classement: boolean;
     direct: boolean;
     suivants: boolean;
+    tableau?: boolean;
   }): void {
     if (!this.session) throw new Error('Aucune session active');
-    this.sessionKioskViews = views;
+    this.sessionKioskViews = { tableau: true, ...views };
   }
 
   public updatePoolFencers(updates: Array<{ poolId: string; fencers: any[] }>): void {
@@ -4005,9 +4228,7 @@ export class RemoteScoreServer {
         }
       }
 
-      const firstPlayable = arenaEffectivelyFree
-        ? queue.find(m => !m.isTableau || !this.isDeMatchBlocked(m.id))
-        : undefined;
+      const firstPlayable = arenaEffectivelyFree && queue.length > 0 ? queue[0] : undefined;
       if (firstPlayable) {
         this.assignMatchToArena(arenaId, firstPlayable);
         const rest = queue.filter(m => m.id !== firstPlayable.id);
@@ -4020,6 +4241,9 @@ export class RemoteScoreServer {
     console.log(
       `[RemoteScoreServer] refreshDeMatches: ${deMatches.length} matchs DE, ${pending.length} distribués`
     );
+
+    // Notifier le kiosk que le bracket a changé
+    this.io.emit('bracket:update');
   }
 
   public getSession(): RemoteSession | null {

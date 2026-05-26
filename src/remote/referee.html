@@ -2014,7 +2014,7 @@
           this.pushHistory('card');
           if (navigator.vibrate) navigator.vibrate(cardType === 'red' ? [100,50,100] : cardType === 'yellow' ? 80 : 40);
 
-          const ef = this._effectiveFencer(fencer);
+          const ef = fencer; // caller already resolved via _effectiveFencer
           const cards = ef === 'A' ? this.cardsA : this.cardsB;
 
           // Conversion 2ème blanc → jaune (chemin sans sélecteur de raison)
@@ -2081,7 +2081,8 @@
           this._reasonSelectorFencer = fencer;
           this._reasonSelectorOriginalType = originalCardType;
 
-          const nameEl = document.getElementById(`fencer-${fencer.toLowerCase()}-name`);
+          const displayPos = this._effectiveFencer(fencer); // _effectiveFencer is its own inverse
+          const nameEl = document.getElementById(`fencer-${displayPos.toLowerCase()}-name`);
           const fencerName = nameEl ? nameEl.textContent.trim() : `Tireur ${fencer}`;
           document.getElementById('reason-selector-title').textContent =
             `Raison du carton — ${fencerName}`;
@@ -2581,8 +2582,11 @@
         }
 
         showCoinFlipConfirm(winner) {
-          const nameEl = document.getElementById(`fencer-${winner.toLowerCase()}-name`);
-          const winnerName = nameEl ? nameEl.textContent.trim() : `Tireur ${winner}`;
+          const winnerFencer = winner === 'A' ? this.currentMatch?.fencerA : this.currentMatch?.fencerB;
+          const winnerName = winnerFencer
+            ? `${winnerFencer.lastName || ''} ${winnerFencer.firstName || ''}`.trim() || `Tireur ${winner}`
+            : `Tireur ${winner}`;
+          // fencerA est toujours côté VERT (logical), fencerB toujours ROUGE
           const colorLabel = winner === 'A' ? 'VERT' : 'ROUGE';
 
           const nameDisplay = document.getElementById('coin-flip-confirm-name');
@@ -2772,8 +2776,9 @@
             this.pausedForModal = true;
           }
 
-          document.getElementById('final-score-display').textContent =
-            `${this.scoreA} - ${this.scoreB}`;
+          document.getElementById('final-score-display').textContent = this.swapped
+            ? `${this.scoreA} - ${this.scoreB}`
+            : `${this.scoreB} - ${this.scoreA}`;
           document.getElementById('finish-modal').classList.add('active');
         }
 

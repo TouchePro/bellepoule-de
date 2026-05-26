@@ -1477,13 +1477,12 @@
           const result   = document.getElementById('coin-result');
           if (!overlay || !coin || !nameGreen || !nameRed || !result) return;
 
-          // Noms des tireurs (respecte l'inversion de l'affichage)
-          const fA = this.inversionEnabled ? fencerB : fencerA;
-          const fB = this.inversionEnabled ? fencerA : fencerB;
-          const nameA = fA ? `${fA.lastName || ''} ${fA.firstName || ''}`.trim() || 'VERT'   : 'VERT';
-          const nameB = fB ? `${fB.lastName || ''} ${fB.firstName || ''}`.trim() || 'ROUGE'  : 'ROUGE';
-          nameGreen.textContent = nameA;
-          nameRed.textContent   = nameB;
+          // fencerA est TOUJOURS VERT, fencerB est TOUJOURS ROUGE
+          // (l'inversion ne change que la position gauche/droite, pas la couleur)
+          const nameGreenStr = fencerA ? `${fencerA.lastName || ''} ${fencerA.firstName || ''}`.trim() || 'VERT'  : 'VERT';
+          const nameRedStr   = fencerB ? `${fencerB.lastName || ''} ${fencerB.firstName || ''}`.trim() || 'ROUGE' : 'ROUGE';
+          nameGreen.textContent = nameGreenStr;
+          nameRed.textContent   = nameRedStr;
 
           // Réinitialiser l'état visuel
           result.className = 'hidden';
@@ -1494,15 +1493,10 @@
           // Afficher l'overlay
           overlay.classList.remove('hidden');
 
-          // Calculer les rotations : 10 tours + face gagnante
-          // Face verte = 0° / 360°, face rouge = 180°
-          // winner 'A' → face verte → 3600° (10 tours)
-          // winner 'B' → face rouge → 3600° + 180° = 3780°
-          // Si l'affichage est inversé : winner 'A' = tireur B visuel = face rouge
-          const visualWinner = this.inversionEnabled
-            ? (winner === 'A' ? 'B' : 'A')
-            : winner;
-          const finalDeg = visualWinner === 'A' ? 3600 : 3780;
+          // winner 'A' = fencerA (VERT) → face verte (3600°)
+          // winner 'B' = fencerB (ROUGE) → face rouge (3780°)
+          const isGreenWinner = winner === 'A';
+          const finalDeg = isGreenWinner ? 3600 : 3780;
 
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
@@ -1513,9 +1507,9 @@
 
           // Afficher le résultat après l'animation
           setTimeout(() => {
-            const winnerName = visualWinner === 'A' ? nameA : nameB;
-            const colorClass  = visualWinner === 'A' ? 'winner-green' : 'winner-red';
-            const colorLabel  = visualWinner === 'A' ? 'VERT' : 'ROUGE';
+            const winnerName = isGreenWinner ? nameGreenStr : nameRedStr;
+            const colorClass  = isGreenWinner ? 'winner-green' : 'winner-red';
+            const colorLabel  = isGreenWinner ? 'VERT' : 'ROUGE';
             result.textContent = `🏆 ${winnerName} gagne ! (${colorLabel})`;
             result.className   = colorClass;
           }, 3600);
@@ -1639,10 +1633,10 @@
 
           // Mise à jour des scores (respecte l'inversion)
           if (data.scoreA !== undefined) {
-            document.getElementById(this.inversionEnabled ? 'score-b' : 'score-a').textContent = data.scoreA;
+            document.getElementById(this.inversionEnabled ? 'score-a' : 'score-b').textContent = data.scoreA;
           }
           if (data.scoreB !== undefined) {
-            document.getElementById(this.inversionEnabled ? 'score-a' : 'score-b').textContent = data.scoreB;
+            document.getElementById(this.inversionEnabled ? 'score-b' : 'score-a').textContent = data.scoreB;
           }
 
           // Mise à jour des cartons

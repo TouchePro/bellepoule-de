@@ -1160,8 +1160,20 @@ export function generateBracketTreeMultiPageHTML(
   const firstRoundCount = tableauSize / 2;
   const USABLE_H = SVG_H - TOP_MARGIN - BOT_MARGIN;
   const SLOT_H   = USABLE_H / firstRoundCount;
-  const ROW_H    = Math.max(16, Math.min(32, Math.floor(SLOT_H * 0.55)));
+  const ROW_H    = Math.max(10, Math.min(32, Math.floor(SLOT_H * 0.45)));
   const MATCH_H  = ROW_H * 2;
+
+  // Snap page split to nearest inter-match gap to avoid cutting through match boxes
+  const splitIdx    = Math.round((qH - TOP_MARGIN) / SLOT_H - 0.5);
+  const nearMatchCY = TOP_MARGIN + (splitIdx + 0.5) * SLOT_H;
+  const cutY        = Math.abs(qH - nearMatchCY) < MATCH_H / 2
+    ? Math.round(
+        Math.abs(TOP_MARGIN + splitIdx * SLOT_H - qH) <=
+        Math.abs(TOP_MARGIN + (splitIdx + 1) * SLOT_H - qH)
+          ? TOP_MARGIN + splitIdx * SLOT_H
+          : TOP_MARGIN + (splitIdx + 1) * SLOT_H
+      )
+    : qH;
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
   const truncate = (s: string, n: number) => s.length > n ? s.slice(0, n - 1) + '…' : s;
@@ -1206,7 +1218,7 @@ export function generateBracketTreeMultiPageHTML(
   }).join('\n  ');
 
   const roundLabels = mkRoundLabels(TOP_MARGIN - 7)
-    + '\n  ' + mkRoundLabels(qH + LABEL_H - 5);
+    + '\n  ' + mkRoundLabels(cutY + LABEL_H - 5);
 
   const petiteFinaleLabel = petiteFinale ? `
   <text x="${colX(2) + MATCH_W / 2}" y="${SVG_H - BOT_MARGIN - MATCH_H - 10}"
@@ -1347,7 +1359,7 @@ export function generateBracketTreeMultiPageHTML(
   </div>
   <div class="bracket-view">
     <svg xmlns="http://www.w3.org/2000/svg"
-         viewBox="${col * qW} ${row * qH} ${qW} ${qH}"
+         viewBox="${col * qW} ${row === 0 ? 0 : cutY} ${qW} ${row === 0 ? cutY : SVG_H - cutY}"
          preserveAspectRatio="xMinYMin meet">
       ${svgContent}
     </svg>
@@ -1554,7 +1566,7 @@ export async function exportRankingToPDF(
 
 // ─── Export Résultats Finaux ───────────────────────────────────────────────────
 
-interface FinalResultForPDF {
+export interface FinalResultForPDF {
   rank: number;
   fencer: Fencer;
   eliminatedAt?: string;
@@ -1658,5 +1670,250 @@ export async function exportResultsToPDF(
   if (results.length === 0) throw new Error('Aucun résultat à exporter');
   const html = generateResultsHTML(results, title, logoBase64, template);
   await savePDF(html, 'resultats-finaux.pdf');
+}
+
+// ─── Export Liste d'Appel ──────────────────────────────────────────────────────
+
+const APPEL_COL_HEADERS: Record<string, string> = {
+  ref: 'N°',
+  lastName: 'Nom',
+  firstName: 'Prénom',
+  birthDate: 'Né(e)',
+  club: 'Club',
+  ranking: 'Classement',
+  status: 'Statut',
+};
+
+const APPEL_STATUS_LABELS: Record<string, string> = {
+  Q: 'Qualifié',
+  E: 'Éliminé',
+  A: 'Abandon',
+  X: 'Exclu',
+  N: 'Non pointé',
+  P: 'Pointé',
+  F: 'Forfait',
+};
+
+function getFencerCellValue(fencer: Fencer, col: string): string {
+  switch (col) {
+    case 'ref':       return String(fencer.ref);
+    case 'lastName':  return fencer.lastName.toUpperCase();
+    case 'firstName': return fencer.firstName ?? '';
+    case 'birthDate': return fencer.birthDate ? String(new Date(fencer.birthDate).getFullYear()) : '-';
+    case 'club':      return fencer.club || '-';
+    case 'ranking':   return fencer.ranking ? `#${fencer.ranking}` : '-';
+    case 'status':    return APPEL_STATUS_LABELS[fencer.status] ?? fencer.status;
+    default:          return '';
+  }
+}
+
+function generateAppelHTML(
+  fencers: Fencer[],
+  visibleColumns: string[],
+  title: string,
+  competitionName?: string,
+  logoBase64?: string,
+  template?: PdfTemplate
+): string {
+  const now = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+  const effectiveTitle = template?.customTitle?.trim() || title;
+  const cssOverrides = template ? buildCssOverrides(template) : '';
+
+  const headers = visibleColumns
+    .map(col => `<th>${APPEL_COL_HEADERS[col] ?? col}</th>`)
+    .join('');
+
+  const rows = fencers.map(fencer => {
+    const cells = visibleColumns
+      .map(col => `<td>${getFencerCellValue(fencer, col)}</td>`)
+      .join('');
+    return `<tr>${cells}</tr>`;
+  }).join('');
+
+  const subtitle = competitionName
+    ? `${competitionName} — ${fencers.length} tireur${fencers.length > 1 ? 's' : ''}`
+    : `${fencers.length} tireur${fencers.length > 1 ? 's' : ''}`;
+
+  const sections: Record<string, string> = {
+    'header': `
+  <div class="doc-header">
+    ${logoBase64 ? `<img class="doc-header-logo" src="${logoBase64}" alt="Logo" />` : ''}
+    <div class="doc-header-left">
+      <h1>${effectiveTitle}</h1>
+      <div class="subtitle">${subtitle}</div>
+    </div>
+    <div class="doc-header-badge" style="font-size:11pt">AP</div>
+  </div>`,
+    'gold-bar': `  <div class="gold-bar"></div>`,
+    'appel-table': `
+  <table>
+    <thead><tr>${headers}</tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`,
+    'footer': `
+  <div class="doc-footer">
+    <span>BellePoule Modern</span>
+    <span>${now}</span>
+  </div>`,
+  };
+
+  const defaultOrder = ['header', 'gold-bar', 'appel-table', 'footer'];
+  const body = assembleBody(sections, template, defaultOrder);
+
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>${effectiveTitle}</title>
+  <style>
+    ${cssOverrides}
+    ${BASE_CSS}
+    table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+    th {
+      background: var(--navy); color: var(--white);
+      font-size: 8pt; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.8px; padding: 2.5mm 3mm; text-align: left;
+    }
+    td { padding: 2mm 3mm; border-bottom: 1px solid var(--gray-light); vertical-align: middle; }
+    tr:nth-child(even) td { background: var(--gray-xlight); }
+  </style>
+</head>
+<body>
+${body}
+</body>
+</html>`;
+}
+
+export async function exportAppelToPDF(
+  fencers: Fencer[],
+  visibleColumns: string[] = ['ref', 'lastName', 'firstName', 'birthDate', 'club', 'ranking', 'status'],
+  title: string = "Liste d'appel",
+  competitionName?: string,
+  logoBase64?: string,
+  template?: PdfTemplate
+): Promise<void> {
+  if (fencers.length === 0) throw new Error("Aucun tireur dans la liste d'appel");
+  const html = generateAppelHTML(fencers, visibleColumns, title, competitionName, logoBase64, template);
+  await savePDF(html, 'appel.pdf');
+}
+
+// ─── Export complet compétition ───────────────────────────────────────────────
+
+function extractBodyContent(html: string): string {
+  const m = /<body[^>]*>([\s\S]*?)<\/body>/i.exec(html);
+  return m ? m[1].trim() : '';
+}
+
+function extractStyleContent(html: string): string {
+  const re = /<style[^>]*>([\s\S]*?)<\/style>/gi;
+  const parts: string[] = [];
+  let m;
+  while ((m = re.exec(html)) !== null) parts.push(m[1]);
+  return parts.join('\n');
+}
+
+export interface FullCompetitionExportData {
+  fencers: Fencer[];
+  pools: Pool[];
+  overallRanking: PoolRanking[];
+  tableauMatches: TableauMatchForPDF[];
+  consolationBrackets: { id: string; name: string; matches: TableauMatchForPDF[] }[];
+  finalResults: FinalResultForPDF[];
+  competitionTitle: string;
+  isLaserSabre?: boolean;
+  template?: PdfTemplate;
+}
+
+export async function exportFullCompetitionPDF(data: FullCompetitionExportData): Promise<void> {
+  const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
+  const {
+    fencers, pools, overallRanking, tableauMatches, consolationBrackets,
+    finalResults, competitionTitle, isLaserSabre = false, template,
+  } = data;
+
+  const sections: string[] = [];
+
+  if (fencers.length > 0) {
+    const sorted = [...fencers].sort(
+      (a, b) => (a.ranking ?? Infinity) - (b.ranking ?? Infinity) || a.lastName.localeCompare(b.lastName)
+    );
+    sections.push(generateAppelHTML(
+      sorted,
+      ['ref', 'lastName', 'firstName', 'birthDate', 'club', 'ranking', 'status'],
+      `Feuille d'appel — ${competitionTitle}`,
+      competitionTitle, logo, template
+    ));
+  }
+
+  for (const pool of pools) {
+    sections.push(generatePoolHTML(
+      pool,
+      { title: `Poule ${pool.number} — ${competitionTitle}`, logoBase64: logo, competitionName: competitionTitle },
+      template
+    ));
+  }
+
+  if (overallRanking.length > 0) {
+    const rankCols = isLaserSabre
+      ? ['rank', 'lastName', 'firstName', 'club', 'victories', 'ratio', 'td', 'tr', 'quest', 'index']
+      : ['rank', 'lastName', 'firstName', 'club', 'victories', 'ratio', 'td', 'tr', 'index'];
+    sections.push(generateRankingHTML(
+      overallRanking, `Classement provisoire — ${competitionTitle}`,
+      isLaserSabre, rankCols, logo, template
+    ));
+  }
+
+  const rounds = [...new Set(tableauMatches.map(m => m.round))].sort((a, b) => b - a);
+  for (const round of rounds) {
+    const roundMatches = tableauMatches.filter(m => m.round === round && !m.isBye);
+    if (roundMatches.length === 0) continue;
+    sections.push(generateTableauHTML(
+      roundMatches, MAX_MATCHES_PER_PAGE_TABLEAU,
+      `${getTableauRoundName(round)} — ${competitionTitle}`,
+      logo, template
+    ));
+  }
+
+  for (const bracket of consolationBrackets) {
+    const bRounds = [...new Set(bracket.matches.map(m => m.round))].sort((a, b) => b - a);
+    for (const round of bRounds) {
+      const roundMatches = bracket.matches.filter(m => m.round === round && !m.isBye);
+      if (roundMatches.length === 0) continue;
+      sections.push(generateTableauHTML(
+        roundMatches, MAX_MATCHES_PER_PAGE_TABLEAU,
+        `${bracket.name} — ${getTableauRoundName(round)} — ${competitionTitle}`,
+        logo, template
+      ));
+    }
+  }
+
+  if (finalResults.length > 0) {
+    sections.push(generateResultsHTML(finalResults, `Classement final — ${competitionTitle}`, logo, template));
+  }
+
+  if (sections.length === 0) throw new Error('Aucune donnée à exporter');
+
+  const allStyles = sections.map(extractStyleContent).join('\n');
+  const allBodies = sections
+    .map((html, i) => (i === 0 ? '' : '<div class="full-export-break"></div>\n') + extractBodyContent(html))
+    .join('\n');
+
+  const combined = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Export complet — ${competitionTitle}</title>
+  <style>
+    ${allStyles}
+    .full-export-break { break-before: page; }
+  </style>
+</head>
+<body>
+${allBodies}
+</body>
+</html>`;
+
+  const safe = competitionTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+  await savePDF(combined, `export_complet_${safe}.pdf`);
 }
 

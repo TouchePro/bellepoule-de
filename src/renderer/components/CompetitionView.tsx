@@ -8,6 +8,7 @@ import { Competition, Fencer, FencerStatus, Match, MatchStatus, Weapon, QuestPha
 import { Arena } from '../../shared/types/remote';
 import { logger, LogCategory } from '@shared/services/logger';
 import { RankingImportResult } from '../../shared/utils/fileParser';
+import type { TableauMatchForPDF } from '../../shared/utils/pdfExport';
 import FencerList from './FencerList';
 import { TableauMatch, FinalResult, propagateWinners, ConsolationBracket } from './tableau/tableauTypes';
 import PoolRankingView from './PoolRankingView';
@@ -42,6 +43,7 @@ const TableauView = React.lazy(() => import('./TableauView'));
 const RemoteScoreManager = React.lazy(() => import('./RemoteScoreManager'));
 const KioskDisplay = React.lazy(() => import('./KioskDisplay'));
 const FencerComparison = React.lazy(() => import('./FencerComparison').then(m => ({ default: m.FencerComparison })));
+const MatchAuditLog = React.lazy(() => import('./MatchAuditLog').then(m => ({ default: m.MatchAuditLog })));
 const AnalyticsDashboard = React.lazy(() => import('./AnalyticsDashboard').then(m => ({ default: m.AnalyticsDashboard })));
 const PresentationMode = React.lazy(() => import('./PresentationMode').then(m => ({ default: m.PresentationMode })));
 const QuestPhaseView = React.lazy(() => import('./QuestPhaseView'));
@@ -372,7 +374,12 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         const idx = prev.findIndex(m => m.id === matchId);
         if (idx === -1) return prev;
         const match = prev[idx];
-        const winner = scoreA > scoreB ? match.fencerA : scoreB > scoreA ? match.fencerB : null;
+        const winner =
+          scoreA > scoreB ? match.fencerA :
+          scoreB > scoreA ? match.fencerB :
+          winnerOverride === 'A' ? match.fencerA :
+          winnerOverride === 'B' ? match.fencerB :
+          null;
         const updated = prev.map((m, i) => (i === idx ? { ...m, scoreA, scoreB, winner } : m));
         const size = prev.length > 0 ? Math.max(...prev.map(m => m.round)) : 0;
         propagateWinners(updated, size);
@@ -633,8 +640,10 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   );
 
   const handleGoToRanking = () => {
-    const ranking = computeOverallRanking(pools);
-    setOverallRanking(ranking);
+    if (overallRanking.length === 0) {
+      const ranking = computeOverallRanking(pools);
+      setOverallRanking(ranking);
+    }
     setCurrentPhase('ranking');
   };
 
@@ -1249,6 +1258,11 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             competition={competition}
             poolRanking={overallRanking}
             finalResults={finalResults}
+            fencers={fencers}
+            pools={pools}
+            tableauMatches={tableauMatches as TableauMatchForPDF[]}
+            consolationBrackets={consolationBrackets}
+            isLaserSabre={isLaserSabre}
           />
         )}
 
@@ -1268,7 +1282,15 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         </Suspense>
 
         {currentPhase === 'logs' && (
-          <ScoreAuditLog competitionId={competition.id} />
+          <>
+            <ScoreAuditLog competitionId={competition.id} />
+            <Suspense fallback={null}>
+              <MatchAuditLog
+                competitionId={competition.id}
+                competitionName={competition.title}
+              />
+            </Suspense>
+          </>
         )}
 
         {currentPhase === 'referees' && competition.settings?.refereeFeatureEnabled && (
