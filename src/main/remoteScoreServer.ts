@@ -59,11 +59,13 @@ export class RemoteScoreServer {
     classement: boolean;
     direct: boolean;
     suivants: boolean;
+    tableau: boolean;
   } = {
     poules: true,
     classement: true,
     direct: true,
     suivants: true,
+    tableau: true,
   };
 
   // Inscription distante : actif pendant la phase CHECKIN, désactivé après génération des poules
@@ -1733,6 +1735,97 @@ export class RemoteScoreServer {
         res.json({ upcoming });
       } catch (error) {
         console.error('[RemoteScoreServer] Erreur upcoming-matches:', error);
+        res.status(500).json({ error: 'Erreur interne' });
+      }
+    });
+
+    // Données du tableau d'élimination directe pour le kiosk
+    this.app.get('/api/bracket', (req, res) => {
+      try {
+        if (!this.session) return res.status(404).json({ error: 'Aucune session active' });
+
+        const deMatches = (this.sessionMatches as any[]).filter((m: any) => m.isTableau);
+
+        if (deMatches.length === 0) {
+          return res.json({ tableSize: 0, currentRound: null, rounds: [] });
+        }
+
+        const roundLabels: Record<number, string> = {
+          1: 'Finale',
+          2: 'Demi-finales',
+          4: 'Quarts de finale',
+          8: '8èmes de finale',
+          16: '16èmes de finale',
+          32: '32èmes de finale',
+          64: '64èmes de finale',
+          128: '128èmes de finale',
+        };
+
+        // Arène par matchId pour l'affichage
+        const arenaByMatchId = new Map<string, string>();
+        for (const [arenaId, arena] of this.arenas.entries()) {
+          if (arena.currentMatch) {
+            const num = parseInt(arenaId.replace('arena', ''), 10);
+            arenaByMatchId.set(arena.currentMatch.id, `Piste ${num}`);
+          }
+        }
+
+        // Déterminer la taille du tableau (plus grande puissance de 2 couvrant tous les rounds)
+        // maxRound (sans petite finale round=3) = taille du tableau (puissance de 2)
+        const mainRounds = deMatches.filter((m: any) => m.round !== 3);
+        const maxRound = mainRounds.length > 0 ? Math.max(...mainRounds.map((m: any) => m.round || 1)) : 4;
+        const tableSize = maxRound;
+
+        // Grouper par round, enrichir avec scores live
+        const roundMap = new Map<number, any[]>();
+        for (const m of deMatches) {
+          const round = m.round || 1;
+          if (!roundMap.has(round)) roundMap.set(round, []);
+          const live = this.sessionMatchScores.get(m.id);
+          const isFinished =
+            (live?.status ?? m.status) === 'finished' ||
+            (live?.status ?? m.status) === MatchStatus.FINISHED ||
+            !!m.winner;
+          const isLive =
+            !isFinished &&
+            ((live?.status ?? m.status) === 'in_progress' ||
+              (live?.status ?? m.status) === MatchStatus.IN_PROGRESS ||
+              arenaByMatchId.has(m.id));
+          roundMap.get(round)!.push({
+            id: m.id,
+            position: m.position || 1,
+            fencerA: m.fencerA
+              ? { lastName: m.fencerA.lastName, firstName: m.fencerA.firstName, club: m.fencerA.club ?? '', id: m.fencerA.id }
+              : null,
+            fencerB: m.fencerB
+              ? { lastName: m.fencerB.lastName, firstName: m.fencerB.firstName, club: m.fencerB.club ?? '', id: m.fencerB.id }
+              : null,
+            scoreA: live?.scoreA ?? m.scoreA ?? null,
+            scoreB: live?.scoreB ?? m.scoreB ?? null,
+            winnerId: m.winner?.id ?? null,
+            status: isFinished ? 'finished' : isLive ? 'live' : 'pending',
+            isBye: !!m.isBye,
+            arenaName: arenaByMatchId.get(m.id) ?? null,
+          });
+        }
+
+        // Trier les rounds du plus grand (tour initial) au plus petit (finale)
+        const rounds = Array.from(roundMap.entries())
+          .sort(([a], [b]) => b - a)
+          .map(([round, matches]) => ({
+            round,
+            label: roundLabels[round] ?? `Tour de ${round}`,
+            matches: matches.sort((a: any, b: any) => a.position - b.position),
+          }));
+
+        // Round actif = premier round non entièrement terminé (du plus grand au plus petit)
+        const currentRound =
+          rounds.find(r => r.matches.some((m: any) => m.status !== 'finished' && !m.isBye))
+            ?.round ?? null;
+
+        res.json({ tableSize, currentRound, rounds });
+      } catch (error) {
+        console.error('[RemoteScoreServer] Erreur /api/bracket:', error);
         res.status(500).json({ error: 'Erreur interne' });
       }
     });
@@ -3960,9 +4053,10 @@ export class RemoteScoreServer {
     classement: boolean;
     direct: boolean;
     suivants: boolean;
+    tableau?: boolean;
   }): void {
     if (!this.session) throw new Error('Aucune session active');
-    this.sessionKioskViews = views;
+    this.sessionKioskViews = { tableau: true, ...views };
   }
 
   public updatePoolFencers(updates: Array<{ poolId: string; fencers: any[] }>): void {
@@ -4147,6 +4241,9 @@ export class RemoteScoreServer {
     console.log(
       `[RemoteScoreServer] refreshDeMatches: ${deMatches.length} matchs DE, ${pending.length} distribués`
     );
+
+    // Notifier le kiosk que le bracket a changé
+    this.io.emit('bracket:update');
   }
 
   public getSession(): RemoteSession | null {
