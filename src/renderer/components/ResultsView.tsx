@@ -6,10 +6,13 @@
 
 import React from 'react';
 import { Fencer, PoolRanking, Competition, FencerStatus } from '../../shared/types';
+import type { Pool } from '../../shared/types';
 import { useToast } from './Toast';
 import { exportResultsXMLFFE } from '../../shared/utils/multiFormatExport';
-import { exportResultsToPDF } from '../../shared/utils/pdfExport';
+import { exportResultsToPDF, exportFullCompetitionPDF } from '../../shared/utils/pdfExport';
+import type { TableauMatchForPDF, FinalResultForPDF } from '../../shared/utils/pdfExport';
 import { usePdfTemplateStore } from '../../features/pdfTemplates/hooks/usePdfTemplateStore';
+import type { ConsolationBracket } from './tableau/tableauTypes';
 
 interface FinalResult {
   rank: number;
@@ -21,6 +24,11 @@ interface ResultsViewProps {
   competition: Competition;
   poolRanking: PoolRanking[];
   finalResults: FinalResult[];
+  fencers?: Fencer[];
+  pools?: Pool[];
+  tableauMatches?: TableauMatchForPDF[];
+  consolationBrackets?: ConsolationBracket[];
+  isLaserSabre?: boolean;
 }
 
 // ─── Static style constants ───────────────────────────────────────────────────
@@ -62,10 +70,14 @@ const RV_STYLES = {
   btnCsv: { padding: '0.75rem 1.5rem', background: '#f59e0b', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' } satisfies React.CSSProperties,
   btnXml: { padding: '0.75rem 1.5rem', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' } satisfies React.CSSProperties,
   btnPdf: { padding: '0.75rem 1.5rem', background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' } satisfies React.CSSProperties,
+  btnFullPdf: { padding: '0.75rem 1.5rem', background: '#166534', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' } satisfies React.CSSProperties,
   legend: { textAlign: 'center' as const, marginTop: '1.5rem', fontSize: '0.875rem', color: '#6b7280' } satisfies React.CSSProperties,
 } satisfies Record<string, React.CSSProperties>;
 
-const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, finalResults }) => {
+const ResultsView: React.FC<ResultsViewProps> = ({
+  competition, poolRanking, finalResults,
+  fencers, pools, tableauMatches, consolationBrackets, isLaserSabre,
+}) => {
   const { showToast } = useToast();
   const rankingTemplate = usePdfTemplateStore(s => s.templates.ranking);
 
@@ -172,6 +184,28 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
     link.download = `resultats_${competition.title.replace(/[^a-z0-9]/gi, '_')}.xml`;
     link.click();
     showToast('Export XML réussi !', 'success');
+  };
+
+  const exportFullPDF = async () => {
+    try {
+      await exportFullCompetitionPDF({
+        fencers: fencers ?? [],
+        pools: pools ?? [],
+        overallRanking: poolRanking,
+        tableauMatches: tableauMatches ?? [],
+        consolationBrackets: (consolationBrackets ?? []).map(b => ({
+          id: b.id,
+          name: b.name,
+          matches: b.matches as TableauMatchForPDF[],
+        })),
+        finalResults: resultsToDisplay as FinalResultForPDF[],
+        competitionTitle: competition.title,
+        isLaserSabre,
+        template: rankingTemplate,
+      });
+    } catch (e) {
+      showToast((e as Error).message, 'error');
+    }
   };
 
   const champion = resultsToDisplay.find(r => r.rank === 1);
@@ -292,6 +326,9 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
         </button>
         <button onClick={exportPDF} style={RV_STYLES.btnPdf}>
           📄 PDF
+        </button>
+        <button onClick={exportFullPDF} style={RV_STYLES.btnFullPdf}>
+          📦 Export complet PDF
         </button>
       </div>
 
