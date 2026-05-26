@@ -22,6 +22,8 @@ import {
   Phase,
   PhaseType,
   Referee,
+  MatchEventEntry,
+  MatchEventType,
 } from '../shared/types';
 import { validateId, validateSessionState, sanitizeId } from './validation';
 import { logger, LogCategory } from '../shared/services/logger';
@@ -2397,6 +2399,164 @@ export class DatabaseManager {
     }
     stmt.free();
     return rows;
+  }
+
+  // ─── Match timeline (audit log) ──────────────────────────────────────────────
+
+  private parseTimelineRow(r: any): MatchEventEntry {
+    return {
+      id: r.id as string,
+      matchId: r.match_id as string,
+      eventType: r.event_type as MatchEventType,
+      timestamp: r.timestamp as string,
+      fencerId: (r.fencer_id as string) ?? null,
+      fencerLastName: (r.fencer_last_name as string) ?? null,
+      fencerFirstName: (r.fencer_first_name as string) ?? null,
+      fencerSide: (r.fencer_side as 'A' | 'B') ?? null,
+      previousScoreA: r.prev_a ? JSON.parse(r.prev_a as string) : null,
+      previousScoreB: r.prev_b ? JSON.parse(r.prev_b as string) : null,
+      newScoreA: r.new_a ? JSON.parse(r.new_a as string) : null,
+      newScoreB: r.new_b ? JSON.parse(r.new_b as string) : null,
+      changedBy: (r.changed_by as string) ?? null,
+      refereeName: (r.referee_name as string) ?? null,
+      ipAddress: (r.ip_address as string) ?? null,
+      changeReason: (r.change_reason as string) ?? null,
+      zone: (r.zone as string) ?? null,
+      points: r.points != null ? Number(r.points) : null,
+      cardType: (r.card_type as string) ?? null,
+      cardReason: (r.card_reason as string) ?? null,
+      cardGroup: r.card_group != null ? Number(r.card_group) : null,
+      resultingExclusion: r.resulting_exclusion != null ? r.resulting_exclusion === 1 : null,
+      exitType: (r.exit_type as string) ?? null,
+    };
+  }
+
+  private static readonly TIMELINE_UNION_MATCH = `
+    SELECT sal.id, sal.match_id, 'score_change' AS event_type,
+           sal.changed_at AS timestamp,
+           NULL AS fencer_id, NULL AS fencer_last_name, NULL AS fencer_first_name, NULL AS fencer_side,
+           sal.previous_score_a AS prev_a, sal.previous_score_b AS prev_b,
+           sal.new_score_a AS new_a, sal.new_score_b AS new_b,
+           sal.changed_by, sal.referee_name, sal.ip_address, sal.reason AS change_reason,
+           NULL AS zone, NULL AS points,
+           NULL AS card_type, NULL AS card_reason, NULL AS card_group, NULL AS resulting_exclusion,
+           NULL AS exit_type
+    FROM score_audit_log sal WHERE sal.match_id = ?
+    UNION ALL
+    SELECT mt.id, mt.match_id, 'touch', mt.timestamp,
+           mt.fencer_id, f.last_name, f.first_name,
+           CASE WHEN m.fencer_a_id = mt.fencer_id THEN 'A' ELSE 'B' END,
+           NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+           mt.zone, mt.points,
+           NULL, NULL, NULL, NULL, NULL
+    FROM match_touches mt
+    LEFT JOIN fencers f ON mt.fencer_id = f.id
+    LEFT JOIN matches m ON mt.match_id = m.id
+    WHERE mt.match_id = ?
+    UNION ALL
+    SELECT mc.id, mc.match_id, 'card', mc.timestamp,
+           mc.fencer_id, f.last_name, f.first_name,
+           CASE WHEN m.fencer_a_id = mc.fencer_id THEN 'A' ELSE 'B' END,
+           NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+           NULL, mc.points_awarded,
+           mc.card_type, mc.reason, mc.card_group, mc.resulting_exclusion,
+           NULL
+    FROM match_cards mc
+    LEFT JOIN fencers f ON mc.fencer_id = f.id
+    LEFT JOIN matches m ON mc.match_id = m.id
+    WHERE mc.match_id = ?
+    UNION ALL
+    SELECT mae.id, mae.match_id, 'arena_exit', mae.timestamp,
+           mae.fencer_id, f.last_name, f.first_name,
+           CASE WHEN m.fencer_a_id = mae.fencer_id THEN 'A' ELSE 'B' END,
+           NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+           NULL, mae.points_awarded,
+           NULL, NULL, NULL, NULL,
+           mae.exit_type
+    FROM match_arena_exits mae
+    LEFT JOIN fencers f ON mae.fencer_id = f.id
+    LEFT JOIN matches m ON mae.match_id = m.id
+    WHERE mae.match_id = ?
+    ORDER BY timestamp ASC
+  `;
+
+  public getMatchTimeline(matchId: string): MatchEventEntry[] {
+    if (!this.db) throw new Error('Database not open');
+    const stmt = this.db.prepare(DatabaseManager.TIMELINE_UNION_MATCH);
+    stmt.bind([matchId, matchId, matchId, matchId]);
+    const rows: any[] = [];
+    while (stmt.step()) rows.push(stmt.getAsObject());
+    stmt.free();
+    return rows.map(r => this.parseTimelineRow(r));
+  }
+
+  public getCompetitionTimeline(competitionId: string): MatchEventEntry[] {
+    if (!this.db) throw new Error('Database not open');
+    const matchSubquery = `
+      SELECT m.id FROM matches m
+        LEFT JOIN pools p ON m.pool_id = p.id
+        LEFT JOIN phases ph ON p.phase_id = ph.id
+        WHERE ph.competition_id = ?1
+      UNION
+      SELECT m.id FROM matches m
+        JOIN bracket_nodes bn ON m.id = bn.match_id
+        WHERE bn.competition_id = ?1
+    `;
+    const sql = `
+      SELECT sal.id, sal.match_id, 'score_change' AS event_type,
+             sal.changed_at AS timestamp,
+             NULL AS fencer_id, NULL AS fencer_last_name, NULL AS fencer_first_name, NULL AS fencer_side,
+             sal.previous_score_a AS prev_a, sal.previous_score_b AS prev_b,
+             sal.new_score_a AS new_a, sal.new_score_b AS new_b,
+             sal.changed_by, sal.referee_name, sal.ip_address, sal.reason AS change_reason,
+             NULL AS zone, NULL AS points,
+             NULL AS card_type, NULL AS card_reason, NULL AS card_group, NULL AS resulting_exclusion,
+             NULL AS exit_type
+      FROM score_audit_log sal
+      WHERE sal.match_id IN (${matchSubquery})
+      UNION ALL
+      SELECT mt.id, mt.match_id, 'touch', mt.timestamp,
+             mt.fencer_id, f.last_name, f.first_name,
+             CASE WHEN m.fencer_a_id = mt.fencer_id THEN 'A' ELSE 'B' END,
+             NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+             mt.zone, mt.points,
+             NULL, NULL, NULL, NULL, NULL
+      FROM match_touches mt
+      LEFT JOIN fencers f ON mt.fencer_id = f.id
+      LEFT JOIN matches m ON mt.match_id = m.id
+      WHERE mt.match_id IN (${matchSubquery})
+      UNION ALL
+      SELECT mc.id, mc.match_id, 'card', mc.timestamp,
+             mc.fencer_id, f.last_name, f.first_name,
+             CASE WHEN m.fencer_a_id = mc.fencer_id THEN 'A' ELSE 'B' END,
+             NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+             NULL, mc.points_awarded,
+             mc.card_type, mc.reason, mc.card_group, mc.resulting_exclusion,
+             NULL
+      FROM match_cards mc
+      LEFT JOIN fencers f ON mc.fencer_id = f.id
+      LEFT JOIN matches m ON mc.match_id = m.id
+      WHERE mc.match_id IN (${matchSubquery})
+      UNION ALL
+      SELECT mae.id, mae.match_id, 'arena_exit', mae.timestamp,
+             mae.fencer_id, f.last_name, f.first_name,
+             CASE WHEN m.fencer_a_id = mae.fencer_id THEN 'A' ELSE 'B' END,
+             NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+             NULL, mae.points_awarded,
+             NULL, NULL, NULL, NULL,
+             mae.exit_type
+      FROM match_arena_exits mae
+      LEFT JOIN fencers f ON mae.fencer_id = f.id
+      LEFT JOIN matches m ON mae.match_id = m.id
+      WHERE mae.match_id IN (${matchSubquery})
+      ORDER BY timestamp ASC
+    `;
+    const stmt = this.db.prepare(sql);
+    stmt.bind([competitionId]);
+    const rows: any[] = [];
+    while (stmt.step()) rows.push(stmt.getAsObject());
+    stmt.free();
+    return rows.map(r => this.parseTimelineRow(r));
   }
 
   // ─── Arena state persistence ─────────────────────────────────────────────────

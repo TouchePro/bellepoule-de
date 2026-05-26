@@ -42,6 +42,7 @@ const TableauView = React.lazy(() => import('./TableauView'));
 const RemoteScoreManager = React.lazy(() => import('./RemoteScoreManager'));
 const KioskDisplay = React.lazy(() => import('./KioskDisplay'));
 const FencerComparison = React.lazy(() => import('./FencerComparison').then(m => ({ default: m.FencerComparison })));
+const MatchAuditLog = React.lazy(() => import('./MatchAuditLog').then(m => ({ default: m.MatchAuditLog })));
 const AnalyticsDashboard = React.lazy(() => import('./AnalyticsDashboard').then(m => ({ default: m.AnalyticsDashboard })));
 const PresentationMode = React.lazy(() => import('./PresentationMode').then(m => ({ default: m.PresentationMode })));
 const QuestPhaseView = React.lazy(() => import('./QuestPhaseView'));
@@ -1271,7 +1272,15 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         </Suspense>
 
         {currentPhase === 'logs' && (
-          <ScoreAuditLog competitionId={competition.id} />
+          <>
+            <ScoreAuditLog competitionId={competition.id} />
+            <Suspense fallback={null}>
+              <MatchAuditLog
+                competitionId={competition.id}
+                competitionName={competition.title}
+              />
+            </Suspense>
+          </>
         )}
 
         {currentPhase === 'referees' && competition.settings?.refereeFeatureEnabled && (

@@ -1816,6 +1816,135 @@ export class RemoteScoreServer {
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.send(html);
     });
+
+    // Journal du match en cours (tablette arbitre - lecture seule)
+    this.app.get('/api/arena/:arenaId/current-match/events', (req, res) => {
+      const arena = this.arenas.get(req.params.arenaId);
+      if (!arena?.currentMatch?.id) {
+        return res.json({ success: true, events: [], matchId: null });
+      }
+      try {
+        const events = this.db.getMatchTimeline(arena.currentMatch.id);
+        res.json({ success: true, events, matchId: arena.currentMatch.id });
+      } catch (e) {
+        res.status(500).json({ success: false, error: String(e) });
+      }
+    });
+
+    // Page HTML journal (match en cours uniquement)
+    this.app.get('/arene:arenaId/journal', (req, res) => {
+      const arenaNum = req.params.arenaId;
+      const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Journal – Piste ${arenaNum}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; padding: 1rem; font-size: 14px; }
+    header { text-align: center; padding: 0.75rem 0 1rem; }
+    header h1 { font-size: 1.1rem; color: #f8fafc; }
+    #match-info { color: #94a3b8; font-size: 0.8rem; margin-top: 0.25rem; }
+    #status { text-align: center; color: #94a3b8; padding: 2rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    th { background: #1e293b; color: #94a3b8; padding: 0.45rem 0.6rem; text-align: left; font-weight: 600; position: sticky; top: 0; }
+    td { padding: 0.4rem 0.6rem; border-bottom: 1px solid #1e293b; }
+    tr:nth-child(even) td { background: rgba(255,255,255,0.03); }
+    .badge { padding: 0.1rem 0.4rem; border-radius: 999px; font-size: 0.7rem; font-weight: 700; }
+    .badge-score_change { background: #4c1d95; color: #c4b5fd; }
+    .badge-touch { background: #1e3a5f; color: #93c5fd; }
+    .badge-card { background: #450a0a; color: #fca5a5; }
+    .badge-arena_exit { background: #451a03; color: #fcd34d; }
+    .side-a { color: #60a5fa; font-weight: 600; }
+    .side-b { color: #f87171; font-weight: 600; }
+    .ts { font-family: monospace; color: #64748b; white-space: nowrap; }
+    #last-update { position: fixed; bottom: 0.5rem; right: 0.75rem; font-size: 0.7rem; color: #475569; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Journal — Piste ${arenaNum}</h1>
+    <div id="match-info">Chargement…</div>
+  </header>
+  <div id="status"></div>
+  <table id="log-table" style="display:none">
+    <thead><tr><th>Heure</th><th>Type</th><th>Tireur</th><th>Description</th></tr></thead>
+    <tbody id="log-body"></tbody>
+  </table>
+  <div id="last-update"></div>
+  <script>
+    const arenaId = 'arena${arenaNum}';
+    let baseTs = null;
+
+    function describeEvent(e) {
+      switch (e.eventType) {
+        case 'touch': return 'Zone ' + (e.zone || '?') + ' — ' + (e.points || 0) + ' pt(s)';
+        case 'card': return 'Carton ' + (e.cardType || '') + ' — ' + (e.cardReason || '') + (e.resultingExclusion ? ' (exclusion)' : '');
+        case 'arena_exit': return (e.exitType === 'arena_exit_voluntary' ? 'Sortie volontaire' : "Sortie d'arène") + ' — +' + (e.points || 0) + ' pts adv.';
+        case 'score_change': {
+          const pA = e.previousScoreA && e.previousScoreA.value != null ? e.previousScoreA.value : '?';
+          const pB = e.previousScoreB && e.previousScoreB.value != null ? e.previousScoreB.value : '?';
+          const nA = e.newScoreA && e.newScoreA.value != null ? e.newScoreA.value : '?';
+          const nB = e.newScoreB && e.newScoreB.value != null ? e.newScoreB.value : '?';
+          return pA + '/' + pB + ' → ' + nA + '/' + nB + ' (' + (e.refereeName || e.changedBy || '?') + ')';
+        }
+        default: return '';
+      }
+    }
+
+    function formatTs(ts) {
+      const d = new Date(ts);
+      const abs = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      if (!baseTs) return abs;
+      const diff = d.getTime() - new Date(baseTs).getTime();
+      if (diff < 0) return abs;
+      const s = Math.floor(diff / 1000) % 60;
+      const m = Math.floor(diff / 60000);
+      return abs + ' (+' + (m > 0 ? m + 'm' : '') + String(s).padStart(2,'0') + 's)';
+    }
+
+    async function refresh() {
+      try {
+        const r = await fetch('/api/arena/' + arenaId + '/current-match/events');
+        const data = await r.json();
+        const info = document.getElementById('match-info');
+        const status = document.getElementById('status');
+        const table = document.getElementById('log-table');
+        const body = document.getElementById('log-body');
+
+        if (!data.matchId || data.events.length === 0) {
+          info.textContent = 'Aucun match en cours';
+          status.textContent = data.matchId ? 'Aucun événement enregistré.' : '';
+          table.style.display = 'none';
+          baseTs = null;
+          return;
+        }
+
+        baseTs = data.events[0].timestamp;
+        info.textContent = 'Match en cours · ' + data.events.length + ' événement(s)';
+        status.textContent = '';
+        table.style.display = '';
+
+        body.innerHTML = data.events.map(e => {
+          const side = e.fencerSide ? ('<span class="side-' + e.fencerSide.toLowerCase() + '">' + e.fencerSide + ' — ' + (e.fencerLastName || '') + '</span>') : '<span style="color:#6b7280">Match</span>';
+          return '<tr><td class="ts">' + formatTs(e.timestamp) + '</td><td><span class="badge badge-' + e.eventType + '">' + e.eventType + '</span></td><td>' + side + '</td><td>' + describeEvent(e) + '</td></tr>';
+        }).reverse().join('');
+
+        document.getElementById('last-update').textContent = 'MàJ ' + new Date().toLocaleTimeString('fr-FR');
+      } catch(err) {
+        document.getElementById('status').textContent = 'Erreur de connexion';
+      }
+    }
+
+    refresh();
+    setInterval(refresh, 5000);
+  </script>
+</body>
+</html>`;
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.send(html);
+    });
   }
 
   private setupSocketHandlers(): void {

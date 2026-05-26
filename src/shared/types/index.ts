@@ -652,3 +652,39 @@ export interface UISettings {
   autoSave: boolean;
   autoSaveInterval: number; // En secondes
 }
+
+// ============================================================================
+// Match Timeline (Audit Log) Types
+// ============================================================================
+
+export type MatchEventType = 'score_change' | 'touch' | 'card' | 'arena_exit';
+
+export interface MatchEventEntry {
+  id: string;
+  matchId: string;
+  eventType: MatchEventType;
+  timestamp: string; // ISO 8601
+  fencerId: string | null;
+  fencerLastName: string | null;
+  fencerFirstName: string | null;
+  fencerSide: 'A' | 'B' | null;
+  // score_change
+  previousScoreA: { value: number | null } | null;
+  previousScoreB: { value: number | null } | null;
+  newScoreA: { value: number | null } | null;
+  newScoreB: { value: number | null } | null;
+  changedBy: string | null;
+  refereeName: string | null;
+  ipAddress: string | null;
+  changeReason: string | null;
+  // touch
+  zone: string | null;
+  points: number | null;
+  // card
+  cardType: string | null;
+  cardReason: string | null;
+  cardGroup: number | null;
+  resultingExclusion: boolean | null;
+  // arena_exit
+  exitType: string | null;
+}
