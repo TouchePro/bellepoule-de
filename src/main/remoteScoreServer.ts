@@ -3629,12 +3629,12 @@ export class RemoteScoreServer {
     this.sessionRefereeFeatureEnabled = competition.settings?.refereeFeatureEnabled ?? false;
 
     // Stocker les vues kiosk activées
-    this.sessionKioskViews = kioskViews ?? {
+    this.sessionKioskViews = { tableau: true, ...(kioskViews ?? {
       poules: true,
       classement: true,
       direct: true,
       suivants: true,
-    };
+    }) };
 
     // Stocker le type d'arme pour l'arrêt automatique à 15 points en Laser Sabre
     this.sessionWeapon = competition.weapon || null;
