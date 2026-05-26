@@ -1099,7 +1099,11 @@
           if (poolsRes.ok) {
             const data = await poolsRes.json();
             state.poolsData = data.pools || [];
-            buildOverallRanking();
+            if (data.overallRanking && data.overallRanking.length > 0) {
+              state.overallRanking = data.overallRanking;
+            } else {
+              buildOverallRanking();
+            }
             renderPools();
             renderRanking();
           }
