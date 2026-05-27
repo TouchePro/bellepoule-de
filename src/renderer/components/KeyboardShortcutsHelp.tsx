@@ -239,4 +239,4 @@ export const KeyboardShortcutsHelp: React.FC = () => {
   );
 };
 
-export default KeyboardShortcutsHelp;
+export default React.memo(KeyboardShortcutsHelp);

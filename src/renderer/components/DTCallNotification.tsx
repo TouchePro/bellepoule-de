@@ -129,4 +129,4 @@ const DTCallNotification: React.FC = () => {
   );
 };
 
-export default DTCallNotification;
+export default React.memo(DTCallNotification);

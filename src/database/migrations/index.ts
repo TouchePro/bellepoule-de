@@ -12,7 +12,7 @@ export interface Migration {
 export class MigrationManager {
   constructor(private db: any) {}
 
-  run(migrations: Migration[]): void {
+  run(migrations: Migration[]): number {
     this.ensureMigrationsTable();
     const applied = this.getAppliedVersions();
     const pending = migrations
@@ -28,6 +28,7 @@ export class MigrationManager {
     if (pending.length > 0) {
       console.log(`[DB] ${pending.length} migration(s) appliquée(s)`);
     }
+    return pending.length;
   }
 
   private ensureMigrationsTable(): void {

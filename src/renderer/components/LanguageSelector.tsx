@@ -62,4 +62,4 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   );
 };
 
-export default LanguageSelector;
+export default React.memo(LanguageSelector);

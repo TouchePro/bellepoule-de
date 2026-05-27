@@ -218,6 +218,7 @@ export interface PoolStats {
   index: number; // Indice (TD - TR)
   matchesPlayed: number; // Matchs joués
   victoryRatio: number; // V/M (ratio victoires/matchs)
+  maxSingleMatchScore?: number; // Meilleur score marqué en un seul match
   poolRank?: number; // Rang dans la poule
   overallRank?: number; // Rang général après poules
 }
@@ -320,6 +321,7 @@ export interface PoolRanking {
   questVictories2?: number; // Nombre de victoires à 2 points (écart 4-7)
   questVictories1?: number; // Nombre de victoires à 1 point (écart ≤3)
   totalCards?: number;      // Nombre total de cartons reçus (critère de départage Quest)
+  maxSingleMatchScore?: number; // Meilleur score marqué en un seul match
 }
 
 // ============================================================================
@@ -572,6 +574,9 @@ export interface CompetitionSettings {
   refereeFeatureEnabled?: boolean; // Activer la gestion des arbitres sur arènes et saisie distante
   customFormula?: CustomFormulaConfig; // Formule à la carte (arme CUSTOM uniquement)
   playAllPositions?: boolean; // Jouer toutes les places (tableaux de classement)
+  expertMode?: boolean; // Mode expert : édition avancée des pistes et arbitres
+  maxRefereesPerPool?: number; // Nombre max d'arbitres par poule (mode expert)
+  maxRefereesPerMatch?: number; // Nombre max d'arbitres par match DE (mode expert)
 }
 
 export interface Phase extends BaseEntity {
@@ -646,4 +651,40 @@ export interface UISettings {
   showTips: boolean;
   autoSave: boolean;
   autoSaveInterval: number; // En secondes
+}
+
+// ============================================================================
+// Match Timeline (Audit Log) Types
+// ============================================================================
+
+export type MatchEventType = 'score_change' | 'touch' | 'card' | 'arena_exit';
+
+export interface MatchEventEntry {
+  id: string;
+  matchId: string;
+  eventType: MatchEventType;
+  timestamp: string; // ISO 8601
+  fencerId: string | null;
+  fencerLastName: string | null;
+  fencerFirstName: string | null;
+  fencerSide: 'A' | 'B' | null;
+  // score_change
+  previousScoreA: { value: number | null } | null;
+  previousScoreB: { value: number | null } | null;
+  newScoreA: { value: number | null } | null;
+  newScoreB: { value: number | null } | null;
+  changedBy: string | null;
+  refereeName: string | null;
+  ipAddress: string | null;
+  changeReason: string | null;
+  // touch
+  zone: string | null;
+  points: number | null;
+  // card
+  cardType: string | null;
+  cardReason: string | null;
+  cardGroup: number | null;
+  resultingExclusion: boolean | null;
+  // arena_exit
+  exitType: string | null;
 }

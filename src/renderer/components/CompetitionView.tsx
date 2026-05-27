@@ -3,20 +3,20 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
 import { Competition, Fencer, FencerStatus, Match, MatchStatus, Weapon, QuestPhaseConfig, Referee } from '../../shared/types';
+import { Arena } from '../../shared/types/remote';
 import { logger, LogCategory } from '@shared/services/logger';
 import { RankingImportResult } from '../../shared/utils/fileParser';
+import type { TableauMatchForPDF } from '../../shared/utils/pdfExport';
 import FencerList from './FencerList';
-import PoolView from './PoolView';
-import TableauView, { TableauMatch, FinalResult, propagateWinners, ConsolationBracket } from './TableauView';
+import { TableauMatch, FinalResult, propagateWinners, ConsolationBracket } from './tableau/tableauTypes';
 import PoolRankingView from './PoolRankingView';
 import ResultsView from './ResultsView';
 import AddFencerModal from './AddFencerModal';
 import CompetitionPropertiesModal from './CompetitionPropertiesModal';
 import ImportModal from './ImportModal';
 import PoolPrepView from './PoolPrepView';
-import RemoteScoreManager from './RemoteScoreManager';
 import { useToast } from './Toast';
 import { useTranslation } from '../hooks/useTranslation';
 import { useCompetitionSession, Phase } from '../hooks/useCompetitionSession';
@@ -30,16 +30,23 @@ import {
   generatePoolMatchOrder,
   generateInitialRanking,
 } from '../../shared/utils/poolCalculations';
-import { FencerComparison } from './FencerComparison';
-import { AnalyticsDashboard } from './AnalyticsDashboard';
 import { QRCodeShare } from './QRCodeShare';
 import { TouchOptimizedReferee } from './TouchOptimizedReferee';
-import { PresentationMode } from './PresentationMode';
-import KioskDisplay from './KioskDisplay';
 import { FencerPhoto } from './FencerPhoto';
-import QuestPhaseView from './QuestPhaseView';
 import { ScoreAuditLog } from './ScoreAuditLog';
 import { RefereeManagerComponent } from './RefereeManager';
+import CompetitionHeader from './competition/CompetitionHeader';
+import CompetitionNav from './competition/CompetitionNav';
+
+const PoolView = React.lazy(() => import('./PoolView'));
+const TableauView = React.lazy(() => import('./TableauView'));
+const RemoteScoreManager = React.lazy(() => import('./RemoteScoreManager'));
+const KioskDisplay = React.lazy(() => import('./KioskDisplay'));
+const FencerComparison = React.lazy(() => import('./FencerComparison').then(m => ({ default: m.FencerComparison })));
+const MatchAuditLog = React.lazy(() => import('./MatchAuditLog').then(m => ({ default: m.MatchAuditLog })));
+const AnalyticsDashboard = React.lazy(() => import('./AnalyticsDashboard').then(m => ({ default: m.AnalyticsDashboard })));
+const PresentationMode = React.lazy(() => import('./PresentationMode').then(m => ({ default: m.PresentationMode })));
+const QuestPhaseView = React.lazy(() => import('./QuestPhaseView'));
 
 interface CompetitionViewProps {
   competition: Competition;
@@ -47,6 +54,35 @@ interface CompetitionViewProps {
   requestPhase?: string;
   onPhaseApplied?: () => void;
 }
+
+// ─── Static style constants ───────────────────────────────────────────────────
+
+const CV_STYLES = {
+  root: { display: 'flex', flex: 1, flexDirection: 'column' as const, overflow: 'hidden' } satisfies React.CSSProperties,
+  thirdPlaceOverlay: { position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 } satisfies React.CSSProperties,
+  thirdPlaceModal: { backgroundColor: 'white', padding: '2rem', borderRadius: '8px', boxShadow: '0 10px 25px rgba(0, 0, 0, 0.25)', maxWidth: '500px', width: '90%' } satisfies React.CSSProperties,
+  thirdPlaceTitle: { margin: '0 0 1rem 0', color: '#1f2937' } satisfies React.CSSProperties,
+  thirdPlaceBtnRow: { display: 'flex', gap: '1rem', justifyContent: 'flex-end' as const, marginTop: '1.5rem' } satisfies React.CSSProperties,
+  kioskOverlay: { position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, background: '#f3f4f6', overflow: 'auto' as const } satisfies React.CSSProperties,
+  kioskCloseWrapper: { position: 'sticky' as const, top: '1rem', right: '1rem', float: 'right' as const, zIndex: 10000, margin: '1rem' } satisfies React.CSSProperties,
+  kioskCloseBtn: { background: '#ef4444', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '8px', cursor: 'pointer', fontSize: '1rem', fontWeight: 'bold' as const } satisfies React.CSSProperties,
+  kioskContent: { padding: '2rem' } satisfies React.CSSProperties,
+  kioskHeading: { marginBottom: '2rem', color: '#1f2937' } satisfies React.CSSProperties,
+  kioskPoolCard: { marginBottom: '3rem', background: 'white', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' } satisfies React.CSSProperties,
+  kioskPoolTitle: { marginBottom: '1rem', color: '#374151', borderBottom: '2px solid #e5e7eb', paddingBottom: '0.5rem' } satisfies React.CSSProperties,
+  kioskMatchGrid: { display: 'grid', gap: '1rem' } satisfies React.CSSProperties,
+  kioskMatchFencerA: { display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 } satisfies React.CSSProperties,
+  kioskMatchScores: { display: 'flex', alignItems: 'center', gap: '1rem' } satisfies React.CSSProperties,
+  kioskMatchScoreInput: { width: '60px', padding: '0.5rem', fontSize: '1.25rem', textAlign: 'center' as const, border: '2px solid #d1d5db', borderRadius: '6px' } satisfies React.CSSProperties,
+  kioskMatchSep: { fontSize: '1.5rem', fontWeight: 'bold' as const, color: '#6b7280' } satisfies React.CSSProperties,
+  kioskMatchFencerB: { display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, justifyContent: 'flex-end' as const } satisfies React.CSSProperties,
+  kioskMatchName: { fontWeight: 'bold' as const } satisfies React.CSSProperties,
+  kioskFinishRow: { textAlign: 'center' as const, marginTop: '2rem' } satisfies React.CSSProperties,
+  kioskFinishBtn: { background: '#10b981', color: 'white', border: 'none', padding: '1rem 2rem', borderRadius: '8px', cursor: 'pointer', fontSize: '1.25rem', fontWeight: 'bold' as const } satisfies React.CSSProperties,
+  poolsExportRow: { textAlign: 'center' as const, marginBottom: '2rem' } satisfies React.CSSProperties,
+  questWrapper: { display: 'none' } satisfies React.CSSProperties,
+  phaseContent: { flex: 1, overflow: 'auto' as const } satisfies React.CSSProperties,
+} satisfies Record<string, React.CSSProperties>;
 
 const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate, requestPhase, onPhaseApplied }) => {
   const { showToast } = useToast();
@@ -60,6 +96,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const poolMaxScore = competition.settings?.defaultPoolMaxScore ?? 21;
   const tableMaxScore = competition.settings?.defaultTableMaxScore ?? 0;
   const isLaserSabre = competition.weapon === Weapon.LASER;
+  const expertMode = competition.settings?.expertMode ?? false;
 
   const auditLogEnabled = localStorage.getItem('bellepoule-audit-log-enabled') === 'true';
 
@@ -81,7 +118,9 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     content: string;
   } | null>(null);
   const [isRemoteActive, setIsRemoteActive] = useState(false);
+  const [remoteServerUrl, setRemoteServerUrl] = useState<string | null>(null);
   const [remoteArenaCount, setRemoteArenaCount] = useState<number>(1);
+  const [arenaStates, setArenaStates] = useState<Arena[]>([]);
   const [showThirdPlaceDialog, setShowThirdPlaceDialog] = useState(false);
   const [tableauMatches, setTableauMatches] = useState<TableauMatch[]>([]);
   const [consolationBrackets, setConsolationBrackets] = useState<ConsolationBracket[]>([]);
@@ -170,13 +209,18 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     poolPrepParams,
   });
 
-  // Synchroniser le nombre d'arènes avec le nombre de poules (seed initial uniquement, pas de valeur restaurée)
+  // Synchroniser le nombre d'arènes avec le nombre de poules
   useEffect(() => {
     if (!isLoaded) return;
-    if (pools.length > 0 && remoteArenaCount === 1 && !restoredState?.remoteArenaCount) {
-      setRemoteArenaCount(pools.length);
+    if (pools.length > 0) {
+      if (!restoredState?.remoteArenaCount) {
+        setRemoteArenaCount(pools.length);
+      } else if (remoteArenaCount > pools.length) {
+        // Les poules ont rétréci depuis le dernier run : clamp pour éviter des arènes fantômes.
+        setRemoteArenaCount(pools.length);
+      }
     }
-  }, [isLoaded, pools.length]);
+  }, [isLoaded, pools.length, remoteArenaCount]);
 
   // Restaurer l'état au chargement
   useEffect(() => {
@@ -228,6 +272,15 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     return () => { cancelled = true; };
   }, [isLoaded, pools.length, competition.id]);
 
+  // Rétablir isRemoteActive si une session est déjà en cours (ex: rechargement après phase poules)
+  useEffect(() => {
+    window.electronAPI.remote.getSession(competition.id)
+      .then((result: any) => {
+        if (result?.success && result?.session) setIsRemoteActive(true);
+      })
+      .catch(() => {});
+  }, [competition.id]);
+
   // Charger les tireurs au montage
   useEffect(() => {
     loadFencers();
@@ -254,9 +307,47 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     window.electronAPI.remote.getServerInfo(competition.id).then((res: any) => {
       if (res?.success && res.serverInfo) {
         setIsRemoteActive(true);
+        setRemoteServerUrl(res.serverInfo.url);
       }
     });
   }, [competition.id]);
+
+  // Mettre à jour l'URL du serveur distant quand il devient actif
+  useEffect(() => {
+    if (!isRemoteActive || !window.electronAPI?.remote) return;
+    // Petit délai pour laisser le serveur démarrer si besoin
+    const timer = setTimeout(() => {
+      window.electronAPI.remote.getServerInfo(competition.id).then((res: any) => {
+        if (res?.success && res.serverInfo) setRemoteServerUrl(res.serverInfo.url);
+      });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [isRemoteActive, competition.id]);
+
+  // Charger les arènes quand le serveur distant devient actif et s'abonner aux updates
+  useEffect(() => {
+    if (!isRemoteActive || !competition?.id || !window.electronAPI?.remote) return;
+    window.electronAPI.remote.getArenas(competition.id).then((res: any) => {
+      if (res?.success && res.arenas) setArenaStates(res.arenas);
+    }).catch(() => {});
+    let unlisten: (() => void) | undefined;
+    if (window.electronAPI.onRemoteArenaUpdate) {
+      unlisten = window.electronAPI.onRemoteArenaUpdate((data: any) => {
+        setArenaStates(prev => {
+          const idx = prev.findIndex((a: Arena) => a.id === data.arenaId);
+          if (idx === -1) return prev;
+          const updated = [...prev];
+          updated[idx] = {
+            ...updated[idx],
+            currentMatch: data.update?.match ?? updated[idx].currentMatch,
+            status: data.update?.status ?? updated[idx].status,
+          };
+          return updated;
+        });
+      });
+    }
+    return () => unlisten?.();
+  }, [isRemoteActive, competition.id]);
 
   // Écouter les mises à jour des matches distants
   // Note: pas de garde sur currentPhase car la phase 'remote' affiche le panel de saisie distante
@@ -283,7 +374,12 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         const idx = prev.findIndex(m => m.id === matchId);
         if (idx === -1) return prev;
         const match = prev[idx];
-        const winner = scoreA > scoreB ? match.fencerA : scoreB > scoreA ? match.fencerB : null;
+        const winner =
+          scoreA > scoreB ? match.fencerA :
+          scoreB > scoreA ? match.fencerB :
+          winnerOverride === 'A' ? match.fencerA :
+          winnerOverride === 'B' ? match.fencerB :
+          null;
         const updated = prev.map((m, i) => (i === idx ? { ...m, scoreA, scoreB, winner } : m));
         const size = prev.length > 0 ? Math.max(...prev.map(m => m.round)) : 0;
         propagateWinners(updated, size);
@@ -439,6 +535,10 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     const newPools = generatePoolsHook(checkedIn);
     if (newPools) {
       await persistPoolsToDB(newPools);
+      // Fermer l'inscription distante dès que les poules sont générées
+      if (isRemoteActive && window.electronAPI?.remote?.setRegistrationEnabled) {
+        window.electronAPI.remote.setRegistrationEnabled(competition.id, false).catch(() => {});
+      }
       setCurrentPhase('poolprep');
     }
   };
@@ -540,8 +640,10 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   );
 
   const handleGoToRanking = () => {
-    const ranking = computeOverallRanking(pools);
-    setOverallRanking(ranking);
+    if (overallRanking.length === 0) {
+      const ranking = computeOverallRanking(pools);
+      setOverallRanking(ranking);
+    }
     setCurrentPhase('ranking');
   };
 
@@ -657,6 +759,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       setCurrentPhase('checkin');
     }
   }, [phaseOrder]);
+
+  // Synchroniser l'état d'inscription distante avec la phase courante
+  useEffect(() => {
+    if (!isRemoteActive || !window.electronAPI?.remote?.setRegistrationEnabled) return;
+    const enabled = currentPhase === 'checkin';
+    window.electronAPI.remote.setRegistrationEnabled(competition.id, enabled).catch(() => {});
+  }, [currentPhase, isRemoteActive, competition.id]);
 
   const handleGoBack = () => {
     if (skipPoolPhase && currentPhase === 'ranking') {
@@ -808,204 +917,103 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
   const poolsNextAction = getPoolsNextAction();
 
+  // Confetti + menu état
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [showActionsMenu, setShowActionsMenu] = useState(false);
+  const prevAllPoolsComplete = useRef(false);
+  const prevChampion = useRef<string | null>(null);
+  const actionsMenuRef = useRef<HTMLDivElement>(null);
+
+  // Détecter complétion des poules → confetti
+  useEffect(() => {
+    const allDone = canAdvanceFromPools && pools.length > 0;
+    if (allDone && !prevAllPoolsComplete.current) {
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 3200);
+    }
+    prevAllPoolsComplete.current = allDone;
+  }, [canAdvanceFromPools, pools.length]);
+
+  // Fermer le menu actions au clic extérieur
+  useEffect(() => {
+    if (!showActionsMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (actionsMenuRef.current && !actionsMenuRef.current.contains(e.target as Node)) {
+        setShowActionsMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showActionsMenu]);
+
+  // Calcul progression matchs
+  const matchProgress = useMemo(() => {
+    if (pools.length === 0 && tableauMatches.length === 0) return null;
+    if (pools.length > 0) {
+      const total = pools.reduce((s, p) => s + p.matches.length, 0);
+      const done = pools.reduce((s, p) => s + p.matches.filter(m => m.status === MatchStatus.FINISHED).length, 0);
+      return { done, total, label: 'poules' };
+    }
+    if (tableauMatches.length > 0) {
+      const total = tableauMatches.filter(m => m.fencerA && m.fencerB).length;
+      const done = tableauMatches.filter(m => m.winner !== null).length;
+      return { done, total, label: 'tableau' };
+    }
+    return null;
+  }, [pools, tableauMatches]);
+
   return (
-    <div style={{ display: 'flex', flex: 1, flexDirection: 'column', overflow: 'hidden' }}>
-      {/* Header */}
-      <div
-        style={{
-          padding: '1rem',
-          background: competition.color,
-          color: 'white',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.25rem' }}>
-            {competition.title}
-          </h1>
-          <p style={{ opacity: 0.9, fontSize: '0.875rem' }}>
-            {new Date(competition.date).toLocaleDateString(language === 'zh-HK' ? 'zh-HK' : language, {
-              weekday: 'long',
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric',
-            })}
-            {competition.location && ` • ${competition.location}`}
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <span className="badge" style={{ background: 'rgba(255,255,255,0.2)' }}>
-            {fencers.length} {t('fencer.label')}
-          </span>
-          <span className="badge" style={{ background: 'rgba(255,255,255,0.2)' }}>
-            {getCheckedInFencers().length} {t('fencer.present_label')}
-          </span>
-          <button
-            onClick={() => setShowFencerComparison(true)}
-            style={{
-              background: 'rgba(255,255,255,0.2)',
-              border: 'none',
-              color: 'white',
-              padding: '0.5rem 1rem',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-            }}
-          >
-            ⚔️ {t('competition.comparisons')}
-          </button>
-          <button
-            onClick={() => setShowAnalytics(true)}
-            style={{
-              background: 'rgba(255,255,255,0.2)',
-              border: 'none',
-              color: 'white',
-              padding: '0.5rem 1rem',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-            }}
-          >
-            📊 {t('competition.analytics')}
-          </button>
-          <button
-            onClick={() => setShowQRCode(true)}
-            style={{
-              background: 'rgba(255,255,255,0.2)',
-              border: 'none',
-              color: 'white',
-              padding: '0.5rem 1rem',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-            }}
-          >
-            📱 Partager
-          </button>
-          {currentPhase === 'pools' && pools.length > 0 && (
-            <>
-              <button
-                onClick={() => setShowPresentation(true)}
-                style={{
-                  background: 'rgba(255,255,255,0.2)',
-                  border: 'none',
-                  color: 'white',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                }}
-              >
-                🖥️ Mode Présentation
-              </button>
-              <button
-                onClick={() => setShowKiosk(true)}
-                style={{
-                  background: 'rgba(255,255,255,0.2)',
-                  border: 'none',
-                  color: 'white',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                }}
-              >
-                📱 Mode Kiosk
-              </button>
-            </>
-          )}
-          {(pools.length > 0 || tableauMatches.length > 0) && (
-            <button
-              onClick={() => setShowKioskDisplay(true)}
-              style={{
-                background: 'rgba(255,255,255,0.2)',
-                border: 'none',
-                color: 'white',
-                padding: '0.5rem 1rem',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '0.875rem',
-              }}
-            >
-              🖥️ Kiosk Public
-            </button>
-          )}
-          <button
-            onClick={() => setShowPropertiesModal(true)}
-            style={{
-              background: 'rgba(255,255,255,0.2)',
-              border: 'none',
-              color: 'white',
-              padding: '0.5rem 1rem',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-            }}
-          >
-            ⚙️ Propriétés
-          </button>
-        </div>
-      </div>
+    <div style={CV_STYLES.root}>
+      <CompetitionHeader
+        competition={competition}
+        language={language}
+        t={t}
+        matchProgress={matchProgress}
+        showConfetti={showConfetti}
+        showActionsMenu={showActionsMenu}
+        setShowActionsMenu={setShowActionsMenu}
+        actionsMenuRef={actionsMenuRef}
+        currentPhase={currentPhase}
+        pools={pools}
+        tableauMatches={tableauMatches}
+        fencersCount={fencers.length}
+        checkedInCount={getCheckedInFencers().length}
+        setShowFencerComparison={setShowFencerComparison}
+        setShowAnalytics={setShowAnalytics}
+        setShowQRCode={setShowQRCode}
+        setShowPresentation={setShowPresentation}
+        setShowKiosk={setShowKiosk}
+        setShowKioskDisplay={setShowKioskDisplay}
+        setShowPropertiesModal={setShowPropertiesModal}
+      />
+      <CompetitionNav
+        competition={competition}
+        phases={phases}
+        currentPhase={currentPhase}
+        setCurrentPhase={setCurrentPhase}
+        language={language}
+        t={t}
+        handleGoBack={handleGoBack}
+        handleGeneratePools={handleGeneratePools}
+        poolsNextAction={poolsNextAction}
+        questEnabled={questEnabled}
+        questConfig={questConfig}
+        fencers={fencers}
+        getCheckedInFencers={getCheckedInFencers}
+        pools={pools}
+        tableauMatches={tableauMatches}
+      />
 
-      {/* Navigation */}
-      <div className="phase-nav">
-        {phases.map((phase, index) => (
-          <React.Fragment key={phase.id}>
-            <div
-              className={`phase-step ${currentPhase === phase.id ? 'phase-step-active' : ''} ${phase.disabled ? 'phase-step-disabled' : ''}`}
-              onClick={() => !phase.disabled && setCurrentPhase(phase.id as Phase)}
-              title={phase.title ?? (phase.disabled ? 'Section non disponible' : undefined)}
-            >
-              <span className="phase-step-number">{phase.icon}</span>
-              <span>{phase.label}</span>
-            </div>
-            {index < phases.length - 1 && (
-              <div style={{ display: 'flex', alignItems: 'center', color: '#9CA3AF' }}>→</div>
-            )}
-          </React.Fragment>
-        ))}
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          {currentPhase !== 'checkin' && (
-            <button className="btn btn-secondary" onClick={handleGoBack}>
-              ← Retour
-            </button>
-          )}
-          {currentPhase === 'checkin' && questEnabled && !questConfig?.hasPreliminaryPools && (
-            <button
-              className="btn btn-primary"
-              onClick={() => setCurrentPhase('quest')}
-              disabled={getCheckedInFencers().length < 2}
-            >
-              Tour Quest →
-            </button>
-          )}
-          {currentPhase === 'checkin' && (!questEnabled || questConfig?.hasPreliminaryPools) && (
-            <button
-              className="btn btn-primary"
-              onClick={handleGeneratePools}
-              disabled={getCheckedInFencers().length < 4}
-            >
-              Générer les poules →
-            </button>
-          )}
-          {currentPhase === 'pools' && poolsNextAction && (
-            <button className="btn btn-primary" onClick={poolsNextAction.action}>
-              {poolsNextAction.label}
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Content */}
-      <div style={{ flex: 1, overflow: 'auto' }}>
+      {/* Content — keyed pour animation de transition */}
+      <div key={currentPhase} className="phase-content" style={CV_STYLES.phaseContent}>
         {currentPhase === 'checkin' && (
           <FencerList
             fencers={fencers}
             competitionId={competition.id}
             onCheckIn={handleCheckInFencer}
             onAddFencer={() => setShowAddFencerModal(true)}
+            registerUrl={isRemoteActive && remoteServerUrl ? `${remoteServerUrl}/register` : undefined}
+            onFencersChanged={loadFencers}
             onEditFencer={updateFencer}
             onDeleteFencer={deleteFencer}
             onDeleteAllFencers={deleteAllFencers}
@@ -1044,6 +1052,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             maxScore={poolMaxScore}
             minFencersPerPool={minFencersPerPool}
             maxFencersPerPool={maxFencersPerPool}
+            expertMode={expertMode}
             onPoolsConfirm={confirmedPools => {
               setPools(confirmedPools);
               setSkipPoolPhase(false);
@@ -1073,7 +1082,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             ) : (
               <>
                 {pools.length > 1 && (
-                  <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                  <div style={CV_STYLES.poolsExportRow}>
                     <button className="btn btn-success" onClick={handleExportAllPoolsPDF}>
                       📄 Exporter toutes les poules en PDF
                     </button>
@@ -1088,6 +1097,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                     gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${Math.max(480, 280 + (pools[0]?.fencers?.length ?? 6) * 38)}px), 1fr))`,
                   }}
                 >
+                  <Suspense fallback={null}>
                   {pools.map((pool, poolIndex) => (
                     <div key={pool.id} style={{ minWidth: 0, overflow: 'auto' }}>
                       <PoolView
@@ -1095,6 +1105,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                         weapon={competition.weapon}
                         competitionName={competition.title}
                         maxScore={poolMaxScore}
+                        competitionId={competition.id}
                         onScoreUpdate={(matchIndex, scoreA, scoreB, winner, specialStatus) =>
                           updateScore(poolIndex, matchIndex, scoreA, scoreB, winner, specialStatus)
                         }
@@ -1123,9 +1134,30 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                             handleFencerForfeit(fencerId, status);
                           }
                         }}
+                        onFencerAdded={updatedPool => {
+                          updatedPool.ranking = computePoolRanking(updatedPool);
+                          setPools(prev =>
+                            prev.map(p => (p.id === updatedPool.id ? updatedPool : p))
+                          );
+                        }}
+                        arenaCount={remoteArenaCount}
+                        arenas={arenaStates}
+                        isRemoteActive={isRemoteActive}
+                        onMatchArenaChange={(matchId, oldArena, newArena, fencerA, fencerB) => {
+                          if (!isRemoteActive || !competition?.id) return;
+                          window.electronAPI.remote.updateMatchArena(
+                            competition.id,
+                            matchId,
+                            oldArena,
+                            newArena,
+                            fencerA ?? undefined,
+                            fencerB ?? undefined
+                          ).catch(() => {});
+                        }}
                       />
                     </div>
                   ))}
+                  </Suspense>
                 </div>
               </>
             )}
@@ -1152,7 +1184,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         )}
 
         {questEnabled && questConfig && (
-          <div style={{ display: currentPhase === 'quest' ? undefined : 'none' }}>
+          <div style={currentPhase === 'quest' ? undefined : CV_STYLES.questWrapper}>
+            <Suspense fallback={null}>
             <QuestPhaseView
               fencers={(() => {
                 const checked = getCheckedInFencers();
@@ -1183,10 +1216,12 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               }}
               onConfigUpdate={handleQuestConfigUpdate}
             />
+            </Suspense>
           </div>
         )}
 
         {currentPhase === 'tableau' && (
+          <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Chargement tableau…</div>}>
           <TableauView
             ranking={overallRanking}
             matches={tableauMatches}
@@ -1201,7 +1236,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               setFinalResults(results);
               setCurrentPhase('results');
             }}
-            onMatchArenaChange={(matchId, oldArena, newArena) => {
+            onMatchArenaChange={(matchId, oldArena, newArena, fencerAParam, fencerBParam) => {
               if (isRemoteActive) {
                 const match = tableauMatches.find(m => m.id === matchId);
                 window.electronAPI.remote.updateMatchArena(
@@ -1209,12 +1244,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                   matchId,
                   oldArena,
                   newArena,
-                  match?.fencerA ?? null,
-                  match?.fencerB ?? null
+                  fencerAParam ?? match?.fencerA ?? null,
+                  fencerBParam ?? match?.fencerB ?? null
                 );
               }
             }}
           />
+          </Suspense>
         )}
 
         {currentPhase === 'results' && (
@@ -1222,24 +1258,39 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             competition={competition}
             poolRanking={overallRanking}
             finalResults={finalResults}
+            fencers={fencers}
+            pools={pools}
+            tableauMatches={tableauMatches as TableauMatchForPDF[]}
+            consolationBrackets={consolationBrackets}
+            isLaserSabre={isLaserSabre}
           />
         )}
 
-        <div style={{ display: currentPhase === 'remote' ? '' : 'none' }}>
+        <Suspense fallback={null}>
           <RemoteScoreManager
             competition={competition}
             pools={pools}
             tableauMatches={tableauMatches}
+            consolationBrackets={consolationBrackets}
             initialStripCount={remoteArenaCount}
             onArenaCountChange={setRemoteArenaCount}
             onStartRemote={() => setIsRemoteActive(true)}
-            onStopRemote={() => setIsRemoteActive(false)}
+            onStopRemote={() => { setIsRemoteActive(false); setArenaStates([]); }}
             isRemoteActive={isRemoteActive}
+            isVisible={currentPhase === 'remote'}
           />
-        </div>
+        </Suspense>
 
         {currentPhase === 'logs' && (
-          <ScoreAuditLog competitionId={competition.id} />
+          <>
+            <ScoreAuditLog competitionId={competition.id} />
+            <Suspense fallback={null}>
+              <MatchAuditLog
+                competitionId={competition.id}
+                competitionName={competition.title}
+              />
+            </Suspense>
+          </>
         )}
 
         {currentPhase === 'referees' && competition.settings?.refereeFeatureEnabled && (
@@ -1249,7 +1300,15 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             pools={pools}
             matches={pools.flatMap(p => p.matches ?? [])}
             onRefereesChange={setReferees}
-            onAssignmentsChange={() => {}}
+            onAssignmentsChange={(assignments) => {
+              setPools(prev => prev.map(pool => ({
+                ...pool,
+                matches: (pool.matches ?? []).map(m => {
+                  const ref = assignments.get(m.id);
+                  return ref !== undefined ? { ...m, referee: ref } : m;
+                }),
+              })));
+            }}
           />
         )}
       </div>
@@ -1290,42 +1349,12 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       )}
 
       {showThirdPlaceDialog && (
-        <div
-          className="modal-overlay"
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: 'white',
-              padding: '2rem',
-              borderRadius: '8px',
-              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.25)',
-              maxWidth: '500px',
-              width: '90%',
-            }}
-          >
-            <h3 style={{ margin: '0 0 1rem 0', color: '#1f2937' }}>
+        <div className="modal-overlay" style={CV_STYLES.thirdPlaceOverlay}>
+          <div style={CV_STYLES.thirdPlaceModal}>
+            <h3 style={CV_STYLES.thirdPlaceTitle}>
               {t('competition.third_place_match_dialog')}
             </h3>
-            <div
-              style={{
-                display: 'flex',
-                gap: '1rem',
-                justifyContent: 'flex-end',
-                marginTop: '1.5rem',
-              }}
-            >
+            <div style={CV_STYLES.thirdPlaceBtnRow}>
               <button className="btn btn-secondary" onClick={() => handleThirdPlaceDecision(false)}>
                 Non
               </button>
@@ -1339,112 +1368,68 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
       {/* Nouveaux modals */}
       {showFencerComparison && (
-        <FencerComparison
-          fencers={fencers}
-          pools={pools}
-          tableauMatches={tableauMatches}
-          onClose={() => setShowFencerComparison(false)}
-        />
+        <Suspense fallback={null}>
+          <FencerComparison
+            fencers={fencers}
+            pools={pools}
+            tableauMatches={tableauMatches}
+            onClose={() => setShowFencerComparison(false)}
+          />
+        </Suspense>
       )}
 
       {showAnalytics && (
-        <AnalyticsDashboard
-          competition={competition}
-          pools={pools}
-          matches={pools.flatMap(p => p.matches ?? [])}
-          fencers={fencers}
-          onClose={() => setShowAnalytics(false)}
-        />
+        <Suspense fallback={null}>
+          <AnalyticsDashboard
+            competition={competition}
+            pools={pools}
+            matches={pools.flatMap(p => p.matches ?? [])}
+            fencers={fencers}
+            onClose={() => setShowAnalytics(false)}
+          />
+        </Suspense>
       )}
 
       {showQRCode && <QRCodeShare competition={competition} onClose={() => setShowQRCode(false)} />}
 
       {/* Mode Présentation */}
       {showPresentation && (
-        <PresentationMode
-          competition={competition}
-          pools={pools}
-          onClose={() => setShowPresentation(false)}
-        />
+        <Suspense fallback={null}>
+          <PresentationMode
+            competition={competition}
+            pools={pools}
+            onClose={() => setShowPresentation(false)}
+          />
+        </Suspense>
       )}
 
       {/* Mode Kiosk Public - Affichage grand écran */}
       {showKioskDisplay && (
-        <KioskDisplay
-          competition={competition}
-          pools={pools}
-          weapon={competition.weapon}
-          tableauMatches={tableauMatches}
-          onClose={() => setShowKioskDisplay(false)}
-        />
+        <Suspense fallback={null}>
+          <KioskDisplay
+            competition={competition}
+            pools={pools}
+            weapon={competition.weapon}
+            tableauMatches={tableauMatches}
+            onClose={() => setShowKioskDisplay(false)}
+          />
+        </Suspense>
       )}
 
       {/* Mode Kiosk - Interface tablette arbitre */}
       {showKiosk && pools.length > 0 && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 9999,
-            background: '#f3f4f6',
-            overflow: 'auto',
-          }}
-        >
-          <div
-            style={{
-              position: 'sticky',
-              top: '1rem',
-              right: '1rem',
-              float: 'right',
-              zIndex: 10000,
-              margin: '1rem',
-            }}
-          >
-            <button
-              onClick={() => setShowKiosk(false)}
-              style={{
-                background: '#ef4444',
-                color: 'white',
-                border: 'none',
-                padding: '0.75rem 1.5rem',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '1rem',
-                fontWeight: 'bold',
-              }}
-            >
+        <div style={CV_STYLES.kioskOverlay}>
+          <div style={CV_STYLES.kioskCloseWrapper}>
+            <button onClick={() => setShowKiosk(false)} style={CV_STYLES.kioskCloseBtn}>
               ✕ Quitter Mode Kiosk
             </button>
           </div>
-          <div style={{ padding: '2rem' }}>
-            <h2 style={{ marginBottom: '2rem', color: '#1f2937' }}>
-              Mode Kiosk - Saisie des scores
-            </h2>
+          <div style={CV_STYLES.kioskContent}>
+            <h2 style={CV_STYLES.kioskHeading}>Mode Kiosk - Saisie des scores</h2>
             {pools.map((pool, poolIndex) => (
-              <div
-                key={pool.id}
-                style={{
-                  marginBottom: '3rem',
-                  background: 'white',
-                  borderRadius: '12px',
-                  padding: '1.5rem',
-                  boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                }}
-              >
-                <h3
-                  style={{
-                    marginBottom: '1rem',
-                    color: '#374151',
-                    borderBottom: '2px solid #e5e7eb',
-                    paddingBottom: '0.5rem',
-                  }}
-                >
-                  Poule {pool.number}
-                </h3>
-                <div style={{ display: 'grid', gap: '1rem' }}>
+              <div key={pool.id} style={CV_STYLES.kioskPoolCard}>
+                <h3 style={CV_STYLES.kioskPoolTitle}>Poule {pool.number}</h3>
+                <div style={CV_STYLES.kioskMatchGrid}>
                   {pool.matches.map(
                     (match, matchIndex) =>
                       match.status !== 'finished' && (
@@ -1463,9 +1448,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                                 : '1px solid #e5e7eb',
                           }}
                         >
-                          <div
-                            style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}
-                          >
+                          <div style={CV_STYLES.kioskMatchFencerA}>
                             <FencerPhoto
                               photo={match.fencerA?.photo}
                               firstName={match.fencerA?.firstName || ''}
@@ -1473,24 +1456,17 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                               size="medium"
                               editable={false}
                             />
-                            <span style={{ fontWeight: 'bold' }}>
+                            <span style={CV_STYLES.kioskMatchName}>
                               {match.fencerA?.firstName} {match.fencerA?.lastName}
                             </span>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                          <div style={CV_STYLES.kioskMatchScores}>
                             <input
                               type="number"
                               min="0"
                               max={poolMaxScore}
                               defaultValue={match.scoreA?.value || 0}
-                              style={{
-                                width: '60px',
-                                padding: '0.5rem',
-                                fontSize: '1.25rem',
-                                textAlign: 'center',
-                                border: '2px solid #d1d5db',
-                                borderRadius: '6px',
-                              }}
+                              style={CV_STYLES.kioskMatchScoreInput}
                               onChange={e => {
                                 const scoreA = parseInt(e.target.value) || 0;
                                 const scoreB = match.scoreB?.value || 0;
@@ -1499,24 +1475,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                                 }
                               }}
                             />
-                            <span
-                              style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#6b7280' }}
-                            >
-                              -
-                            </span>
+                            <span style={CV_STYLES.kioskMatchSep}>-</span>
                             <input
                               type="number"
                               min="0"
                               max={poolMaxScore}
                               defaultValue={match.scoreB?.value || 0}
-                              style={{
-                                width: '60px',
-                                padding: '0.5rem',
-                                fontSize: '1.25rem',
-                                textAlign: 'center',
-                                border: '2px solid #d1d5db',
-                                borderRadius: '6px',
-                              }}
+                              style={CV_STYLES.kioskMatchScoreInput}
                               onChange={e => {
                                 const scoreB = parseInt(e.target.value) || 0;
                                 const scoreA = match.scoreA?.value || 0;
@@ -1526,16 +1491,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                               }}
                             />
                           </div>
-                          <div
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '1rem',
-                              flex: 1,
-                              justifyContent: 'flex-end',
-                            }}
-                          >
-                            <span style={{ fontWeight: 'bold' }}>
+                          <div style={CV_STYLES.kioskMatchFencerB}>
+                            <span style={CV_STYLES.kioskMatchName}>
                               {match.fencerB?.firstName} {match.fencerB?.lastName}
                             </span>
                             <FencerPhoto
@@ -1553,22 +1510,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               </div>
             ))}
             {areAllPoolsComplete() && (
-              <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+              <div style={CV_STYLES.kioskFinishRow}>
                 <button
                   onClick={() => {
                     setShowKiosk(false);
                     handleGoToRanking();
                   }}
-                  style={{
-                    background: '#10b981',
-                    color: 'white',
-                    border: 'none',
-                    padding: '1rem 2rem',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontSize: '1.25rem',
-                    fontWeight: 'bold',
-                  }}
+                  style={CV_STYLES.kioskFinishBtn}
                 >
                   ✓ Tous les matchs sont terminés - Voir le classement
                 </button>

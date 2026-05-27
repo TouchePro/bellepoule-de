@@ -7,9 +7,8 @@
 import { useCallback } from 'react';
 import { Competition, Fencer, Pool, PoolRanking, FencerStatus } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
-import { FinalResult } from '../components/TableauView';
+import { FinalResult } from '../components/tableau/tableauTypes';
 import { exportFencersToTXT, exportFencersToFFF } from '../../shared/utils/fencerExport';
-import { exportMultiplePoolsToPDF } from '../../shared/utils/pdfExport';
 import { usePdfTemplateStore } from '../../features/pdfTemplates/hooks/usePdfTemplateStore';
 import { useToast } from '../components/Toast';
 import {
@@ -210,10 +209,11 @@ export const useExport = ({ competition, showToast }: UseExportProps) => {
     [competition.title, competition.date, downloadFile, showToast]
   );
 
-  // Export PDF de toutes les poules
+  // Export PDF de toutes les poules — jsPDF chargé à la demande
   const exportPoolsPDF = useCallback(
     async (pools: Pool[], currentPoolRound: number) => {
       try {
+        const { exportMultiplePoolsToPDF } = await import('../../shared/utils/pdfExport');
         const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
         await exportMultiplePoolsToPDF(
           pools,

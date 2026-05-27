@@ -195,10 +195,16 @@
       }
 
       .score-display.not-started {
-        color: #16a34a !important;
-        background-color: rgba(22, 163, 74, 0.12);
         border-radius: 10px;
         padding: 0.15rem 0.6rem;
+      }
+
+      .score-display.red-score.not-started {
+        background-color: rgba(220, 38, 38, 0.12);
+      }
+
+      .score-display.green-score.not-started {
+        background-color: rgba(22, 163, 74, 0.12);
       }
 
       /* Boutons de score */
@@ -302,7 +308,7 @@
       .vs-divider {
         font-size: 1.5rem;
         font-weight: 700;
-        color: #ef4444;
+        color: #f97316;
       }
 
       /* ── Modal sélecteur de raison ── */
@@ -1014,13 +1020,23 @@
         border-color: #7c3aed;
         color: #fff;
       }
+      @media (prefers-color-scheme: dark) {
+        .active-match { background: rgba(30,30,40,0.97); color: #f3f4f6; }
+        .fencer-box { background: #1f2937; color: #f9fafb; }
+        .fencer-box.red-side { background: linear-gradient(135deg, #3b0a0a 0%, #4c1010 100%); }
+        .fencer-box.green-side { background: linear-gradient(135deg, #0a2e1a 0%, #103d22 100%); }
+        .fencer-club { color: #9ca3af; }
+        .modal-content { background: #1f2937; color: #f3f4f6; }
+        .final-score { background: #111827; color: #f3f4f6; }
+        .next-matches-screen { background: rgba(0,0,0,0.5); }
+      }
     </style>
   </head>
   <body>
     <div class="header">
       <h1>
         <span>⚔️</span>
-        <span>Arène <span id="arena-number">1</span></span>
+        <span><span id="arena-label">Arène</span> <span id="arena-number">1</span></span>
       </h1>
       <div class="connection-status">
         <button id="btn-swap" class="swap-btn" onclick="refereeApp.toggleSwap()" data-i18n-title="referee.swap_colors" title="Inverser rouge/vert">⇄</button>
@@ -1526,7 +1542,14 @@
           fetch('/api/session')
             .then(r => (r.ok ? r.json() : null))
             .then(s => {
-              if (s) this.isLaserSabre = s.weapon === 'L';
+              if (s) {
+              this.isLaserSabre = s.weapon === 'L';
+              this.isModernFencing = ['E', 'F', 'S'].includes(s.weapon);
+              if (this.isModernFencing) {
+                document.getElementById('arena-label').textContent = 'Piste';
+                document.querySelectorAll('.btn-plus-3, .btn-plus-5').forEach(b => (b.style.display = 'none'));
+              }
+            }
             })
             .catch(() => {});
           // Service Worker PWA
@@ -1950,6 +1973,7 @@
           }
 
           this.pushHistory('score');
+          if (navigator.vibrate) navigator.vibrate(points === 5 ? 120 : points === 3 ? 80 : 40);
 
           const ef = this._effectiveFencer(fencer);
           const zone = points === 1 ? 'A' : points === 3 ? 'B' : 'C';
@@ -1988,8 +2012,9 @@
           if (this.matchStatus === 'finished') return;
 
           this.pushHistory('card');
+          if (navigator.vibrate) navigator.vibrate(cardType === 'red' ? [100,50,100] : cardType === 'yellow' ? 80 : 40);
 
-          const ef = this._effectiveFencer(fencer);
+          const ef = fencer; // caller already resolved via _effectiveFencer
           const cards = ef === 'A' ? this.cardsA : this.cardsB;
 
           // Conversion 2ème blanc → jaune (chemin sans sélecteur de raison)
@@ -2003,7 +2028,14 @@
 
           cards.push(cardType);
 
-          if (cardType === 'yellow') {
+          if (this.isModernFencing) {
+            if (cardType === 'red') {
+              if (ef === 'A') this.scoreB += 1;
+              else this.scoreA += 1;
+              this.showNotification("🟥 +1 point pour l'adversaire");
+            }
+            // jaune = avertissement sans point en escrime moderne
+          } else if (cardType === 'yellow') {
             if (ef === 'A') this.scoreB += 3;
             else this.scoreA += 3;
             this.showNotification("🟨 +3 points pour l'adversaire");
@@ -2049,7 +2081,8 @@
           this._reasonSelectorFencer = fencer;
           this._reasonSelectorOriginalType = originalCardType;
 
-          const nameEl = document.getElementById(`fencer-${fencer.toLowerCase()}-name`);
+          const displayPos = this._effectiveFencer(fencer); // _effectiveFencer is its own inverse
+          const nameEl = document.getElementById(`fencer-${displayPos.toLowerCase()}-name`);
           const fencerName = nameEl ? nameEl.textContent.trim() : `Tireur ${fencer}`;
           document.getElementById('reason-selector-title').textContent =
             `Raison du carton — ${fencerName}`;
@@ -2198,6 +2231,7 @@
           this.overtimeType = this.overtimeType === 'supplementary'
             ? 'challenger_supplementary'
             : 'challenger';
+          if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
           this.updateSuddenDeathUI();
           this.showNotification(
             '⚡ MORT SUBITE – Les deux tireurs ont 10 pts ! Zone C uniquement.'
@@ -2366,7 +2400,7 @@
         }
 
         _effectiveFencer(configFencer) {
-          return this.swapped ? (configFencer === 'A' ? 'B' : 'A') : configFencer;
+          return this.swapped ? configFencer : (configFencer === 'A' ? 'B' : 'A');
         }
 
         applySwapState() {
@@ -2380,8 +2414,8 @@
           if (scoreB) scoreB.className = `score-display ${this.swapped ? 'red-score' : 'green-score'}`;
 
           if (this.currentMatch) {
-            const left = this.swapped ? this.currentMatch.fencerB : this.currentMatch.fencerA;
-            const right = this.swapped ? this.currentMatch.fencerA : this.currentMatch.fencerB;
+            const left = this.swapped ? this.currentMatch.fencerA : this.currentMatch.fencerB;
+            const right = this.swapped ? this.currentMatch.fencerB : this.currentMatch.fencerA;
             const leftName = `${left?.lastName || ''} ${left?.firstName || ''}`.trim();
             const rightName = `${right?.lastName || ''} ${right?.firstName || ''}`.trim();
             const nameElA = document.getElementById('fencer-a-name');
@@ -2408,8 +2442,8 @@
             scoreAEl.classList.add('not-started');
             scoreBEl.classList.add('not-started');
           } else {
-            scoreAEl.textContent = this.swapped ? this.scoreB : this.scoreA;
-            scoreBEl.textContent = this.swapped ? this.scoreA : this.scoreB;
+            scoreAEl.textContent = this.swapped ? this.scoreA : this.scoreB;
+            scoreBEl.textContent = this.swapped ? this.scoreB : this.scoreA;
             scoreAEl.classList.remove('not-started');
             scoreBEl.classList.remove('not-started');
           }
@@ -2424,8 +2458,8 @@
               )
               .join('');
 
-          document.getElementById('fencer-a-cards').innerHTML = renderCards(this.swapped ? this.cardsB : this.cardsA);
-          document.getElementById('fencer-b-cards').innerHTML = renderCards(this.swapped ? this.cardsA : this.cardsB);
+          document.getElementById('fencer-a-cards').innerHTML = renderCards(this.swapped ? this.cardsA : this.cardsB);
+          document.getElementById('fencer-b-cards').innerHTML = renderCards(this.swapped ? this.cardsB : this.cardsA);
         }
 
         toggleTimer() {
@@ -2518,6 +2552,7 @@
           } else {
             this.overtimeType = 'supplementary';
           }
+          if (navigator.vibrate) navigator.vibrate([150, 80, 150, 80, 400]);
           this.timerSeconds = 30;
           this.updateTimerDisplay();
           this.broadcastTimerUpdate();
@@ -2547,8 +2582,11 @@
         }
 
         showCoinFlipConfirm(winner) {
-          const nameEl = document.getElementById(`fencer-${winner.toLowerCase()}-name`);
-          const winnerName = nameEl ? nameEl.textContent.trim() : `Tireur ${winner}`;
+          const winnerFencer = winner === 'A' ? this.currentMatch?.fencerA : this.currentMatch?.fencerB;
+          const winnerName = winnerFencer
+            ? `${winnerFencer.lastName || ''} ${winnerFencer.firstName || ''}`.trim() || `Tireur ${winner}`
+            : `Tireur ${winner}`;
+          // fencerA est toujours côté VERT (logical), fencerB toujours ROUGE
           const colorLabel = winner === 'A' ? 'VERT' : 'ROUGE';
 
           const nameDisplay = document.getElementById('coin-flip-confirm-name');
@@ -2731,13 +2769,16 @@
         showFinishModal() {
           if (!this.currentMatch || this.matchStatus !== 'in_progress') return;
 
+          if (navigator.vibrate) navigator.vibrate([100, 60, 100, 60, 600]);
+
           if (this.timerRunning) {
             this.pauseTimer();
             this.pausedForModal = true;
           }
 
-          document.getElementById('final-score-display').textContent =
-            `${this.scoreA} - ${this.scoreB}`;
+          document.getElementById('final-score-display').textContent = this.swapped
+            ? `${this.scoreA} - ${this.scoreB}`
+            : `${this.scoreB} - ${this.scoreA}`;
           document.getElementById('finish-modal').classList.add('active');
         }
 
@@ -2897,12 +2938,31 @@
           }
           this.updateRefereeBar();
 
+          // Arène libérée par le serveur (match saisi depuis l'application principale)
+          if (data.status === 'idle') {
+            if (this.matchStatus === 'in_progress') {
+              this.showNotification('⚠️ Match clôturé depuis l\'application principale');
+              this.stopTimer();
+              setTimeout(() => {
+                this._clearActiveMatch();
+                this.showNextMatchesScreen();
+              }, 2000);
+            } else {
+              this._clearActiveMatch();
+              this.showNextMatchesScreen();
+            }
+            return;
+          }
+
           // Nouveau match prêt côté serveur (chargement automatique après fin de match)
           if (data.status === 'ready' && data.match && data.match.id) {
             // Ignorer si c'est déjà notre match actuel
             if (this.currentMatch && this.currentMatch.id === data.match.id) return;
-            // Ne pas écraser un match en cours
-            if (this.matchStatus === 'in_progress') return;
+            // Notifier sans interrompre un match en cours
+            if (this.matchStatus === 'in_progress') {
+              this.showNotification('⏭️ Prochain match disponible après ce match');
+              return;
+            }
 
             const fencerA = data.fencerA || data.match.fencerA;
             const fencerB = data.fencerB || data.match.fencerB;
@@ -2928,10 +2988,38 @@
               this.matches.push(newMatch);
             }
 
-            // Toujours rafraîchir l'écran de sélection sans auto-sélectionner
+            // Si l'arbitre avait un ancien match ouvert, fermer le panneau pour revenir à la liste
+            const activePanel = document.getElementById('active-match');
+            if (activePanel && activePanel.classList.contains('visible')) {
+              this._clearActiveMatch();
+            }
+
+            // Rafraîchir et afficher l'écran de sélection
             this.loadNextMatches();
+            this.showNextMatchesScreen();
             this.showNotification('⏭️ Match suivant disponible !');
           }
+        }
+
+        _clearActiveMatch() {
+          this.currentMatch = null;
+          this.scoreA = 0;
+          this.scoreB = 0;
+          this.cardsA = [];
+          this.cardsB = [];
+          this.touchesA = [];
+          this.touchesB = [];
+          this.faultHistoryA = { 1: 0, 2: 0, 3: 0 };
+          this.faultHistoryB = { 1: 0, 2: 0, 3: 0 };
+          this.matchStatus = 'not_started';
+          this.isSuddenDeath = false;
+          this.waitingOvertimeStart = false;
+          this.overtimeType = null;
+          this.actionHistory = [];
+          this.timerSeconds = this.defaultTimerSeconds;
+          this.updateTimerDisplay();
+          document.getElementById('active-match').classList.remove('visible');
+          this.updateControlButtons();
         }
 
         updateRefereeBar() {

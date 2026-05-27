@@ -92,4 +92,4 @@ const PdfPreview: React.FC<Props> = ({ template, docType }) => {
   );
 };
 
-export default PdfPreview;
+export default React.memo(PdfPreview);

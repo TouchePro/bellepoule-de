@@ -211,4 +211,4 @@ const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCr
   );
 };
 
-export default NewCompetitionModal;
+export default React.memo(NewCompetitionModal);

@@ -1119,13 +1119,13 @@
     <div id="card-announcement-banner" class="card-announcement-banner"></div>
 
     <div class="arena-number-strip">
-      Arène <span id="arena-strip-number">1</span>
+      <span class="arena-word-label">Arène</span> <span id="arena-strip-number">1</span>
     </div>
 
     <div class="header">
       <div class="arena-title">
         <span>⚔️</span>
-        <span>Arène <span id="arena-number">1</span></span>
+        <span><span class="arena-word-label">Arène</span> <span id="arena-number">1</span></span>
       </div>
       <div class="status-section">
         <div class="inversion-toggle">
@@ -1188,7 +1188,7 @@
         </div>
         <!-- Grand numéro (visible quand pas de nextMatch) -->
         <div class="arena-idle-number" id="arena-idle-number">1</div>
-        <div class="arena-idle-label" data-i18n="remote.arena">Arène</div>
+        <div class="arena-idle-label arena-word-label" data-i18n="remote.arena">Arène</div>
       </div>
 
       <!-- Écran d'intro photo (affiché quand showPhotos=true et statut ready) -->
@@ -1342,6 +1342,14 @@
           this.applyTheme(this.theme);
           this.setupHeaderAutoHide();
           this.setupSocketListeners();
+          fetch('/api/session')
+            .then(r => (r.ok ? r.json() : null))
+            .then(s => {
+              if (s && ['E', 'F', 'S'].includes(s.weapon)) {
+                document.querySelectorAll('.arena-word-label').forEach(el => (el.textContent = 'Piste'));
+              }
+            })
+            .catch(() => {});
         }
 
         applyTheme(theme, customTheme) {
@@ -1469,13 +1477,12 @@
           const result   = document.getElementById('coin-result');
           if (!overlay || !coin || !nameGreen || !nameRed || !result) return;
 
-          // Noms des tireurs (respecte l'inversion de l'affichage)
-          const fA = this.inversionEnabled ? fencerB : fencerA;
-          const fB = this.inversionEnabled ? fencerA : fencerB;
-          const nameA = fA ? `${fA.lastName || ''} ${fA.firstName || ''}`.trim() || 'VERT'   : 'VERT';
-          const nameB = fB ? `${fB.lastName || ''} ${fB.firstName || ''}`.trim() || 'ROUGE'  : 'ROUGE';
-          nameGreen.textContent = nameA;
-          nameRed.textContent   = nameB;
+          // fencerA est TOUJOURS VERT, fencerB est TOUJOURS ROUGE
+          // (l'inversion ne change que la position gauche/droite, pas la couleur)
+          const nameGreenStr = fencerA ? `${fencerA.lastName || ''} ${fencerA.firstName || ''}`.trim() || 'VERT'  : 'VERT';
+          const nameRedStr   = fencerB ? `${fencerB.lastName || ''} ${fencerB.firstName || ''}`.trim() || 'ROUGE' : 'ROUGE';
+          nameGreen.textContent = nameGreenStr;
+          nameRed.textContent   = nameRedStr;
 
           // Réinitialiser l'état visuel
           result.className = 'hidden';
@@ -1486,15 +1493,10 @@
           // Afficher l'overlay
           overlay.classList.remove('hidden');
 
-          // Calculer les rotations : 10 tours + face gagnante
-          // Face verte = 0° / 360°, face rouge = 180°
-          // winner 'A' → face verte → 3600° (10 tours)
-          // winner 'B' → face rouge → 3600° + 180° = 3780°
-          // Si l'affichage est inversé : winner 'A' = tireur B visuel = face rouge
-          const visualWinner = this.inversionEnabled
-            ? (winner === 'A' ? 'B' : 'A')
-            : winner;
-          const finalDeg = visualWinner === 'A' ? 3600 : 3780;
+          // winner 'A' = fencerA (VERT) → face verte (3600°)
+          // winner 'B' = fencerB (ROUGE) → face rouge (3780°)
+          const isGreenWinner = winner === 'A';
+          const finalDeg = isGreenWinner ? 3600 : 3780;
 
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
@@ -1505,9 +1507,9 @@
 
           // Afficher le résultat après l'animation
           setTimeout(() => {
-            const winnerName = visualWinner === 'A' ? nameA : nameB;
-            const colorClass  = visualWinner === 'A' ? 'winner-green' : 'winner-red';
-            const colorLabel  = visualWinner === 'A' ? 'VERT' : 'ROUGE';
+            const winnerName = isGreenWinner ? nameGreenStr : nameRedStr;
+            const colorClass  = isGreenWinner ? 'winner-green' : 'winner-red';
+            const colorLabel  = isGreenWinner ? 'VERT' : 'ROUGE';
             result.textContent = `🏆 ${winnerName} gagne ! (${colorLabel})`;
             result.className   = colorClass;
           }, 3600);
@@ -1631,10 +1633,10 @@
 
           // Mise à jour des scores (respecte l'inversion)
           if (data.scoreA !== undefined) {
-            document.getElementById(this.inversionEnabled ? 'score-b' : 'score-a').textContent = data.scoreA;
+            document.getElementById(this.inversionEnabled ? 'score-a' : 'score-b').textContent = data.scoreA;
           }
           if (data.scoreB !== undefined) {
-            document.getElementById(this.inversionEnabled ? 'score-a' : 'score-b').textContent = data.scoreB;
+            document.getElementById(this.inversionEnabled ? 'score-b' : 'score-a').textContent = data.scoreB;
           }
 
           // Mise à jour des cartons
@@ -1705,8 +1707,8 @@
 
           const fA = this.currentMatch.fencerA || {};
           const fB = this.currentMatch.fencerB || {};
-          const left  = this.inversionEnabled ? fB : fA;
-          const right = this.inversionEnabled ? fA : fB;
+          const left  = this.inversionEnabled ? fA : fB;
+          const right = this.inversionEnabled ? fB : fA;
 
           document.getElementById('fencer-a-name').textContent =
             `${left.lastName || ''} ${left.firstName || ''}`.trim() || '-';
@@ -1720,8 +1722,8 @@
           const sB = this.currentMatch.scoreB;
           const valA = (typeof sA === 'object' ? (sA?.value ?? 0) : sA) ?? 0;
           const valB = (typeof sB === 'object' ? (sB?.value ?? 0) : sB) ?? 0;
-          document.getElementById('score-a').textContent = this.inversionEnabled ? valB : valA;
-          document.getElementById('score-b').textContent = this.inversionEnabled ? valA : valB;
+          document.getElementById('score-a').textContent = this.inversionEnabled ? valA : valB;
+          document.getElementById('score-b').textContent = this.inversionEnabled ? valB : valA;
 
           this.applyInversionColors();
         }
@@ -1751,8 +1753,8 @@
               )
               .join('');
 
-          document.getElementById('fencer-a-cards').innerHTML = renderCards(this.inversionEnabled ? this.cardsB : this.cardsA);
-          document.getElementById('fencer-b-cards').innerHTML = renderCards(this.inversionEnabled ? this.cardsA : this.cardsB);
+          document.getElementById('fencer-a-cards').innerHTML = renderCards(this.inversionEnabled ? this.cardsA : this.cardsB);
+          document.getElementById('fencer-b-cards').innerHTML = renderCards(this.inversionEnabled ? this.cardsB : this.cardsA);
         }
 
         updateTimerDisplay(timerStatus) {
@@ -1863,8 +1865,8 @@
           if (!this.nextMatch) return;
           const fA = this.nextMatch.fencerA || {};
           const fB = this.nextMatch.fencerB || {};
-          const left  = this.inversionEnabled ? fB : fA;
-          const right = this.inversionEnabled ? fA : fB;
+          const left  = this.inversionEnabled ? fA : fB;
+          const right = this.inversionEnabled ? fB : fA;
 
           document.getElementById('next-name-a').textContent =
             `${left.lastName || ''} ${left.firstName || ''}`.trim() || '-';
@@ -1906,8 +1908,8 @@
           const fA = this.currentMatch.fencerA || {};
           const fB = this.currentMatch.fencerB || {};
 
-          const left  = this.inversionEnabled ? fB : fA;
-          const right = this.inversionEnabled ? fA : fB;
+          const left  = this.inversionEnabled ? fA : fB;
+          const right = this.inversionEnabled ? fB : fA;
 
           document.getElementById('intro-name-a').textContent =
             `${left.lastName || ''} ${left.firstName || ''}`.trim() || '-';
@@ -1941,8 +1943,8 @@
           if (this.nextMatch) {
             const fA = this.nextMatch.fencerA || {};
             const fB = this.nextMatch.fencerB || {};
-            const left  = this.inversionEnabled ? fB : fA;
-            const right = this.inversionEnabled ? fA : fB;
+            const left  = this.inversionEnabled ? fA : fB;
+            const right = this.inversionEnabled ? fB : fA;
             document.getElementById('idle-name-a').textContent =
               `${left.lastName || ''} ${left.firstName || ''}`.trim() || '-';
             document.getElementById('idle-club-a').textContent = left.club || '';

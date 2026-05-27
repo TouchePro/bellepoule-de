@@ -181,4 +181,4 @@ function DEMO_DATA(fencerId: string): CompetitionResult[] {
   ];
 }
 
-export default HistoricalStats;
+export default React.memo(HistoricalStats);

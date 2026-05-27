@@ -2,7 +2,7 @@
  * BellePoule Modern - Éditeur de critères de classement drag-reorderable
  */
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState , memo} from 'react';
 import { RankingCriterion, RankingCriterionId } from '../../../shared/types';
 
 const CRITERION_LABELS: Record<RankingCriterionId, string> = {
@@ -21,7 +21,7 @@ interface Props {
   readOnly?: boolean;
 }
 
-export const RankingCriteriaEditor: React.FC<Props> = ({ criteria, onChange, readOnly }) => {
+const RankingCriteriaEditor_: React.FC<Props> = ({ criteria, onChange, readOnly }) => {
   const dragIndex = useRef<number | null>(null);
   const [dragOver, setDragOver] = useState<number | null>(null);
 
@@ -131,3 +131,5 @@ export const RankingCriteriaEditor: React.FC<Props> = ({ criteria, onChange, rea
     </div>
   );
 };
+
+export const RankingCriteriaEditor = memo(RankingCriteriaEditor_);

@@ -420,6 +420,10 @@ export interface RemoteServerAPI {
     competitionId: string,
     matchId: string
   ) => Promise<{ success: boolean; error?: string }>;
+  setRegistrationEnabled: (
+    competitionId: string,
+    enabled: boolean
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 // ============================================================================
@@ -480,6 +484,7 @@ export interface DatabaseAPI {
   createPool: (phaseId: string, number: number, poolId?: string) => Promise<Pool>;
   clearPoolsForPhase: (phaseId: string) => Promise<void>;
   addFencerToPool: (poolId: string, fencerId: string, position: number) => Promise<void>;
+  addFencerToPoolMidCompetition: (poolId: string, fencerId: string, maxScore?: number) => Promise<Pool>;
   getPoolFencers: (poolId: string) => Promise<Fencer[]>;
   getPoolsByPhase: (phaseId: string) => Promise<Pool[]>;
   updatePool: (pool: Pool) => Promise<void>;
@@ -566,6 +571,10 @@ export interface DatabaseAPI {
 
   // Score audit log
   getScoreAuditLogByCompetition: (competitionId: string) => Promise<ScoreAuditEntry[]>;
+
+  // Match timeline
+  getMatchTimeline: (matchId: string) => Promise<import('./index').MatchEventEntry[]>;
+  getCompetitionTimeline: (competitionId: string) => Promise<import('./index').MatchEventEntry[]>;
 }
 
 export interface FileAPI {
@@ -608,6 +617,7 @@ export interface MenuAPI {
   onFileSaved: (callback: (filepath: string) => void) => void;
   onAutosaveCompleted: (callback: () => void) => void;
   onAutosaveFailed: (callback: () => void) => void;
+  onDbReady: (callback: () => void) => void;
 }
 
 export interface UtilityAPI {
@@ -699,7 +709,7 @@ export interface ElectronAPI extends MenuAPI, UtilityAPI {
   dialog: DialogAPI;
   updater: UpdaterAPI;
   remote: RemoteServerAPI;
-  onRemoteArenaUpdate: (callback: (data: any) => void) => void;
+  onRemoteArenaUpdate: (callback: (data: any) => void) => () => void;
   onRemoteMatchFinished: (callback: (data: any) => void) => void;
   onKioskNoteUpdate: (
     callback: (note: import('../types/remote').OrgNote | null) => void

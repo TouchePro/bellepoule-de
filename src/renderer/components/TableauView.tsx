@@ -6,13 +6,18 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Fencer, FencerStatus, PoolRanking } from '../../shared/types';
+export { TableauMatch, FinalResult, ConsolationBracket, propagateWinners } from './tableau/tableauTypes';
+import { TableauMatch, FinalResult, ConsolationBracket, propagateWinners } from './tableau/tableauTypes';
 import { useToast } from './Toast';
 import { useModalResize } from '../hooks/useModalResize';
 import Bracket from './Bracket';
-import { exportTableauToPDF, printTableauHTML, MAX_MATCHES_PER_PAGE_TABLEAU } from '../../shared/utils/pdfExport';
+import { exportTableauToPDF, printTableauHTML, MAX_MATCHES_PER_PAGE_TABLEAU, exportBracketTreeToPDF } from '../../shared/utils/pdfExport';
 import { usePdfTemplateStore } from '../../features/pdfTemplates/hooks/usePdfTemplateStore';
 import MatchCard from './tableau/MatchCard';
 import SeedingTable from './tableau/SeedingTable';
+import TableauScoreModal from './tableau/TableauScoreModal';
+import TableauPendingSection from './tableau/TableauPendingSection';
+import TableauToolbar from './tableau/TableauToolbar';
 
 interface BracketMatch {
   id: string;
@@ -26,38 +31,6 @@ interface BracketMatch {
   isBye?: boolean;
 }
 
-export interface TableauMatch {
-  id: string;
-  round: number;
-  position: number;
-  fencerA: Fencer | null;
-  fencerB: Fencer | null;
-  scoreA: number | null;
-  scoreB: number | null;
-  winner: Fencer | null;
-  isBye: boolean;
-  arena?: number | null;
-}
-
-export interface FinalResult {
-  rank: number;
-  fencer: Fencer;
-  eliminatedAt: string;
-  poolTouches?: number; // Touches marquées en poules
-  tableTouches?: number; // Touches marquées en tableau
-  totalTouches?: number; // Total pour départage (poules + tableau)
-}
-
-export interface ConsolationBracket {
-  id: string;
-  name: string;
-  firstPlace: number;
-  matches: TableauMatch[];
-  size: number;
-  isComplete: boolean;
-  sourceRound: number; // round du bracket parent qui a généré ce bracket
-  parentBracketId: string; // 'main' ou id d'un bracket de consolation
-}
 
 interface TableauViewProps {
   ranking: PoolRanking[];
@@ -68,96 +41,57 @@ interface TableauViewProps {
   thirdPlaceMatch?: boolean;
   playAllPositions?: boolean;
   arenaCount?: number;
-  onMatchArenaChange?: (matchId: string, oldArena: number | null, newArena: number | null) => void;
+  onMatchArenaChange?: (matchId: string, oldArena: number | null, newArena: number | null, fencerA?: any, fencerB?: any) => void;
   consolationBrackets?: ConsolationBracket[];
   onConsolationBracketsChange?: (brackets: ConsolationBracket[]) => void;
 }
 
+// ─── Static style constants ───────────────────────────────────────────────────
+
+const TV_STYLES = {
+  root: { padding: '1rem' } satisfies React.CSSProperties,
+  scrollArea: { padding: '1rem', background: '#f9fafb', borderRadius: '8px', maxHeight: '70vh', overflowY: 'auto' as const } satisfies React.CSSProperties,
+  pendingOrderRow: { marginBottom: '0.75rem', display: 'flex', justifyContent: 'flex-end' as const } satisfies React.CSSProperties,
+  pendingOrderBtn: { background: '#e5e7eb', border: 'none', padding: '0.375rem 0.75rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.875rem', fontWeight: '500', color: '#374151', display: 'flex', alignItems: 'center', gap: '0.25rem' } satisfies React.CSSProperties,
+  summaryBox: { marginTop: '1rem', padding: '0.75rem', background: '#f3f4f6', borderRadius: '8px' } satisfies React.CSSProperties,
+  summaryTitle: { fontSize: '0.875rem', fontWeight: '600', marginBottom: '0.5rem' } satisfies React.CSSProperties,
+  summaryFlex: { display: 'flex', flexWrap: 'wrap' as const, gap: '0.5rem' } satisfies React.CSSProperties,
+  summaryItemBase: { padding: '0.5rem 0.75rem', borderRadius: '4px', fontSize: '0.75rem', border: '1px solid #e5e7eb' } satisfies React.CSSProperties,
+  pendingEmpty: { padding: '2rem', textAlign: 'center' as const, color: '#6b7280' } satisfies React.CSSProperties,
+  roundCol: { display: 'flex', flexDirection: 'column' as const, justifyContent: 'flex-start', minWidth: '200px' } satisfies React.CSSProperties,
+  roundHeader: { textAlign: 'center' as const, fontWeight: '600', marginBottom: '0.5rem', color: '#374151', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', userSelect: 'none' as const } satisfies React.CSSProperties,
+  roundHeaderChevron: { fontSize: '1rem', fontWeight: 'bold', marginRight: '0.25rem' } satisfies React.CSSProperties,
+  fullRoundsRow: { display: 'flex', gap: '1rem', overflowX: 'auto' as const } satisfies React.CSSProperties,
+  barragesBox: { marginBottom: '1rem', padding: '0.75rem', background: '#eff6ff', borderRadius: '8px', border: '1px solid #bfdbfe' } satisfies React.CSSProperties,
+  barragesTitle: { fontWeight: 600, marginBottom: '0.5rem', color: '#1e40af' } satisfies React.CSSProperties,
+  barragesFlex: { display: 'flex', gap: '0.5rem', flexWrap: 'wrap' as const } satisfies React.CSSProperties,
+  consolationSection: { marginTop: '1.5rem' } satisfies React.CSSProperties,
+  consolationCard: { background: '#f9fafb', borderRadius: '8px', padding: '1rem', marginBottom: '1rem', border: '1px solid #e5e7eb' } satisfies React.CSSProperties,
+  consolationHeader: { display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' } satisfies React.CSSProperties,
+  consolationTitle: { margin: 0, fontSize: '1rem', fontWeight: 600, color: '#374151' } satisfies React.CSSProperties,
+  consolationDoneBadge: { background: '#d1fae5', color: '#065f46', padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 500 } satisfies React.CSSProperties,
+  consolationWinnerBadge: { background: '#fef3c7', padding: '0.25rem 0.75rem', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 600 } satisfies React.CSSProperties,
+  consolationRoundsRow: { display: 'flex', gap: '1rem', overflowX: 'auto' as const } satisfies React.CSSProperties,
+  consolationRoundCol: { display: 'flex', flexDirection: 'column' as const, minWidth: '200px' } satisfies React.CSSProperties,
+  consolationRoundTitle: { textAlign: 'center' as const, fontWeight: 600, marginBottom: '0.5rem', color: '#374151', fontSize: '0.875rem' } satisfies React.CSSProperties,
+  consolationRoundMatches: { display: 'flex', flexDirection: 'column' as const, gap: '0.5rem' } satisfies React.CSSProperties,
+  pdfModalBody: { padding: '1.5rem' } satisfies React.CSSProperties,
+  pdfModalHint: { marginBottom: '1rem', color: '#6b7280', fontSize: '0.875rem' } satisfies React.CSSProperties,
+  pdfModalLabel: { display: 'block', fontWeight: '600', marginBottom: '0.5rem' } satisfies React.CSSProperties,
+  pdfModalMaxHint: { fontWeight: '400', color: '#6b7280' } satisfies React.CSSProperties,
+  pdfModalBtnRow: { display: 'flex', gap: '0.5rem', alignItems: 'center' } satisfies React.CSSProperties,
+  pdfModalCountHint: { marginTop: '0.75rem', fontSize: '0.8rem', color: '#9ca3af' } satisfies React.CSSProperties,
+  pdfModalFooter: { display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' as const } satisfies React.CSSProperties,
+  arenaModalBody: { padding: '1.5rem' } satisfies React.CSSProperties,
+  arenaModalHint: { marginBottom: '1rem', color: '#6b7280' } satisfies React.CSSProperties,
+  arenaModalGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' } satisfies React.CSSProperties,
+  arenaModalNoArenaBtn: { padding: '0.75rem' } satisfies React.CSSProperties,
+  arenaQueueHint: { fontSize: '0.7rem', marginLeft: '0.3rem', color: '#6b7280' } satisfies React.CSSProperties,
+} satisfies Record<string, React.CSSProperties>;
+
 const BASE_MATCH_HEIGHT = 100;
 const SLOT_HEIGHT = BASE_MATCH_HEIGHT + 50; // hauteur d'un créneau dans la première colonne
 
-export function propagateWinners(matchList: TableauMatch[], size: number): void {
-  let currentRound = size;
-
-  while (currentRound > 2) {
-    const nextRound = currentRound / 2;
-    const currentMatches = matchList.filter(m => m.round === currentRound);
-    const nextMatches = matchList.filter(m => m.round === nextRound);
-
-    // Première passe : propager tous les gagnants (y compris les exempts)
-    currentMatches.forEach((match, idx) => {
-      if (match.winner) {
-        const nextMatchIdx = Math.floor(idx / 2);
-        const nextMatch = nextMatches[nextMatchIdx];
-        if (nextMatch) {
-          if (idx % 2 === 0) {
-            nextMatch.fencerA = match.winner;
-          } else {
-            nextMatch.fencerB = match.winner;
-          }
-        }
-      }
-    });
-
-    // Deuxième passe : vérifier les exempts au tour suivant
-    nextMatches.forEach((nextMatch, nextIdx) => {
-      // Ne pas modifier les matchs déjà joués
-      if (nextMatch.scoreA !== null && nextMatch.scoreB !== null) return;
-
-      const feederA = currentMatches[nextIdx * 2];
-      const feederB = currentMatches[nextIdx * 2 + 1];
-
-      // Vérifier si les deux matchs sources sont résolus
-      const feederAResolved =
-        !feederA ||
-        feederA.winner !== null ||
-        (feederA.isBye && !feederA.fencerA && !feederA.fencerB);
-      const feederBResolved =
-        !feederB ||
-        feederB.winner !== null ||
-        (feederB.isBye && !feederB.fencerA && !feederB.fencerB);
-
-      if (feederAResolved && feederBResolved) {
-        if (nextMatch.fencerA && !nextMatch.fencerB) {
-          nextMatch.winner = nextMatch.fencerA;
-          nextMatch.isBye = true;
-        } else if (!nextMatch.fencerA && nextMatch.fencerB) {
-          nextMatch.winner = nextMatch.fencerB;
-          nextMatch.isBye = true;
-        } else if (nextMatch.fencerA && nextMatch.fencerB) {
-          nextMatch.isBye = false;
-          nextMatch.winner = null;
-        }
-      }
-    });
-
-    currentRound = nextRound;
-  }
-
-  // Gérer le match de 3ème place si présent dans matchList
-  const thirdPlaceMatchEntry = matchList.find(m => m.round === 3);
-  if (thirdPlaceMatchEntry && size >= 4) {
-    const semiFinalMatches = matchList.filter(m => m.round === 4);
-
-    if (semiFinalMatches.length === 2) {
-      // Assigner les perdants des demi-finales au match de 3ème place
-      const losers: Fencer[] = [];
-
-      semiFinalMatches.forEach(semiFinal => {
-        if (semiFinal.winner) {
-          const loser =
-            semiFinal.fencerA?.id === semiFinal.winner.id ? semiFinal.fencerB : semiFinal.fencerA;
-          if (loser) losers.push(loser);
-        }
-      });
-
-      if (losers.length === 2) {
-        thirdPlaceMatchEntry.fencerA = losers[0];
-        thirdPlaceMatchEntry.fencerB = losers[1];
-      }
-    }
-  }
-}
 
 const TableauViewComponent: React.FC<TableauViewProps> = ({
   ranking,
@@ -187,11 +121,13 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   const [expandedRounds, setExpandedRounds] = useState<Set<number>>(new Set());
   const [showArenaModal, setShowArenaModal] = useState(false);
   const [selectedMatchForArena, setSelectedMatchForArena] = useState<string | null>(null);
+  const [selectedMatchConsolationBracketId, setSelectedMatchConsolationBracketId] = useState<string | null>(null);
   const [pyramidViewMode, setPyramidViewMode] = useState<boolean>(false);
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [pdfMode, setPdfMode] = useState<'print' | 'pdf'>('pdf');
   const [pdfMatchesPerPage, setPdfMatchesPerPage] = useState<number>(MAX_MATCHES_PER_PAGE_TABLEAU);
-  const [autoAssignArenas, setAutoAssignArenas] = useState(true);
+  const [selectedRounds, setSelectedRounds] = useState<Set<number>>(new Set());
+  const [autoAssignArenas, setAutoAssignArenas] = useState(false);
   const isUnlimitedScore = maxScore === 999;
   const prevMatchesLengthRef = useRef(0);
   const mountMatchesRef = useRef(matches);
@@ -266,6 +202,16 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     [arenaCount, distributeArenasRoundRobin, matches, onMatchesChange, onMatchArenaChange]
   );
 
+  const handleBulkDeassign = useCallback(() => {
+    const updated = matches.map(m => ({ ...m, arena: null as number | null }));
+    onMatchesChange(updated);
+    matches.forEach(m => {
+      if (m.arena != null) {
+        onMatchArenaChange?.(m.id, m.arena, null);
+      }
+    });
+  }, [matches, onMatchesChange, onMatchArenaChange]);
+
   useEffect(() => {
     const eligibleCount = ranking.filter(
       r =>
@@ -310,11 +256,18 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   // playAllPositions : déclencher onComplete quand le tableau principal ET tous les brackets de consolation sont terminés
   useEffect(() => {
     if (!playAllPositions || !onComplete || matches.length === 0) return;
+    // Ignorer au montage (données déjà complètes restaurées depuis DB)
+    if (matches === mountMatchesRef.current) return;
     const mainFinalDone = !!matches.find(m => m.round === 2)?.winner;
     const mainThirdEntry = matches.find(m => m.round === 3);
     const mainThirdDone = !mainThirdEntry || !!mainThirdEntry.winner;
     if (!mainFinalDone || !mainThirdDone) return;
-    if (consolationBrackets.length === 0) return; // les brackets ne sont pas encore créés
+    // Des brackets de consolation sont attendus quand tableauSize >= 8 (rounds > 4)
+    // ou quand il y a des barrages. Pour tableauSize <= 4, aucun bracket de consolation
+    // n'est créé (les demi-finalistes perdants vont directement à la petite finale).
+    const hasBarrages = matches.some(m => m.round === tableauSize * 2);
+    const needsConsolation = tableauSize >= 8 || hasBarrages;
+    if (needsConsolation && consolationBrackets.length === 0) return; // pas encore créés
     if (consolationBrackets.some(b => !b.isComplete)) return;
     onComplete(buildCombinedResults(matches, consolationBrackets));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -734,6 +687,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
     if (!confirmed) return;
 
+    const effectiveMax = isUnlimitedScore ? 15 : maxScore;
     // Copier les matchs actuels
     const updatedMatches = [...matches];
     let filledCount = 0;
@@ -749,16 +703,16 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
       for (const match of roundMatches) {
         // Générer des scores aléatoires
-        let scoreA = Math.floor(Math.random() * (maxScore + 1));
-        let scoreB = Math.floor(Math.random() * (maxScore + 1));
+        let scoreA = Math.floor(Math.random() * (effectiveMax + 1));
+        let scoreB = Math.floor(Math.random() * (effectiveMax + 1));
 
-        // Éviter les égalités en élimination directe sans dépasser maxScore
+        // Éviter les égalités en élimination directe sans dépasser effectiveMax
         if (scoreA === scoreB) {
           if (Math.random() > 0.5) {
-            if (scoreA < maxScore) scoreA += 1;
+            if (scoreA < effectiveMax) scoreA += 1;
             else scoreB -= 1;
           } else {
-            if (scoreB < maxScore) scoreB += 1;
+            if (scoreB < effectiveMax) scoreB += 1;
             else scoreA -= 1;
           }
         }
@@ -791,15 +745,15 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
       thirdPlaceMatch.fencerB &&
       !thirdPlaceMatch.winner
     ) {
-      let scoreA = Math.floor(Math.random() * (maxScore + 1));
-      let scoreB = Math.floor(Math.random() * (maxScore + 1));
+      let scoreA = Math.floor(Math.random() * (effectiveMax + 1));
+      let scoreB = Math.floor(Math.random() * (effectiveMax + 1));
 
       if (scoreA === scoreB) {
         if (Math.random() > 0.5) {
-          if (scoreA < maxScore) scoreA += 1;
+          if (scoreA < effectiveMax) scoreA += 1;
           else scoreB -= 1;
         } else {
-          if (scoreB < maxScore) scoreB += 1;
+          if (scoreB < effectiveMax) scoreB += 1;
           else scoreA -= 1;
         }
       }
@@ -949,15 +903,30 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
   const handleExportPDF = async () => {
     const perPage = Math.max(1, Math.min(pdfMatchesPerPage, MAX_MATCHES_PER_PAGE_TABLEAU));
-    const title = `Tableau de ${tableauSize}`;
+    const filteredMatches = matches.filter(m => selectedRounds.has(m.round));
+    const roundLabel = [...selectedRounds]
+      .sort((a, b) => b - a)
+      .map(r => getRoundName(r))
+      .join(', ');
+    const title = `Tableau de ${tableauSize}${roundLabel ? ` — ${roundLabel}` : ''}`;
     const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
     try {
       if (pdfMode === 'print') {
-        await printTableauHTML(matches, perPage, title, logo, tableauTemplate);
+        await printTableauHTML(filteredMatches, perPage, title, logo, tableauTemplate);
       } else {
-        await exportTableauToPDF(matches, perPage, title, logo, tableauTemplate);
+        await exportTableauToPDF(filteredMatches, perPage, title, logo, tableauTemplate);
       }
       setShowPdfModal(false);
+    } catch (e) {
+      showToast((e as Error).message, 'error');
+    }
+  };
+
+  const handleExportTree = async () => {
+    const title = `Arbre — Tableau de ${tableauSize}`;
+    const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
+    try {
+      await exportBracketTreeToPDF(matches, title, logo, tableauTemplate);
     } catch (e) {
       showToast((e as Error).message, 'error');
     }
@@ -1280,31 +1249,9 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     const isExpanded = expandedRounds.size === 0 || expandedRounds.has(round);
 
     return (
-      <div
-        key={round}
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'flex-start',
-          minWidth: '200px',
-        }}
-      >
-        <div
-          onClick={() => toggleRoundExpansion(round)}
-          style={{
-            textAlign: 'center',
-            fontWeight: '600',
-            marginBottom: '0.5rem',
-            color: '#374151',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '0.5rem',
-            userSelect: 'none',
-          }}
-        >
-          <span style={{ fontSize: '1rem', fontWeight: 'bold', marginRight: '0.25rem' }}>
+      <div key={round} style={TV_STYLES.roundCol}>
+        <div onClick={() => toggleRoundExpansion(round)} style={TV_STYLES.roundHeader}>
+          <span style={TV_STYLES.roundHeaderChevron}>
             {isExpanded ? '▼' : '▶'}
           </span>
           {getRoundName(round)}
@@ -1443,210 +1390,62 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   };
 
   return (
-    <div style={{ padding: '1rem' }}>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '1rem',
+    <div style={TV_STYLES.root}>
+      <TableauToolbar
+        tableauSize={tableauSize}
+        rankingCount={ranking.length}
+        arenaCount={arenaCount}
+        autoAssignArenas={autoAssignArenas}
+        onAutoAssignToggle={handleAutoAssignToggle}
+        onBulkDeassign={handleBulkDeassign}
+        onAutoFillScores={handleAutoFillScores}
+        viewMode={viewMode}
+        onViewModeToggle={() => setViewMode(viewMode === 'full' ? 'pending' : 'full')}
+        pyramidViewMode={pyramidViewMode}
+        onPyramidViewModeToggle={() => setPyramidViewMode(!pyramidViewMode)}
+        onPrintClick={() => {
+          setPdfMode('print');
+          const rounds = [...new Set(matches.filter(m => m.fencerA && m.fencerB && !m.isBye).map(m => m.round))].sort((a, b) => b - a);
+          setSelectedRounds(new Set(rounds));
+          setShowPdfModal(true);
         }}
-      >
-        <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>
-          Tableau de {tableauSize} - {ranking.length} qualifiés
-        </h2>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          {arenaCount > 0 && (
-            <label
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                fontSize: '0.875rem',
-                color: '#374151',
-                cursor: 'pointer',
-                padding: '0.5rem 0.75rem',
-                background: autoAssignArenas ? '#eff6ff' : '#f3f4f6',
-                border: `1px solid ${autoAssignArenas ? '#3b82f6' : '#d1d5db'}`,
-                borderRadius: '6px',
-                userSelect: 'none',
-              }}
-              title="Assigne automatiquement les matchs aux arènes disponibles en round-robin"
-            >
-              <input
-                type="checkbox"
-                checked={autoAssignArenas}
-                onChange={e => handleAutoAssignToggle(e.target.checked)}
-                style={{ cursor: 'pointer' }}
-              />
-              <span>🏟️ Assignation auto</span>
-            </label>
-          )}
-          <button
-            onClick={handleAutoFillScores}
-            style={{
-              background: '#f59e0b',
-              color: 'white',
-              border: 'none',
-              padding: '0.5rem 1rem',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: '500',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.25rem',
-            }}
-          >
-            🎲 Remplir auto
-          </button>
-          <button
-            onClick={() => setViewMode(viewMode === 'full' ? 'pending' : 'full')}
-            style={{
-              background: viewMode === 'pending' ? '#3b82f6' : '#e5e7eb',
-              color: viewMode === 'pending' ? 'white' : '#374151',
-              border: 'none',
-              padding: '0.5rem 0.75rem',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: '500',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.25rem',
-            }}
-            title={
-              viewMode === 'full'
-                ? 'Afficher les matches en attente'
-                : 'Afficher le tableau complet'
-            }
-          >
-            {viewMode === 'full' ? '📋 Matchs en attente' : '📊 Tableau complet'}
-          </button>
-          <button
-            onClick={() => setPyramidViewMode(!pyramidViewMode)}
-            style={{
-              background: pyramidViewMode ? '#8b5cf6' : '#e5e7eb',
-              color: pyramidViewMode ? 'white' : '#374151',
-              border: 'none',
-              padding: '0.5rem 0.75rem',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: '500',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.25rem',
-            }}
-            title={pyramidViewMode ? 'Vue tableau' : 'Vue pyramidale'}
-          >
-            {pyramidViewMode ? '🔲 Tableau' : '🔺 Pyramide'}
-          </button>
-          <button
-            onClick={() => { setPdfMode('print'); setShowPdfModal(true); }}
-            style={{
-              background: '#6366f1',
-              color: 'white',
-              border: 'none',
-              padding: '0.5rem 0.75rem',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: '500',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.25rem',
-            }}
-            title="Imprimer les feuilles de match"
-          >
-            🖨️ Imprimer
-          </button>
-          <button
-            onClick={() => { setPdfMode('pdf'); setShowPdfModal(true); }}
-            style={{
-              background: '#10b981',
-              color: 'white',
-              border: 'none',
-              padding: '0.5rem 0.75rem',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: '500',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.25rem',
-            }}
-            title="Exporter les feuilles de match en PDF"
-          >
-            📄 Export PDF
-          </button>
-          {champion && (
-            <div
-              style={{
-                background: '#fef3c7',
-                padding: '0.5rem 1rem',
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-              }}
-            >
-              <span style={{ fontSize: '1.5rem' }}>🏆</span>
-              <span style={{ fontWeight: '600' }}>
-                {champion.lastName} {champion.firstName}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
+        onExportPdfClick={() => {
+          setPdfMode('pdf');
+          const rounds = [...new Set(matches.filter(m => m.fencerA && m.fencerB && !m.isBye).map(m => m.round))].sort((a, b) => b - a);
+          setSelectedRounds(new Set(rounds));
+          setShowPdfModal(true);
+        }}
+        onExportTreeClick={handleExportTree}
+        champion={champion}
+      />
 
-      <div
-        style={{
-          padding: '1rem',
-          background: '#f9fafb',
-          borderRadius: '8px',
-          maxHeight: '70vh',
-          overflowY: 'auto',
-        }}
-      >
+      <div style={TV_STYLES.scrollArea}>
         {viewMode === 'pending' ? (
           pendingViewRounds.length > 0 ? (
             <>
-              <div style={{ marginBottom: '0.75rem', display: 'flex', justifyContent: 'flex-end' }}>
+              <div style={TV_STYLES.pendingOrderRow}>
                 <button
                   onClick={() => setPendingOrder(prev => (prev === 'asc' ? 'desc' : 'asc'))}
-                  style={{
-                    background: '#e5e7eb',
-                    border: 'none',
-                    padding: '0.375rem 0.75rem',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '0.875rem',
-                    fontWeight: '500',
-                    color: '#374151',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.25rem',
-                  }}
+                  style={TV_STYLES.pendingOrderBtn}
                   title={pendingOrder === 'asc' ? 'Affichage croissant' : 'Affichage décroissant'}
                 >
                   {pendingOrder === 'asc' ? '🔼 Croissant' : '🔽 Décroissant'}
                 </button>
               </div>
-              {pendingViewRounds.map(round => renderPendingSection(round))}
+              {pendingViewRounds.map(round => (
+                <TableauPendingSection
+                  key={round}
+                  round={round}
+                  matches={matches}
+                  isExpanded={expandedRounds.has(round)}
+                  onToggle={toggleRoundExpansion}
+                  renderMatch={renderMatch}
+                />
+              ))}
 
-              <div
-                style={{
-                  marginTop: '1rem',
-                  padding: '0.75rem',
-                  background: '#f3f4f6',
-                  borderRadius: '8px',
-                }}
-              >
-                <h4 style={{ fontSize: '0.875rem', fontWeight: '600', marginBottom: '0.5rem' }}>
-                  Résumé des pistes
-                </h4>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <div style={TV_STYLES.summaryBox}>
+                <h4 style={TV_STYLES.summaryTitle}>Résumé des pistes</h4>
+                <div style={TV_STYLES.summaryFlex}>
                   {Array.from({ length: arenaCount }, (_, i) => i + 1).map(arenaNum => {
                     const arenaMatches = pendingMatches.filter(m => m.arena === arenaNum);
                     return (
@@ -1682,18 +1481,16 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
               </div>
             </>
           ) : (
-            <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
-              ✓ Tous les matches sont terminés
-            </div>
+            <div style={TV_STYLES.pendingEmpty}>✓ Tous les matches sont terminés</div>
           )
         ) : pyramidViewMode ? (
           <Bracket matches={convertToBracketMatches()} tableSize={tableauSize} />
         ) : (
           <>
             {playAllPositions && matches.some(m => m.round === tableauSize * 2) && (
-              <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#eff6ff', borderRadius: '8px', border: '1px solid #bfdbfe' }}>
-                <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: '#1e40af' }}>Barrages</div>
-                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <div style={TV_STYLES.barragesBox}>
+                <div style={TV_STYLES.barragesTitle}>Barrages</div>
+                <div style={TV_STYLES.barragesFlex}>
                   {matches.filter(m => m.round === tableauSize * 2).sort((a, b) => a.position - b.position).map(match => (
                     <MatchCard
                       key={match.id}
@@ -1707,7 +1504,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                 </div>
               </div>
             )}
-            <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto' }}>
+            <div style={TV_STYLES.fullRoundsRow}>
               {rounds.map(round => renderRound(round))}
             </div>
           </>
@@ -1718,7 +1515,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
       {/* Brackets de consolation (mode Jouer toutes les places) */}
       {playAllPositions && consolationBrackets.length > 0 && (
-        <div style={{ marginTop: '1.5rem' }}>
+        <div style={TV_STYLES.consolationSection}>
           {consolationBrackets
             .sort((a, b) => a.firstPlace - b.firstPlace)
             .map(bracket => {
@@ -1731,41 +1528,26 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                 if (fi !== -1) bracketRounds.splice(fi, 0, 3);
               }
               return (
-                <div
-                  key={bracket.id}
-                  style={{
-                    background: '#f9fafb',
-                    borderRadius: '8px',
-                    padding: '1rem',
-                    marginBottom: '1rem',
-                    border: '1px solid #e5e7eb',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
-                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: '#374151' }}>
-                      🥋 {bracket.name}
-                    </h3>
+                <div key={bracket.id} style={TV_STYLES.consolationCard}>
+                  <div style={TV_STYLES.consolationHeader}>
+                    <h3 style={TV_STYLES.consolationTitle}>🥋 {bracket.name}</h3>
                     {bracket.isComplete && (
-                      <span style={{ background: '#d1fae5', color: '#065f46', padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 500 }}>
-                        Terminé
-                      </span>
+                      <span style={TV_STYLES.consolationDoneBadge}>Terminé</span>
                     )}
                     {finalM?.winner && (
-                      <span style={{ background: '#fef3c7', padding: '0.25rem 0.75rem', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 600 }}>
+                      <span style={TV_STYLES.consolationWinnerBadge}>
                         🏆 {finalM.winner.lastName} {finalM.winner.firstName}
                       </span>
                     )}
                   </div>
-                  <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto' }}>
+                  <div style={TV_STYLES.consolationRoundsRow}>
                     {bracketRounds.map(round => {
                       const roundMatches = bracket.matches.filter(m => m.round === round).sort((a, b) => a.position - b.position);
                       const roundName = round === 3 ? 'Petite finale' : round === 2 ? 'Finale' : round === 4 ? 'Demi-finales' : round === 8 ? 'Quarts' : `Tableau de ${round}`;
                       return (
-                        <div key={round} style={{ display: 'flex', flexDirection: 'column', minWidth: '200px' }}>
-                          <div style={{ textAlign: 'center', fontWeight: 600, marginBottom: '0.5rem', color: '#374151', fontSize: '0.875rem' }}>
-                            {roundName}
-                          </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <div key={round} style={TV_STYLES.consolationRoundCol}>
+                          <div style={TV_STYLES.consolationRoundTitle}>{roundName}</div>
+                          <div style={TV_STYLES.consolationRoundMatches}>
                             {roundMatches.map(match => (
                               <MatchCard
                                 key={match.id}
@@ -1773,7 +1555,11 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                                 viewMode="full"
                                 baseMatchHeight={BASE_MATCH_HEIGHT}
                                 onMatchClick={m => openScoreModal(m, bracket.id)}
-                                onArenaClick={() => {}}
+                                onArenaClick={arenaCount > 0 && match.winner === null ? () => {
+                                  setSelectedMatchForArena(match.id);
+                                  setSelectedMatchConsolationBracketId(bracket.id);
+                                  setShowArenaModal(true);
+                                } : () => {}}
                               />
                             ))}
                           </div>
@@ -1788,223 +1574,27 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
       )}
 
       {/* Score Modal */}
-      {(() => {
-        if (!showScoreModal || !editingMatch) return null;
-
+      {showScoreModal && editingMatch && (() => {
         const match = editingConsolationId
           ? consolationBrackets.find(b => b.id === editingConsolationId)?.matches.find(m => m.id === editingMatch)
           : matches.find(m => m.id === editingMatch);
         if (!match) return null;
-
-        const scoreModal = (
-          <div className="modal-overlay" onClick={() => setShowScoreModal(false)}>
-            <div
-              ref={modalRef}
-              className="modal resizable"
-              style={{
-                maxWidth: '900px',
-                width: '95%',
-                minHeight: '400px',
-              }}
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="modal-header" style={{ cursor: 'move' }}>
-                <h3 className="modal-title">{getRoundName(match.round)} - Saisie rapide</h3>
-              </div>
-              <div className="modal-body" style={{ padding: '2rem' }}>
-                {/* Ligne unique avec les deux tireurs côte à côte */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '1.5rem',
-                    marginBottom: '1.5rem',
-                  }}
-                >
-                  {/* Tireur A */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'flex-end',
-                      flex: 1,
-                      minWidth: '200px',
-                    }}
-                  >
-                    <div style={{ fontSize: '1.5rem', fontWeight: 600, textAlign: 'right' }}>
-                      {match.fencerA?.lastName}
-                    </div>
-                    <div style={{ fontSize: '1rem', color: '#6b7280', textAlign: 'right' }}>
-                      {match.fencerA?.firstName} {match.fencerA?.club && `(${match.fencerA.club})`}
-                    </div>
-                  </div>
-
-                  {/* Input Score A */}
-                  <input
-                    type="number"
-                    className="form-input"
-                    style={{
-                      width: '120px',
-                      textAlign: 'center',
-                      fontSize: '3rem',
-                      padding: '0.75rem',
-                      borderColor:
-                        (parseInt(editScoreA, 10) || 0) > (isUnlimitedScore ? 999 : maxScore)
-                          ? '#ef4444'
-                          : undefined,
-                      borderWidth:
-                        (parseInt(editScoreA, 10) || 0) > (isUnlimitedScore ? 999 : maxScore)
-                          ? '2px'
-                          : undefined,
-                    }}
-                    value={editScoreA}
-                    onChange={e => setEditScoreA(e.target.value)}
-                    min="0"
-                    max={isUnlimitedScore ? undefined : maxScore}
-                    autoFocus
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleScoreSubmit();
-                      } else if (e.key === 'Tab' && !e.shiftKey) {
-                        e.preventDefault();
-                        const modalBody = e.currentTarget.closest('.modal-body');
-                        if (modalBody) {
-                          const inputs = modalBody.querySelectorAll('input[type="number"]');
-                          if (inputs.length > 1) {
-                            const nextInput = inputs[1] as HTMLInputElement;
-                            nextInput.focus();
-                            nextInput.select();
-                          }
-                        }
-                      }
-                    }}
-                  />
-
-                  {/* Séparateur */}
-                  <span style={{ fontSize: '3rem', fontWeight: 'bold', color: '#9ca3af' }}>:</span>
-
-                  {/* Input Score B */}
-                  <input
-                    type="number"
-                    className="form-input"
-                    style={{
-                      width: '120px',
-                      textAlign: 'center',
-                      fontSize: '3rem',
-                      padding: '0.75rem',
-                      borderColor:
-                        (parseInt(editScoreB, 10) || 0) > (isUnlimitedScore ? 999 : maxScore)
-                          ? '#ef4444'
-                          : undefined,
-                      borderWidth:
-                        (parseInt(editScoreB, 10) || 0) > (isUnlimitedScore ? 999 : maxScore)
-                          ? '2px'
-                          : undefined,
-                    }}
-                    value={editScoreB}
-                    onChange={e => setEditScoreB(e.target.value)}
-                    min="0"
-                    max={isUnlimitedScore ? undefined : maxScore}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleScoreSubmit();
-                      } else if (e.key === 'Tab' && e.shiftKey) {
-                        e.preventDefault();
-                        const modalBody = e.currentTarget.closest('.modal-body');
-                        if (modalBody) {
-                          const inputs = modalBody.querySelectorAll('input[type="number"]');
-                          if (inputs.length > 0) {
-                            const prevInput = inputs[0] as HTMLInputElement;
-                            prevInput.focus();
-                            prevInput.select();
-                          }
-                        }
-                      }
-                    }}
-                  />
-
-                  {/* Tireur B */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'flex-start',
-                      flex: 1,
-                      minWidth: '200px',
-                    }}
-                  >
-                    <div style={{ fontSize: '1.5rem', fontWeight: 600, textAlign: 'left' }}>
-                      {match.fencerB?.lastName}
-                    </div>
-                    <div style={{ fontSize: '1rem', color: '#6b7280', textAlign: 'left' }}>
-                      {match.fencerB?.firstName} {match.fencerB?.club && `(${match.fencerB.club})`}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Info score max */}
-                {!isUnlimitedScore && maxScore > 0 && (
-                  <p
-                    className="text-sm text-muted"
-                    style={{ textAlign: 'center', marginBottom: '1rem', fontSize: '1rem' }}
-                  >
-                    💡 Score maximum : {maxScore} touches
-                  </p>
-                )}
-
-                {/* Boutons spéciaux sur une ligne */}
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: '0.5rem',
-                    justifyContent: 'center',
-                    borderTop: '1px solid #e5e7eb',
-                    paddingTop: '1rem',
-                    marginTop: '1rem',
-                  }}
-                >
-                  <button
-                    className="btn btn-warning"
-                    onClick={() => handleSpecialStatus('abandon')}
-                    style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
-                  >
-                    🚴 Abandon
-                  </button>
-                  <button
-                    className="btn btn-warning"
-                    onClick={() => handleSpecialStatus('forfait')}
-                    style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
-                  >
-                    📋 Forfait
-                  </button>
-                  <button
-                    className="btn btn-danger"
-                    onClick={() => handleSpecialStatus('exclusion')}
-                    style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
-                  >
-                    🚫 Exclusion
-                  </button>
-                </div>
-              </div>
-              <div
-                className="modal-footer"
-                style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}
-              >
-                <button className="btn btn-secondary" onClick={() => setShowScoreModal(false)}>
-                  Annuler
-                </button>
-                <button className="btn btn-primary" onClick={handleScoreSubmit}>
-                  Valider
-                </button>
-              </div>
-            </div>
-          </div>
+        return (
+          <TableauScoreModal
+            match={match}
+            editScoreA={editScoreA}
+            setEditScoreA={setEditScoreA}
+            editScoreB={editScoreB}
+            setEditScoreB={setEditScoreB}
+            maxScore={maxScore}
+            isUnlimitedScore={isUnlimitedScore}
+            modalRef={modalRef}
+            onClose={() => setShowScoreModal(false)}
+            onSubmit={handleScoreSubmit}
+            onSpecialStatus={handleSpecialStatus}
+            getRoundName={getRoundName}
+          />
         );
-
-        return scoreModal;
       })()}
 
       {showPdfModal && (
@@ -2016,18 +1606,16 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                 &times;
               </button>
             </div>
-            <div className="modal-body" style={{ padding: '1.5rem' }}>
-              <p style={{ marginBottom: '1rem', color: '#6b7280', fontSize: '0.875rem' }}>
+            <div className="modal-body" style={TV_STYLES.pdfModalBody}>
+              <p style={TV_STYLES.pdfModalHint}>
                 Chaque fiche contient le nom complet des combattants, une case score et une case
                 signature.
               </p>
-              <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem' }}>
+              <label style={TV_STYLES.pdfModalLabel}>
                 Matchs par feuille A4{' '}
-                <span style={{ fontWeight: '400', color: '#6b7280' }}>
-                  (max {MAX_MATCHES_PER_PAGE_TABLEAU})
-                </span>
+                <span style={TV_STYLES.pdfModalMaxHint}>(max {MAX_MATCHES_PER_PAGE_TABLEAU})</span>
               </label>
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <div style={TV_STYLES.pdfModalBtnRow}>
                 {Array.from({ length: MAX_MATCHES_PER_PAGE_TABLEAU }, (_, i) => i + 1).map(n => (
                   <button
                     key={n}
@@ -2048,27 +1636,47 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                   </button>
                 ))}
               </div>
-              <p style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: '#9ca3af' }}>
-                {matches.filter(m => !m.isBye && m.fencerA && m.fencerB).length} matchs →{' '}
-                {Math.ceil(
-                  matches.filter(m => !m.isBye && m.fencerA && m.fencerB).length / pdfMatchesPerPage
-                )}{' '}
-                feuille
-                {Math.ceil(
-                  matches.filter(m => !m.isBye && m.fencerA && m.fencerB).length / pdfMatchesPerPage
-                ) > 1
-                  ? 's'
-                  : ''}
-              </p>
+              <label style={{ ...TV_STYLES.pdfModalLabel, marginTop: '1rem' }}>
+                Phases à inclure
+              </label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '0.75rem' }}>
+                {[...new Set(matches.filter(m => m.fencerA && m.fencerB && !m.isBye).map(m => m.round))]
+                  .sort((a, b) => b - a)
+                  .map(round => (
+                    <label key={round} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.875rem' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedRounds.has(round)}
+                        onChange={e => {
+                          const next = new Set(selectedRounds);
+                          if (e.target.checked) next.add(round); else next.delete(round);
+                          setSelectedRounds(next);
+                        }}
+                      />
+                      {getRoundName(round)}
+                      <span style={{ color: '#9ca3af', fontSize: '0.75rem' }}>
+                        ({matches.filter(m => m.round === round && m.fencerA && m.fencerB && !m.isBye).length} match
+                        {matches.filter(m => m.round === round && m.fencerA && m.fencerB && !m.isBye).length > 1 ? 's' : ''})
+                      </span>
+                    </label>
+                  ))}
+              </div>
+              {(() => {
+                const count = matches.filter(m => selectedRounds.has(m.round) && !m.isBye && m.fencerA && m.fencerB).length;
+                return (
+                  <p style={TV_STYLES.pdfModalCountHint}>
+                    {count} match{count > 1 ? 's' : ''} →{' '}
+                    {Math.ceil(count / pdfMatchesPerPage)} feuille
+                    {Math.ceil(count / pdfMatchesPerPage) > 1 ? 's' : ''}
+                  </p>
+                );
+              })()}
             </div>
-            <div
-              className="modal-footer"
-              style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}
-            >
+            <div className="modal-footer" style={TV_STYLES.pdfModalFooter}>
               <button className="btn btn-secondary" onClick={() => setShowPdfModal(false)}>
                 Annuler
               </button>
-              <button className="btn btn-primary" onClick={handleExportPDF}>
+              <button className="btn btn-primary" onClick={handleExportPDF} disabled={selectedRounds.size === 0}>
                 {pdfMode === 'print' ? '🖨️ Imprimer' : '📄 Générer PDF'}
               </button>
             </div>
@@ -2076,76 +1684,90 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         </div>
       )}
 
-      {showArenaModal && selectedMatchForArena && (
-        <div className="modal-overlay" onClick={() => setShowArenaModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
-            <div className="modal-header">
-              <h3 className="modal-title">Assigner à une piste</h3>
-              <button className="btn-close" onClick={() => setShowArenaModal(false)}>
-                &times;
-              </button>
-            </div>
-            <div className="modal-body" style={{ padding: '1.5rem' }}>
-              <p style={{ marginBottom: '1rem', color: '#6b7280' }}>
-                Sélectionnez la piste pour ce match :
-              </p>
-              <div
-                style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}
-              >
-                <button
-                  className={`btn ${!matches.find(m => m.id === selectedMatchForArena)?.arena ? 'btn-primary' : 'btn-secondary'}`}
-                  onClick={() => {
-                    const oldArena =
-                      matches.find(m => m.id === selectedMatchForArena)?.arena ?? null;
-                    const updatedMatches = matches.map(m =>
-                      m.id === selectedMatchForArena ? { ...m, arena: null } : m
-                    );
-                    onMatchesChange(updatedMatches);
-                    onMatchArenaChange?.(selectedMatchForArena!, oldArena, null);
-                    setShowArenaModal(false);
-                    setSelectedMatchForArena(null);
-                  }}
-                  style={{ padding: '0.75rem' }}
-                >
-                  -
+      {showArenaModal && selectedMatchForArena && (() => {
+        const isConsolation = !!selectedMatchConsolationBracketId;
+        const consolationBracket = isConsolation
+          ? consolationBrackets.find(b => b.id === selectedMatchConsolationBracketId)
+          : null;
+        const currentArena = isConsolation
+          ? (consolationBracket?.matches.find(m => m.id === selectedMatchForArena)?.arena ?? null)
+          : (matches.find(m => m.id === selectedMatchForArena)?.arena ?? null);
+
+        const closeModal = () => {
+          setShowArenaModal(false);
+          setSelectedMatchForArena(null);
+          setSelectedMatchConsolationBracketId(null);
+        };
+
+        const assignArena = (arenaNum: number | null) => {
+          const oldArena = currentArena;
+          if (isConsolation && consolationBracket) {
+            const updatedBracket = {
+              ...consolationBracket,
+              matches: consolationBracket.matches.map(m =>
+                m.id === selectedMatchForArena ? { ...m, arena: arenaNum } : m
+              ),
+            };
+            setConsolationBrackets(prev =>
+              prev.map(b => b.id === consolationBracket.id ? updatedBracket : b)
+            );
+            const consolMatch = consolationBracket.matches.find(m => m.id === selectedMatchForArena);
+            onMatchArenaChange?.(selectedMatchForArena!, oldArena, arenaNum, consolMatch?.fencerA ?? null, consolMatch?.fencerB ?? null);
+          } else {
+            const updatedMatches = matches.map(m =>
+              m.id === selectedMatchForArena ? { ...m, arena: arenaNum } : m
+            );
+            onMatchesChange(updatedMatches);
+            onMatchArenaChange?.(selectedMatchForArena!, oldArena, arenaNum);
+          }
+          closeModal();
+        };
+
+        return (
+          <div className="modal-overlay" onClick={closeModal}>
+            <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+              <div className="modal-header">
+                <h3 className="modal-title">Assigner à une piste</h3>
+                <button className="btn-close" onClick={closeModal}>
+                  &times;
                 </button>
-                {Array.from({ length: arenaCount }, (_, i) => i + 1).map(arenaNum => {
-                  const queueCount = matches.filter(
-                    m => m.arena === arenaNum && m.id !== selectedMatchForArena && m.winner === null
-                  ).length;
-                  return (
-                    <button
-                      key={arenaNum}
-                      className={`btn ${matches.find(m => m.id === selectedMatchForArena)?.arena === arenaNum ? 'btn-primary' : 'btn-secondary'}`}
-                      onClick={() => {
-                        const oldArena =
-                          matches.find(m => m.id === selectedMatchForArena)?.arena ?? null;
-                        const updatedMatches = matches.map(m =>
-                          m.id === selectedMatchForArena ? { ...m, arena: arenaNum } : m
-                        );
-                        onMatchesChange(updatedMatches);
-                        onMatchArenaChange?.(selectedMatchForArena!, oldArena, arenaNum);
-                        setShowArenaModal(false);
-                        setSelectedMatchForArena(null);
-                      }}
-                      style={{ padding: '0.75rem', position: 'relative' }}
-                    >
-                      Piste {arenaNum}
-                      {queueCount > 0 && (
-                        <span
-                          style={{ fontSize: '0.7rem', marginLeft: '0.3rem', color: '#6b7280' }}
-                        >
-                          (+{queueCount})
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
+              </div>
+              <div className="modal-body" style={TV_STYLES.arenaModalBody}>
+                <p style={TV_STYLES.arenaModalHint}>Sélectionnez la piste pour ce match :</p>
+                <div style={TV_STYLES.arenaModalGrid}>
+                  <button
+                    className={`btn ${!currentArena ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => assignArena(null)}
+                    style={TV_STYLES.arenaModalNoArenaBtn}
+                  >
+                    -
+                  </button>
+                  {Array.from({ length: arenaCount }, (_, i) => i + 1).map(arenaNum => {
+                    const queueCount = matches.filter(
+                      m => m.arena === arenaNum && m.id !== selectedMatchForArena && m.winner === null
+                    ).length;
+                    return (
+                      <button
+                        key={arenaNum}
+                        className={`btn ${currentArena === arenaNum ? 'btn-primary' : 'btn-secondary'}`}
+                        onClick={() => assignArena(arenaNum)}
+                        style={{ padding: '0.75rem', position: 'relative' }}
+                      >
+                        Piste {arenaNum}
+                        {queueCount > 0 && (
+                          <span style={TV_STYLES.arenaQueueHint}>
+                            (+{queueCount})
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 };

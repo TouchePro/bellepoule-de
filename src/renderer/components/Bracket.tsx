@@ -36,7 +36,7 @@ interface MatchPosition {
 }
 
 const MATCH_WIDTH = 200;
-const MATCH_HEIGHT = 50;
+const MATCH_HEIGHT = 70;
 const HORIZONTAL_GAP = 80;
 const VERTICAL_GAP = 10;
 
@@ -141,6 +141,16 @@ const Bracket: React.FC<BracketProps> = ({
         >
           {fencer ? `${fencer.lastName} ${fencer.firstName.charAt(0)}.` : 'TBD'}
         </text>
+        {fencer?.club && (
+          <text
+            x={10}
+            y={isTop ? MATCH_HEIGHT / 4 + 16 : (MATCH_HEIGHT * 3) / 4 + 16}
+            fill="#6c757d"
+            fontSize={9}
+          >
+            {fencer.club}
+          </text>
+        )}
         <rect
           x={MATCH_WIDTH - 40}
           y={isTop ? 0 : MATCH_HEIGHT / 2}

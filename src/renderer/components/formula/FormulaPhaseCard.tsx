@@ -2,7 +2,7 @@
  * BellePoule Modern - Carte d'une phase dans le pipeline de formule
  */
 
-import React, { useState } from 'react';
+import React, { useState , memo} from 'react';
 import {
   CustomDEConfig,
   CustomPoolRoundConfig,
@@ -38,7 +38,7 @@ const NODE_TYPE_COLORS: Record<FormulaPhaseNodeType, string> = {
   classification: '#10B981',
 };
 
-export const FormulaPhaseCard: React.FC<Props> = ({
+const FormulaPhaseCard_: React.FC<Props> = ({
   node,
   index,
   inputFencers,
@@ -364,3 +364,5 @@ export const FormulaPhaseCard: React.FC<Props> = ({
     </div>
   );
 };
+
+export const FormulaPhaseCard = memo(FormulaPhaseCard_);

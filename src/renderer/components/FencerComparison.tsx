@@ -3,9 +3,9 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo , memo} from 'react';
 import { Fencer, Pool } from '../../shared/types';
-import { TableauMatch } from './TableauView';
+import { TableauMatch } from './tableau/tableauTypes';
 import { FencerStatsCalculator } from '../../shared/utils/fencerStatsCalculator';
 
 interface FencerComparisonProps {
@@ -54,7 +54,7 @@ interface ComparisonStats {
   };
 }
 
-export const FencerComparison: React.FC<FencerComparisonProps> = ({
+const FencerComparison_: React.FC<FencerComparisonProps> = ({
   fencers,
   pools,
   tableauMatches,
@@ -466,3 +466,5 @@ export const FencerComparison: React.FC<FencerComparisonProps> = ({
     </div>
   );
 };
+
+export const FencerComparison = memo(FencerComparison_);

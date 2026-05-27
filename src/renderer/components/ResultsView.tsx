@@ -6,10 +6,13 @@
 
 import React from 'react';
 import { Fencer, PoolRanking, Competition, FencerStatus } from '../../shared/types';
+import type { Pool } from '../../shared/types';
 import { useToast } from './Toast';
 import { exportResultsXMLFFE } from '../../shared/utils/multiFormatExport';
-import { exportResultsToPDF } from '../../shared/utils/pdfExport';
+import { exportResultsToPDF, exportFullCompetitionPDF } from '../../shared/utils/pdfExport';
+import type { TableauMatchForPDF, FinalResultForPDF } from '../../shared/utils/pdfExport';
 import { usePdfTemplateStore } from '../../features/pdfTemplates/hooks/usePdfTemplateStore';
+import type { ConsolationBracket } from './tableau/tableauTypes';
 
 interface FinalResult {
   rank: number;
@@ -21,9 +24,60 @@ interface ResultsViewProps {
   competition: Competition;
   poolRanking: PoolRanking[];
   finalResults: FinalResult[];
+  fencers?: Fencer[];
+  pools?: Pool[];
+  tableauMatches?: TableauMatchForPDF[];
+  consolationBrackets?: ConsolationBracket[];
+  isLaserSabre?: boolean;
 }
 
-const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, finalResults }) => {
+// ─── Static style constants ───────────────────────────────────────────────────
+
+const RV_STYLES = {
+  wrapper: { padding: '2rem', maxWidth: '900px', margin: '0 auto' } satisfies React.CSSProperties,
+  champHeader: { textAlign: 'center' as const, padding: '2rem', background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)', borderRadius: '12px', marginBottom: '2rem', color: 'white', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' } satisfies React.CSSProperties,
+  champTrophy: { fontSize: '4rem', marginBottom: '0.5rem' } satisfies React.CSSProperties,
+  champTitle: { fontSize: '1.5rem', marginBottom: '0.5rem' } satisfies React.CSSProperties,
+  champName: { fontSize: '2rem', fontWeight: '700' } satisfies React.CSSProperties,
+  champClub: { opacity: 0.9, marginTop: '0.5rem' } satisfies React.CSSProperties,
+  podiumRow: { display: 'flex', justifyContent: 'center', alignItems: 'flex-end', gap: '1rem', marginBottom: '2rem', padding: '1rem' } satisfies React.CSSProperties,
+  podium2: { textAlign: 'center' as const, background: '#e5e7eb', padding: '1rem', borderRadius: '8px 8px 0 0', minWidth: '150px', height: '120px', display: 'flex', flexDirection: 'column' as const, justifyContent: 'flex-end' as const } satisfies React.CSSProperties,
+  podium2Medal: { fontSize: '2rem' } satisfies React.CSSProperties,
+  podium2Name: { fontWeight: '600', fontSize: '0.875rem' } satisfies React.CSSProperties,
+  podium2Place: { fontSize: '0.75rem', color: '#6b7280' } satisfies React.CSSProperties,
+  podium1: { textAlign: 'center' as const, background: '#fef3c7', padding: '1rem', borderRadius: '8px 8px 0 0', minWidth: '150px', height: '160px', display: 'flex', flexDirection: 'column' as const, justifyContent: 'flex-end' as const, border: '2px solid #f59e0b' } satisfies React.CSSProperties,
+  podium1Medal: { fontSize: '2.5rem' } satisfies React.CSSProperties,
+  podium1Name: { fontWeight: '700', fontSize: '1rem' } satisfies React.CSSProperties,
+  podium1Place: { fontSize: '0.875rem', color: '#92400e' } satisfies React.CSSProperties,
+  podium3: { textAlign: 'center' as const, background: '#fed7aa', padding: '1rem', borderRadius: '8px 8px 0 0', minWidth: '150px', height: '100px', display: 'flex', flexDirection: 'column' as const, justifyContent: 'flex-end' as const } satisfies React.CSSProperties,
+  podium3Medal: { fontSize: '1.5rem' } satisfies React.CSSProperties,
+  podium3Name: { fontWeight: '600', fontSize: '0.875rem' } satisfies React.CSSProperties,
+  podium3Place: { fontSize: '0.75rem', color: '#6b7280' } satisfies React.CSSProperties,
+  tableWrapper: { background: 'white', borderRadius: '8px', boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)', overflow: 'hidden' } satisfies React.CSSProperties,
+  tableHeader: { padding: '1rem', background: '#f9fafb', borderBottom: '1px solid #e5e7eb', fontWeight: '600' } satisfies React.CSSProperties,
+  table: { width: '100%', borderCollapse: 'collapse' as const } satisfies React.CSSProperties,
+  thead: { background: '#f9fafb', borderBottom: '2px solid #e5e7eb' } satisfies React.CSSProperties,
+  thRank: { padding: '0.75rem', textAlign: 'left' as const, width: '60px' } satisfies React.CSSProperties,
+  thLeft: { padding: '0.75rem', textAlign: 'left' as const } satisfies React.CSSProperties,
+  thCenter: { padding: '0.75rem', textAlign: 'center' as const } satisfies React.CSSProperties,
+  tdPad: { padding: '0.75rem' } satisfies React.CSSProperties,
+  tdMedalSpan: { marginRight: '0.5rem' } satisfies React.CSSProperties,
+  tdClub: { padding: '0.75rem', color: '#6b7280' } satisfies React.CSSProperties,
+  tdElim: { padding: '0.75rem', textAlign: 'center' as const, color: '#6b7280' } satisfies React.CSSProperties,
+  exportRow: { display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '2rem', flexWrap: 'wrap' as const } satisfies React.CSSProperties,
+  btnPrint: { padding: '0.75rem 1.5rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' } satisfies React.CSSProperties,
+  btnCopy: { padding: '0.75rem 1.5rem', background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' } satisfies React.CSSProperties,
+  btnCsv: { padding: '0.75rem 1.5rem', background: '#f59e0b', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' } satisfies React.CSSProperties,
+  btnXml: { padding: '0.75rem 1.5rem', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' } satisfies React.CSSProperties,
+  btnPdf: { padding: '0.75rem 1.5rem', background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' } satisfies React.CSSProperties,
+  btnFullPdf: { padding: '0.75rem 1.5rem', background: '#166534', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' } satisfies React.CSSProperties,
+  legend: { textAlign: 'center' as const, marginTop: '1.5rem', fontSize: '0.875rem', color: '#6b7280' } satisfies React.CSSProperties,
+} satisfies Record<string, React.CSSProperties>;
+
+const ResultsView: React.FC<ResultsViewProps> = ({
+  competition, poolRanking, finalResults,
+  fencers, pools, tableauMatches, consolationBrackets, isLaserSabre,
+}) => {
   const { showToast } = useToast();
   const rankingTemplate = usePdfTemplateStore(s => s.templates.ranking);
 
@@ -132,143 +186,89 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
     showToast('Export XML réussi !', 'success');
   };
 
+  const exportFullPDF = async () => {
+    try {
+      await exportFullCompetitionPDF({
+        fencers: fencers ?? [],
+        pools: pools ?? [],
+        overallRanking: poolRanking,
+        tableauMatches: tableauMatches ?? [],
+        consolationBrackets: (consolationBrackets ?? []).map(b => ({
+          id: b.id,
+          name: b.name,
+          matches: b.matches as TableauMatchForPDF[],
+        })),
+        finalResults: resultsToDisplay as FinalResultForPDF[],
+        competitionTitle: competition.title,
+        isLaserSabre,
+        template: rankingTemplate,
+      });
+    } catch (e) {
+      showToast((e as Error).message, 'error');
+    }
+  };
+
   const champion = resultsToDisplay.find(r => r.rank === 1);
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '900px', margin: '0 auto' }}>
+    <div style={RV_STYLES.wrapper}>
       {/* En-tête avec le champion */}
       {champion && (
-        <div
-          style={{
-            textAlign: 'center',
-            padding: '2rem',
-            background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
-            borderRadius: '12px',
-            marginBottom: '2rem',
-            color: 'white',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-          }}
-        >
-          <div style={{ fontSize: '4rem', marginBottom: '0.5rem' }}>🏆</div>
-          <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Champion</h1>
-          <div style={{ fontSize: '2rem', fontWeight: '700' }}>
+        <div style={RV_STYLES.champHeader}>
+          <div style={RV_STYLES.champTrophy}>🏆</div>
+          <h1 style={RV_STYLES.champTitle}>Champion</h1>
+          <div style={RV_STYLES.champName}>
             {champion.fencer.firstName} {champion.fencer.lastName}
           </div>
           {champion.fencer.club && (
-            <div style={{ opacity: 0.9, marginTop: '0.5rem' }}>{champion.fencer.club}</div>
+            <div style={RV_STYLES.champClub}>{champion.fencer.club}</div>
           )}
         </div>
       )}
 
       {/* Podium visuel */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'flex-end',
-          gap: '1rem',
-          marginBottom: '2rem',
-          padding: '1rem',
-        }}
-      >
+      <div style={RV_STYLES.podiumRow}>
         {/* 2ème place */}
         {resultsToDisplay[1] && (
-          <div
-            style={{
-              textAlign: 'center',
-              background: '#e5e7eb',
-              padding: '1rem',
-              borderRadius: '8px 8px 0 0',
-              minWidth: '150px',
-              height: '120px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'flex-end',
-            }}
-          >
-            <div style={{ fontSize: '2rem' }}>🥈</div>
-            <div style={{ fontWeight: '600', fontSize: '0.875rem' }}>
-              {resultsToDisplay[1].fencer.lastName}
-            </div>
-            <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>2ème</div>
+          <div style={RV_STYLES.podium2}>
+            <div style={RV_STYLES.podium2Medal}>🥈</div>
+            <div style={RV_STYLES.podium2Name}>{resultsToDisplay[1].fencer.lastName}</div>
+            <div style={RV_STYLES.podium2Place}>2ème</div>
           </div>
         )}
 
         {/* 1ère place */}
         {resultsToDisplay[0] && (
-          <div
-            style={{
-              textAlign: 'center',
-              background: '#fef3c7',
-              padding: '1rem',
-              borderRadius: '8px 8px 0 0',
-              minWidth: '150px',
-              height: '160px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'flex-end',
-              border: '2px solid #f59e0b',
-            }}
-          >
-            <div style={{ fontSize: '2.5rem' }}>🥇</div>
-            <div style={{ fontWeight: '700', fontSize: '1rem' }}>
-              {resultsToDisplay[0].fencer.lastName}
-            </div>
-            <div style={{ fontSize: '0.875rem', color: '#92400e' }}>1er</div>
+          <div style={RV_STYLES.podium1}>
+            <div style={RV_STYLES.podium1Medal}>🥇</div>
+            <div style={RV_STYLES.podium1Name}>{resultsToDisplay[0].fencer.lastName}</div>
+            <div style={RV_STYLES.podium1Place}>1er</div>
           </div>
         )}
 
         {/* 3ème place */}
         {resultsToDisplay[2] && (
-          <div
-            style={{
-              textAlign: 'center',
-              background: '#fed7aa',
-              padding: '1rem',
-              borderRadius: '8px 8px 0 0',
-              minWidth: '150px',
-              height: '100px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'flex-end',
-            }}
-          >
-            <div style={{ fontSize: '1.5rem' }}>🥉</div>
-            <div style={{ fontWeight: '600', fontSize: '0.875rem' }}>
-              {resultsToDisplay[2].fencer.lastName}
-            </div>
-            <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>3ème</div>
+          <div style={RV_STYLES.podium3}>
+            <div style={RV_STYLES.podium3Medal}>🥉</div>
+            <div style={RV_STYLES.podium3Name}>{resultsToDisplay[2].fencer.lastName}</div>
+            <div style={RV_STYLES.podium3Place}>3ème</div>
           </div>
         )}
       </div>
 
       {/* Tableau complet des résultats */}
-      <div
-        style={{
-          background: 'white',
-          borderRadius: '8px',
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-          overflow: 'hidden',
-        }}
-      >
-        <div
-          style={{
-            padding: '1rem',
-            background: '#f9fafb',
-            borderBottom: '1px solid #e5e7eb',
-            fontWeight: '600',
-          }}
-        >
+      <div style={RV_STYLES.tableWrapper}>
+        <div style={RV_STYLES.tableHeader}>
           📊 Classement final - {resultsToDisplay.length} tireurs
         </div>
 
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <table style={RV_STYLES.table}>
           <thead>
-            <tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
-              <th style={{ padding: '0.75rem', textAlign: 'left', width: '60px' }}>Rang</th>
-              <th style={{ padding: '0.75rem', textAlign: 'left' }}>Tireur</th>
-              <th style={{ padding: '0.75rem', textAlign: 'left' }}>Club</th>
-              <th style={{ padding: '0.75rem', textAlign: 'center' }}>Éliminé en</th>
+            <tr style={RV_STYLES.thead}>
+              <th style={RV_STYLES.thRank}>Rang</th>
+              <th style={RV_STYLES.thLeft}>Tireur</th>
+              <th style={RV_STYLES.thLeft}>Club</th>
+              <th style={RV_STYLES.thCenter}>Éliminé en</th>
             </tr>
           </thead>
           <tbody>
@@ -280,22 +280,18 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
                   borderBottom: '1px solid #e5e7eb',
                 }}
               >
-                <td style={{ padding: '0.75rem' }}>
-                  <span style={{ marginRight: '0.5rem' }}>{getMedalEmoji(result.rank)}</span>
+                <td style={RV_STYLES.tdPad}>
+                  <span style={RV_STYLES.tdMedalSpan}>{getMedalEmoji(result.rank)}</span>
                   {result.rank}
                 </td>
-                <td style={{ padding: '0.75rem' }}>
+                <td style={RV_STYLES.tdPad}>
                   {result.fencer.firstName} {result.fencer.lastName}
                   {result.fencer.status === FencerStatus.ABANDONED && ' (A)'}
                   {result.fencer.status === FencerStatus.FORFAIT && ' (F)'}
                   {result.fencer.status === FencerStatus.EXCLUDED && ' (X)'}
                 </td>
-                <td style={{ padding: '0.75rem', color: '#6b7280' }}>
-                  {result.fencer.club || '-'}
-                </td>
-                <td style={{ padding: '0.75rem', textAlign: 'center', color: '#6b7280' }}>
-                  {result.eliminatedAt || '-'}
-                </td>
+                <td style={RV_STYLES.tdClub}>{result.fencer.club || '-'}</td>
+                <td style={RV_STYLES.tdElim}>{result.eliminatedAt || '-'}</td>
               </tr>
             ))}
           </tbody>
@@ -303,30 +299,8 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
       </div>
 
       {/* Boutons d'export */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '1rem',
-          justifyContent: 'center',
-          marginTop: '2rem',
-          flexWrap: 'wrap',
-        }}
-      >
-        <button
-          onClick={() => window.electronAPI.print()}
-          style={{
-            padding: '0.75rem 1.5rem',
-            background: '#3b82f6',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '0.875rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-          }}
-        >
+      <div style={RV_STYLES.exportRow}>
+        <button onClick={() => window.electronAPI.print()} style={RV_STYLES.btnPrint}>
           🖨️ Imprimer
         </button>
         <button
@@ -340,87 +314,28 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
             navigator.clipboard.writeText(text);
             showToast('Résultats copiés dans le presse-papier !', 'success');
           }}
-          style={{
-            padding: '0.75rem 1.5rem',
-            background: '#10b981',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '0.875rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-          }}
+          style={RV_STYLES.btnCopy}
         >
           📋 Copier
         </button>
-        <button
-          onClick={exportCSV}
-          style={{
-            padding: '0.75rem 1.5rem',
-            background: '#f59e0b',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '0.875rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-          }}
-        >
+        <button onClick={exportCSV} style={RV_STYLES.btnCsv}>
           📊 CSV
         </button>
-        <button
-          onClick={exportXML}
-          style={{
-            padding: '0.75rem 1.5rem',
-            background: '#8b5cf6',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '0.875rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-          }}
-        >
+        <button onClick={exportXML} style={RV_STYLES.btnXml}>
           📝 XML
         </button>
-        <button
-          onClick={exportPDF}
-          style={{
-            padding: '0.75rem 1.5rem',
-            background: '#ef4444',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '0.875rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-          }}
-        >
+        <button onClick={exportPDF} style={RV_STYLES.btnPdf}>
           📄 PDF
+        </button>
+        <button onClick={exportFullPDF} style={RV_STYLES.btnFullPdf}>
+          📦 Export complet PDF
         </button>
       </div>
 
       {/* Légende */}
-      <div
-        style={{
-          textAlign: 'center',
-          marginTop: '1.5rem',
-          fontSize: '0.875rem',
-          color: '#6b7280',
-        }}
-      >
-        (A) = Abandon • (F) = Forfait • (X) = Exclu
-      </div>
+      <div style={RV_STYLES.legend}>(A) = Abandon • (F) = Forfait • (X) = Exclu</div>
     </div>
   );
 };
 
-export default ResultsView;
+export default React.memo(ResultsView);

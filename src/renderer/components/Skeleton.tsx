@@ -14,7 +14,7 @@ interface SkeletonProps {
   style?: React.CSSProperties;
 }
 
-export const Skeleton: React.FC<SkeletonProps> = ({
+const Skeleton_: React.FC<SkeletonProps> = ({
   width = '100%',
   height = '20px',
   borderRadius = '4px',
@@ -39,7 +39,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
 };
 
 // Competition Card Skeleton
-export const CompetitionCardSkeleton: React.FC = () => {
+const CompetitionCardSkeleton_: React.FC = () => {
   return (
     <div
       style={{
@@ -66,7 +66,7 @@ export const CompetitionCardSkeleton: React.FC = () => {
 };
 
 // Pool View Skeleton
-export const PoolViewSkeleton: React.FC = () => {
+const PoolViewSkeleton_: React.FC = () => {
   return (
     <div style={{ padding: '20px' }}>
       <div style={{ marginBottom: '24px' }}>
@@ -113,7 +113,7 @@ export const PoolViewSkeleton: React.FC = () => {
 };
 
 // Table Row Skeleton
-export const TableRowSkeleton: React.FC<{ columns?: number }> = ({ columns = 5 }) => {
+const TableRowSkeleton_: React.FC<{ columns?: number }> = ({ columns = 5 }) => {
   return (
     <div
       style={{
@@ -133,7 +133,7 @@ export const TableRowSkeleton: React.FC<{ columns?: number }> = ({ columns = 5 }
 };
 
 // Stats Card Skeleton
-export const StatsCardSkeleton: React.FC = () => {
+const StatsCardSkeleton_: React.FC = () => {
   return (
     <div
       style={{
@@ -156,7 +156,7 @@ export const StatsCardSkeleton: React.FC = () => {
 };
 
 // Add shimmer keyframes to global styles
-export const SkeletonStyles: React.FC = () => (
+const SkeletonStyles_: React.FC = () => (
   <style>{`
     @keyframes shimmer {
       0% {
@@ -168,6 +168,13 @@ export const SkeletonStyles: React.FC = () => (
     }
   `}</style>
 );
+
+export const Skeleton = React.memo(Skeleton_);
+export const CompetitionCardSkeleton = React.memo(CompetitionCardSkeleton_);
+export const PoolViewSkeleton = React.memo(PoolViewSkeleton_);
+export const TableRowSkeleton = React.memo(TableRowSkeleton_);
+export const StatsCardSkeleton = React.memo(StatsCardSkeleton_);
+export const SkeletonStyles = React.memo(SkeletonStyles_);
 
 export default {
   Skeleton,

@@ -127,6 +127,22 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-npm-
 
+      - name: Cache Electron binaries
+        uses: actions/cache@v5
+        with:
+          path: ~/Library/Caches/electron
+          key: ${{ runner.os }}-electron-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-
+
+      - name: Cache electron-builder
+        uses: actions/cache@v5
+        with:
+          path: ~/Library/Caches/electron-builder
+          key: ${{ runner.os }}-electron-builder-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-builder-
+
       - name: Install Dependencies
         run: |
           for i in 1 2 3; do
@@ -140,9 +156,16 @@ jobs:
         run: npm run build:ci
 
       - name: Package with Electron Builder
-        run: npx electron-builder --mac --x64
+        run: |
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            npx electron-builder --mac --x64 && break
+            [ $i -lt 3 ] && sleep 30
+          done || exit 1
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ELECTRON_CACHE: ~/Library/Caches/electron
+          ELECTRON_BUILDER_CACHE: ~/Library/Caches/electron-builder
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v7
@@ -173,6 +196,22 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-npm-
 
+      - name: Cache Electron binaries
+        uses: actions/cache@v5
+        with:
+          path: ~/Library/Caches/electron
+          key: ${{ runner.os }}-electron-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-
+
+      - name: Cache electron-builder
+        uses: actions/cache@v5
+        with:
+          path: ~/Library/Caches/electron-builder
+          key: ${{ runner.os }}-electron-builder-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-builder-
+
       - name: Install Dependencies
         run: |
           for i in 1 2 3; do
@@ -186,9 +225,16 @@ jobs:
         run: npm run build:ci
 
       - name: Package with Electron Builder
-        run: npx electron-builder --mac --arm64
+        run: |
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            npx electron-builder --mac --arm64 && break
+            [ $i -lt 3 ] && sleep 30
+          done || exit 1
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ELECTRON_CACHE: ~/Library/Caches/electron
+          ELECTRON_BUILDER_CACHE: ~/Library/Caches/electron-builder
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v7
@@ -314,25 +360,27 @@ jobs:
       - name: List downloaded files
         run: find builds -type f
 
-      - name: Delete all existing releases
+      - name: Delete old releases (keep last 3)
         run: |
-          # Supprimer toutes les releases pour ne conserver que la nouvelle
           tags=$(gh release list --repo "${{ github.repository }}" --json tagName -q '.[].tagName' 2>/dev/null || true)
+          count=0
           if [ -n "$tags" ]; then
             echo "$tags" | while read -r tag; do
-              echo "Suppression de la release: $tag"
-              gh release delete "$tag" --repo "${{ github.repository }}" --yes --cleanup-tag 2>/dev/null || true
+              count=$((count + 1))
+              if [ $count -gt 3 ]; then
+                echo "Suppression de la release: $tag"
+                gh release delete "$tag" --repo "${{ github.repository }}" --yes --cleanup-tag 2>/dev/null || true
+              fi
             done
           fi
-          # Nettoyer le tag 'latest' orphelin s'il reste
-          gh api -X DELETE "repos/${{ github.repository }}/git/refs/tags/latest" 2>/dev/null || true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: latest
+          tag_name: 'v${{ needs.increment-version.outputs.version }}-build.${{ needs.increment-version.outputs.build }}'
+          make_latest: true
           name: '🚀 BellePoule Modern v${{ needs.increment-version.outputs.version }} Build #${{ needs.increment-version.outputs.build }}'
           body: |
             ## BellePoule Modern

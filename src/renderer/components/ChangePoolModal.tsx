@@ -15,7 +15,7 @@ interface ChangePoolModalProps {
   onClose: () => void;
 }
 
-const ChangePoolModal: React.FC<ChangePoolModalProps> = ({
+const ChangePoolModalComponent: React.FC<ChangePoolModalProps> = ({
   fencer,
   currentPool,
   allPools,
@@ -227,4 +227,5 @@ const ChangePoolModal: React.FC<ChangePoolModalProps> = ({
   );
 };
 
+const ChangePoolModal = React.memo(ChangePoolModalComponent);
 export default ChangePoolModal;

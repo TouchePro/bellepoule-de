@@ -161,6 +161,7 @@ export function calculateFencerPoolStats(fencer: Fencer, matches: Match[]): Pool
   let touchesScored = 0;
   let touchesReceived = 0;
   let matchesPlayed = 0;
+  let maxSingleMatchScore = 0;
 
   for (const match of matches) {
     // Vérifier si le tireur est dans ce match
@@ -186,6 +187,7 @@ export function calculateFencerPoolStats(fencer: Fencer, matches: Match[]): Pool
     }
 
     matchesPlayed++;
+    maxSingleMatchScore = Math.max(maxSingleMatchScore, myScore.value ?? 0);
 
     // Gestion des cas spéciaux
     if (myScore.isAbstention || myScore.isExclusion || myScore.isForfait) {
@@ -218,6 +220,7 @@ export function calculateFencerPoolStats(fencer: Fencer, matches: Match[]): Pool
     index,
     matchesPlayed,
     victoryRatio,
+    maxSingleMatchScore,
   };
 }
 
@@ -235,9 +238,9 @@ function assignRanks(rankings: PoolRanking[]): void {
       const sameVictories = prev.ratio === curr.ratio;
       const sameQuest = (prev.questPoints ?? 0) === (curr.questPoints ?? 0);
       const sameCards = (prev.totalCards ?? 0) === (curr.totalCards ?? 0);
-      const sameIndex = prev.index === curr.index;
+      const sameSingleMatch = (prev.maxSingleMatchScore ?? 0) === (curr.maxSingleMatchScore ?? 0);
 
-      if (sameVictories && sameQuest && sameCards && sameIndex) {
+      if (sameVictories && sameQuest && sameCards && sameSingleMatch) {
         rankings[i].rank = rankings[i - 1].rank;
       } else {
         rankings[i].rank = currentRank;
@@ -316,6 +319,7 @@ export function calculatePoolRanking(pool: Pool): PoolRanking[] {
       index: stats.index,
       ratio: stats.victoryRatio,
       questPoints: questStats.questPoints,
+      maxSingleMatchScore: stats.maxSingleMatchScore ?? 0,
     });
   }
 
@@ -343,9 +347,11 @@ export function calculatePoolRanking(pool: Pool): PoolRanking[] {
       return bQuest - aQuest;
     }
 
-    // 3. Indice (TD - TR) (décroissant)
-    if (a.index !== b.index) {
-      return b.index - a.index;
+    // 3. Meilleur score en un match (décroissant)
+    const aMax = a.maxSingleMatchScore ?? 0;
+    const bMax = b.maxSingleMatchScore ?? 0;
+    if (aMax !== bMax) {
+      return bMax - aMax;
     }
 
     // 4. Confrontation directe — O(1) grâce à la Map
@@ -370,17 +376,14 @@ export function calculatePoolRanking(pool: Pool): PoolRanking[] {
 // Pool Distribution Algorithm
 // ============================================================================
 
-/** Fonction extracteur de clé pour un critère de séparation */
-type CriterionKey = (f: Fencer) => string;
-
 /**
- * Distribue les tireurs dans les poules selon la méthode serpentine
+ * Distribue les tireurs dans les poules selon la méthode serpentine FIE
  * en respectant les critères de séparation (club, région, nation)
  *
- * Algorithme:
- * 1. Distribution serpentine pure: 1→2→3→...→8→8→7→6→...→1→1→2→...
- * 2. Détection des conflits de club
- * 3. Échange de tireurs entre poules pour résoudre les conflits
+ * Algorithme (FIE §2 et §3) :
+ * 1. Serpentine intégrée avec descente dans le classement si conflit (FIE §2)
+ * 2. Rééquilibrage des tailles de poules
+ * 3. Tirage au sort des positions dans la poule (FIE §3)
  */
 export function distributeFencersToPoolsSerpentine(
   fencers: Fencer[],
@@ -405,219 +408,81 @@ export function distributeFencersToPoolsSerpentine(
   }
   const pools: Fencer[][] = Array.from({ length: poolCount }, () => []);
 
-  // Trier les tireurs par classement (meilleur classement = premier)
-  const sortedFencers = [...fencers].sort((a, b) => (a.ranking ?? 99999) - (b.ranking ?? 99999));
+  // Trier les tireurs par classement (meilleur classement = premier, non-classés = derniers)
+  const pending = [...fencers].sort((a, b) => (a.ranking ?? 99999) - (b.ranking ?? 99999));
 
-  // Distribution serpentine pure
-  let direction = 1; // 1 = aller, -1 = retour
+  // Distribution serpentine avec descente dans le classement (FIE §2) :
+  // pour chaque slot, prendre le premier tireur sans conflit dans la poule cible.
+  // Si impossible (tous en conflit), prendre le suivant naturel (FIE : "rester dans la poule initiale").
+  let direction = 1;
   let poolIndex = 0;
 
-  for (const fencer of sortedFencers) {
-    pools[poolIndex].push(fencer);
+  while (pending.length > 0) {
+    const pool = pools[poolIndex];
 
-    // Avancer dans la serpentine
+    let chosen = 0;
+    if (separation.byClub || separation.byRegion || separation.byNation) {
+      for (let i = 0; i < pending.length; i++) {
+        if (!hasConflictWith(pending[i], pool, separation)) {
+          chosen = i;
+          break;
+        }
+      }
+    }
+
+    pool.push(pending.splice(chosen, 1)[0]);
+
     poolIndex += direction;
     if (poolIndex >= poolCount) {
-      // On arrive à la fin, on repart en arrière (la dernière poule est visitée deux fois)
       direction = -1;
       poolIndex = poolCount - 1;
     } else if (poolIndex < 0) {
-      // On arrive au début, on repart en avant (la première poule est visitée deux fois)
       direction = 1;
       poolIndex = 0;
     }
   }
 
-  // Résoudre les conflits par ordre de priorité : Club > Région > Nation
-  const clubKey: CriterionKey = f => f.club ?? '';
-  const regionKey: CriterionKey = f => f.region ?? '';
-  const nationKey: CriterionKey = f => f.nationality ?? '';
-
-  if (separation.byClub) {
-    resolveConflictsForCriterion(pools, clubKey, []);
-  }
-  if (separation.byRegion) {
-    resolveConflictsForCriterion(pools, regionKey, separation.byClub ? [clubKey] : []);
-  }
-  if (separation.byNation) {
-    resolveConflictsForCriterion(pools, nationKey, [
-      ...(separation.byClub ? [clubKey] : []),
-      ...(separation.byRegion ? [regionKey] : []),
-    ]);
-  }
-
   // Rééquilibrer les poules pour assurer un nombre égal (ou presque égal) de tireurs
   rebalancePools(pools, separation);
+
+  // Tirage au sort des positions dans la poule (FIE §3)
+  for (const pool of pools) {
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+  }
 
   return pools;
 }
 
 /**
- * Résout les conflits pour un critère donné (club, région, nation) en échangeant des tireurs
- * entre poules tout en préservant au mieux l'équilibre de la serpentine.
- * Les critères de priorité supérieure (protectedCriteria) ne sont jamais aggravés.
+ * Vérifie si un tireur crée un conflit (club/région/nation) avec une poule existante.
  */
-function resolveConflictsForCriterion(
-  pools: Fencer[][],
-  getCriterionKey: CriterionKey,
-  protectedCriteria: CriterionKey[]
-): void {
-  const poolCount = pools.length;
-  let maxIterations = 100;
-  let improved = true;
-
-  const buildKeyMap = (pool: Fencer[]) => {
-    const m = new Map<string, number>();
-    for (const f of pool) {
-      const key = getCriterionKey(f);
-      if (key !== '') m.set(key, (m.get(key) ?? 0) + 1);
-    }
-    return m;
-  };
-  const keyMaps = pools.map(buildKeyMap);
-
-  while (improved && maxIterations > 0) {
-    improved = false;
-    maxIterations--;
-
-    for (let poolIdx = 0; poolIdx < poolCount; poolIdx++) {
-      const pool = pools[poolIdx];
-
-      for (let fencerIdx = 0; fencerIdx < pool.length; fencerIdx++) {
-        const fencer = pool[fencerIdx];
-        const key = getCriterionKey(fencer);
-
-        // Ignorer les tireurs sans valeur pour ce critère
-        if (key === '') continue;
-
-        const hasConflict = (keyMaps[poolIdx].get(key) ?? 0) > 1;
-        if (!hasConflict) continue;
-
-        const swapPartner = findSwapPartner(
-          fencer,
-          fencerIdx,
-          poolIdx,
-          pools,
-          getCriterionKey,
-          protectedCriteria,
-          keyMaps
-        );
-
-        if (swapPartner) {
-          const { poolIdx: otherPoolIdx, fencerIdx: otherFencerIdx } = swapPartner;
-          const fencerA = pools[poolIdx][fencerIdx];
-          const fencerB = pools[otherPoolIdx][otherFencerIdx];
-          pools[poolIdx][fencerIdx] = fencerB;
-          pools[otherPoolIdx][otherFencerIdx] = fencerA;
-
-          keyMaps[poolIdx] = buildKeyMap(pools[poolIdx]);
-          keyMaps[otherPoolIdx] = buildKeyMap(pools[otherPoolIdx]);
-
-          improved = true;
-          break;
-        }
-      }
-
-      if (improved) break;
-    }
-  }
-}
-
-/**
- * Trouve un partenaire d'échange pour résoudre un conflit sur un critère donné.
- * Retourne null si aucun échange valide n'est trouvé.
- */
-function findSwapPartner(
+function hasConflictWith(
   fencer: Fencer,
-  fencerIdx: number,
-  currentPoolIdx: number,
-  pools: Fencer[][],
-  getCriterionKey: CriterionKey,
-  protectedCriteria: CriterionKey[],
-  keyMaps: Map<string, number>[]
-): { poolIdx: number; fencerIdx: number } | null {
-  const poolCount = pools.length;
-  let bestSwap: { poolIdx: number; fencerIdx: number; score: number } | null = null;
-
-  for (let offset = 1; offset < poolCount; offset++) {
-    const directions = [offset, -offset];
-
-    for (const dir of directions) {
-      const otherPoolIdx = (currentPoolIdx + dir + poolCount) % poolCount;
-      const otherPool = pools[otherPoolIdx];
-
-      for (let otherFencerIdx = 0; otherFencerIdx < otherPool.length; otherFencerIdx++) {
-        const otherFencer = otherPool[otherFencerIdx];
-
-        if (
-          canSwapResolveConflict(
-            fencer,
-            otherFencer,
-            currentPoolIdx,
-            otherPoolIdx,
-            pools,
-            getCriterionKey,
-            protectedCriteria,
-            keyMaps
-          )
-        ) {
-          const score = 1000 - offset * 10 - Math.abs(fencerIdx - otherFencerIdx);
-
-          if (!bestSwap || score > bestSwap.score) {
-            bestSwap = { poolIdx: otherPoolIdx, fencerIdx: otherFencerIdx, score };
-          }
-        }
-      }
-    }
-  }
-
-  return bestSwap ? { poolIdx: bestSwap.poolIdx, fencerIdx: bestSwap.fencerIdx } : null;
-}
-
-/**
- * Vérifie si un échange entre deux tireurs améliore le critère cible
- * sans aggraver les critères de priorité supérieure (protectedCriteria).
- */
-function canSwapResolveConflict(
-  fencer1: Fencer,
-  fencer2: Fencer,
-  pool1Idx: number,
-  pool2Idx: number,
-  pools: Fencer[][],
-  getCriterionKey: CriterionKey,
-  protectedCriteria: CriterionKey[],
-  keyMaps: Map<string, number>[]
+  pool: Fencer[],
+  separation: { byClub: boolean; byRegion: boolean; byNation: boolean }
 ): boolean {
-  const pool1 = pools[pool1Idx];
-  const pool2 = pools[pool2Idx];
-  const keyMap1 = keyMaps[pool1Idx];
-  const keyMap2 = keyMaps[pool2Idx];
-
-  const key1 = getCriterionKey(fencer1);
-  const key2 = getCriterionKey(fencer2);
-
-  // O(1) lookups via pre-built maps instead of O(n) filter() calls
-  const conflicts1Before = (keyMap1.get(key1) ?? 0) - 1;
-  const conflicts2Before = (keyMap2.get(key2) ?? 0) - 1;
-  const conflicts1After = key1 === key2 ? conflicts1Before : (keyMap1.get(key2) ?? 0);
-  const conflicts2After = key1 === key2 ? conflicts2Before : (keyMap2.get(key1) ?? 0);
-
-  if (conflicts1After > 0 || conflicts2After > 0) return false;
-  if (conflicts1After + conflicts2After > conflicts1Before + conflicts2Before) return false;
-
-  // Vérifier que l'échange ne crée aucun nouveau conflit sur les critères protégés
-  for (const getProtectedKey of protectedCriteria) {
-    const pk1 = getProtectedKey(fencer1);
-    const pk2 = getProtectedKey(fencer2);
-    // Si les deux tireurs ont la même clé protégée, l'échange est neutre → OK
-    if (pk1 === pk2) continue;
-    // fencer2 irait dans pool1 : vérifier qu'aucun autre tireur de pool1 n'a déjà pk2
-    if (pk2 !== '' && pool1.some(f => f !== fencer1 && getProtectedKey(f) === pk2)) return false;
-    // fencer1 irait dans pool2 : vérifier qu'aucun autre tireur de pool2 n'a déjà pk1
-    if (pk1 !== '' && pool2.some(f => f !== fencer2 && getProtectedKey(f) === pk1)) return false;
-  }
-
-  return true;
+  return pool.some(existing => {
+    if (separation.byClub && fencer.club && fencer.club !== '' && fencer.club === existing.club)
+      return true;
+    if (
+      separation.byRegion &&
+      fencer.region &&
+      fencer.region !== '' &&
+      fencer.region === existing.region
+    )
+      return true;
+    if (
+      separation.byNation &&
+      fencer.nationality &&
+      fencer.nationality !== '' &&
+      fencer.nationality === existing.nationality
+    )
+      return true;
+    return false;
+  });
 }
 
 /**
@@ -1040,6 +905,10 @@ function mergeFencerRankings(rankings: PoolRanking[]): PoolRanking[] {
       existing.index = existing.touchesScored - existing.touchesReceived;
       existing.ratio =
         existing.matchesPlayed > 0 ? existing.victories / existing.matchesPlayed : 0;
+      existing.maxSingleMatchScore = Math.max(
+        existing.maxSingleMatchScore ?? 0,
+        r.maxSingleMatchScore ?? 0
+      );
       existing.questPoints = (existing.questPoints ?? 0) + (r.questPoints ?? 0);
       existing.questVictories4 = (existing.questVictories4 ?? 0) + (r.questVictories4 ?? 0);
       existing.questVictories3 = (existing.questVictories3 ?? 0) + (r.questVictories3 ?? 0);
@@ -1082,9 +951,11 @@ export function calculateOverallRanking(pools: Pool[]): PoolRanking[] {
     if (aQuest !== bQuest) {
       return bQuest - aQuest;
     }
-    // 3. Indice (TD-TR)
-    if (a.index !== b.index) {
-      return b.index - a.index;
+    // 3. Meilleur score en un match
+    const aMax = a.maxSingleMatchScore ?? 0;
+    const bMax = b.maxSingleMatchScore ?? 0;
+    if (aMax !== bMax) {
+      return bMax - aMax;
     }
     // 4. Égalité parfaite - garder l'ordre
     return 0;

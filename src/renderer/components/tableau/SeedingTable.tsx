@@ -38,7 +38,8 @@ const SeedingTable: React.FC<SeedingTableProps> = ({ ranking, tableauSize }) => 
               {r.fencer.lastName} {r.fencer.firstName}
             </span>
             <span style={{ fontSize: '0.625rem', color: '#6b7280' }}>
-              {r.fencer.birthDate && `${new Date(r.fencer.birthDate).getFullYear()}`}
+              {r.fencer.club && r.fencer.club}
+              {r.fencer.birthDate && ` • ${new Date(r.fencer.birthDate).getFullYear()}`}
               {r.fencer.ranking && ` • #${r.fencer.ranking}`}
             </span>
           </div>
@@ -51,4 +52,4 @@ const SeedingTable: React.FC<SeedingTableProps> = ({ ranking, tableauSize }) => 
   </div>
 );
 
-export default SeedingTable;
+export default React.memo(SeedingTable);

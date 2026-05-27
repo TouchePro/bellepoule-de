@@ -671,4 +671,4 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
   );
 };
 
-export default RefereeManagerComponent;
+export default React.memo(RefereeManagerComponent);

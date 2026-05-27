@@ -265,4 +265,4 @@ _Issue créée automatiquement depuis BellePoule Modern_`;
   );
 };
 
-export default ReportIssueModal;
+export default React.memo(ReportIssueModal);

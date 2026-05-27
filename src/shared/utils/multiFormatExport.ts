@@ -3,7 +3,7 @@
  * Licensed under GPL-3.0
  */
 
-import { Competition, Fencer, Pool, PoolRanking, FencerStatus } from '../types';
+import { Competition, Fencer, Pool, PoolRanking, FencerStatus, MatchEventEntry } from '../types';
 
 /**
  * Export results as HTML web page
@@ -338,4 +338,45 @@ function escapeXml(str: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
+}
+
+export function describeMatchEvent(entry: MatchEventEntry): string {
+  switch (entry.eventType) {
+    case 'touch':
+      return `Zone ${entry.zone ?? '?'} — ${entry.points ?? 0} pt(s)`;
+    case 'card': {
+      const exclusion = entry.resultingExclusion ? ' (exclusion)' : '';
+      return `Carton ${entry.cardType ?? ''} — ${entry.cardReason ?? ''}${exclusion}`;
+    }
+    case 'arena_exit':
+      return `${entry.exitType === 'arena_exit_voluntary' ? 'Sortie volontaire' : "Sortie d'arène"} — +${entry.points ?? 0} pts adv.`;
+    case 'score_change': {
+      const pA = entry.previousScoreA?.value ?? '?';
+      const pB = entry.previousScoreB?.value ?? '?';
+      const nA = entry.newScoreA?.value ?? '?';
+      const nB = entry.newScoreB?.value ?? '?';
+      const by = entry.refereeName ?? entry.changedBy ?? '?';
+      return `${pA}/${pB} → ${nA}/${nB} (${by})`;
+    }
+    default:
+      return '';
+  }
+}
+
+export function exportMatchTimelineJSON(
+  entries: MatchEventEntry[],
+  title: string,
+  competitionName?: string
+): string {
+  return JSON.stringify(
+    {
+      title,
+      competitionName: competitionName ?? null,
+      exportedAt: new Date().toISOString(),
+      eventCount: entries.length,
+      events: entries,
+    },
+    null,
+    2
+  );
 }

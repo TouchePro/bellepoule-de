@@ -55,6 +55,13 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
   const [refereeFeatureEnabled, setRefereeFeatureEnabled] = useState(
     competition.settings?.refereeFeatureEnabled ?? false
   );
+  const [expertMode, setExpertMode] = useState(competition.settings?.expertMode ?? false);
+  const [maxRefereesPerPool, setMaxRefereesPerPool] = useState(
+    competition.settings?.maxRefereesPerPool ?? 1
+  );
+  const [maxRefereesPerMatch, setMaxRefereesPerMatch] = useState(
+    competition.settings?.maxRefereesPerMatch ?? 1
+  );
 
   // Formule personnalisée (arme CUSTOM)
   const [customFormula, setCustomFormula] = useState<CustomFormulaConfig>(
@@ -117,6 +124,8 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
       minTeamSize: competition.settings?.minTeamSize ?? 3,
       questConfig,
       refereeFeatureEnabled,
+      expertMode,
+      ...(expertMode ? { maxRefereesPerPool, maxRefereesPerMatch } : {}),
       ...(weapon === Weapon.CUSTOM ? { customFormula } : {}),
     };
 
@@ -586,6 +595,62 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
                 Affiche le nom de l'arbitre sur l'arène et permet de le changer depuis la saisie distante
               </small>
             </div>
+            <div className="form-group" style={{ marginTop: '0.75rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={expertMode}
+                  onChange={e => setExpertMode(e.target.checked)}
+                />
+                Mode expert
+              </label>
+              <small style={{ color: '#6b7280', fontSize: '0.75rem', marginLeft: '1.5rem' }}>
+                Active l'édition avancée des pistes et du nombre d'arbitres par poule / match
+              </small>
+            </div>
+            {expertMode && (
+              <div
+                style={{
+                  background: '#fefce8',
+                  border: '1px solid #fde047',
+                  borderRadius: '8px',
+                  padding: '1rem',
+                  marginTop: '0.75rem',
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '1rem',
+                }}
+              >
+                <div className="form-group">
+                  <label htmlFor="maxRefereesPerPool" style={{ fontSize: '0.875rem' }}>
+                    Arbitres max par poule
+                  </label>
+                  <input
+                    type="number"
+                    id="maxRefereesPerPool"
+                    className="form-input"
+                    value={maxRefereesPerPool}
+                    min={1}
+                    max={10}
+                    onChange={e => setMaxRefereesPerPool(Math.max(1, parseInt(e.target.value) || 1))}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="maxRefereesPerMatch" style={{ fontSize: '0.875rem' }}>
+                    Arbitres max par match (tableau)
+                  </label>
+                  <input
+                    type="number"
+                    id="maxRefereesPerMatch"
+                    className="form-input"
+                    value={maxRefereesPerMatch}
+                    min={1}
+                    max={10}
+                    onChange={e => setMaxRefereesPerMatch(Math.max(1, parseInt(e.target.value) || 1))}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="modal-footer">
@@ -602,4 +667,4 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
   );
 };
 
-export default CompetitionPropertiesModal;
+export default React.memo(CompetitionPropertiesModal);

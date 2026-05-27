@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Pool, Fencer, Score, MatchStatus, FencerStatus } from '../../../shared/types';
 import { formatRatio, formatIndex } from '../../../shared/utils/poolCalculations';
 import { ColumnId } from '../../hooks/useColumnVisibility';
@@ -25,6 +25,22 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
   isLocked = false,
 }) => {
   const fencers = pool.fencers;
+  const [flashCell, setFlashCell] = useState<string | null>(null);
+  const prevMatchesRef = useRef<typeof pool.matches>(pool.matches);
+
+  useEffect(() => {
+    const prev = prevMatchesRef.current;
+    for (const match of pool.matches) {
+      const old = prev.find(m => m.id === match.id);
+      if (old && match.status === MatchStatus.FINISHED && old.status !== MatchStatus.FINISHED) {
+        const key = `${match.fencerA?.id}-${match.fencerB?.id}`;
+        setFlashCell(key);
+        setTimeout(() => setFlashCell(null), 900);
+        break;
+      }
+    }
+    prevMatchesRef.current = pool.matches;
+  }, [pool.matches]);
 
   const getScore = (fencerA: Fencer, fencerB: Fencer): Score | null => {
     const match = pool.matches.find(
@@ -128,14 +144,59 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
             Rg
           </div>
         )}
+        {isVisible('club') && (
+          <div
+            className="pool-cell pool-cell-header"
+            onContextMenu={e => { e.preventDefault(); toggleColumn('pool', 'club'); }}
+            title="Clic droit pour masquer"
+          >
+            Club
+          </div>
+        )}
+        {isVisible('nation') && (
+          <div
+            className="pool-cell pool-cell-header"
+            onContextMenu={e => { e.preventDefault(); toggleColumn('pool', 'nation'); }}
+            title="Clic droit pour masquer"
+          >
+            Nat
+          </div>
+        )}
+        {isVisible('region') && (
+          <div
+            className="pool-cell pool-cell-header"
+            onContextMenu={e => { e.preventDefault(); toggleColumn('pool', 'region'); }}
+            title="Clic droit pour masquer"
+          >
+            Rég
+          </div>
+        )}
       </div>
 
       {fencers.map((rowFencer, rowIndex) => {
         const stats = calculateFencerStats(rowFencer);
-        const rankEntry = pool.ranking.find(r => r.fencer.id === rowFencer.id);
+        const rankEntry = pool.ranking?.find(r => r.fencer.id === rowFencer.id);
+        const rankRatio = (rankEntry?.rank ?? fencers.length) / fencers.length;
+        const rowBg =
+          rankRatio <= 0.7
+            ? 'rgba(16,185,129,0.08)'
+            : rankRatio <= 0.9
+              ? 'rgba(245,158,11,0.10)'
+              : 'rgba(239,68,68,0.08)';
+
+        const fencerMatches = pool.matches.filter(
+          m =>
+            m.status === MatchStatus.FINISHED &&
+            (m.fencerA?.id === rowFencer.id || m.fencerB?.id === rowFencer.id)
+        );
+        const sparkBars = fencerMatches.map(m => {
+          const isA = m.fencerA?.id === rowFencer.id;
+          const won = isA ? m.scoreA?.isVictory : m.scoreB?.isVictory;
+          return won;
+        });
 
         return (
-          <div key={rowFencer.id} className="pool-row">
+          <div key={rowFencer.id} className="pool-row" style={{ backgroundColor: rowBg }}>
             <div
               className="pool-cell pool-cell-header pool-cell-name"
               title={`${rowFencer.firstName} ${rowFencer.lastName}`}
@@ -148,6 +209,20 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
                   {rowFencer.firstName}
                 </span>
               </span>
+              {sparkBars.length > 0 && (
+                <svg width="16" height="10" style={{ flexShrink: 0 }} aria-hidden="true">
+                  {sparkBars.map((won, i) => (
+                    <rect
+                      key={i}
+                      x={i * (16 / sparkBars.length)}
+                      y={won ? 0 : 4}
+                      width={Math.max(1, 16 / sparkBars.length - 1)}
+                      height={won ? 10 : 6}
+                      fill={won ? '#22c55e' : '#ef4444'}
+                    />
+                  ))}
+                </svg>
+              )}
               {onFencerChangePool && (
                 <button
                   onClick={e => {
@@ -211,10 +286,14 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
                   : 'pool-cell-defeat'
                 : 'pool-cell-editable';
 
+              const cellKey = `${rowFencer.id}-${colFencer.id}`;
+              const mirrorKey = `${colFencer.id}-${rowFencer.id}`;
+              const isFlashing = flashCell === cellKey || flashCell === mirrorKey;
+
               return (
                 <div
                   key={colIndex}
-                  className={`pool-cell ${cellClass}`}
+                  className={`pool-cell ${cellClass} ${isFlashing ? 'pool-cell-flash' : ''}`}
                   onClick={() => !isLocked && onCellClick(rowFencer, colFencer)}
                   style={{ cursor: isLocked ? 'default' : 'pointer', position: 'relative' }}
                 >
@@ -289,6 +368,21 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
                 {rankEntry?.rank || '-'}
               </div>
             )}
+            {isVisible('club') && (
+              <div className="pool-cell" style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                {rowFencer.club ?? ''}
+              </div>
+            )}
+            {isVisible('nation') && (
+              <div className="pool-cell" style={{ fontWeight: 600, textTransform: 'uppercase' }}>
+                {rowFencer.nationality ?? ''}
+              </div>
+            )}
+            {isVisible('region') && (
+              <div className="pool-cell" style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                {rowFencer.region ?? ''}
+              </div>
+            )}
           </div>
         );
       })}
@@ -296,4 +390,4 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
   );
 };
 
-export default PoolScoreMatrix;
+export default React.memo(PoolScoreMatrix);

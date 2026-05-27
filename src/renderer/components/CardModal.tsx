@@ -23,7 +23,7 @@ interface CardModalProps {
   opponentName: string;
 }
 
-export const CardModal: React.FC<CardModalProps> = ({
+const CardModal_: React.FC<CardModalProps> = ({
   isOpen,
   onClose,
   onConfirm,
@@ -195,4 +195,5 @@ export const CardModal: React.FC<CardModalProps> = ({
   );
 };
 
+export const CardModal = React.memo(CardModal_);
 export default CardModal;

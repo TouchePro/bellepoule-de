@@ -155,4 +155,4 @@ export const useToast = (): ToastContextType => {
   return context;
 };
 
-export default ToastProvider;
+export default React.memo(ToastProvider);

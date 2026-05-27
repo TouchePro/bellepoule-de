@@ -3,27 +3,41 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useEffect, useCallback } from 'react';
-import { Competition } from '../shared/types';
+import React, { useEffect, useCallback, useState, Suspense } from 'react';
+import { Competition, PhaseType } from '../shared/types';
 import type { CompetitionCreateData } from '../shared/types/preload';
 import { logger, LogCategory } from '@shared/services/logger';
 import CompetitionList from './components/CompetitionList';
-import CompetitionView from './components/CompetitionView';
-import NewCompetitionModal from './components/NewCompetitionModal';
-import ReportIssueModal from './components/ReportIssueModal';
-import UpdateNotification from './components/UpdateNotification';
-import SettingsModal from './components/SettingsModal';
-import DTCallNotification from './components/DTCallNotification';
+const CompetitionView = React.lazy(() => import('./components/CompetitionView'));
+const CommandPalette = React.lazy(() => import('./components/CommandPalette'));
+const NewCompetitionModal = React.lazy(() => import('./components/NewCompetitionModal'));
+const ReportIssueModal = React.lazy(() => import('./components/ReportIssueModal'));
+const SettingsModal = React.lazy(() => import('./components/SettingsModal'));
+const DTCallNotification = React.lazy(() => import('./components/DTCallNotification'));
+const UpdateNotification = React.lazy(() => import('./components/UpdateNotification'));
 import { ToastProvider, useToast } from './components/Toast';
 import { ConfirmProvider, useConfirm } from './components/ConfirmDialog';
-import { TranslationProvider, useTranslation } from './contexts/TranslationContext';
+import { TranslationProvider, useTranslation, Theme } from './contexts/TranslationContext';
 import { ErrorBoundary, CompetitionErrorBoundary } from './components/ErrorBoundary';
 import { useAppState } from './hooks/useAppState';
 
+const PHASE_BADGE: Record<string, { label: string; cls: string }> = {
+  [PhaseType.CHECKIN]: { label: 'Appel', cls: 'badge-checkin' },
+  [PhaseType.POOL]: { label: 'Poules', cls: 'badge-pool' },
+  [PhaseType.QUEST]: { label: 'Quest', cls: 'badge-pool' },
+  [PhaseType.DIRECT_ELIMINATION]: { label: 'Tableau', cls: 'badge-tableau' },
+  [PhaseType.CLASSIFICATION]: { label: 'Résultats', cls: 'badge-results' },
+};
+
+const THEME_ICONS: Record<string, string> = { default: '🌓', light: '☀️', dark: '🌙' };
+const THEME_CYCLE: Theme[] = ['default', 'light', 'dark'];
+
 const AppContent: React.FC = () => {
-  const { t, isLoading: translationLoading } = useTranslation();
+  const { t, isLoading: translationLoading, theme, changeTheme } = useTranslation();
   const { showToast } = useToast();
   const { confirm } = useConfirm();
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
 
   const {
     view,
@@ -52,11 +66,23 @@ const AppContent: React.FC = () => {
     handleTabSwitch,
   } = useAppState(showToast);
 
-  // Load competitions on mount
+  // Load competitions on mount — attendre db:ready si la fenêtre s'ouvre avant la DB
   useEffect(() => {
-    loadCompetitions();
+    if (window.electronAPI?.onDbReady) {
+      // Si la DB n'est pas encore prête, attendre l'event puis charger
+      let loaded = false;
+      const tryLoad = () => { if (!loaded) { loaded = true; loadCompetitions(); } };
+      window.electronAPI.onDbReady(tryLoad);
+      // Charger quand même après 1s au cas où db:ready est déjà passé
+      const fallback = setTimeout(tryLoad, 1000);
+      return () => clearTimeout(fallback);
+    } else {
+      loadCompetitions();
+    }
+  }, []);
 
-    // Listen for menu events
+  // Listen for menu events
+  useEffect(() => {
     if (window.electronAPI) {
       window.electronAPI.onMenuNewCompetition(() => setShowNewCompetitionModal(true));
       window.electronAPI.onMenuReportIssue(() => setShowReportIssueModal(true));
@@ -96,6 +122,18 @@ const AppContent: React.FC = () => {
         window.electronAPI.removeAllListeners('autosave:failed');
       }
     };
+  }, []);
+
+  // Ctrl+K → command palette
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowCommandPalette(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
   }, []);
 
   // Sync logo from disk to localStorage so PDF exports always find it
@@ -201,6 +239,9 @@ const AppContent: React.FC = () => {
       }
     }
 
+    localStorage.removeItem(`bellepoule-remote-launched-${competitionId}`);
+    localStorage.removeItem(`bellepoule-remote-port-${competitionId}`);
+
     const newOpenCompetitions = openCompetitions.filter(
       open => open.competition.id !== competitionId
     );
@@ -223,6 +264,8 @@ const AppContent: React.FC = () => {
     try {
       if (window.electronAPI) {
         await window.electronAPI.db.deleteCompetition(id);
+        localStorage.removeItem(`bellepoule-remote-launched-${id}`);
+        localStorage.removeItem(`bellepoule-remote-port-${id}`);
         setCompetitions(prev => prev.filter(c => c.id !== id));
 
         // Supprimer l'onglet ouvert pour cette compétition (évite le tab fantôme)
@@ -254,8 +297,8 @@ const AppContent: React.FC = () => {
 
   return (
     <>
-      <UpdateNotification />
-      <DTCallNotification />
+      <Suspense fallback={null}><UpdateNotification /></Suspense>
+      <Suspense fallback={null}><DTCallNotification /></Suspense>
       <div className="app">
         <header className="header">
           <div className="header-title">
@@ -274,6 +317,15 @@ const AppContent: React.FC = () => {
             </svg>
             {t('app.title')}
           </div>
+          {/* Ctrl+K hint — clickable */}
+          <button
+            className="header-search-hint"
+            onClick={() => setShowCommandPalette(true)}
+            title="Ouvrir la palette de commandes (Ctrl+K)"
+          >
+            <span>Rechercher…</span>
+            <kbd>Ctrl K</kbd>
+          </button>
           <div className="header-nav">
             {openCompetitions.length > 0 && view === 'competition' && (
               <button
@@ -301,6 +353,16 @@ const AppContent: React.FC = () => {
                 📡 {t('phases.remote')}
               </button>
             )}
+            <button
+              className="btn-theme-toggle"
+              onClick={() => {
+                const next = THEME_CYCLE[(THEME_CYCLE.indexOf(theme) + 1) % THEME_CYCLE.length];
+                changeTheme(next);
+              }}
+              title={`Thème : ${theme}`}
+            >
+              {THEME_ICONS[theme]}
+            </button>
             <button
               className="btn btn-secondary"
               onClick={() => setShowSettingsModal(true)}
@@ -376,7 +438,25 @@ const AppContent: React.FC = () => {
             {openCompetitions.map(openComp => (
               <div
                 key={openComp.competition.id}
-                className={`tab ${activeTabId === openComp.competition.id ? 'tab-active' : ''}`}
+                className={`tab ${activeTabId === openComp.competition.id ? 'tab-active' : ''} ${draggedTabId === openComp.competition.id ? 'tab-dragging' : ''}`}
+                draggable
+                onDragStart={() => setDraggedTabId(openComp.competition.id)}
+                onDragEnd={() => setDraggedTabId(null)}
+                onDragOver={e => e.preventDefault()}
+                onDrop={e => {
+                  e.preventDefault();
+                  if (!draggedTabId || draggedTabId === openComp.competition.id) return;
+                  setOpenCompetitions(prev => {
+                    const from = prev.findIndex(o => o.competition.id === draggedTabId);
+                    const to = prev.findIndex(o => o.competition.id === openComp.competition.id);
+                    if (from === -1 || to === -1) return prev;
+                    const next = [...prev];
+                    const [moved] = next.splice(from, 1);
+                    next.splice(to, 0, moved);
+                    return next;
+                  });
+                  setDraggedTabId(null);
+                }}
                 onClick={() => handleTabSwitch(openComp.competition.id)}
                 style={{
                   display: 'flex',
@@ -384,18 +464,15 @@ const AppContent: React.FC = () => {
                   gap: '0.5rem',
                   padding: '0.75rem 1rem',
                   borderRadius: '8px 8px 0 0',
-                  cursor: 'pointer',
+                  cursor: 'grab',
                   background: activeTabId === openComp.competition.id ? 'white' : 'transparent',
-                  border:
-                    activeTabId === openComp.competition.id
-                      ? '1px solid #e5e7eb'
-                      : '1px solid transparent',
-                  borderBottom:
-                    activeTabId === openComp.competition.id ? '1px solid white' : 'none',
+                  border: activeTabId === openComp.competition.id ? '1px solid #e5e7eb' : '1px solid transparent',
+                  borderBottom: activeTabId === openComp.competition.id ? '1px solid white' : 'none',
                   marginBottom: activeTabId === openComp.competition.id ? '-1px' : '0',
                   transition: 'all 0.15s ease',
                   position: 'relative',
                   minWidth: '150px',
+                  opacity: draggedTabId === openComp.competition.id ? 0.4 : 1,
                 }}
                 onMouseEnter={e => {
                   if (activeTabId !== openComp.competition.id) {
@@ -408,6 +485,12 @@ const AppContent: React.FC = () => {
                   }
                 }}
               >
+                {/* Dot coloré de la compétition */}
+                <span style={{
+                  width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                  background: openComp.competition.color || '#3B5BDB',
+                  boxShadow: `0 0 0 2px ${(openComp.competition.color || '#3B5BDB')}33`,
+                }} />
                 <span
                   style={{
                     fontWeight: activeTabId === openComp.competition.id ? '600' : '400',
@@ -423,29 +506,23 @@ const AppContent: React.FC = () => {
                   {openComp.isDirty && (
                     <span style={{ color: '#ef4444', marginLeft: '0.25rem' }}>●</span>
                   )}
+                  {(() => {
+                    const phase = openComp.competition.phases?.[openComp.competition.currentPhaseIndex];
+                    const badge = phase ? PHASE_BADGE[phase.type] : null;
+                    return badge ? (
+                      <span className={`tab-phase-badge ${badge.cls}`}>{badge.label}</span>
+                    ) : null;
+                  })()}
                 </span>
                 <button
                   onClick={e => handleTabClose(openComp.competition.id, e)}
                   style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#6b7280',
-                    cursor: 'pointer',
-                    padding: '0.125rem',
-                    borderRadius: '3px',
-                    fontSize: '0.75rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    background: 'none', border: 'none', color: '#6b7280',
+                    cursor: 'pointer', padding: '0.125rem', borderRadius: '3px',
+                    fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.background = '#e5e7eb';
-                    e.currentTarget.style.color = '#374151';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.background = 'none';
-                    e.currentTarget.style.color = '#6b7280';
-                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#e5e7eb'; e.currentTarget.style.color = '#374151'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280'; }}
                   title={t('app.close_tab')}
                 >
                   ×
@@ -478,29 +555,58 @@ const AppContent: React.FC = () => {
 
           {view === 'competition' && currentCompetition && activeTabId && (
             <CompetitionErrorBoundary key={currentCompetition.id}>
-              <CompetitionView
-                competition={currentCompetition}
-                onUpdate={handleUpdateCompetition}
-                requestPhase={requestedPhase ?? undefined}
-                onPhaseApplied={() => setRequestedPhase(null)}
-              />
+              <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Chargement…</div>}>
+                <CompetitionView
+                  competition={currentCompetition}
+                  onUpdate={handleUpdateCompetition}
+                  requestPhase={requestedPhase ?? undefined}
+                  onPhaseApplied={() => setRequestedPhase(null)}
+                />
+              </Suspense>
             </CompetitionErrorBoundary>
           )}
         </main>
 
         {showNewCompetitionModal && (
-          <NewCompetitionModal
-            onClose={() => setShowNewCompetitionModal(false)}
-            onCreate={handleCreateCompetition}
-          />
+          <Suspense fallback={null}>
+            <NewCompetitionModal
+              onClose={() => setShowNewCompetitionModal(false)}
+              onCreate={handleCreateCompetition}
+            />
+          </Suspense>
         )}
 
         {showReportIssueModal && (
-          <ReportIssueModal onClose={() => setShowReportIssueModal(false)} />
+          <Suspense fallback={null}>
+            <ReportIssueModal onClose={() => setShowReportIssueModal(false)} />
+          </Suspense>
         )}
 
         {showSettingsModal && (
-          <SettingsModal onClose={() => setShowSettingsModal(false)} onSave={handleSettingsSave} />
+          <Suspense fallback={null}>
+            <SettingsModal onClose={() => setShowSettingsModal(false)} onSave={handleSettingsSave} />
+          </Suspense>
+        )}
+
+        {showCommandPalette && (
+          <Suspense fallback={null}>
+            <CommandPalette
+              competitions={competitions}
+              onClose={() => setShowCommandPalette(false)}
+              onSelectCompetition={id => {
+                setShowCommandPalette(false);
+                handleTabSwitch(id);
+              }}
+              onNewCompetition={() => {
+                setShowCommandPalette(false);
+                setShowNewCompetitionModal(true);
+              }}
+              onOpenSettings={() => {
+                setShowCommandPalette(false);
+                setShowSettingsModal(true);
+              }}
+            />
+          </Suspense>
         )}
       </div>
     </>

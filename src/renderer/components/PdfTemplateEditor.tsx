@@ -240,4 +240,4 @@ const PdfTemplateEditor: React.FC<Props> = ({ template, onChange, onReset }) => 
   );
 };
 
-export default PdfTemplateEditor;
+export default React.memo(PdfTemplateEditor);

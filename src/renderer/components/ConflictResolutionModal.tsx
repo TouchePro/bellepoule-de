@@ -107,4 +107,4 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
   );
 };
 
-export default ConflictResolutionModal;
+export default React.memo(ConflictResolutionModal);

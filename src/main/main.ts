@@ -8,7 +8,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 import JSZip from 'jszip';
-import { DatabaseManager } from '../database';
+import { DatabaseManager, prewarmSqlJs } from '../database';
 import { RemoteScoreServer } from './remoteScoreServer';
 import { AutoUpdater } from './autoUpdater';
 import { Competition, Fencer, FencerStatus, Match, MatchStatus, Pool } from '../shared/types';
@@ -985,6 +985,13 @@ ipcMain.handle('db:updateMatch', async (_, id, updates) => {
   } else {
     db.updateMatch(id, updates);
   }
+
+  // Propager l'assignation d'arbitre au serveur distant
+  if (updates.refereeId) {
+    for (const { server } of remoteServers.values()) {
+      try { server.assignRefereeToMatch(id, updates.refereeId); } catch { /* non bloquant */ }
+    }
+  }
 });
 
 ipcMain.handle('db:upsertTableauMatch', async (_, params) => {
@@ -1032,6 +1039,9 @@ ipcMain.handle('db:clearPoolsForPhase', async (_, phaseId) => {
 });
 ipcMain.handle('db:addFencerToPool', async (_, poolId, fencerId, position) => {
   return db.addFencerToPool(poolId, fencerId, position);
+});
+ipcMain.handle('db:addFencerToPoolMidCompetition', async (_, poolId, fencerId, maxScore) => {
+  return db.addFencerToPoolMidCompetition(poolId, fencerId, maxScore ?? 5);
 });
 ipcMain.handle('db:getPoolFencers', async (_, poolId) => {
   return db.getPoolFencers(poolId);
@@ -1135,6 +1145,14 @@ ipcMain.handle('db:deleteAbandonSnapshot', async (_, fencerId) => {
 
 ipcMain.handle('db:getScoreAuditLogByCompetition', async (_, competitionId) => {
   return db.getScoreAuditLogByCompetition(competitionId);
+});
+
+ipcMain.handle('db:getMatchTimeline', async (_, matchId: string) => {
+  return db.getMatchTimeline(matchId);
+});
+
+ipcMain.handle('db:getCompetitionTimeline', async (_, competitionId: string) => {
+  return db.getCompetitionTimeline(competitionId);
 });
 
 // File handlers
@@ -1852,6 +1870,17 @@ ipcMain.handle('remote:changePort', async (_, competitionId: string, newPort: nu
   }
 });
 
+ipcMain.handle('remote:setRegistrationEnabled', async (_, competitionId: string, enabled: boolean) => {
+  try {
+    const entry = remoteServers.get(competitionId);
+    if (!entry) return { success: false, error: 'Serveur non démarré' };
+    entry.server.setRegistrationEnabled(enabled);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
 ipcMain.handle('app:getLogo', async () => {
   const logoPath = path.join(app.getPath('userData'), 'logo.dat');
   try {
@@ -1933,6 +1962,9 @@ if (process.platform === 'linux') {
 }
 
 app.whenReady().then(async () => {
+  // Préchauffer sql.js WASM en parallèle avec la création de la fenêtre
+  prewarmSqlJs();
+
   // Initialize database dans un répertoire inscriptible (userData)
   // Sur Windows, process.cwd() peut pointer vers C:\Windows\System32 (non inscriptible)
   const userDataPath = app.getPath('userData');
@@ -1950,10 +1982,14 @@ app.whenReady().then(async () => {
     }
   }
 
+  // Créer la fenêtre immédiatement pendant que la DB se charge
+  createWindow();
+
   await db.open(dbPath);
   console.log('Base de données ouverte:', db.getPath());
 
-  createWindow();
+  // Signaler au renderer que la DB est prête
+  mainWindow?.webContents.send('db:ready');
 
   // Initialize auto updater
   if (mainWindow) {

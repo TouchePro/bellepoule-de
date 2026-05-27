@@ -170,6 +170,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }
       return ipcRenderer.invoke('db:addFencerToPool', poolId, fencerId, position);
     },
+    addFencerToPoolMidCompetition: (poolId: string, fencerId: string, maxScore?: number) => {
+      if (!poolId || typeof poolId !== 'string') {
+        throw new Error('Pool ID is required and must be a string');
+      }
+      if (!fencerId || typeof fencerId !== 'string') {
+        throw new Error('Fencer ID is required and must be a string');
+      }
+      return ipcRenderer.invoke('db:addFencerToPoolMidCompetition', poolId, fencerId, maxScore);
+    },
     getPoolFencers: (poolId: string) => {
       if (!poolId || typeof poolId !== 'string') {
         throw new Error('Pool ID is required and must be a string');
@@ -282,6 +291,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('db:getScoreAuditLogByCompetition', competitionId),
     deleteAbandonSnapshot: (fencerId: string) =>
       ipcRenderer.invoke('db:deleteAbandonSnapshot', fencerId),
+    getMatchTimeline: (matchId: string) =>
+      ipcRenderer.invoke('db:getMatchTimeline', matchId),
+    getCompetitionTimeline: (competitionId: string) =>
+      ipcRenderer.invoke('db:getCompetitionTimeline', competitionId),
   },
 
   // File operations with validation
@@ -397,6 +410,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('file:saved', (_, filepath) => callback(filepath)),
   onAutosaveCompleted: (callback: () => void) => ipcRenderer.on('autosave:completed', callback),
   onAutosaveFailed: (callback: () => void) => ipcRenderer.on('autosave:failed', callback),
+  onDbReady: (callback: () => void) => ipcRenderer.once('db:ready', callback),
 
   // Utility functions
   print: () => ipcRenderer.invoke('window:print'),
@@ -460,8 +474,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       direct: boolean;
       suivants: boolean;
     }) => ipcRenderer.invoke('remote:updateKioskViews', competitionId, views),
-    updateMatchArena: (competitionId: string, matchId: string, fromArena: number | null, toArena: number | null) =>
-      ipcRenderer.invoke('remote:updateMatchArena', competitionId, matchId, fromArena, toArena),
+    updateMatchArena: (competitionId: string, matchId: string, fromArena: number | null, toArena: number | null, fencerA?: any, fencerB?: any) =>
+      ipcRenderer.invoke('remote:updateMatchArena', competitionId, matchId, fromArena, toArena, fencerA, fencerB),
     updatePoolFencers: (competitionId: string, updates: Array<{ poolId: string; fencers: any[] }>) =>
       ipcRenderer.invoke('remote:updatePoolFencers', competitionId, updates),
     syncPoolMatches: (competitionId: string, poolsData: Array<{ poolId: string; matches: any[] }>) =>
@@ -484,11 +498,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('remote:acknowledgeDTCall', competitionId, arenaId),
     resetPoolMatch: (competitionId: string, matchId: string) =>
       ipcRenderer.invoke('remote:resetPoolMatch', competitionId, matchId),
+    setRegistrationEnabled: (competitionId: string, enabled: boolean) =>
+      ipcRenderer.invoke('remote:setRegistrationEnabled', competitionId, enabled),
   },
 
   // Remote event listeners (for real-time updates)
   onRemoteArenaUpdate: (callback: (data: any) => void) => {
-    ipcRenderer.on('arena:update', (_, data) => callback(data));
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on('arena:update', handler);
+    return () => ipcRenderer.removeListener('arena:update', handler);
   },
   onRemoteMatchFinished: (callback: (data: any) => void) => {
     ipcRenderer.on('match:finished', (_, data) => callback(data));

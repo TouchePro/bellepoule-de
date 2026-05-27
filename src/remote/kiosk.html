@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Kiosk - BellePoule Modern</title>
+    <script src="/socket.io/socket.io.js"></script>
     <script src="/i18n.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -415,8 +416,10 @@
         text-align: center;
       }
 
-      .score-a { color: #10b981; }
-      .score-b { color: #ef4444; }
+      .score-a { color: #ef4444; }
+      .score-b { color: #10b981; }
+      .fencer-red { border-left: 3px solid #ef4444; padding-left: 0.5rem; }
+      .fencer-green { border-right: 3px solid #10b981; padding-right: 0.5rem; }
 
       .arena-vs {
         font-size: 1rem;
@@ -672,6 +675,151 @@
       color: #94a3b8;
       font-style: italic;
     }
+      /* ── Vue Tableau d'élimination directe ─────────────────────────────── */
+      #view-tableau .bracket-outer {
+        flex: 1;
+        overflow-x: auto;
+        overflow-y: hidden;
+        position: relative;
+        scroll-behavior: smooth;
+      }
+
+      #view-tableau .bracket-inner {
+        position: relative;
+        display: inline-block;
+        min-width: 100%;
+      }
+
+      .bracket-round-labels {
+        position: relative;
+        height: 28px;
+        margin-bottom: 6px;
+        flex-shrink: 0;
+      }
+
+      .bracket-round-label {
+        position: absolute;
+        text-align: center;
+        font-size: 0.62rem;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        padding: 0.2rem 0;
+        border-radius: 0.3rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .bracket-round-label.active-round {
+        color: #fbbf24;
+        background: rgba(251, 191, 36, 0.08);
+      }
+
+      .bracket-matches-layer {
+        position: relative;
+        flex-shrink: 0;
+      }
+
+      .bracket-match {
+        position: absolute;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        border-radius: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        transition: border-color 0.3s;
+      }
+
+      .bracket-match.match--live {
+        border-color: rgba(16, 185, 129, 0.6);
+        background: rgba(16, 185, 129, 0.06);
+        animation: bracket-pulse 2s ease infinite;
+      }
+
+      .bracket-match.match--finished {
+        border-color: rgba(100, 116, 139, 0.25);
+      }
+
+      .bracket-match.match--bye {
+        opacity: 0.2;
+      }
+
+      @keyframes bracket-pulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.3); }
+        50%       { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+      }
+
+      .bm-row {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 0.4rem;
+        gap: 0.25rem;
+        min-width: 0;
+      }
+
+      .bm-winner { background: rgba(251, 191, 36, 0.12); }
+      .bm-loser  { opacity: 0.38; }
+
+      .bm-name {
+        font-size: 0.75rem;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+        flex: 1;
+      }
+
+      .bm-score {
+        font-size: 0.88rem;
+        font-weight: 900;
+        color: #fbbf24;
+        min-width: 1.1rem;
+        text-align: right;
+        flex-shrink: 0;
+      }
+
+      .bm-divider {
+        height: 1px;
+        background: rgba(255, 255, 255, 0.07);
+        flex-shrink: 0;
+      }
+
+      .bm-arena {
+        font-size: 0.55rem;
+        color: #475569;
+        text-align: center;
+        padding: 0.05rem 0;
+        flex-shrink: 0;
+      }
+
+      .bracket-svg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        overflow: visible;
+        pointer-events: none;
+      }
+
+      .bracket-trophy-banner {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.3rem 0.6rem;
+        background: rgba(251, 191, 36, 0.12);
+        border-radius: 0.4rem;
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #fbbf24;
+        margin-top: 4px;
+        flex-shrink: 0;
+      }
     </style>
   </head>
   <body>
@@ -700,6 +848,7 @@
         <button id="btn-classement" onclick="switchView('classement')" data-i18n="kiosk.ranking">Classement</button>
         <button id="btn-direct" onclick="switchView('direct')" data-i18n="kiosk.live">Matchs en direct</button>
         <button id="btn-suivants" onclick="switchView('suivants')" data-i18n="kiosk.next_matches">Matchs suivants</button>
+        <button id="btn-tableau" onclick="switchView('tableau')">Tableau DE</button>
       </div>
       <div style="position:relative;margin-left:0.5rem">
         <button id="btn-settings" class="settings-btn" title="Configurer les vues">⚙</button>
@@ -717,6 +866,16 @@
           <label class="settings-item">
             <input type="checkbox" id="cb-suivants" checked> Matchs suivants
           </label>
+          <label class="settings-item">
+            <input type="checkbox" id="cb-tableau" checked> Tableau DE
+          </label>
+          <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:0.5rem 0">
+          <div class="settings-title" data-i18n="kiosk.rotation_label">Rafraîchissement</div>
+          <div class="settings-item">
+            <input type="number" id="rotation-input" min="3" max="300" value="15"
+              style="width:56px;background:#0f172a;border:1px solid rgba(255,255,255,0.2);border-radius:0.4rem;color:#e2e8f0;padding:0.2rem 0.4rem;font-size:0.875rem">
+            <span data-i18n="kiosk.rotation_unit">s</span>
+          </div>
         </div>
       </div>
       <div class="menu-status">
@@ -793,6 +952,26 @@
       </div>
     </div>
 
+    <!-- Vue Tableau d'élimination directe -->
+    <div id="view-tableau" class="kiosk-view">
+      <div class="view-header">
+        <div>
+          <div class="view-title">Tableau d'Élimination</div>
+          <div class="view-subtitle" id="tableau-subtitle">Tableau direct</div>
+        </div>
+        <div class="view-badge" id="tableau-badge">—</div>
+      </div>
+      <div class="bracket-outer" id="bracket-outer">
+        <div class="bracket-inner" id="bracket-inner">
+          <div class="no-data">
+            <div class="no-data-icon">🏆</div>
+            <h3>Tableau non disponible</h3>
+            <p>Le tableau apparaîtra lors de la phase d'élimination directe</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Vue Matchs en direct -->
     <div id="view-direct" class="kiosk-view">
       <div class="view-header">
@@ -813,23 +992,26 @@
 
     <script>
       // ─── État ────────────────────────────────────────────────────────────────
-      const ALL_VIEWS = ['poules', 'classement', 'direct', 'suivants'];
+      const ALL_VIEWS = ['poules', 'classement', 'direct', 'suivants', 'tableau'];
 
       const state = {
         currentView: 'poules',
-        views: ['poules', 'classement', 'direct', 'suivants'],
+        views: ['poules', 'classement', 'direct', 'suivants', 'tableau'],
         rotationMs: 15000,
         rotationTimer: null,
         progressTimer: null,
         progressStart: null,
         menuTimer: null,
         session: null,
-        poolsData: [],    // pools avec rankings
-        arenasData: [],   // arènes
-        upcomingData: [], // matchs suivants
+        poolsData: [],
+        arenasData: [],
+        upcomingData: [],
         overallRanking: [],
         lastUpdate: null,
-        prevArenaScores: {},  // { [arenaId]: { scoreA, scoreB } }
+        prevArenaScores: {},
+        bracketData: null,
+        bracketPanTimer: null,
+        bracketPanIndex: 0,
       };
 
       // ─── Note d'organisation ─────────────────────────────────────────────────
@@ -896,17 +1078,32 @@
       function switchView(name) {
         state.currentView = name;
 
+        // Stopper le pan du bracket si on quitte la vue tableau
+        clearInterval(state.bracketPanTimer);
+        state.bracketPanTimer = null;
+
         ALL_VIEWS.forEach(v => {
           document.getElementById('view-' + v).classList.toggle('active', v === name);
           const btn = document.getElementById('btn-' + v);
           if (btn) btn.classList.toggle('active', v === name);
         });
 
-        // Reset scroll for classement
         if (name === 'classement') {
           const wrapper = document.getElementById('ranking-scroll-wrapper');
           wrapper.scrollTop = 0;
           startAutoScroll(wrapper);
+        }
+
+        if (name === 'tableau') {
+          state.bracketPanIndex = 0;
+          if (state.bracketData) {
+            renderBracket();
+            // Scroll vers le round actif après rendu
+            setTimeout(() => {
+              if (state.bracketData?.currentRound) scrollToBracketRound(state.bracketData.currentRound);
+            }, 120);
+          }
+          startBracketPan();
         }
 
         document.getElementById('progress-bar').style.width = '0%';
@@ -979,6 +1176,16 @@
         return null;
       }
 
+      // ─── Configuration locale du délai de rotation ───────────────────────────
+      function saveLocalRotation(sec) {
+        localStorage.setItem('kioskRotationSec', String(sec));
+      }
+
+      function loadLocalRotation() {
+        const v = parseInt(localStorage.getItem('kioskRotationSec'), 10);
+        return (!isNaN(v) && v >= 3) ? v : 15;
+      }
+
       function applyLocalViews() {
         const enabled = ALL_VIEWS.filter(v => document.getElementById('cb-' + v).checked);
         state.views = enabled.length > 0 ? enabled : ALL_VIEWS.slice();
@@ -1019,6 +1226,17 @@
           applyLocalViews();
           clearTimeout(state.menuTimer); // garder le menu visible pendant la config
         });
+      });
+
+      // Changement du délai de rotation
+      document.getElementById('rotation-input').addEventListener('change', () => {
+        const raw = parseInt(document.getElementById('rotation-input').value, 10);
+        const sec = (!isNaN(raw) && raw >= 3) ? Math.min(raw, 300) : 15;
+        document.getElementById('rotation-input').value = sec;
+        state.rotationMs = sec * 1000;
+        saveLocalRotation(sec);
+        startRotation();
+        clearTimeout(state.menuTimer);
       });
 
       // ─── Statut connexion ────────────────────────────────────────────────────
@@ -1069,7 +1287,11 @@
           if (poolsRes.ok) {
             const data = await poolsRes.json();
             state.poolsData = data.pools || [];
-            buildOverallRanking();
+            if (data.overallRanking && data.overallRanking.length > 0) {
+              state.overallRanking = data.overallRanking;
+            } else {
+              buildOverallRanking();
+            }
             renderPools();
             renderRanking();
           }
@@ -1135,7 +1357,8 @@
 
         container.innerHTML = pools.map(pool => {
           const rankings = pool.rankings || [];
-          const isComplete = rankings.every(r => (r.matchCount || 0) > 0);
+          const expectedMatches = Math.max(0, rankings.length - 1);
+          const isComplete = rankings.length > 0 && rankings.every(r => (r.matchesPlayed || 0) >= expectedMatches);
           const rows = rankings.map((r, i) => {
             const ind = (r.index >= 0 ? '+' : '') + (r.index || 0);
             const rankClass = i < 3 ? ' rank-' + (i + 1) : '';
@@ -1180,14 +1403,10 @@
           return;
         }
 
-        const medals = ['🥇', '🥈', '🥉'];
         tbody.innerHTML = ranking.map((r, i) => {
           const ind = (r.index >= 0 ? '+' : '') + (r.index || 0);
-          const topClass = i < 3 ? ' class="top-row"' : '';
-          const rankDisplay = i < 3
-            ? `<span class="rank-medal">${medals[i]}</span>`
-            : `<span style="color:#64748b;font-weight:700">${i + 1}</span>`;
-          return `<tr${topClass}>
+          const rankDisplay = `<span style="color:#64748b;font-weight:700">${i + 1}</span>`;
+          return `<tr>
             <td>${rankDisplay}</td>
             <td>
               <div style="font-weight:500">${escHtml(r.lastName)} ${escHtml(r.firstName || '')}</div>
@@ -1317,7 +1536,7 @@
               <span class="arena-status-pill ${isActive ? 'in-progress' : ''}">${isActive ? 'En cours' : 'Assigné'}</span>
             </div>
             <div class="arena-matchup">
-              <div class="arena-fencer">
+              <div class="arena-fencer fencer-red">
                 <div class="fname">${escHtml(nameA)}</div>
                 <div class="fclub">${escHtml(clubA)}</div>
               </div>
@@ -1326,7 +1545,7 @@
                 <span class="arena-vs">-</span>
                 <span class="arena-score score-b" id="sb-${aid}">${scoreB}</span>
               </div>
-              <div class="arena-fencer">
+              <div class="arena-fencer fencer-green">
                 <div class="fname">${escHtml(nameB)}</div>
                 <div class="fclub">${escHtml(clubB)}</div>
               </div>
@@ -1357,6 +1576,218 @@
             scoreB: m ? (m.scoreB ?? null) : null,
           };
         }
+      }
+
+      // ─── Bracket d'élimination directe ──────────────────────────────────────
+
+      function getBracketDims(data) {
+        const n = data.rounds.length > 0 ? data.rounds[0].round : 8;
+        if (n <= 8)  return { cardW: 210, cardH: 66, colGap: 70, rowGap: 10 };
+        if (n <= 16) return { cardW: 188, cardH: 60, colGap: 62, rowGap: 8 };
+        if (n <= 32) return { cardW: 158, cardH: 52, colGap: 54, rowGap: 6 };
+        return              { cardW: 130, cardH: 44, colGap: 46, rowGap: 4 };
+      }
+
+      async function fetchBracket() {
+        try {
+          const res = await fetch('/api/bracket');
+          if (!res.ok) return;
+          const data = await res.json();
+          state.bracketData = data;
+          if (state.currentView === 'tableau') renderBracket();
+        } catch { /* optionnel */ }
+      }
+
+      function startBracketPan() {
+        clearInterval(state.bracketPanTimer);
+        if (!state.bracketData?.rounds?.length) return;
+        state.bracketPanTimer = setInterval(() => {
+          if (!state.bracketData?.rounds?.length) return;
+          state.bracketPanIndex = (state.bracketPanIndex + 1) % state.bracketData.rounds.length;
+          const r = state.bracketData.rounds[state.bracketPanIndex];
+          if (r) scrollToBracketRound(r.round);
+        }, 8000);
+      }
+
+      function scrollToBracketRound(roundValue) {
+        const outer = document.getElementById('bracket-outer');
+        if (!outer || !state.bracketData?.rounds) return;
+        const { cardW, colGap } = getBracketDims(state.bracketData);
+        const orderedRounds = getBracketRoundOrder(state.bracketData.rounds);
+        const idx = orderedRounds.findIndex(r => r.round === roundValue);
+        if (idx < 0) return;
+        const colX = idx * (cardW + colGap) + colGap / 2;
+        const viewW = outer.clientWidth;
+        const targetLeft = Math.max(0, colX - viewW / 2 + cardW / 2);
+        outer.scrollTo({ left: targetLeft, behavior: 'smooth' });
+      }
+
+      function getBracketRoundOrder(rounds) {
+        // Rounds principaux (hors petite finale round=3) triés décroissants, puis petite finale à la fin
+        const main = rounds.filter(r => r.round !== 3).sort((a, b) => b.round - a.round);
+        const pf = rounds.find(r => r.round === 3);
+        return pf ? [...main, pf] : main;
+      }
+
+      function renderBracket() {
+        const container = document.getElementById('bracket-inner');
+        if (!container) return;
+
+        const data = state.bracketData;
+        if (!data || !data.rounds || data.rounds.length === 0) {
+          document.getElementById('tableau-badge').textContent = '—';
+          container.innerHTML = '<div class="no-data"><div class="no-data-icon">🏆</div><h3>Tableau non disponible</h3><p>Le tableau apparaîtra lors de la phase d\'élimination directe</p></div>';
+          return;
+        }
+
+        const orderedRounds = getBracketRoundOrder(data.rounds);
+        if (orderedRounds.length === 0) {
+          container.innerHTML = '<div class="no-data"><div class="no-data-icon">🏆</div><h3>Aucun match disponible</h3></div>';
+          return;
+        }
+
+        const { cardW, cardH, colGap, rowGap } = getBracketDims(data);
+        const firstRound = orderedRounds[0].round; // ex: 16 pour T16
+        const cardSlot = cardH + rowGap;
+
+        // Hauteur totale = nombre de matchs dans le 1er round * cardSlot
+        const firstRoundMatchCount = firstRound / 2;
+        let totalH = firstRoundMatchCount * cardSlot;
+
+        // Adapter si trop grand pour la fenêtre
+        const availH = Math.max(200, (window.innerHeight || 800) - 220);
+        let scale = 1;
+        if (totalH > availH) {
+          scale = availH / totalH;
+          totalH = availH;
+        }
+        const sCardW  = Math.round(cardW  * scale);
+        const sCardH  = Math.round(cardH  * scale);
+        const sColGap = Math.round(colGap * scale);
+
+        const totalW = orderedRounds.length * (sCardW + sColGap) + sColGap;
+        const labelH = 28;
+
+        // Fonction Y-center d'un match (pos 1-indexed, round = round value)
+        const yCenter = (pos, round) => (2 * pos - 1) / round * totalH;
+
+        let cardsHtml = '';
+        const connectors = []; // { x1, y1, x2, y2 }
+
+        for (let ci = 0; ci < orderedRounds.length; ci++) {
+          const rd = orderedRounds[ci];
+          const r = rd.round;
+          const colX = ci * (sCardW + sColGap) + sColGap / 2;
+          const isActive = r === data.currentRound;
+
+          for (const match of rd.matches) {
+            if (match.isBye) continue;
+            const p = match.position || 1;
+            const yc = yCenter(p, r);
+            const yTop = Math.round(yc - sCardH / 2);
+            const cls = [
+              'bracket-match',
+              match.status === 'live'     ? 'match--live' :
+              match.status === 'finished' ? 'match--finished' : 'match--pending',
+            ].join(' ');
+
+            const fA = match.fencerA;
+            const fB = match.fencerB;
+            const nameA = fA ? escHtml(fA.lastName + (fA.firstName ? ' ' + fA.firstName[0] + '.' : '')) : '?';
+            const nameB = fB ? escHtml(fB.lastName + (fB.firstName ? ' ' + fB.firstName[0] + '.' : '')) : (r === 2 ? 'TBD' : '?');
+            const winA = match.winnerId && fA && match.winnerId === fA.id;
+            const winB = match.winnerId && fB && match.winnerId === fB.id;
+            const sA = match.scoreA !== null && match.scoreA !== undefined ? match.scoreA : '';
+            const sB = match.scoreB !== null && match.scoreB !== undefined ? match.scoreB : '';
+
+            // Trophée finale
+            const isFinal = r === 2 && match.position === 1;
+            const winnerName = isFinal && winA ? nameA : isFinal && winB ? nameB : null;
+
+            const arenaHtml = match.arenaName
+              ? `<div class="bm-arena">${escHtml(match.arenaName)}</div>`
+              : '';
+            const fontSize = scale < 0.7 ? 'style="font-size:0.62rem"' : '';
+
+            cardsHtml += `<div class="${cls}" style="position:absolute;left:${colX}px;top:${yTop}px;width:${sCardW}px;height:${sCardH}px">
+              <div class="bm-row ${winA ? 'bm-winner' : winB ? 'bm-loser' : ''}" ${fontSize}>
+                <span class="bm-name">${nameA}</span>
+                <span class="bm-score">${sA}</span>
+              </div>
+              <div class="bm-divider"></div>
+              ${arenaHtml}
+              <div class="bm-row ${winB ? 'bm-winner' : winA ? 'bm-loser' : ''}" ${fontSize}>
+                <span class="bm-name">${nameB}</span>
+                <span class="bm-score">${sB}</span>
+              </div>
+            </div>`;
+
+            // Connecteurs SVG vers le round suivant (sauf petite finale)
+            if (ci < orderedRounds.length - 1) {
+              const nextRd = orderedRounds[ci + 1];
+              // Ne pas connecter si l'un des deux est la petite finale (round=3)
+              if (r !== 3 && nextRd.round !== 3) {
+                const nextP = Math.ceil(p / 2);
+                const nextYc = yCenter(nextP, nextRd.round);
+                connectors.push({
+                  x1: colX + sCardW,
+                  y1: Math.round(yc),
+                  x2: (ci + 1) * (sCardW + sColGap) + sColGap / 2,
+                  y2: Math.round(nextYc),
+                });
+              }
+            }
+          }
+        }
+
+        // Labels de round
+        let labelsHtml = '';
+        for (let ci = 0; ci < orderedRounds.length; ci++) {
+          const rd = orderedRounds[ci];
+          const colX = ci * (sCardW + sColGap) + sColGap / 2;
+          const isActive = rd.round === data.currentRound;
+          labelsHtml += `<div class="bracket-round-label${isActive ? ' active-round' : ''}" style="left:${colX}px;width:${sCardW}px">${escHtml(rd.label)}</div>`;
+        }
+
+        // Chemins SVG
+        const svgPaths = connectors.map(c => {
+          const xMid = Math.round((c.x1 + c.x2) / 2);
+          return `<path d="M${c.x1},${c.y1} L${xMid},${c.y1} L${xMid},${c.y2} L${c.x2},${c.y2}" />`;
+        }).join('');
+
+        // Chercher le vainqueur final
+        const finaleRound = orderedRounds.find(r => r.round === 2);
+        const finaleMatch = finaleRound?.matches?.[0];
+        let winnerBanner = '';
+        if (finaleMatch?.winnerId && (finaleMatch.fencerA || finaleMatch.fencerB)) {
+          const winner = finaleMatch.winnerId === finaleMatch.fencerA?.id
+            ? finaleMatch.fencerA : finaleMatch.fencerB;
+          if (winner) {
+            winnerBanner = `<div class="bracket-trophy-banner">🏆 ${escHtml(winner.lastName + ' ' + (winner.firstName || ''))}</div>`;
+          }
+        }
+
+        // Compter les matchs restants pour le badge
+        const pending = data.rounds.reduce((n, r) => n + r.matches.filter(m => m.status !== 'finished' && !m.isBye).length, 0);
+        const total   = data.rounds.reduce((n, r) => n + r.matches.filter(m => !m.isBye).length, 0);
+        document.getElementById('tableau-badge').textContent = 'T' + data.tableSize + ' · ' + (total - pending) + '/' + total;
+        document.getElementById('tableau-subtitle').textContent =
+          data.currentRound ? orderedRounds.find(r => r.round === data.currentRound)?.label || 'En cours' : 'Phase terminée';
+
+        container.style.width = totalW + 'px';
+        container.style.minWidth = '';
+        container.innerHTML = `
+          <div class="bracket-round-labels" style="width:${totalW}px;position:relative;height:${labelH}px;flex-shrink:0;margin-bottom:6px">
+            ${labelsHtml}
+          </div>
+          <div class="bracket-matches-layer" style="position:relative;width:${totalW}px;height:${totalH}px">
+            ${cardsHtml}
+            <svg class="bracket-svg" width="${totalW}" height="${totalH}"
+                 style="position:absolute;top:0;left:0;overflow:visible;pointer-events:none">
+              <g stroke="rgba(100,116,139,0.45)" stroke-width="1.5" fill="none">${svgPaths}</g>
+            </svg>
+          </div>
+          ${winnerBanner}`;
       }
 
       // ─── Logo organisateur ───────────────────────────────────────────────────
@@ -1391,11 +1822,24 @@
       // ─── Init ─────────────────────────────────────────────────────────────────
       window.addEventListener('DOMContentLoaded', async () => {
         await window.initRemoteI18n();
+
+        const savedSec = loadLocalRotation();
+        state.rotationMs = savedSec * 1000;
+        document.getElementById('rotation-input').value = savedSec;
+
         fetchData();
         fetchLogo();
+        fetchBracket();
         setInterval(fetchData, 15000);
         setInterval(fetchLogo, 30000);
+        setInterval(fetchBracket, 15000);
         startRotation();
+
+        // Socket.IO : mise à jour temps réel du bracket
+        try {
+          const socket = io();
+          socket.on('bracket:update', fetchBracket);
+        } catch { /* Socket.IO optionnel */ }
 
         // Plein écran automatique au premier clic seulement
         let _fsRequested = false;
