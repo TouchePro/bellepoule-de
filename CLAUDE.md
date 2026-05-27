@@ -1,5 +1,10 @@
 # CLAUDE.md ─ Instructions permanentes du projet
 
+## Issues GitHub – règles absolues
+- **Ne jamais clore une issue** directement
+- Quand le travail est terminé : poster un commentaire dans l'issue demandant validation avant clôture
+- Exemple : "Travail terminé — PR #X créée. Valider et clore si OK."
+
 ## Git – règles absolues
 - **TOUJOURS** push sur `dev`, jamais sur `main`
 - Ne jamais merger vers `main` — c'est le rôle de l'utilisateur
