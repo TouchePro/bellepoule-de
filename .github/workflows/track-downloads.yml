@@ -1,0 +1,70 @@
+name: Track Release Downloads
+
+on:
+  schedule:
+    - cron: '0 6 * * *'   # tous les jours à 6h UTC
+  workflow_dispatch:        # déclenchement manuel possible
+
+permissions:
+  contents: write
+
+jobs:
+  track:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Fetch download stats
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPO="${{ github.repository }}"
+          DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          # Récupère toutes les releases avec leurs assets
+          RELEASES=$(curl -s -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/$REPO/releases?per_page=100")
+
+          # Construit le snapshot du jour
+          SNAPSHOT=$(echo "$RELEASES" | jq --arg date "$DATE" '{
+            date: $date,
+            releases: [.[] | {
+              tag: .tag_name,
+              name: .name,
+              published_at: .published_at,
+              total_downloads: ([.assets[].download_count] | add // 0),
+              assets: [.assets[] | {
+                name: .name,
+                downloads: .download_count
+              }]
+            }]
+          }')
+
+          mkdir -p stats
+
+          # Crée le fichier s'il n'existe pas
+          if [ ! -f stats/downloads.json ]; then
+            echo '{"history":[]}' > stats/downloads.json
+          fi
+
+          # Ajoute le snapshot à l'historique
+          jq --argjson snap "$SNAPSHOT" '.history += [$snap]' \
+            stats/downloads.json > stats/downloads_tmp.json
+          mv stats/downloads_tmp.json stats/downloads.json
+
+          # Génère aussi un résumé lisible (latest snapshot)
+          echo "$SNAPSHOT" | jq '.' > stats/downloads_latest.json
+
+          echo "=== Downloads snapshot ==="
+          echo "$SNAPSHOT" | jq '.releases[] | "\(.tag): \(.total_downloads) downloads"' -r
+
+      - name: Commit stats
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add stats/downloads.json stats/downloads_latest.json
+          git diff --cached --quiet || git commit -m "📊 Stats téléchargements $(date -u +%Y-%m-%d)"
+          git push
