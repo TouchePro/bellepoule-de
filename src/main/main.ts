@@ -1288,15 +1288,17 @@ ipcMain.handle('file:printHtml', async (_, html: string) => {
     printWin.loadFile(tmpFile);
 
     printWin.webContents.once('did-finish-load', () => {
-      printWin.webContents.print({ silent: false, printBackground: true }, (success: boolean) => {
-        try {
-          fs.unlinkSync(tmpFile);
-        } catch {
-          /* ignore */
-        }
-        printWin.destroy();
-        resolve({ success });
-      });
+      setTimeout(() => {
+        printWin.webContents.print({ silent: false, printBackground: true }, (success: boolean) => {
+          try {
+            fs.unlinkSync(tmpFile);
+          } catch {
+            /* ignore */
+          }
+          printWin.destroy();
+          resolve({ success });
+        });
+      }, 800);
     });
 
     printWin.webContents.once('did-fail-load', () => {
@@ -1337,6 +1339,7 @@ ipcMain.handle('file:printHtmlToPDF', async (_, html: string, outputPath: string
     pdfWin.loadFile(tmpFile);
 
     pdfWin.webContents.once('did-finish-load', () => {
+      setTimeout(() => {
       pdfWin.webContents
         .printToPDF({
           printBackground: true,
@@ -1369,6 +1372,7 @@ ipcMain.handle('file:printHtmlToPDF', async (_, html: string, outputPath: string
           pdfWin.destroy();
           resolve({ success: false, error: err.message });
         });
+      }, 800);
     });
 
     pdfWin.webContents.once('did-fail-load', () => {
