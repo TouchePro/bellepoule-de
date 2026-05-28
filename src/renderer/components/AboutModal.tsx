@@ -122,13 +122,20 @@ const styles: Record<string, React.CSSProperties> = {
   },
 };
 
-// Poules face-à-face :
-//   Gauche (🐔 mirrored → face droite) : left=5px, avance de 28px vers centre
-//   Droite (🐔 naturel → face gauche)  : left=261px, avance de 28px vers centre
-// Sabre bleu  : origin gauche, longueur 95px, tip à 5+44+95=144px → avance à 172px
-// Sabre rouge : origin droite, longueur 95px, tip à 261-95=166px → recule à 138px
-// À l'impact les tips se croisent (~155px = centre 310px/2)
-// Les sabres se croisent : bleu +22deg, rouge -22deg → X
+// Poules face-à-face dans une arène 310×160px :
+//   Gauche (🐔 mirrored → face droite) : left=5px, avance à 80px au clash
+//   Droite (🐔 naturel → face gauche)  : left=221px, avance à 146px au clash
+//
+// Sabres VERTICAUX (pointent vers le haut) :
+//   Bleu  : div horizontal 75px, transformOrigin left center, rotate(-85deg) au repos
+//           → pointe quasi verticale. Au clash : left avance + rotate(-62deg) vers centre
+//   Rouge : div horizontal 75px, transformOrigin right center, rotate(85deg) au repos
+//           Au clash : left recule + rotate(62deg) → les tips se croisent au-dessus
+//
+// Positions chicken centre vertical : top=68% (=109px / arène 160px)
+// Tip bleu repos   : x≈53px,  y≈35px (au-dessus du centre) ✓
+// Tip bleu clash   : x=155px, y≈47px  ┐
+// Tip rouge clash  : x=147px, y≈47px  ┘ → croisement ~151px ≈ 50% largeur ✓
 
 let injected = false;
 function injectKeyframes() {
@@ -139,45 +146,47 @@ function injectKeyframes() {
     /* Poule gauche miroir (face droite), avance vers centre */
     @keyframes bp-hen-left {
       0%,100% { left: 5px; }
-      38%,58% { left: 33px; }
+      38%,58% { left: 80px; }
     }
     /* Poule droite naturelle (face gauche), avance vers centre */
     @keyframes bp-hen-right {
-      0%,100% { left: 261px; }
-      38%,58% { left: 233px; }
+      0%,100% { left: 221px; }
+      38%,58% { left: 146px; }
     }
-    /* Sabre bleu — part du bec de la poule gauche, pointe droite */
+    /* Sabre bleu — tenu par la poule gauche, POINTE VERS LE HAUT
+       Au repos : quasi vertical (-85°), avance et se penche vers le centre (-62°) */
     @keyframes bp-saber-blue {
       0%,100% {
         left: 49px;
-        transform: translateY(-50%) rotate(0deg);
+        transform: translateY(-50%) rotate(-85deg);
         box-shadow: 0 0 8px 3px #39f, 0 0 2px 1px #9cf;
       }
       38%,58% {
-        left: 77px;
-        transform: translateY(-50%) rotate(22deg);
-        box-shadow: 0 0 18px 6px #39f, 0 0 5px 2px #9cf;
+        left: 124px;
+        transform: translateY(-50%) rotate(-62deg);
+        box-shadow: 0 0 20px 7px #39f, 0 0 5px 2px #9cf;
       }
     }
-    /* Sabre rouge — part du bec de la poule droite, pointe gauche */
+    /* Sabre rouge — tenu par la poule droite, POINTE VERS LE HAUT
+       Au repos : quasi vertical (+85°), avance et se penche vers le centre (+62°) */
     @keyframes bp-saber-red {
       0%,100% {
-        left: 166px;
-        transform: translateY(-50%) rotate(0deg);
+        left: 146px;
+        transform: translateY(-50%) rotate(85deg);
         box-shadow: 0 0 8px 3px #f33, 0 0 2px 1px #f99;
       }
       38%,58% {
-        left: 138px;
-        transform: translateY(-50%) rotate(-22deg);
-        box-shadow: 0 0 18px 6px #f33, 0 0 5px 2px #f99;
+        left: 71px;
+        transform: translateY(-50%) rotate(62deg);
+        box-shadow: 0 0 20px 7px #f33, 0 0 5px 2px #f99;
       }
     }
-    /* Étincelles au point de croisement (~155px) */
+    /* Étincelles au point de croisement (~50% largeur, ~30% hauteur) */
     @keyframes bp-spark {
-      0%,34%,64%,100% { opacity: 0; transform: translate(-50%,-50%) scale(0) rotate(0deg); }
-      44%             { opacity: 1; transform: translate(-50%,-50%) scale(1.6) rotate(15deg); }
-      52%             { opacity: 0.7; transform: translate(-50%,-50%) scale(1.1) rotate(-10deg); }
-      58%             { opacity: 0; transform: translate(-50%,-50%) scale(0.3) rotate(5deg); }
+      0%,34%,64%,100% { opacity: 0; transform: translate(-50%,-180%) scale(0) rotate(0deg); }
+      44%             { opacity: 1; transform: translate(-50%,-180%) scale(1.6) rotate(15deg); }
+      52%             { opacity: 0.8; transform: translate(-50%,-180%) scale(1.1) rotate(-10deg); }
+      58%             { opacity: 0; transform: translate(-50%,-180%) scale(0.2) rotate(5deg); }
     }
     /* Pulsation subtile sur le numéro de build */
     @keyframes bp-build-pulse {
@@ -260,54 +269,54 @@ const AboutModal: React.FC<Props> = ({ onClose }) => {
 
         {easterActive && (
           <>
-            {/* Arena — largeur fixe 310px centrée dans le modal */}
-            <div style={{ ...styles.arena, maxWidth: '310px', margin: '1.2rem auto 0' }}>
+            {/* Arena — 310px × 160px, sabres visibles en hauteur */}
+            <div style={{ ...styles.arena, maxWidth: '310px', height: '160px', margin: '1.2rem auto 0' }}>
 
-              {/* Poule gauche — scaleX(-1) pour la faire face à droite */}
+              {/* Poule gauche — scaleX(-1) pour la faire face à droite, bas de l'arène */}
               <div style={{
                 position: 'absolute',
-                top: '50%',
+                top: '68%',
                 transform: 'translateY(-50%) scaleX(-1)',
                 fontSize: '2.6rem', lineHeight: 1,
                 animation: anim('bp-hen-left'),
               }}>🐔</div>
 
-              {/* Sabre bleu — origin gauche (bec de la poule gauche) */}
+              {/* Sabre bleu — origin gauche, POINTE VERS LE HAUT (-85° repos) */}
               <div style={{
                 position: 'absolute',
-                top: '50%',
-                width: '95px', height: '5px',
+                top: '68%',
+                width: '75px', height: '5px',
                 borderRadius: '3px 1px 1px 3px',
-                background: 'linear-gradient(90deg, #fff 0%, #6cf 15%, #39f 60%, #06c 100%)',
+                background: 'linear-gradient(90deg, #fff 0%, #6cf 10%, #39f 55%, #06c 100%)',
                 transformOrigin: 'left center',
                 animation: anim('bp-saber-blue'),
               }} />
 
-              {/* Sabre rouge — origin droite (bec de la poule droite) */}
+              {/* Sabre rouge — origin droite, POINTE VERS LE HAUT (+85° repos) */}
               <div style={{
                 position: 'absolute',
-                top: '50%',
-                width: '95px', height: '5px',
+                top: '68%',
+                width: '75px', height: '5px',
                 borderRadius: '1px 3px 3px 1px',
-                background: 'linear-gradient(270deg, #fff 0%, #f99 15%, #f33 60%, #900 100%)',
+                background: 'linear-gradient(270deg, #fff 0%, #f99 10%, #f33 55%, #900 100%)',
                 transformOrigin: 'right center',
                 animation: anim('bp-saber-red'),
               }} />
 
-              {/* Poule droite — naturellement face gauche */}
+              {/* Poule droite — naturellement face gauche, bas de l'arène */}
               <div style={{
                 position: 'absolute',
-                top: '50%',
+                top: '68%',
                 transform: 'translateY(-50%)',
                 fontSize: '2.6rem', lineHeight: 1,
                 animation: anim('bp-hen-right'),
               }}>🐔</div>
 
-              {/* Étincelles au point de croisement ~155px */}
+              {/* Étincelles au croisement — décalées vers le haut (~30% de l'arène) */}
               <div style={{
                 position: 'absolute',
                 left: '50%',
-                top: '50%',
+                top: '68%',
                 fontSize: '1.3rem',
                 pointerEvents: 'none',
                 zIndex: 10,
