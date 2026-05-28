@@ -1109,6 +1109,13 @@
           title="Appel DT (appui long = annuler)"
           aria-label="Appel DT"
         >📣</button>
+        <button
+          id="btn-journal"
+          onclick="window.open(`/arene${refereeApp?.arenaNumber || document.getElementById('arena-number').textContent}/journal`, '_blank')"
+          title="Journal du match"
+          aria-label="Journal"
+          style="background:rgba(139,92,246,0.15); border:1px solid rgba(139,92,246,0.4); color:#c4b5fd; border-radius:0.5rem; padding:0.3rem 0.6rem; font-size:1rem; cursor:pointer;"
+        >📋</button>
       </div>
     </div>
 
@@ -3170,8 +3177,17 @@
         renderNextMatchesList(matches) {
           const container = document.getElementById('next-matches-list');
           if (matches.length === 0) {
-            container.innerHTML =
-              '<div class="next-matches-empty">✅ Tous les matchs de cette arène sont terminés</div>';
+            const arenaNum = this.arenaNumber || document.getElementById('arena-number').textContent;
+            container.innerHTML = `
+              <div class="next-matches-empty">✅ Tous les matchs de cette arène sont terminés</div>
+              <div style="display:flex;gap:0.75rem;justify-content:center;margin-top:1.25rem;flex-wrap:wrap;">
+                <a href="/arene${arenaNum}/poule" style="display:inline-flex;align-items:center;gap:0.4rem;padding:0.85rem 1.5rem;background:#4f46e5;color:#fff;border-radius:0.75rem;font-size:1rem;font-weight:700;text-decoration:none;">
+                  ✍️ SIGNATURE
+                </a>
+                <a href="/arene${arenaNum}/journal" target="_blank" style="display:inline-flex;align-items:center;gap:0.4rem;padding:0.85rem 1.5rem;background:#4c1d95;color:#c4b5fd;border-radius:0.75rem;font-size:1rem;font-weight:700;text-decoration:none;">
+                  📋 JOURNAL
+                </a>
+              </div>`;
             return;
           }
           const statusBadge = status => {
@@ -3278,6 +3294,9 @@
       <p class="pco-sub">Tous les matchs sont terminés</p>
       <button class="pco-btn" onclick="refereeApp.goToSignature()">
         ✍️ SIGNATURE
+      </button>
+      <button class="pco-btn" onclick="window.open(`/arene${refereeApp.arenaNumber}/journal`, '_blank')" style="margin-top:1rem; background:#4c1d95; animation:none; font-size:1.2rem; padding:0.9rem 2rem;">
+        📋 JOURNAL
       </button>
     </div>
   </body>
