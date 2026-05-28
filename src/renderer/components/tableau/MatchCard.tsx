@@ -1,0 +1,129 @@
+import React from 'react';
+import { TableauMatch } from './tableauTypes';
+
+interface MatchCardProps {
+  match: TableauMatch;
+  verticalPosition?: number;
+  viewMode: 'full' | 'pending';
+  baseMatchHeight: number;
+  onMatchClick?: (match: TableauMatch) => void;
+  onArenaClick?: (matchId: string) => void;
+  readOnly?: boolean;
+}
+
+const BASE_MATCH_HEIGHT = 100;
+
+const MatchCard: React.FC<MatchCardProps> = ({
+  match,
+  verticalPosition,
+  viewMode,
+  baseMatchHeight,
+  onMatchClick,
+  onArenaClick,
+  readOnly = false,
+}) => {
+  const canEdit = !readOnly && !!(match.fencerA && match.fencerB && !match.isBye) && !!onMatchClick;
+  const hasScore = match.scoreA !== null && match.scoreB !== null;
+  const isMatchComplete = match.winner !== null;
+
+  const winnerA = match.winner?.id === match.fencerA?.id;
+  const winnerB = match.winner?.id === match.fencerB?.id;
+
+  const handleArenaClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onArenaClick?.(match.id);
+  };
+
+  const fencerName = (f: typeof match.fencerA) =>
+    f ? `${f.lastName} ${f.firstName.charAt(0)}.` : '—';
+
+  const posStyle: React.CSSProperties =
+    verticalPosition !== undefined
+      ? {
+          position: 'absolute' as const,
+          top: `${verticalPosition}px`,
+          left: 0,
+          right: 0,
+          height: `${BASE_MATCH_HEIGHT}px`,
+          overflow: 'hidden',
+        }
+      : { position: 'relative' as const, marginBottom: '0.375rem' };
+
+  return (
+    <div
+      className={`match-card ${canEdit ? 'match-card-clickable' : ''} ${isMatchComplete ? 'match-card-done' : ''}`}
+      style={posStyle}
+      onClick={() => canEdit && onMatchClick && onMatchClick(match)}
+    >
+      {/* Arena badge */}
+      {canEdit && !isMatchComplete && onArenaClick && (
+        <button
+          className={`match-arena-btn ${match.arena ? 'match-arena-btn-active' : ''}`}
+          onClick={handleArenaClick}
+          title={match.arena ? `Piste ${match.arena}` : 'Assigner une piste'}
+        >
+          {match.arena ? `P${match.arena}` : '+P'}
+        </button>
+      )}
+
+      {/* Fencer A */}
+      <div className={`match-fencer ${winnerA ? 'match-fencer-winner' : ''} ${!match.fencerA ? 'match-fencer-empty' : ''}`}>
+        <div className="match-fencer-info">
+          {winnerA && <span className="match-winner-crown">🥇</span>}
+          <div className="match-fencer-details">
+            <span className="match-fencer-name">{fencerName(match.fencerA)}</span>
+            {match.fencerA?.club && (
+              <span className="match-fencer-club">{match.fencerA.club}</span>
+            )}
+          </div>
+          {match.fencerA?.ranking && (
+            <span className="match-fencer-seed">#{match.fencerA.ranking}</span>
+          )}
+        </div>
+        {hasScore && (
+          <span className={`match-score ${winnerA ? 'match-score-winner' : 'match-score-loser'}`}>
+            {match.scoreA}
+          </span>
+        )}
+      </div>
+
+      {/* Divider */}
+      <div className="match-divider" />
+
+      {/* Fencer B */}
+      <div className={`match-fencer ${winnerB ? 'match-fencer-winner' : ''} ${!match.fencerB ? 'match-fencer-empty' : ''}`}>
+        <div className="match-fencer-info">
+          {winnerB && <span className="match-winner-crown">🥇</span>}
+          <div className="match-fencer-details">
+            <span className="match-fencer-name">{fencerName(match.fencerB)}</span>
+            {match.fencerB?.club && (
+              <span className="match-fencer-club">{match.fencerB.club}</span>
+            )}
+          </div>
+          {match.fencerB?.ranking && (
+            <span className="match-fencer-seed">#{match.fencerB.ranking}</span>
+          )}
+        </div>
+        {hasScore && (
+          <span className={`match-score ${winnerB ? 'match-score-winner' : 'match-score-loser'}`}>
+            {match.scoreB}
+          </span>
+        )}
+      </div>
+
+      {/* Bye */}
+      {match.isBye && (
+        <div className="match-bye">Exempt</div>
+      )}
+
+      {/* CTA bar */}
+      {canEdit && viewMode !== 'full' && (
+        <div className={`match-cta ${hasScore ? 'match-cta-edit' : 'match-cta-enter'}`}>
+          {hasScore ? '✏️ Modifier' : '➕ Saisir score'}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default React.memo(MatchCard);

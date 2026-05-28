@@ -146,21 +146,25 @@ export const useLateFencerStore = create<LateFencerState & LateFencerActions>()(
 
             set(state => {
               state.lateFencers.forEach(lf => {
+                if (lf.status === 'forfeit') return;
+
                 const delayMs = now.getTime() - lf.scheduledMatchTime.getTime();
                 lf.delayMinutes = Math.floor(delayMs / 60000);
 
                 // Update status based on thresholds
                 if (lf.delayMinutes >= config.forfeitThresholdMinutes) {
-                  lf.status = 'forfeit';
-                  if (config.autoForfeit && lf.status !== 'forfeit') {
-                    // Trigger auto-forfeit
+                  if (config.autoForfeit) {
                     lf.status = 'forfeit';
+                  } else {
+                    lf.status = 'critical';
                   }
                 } else if (lf.delayMinutes >= config.criticalThresholdMinutes) {
                   lf.status = 'critical';
                 } else if (lf.delayMinutes >= config.warningThresholdMinutes) {
                   lf.status = 'warned';
                 }
+
+                if (lf.status === 'forfeit') return;
 
                 // Check if notification needed
                 const timeSinceLastNotification = lf.lastNotificationTime
@@ -169,10 +173,8 @@ export const useLateFencerStore = create<LateFencerState & LateFencerActions>()(
 
                 if (
                   lf.notificationsSent < config.maxNotifications &&
-                  timeSinceLastNotification >= config.notificationIntervalMinutes &&
-                  lf.status !== 'forfeit'
+                  timeSinceLastNotification >= config.notificationIntervalMinutes
                 ) {
-                  // Send notification
                   lf.notificationsSent += 1;
                   lf.lastNotificationTime = now;
                 }

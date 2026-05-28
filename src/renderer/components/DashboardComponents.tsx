@@ -5,7 +5,6 @@
  */
 
 import React from 'react';
-import { useTranslation } from '../hooks/useTranslation';
 
 // Modern Stat Card with icon and trend
 interface StatCardProps {
@@ -16,8 +15,7 @@ interface StatCardProps {
   color: 'blue' | 'green' | 'orange' | 'purple' | 'red';
 }
 
-export const ModernStatCard: React.FC<StatCardProps> = ({ title, value, icon, trend, color }) => {
-  const { t } = useTranslation();
+const ModernStatCard_: React.FC<StatCardProps> = ({ title, value, icon, trend, color }) => {
   const colors = {
     blue: { bg: '#eff6ff', icon: '#3b82f6', text: '#1e40af' },
     green: { bg: '#f0fdf4', icon: '#10b981', text: '#065f46' },
@@ -71,7 +69,7 @@ export const ModernStatCard: React.FC<StatCardProps> = ({ title, value, icon, tr
             >
               {trend.isPositive ? '↑' : '↓'} {Math.abs(trend.value)}%
             </span>
-            <span style={{ color: '#9ca3af', fontSize: '12px' }}>{t('dashboard.vs_last_month')}</span>
+            <span style={{ color: '#9ca3af', fontSize: '12px' }}>vs dernier mois</span>
           </div>
         )}
       </div>
@@ -89,7 +87,7 @@ interface TimelineItem {
   color: string;
 }
 
-export const ActivityTimeline: React.FC<{ items: TimelineItem[] }> = ({ items }) => {
+const ActivityTimeline_: React.FC<{ items: TimelineItem[] }> = ({ items }) => {
   return (
     <div style={{ padding: '20px' }}>
       {items.map((item, index) => (
@@ -143,7 +141,7 @@ export const ActivityTimeline: React.FC<{ items: TimelineItem[] }> = ({ items })
 };
 
 // Mini Chart (Sparkline)
-export const Sparkline: React.FC<{
+const Sparkline_: React.FC<{
   data: number[];
   color?: string;
   height?: number;
@@ -175,7 +173,7 @@ export const Sparkline: React.FC<{
 };
 
 // Comparison Bar
-export const ComparisonBar: React.FC<{
+const ComparisonBar_: React.FC<{
   label: string;
   valueA: number;
   valueB: number;
@@ -246,14 +244,13 @@ export const ComparisonBar: React.FC<{
 };
 
 // Leaderboard Item
-export const LeaderboardItem: React.FC<{
+const LeaderboardItem_: React.FC<{
   rank: number;
   name: string;
   score: number;
   avatar?: string;
   isCurrentUser?: boolean;
 }> = ({ rank, name, score, avatar, isCurrentUser }) => {
-  const { t } = useTranslation();
   const getRankColor = () => {
     switch (rank) {
       case 1:
@@ -333,7 +330,7 @@ export const LeaderboardItem: React.FC<{
           <span
             style={{ marginLeft: '8px', fontSize: '12px', color: '#3b82f6', fontWeight: '500' }}
           >
-            {t('dashboard.you')}
+            (Vous)
           </span>
         )}
       </div>
@@ -347,7 +344,7 @@ export const LeaderboardItem: React.FC<{
 };
 
 // Empty State Illustration
-export const EmptyState: React.FC<{
+const EmptyState_: React.FC<{
   icon: string;
   title: string;
   description: string;
@@ -415,17 +412,16 @@ export const EmptyState: React.FC<{
 };
 
 // Weather/Condition Widget
-export const ConditionWidget: React.FC<{
+const ConditionWidget_: React.FC<{
   condition: 'excellent' | 'good' | 'fair' | 'poor';
   label: string;
   value: string;
 }> = ({ condition, label, value }) => {
-  const { t } = useTranslation();
   const conditions = {
-    excellent: { color: '#10b981', icon: '✨' },
-    good: { color: '#3b82f6', icon: '👍' },
-    fair: { color: '#f59e0b', icon: '⚠️' },
-    poor: { color: '#ef4444', icon: '🔴' },
+    excellent: { color: '#10b981', icon: '✨', label: 'Excellent' },
+    good: { color: '#3b82f6', icon: '👍', label: 'Bon' },
+    fair: { color: '#f59e0b', icon: '⚠️', label: 'Moyen' },
+    poor: { color: '#ef4444', icon: '🔴', label: 'Faible' },
   };
 
   const theme = conditions[condition];
@@ -462,12 +458,20 @@ export const ConditionWidget: React.FC<{
         <p
           style={{ margin: '2px 0 0 0', fontSize: '18px', fontWeight: 'bold', color: theme.color }}
         >
-          {t(`dashboard.condition_${condition}`)}
+          {value}
         </p>
       </div>
     </div>
   );
 };
+
+export const ModernStatCard = React.memo(ModernStatCard_);
+export const ActivityTimeline = React.memo(ActivityTimeline_);
+export const Sparkline = React.memo(Sparkline_);
+export const ComparisonBar = React.memo(ComparisonBar_);
+export const LeaderboardItem = React.memo(LeaderboardItem_);
+export const EmptyState = React.memo(EmptyState_);
+export const ConditionWidget = React.memo(ConditionWidget_);
 
 export default {
   ModernStatCard,

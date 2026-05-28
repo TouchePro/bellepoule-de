@@ -106,7 +106,7 @@ const UpdateNotification: React.FC<UpdateNotificationProps> = ({ visible: propVi
   );
 };
 
-export default UpdateNotification;
+export default React.memo(UpdateNotification);
 
 /* Styles à ajouter dans le fichier CSS global */
 export const updateNotificationStyles = `

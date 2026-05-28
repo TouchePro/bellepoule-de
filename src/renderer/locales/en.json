@@ -1,6 +1,12 @@
 {
   "app": {
-    "title": "BellePoule Modern"
+    "title": "BellePoule Modern",
+    "home": "General",
+    "back_to_list": "Back to competition list",
+    "close_tab": "Close tab",
+    "load_error_title": "Loading Error",
+    "load_error_message": "An error occurred while loading the competition list.",
+    "reload": "Reload Application"
   },
   "menu": {
     "new_competition": "New Competition",
@@ -24,13 +30,16 @@
     "third_place_match_ok": "Click OK to add the bronze medal match",
     "third_place_match_cancel": "Click Cancel to finish after the semi-finals",
     "third_place_match_label": "Bronze medal match (3rd place match)",
-    "third_place_match_description": "Organizes an additional match between the two losing semi-finalists to determine 3rd and 4th place"
+    "third_place_match_description": "Organizes an additional match between the two losing semi-finalists to determine 3rd and 4th place",
+    "comparisons": "Comparisons",
+    "analytics": "Analytics"
   },
   "weapons": {
     "epee": "Epee",
     "foil": "Foil",
     "sabre": "Sabre",
-    "laser": "Laser Sabre"
+    "laser": "Laser Sabre",
+    "custom": "Custom formula"
   },
   "genders": {
     "male": "Male",
@@ -43,7 +52,11 @@
     "U15": "U15",
     "U17": "U17",
     "U20": "U20",
-    "senior": "Senior"
+    "senior": "Senior",
+    "V1": "Veterans 1",
+    "V2": "Veterans 2",
+    "V3": "Veterans 3",
+    "V4": "Veterans 4"
   },
   "fencer": {
     "last_name": "Last Name",
@@ -63,7 +76,9 @@
     "abandon": "Abandon",
     "forfait": "Withdraw",
     "reactivate": "Reactivate",
-    "points": "Points"
+    "points": "Points",
+    "label": "fencers",
+    "present_label": "checked in"
   },
   "status": {
     "checked_in": "Present",
@@ -79,11 +94,19 @@
   },
   "phases": {
     "checkin": "Check-in",
+    "poolprep": "Preparation",
     "pools": "Pools",
+    "pools_skip": "Pools (skipped)",
+    "pools_round": "Pools ({{current}}/{{total}})",
+    "pools_skip_tooltip": "Pool phase skipped (0 pools)",
+    "pools_locked_tooltip": "Complete pool preparation first",
+    "tableau_locked_tooltip": "Complete all pools and validate ranking to access the table",
     "ranking": "Ranking",
     "tableau": "Table",
     "results": "Results",
-    "remote": "Remote Entry"
+    "remote": "Remote Entry",
+    "logs": "History",
+    "referees": "Referees"
   },
   "pools": {
     "generate": "Generate Pools",
@@ -98,7 +121,9 @@
     "no_pools": "No Pools",
     "return_to_checkin": "Return to Check-in",
     "pool_number": "Pool",
-    "change_pool": "Change Pool"
+    "change_pool": "Change Pool",
+    "next_round_n": "Pool round {{n}} →",
+    "view_ranking_action": "View ranking →"
   },
   "ranking": {
     "rank": "Rank",
@@ -204,12 +229,137 @@
     "warning": "Warning",
     "info": "Information",
     "connection_lost": "Connection lost",
-    "connection_restored": "Connection restored"
+    "connection_restored": "Connection restored",
+    "name_required": "Last name and first name are required"
   },
   "time": {
     "minutes": "minutes",
     "seconds": "seconds",
     "hours": "hours",
     "days": "days"
+  },
+  "pdfTemplate": {
+    "modalTitle": "Customize PDF Exports",
+    "openButton": "Customize PDFs",
+    "docType": { "pool": "Pools", "tableau": "Tableau", "ranking": "Ranking" },
+    "customTitle": "Custom title",
+    "customTitlePlaceholder": "Leave empty for automatic title",
+    "colors": { "navy": "Primary color", "gold": "Accent color", "green": "Victory color" },
+    "elements": {
+      "header": "Header", "gold-bar": "Gold separator", "competition-name": "Competition name", "meta-chips": "Info chips",
+      "score-grid": "Score grid", "pending-matches": "Pending matches",
+      "finished-matches": "Results", "match-cards": "Match cards",
+      "ranking-table": "Ranking table", "footer": "Footer"
+    },
+    "reset": "Reset", "exportJson": "Export JSON", "importJson": "Import JSON", "importError": "Invalid JSON file"
+  },
+  "cardModal": {
+    "title": "Card for {{name}}",
+    "previous_cards": "Previous cards:",
+    "card_white": "⬜ WHITE CARD",
+    "card_yellow": "🟨 YELLOW CARD",
+    "card_red": "🟥 RED CARD",
+    "card_black": "⬛ BLACK CARD",
+    "abbr_white": "W",
+    "abbr_yellow": "Y",
+    "abbr_red": "R",
+    "abbr_black": "B",
+    "points_for": "+{{points}} point for {{name}}",
+    "exclusion": "⚠️ EXCLUSION FROM COMPETITION"
+  },
+  "cardReasons": {
+    "EARLY_START": "Early start",
+    "LATE_STOP": "Continue after \"Halt!\"",
+    "BODY_CONTACT": "Voluntary body contact",
+    "COUNTER_ATTACK": "Counter-attack",
+    "TARGET_SUBSTITUTION": "Target substitution",
+    "VOLUNTARY_DROP": "Voluntary sabre drop",
+    "TIME_WASTING": "Time wasting",
+    "NON_COMPLIANT_GEAR": "Non-compliant equipment",
+    "ESTOC": "Thrust (estoc)",
+    "UNARMED_HAND": "Use of unarmed hand",
+    "VOLUNTARY_EXIT": "Voluntary exit from piste",
+    "HEAVY_HIT": "Heavy hit",
+    "BRUTALITY": "Brutality",
+    "DANGEROUS": "Dangerous behaviour",
+    "REFUSAL": "Refusal to fight",
+    "UNSPORTSMANLIKE": "Unsportsmanlike conduct",
+    "CHEATING": "Cheating"
+  },
+  "cardGroups": {
+    "GROUP_1": "Group 1 (White → Yellow → Yellow)",
+    "GROUP_2": "Group 2 (Yellow → Red → Red)",
+    "GROUP_3": "Group 3 (Red → Exclusion)",
+    "GROUP_4": "Group 4 (Immediate Exclusion)"
+  },
+  "stats": {
+    "title": "Fencer Statistics",
+    "zone_a": "Zone A (1 pt)",
+    "zone_b": "Zone B (3 pts)",
+    "zone_c": "Zone C (5 pts)",
+    "total_points": "Total pts",
+    "white_cards": "White cards",
+    "yellow_cards": "Yellow cards",
+    "red_cards": "Red cards",
+    "arena_exits": "Arena exits",
+    "matches_played": "Matches",
+    "avg_duration": "Avg duration",
+    "early_finishes": "< 3 min",
+    "export_pdf": "Export statistics (PDF)",
+    "export_fencer_pdf": "Export this fencer (PDF)",
+    "export_competition_pdf": "Competition PDF export",
+    "no_data": "No statistics available for this competition.",
+    "laser_only": "Touch zones (A/B/C) are only available in Laser Sabre mode."
+  },
+  "shortcuts": {
+    "title": "Keyboard Shortcuts",
+    "subtitle": "Master BellePoule like a pro",
+    "footer": "Press ? to show this help at any time",
+    "category_all": "All",
+    "category_global": "Global",
+    "category_navigation": "Navigation",
+    "category_actions": "Actions",
+    "category_competition": "Competition",
+    "show_help": "Show shortcuts help",
+    "quick_search": "Quick search",
+    "close_modal": "Close modal / Cancel",
+    "go_pools": "Go to pools",
+    "go_tableau": "Go to tableau",
+    "go_results": "Go to results",
+    "nav_fields": "Navigate between fields",
+    "save": "Save",
+    "undo": "Undo",
+    "redo": "Redo",
+    "new_competition": "New competition",
+    "refresh_data": "Refresh data",
+    "timer": "Start/Pause timer",
+    "nav_list": "Navigate in list",
+    "validate": "Validate / Open"
+  },
+  "formula": {
+    "builder_title": "Formula builder",
+    "add_pool_round": "Add pool round",
+    "add_de": "Add direct elimination",
+    "add_classification": "Add classification",
+    "save_template": "Save as template",
+    "load_template": "Load template",
+    "advancement_rule": "Advancement rule",
+    "advancement_all": "All advance",
+    "advancement_percent": "Top %",
+    "advancement_fixed": "Fixed count",
+    "advancement_bracket": "Next bracket",
+    "ranking_criteria": "Ranking criteria",
+    "criterion_vm": "V/M (victory ratio)",
+    "criterion_index": "Index (TD−TR)",
+    "criterion_td": "Touches scored",
+    "criterion_tr": "Touches received",
+    "criterion_direct": "Direct bout",
+    "criterion_initial": "Initial ranking",
+    "simulation_title": "Simulation",
+    "pool_round_n": "Pool round {{n}}",
+    "scoring_standard": "Standard (1 touch = 1 pt)",
+    "scoring_zones": "Custom zones",
+    "zone_label": "Zone",
+    "zone_points": "Points"
   }
 }

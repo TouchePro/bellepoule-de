@@ -5,7 +5,6 @@
 
 import React, { useState } from 'react';
 import { Fencer, Gender, FencerStatus } from '../../shared/types';
-import { useTranslation } from '../hooks/useTranslation';
 import FencerPhoto from './FencerPhoto';
 
 interface EditFencerModalProps {
@@ -15,12 +14,11 @@ interface EditFencerModalProps {
 }
 
 const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClose }) => {
-  const { t } = useTranslation();
   const [lastName, setLastName] = useState(fencer.lastName);
   const [firstName, setFirstName] = useState(fencer.firstName);
   const [gender, setGender] = useState<Gender>(fencer.gender);
   const [club, setClub] = useState(fencer.club || '');
-  const [league, setLeague] = useState(fencer.league || '');
+  const [region, setRegion] = useState(fencer.region || '');
   const [nationality, setNationality] = useState(fencer.nationality || 'FRA');
   const [license, setLicense] = useState(fencer.license || '');
   const [ranking, setRanking] = useState(fencer.ranking?.toString() || '');
@@ -35,7 +33,7 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
       firstName,
       gender,
       club: club || undefined,
-      league: league || undefined,
+      region: region || undefined,
       nationality,
       license: license || undefined,
       ranking: ranking ? parseInt(ranking) : undefined,
@@ -50,7 +48,7 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
         <div className="modal-header">
-          <h2>{t('fencer.edit_title')}</h2>
+          <h2>Modifier le tireur</h2>
           <button className="btn-close" onClick={onClose}>
             &times;
           </button>
@@ -70,7 +68,7 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
-              <label className="form-label">{t('fencer.last_name')} *</label>
+              <label className="form-label">Nom *</label>
               <input
                 type="text"
                 className="form-input"
@@ -81,7 +79,7 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
             </div>
 
             <div className="form-group">
-              <label className="form-label">{t('fencer.first_name')} *</label>
+              <label className="form-label">Prénom *</label>
               <input
                 type="text"
                 className="form-input"
@@ -94,36 +92,36 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
-              <label className="form-label">{t('fencer.gender')}</label>
+              <label className="form-label">Sexe</label>
               <select
                 className="form-input form-select"
                 value={gender}
                 onChange={e => setGender(e.target.value as Gender)}
               >
-                <option value={Gender.MALE}>{t('genders.male')}</option>
-                <option value={Gender.FEMALE}>{t('genders.female')}</option>
-                <option value={Gender.MIXED}>{t('genders.mixed')}</option>
+                <option value={Gender.MALE}>Homme</option>
+                <option value={Gender.FEMALE}>Femme</option>
+                <option value={Gender.MIXED}>Mixte</option>
               </select>
             </div>
 
             <div className="form-group">
-              <label className="form-label">{t('fencer.status')}</label>
+              <label className="form-label">Statut</label>
               <select
                 className="form-input form-select"
                 value={status}
                 onChange={e => setStatus(e.target.value as FencerStatus)}
               >
-                <option value={FencerStatus.NOT_CHECKED_IN}>{t('status.not_checked_in')}</option>
-                <option value={FencerStatus.CHECKED_IN}>{t('status.checked_in')}</option>
-                <option value={FencerStatus.FORFAIT}>{t('status.forfeit')}</option>
-                <option value={FencerStatus.ABANDONED}>{t('status.abandoned')}</option>
-                <option value={FencerStatus.EXCLUDED}>{t('status.excluded')}</option>
+                <option value={FencerStatus.NOT_CHECKED_IN}>Non pointé</option>
+                <option value={FencerStatus.CHECKED_IN}>Pointé (présent)</option>
+                <option value={FencerStatus.FORFAIT}>Forfait</option>
+                <option value={FencerStatus.ABANDONED}>Abandon</option>
+                <option value={FencerStatus.EXCLUDED}>Exclu</option>
               </select>
             </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label">{t('fencer.club')}</label>
+            <label className="form-label">Club</label>
             <input
               type="text"
               className="form-input"
@@ -135,18 +133,18 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
-              <label className="form-label">{t('fencer.league')}</label>
+              <label className="form-label">Région</label>
               <input
                 type="text"
                 className="form-input"
-                value={league}
-                onChange={e => setLeague(e.target.value)}
+                value={region}
+                onChange={e => setRegion(e.target.value)}
                 placeholder="Ex: IDF"
               />
             </div>
 
             <div className="form-group">
-              <label className="form-label">{t('fencer.nationality')}</label>
+              <label className="form-label">Nationalité</label>
               <input
                 type="text"
                 className="form-input"
@@ -160,7 +158,7 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
-              <label className="form-label">{t('fencer.license')}</label>
+              <label className="form-label">N° Licence</label>
               <input
                 type="text"
                 className="form-input"
@@ -170,24 +168,24 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
             </div>
 
             <div className="form-group">
-              <label className="form-label">{t('fencer.ranking')}</label>
+              <label className="form-label">Classement</label>
               <input
                 type="number"
                 className="form-input"
                 value={ranking}
                 onChange={e => setRanking(e.target.value)}
                 min="1"
-                placeholder={t('actions.default')}
+                placeholder="Non classé"
               />
             </div>
           </div>
 
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary" onClick={onClose}>
-              {t('actions.cancel')}
+              Annuler
             </button>
             <button type="submit" className="btn btn-primary">
-              {t('actions.save')}
+              Enregistrer
             </button>
           </div>
         </form>
@@ -196,4 +194,4 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
   );
 };
 
-export default EditFencerModal;
+export default React.memo(EditFencerModal);

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * BellePoule Modern - Preload Script
  * Exposes safe APIs to the renderer process with type safety
  * Licensed under GPL-3.0
@@ -23,9 +23,16 @@ import type {
   MatchTouchData,
   MatchCardData,
   MatchTimingData,
+  MatchSnapshot,
+  ArenaExitData,
 } from '../shared/types/preload';
 
 // Input validation functions
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const validateUUID = (id: string, label: string): void => {
+  if (!id || !UUID_RE.test(id)) throw new Error(`Invalid ${label} format`);
+};
+
 const validateCompetitionData = (data: CompetitionCreateData): void => {
   if (!data.title || typeof data.title !== 'string') {
     throw new Error('Competition title is required and must be a string');
@@ -71,61 +78,43 @@ contextBridge.exposeInMainWorld('electronAPI', {
       return ipcRenderer.invoke('db:createCompetition', data);
     },
     getCompetition: (id: string) => {
-      if (!id || typeof id !== 'string') {
-        throw new Error('Competition ID is required and must be a string');
-      }
+      validateUUID(id, 'competition ID');
       return ipcRenderer.invoke('db:getCompetition', id);
     },
     getAllCompetitions: () => ipcRenderer.invoke('db:getAllCompetitions'),
     updateCompetition: (id: string, updates: CompetitionUpdateData) => {
-      if (!id || typeof id !== 'string') {
-        throw new Error('Competition ID is required and must be a string');
-      }
+      validateUUID(id, 'competition ID');
       return ipcRenderer.invoke('db:updateCompetition', id, updates);
     },
     deleteCompetition: (id: string) => {
-      if (!id || typeof id !== 'string') {
-        throw new Error('Competition ID is required and must be a string');
-      }
+      validateUUID(id, 'competition ID');
       return ipcRenderer.invoke('db:deleteCompetition', id);
     },
 
     // Fencers
     addFencer: (competitionId: string, fencer: FencerCreateData) => {
-      if (!competitionId || typeof competitionId !== 'string') {
-        throw new Error('Competition ID is required and must be a string');
-      }
+      validateUUID(competitionId, 'competition ID');
       validateFencerData(fencer);
       return ipcRenderer.invoke('db:addFencer', competitionId, fencer);
     },
     getFencer: (id: string) => {
-      if (!id || typeof id !== 'string') {
-        throw new Error('Fencer ID is required and must be a string');
-      }
+      validateUUID(id, 'fencer ID');
       return ipcRenderer.invoke('db:getFencer', id);
     },
     getFencersByCompetition: (competitionId: string) => {
-      if (!competitionId || typeof competitionId !== 'string') {
-        throw new Error('Competition ID is required and must be a string');
-      }
+      validateUUID(competitionId, 'competition ID');
       return ipcRenderer.invoke('db:getFencersByCompetition', competitionId);
     },
     updateFencer: (id: string, updates: FencerUpdateData) => {
-      if (!id || typeof id !== 'string') {
-        throw new Error('Fencer ID is required and must be a string');
-      }
+      validateUUID(id, 'fencer ID');
       return ipcRenderer.invoke('db:updateFencer', id, updates);
     },
     deleteFencer: (id: string) => {
-      if (!id || typeof id !== 'string') {
-        throw new Error('Fencer ID is required and must be a string');
-      }
+      validateUUID(id, 'fencer ID');
       return ipcRenderer.invoke('db:deleteFencer', id);
     },
     deleteAllFencers: (competitionId: string) => {
-      if (!competitionId || typeof competitionId !== 'string') {
-        throw new Error('Competition ID is required and must be a string');
-      }
+      validateUUID(competitionId, 'competition ID');
       return ipcRenderer.invoke('db:deleteAllFencers', competitionId);
     },
 
@@ -135,9 +124,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       return ipcRenderer.invoke('db:createMatch', match, poolId);
     },
     getMatch: (id: string) => {
-      if (!id || typeof id !== 'string') {
-        throw new Error('Match ID is required and must be a string');
-      }
+      validateUUID(id, 'match ID');
       return ipcRenderer.invoke('db:getMatch', id);
     },
     getMatchesByPool: (poolId: string) => {
@@ -147,21 +134,31 @@ contextBridge.exposeInMainWorld('electronAPI', {
       return ipcRenderer.invoke('db:getMatchesByPool', poolId);
     },
     updateMatch: (id: string, updates: MatchUpdateData) => {
-      if (!id || typeof id !== 'string') {
-        throw new Error('Match ID is required and must be a string');
-      }
+      validateUUID(id, 'match ID');
       return ipcRenderer.invoke('db:updateMatch', id, updates);
     },
 
+    upsertTableauMatch: (params: any) => ipcRenderer.invoke('db:upsertTableauMatch', params),
+    upsertMultipleTableauMatches: (competitionId: string, matches: any[]) =>
+      ipcRenderer.invoke('db:upsertMultipleTableauMatches', competitionId, matches),
+    getTableauMatchesForExport: (competitionId: string) =>
+      ipcRenderer.invoke('db:getTableauMatchesForExport', competitionId),
+
     // Pools
-    createPool: (phaseId: string, number: number) => {
+    createPool: (phaseId: string, number: number, poolId?: string) => {
       if (!phaseId || typeof phaseId !== 'string') {
         throw new Error('Phase ID is required and must be a string');
       }
       if (typeof number !== 'number' || number < 0) {
         throw new Error('Pool number is required and must be positive');
       }
-      return ipcRenderer.invoke('db:createPool', phaseId, number);
+      return ipcRenderer.invoke('db:createPool', phaseId, number, poolId);
+    },
+    clearPoolsForPhase: (phaseId: string) => {
+      if (!phaseId || typeof phaseId !== 'string') {
+        throw new Error('Phase ID is required and must be a string');
+      }
+      return ipcRenderer.invoke('db:clearPoolsForPhase', phaseId);
     },
     addFencerToPool: (poolId: string, fencerId: string, position: number) => {
       if (!poolId || typeof poolId !== 'string') {
@@ -175,6 +172,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }
       return ipcRenderer.invoke('db:addFencerToPool', poolId, fencerId, position);
     },
+    addFencerToPoolMidCompetition: (poolId: string, fencerId: string, maxScore?: number) => {
+      if (!poolId || typeof poolId !== 'string') {
+        throw new Error('Pool ID is required and must be a string');
+      }
+      if (!fencerId || typeof fencerId !== 'string') {
+        throw new Error('Fencer ID is required and must be a string');
+      }
+      return ipcRenderer.invoke('db:addFencerToPoolMidCompetition', poolId, fencerId, maxScore);
+    },
     getPoolFencers: (poolId: string) => {
       if (!poolId || typeof poolId !== 'string') {
         throw new Error('Pool ID is required and must be a string');
@@ -187,6 +193,43 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }
       return ipcRenderer.invoke('db:updatePool', pool);
     },
+    getPoolsByPhase: (phaseId: string) => ipcRenderer.invoke('db:getPoolsByPhase', phaseId),
+    getPoolSignatures: (poolId: string) => ipcRenderer.invoke('db:getPoolSignatures', poolId),
+
+    // Phases
+    createPhase: (competitionId: string, type: string, order: number, name: string) =>
+      ipcRenderer.invoke('db:createPhase', competitionId, type, order, name),
+    getPhase: (id: string) => ipcRenderer.invoke('db:getPhase', id),
+    getPhasesByCompetition: (competitionId: string) =>
+      ipcRenderer.invoke('db:getPhasesByCompetition', competitionId),
+    updatePhase: (id: string, updates: { name?: string; isComplete?: boolean }) =>
+      ipcRenderer.invoke('db:updatePhase', id, updates),
+    deletePhase: (id: string) => ipcRenderer.invoke('db:deletePhase', id),
+
+    // Referees
+    createReferee: (
+      competitionId: string,
+      data: {
+        name: string;
+        gender?: string;
+        nationality?: string;
+        club?: string;
+        license?: string;
+        category?: string;
+      }
+    ) => ipcRenderer.invoke('db:createReferee', competitionId, data),
+    getReferee: (id: string) => ipcRenderer.invoke('db:getReferee', id),
+    getRefereesByCompetition: (competitionId: string) =>
+      ipcRenderer.invoke('db:getRefereesByCompetition', competitionId),
+    updateReferee: (id: string, updates: Record<string, string | undefined>) =>
+      ipcRenderer.invoke('db:updateReferee', id, updates),
+    deleteReferee: (id: string) => ipcRenderer.invoke('db:deleteReferee', id),
+    getMatchesWithReferees: (competitionId: string) =>
+      ipcRenderer.invoke('db:getMatchesWithReferees', competitionId),
+
+    // Touch / Card read
+    getTouches: (matchId: string) => ipcRenderer.invoke('db:getTouches', matchId),
+    getCards: (matchId: string) => ipcRenderer.invoke('db:getCards', matchId),
 
     // Session State
     saveSessionState: (competitionId: string, state: SessionState) => {
@@ -194,6 +237,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
         throw new Error('Competition ID is required and must be a string');
       }
       return ipcRenderer.invoke('db:saveSessionState', competitionId, state);
+    },
+    saveSessionStateSync: (competitionId: string, state: unknown): boolean => {
+      if (!competitionId || typeof competitionId !== 'string') {
+        throw new Error('Competition ID is required and must be a string');
+      }
+      return ipcRenderer.sendSync('db:saveSessionStateSync', competitionId, state);
     },
     getSessionState: (competitionId: string) => {
       if (!competitionId || typeof competitionId !== 'string') {
@@ -219,6 +268,35 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }
       return ipcRenderer.invoke('db:getFencerHistory', fencerId);
     },
+    saveArenaExit: (exit: ArenaExitData) => ipcRenderer.invoke('db:saveArenaExit', exit),
+    getFencerCompetitionStats: (fencerId: string) =>
+      ipcRenderer.invoke('db:getFencerCompetitionStats', fencerId),
+    getCompetitionFencerStats: (competitionId: string) =>
+      ipcRenderer.invoke('db:getCompetitionFencerStats', competitionId),
+    saveAbandonSnapshot: (
+      fencerId: string,
+      competitionId: string,
+      previousStatus: string,
+      abandonType: string,
+      snapshots: MatchSnapshot[]
+    ) =>
+      ipcRenderer.invoke(
+        'db:saveAbandonSnapshot',
+        fencerId,
+        competitionId,
+        previousStatus,
+        abandonType,
+        snapshots
+      ),
+    getAbandonSnapshot: (fencerId: string) => ipcRenderer.invoke('db:getAbandonSnapshot', fencerId),
+    getScoreAuditLogByCompetition: (competitionId: string) =>
+      ipcRenderer.invoke('db:getScoreAuditLogByCompetition', competitionId),
+    deleteAbandonSnapshot: (fencerId: string) =>
+      ipcRenderer.invoke('db:deleteAbandonSnapshot', fencerId),
+    getMatchTimeline: (matchId: string) =>
+      ipcRenderer.invoke('db:getMatchTimeline', matchId),
+    getCompetitionTimeline: (competitionId: string) =>
+      ipcRenderer.invoke('db:getCompetitionTimeline', competitionId),
   },
 
   // File operations with validation
@@ -243,6 +321,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
         throw new Error('Content must be a string');
       }
       return ipcRenderer.invoke('file:writeContent', filepath, content);
+    },
+    printHtml: (html: string) => {
+      if (!html || typeof html !== 'string') {
+        throw new Error('HTML content is required');
+      }
+      return ipcRenderer.invoke('file:printHtml', html);
+    },
+    printHtmlToPDF: (html: string, outputPath: string) => {
+      if (!html || typeof html !== 'string') {
+        throw new Error('HTML content is required');
+      }
+      if (!outputPath || typeof outputPath !== 'string') {
+        throw new Error('Output path is required');
+      }
+      return ipcRenderer.invoke('file:printHtmlToPDF', html, outputPath);
     },
     exportPhotos: (competitionId: string, filepath: string) => {
       if (!competitionId || typeof competitionId !== 'string') {
@@ -319,8 +412,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('file:saved', (_, filepath) => callback(filepath)),
   onAutosaveCompleted: (callback: () => void) => ipcRenderer.on('autosave:completed', callback),
   onAutosaveFailed: (callback: () => void) => ipcRenderer.on('autosave:failed', callback),
+  onDbReady: (callback: () => void) => ipcRenderer.once('db:ready', callback),
 
   // Utility functions
+  print: () => ipcRenderer.invoke('window:print'),
   openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url),
   getVersionInfo: () => ipcRenderer.invoke('app:getVersionInfo'),
 
@@ -341,32 +436,123 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Remote score server functions
   remote: {
-    startServer: () => ipcRenderer.invoke('remote:startServer'),
-    stopServer: () => ipcRenderer.invoke('remote:stopServer'),
-    getServerInfo: () => ipcRenderer.invoke('remote:getServerInfo'),
-    startSession: (competitionId: string, strips: number, matches?: any[], showPhotos?: boolean) =>
-      ipcRenderer.invoke('remote:startSession', competitionId, strips, matches, showPhotos),
-    stopSession: () => ipcRenderer.invoke('remote:stopSession'),
-    getSession: () => ipcRenderer.invoke('remote:getSession'),
-    getArenas: () => ipcRenderer.invoke('remote:getArenas'),
-    updateStripCount: (count: number) => ipcRenderer.invoke('remote:updateStripCount', count),
-    updateShowPhotos: (value: boolean) => ipcRenderer.invoke('remote:updateShowPhotos', value),
-    updateMatchArena: (matchId: string, fromArena: number | null, toArena: number | null) =>
-      ipcRenderer.invoke('remote:updateMatchArena', matchId, fromArena, toArena),
-    setArenaPassword: (arenaId: string, password: string) =>
-      ipcRenderer.invoke('remote:setArenaPassword', arenaId, password),
+    getNetworkInterfaces: () => ipcRenderer.invoke('remote:getNetworkInterfaces'),
+    startServer: (competitionId: string, port?: number, host?: string) =>
+      ipcRenderer.invoke('remote:startServer', competitionId, port, host),
+    stopServer: (competitionId: string) => ipcRenderer.invoke('remote:stopServer', competitionId),
+    getServerInfo: (competitionId: string) => ipcRenderer.invoke('remote:getServerInfo', competitionId),
+    startSession: (
+      competitionId: string,
+      strips: number,
+      matches?: any[],
+      showPhotos?: boolean,
+      kioskViews?: { poules: boolean; classement: boolean; direct: boolean; suivants: boolean },
+      cardAnnounce?: boolean
+    ) =>
+      ipcRenderer.invoke(
+        'remote:startSession',
+        competitionId,
+        strips,
+        matches,
+        showPhotos,
+        kioskViews,
+        cardAnnounce
+      ),
+    stopSession: (competitionId: string) => ipcRenderer.invoke('remote:stopSession', competitionId),
+    launchCompetition: (competitionId: string) => ipcRenderer.invoke('remote:launchCompetition', competitionId),
+    getSession: (competitionId: string) => ipcRenderer.invoke('remote:getSession', competitionId),
+    getArenas: (competitionId: string) => ipcRenderer.invoke('remote:getArenas', competitionId),
+    updateStripCount: (competitionId: string, count: number) =>
+      ipcRenderer.invoke('remote:updateStripCount', competitionId, count),
+    updateShowPhotos: (competitionId: string, value: boolean) =>
+      ipcRenderer.invoke('remote:updateShowPhotos', competitionId, value),
+    updateCardAnnounce: (competitionId: string, value: boolean) =>
+      ipcRenderer.invoke('remote:updateCardAnnounce', competitionId, value),
+    updateTheme: (competitionId: string, theme: string) =>
+      ipcRenderer.invoke('remote:updateTheme', competitionId, theme),
+    updateKioskViews: (competitionId: string, views: {
+      poules: boolean;
+      classement: boolean;
+      direct: boolean;
+      suivants: boolean;
+    }) => ipcRenderer.invoke('remote:updateKioskViews', competitionId, views),
+    updateMatchArena: (competitionId: string, matchId: string, fromArena: number | null, toArena: number | null, fencerA?: any, fencerB?: any) =>
+      ipcRenderer.invoke('remote:updateMatchArena', competitionId, matchId, fromArena, toArena, fencerA, fencerB),
+    updatePoolFencers: (competitionId: string, updates: Array<{ poolId: string; fencers: any[] }>) =>
+      ipcRenderer.invoke('remote:updatePoolFencers', competitionId, updates),
+    syncPoolMatches: (competitionId: string, poolsData: Array<{ poolId: string; matches: any[] }>) =>
+      ipcRenderer.invoke('remote:syncPoolMatches', competitionId, poolsData),
+    refreshDeMatches: (competitionId: string, matches: any[]) =>
+      ipcRenderer.invoke('remote:refreshDeMatches', competitionId, matches),
+    setArenaPassword: (competitionId: string, arenaId: string, password: string) =>
+      ipcRenderer.invoke('remote:setArenaPassword', competitionId, arenaId, password),
+    setOrgNote: (competitionId: string, note: any) =>
+      ipcRenderer.invoke('remote:setOrgNote', competitionId, note),
+    clearOrgNote: (competitionId: string) => ipcRenderer.invoke('remote:clearOrgNote', competitionId),
+    updateArenaTheme: (competitionId: string, arenaId: string, theme: string, customTheme?: any) =>
+      ipcRenderer.invoke('remote:updateArenaTheme', competitionId, arenaId, theme, customTheme),
+    updateLogo: (logo: string | null) => ipcRenderer.invoke('remote:updateLogo', logo),
+    setWallpaper: (competitionId: string, wallpaper: string | null) =>
+      ipcRenderer.invoke('remote:setWallpaper', competitionId, wallpaper),
+    changePort: (competitionId: string, newPort: number) =>
+      ipcRenderer.invoke('remote:changePort', competitionId, newPort),
+    acknowledgeDTCall: (competitionId: string, arenaId: string) =>
+      ipcRenderer.invoke('remote:acknowledgeDTCall', competitionId, arenaId),
+    resetPoolMatch: (competitionId: string, matchId: string) =>
+      ipcRenderer.invoke('remote:resetPoolMatch', competitionId, matchId),
+    setRegistrationEnabled: (competitionId: string, enabled: boolean) =>
+      ipcRenderer.invoke('remote:setRegistrationEnabled', competitionId, enabled),
   },
 
   // Remote event listeners (for real-time updates)
   onRemoteArenaUpdate: (callback: (data: any) => void) => {
-    ipcRenderer.on('arena:update', (_, data) => callback(data));
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on('arena:update', handler);
+    return () => ipcRenderer.removeListener('arena:update', handler);
   },
   onRemoteMatchFinished: (callback: (data: any) => void) => {
     ipcRenderer.on('match:finished', (_, data) => callback(data));
   },
+  onKioskNoteUpdate: (callback: (note: any) => void) => {
+    const handler = (_: any, note: any) => callback(note);
+    ipcRenderer.on('kiosk:note', handler);
+    return () => ipcRenderer.removeListener('kiosk:note', handler);
+  },
+  onDTCall: (callback: (data: { arenaId: string; arenaNumber: number; matchNumber: number | null; competitionId: string | null; timestamp: number }) => void) => {
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on('remote:dt_call', handler);
+    return () => ipcRenderer.removeListener('remote:dt_call', handler);
+  },
+  onDTCallCancel: (callback: (data: { arenaId: string }) => void) => {
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on('remote:dt_cancel', handler);
+    return () => ipcRenderer.removeListener('remote:dt_cancel', handler);
+  },
+
+  onScoreIpConflict: (callback: (data: any) => void) => {
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on('score:ip-conflict', handler);
+    return () => ipcRenderer.removeListener('score:ip-conflict', handler);
+  },
+
+  onPoolSignatureUpdated: (callback: (data: { poolId: string; signedFencerIds: string[]; totalFencers: number }) => void) => {
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on('pool:signature:updated', handler);
+    return () => ipcRenderer.removeListener('pool:signature:updated', handler);
+  },
+
+  getLogo: () => ipcRenderer.invoke('app:getLogo'),
+  onLogoLoaded: (callback: (logo: string | null) => void) => {
+    const handler = (_: any, logo: string | null) => callback(logo);
+    ipcRenderer.on('app:logoLoaded', handler);
+    return () => ipcRenderer.removeListener('app:logoLoaded', handler);
+  },
 
   // Remove listeners
   removeAllListeners: (channel: string) => ipcRenderer.removeAllListeners(channel),
+
+  // Notify main process of language change (to rebuild native menu)
+  notifyLanguageChanged: (lang: string) => ipcRenderer.send('app:language-changed', lang),
 });
 
 // Type declarations for the renderer

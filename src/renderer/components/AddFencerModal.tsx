@@ -14,13 +14,13 @@ interface AddFencerModalProps {
   onAdd: (fencer: Partial<Fencer>) => void;
 }
 
-const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
+const AddFencerModalComponent: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
   const { showToast } = useToast();
   const { t } = useTranslation();
   const [lastName, setLastName] = useState('');
   const [firstName, setFirstName] = useState('');
   const [club, setClub] = useState('');
-  const [league, setLeague] = useState('');
+  const [region, setRegion] = useState('');
   const [license, setLicense] = useState('');
   const [ranking, setRanking] = useState('');
   const [gender, setGender] = useState<Gender>(Gender.MALE);
@@ -31,7 +31,7 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
     e.preventDefault();
 
     if (!lastName.trim() || !firstName.trim()) {
-      showToast(t('messages.required_name'), 'warning');
+      showToast(t('messages.name_required'), 'warning');
       return;
     }
 
@@ -39,7 +39,7 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
       lastName: lastName.trim().toUpperCase(),
       firstName: firstName.trim(),
       club: club.trim() || undefined,
-      league: league.trim() || undefined,
+      region: region.trim() || undefined,
       license: license.trim() || undefined,
       ranking: ranking ? parseInt(ranking, 10) : undefined,
       gender,
@@ -47,6 +47,7 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
       status: FencerStatus.NOT_CHECKED_IN,
       photo,
     });
+    onClose();
   };
 
   return (
@@ -145,8 +146,8 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
                   type="text"
                   className="form-input"
                   placeholder="Île-de-France"
-                  value={league}
-                  onChange={e => setLeague(e.target.value)}
+                  value={region}
+                  onChange={e => setRegion(e.target.value)}
                 />
               </div>
               <div className="form-group">
@@ -188,4 +189,5 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
   );
 };
 
+const AddFencerModal = React.memo(AddFencerModalComponent);
 export default AddFencerModal;

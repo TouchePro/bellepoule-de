@@ -5,6 +5,9 @@ on:
     branches: [dev]
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   increment-version:
     runs-on: ubuntu-latest
@@ -16,7 +19,7 @@ jobs:
       full_version: ${{ steps.version.outputs.full_version }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: dev
           fetch-depth: 0
@@ -74,18 +77,18 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: dev
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
 
       - name: Cache npm dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.npm
           key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
@@ -101,8 +104,8 @@ jobs:
             echo "npm ci failed, trying npm install..."
             npm install && break
             echo "Failed, waiting 10s before retry..."
-            sleep 10
-          done
+            [ $i -lt 3 ] && sleep 10
+          done || exit 1
 
       - name: Update version files
         run: |
@@ -112,26 +115,31 @@ jobs:
         run: npm run build:ci
 
       - name: Update package.json for dev build
-        shell: pwsh
+        shell: bash
         run: |
-          $content = Get-Content package.json -Raw
-          $content = $content -replace '"artifactName": "\$\{productName\}-\$\{version\}\.\$\{ext\}"', '"artifactName": "${productName}-dev-${version}.${ext}"'
-          $content = $content -replace '"artifactName": "\$\{productName\}-\$\{version\}-setup\.\$\{ext\}"', '"artifactName": "${productName}-dev-${version}-setup.${ext}"'
-          $content = $content -replace '"artifactName": "\$\{productName\}-\$\{version\}-portable\.\$\{ext\}"', '"artifactName": "${productName}-dev-${version}-portable.${ext}"'
-          Set-Content package.json $content -NoNewline
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            if (!pkg.build.portable) pkg.build.portable = {};
+            pkg.build.portable.artifactName = '\${productName}-dev-\${version}-portable.\${ext}';
+            if (!pkg.build.nsis) pkg.build.nsis = {};
+            pkg.build.nsis.artifactName = '\${productName}-dev-\${version}-setup.\${ext}';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
 
       - name: Package with Electron Builder
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 15
-          max_attempts: 3
-          retry_on: error
-          command: npx electron-builder --win portable --x64
+        shell: bash
+        run: |
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            npx electron-builder --win portable --x64 && break
+            [ $i -lt 3 ] && sleep 10
+          done || exit 1
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-exe-dev
           path: release/*-dev-*.exe
@@ -142,26 +150,50 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: dev
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
 
       - name: Cache npm dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.npm
           key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-npm-
 
+      - name: Cache Electron binaries
+        uses: actions/cache@v5
+        with:
+          path: ~/Library/Caches/electron
+          key: ${{ runner.os }}-electron-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-
+
+      - name: Cache electron-builder
+        uses: actions/cache@v5
+        with:
+          path: ~/Library/Caches/electron-builder
+          key: ${{ runner.os }}-electron-builder-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-builder-
+
       - name: Install Dependencies
-        run: npm ci
+        run: |
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            npm ci && break
+            echo "npm ci failed, trying npm install..."
+            npm install && break
+            echo "Failed, waiting 10s before retry..."
+            [ $i -lt 3 ] && sleep 10
+          done || exit 1
 
       - name: Update version files
         run: |
@@ -180,17 +212,19 @@ jobs:
           "
 
       - name: Package with Electron Builder
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 15
-          max_attempts: 3
-          retry_on: error
-          command: npx electron-builder --mac --x64
+        run: |
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            npx electron-builder --mac --x64 && break
+            [ $i -lt 3 ] && sleep 30
+          done || exit 1
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ELECTRON_CACHE: ~/Library/Caches/electron
+          ELECTRON_BUILDER_CACHE: ~/Library/Caches/electron-builder
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: macos-x64-dmg-dev
           path: release/*-dev-*-x64.dmg
@@ -201,23 +235,39 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: dev
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
 
       - name: Cache npm dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.npm
           key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-npm-
+
+      - name: Cache Electron binaries
+        uses: actions/cache@v5
+        with:
+          path: ~/Library/Caches/electron
+          key: ${{ runner.os }}-electron-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-
+
+      - name: Cache electron-builder
+        uses: actions/cache@v5
+        with:
+          path: ~/Library/Caches/electron-builder
+          key: ${{ runner.os }}-electron-builder-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-builder-
 
       - name: Install Dependencies
         run: |
@@ -227,8 +277,8 @@ jobs:
             echo "npm ci failed, trying npm install..."
             npm install && break
             echo "Failed, waiting 10s before retry..."
-            sleep 10
-          done
+            [ $i -lt 3 ] && sleep 10
+          done || exit 1
 
       - name: Update version files
         run: |
@@ -247,17 +297,19 @@ jobs:
           "
 
       - name: Package with Electron Builder
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 15
-          max_attempts: 3
-          retry_on: error
-          command: npx electron-builder --mac --arm64
+        run: |
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            npx electron-builder --mac --arm64 && break
+            [ $i -lt 3 ] && sleep 30
+          done || exit 1
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ELECTRON_CACHE: ~/Library/Caches/electron
+          ELECTRON_BUILDER_CACHE: ~/Library/Caches/electron-builder
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: macos-arm64-dmg-dev
           path: release/*-dev-*-arm64.dmg
@@ -268,18 +320,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: dev
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
 
       - name: Cache npm dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.npm
           key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
@@ -294,8 +346,8 @@ jobs:
             echo "npm ci failed, trying npm install..."
             npm install && break
             echo "Failed, waiting 10s before retry..."
-            sleep 10
-          done
+            [ $i -lt 3 ] && sleep 10
+          done || exit 1
 
       - name: Update version files
         run: |
@@ -314,17 +366,17 @@ jobs:
           "
 
       - name: Package with Electron Builder
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 15
-          max_attempts: 3
-          retry_on: error
-          command: npx electron-builder --linux AppImage --x64
+        run: |
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            npx electron-builder --linux AppImage --x64 && break
+            [ $i -lt 3 ] && sleep 10
+          done || exit 1
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: linux-x64-appimage-dev
           path: release/*-dev-*.AppImage
@@ -333,20 +385,21 @@ jobs:
   build-linux-arm64:
     needs: increment-version
     runs-on: ubuntu-latest
+    continue-on-error: true
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: dev
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
 
       - name: Cache npm dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.npm
           key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
@@ -361,8 +414,8 @@ jobs:
             echo "npm ci failed, trying npm install..."
             npm install && break
             echo "Failed, waiting 10s before retry..."
-            sleep 10
-          done
+            [ $i -lt 3 ] && sleep 10
+          done || exit 1
 
       - name: Update version files
         run: |
@@ -381,21 +434,22 @@ jobs:
           "
 
       - name: Package with Electron Builder
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 15
-          max_attempts: 3
-          retry_on: error
-          command: npx electron-builder --linux AppImage --arm64
+        run: |
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            npx electron-builder --linux AppImage --arm64 && break
+            [ $i -lt 3 ] && sleep 10
+          done || exit 1
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: linux-arm64-appimage-dev
           path: release/*-dev-*.AppImage
           retention-days: 7
+          if-no-files-found: warn
 
   create-dev-release:
     needs:
@@ -412,64 +466,74 @@ jobs:
       contents: write
 
     steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: dev
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Download All Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: builds
 
       - name: List downloaded files
         run: find builds -type f
 
-      - name: Delete existing dev release
-        run: |
-          # Supprimer la release dev existante si elle existe
-          gh release delete dev --repo "${{ github.repository }}" --yes --cleanup-tag 2>/dev/null || true
-          # Nettoyer le tag dev s'il reste
-          gh api -X DELETE "repos/${{ github.repository }}/git/refs/tags/dev" 2>/dev/null || true
+      - name: Create or Update Dev Release via gh CLI
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          mapfile -t FILES < <(find builds -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" \))
+          NOTES="## 🧪 Version de Développement
 
-      - name: Create Dev Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: dev
-          name: '🧪 BellePoule Modern Dev v${{ needs.increment-version.outputs.version }} Build #${{ needs.increment-version.outputs.build }}'
-          body: |
-            ## 🧪 Version de Développement
+          **Version**: \`${{ needs.increment-version.outputs.version }}\`
+          **Build**: \`#${{ needs.increment-version.outputs.build }}\`
 
-            **Version**: `${{ needs.increment-version.outputs.version }}`
-            **Build**: `#${{ needs.increment-version.outputs.build }}`
+          **Ceci est une version de test !**
 
-            **Ceci est une version de test !** 
+          Cette release contient les dernières modifications de la branche \`dev\` et est destinée aux tests.
 
-            Cette release contient les dernières modifications de la branche `dev` et est destinée aux tests.
+          ### 📥 Téléchargements
 
-            Pour la version stable, utilisez la release principale.
+          | Plateforme | Architecture | Fichier |
+          |------------|--------------|---------|
+          | **Windows** | x64 | \`.exe\` portable |
+          | **macOS** | x64 | \`.dmg\` |
+          | **macOS** | ARM64 | \`.dmg\` (Apple Silicon M1/M2/M3) |
+          | **Linux** | x64 | \`.AppImage\` |
+          | **Linux** | ARM64 | \`.AppImage\` (Raspberry Pi, etc.) |
 
-            ### 📥 Téléchargements
+          ### ⚠️ Notes
+          - Cette version peut contenir des bugs
+          - Les fonctionnalités sont en cours de développement
 
-            | Plateforme | Architecture | Fichier |
-            |------------|--------------|---------|
-            | **Windows** | x64 | `.exe` portable |
-            | **macOS** | x64 | `.dmg` |
-            | **macOS** | ARM64 | `.dmg` (Apple Silicon M1/M2/M3) |
-            | **Linux** | x64 | `.AppImage` |
-            | **Linux** | ARM64 | `.AppImage` (Raspberry Pi, etc.) |
+          ---
+          **Build automatique** • Branche: \`dev\` • Commit: \`${{ github.sha }}\`"
 
-            ### ⚠️ Notes
-            - Cette version peut contenir des bugs
-            - Les fonctionnalités sont en cours de développement
-            - Pour toute issue, merci de la signaler sur GitHub
+          TITLE="🧪 BellePoule Modern Dev v${{ needs.increment-version.outputs.version }} Build #${{ needs.increment-version.outputs.build }}"
 
-            ---
-            **Build automatique** • Branche: `dev` • Commit: `${{ github.sha }}`
-          files: |
-            builds/windows-exe-dev/*.exe
-            builds/macos-x64-dmg-dev/*.dmg
-            builds/macos-arm64-dmg-dev/*.dmg
-            builds/linux-x64-appimage-dev/*.AppImage
-            builds/linux-arm64-appimage-dev/*.AppImage
-          draft: false
-          prerelease: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          echo "=== All releases ==="
+          gh api repos/$REPO/releases --paginate 2>/dev/null | jq -r '.[] | "\(.id) \(.tag_name)"'
+          echo "=== Tag lookup ==="
+          gh api repos/$REPO/releases/tags/dev-prerelease 2>&1 | jq '.' || true
+          TAG="dev-build-${{ needs.increment-version.outputs.build }}"
+          echo "Creating release with tag $TAG"
+          gh release create "$TAG" \
+            --repo "$REPO" \
+            --title "$TITLE" \
+            --notes "$NOTES" \
+            --prerelease \
+            --target dev \
+            "${FILES[@]}"
+
+          # Keep only the 5 most recent dev builds (cleanup old ones)
+          gh api repos/$REPO/releases --paginate 2>/dev/null \
+            | jq -r '.[] | select(.prerelease==true) | "\(.id) \(.tag_name)"' \
+            | grep " dev-build-" | sort -t- -k3 -rn | tail -n +6 \
+            | while read id tag; do
+                echo "Cleaning up old release $tag ($id)"
+                gh api -X DELETE repos/$REPO/releases/$id || true
+                gh api -X DELETE repos/$REPO/git/refs/tags/$tag || true
+              done

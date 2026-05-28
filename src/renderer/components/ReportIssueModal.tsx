@@ -250,4 +250,4 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ onClose }) => {
   );
 };
 
-export default ReportIssueModal;
+export default React.memo(ReportIssueModal);

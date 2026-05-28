@@ -17,6 +17,8 @@ interface CacheEntry<T> {
 export class CacheService {
   private cache = new Map<string, CacheEntry<unknown>>();
   private defaultTTL: number;
+  private hits = 0;
+  private misses = 0;
 
   constructor(defaultTTL: number = 5 * 60 * 1000) {
     // 5 minutes default
@@ -28,13 +30,18 @@ export class CacheService {
    */
   get<T>(key: string): T | undefined {
     const entry = this.cache.get(key);
-    if (!entry) return undefined;
-
-    if (Date.now() > entry.expiresAt) {
-      this.cache.delete(key);
+    if (!entry) {
+      this.misses++;
       return undefined;
     }
 
+    if (Date.now() > entry.expiresAt) {
+      this.cache.delete(key);
+      this.misses++;
+      return undefined;
+    }
+
+    this.hits++;
     return entry.value as T;
   }
 
@@ -81,9 +88,10 @@ export class CacheService {
    * Get cache statistics
    */
   getStats(): { size: number; hitRate: number } {
+    const total = this.hits + this.misses;
     return {
       size: this.cache.size,
-      hitRate: 0, // Would need hit/miss tracking
+      hitRate: total > 0 ? this.hits / total : 0,
     };
   }
 }

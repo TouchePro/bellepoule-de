@@ -1,6 +1,12 @@
-{
+﻿{
   "app": {
-    "title": "BellePoule Modern"
+    "title": "BellePoule Modern",
+    "home": "General",
+    "back_to_list": "Volver a la lista de competiciones",
+    "close_tab": "Cerrar pestaña",
+    "load_error_title": "Error de carga",
+    "load_error_message": "Ocurrió un error al cargar la lista de competiciones.",
+    "reload": "Recargar la aplicación"
   },
   "menu": {
     "new_competition": "Nueva Competición",
@@ -24,7 +30,9 @@
     "third_place_match_ok": "Haga clic en OK para agregar la pequeña final",
     "third_place_match_cancel": "Haga clic en Cancelar para terminar después de las semifinales",
     "third_place_match_label": "Pequeña final (partido por el 3er lugar)",
-    "third_place_match_description": "Organiza un partido adicional entre los dos semifinalistas perdedores para determinar el 3er y 4to lugar"
+    "third_place_match_description": "Organiza un partido adicional entre los dos semifinalistas perdedores para determinar el 3er y 4to lugar",
+    "comparisons": "Comparaciones",
+    "analytics": "Analytics"
   },
   "weapons": {
     "epee": "Espada",
@@ -43,7 +51,11 @@
     "U15": "Sub-15",
     "U17": "Sub-17",
     "U20": "Sub-20",
-    "senior": "Senior"
+    "senior": "Senior",
+    "V1": "Veteranos 1",
+    "V2": "Veteranos 2",
+    "V3": "Veteranos 3",
+    "V4": "Veteranos 4"
   },
   "fencer": {
     "last_name": "Apellido",
@@ -63,7 +75,9 @@
     "abandon": "Abandonar",
     "forfait": "No Presentarse",
     "reactivate": "Reactivar",
-    "points": "Puntos"
+    "points": "Puntos",
+    "label": "tiradores",
+    "present_label": "registrados"
   },
   "status": {
     "checked_in": "Registrado",
@@ -79,11 +93,18 @@
   },
   "phases": {
     "checkin": "Registro",
+    "poolprep": "Preparación",
     "pools": "Poules",
+    "pools_skip": "Poules (saltadas)",
+    "pools_round": "Poules ({{current}}/{{total}})",
+    "pools_skip_tooltip": "Fase de poules ignorada (0 poules)",
+    "pools_locked_tooltip": "Complete primero la preparación de las poules",
+    "tableau_locked_tooltip": "Complete todas las poules y valide la clasificación para acceder al cuadro",
     "ranking": "Clasificación",
     "tableau": "Cuadro",
     "results": "Resultados",
-    "remote": "Entrada Remota"
+    "remote": "Entrada Remota",
+    "referees": "Árbitros"
   },
   "pools": {
     "generate": "Generar Poules",
@@ -98,7 +119,9 @@
     "no_pools": "Sin Poules",
     "return_to_checkin": "Volver al Registro",
     "pool_number": "Poule",
-    "change_pool": "Cambiar Poule"
+    "change_pool": "Cambiar Poule",
+    "next_round_n": "Ronda {{n}} →",
+    "view_ranking_action": "Ver clasificación →"
   },
   "ranking": {
     "rank": "Pos",
@@ -204,12 +227,111 @@
     "warning": "Advertencia",
     "info": "Información",
     "connection_lost": "Conexión perdida",
-    "connection_restored": "Conexión restaurada"
+    "connection_restored": "Conexión restaurada",
+    "name_required": "El apellido y el nombre son obligatorios"
   },
   "time": {
     "minutes": "minutos",
     "seconds": "segundos",
     "hours": "horas",
     "days": "días"
+  },
+  "pdfTemplate": {
+    "modalTitle": "Personalizar exportaciones PDF",
+    "openButton": "Personalizar PDFs",
+    "docType": { "pool": "Grupos", "tableau": "Cuadro", "ranking": "Clasificación" },
+    "customTitle": "Título personalizado",
+    "customTitlePlaceholder": "Dejar vacío para título automático",
+    "colors": { "navy": "Color principal", "gold": "Color de acento", "green": "Color de victoria" },
+    "elements": {
+      "header": "Encabezado", "gold-bar": "Separador dorado", "competition-name": "Nombre de competición", "meta-chips": "Chips de info",
+      "score-grid": "Cuadrícula de puntuación", "pending-matches": "Combates pendientes",
+      "finished-matches": "Resultados", "match-cards": "Fichas de combate",
+      "ranking-table": "Tabla de clasificación", "footer": "Pie de página"
+    },
+    "reset": "Restablecer", "exportJson": "Exportar JSON", "importJson": "Importar JSON", "importError": "Archivo JSON inválido"
+  },
+  "cardModal": {
+    "title": "Tarjeta para {{name}}",
+    "previous_cards": "Tarjetas anteriores:",
+    "card_white": "⬜ TARJETA BLANCA",
+    "card_yellow": "🟨 TARJETA AMARILLA",
+    "card_red": "🟥 TARJETA ROJA",
+    "card_black": "⬛ TARJETA NEGRA",
+    "abbr_white": "B",
+    "abbr_yellow": "A",
+    "abbr_red": "R",
+    "abbr_black": "N",
+    "points_for": "+{{points}} punto para {{name}}",
+    "exclusion": "⚠️ EXCLUSIÓN DE LA COMPETICIÓN"
+  },
+  "cardReasons": {
+    "EARLY_START": "Salida anticipada",
+    "LATE_STOP": "Continuar después de \"¡Alto!\"",
+    "BODY_CONTACT": "Contacto corporal voluntario",
+    "COUNTER_ATTACK": "Contraataque",
+    "TARGET_SUBSTITUTION": "Sustitución de blanco",
+    "VOLUNTARY_DROP": "Soltar el sable voluntariamente",
+    "TIME_WASTING": "Pérdida de tiempo",
+    "NON_COMPLIANT_GEAR": "Material no conforme",
+    "ESTOC": "Golpe de punta (estocada)",
+    "UNARMED_HAND": "Uso de la mano desarmada",
+    "VOLUNTARY_EXIT": "Salida voluntaria de la pista",
+    "HEAVY_HIT": "Golpe fuerte",
+    "BRUTALITY": "Brutalidad",
+    "DANGEROUS": "Comportamiento peligroso",
+    "REFUSAL": "Negativa a combatir",
+    "UNSPORTSMANLIKE": "Conducta antideportiva",
+    "CHEATING": "Trampa"
+  },
+  "cardGroups": {
+    "GROUP_1": "Grupo 1 (Blanco → Amarillo → Amarillo)",
+    "GROUP_2": "Grupo 2 (Amarillo → Rojo → Rojo)",
+    "GROUP_3": "Grupo 3 (Rojo → Exclusión)",
+    "GROUP_4": "Grupo 4 (Exclusión inmediata)"
+  },
+  "stats": {
+    "title": "Estadísticas por tirador",
+    "zone_a": "Zona A (1 pt)",
+    "zone_b": "Zona B (3 pts)",
+    "zone_c": "Zona C (5 pts)",
+    "total_points": "Pts totales",
+    "white_cards": "Tarjetas blancas",
+    "yellow_cards": "Tarjetas amarillas",
+    "red_cards": "Tarjetas rojas",
+    "arena_exits": "Salidas de pista",
+    "matches_played": "Combates",
+    "avg_duration": "Duración med.",
+    "early_finishes": "< 3 min",
+    "export_pdf": "Exportar estadísticas (PDF)",
+    "export_fencer_pdf": "Exportar combatiente (PDF)",
+    "export_competition_pdf": "Exportar competición PDF",
+    "no_data": "No hay estadísticas disponibles para esta competición.",
+    "laser_only": "Las zonas de toque (A/B/C) sólo están disponibles en modo Sable Láser."
+  },
+  "shortcuts": {
+    "title": "Atajos de Teclado",
+    "subtitle": "Domina BellePoule como un profesional",
+    "footer": "Presiona ? para mostrar esta ayuda en cualquier momento",
+    "category_all": "Todos",
+    "category_global": "Global",
+    "category_navigation": "Navegación",
+    "category_actions": "Acciones",
+    "category_competition": "Competición",
+    "show_help": "Mostrar ayuda de atajos",
+    "quick_search": "Búsqueda rápida",
+    "close_modal": "Cerrar modal / Cancelar",
+    "go_pools": "Ir a grupos",
+    "go_tableau": "Ir al cuadro",
+    "go_results": "Ir a resultados",
+    "nav_fields": "Navegar entre campos",
+    "save": "Guardar",
+    "undo": "Deshacer",
+    "redo": "Rehacer",
+    "new_competition": "Nueva competición",
+    "refresh_data": "Actualizar datos",
+    "timer": "Iniciar/Pausar cronómetro",
+    "nav_list": "Navegar en la lista",
+    "validate": "Validar / Abrir"
   }
 }

@@ -3,70 +3,111 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Competition, Fencer, FencerStatus, Pool, Match, PhaseType } from '../shared/types';
+import React, { useEffect, useCallback, useState, Suspense } from 'react';
+import { Competition, PhaseType } from '../shared/types';
+import type { CompetitionCreateData } from '../shared/types/preload';
+import { logger, LogCategory } from '@shared/services/logger';
 import CompetitionList from './components/CompetitionList';
-import CompetitionView from './components/CompetitionView';
-import NewCompetitionModal from './components/NewCompetitionModal';
-import ReportIssueModal from './components/ReportIssueModal';
-import UpdateNotification from './components/UpdateNotification';
-import SettingsModal from './components/SettingsModal';
+const CompetitionView = React.lazy(() => import('./components/CompetitionView'));
+const CommandPalette = React.lazy(() => import('./components/CommandPalette'));
+const NewCompetitionModal = React.lazy(() => import('./components/NewCompetitionModal'));
+const ReportIssueModal = React.lazy(() => import('./components/ReportIssueModal'));
+const SettingsModal = React.lazy(() => import('./components/SettingsModal'));
+const DTCallNotification = React.lazy(() => import('./components/DTCallNotification'));
+const UpdateNotification = React.lazy(() => import('./components/UpdateNotification'));
 import { ToastProvider, useToast } from './components/Toast';
 import { ConfirmProvider, useConfirm } from './components/ConfirmDialog';
-import { TranslationProvider, useTranslation } from './contexts/TranslationContext';
+import { TranslationProvider, useTranslation, Theme } from './contexts/TranslationContext';
 import { ErrorBoundary, CompetitionErrorBoundary } from './components/ErrorBoundary';
+import { useAppState } from './hooks/useAppState';
 
-type View = 'home' | 'competition';
+const PHASE_BADGE: Record<string, { label: string; cls: string }> = {
+  [PhaseType.CHECKIN]: { label: 'Appel', cls: 'badge-checkin' },
+  [PhaseType.POOL]: { label: 'Poules', cls: 'badge-pool' },
+  [PhaseType.QUEST]: { label: 'Quest', cls: 'badge-pool' },
+  [PhaseType.DIRECT_ELIMINATION]: { label: 'Tableau', cls: 'badge-tableau' },
+  [PhaseType.CLASSIFICATION]: { label: 'Résultats', cls: 'badge-results' },
+};
 
-interface OpenCompetition {
-  competition: Competition;
-  isDirty: boolean;
-}
+const THEME_ICONS: Record<string, string> = { default: '🌓', light: '☀️', dark: '🌙' };
+const THEME_CYCLE: Theme[] = ['default', 'light', 'dark'];
 
 const AppContent: React.FC = () => {
-  const { t, isLoading: translationLoading } = useTranslation();
+  const { t, isLoading: translationLoading, theme, changeTheme } = useTranslation();
   const { showToast } = useToast();
   const { confirm } = useConfirm();
-  const [view, setView] = useState<View>('home');
-  const [competitions, setCompetitions] = useState<Competition[]>([]);
-  const [currentCompetition, setCurrentCompetition] = useState<Competition | null>(null);
-  const [openCompetitions, setOpenCompetitions] = useState<OpenCompetition[]>([]);
-  const [activeTabId, setActiveTabId] = useState<string | null>(null);
-  const [showNewCompetitionModal, setShowNewCompetitionModal] = useState(false);
-  const [showReportIssueModal, setShowReportIssueModal] = useState(false);
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
 
-  // Load competitions on mount
+  const {
+    view,
+    competitions,
+    currentCompetition,
+    openCompetitions,
+    activeTabId,
+    showNewCompetitionModal,
+    showReportIssueModal,
+    showSettingsModal,
+    requestedPhase,
+    isLoading,
+    setView,
+    setCompetitions,
+    setCurrentCompetition,
+    setOpenCompetitions,
+    setActiveTabId,
+    setShowNewCompetitionModal,
+    setShowReportIssueModal,
+    setShowSettingsModal,
+    setRequestedPhase,
+    loadCompetitions,
+    handleUpdateCompetition,
+    handleBack,
+    handleSettingsSave,
+    handleTabSwitch,
+  } = useAppState(showToast);
+
+  // Load competitions on mount — attendre db:ready si la fenêtre s'ouvre avant la DB
   useEffect(() => {
-    loadCompetitions();
+    if (window.electronAPI?.onDbReady) {
+      // Si la DB n'est pas encore prête, attendre l'event puis charger
+      let loaded = false;
+      const tryLoad = () => { if (!loaded) { loaded = true; loadCompetitions(); } };
+      window.electronAPI.onDbReady(tryLoad);
+      // Charger quand même après 1s au cas où db:ready est déjà passé
+      const fallback = setTimeout(tryLoad, 1000);
+      return () => clearTimeout(fallback);
+    } else {
+      loadCompetitions();
+    }
+  }, []);
 
-    // Listen for menu events
+  // Listen for menu events
+  useEffect(() => {
     if (window.electronAPI) {
       window.electronAPI.onMenuNewCompetition(() => setShowNewCompetitionModal(true));
       window.electronAPI.onMenuReportIssue(() => setShowReportIssueModal(true));
 
       // Listen for file operations
       window.electronAPI.onFileOpened(async (filepath: string) => {
-        console.log('Fichier .BPM ouvert:', filepath);
+        logger.debug(LogCategory.UI, 'Fichier .BPM ouvert', { filepath });
         await loadCompetitions();
       });
 
       window.electronAPI.onFileSaved(async (filepath: string) => {
-        console.log('Fichier sauvegardé:', filepath);
+        logger.debug(LogCategory.UI, 'Fichier sauvegardé', { filepath });
       });
 
       // Listen for save events
       window.electronAPI.onMenuSave(() => {
-        showToast(t('app.autosave_success'), 'success');
+        showToast('Sauvegarde effectuée', 'success');
       });
 
       window.electronAPI.onAutosaveCompleted(() => {
-        console.log('Autosave OK');
+        logger.debug(LogCategory.UI, 'Autosave OK');
       });
 
       window.electronAPI.onAutosaveFailed(() => {
-        showToast(t('app.autosave_failed'), 'error');
+        showToast('Échec de la sauvegarde automatique', 'error');
       });
     }
 
@@ -83,18 +124,34 @@ const AppContent: React.FC = () => {
     };
   }, []);
 
-  const loadCompetitions = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      if (window.electronAPI) {
-        const comps = await window.electronAPI.db.getAllCompetitions();
-        setCompetitions(comps);
+  // Ctrl+K → command palette
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowCommandPalette(prev => !prev);
       }
-    } catch (error) {
-      console.error('Failed to load competitions:', error);
-    }
-    setIsLoading(false);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
   }, []);
+
+  // Sync logo from disk to localStorage so PDF exports always find it
+  useEffect(() => {
+    if (!window.electronAPI) return;
+    window.electronAPI.getLogo?.().then((logo: string | null) => {
+      if (logo) localStorage.setItem('bellepoule-logo', logo);
+      else localStorage.removeItem('bellepoule-logo');
+    }).catch((err: unknown) => {
+      logger.warn(LogCategory.UI, 'Impossible de charger le logo', err instanceof Error ? err : undefined);
+    });
+    const unsub = window.electronAPI.onLogoLoaded?.((logo: string | null) => {
+      if (logo) localStorage.setItem('bellepoule-logo', logo);
+      else localStorage.removeItem('bellepoule-logo');
+    });
+    return () => { if (typeof unsub === 'function') unsub(); };
+  }, []);
+
 
   const handleCreateCompetition = useCallback(async (data: Partial<Competition>) => {
     try {
@@ -108,7 +165,7 @@ const AppContent: React.FC = () => {
           category: data.category || 'SENIOR',
           ...data,
         };
-        const newComp = await window.electronAPI.db.createCompetition(competitionData as any);
+        const newComp = await window.electronAPI.db.createCompetition(competitionData as unknown as CompetitionCreateData);
         setCompetitions(prev => [newComp, ...prev]);
 
         // Ouvrir la compétition dans un nouvel onglet
@@ -121,74 +178,53 @@ const AppContent: React.FC = () => {
         setView('competition');
       }
     } catch (error) {
-      console.error('Failed to create competition:', error);
+      logger.error(LogCategory.UI, 'Failed to create competition', error as Error);
     }
     setShowNewCompetitionModal(false);
   }, []);
 
-  const handleSelectCompetition = async (competition: Competition) => {
-    console.log('=== handleSelectCompetition ===');
-    console.log('Competition ID:', competition.id);
-    console.log('Competition title:', competition.title);
+  const handleSelectCompetition = useCallback(async (competition: Competition) => {
+    logger.debug(LogCategory.UI, 'handleSelectCompetition', {
+      id: competition.id,
+      title: competition.title,
+    });
 
     try {
       if (window.electronAPI) {
-        // Vérifier si la compétition est déjà ouverte
         const existingOpenComp = openCompetitions.find(
           open => open.competition.id === competition.id
         );
 
         if (existingOpenComp) {
-          console.log("Competition déjà ouverte, activation de l'onglet");
-          // Activer l'onglet existant
           setActiveTabId(competition.id);
           setCurrentCompetition(existingOpenComp.competition);
           setView('competition');
         } else {
-          console.log('Chargement de la compétition depuis la DB...');
-          // Ouvrir dans un nouvel onglet
           const comp = await window.electronAPI.db.getCompetition(competition.id);
-          console.log('Compétition chargée:', comp ? 'OK' : 'NULL');
 
           if (comp) {
-            console.log('Chargement des tireurs...');
             const fencers = await window.electronAPI.db.getFencersByCompetition(competition.id);
-            console.log('Nombre de tireurs:', fencers.length);
             comp.fencers = fencers;
-
-            console.log('Vérification des données:');
-            console.log('- date:', comp.date);
-            console.log('- weapon:', comp.weapon);
-            console.log('- fencers:', comp.fencers.length);
 
             setOpenCompetitions(prev => [...prev, { competition: comp, isDirty: false }]);
             setActiveTabId(comp.id);
             setCurrentCompetition(comp);
             setView('competition');
-            console.log('Compétition ouverte avec succès');
           } else {
-            console.error('Compétition non trouvée dans la DB');
-            showToast(t('app.competition_not_found'), 'error');
+            logger.error(LogCategory.UI, 'Compétition non trouvée dans la DB', undefined, {
+              id: competition.id,
+            });
+            showToast('Erreur: Compétition non trouvée', 'error');
           }
         }
       }
     } catch (error) {
-      console.error('Failed to load competition:', error);
-      console.error('Stack:', error instanceof Error ? error.stack : 'No stack');
-      showToast(t('app.competition_load_error'), 'error');
+      logger.error(LogCategory.UI, 'Failed to load competition', error as Error);
+      showToast('Erreur lors du chargement de la compétition', 'error');
     }
-  };
+  }, [openCompetitions, showToast]);
 
-  const handleTabSwitch = (competitionId: string) => {
-    const openComp = openCompetitions.find(open => open.competition.id === competitionId);
-    if (openComp) {
-      setActiveTabId(competitionId);
-      setCurrentCompetition(openComp.competition);
-      setView('competition');
-    }
-  };
-
-  const handleTabClose = async (competitionId: string, e?: React.MouseEvent) => {
+  const handleTabClose = useCallback(async (competitionId: string, e?: React.MouseEvent) => {
     if (e) {
       e.stopPropagation();
     }
@@ -196,12 +232,15 @@ const AppContent: React.FC = () => {
     const openComp = openCompetitions.find(open => open.competition.id === competitionId);
     if (openComp && openComp.isDirty) {
       const ok = await confirm(
-        t('app.unsaved_changes_dialog')
+        'Des modifications ne sont pas sauvegardées. Voulez-vous vraiment fermer cette compétition ?'
       );
       if (!ok) {
         return;
       }
     }
+
+    localStorage.removeItem(`bellepoule-remote-launched-${competitionId}`);
+    localStorage.removeItem(`bellepoule-remote-port-${competitionId}`);
 
     const newOpenCompetitions = openCompetitions.filter(
       open => open.competition.id !== competitionId
@@ -219,12 +258,14 @@ const AppContent: React.FC = () => {
         setView('home');
       }
     }
-  };
+  }, [openCompetitions, activeTabId, confirm]);
 
-  const handleDeleteCompetition = async (id: string) => {
+  const handleDeleteCompetition = useCallback(async (id: string) => {
     try {
       if (window.electronAPI) {
         await window.electronAPI.db.deleteCompetition(id);
+        localStorage.removeItem(`bellepoule-remote-launched-${id}`);
+        localStorage.removeItem(`bellepoule-remote-port-${id}`);
         setCompetitions(prev => prev.filter(c => c.id !== id));
 
         // Supprimer l'onglet ouvert pour cette compétition (évite le tab fantôme)
@@ -249,274 +290,325 @@ const AppContent: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('Failed to delete competition:', error);
+      logger.error(LogCategory.UI, 'Failed to delete competition', error as Error);
     }
-  };
+  }, [activeTabId, currentCompetition]);
 
-  const handleBack = () => {
-    setView('home');
-  };
-
-  const handleSettingsSave = (settings: any) => {
-    // Currently settings handling would go here
-    // For now, the language change is handled in the SettingsModal component
-    console.log('Settings saved:', settings);
-  };
-
-  const handleUpdateCompetition = (updated: Competition) => {
-    setCurrentCompetition(updated);
-    setCompetitions(competitions.map(c => (c.id === updated.id ? updated : c)));
-
-    // Marquer l'onglet comme modifié
-    setOpenCompetitions(prev =>
-      prev.map(open =>
-        open.competition.id === updated.id ? { ...open, competition: updated, isDirty: true } : open
-      )
-    );
-  };
 
   return (
     <>
-        <UpdateNotification />
-        <div className="app">
-          <header className="header">
-            <div className="header-title">
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M14.5 17.5L3 6V3h3l11.5 11.5" />
-                <path d="M13 19l6-6" />
-                <path d="M16 16l4 4" />
-                <path d="M19 21a2 2 0 100-4 2 2 0 000 4z" />
-              </svg>
-              {t('app.title')}
-            </div>
-            <div className="header-nav">
-              {openCompetitions.length > 0 && view === 'competition' && (
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => {
-                    setView('home');
-                    setActiveTabId(null);
-                  }}
-                  title={t('app.back_to_home_title')}
-                >
-                  🏠 {t('app.home_label')}
-                </button>
-              )}
-              <button className="btn btn-primary" onClick={() => setShowNewCompetitionModal(true)}>
-                + {t('menu.new_competition')}
-              </button>
+      <Suspense fallback={null}><UpdateNotification /></Suspense>
+      <Suspense fallback={null}><DTCallNotification /></Suspense>
+      <div className="app">
+        <header className="header">
+          <div className="header-title">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M14.5 17.5L3 6V3h3l11.5 11.5" />
+              <path d="M13 19l6-6" />
+              <path d="M16 16l4 4" />
+              <path d="M19 21a2 2 0 100-4 2 2 0 000 4z" />
+            </svg>
+            {t('app.title')}
+          </div>
+          {/* Ctrl+K hint — clickable */}
+          <button
+            className="header-search-hint"
+            onClick={() => setShowCommandPalette(true)}
+            title="Ouvrir la palette de commandes (Ctrl+K)"
+          >
+            <span>Rechercher…</span>
+            <kbd>Ctrl K</kbd>
+          </button>
+          <div className="header-nav">
+            {openCompetitions.length > 0 && view === 'competition' && (
               <button
                 className="btn btn-secondary"
-                onClick={() => setShowSettingsModal(true)}
-                title={t('settings.title')}
-              >
-                ⚙️ {t('settings.title')}
-              </button>
-            </div>
-          </header>
-
-          {/* Onglets des compétitions ouvertes */}
-          {openCompetitions.length > 0 && (
-            <div
-              className="tabs-container"
-              style={{
-                background: '#f8fafc',
-                borderBottom: '1px solid #e5e7eb',
-                display: 'flex',
-                alignItems: 'center',
-                padding: '0 1rem',
-                gap: '0.25rem',
-                overflowX: 'auto',
-              }}
-            >
-              {/* Onglet Général/Accueil */}
-              <div
-                className={`tab ${view === 'home' ? 'tab-active' : ''}`}
                 onClick={() => {
                   setView('home');
                   setActiveTabId(null);
                 }}
+                title={t('app.back_to_list')}
+              >
+                🏠 {t('app.home')}
+              </button>
+            )}
+            <button className="btn btn-primary" onClick={() => setShowNewCompetitionModal(true)}>
+              + {t('menu.new_competition')}
+            </button>
+            {view === 'competition' && currentCompetition && (
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  setRequestedPhase('remote');
+                }}
+                title={t('phases.remote')}
+              >
+                📡 {t('phases.remote')}
+              </button>
+            )}
+            <button
+              className="btn-theme-toggle"
+              onClick={() => {
+                const next = THEME_CYCLE[(THEME_CYCLE.indexOf(theme) + 1) % THEME_CYCLE.length];
+                changeTheme(next);
+              }}
+              title={`Thème : ${theme}`}
+            >
+              {THEME_ICONS[theme]}
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowSettingsModal(true)}
+              title={t('settings.title')}
+            >
+              ⚙️ {t('settings.title')}
+            </button>
+          </div>
+        </header>
+
+        {/* Onglets des compétitions ouvertes */}
+        {openCompetitions.length > 0 && (
+          <div
+            className="tabs-container"
+            style={{
+              background: '#f8fafc',
+              borderBottom: '1px solid #e5e7eb',
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0 1rem',
+              gap: '0.25rem',
+              overflowX: 'auto',
+            }}
+          >
+            {/* Onglet Général/Accueil */}
+            <div
+              className={`tab ${view === 'home' ? 'tab-active' : ''}`}
+              onClick={() => {
+                setView('home');
+                setActiveTabId(null);
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.75rem 1rem',
+                borderRadius: '8px 8px 0 0',
+                cursor: 'pointer',
+                background: view === 'home' ? 'white' : 'transparent',
+                border: view === 'home' ? '1px solid #e5e7eb' : '1px solid transparent',
+                borderBottom: view === 'home' ? '1px solid white' : 'none',
+                marginBottom: view === 'home' ? '-1px' : '0',
+                transition: 'all 0.15s ease',
+                position: 'relative',
+                minWidth: '120px',
+              }}
+              onMouseEnter={e => {
+                if (view !== 'home') {
+                  e.currentTarget.style.background = '#f1f5f9';
+                }
+              }}
+              onMouseLeave={e => {
+                if (view !== 'home') {
+                  e.currentTarget.style.background = 'transparent';
+                }
+              }}
+            >
+              <span
+                style={{
+                  fontWeight: view === 'home' ? '600' : '400',
+                  color: view === 'home' ? '#1f2937' : '#6b7280',
+                  fontSize: '0.875rem',
+                  whiteSpace: 'nowrap',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                }}
+              >
+                🏠 {t('app.home')}
+              </span>
+            </div>
+
+            {openCompetitions.map(openComp => (
+              <div
+                key={openComp.competition.id}
+                className={`tab ${activeTabId === openComp.competition.id ? 'tab-active' : ''} ${draggedTabId === openComp.competition.id ? 'tab-dragging' : ''}`}
+                draggable
+                onDragStart={() => setDraggedTabId(openComp.competition.id)}
+                onDragEnd={() => setDraggedTabId(null)}
+                onDragOver={e => e.preventDefault()}
+                onDrop={e => {
+                  e.preventDefault();
+                  if (!draggedTabId || draggedTabId === openComp.competition.id) return;
+                  setOpenCompetitions(prev => {
+                    const from = prev.findIndex(o => o.competition.id === draggedTabId);
+                    const to = prev.findIndex(o => o.competition.id === openComp.competition.id);
+                    if (from === -1 || to === -1) return prev;
+                    const next = [...prev];
+                    const [moved] = next.splice(from, 1);
+                    next.splice(to, 0, moved);
+                    return next;
+                  });
+                  setDraggedTabId(null);
+                }}
+                onClick={() => handleTabSwitch(openComp.competition.id)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.5rem',
                   padding: '0.75rem 1rem',
                   borderRadius: '8px 8px 0 0',
-                  cursor: 'pointer',
-                  background: view === 'home' ? 'white' : 'transparent',
-                  border: view === 'home' ? '1px solid #e5e7eb' : '1px solid transparent',
-                  borderBottom: view === 'home' ? '1px solid white' : 'none',
-                  marginBottom: view === 'home' ? '-1px' : '0',
+                  cursor: 'grab',
+                  background: activeTabId === openComp.competition.id ? 'white' : 'transparent',
+                  border: activeTabId === openComp.competition.id ? '1px solid #e5e7eb' : '1px solid transparent',
+                  borderBottom: activeTabId === openComp.competition.id ? '1px solid white' : 'none',
+                  marginBottom: activeTabId === openComp.competition.id ? '-1px' : '0',
                   transition: 'all 0.15s ease',
                   position: 'relative',
-                  minWidth: '120px',
+                  minWidth: '150px',
+                  opacity: draggedTabId === openComp.competition.id ? 0.4 : 1,
                 }}
                 onMouseEnter={e => {
-                  if (view !== 'home') {
+                  if (activeTabId !== openComp.competition.id) {
                     e.currentTarget.style.background = '#f1f5f9';
                   }
                 }}
                 onMouseLeave={e => {
-                  if (view !== 'home') {
+                  if (activeTabId !== openComp.competition.id) {
                     e.currentTarget.style.background = 'transparent';
                   }
                 }}
               >
+                {/* Dot coloré de la compétition */}
+                <span style={{
+                  width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                  background: openComp.competition.color || '#3B5BDB',
+                  boxShadow: `0 0 0 2px ${(openComp.competition.color || '#3B5BDB')}33`,
+                }} />
                 <span
                   style={{
-                    fontWeight: view === 'home' ? '600' : '400',
-                    color: view === 'home' ? '#1f2937' : '#6b7280',
+                    fontWeight: activeTabId === openComp.competition.id ? '600' : '400',
+                    color: activeTabId === openComp.competition.id ? '#1f2937' : '#6b7280',
                     fontSize: '0.875rem',
                     whiteSpace: 'nowrap',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    flex: 1,
                   }}
                 >
-                  🏠 {t('app.home_label')}
+                  {openComp.competition.title}
+                  {openComp.isDirty && (
+                    <span style={{ color: '#ef4444', marginLeft: '0.25rem' }}>●</span>
+                  )}
+                  {(() => {
+                    const phase = openComp.competition.phases?.[openComp.competition.currentPhaseIndex];
+                    const badge = phase ? PHASE_BADGE[phase.type] : null;
+                    return badge ? (
+                      <span className={`tab-phase-badge ${badge.cls}`}>{badge.label}</span>
+                    ) : null;
+                  })()}
                 </span>
-              </div>
-
-              {openCompetitions.map(openComp => (
-                <div
-                  key={openComp.competition.id}
-                  className={`tab ${activeTabId === openComp.competition.id ? 'tab-active' : ''}`}
-                  onClick={() => handleTabSwitch(openComp.competition.id)}
+                <button
+                  onClick={e => handleTabClose(openComp.competition.id, e)}
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    padding: '0.75rem 1rem',
-                    borderRadius: '8px 8px 0 0',
-                    cursor: 'pointer',
-                    background: activeTabId === openComp.competition.id ? 'white' : 'transparent',
-                    border:
-                      activeTabId === openComp.competition.id
-                        ? '1px solid #e5e7eb'
-                        : '1px solid transparent',
-                    borderBottom:
-                      activeTabId === openComp.competition.id ? '1px solid white' : 'none',
-                    marginBottom: activeTabId === openComp.competition.id ? '-1px' : '0',
-                    transition: 'all 0.15s ease',
-                    position: 'relative',
-                    minWidth: '150px',
+                    background: 'none', border: 'none', color: '#6b7280',
+                    cursor: 'pointer', padding: '0.125rem', borderRadius: '3px',
+                    fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}
-                  onMouseEnter={e => {
-                    if (activeTabId !== openComp.competition.id) {
-                      e.currentTarget.style.background = '#f1f5f9';
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    if (activeTabId !== openComp.competition.id) {
-                      e.currentTarget.style.background = 'transparent';
-                    }
-                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#e5e7eb'; e.currentTarget.style.color = '#374151'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280'; }}
+                  title={t('app.close_tab')}
                 >
-                  <span
-                    style={{
-                      fontWeight: activeTabId === openComp.competition.id ? '600' : '400',
-                      color: activeTabId === openComp.competition.id ? '#1f2937' : '#6b7280',
-                      fontSize: '0.875rem',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      flex: 1,
-                    }}
-                  >
-                    {openComp.competition.title}
-                    {openComp.isDirty && (
-                      <span style={{ color: '#ef4444', marginLeft: '0.25rem' }}>●</span>
-                    )}
-                  </span>
-                  <button
-                    onClick={e => handleTabClose(openComp.competition.id, e)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#6b7280',
-                      cursor: 'pointer',
-                      padding: '0.125rem',
-                      borderRadius: '3px',
-                      fontSize: '0.75rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.background = '#e5e7eb';
-                      e.currentTarget.style.color = '#374151';
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.background = 'none';
-                      e.currentTarget.style.color = '#6b7280';
-                    }}
-                    title={t('app.close_tab_title')}
-                  >
-                    ×
-                  </button>
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <main className="main">
+          {view === 'home' && (
+            <ErrorBoundary
+              fallback={
+                <div style={{ padding: '20px', textAlign: 'center' }}>
+                  <h3>🏠 {t('app.load_error_title')}</h3>
+                  <p>{t('app.load_error_message')}</p>
+                  <button onClick={() => window.location.reload()}>{t('app.reload')}</button>
                 </div>
-              ))}
-            </div>
+              }
+            >
+              <CompetitionList
+                competitions={competitions}
+                isLoading={isLoading}
+                onSelect={handleSelectCompetition}
+                onDelete={handleDeleteCompetition}
+                onNewCompetition={() => setShowNewCompetitionModal(true)}
+              />
+            </ErrorBoundary>
           )}
 
-          <main className="main">
-            {view === 'home' && (
-              <ErrorBoundary
-                fallback={
-                  <div style={{ padding: '20px', textAlign: 'center' }}>
-                    <h3>🏠 {t('app.error_loading_title')}</h3>
-                    <p>{t('app.error_loading_message')}</p>
-                    <button onClick={() => window.location.reload()}>
-                      {t('app.reload_button')}
-                    </button>
-                  </div>
-                }
-              >
-                <CompetitionList
-                  competitions={competitions}
-                  isLoading={isLoading}
-                  onSelect={handleSelectCompetition}
-                  onDelete={handleDeleteCompetition}
-                  onNewCompetition={() => setShowNewCompetitionModal(true)}
-                />
-              </ErrorBoundary>
-            )}
-
-            {view === 'competition' && currentCompetition && activeTabId && (
-              <CompetitionErrorBoundary key={currentCompetition.id}>
+          {view === 'competition' && currentCompetition && activeTabId && (
+            <CompetitionErrorBoundary key={currentCompetition.id}>
+              <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Chargement…</div>}>
                 <CompetitionView
                   competition={currentCompetition}
                   onUpdate={handleUpdateCompetition}
+                  requestPhase={requestedPhase ?? undefined}
+                  onPhaseApplied={() => setRequestedPhase(null)}
                 />
-              </CompetitionErrorBoundary>
-            )}
-          </main>
+              </Suspense>
+            </CompetitionErrorBoundary>
+          )}
+        </main>
 
-          {showNewCompetitionModal && (
+        {showNewCompetitionModal && (
+          <Suspense fallback={null}>
             <NewCompetitionModal
               onClose={() => setShowNewCompetitionModal(false)}
               onCreate={handleCreateCompetition}
             />
-          )}
+          </Suspense>
+        )}
 
-          {showReportIssueModal && (
+        {showReportIssueModal && (
+          <Suspense fallback={null}>
             <ReportIssueModal onClose={() => setShowReportIssueModal(false)} />
-          )}
+          </Suspense>
+        )}
 
-          {showSettingsModal && (
-            <SettingsModal
-              onClose={() => setShowSettingsModal(false)}
-              onSave={handleSettingsSave}
+        {showSettingsModal && (
+          <Suspense fallback={null}>
+            <SettingsModal onClose={() => setShowSettingsModal(false)} onSave={handleSettingsSave} />
+          </Suspense>
+        )}
+
+        {showCommandPalette && (
+          <Suspense fallback={null}>
+            <CommandPalette
+              competitions={competitions}
+              onClose={() => setShowCommandPalette(false)}
+              onSelectCompetition={id => {
+                setShowCommandPalette(false);
+                handleTabSwitch(id);
+              }}
+              onNewCompetition={() => {
+                setShowCommandPalette(false);
+                setShowNewCompetitionModal(true);
+              }}
+              onOpenSettings={() => {
+                setShowCommandPalette(false);
+                setShowSettingsModal(true);
+              }}
             />
-          )}
-        </div>
+          </Suspense>
+        )}
+      </div>
     </>
   );
 };

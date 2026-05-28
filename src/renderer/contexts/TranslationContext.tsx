@@ -5,7 +5,7 @@
  */
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-
+import { logger, LogCategory } from '@shared/services/logger';
 import frTranslations from '../locales/fr.json';
 import enTranslations from '../locales/en.json';
 import deTranslations from '../locales/de.json';
@@ -139,29 +139,36 @@ export const TranslationProvider: React.FC<TranslationProviderProps> = ({ childr
   const [isLoading, setIsLoading] = useState(true);
 
   const changeLanguage = useCallback(async (newLanguage: Language) => {
+    setIsLoading(true);
     const loadedTranslations = loadTranslations(newLanguage);
     setLanguage(newLanguage);
     setTranslations(loadedTranslations);
-    localStorage.setItem('touchepro-language', newLanguage);
+    localStorage.setItem('bellepoule-language', newLanguage);
+    window.electronAPI?.notifyLanguageChanged?.(newLanguage);
+    setIsLoading(false);
   }, []);
 
   const changeTheme = useCallback((newTheme: Theme) => {
     setTheme(newTheme);
     applyTheme(newTheme);
-    localStorage.setItem('touchepro-theme', newTheme);
+    localStorage.setItem('bellepoule-theme', newTheme);
   }, []);
 
   useEffect(() => {
-    const savedLanguage = (localStorage.getItem('touchepro-language') as Language) || 'fr';
-    const savedTheme = (localStorage.getItem('touchepro-theme') as Theme) || 'default';
+    const initialize = async () => {
+      const savedLanguage = (localStorage.getItem('bellepoule-language') as Language) || 'fr';
+      const savedTheme = (localStorage.getItem('bellepoule-theme') as Theme) || 'default';
 
-    applyTheme(savedTheme);
-    const loadedTranslations = loadTranslations(savedLanguage);
+      applyTheme(savedTheme);
+      const loadedTranslations = loadTranslations(savedLanguage);
 
-    setLanguage(savedLanguage);
-    setTheme(savedTheme);
-    setTranslations(loadedTranslations);
-    setIsLoading(false);
+      setLanguage(savedLanguage);
+      setTheme(savedTheme);
+      setTranslations(loadedTranslations);
+      setIsLoading(false);
+    };
+
+    initialize();
   }, []);
 
   const t = useCallback(

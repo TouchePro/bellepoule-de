@@ -107,6 +107,7 @@ export const usePenaltyStore = create<PenaltyState & PenaltyActions>()(
             const state = get();
             const fencerPenalties = state.penalties.filter(p => p.fencerId === fencerId);
 
+            const whiteCards = fencerPenalties.filter(p => p.cardType === CardType.WHITE).length;
             const yellowCards = fencerPenalties.filter(p => p.cardType === CardType.YELLOW).length;
             const redCards = fencerPenalties.filter(p => p.cardType === CardType.RED).length;
             const blackCards = fencerPenalties.filter(p => p.cardType === CardType.BLACK).length;
@@ -114,6 +115,7 @@ export const usePenaltyStore = create<PenaltyState & PenaltyActions>()(
             return {
               fencer: { id: fencerId } as any, // Would fetch actual fencer
               penalties: fencerPenalties,
+              whiteCards,
               yellowCards,
               redCards,
               blackCards,
@@ -127,6 +129,7 @@ export const usePenaltyStore = create<PenaltyState & PenaltyActions>()(
             const penalties = state.penalties;
 
             const byType = {
+              [CardType.WHITE]: penalties.filter(p => p.cardType === CardType.WHITE).length,
               [CardType.YELLOW]: penalties.filter(p => p.cardType === CardType.YELLOW).length,
               [CardType.RED]: penalties.filter(p => p.cardType === CardType.RED).length,
               [CardType.BLACK]: penalties.filter(p => p.cardType === CardType.BLACK).length,

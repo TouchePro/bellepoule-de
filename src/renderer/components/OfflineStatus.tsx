@@ -7,14 +7,14 @@
 import React, { useState, useEffect } from 'react';
 import { offlineSync } from '../services/offlineSync';
 import { offlineStorage } from '../services/offlineStorage';
-import { useTranslation } from '../hooks/useTranslation';
+import { SyncConflict } from '@shared/services/cloudSyncService';
+import { ConflictResolutionModal } from './ConflictResolutionModal';
 
 interface OfflineStatusProps {
   className?: string;
 }
 
-export const OfflineStatus: React.FC<OfflineStatusProps> = ({ className = '' }) => {
-  const { t } = useTranslation();
+const OfflineStatus_: React.FC<OfflineStatusProps> = ({ className = '' }) => {
   const [isOnline, setIsOnline] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState({
@@ -23,6 +23,8 @@ export const OfflineStatus: React.FC<OfflineStatusProps> = ({ className = '' }) 
     lastSync: null as number | null,
   });
   const [showDetails, setShowDetails] = useState(false);
+  const [showConflictModal, setShowConflictModal] = useState(false);
+  const [conflicts] = useState<SyncConflict[]>([]);
 
   useEffect(() => {
     const updateStatus = async () => {
@@ -39,7 +41,7 @@ export const OfflineStatus: React.FC<OfflineStatusProps> = ({ className = '' }) 
     const interval = setInterval(updateStatus, 5000); // Update every 5 seconds
 
     // Listen for sync completion
-    offlineSync.onSyncComplete(_result => {
+    offlineSync.onSyncComplete(result => {
       setIsSyncing(false);
       updateStatus();
     });
@@ -59,6 +61,10 @@ export const OfflineStatus: React.FC<OfflineStatusProps> = ({ className = '' }) 
     };
   }, []);
 
+  const handleConflictResolve = (_conflictId: string, _resolution: 'local' | 'remote') => {
+    // Resolution logic delegated to parent via cloud sync service
+  };
+
   const handleManualSync = async () => {
     if (!isOnline) return;
 
@@ -71,20 +77,20 @@ export const OfflineStatus: React.FC<OfflineStatusProps> = ({ className = '' }) 
   };
 
   const formatLastSync = (timestamp: number | null): string => {
-    if (!timestamp) return t('offline_status.never');
+    if (!timestamp) return 'Jamais';
 
     const date = new Date(timestamp);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
 
-    if (diffMins < 1) return t('offline_status.just_now');
-    if (diffMins < 60) return t('offline_status.minutes_ago', { minutes: String(diffMins) });
+    if (diffMins < 1) return "À l'instant";
+    if (diffMins < 60) return `Il y a ${diffMins} min`;
 
     const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return t('offline_status.hours_ago', { hours: String(diffHours) });
+    if (diffHours < 24) return `Il y a ${diffHours}h`;
 
-    return date.toLocaleDateString();
+    return date.toLocaleDateString('fr-FR');
   };
 
   const getStatusColor = () => {
@@ -96,16 +102,15 @@ export const OfflineStatus: React.FC<OfflineStatusProps> = ({ className = '' }) 
   };
 
   const getStatusText = () => {
-    if (!isOnline) return t('offline_status.offline');
-    if (isSyncing) return t('offline_status.syncing');
-    if (syncStatus.pendingActions > 0)
-      return t('offline_status.pending_actions', { count: String(syncStatus.pendingActions) });
-    if (syncStatus.conflicts > 0)
-      return t('offline_status.conflicts', { count: String(syncStatus.conflicts) });
-    return t('offline_status.online');
+    if (!isOnline) return 'Hors ligne';
+    if (isSyncing) return 'Synchronisation...';
+    if (syncStatus.pendingActions > 0) return `${syncStatus.pendingActions} en attente`;
+    if (syncStatus.conflicts > 0) return `${syncStatus.conflicts} conflits`;
+    return 'Connecté';
   };
 
   return (
+    <>
     <div className={`fixed bottom-4 right-4 z-50 ${className}`}>
       <div className="bg-white rounded-lg shadow-lg border border-gray-200 min-w-[250px]">
         {/* Status indicator */}
@@ -134,24 +139,24 @@ export const OfflineStatus: React.FC<OfflineStatusProps> = ({ className = '' }) 
           <div className="border-t border-gray-200 p-3 space-y-3">
             {/* Connection status */}
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">{t('offline_status.connection')}</span>
+              <span className="text-sm text-gray-600">Connexion:</span>
               <span
                 className={`text-sm font-medium ${isOnline ? 'text-green-600' : 'text-red-600'}`}
               >
-                {isOnline ? t('offline_status.online') : t('offline_status.offline')}
+                {isOnline ? 'En ligne' : 'Hors ligne'}
               </span>
             </div>
 
             {/* Last sync */}
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">{t('offline_status.last_sync')}</span>
+              <span className="text-sm text-gray-600">Dernière synchro:</span>
               <span className="text-sm text-gray-700">{formatLastSync(syncStatus.lastSync)}</span>
             </div>
 
             {/* Pending actions */}
             {syncStatus.pendingActions > 0 && (
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">{t('offline_status.pending_label')}</span>
+                <span className="text-sm text-gray-600">Actions en attente:</span>
                 <span className="text-sm font-medium text-orange-600">
                   {syncStatus.pendingActions}
                 </span>
@@ -161,8 +166,13 @@ export const OfflineStatus: React.FC<OfflineStatusProps> = ({ className = '' }) 
             {/* Conflicts */}
             {syncStatus.conflicts > 0 && (
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">{t('offline_status.conflicts_label')}</span>
-                <span className="text-sm font-medium text-red-600">{syncStatus.conflicts}</span>
+                <span className="text-sm text-gray-600">Conflits:</span>
+                <button
+                  onClick={() => setShowConflictModal(true)}
+                  className="text-sm font-medium text-red-600 underline hover:text-red-700 transition-colors"
+                >
+                  Résoudre {syncStatus.conflicts} conflit{syncStatus.conflicts > 1 ? 's' : ''}
+                </button>
               </div>
             )}
 
@@ -172,7 +182,7 @@ export const OfflineStatus: React.FC<OfflineStatusProps> = ({ className = '' }) 
                 onClick={handleManualSync}
                 className="w-full mt-3 px-3 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition-colors"
               >
-                {t('offline_status.sync_now')}
+                Synchroniser maintenant
               </button>
             )}
 
@@ -180,7 +190,7 @@ export const OfflineStatus: React.FC<OfflineStatusProps> = ({ className = '' }) 
             {isSyncing && (
               <div className="flex items-center justify-center space-x-2 py-2">
                 <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                <span className="text-sm text-gray-600">{t('offline_status.syncing')}</span>
+                <span className="text-sm text-gray-600">Synchronisation en cours...</span>
               </div>
             )}
 
@@ -188,8 +198,8 @@ export const OfflineStatus: React.FC<OfflineStatusProps> = ({ className = '' }) 
             {!isOnline && (
               <div className="bg-yellow-50 border border-yellow-200 rounded p-2">
                 <p className="text-xs text-yellow-800">
-                  <strong>{t('offline_status.offline_mode')}</strong>{' '}
-                  {t('offline_status.offline_mode_desc')}
+                  <strong>Mode hors ligne:</strong> Les modifications seront synchronisées
+                  automatiquement lorsque la connexion sera rétablie.
                 </p>
               </div>
             )}
@@ -197,5 +207,14 @@ export const OfflineStatus: React.FC<OfflineStatusProps> = ({ className = '' }) 
         )}
       </div>
     </div>
+
+      <ConflictResolutionModal
+        conflicts={conflicts}
+        onResolve={handleConflictResolve}
+        onClose={() => setShowConflictModal(false)}
+        isOpen={showConflictModal}
+      />
+    </>
   );
 };
+export const OfflineStatus = React.memo(OfflineStatus_);

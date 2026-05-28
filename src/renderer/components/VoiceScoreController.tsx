@@ -5,7 +5,6 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useTranslation } from '../contexts/TranslationContext';
 
 interface VoiceCommand {
   command: string;
@@ -13,14 +12,22 @@ interface VoiceCommand {
   description: string;
 }
 
+const LANG_CONFIG: Record<string, { locale: string; score: RegExp; increment: RegExp; start: RegExp; pause: RegExp; finish: RegExp }> = {
+  fr: { locale: 'fr-FR', score: /(?:score|mettre|set)\s+([ab])\s+(\d+)/i, increment: /(?:plus|ajouter|add)\s+([ab])/i, start: /(?:démarrer|commencer|start|go)/i, pause: /(?:pause|stop|arrêter)/i, finish: /(?:terminer|fini|fin|end)/i },
+  en: { locale: 'en-US', score: /(?:score|set)\s+([ab])\s+(\d+)/i, increment: /(?:plus|add|increment)\s+([ab])/i, start: /(?:start|begin|go)/i, pause: /(?:pause|stop)/i, finish: /(?:finish|done|end)/i },
+  de: { locale: 'de-DE', score: /(?:stand|score|set)\s+([ab])\s+(\d+)/i, increment: /(?:punkt|plus|add)\s+([ab])/i, start: /(?:start|starten|beginnen)/i, pause: /(?:pause|stop)/i, finish: /(?:beenden|fertig|ende)/i },
+};
+
 export const VoiceScoreController: React.FC<{
   onScoreA?: (score: number) => void;
   onScoreB?: (score: number) => void;
   onStart?: () => void;
   onPause?: () => void;
   onFinish?: () => void;
-}> = ({ onScoreA, onScoreB, onStart, onPause, onFinish }) => {
-  const { t } = useTranslation();
+  language?: string;
+}> = ({ onScoreA, onScoreB, onStart, onPause, onFinish, language = 'fr' }) => {
+  const langKey = Object.keys(LANG_CONFIG).find(k => language.startsWith(k)) ?? 'fr';
+  const lang = LANG_CONFIG[langKey];
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [lastCommand, setLastCommand] = useState('');
@@ -47,22 +54,22 @@ export const VoiceScoreController: React.FC<{
           }
         }
       },
-      description: t('voice_score.set_score_description'),
+      description: 'Définir le score (ex: "score A 5")',
     },
     {
       command: 'démarrer|start|commencer',
       action: () => onStart?.(),
-      description: t('voice_score.start_match_description'),
+      description: 'Démarrer le match',
     },
     {
       command: 'pause|stop',
       action: () => onPause?.(),
-      description: t('voice_score.pause_match_description'),
+      description: 'Mettre en pause',
     },
     {
       command: 'terminer|fini|fin',
       action: () => onFinish?.(),
-      description: t('voice_score.finish_match_description'),
+      description: 'Terminer le match',
     },
     {
       command: 'plus [A|B]',
@@ -81,7 +88,7 @@ export const VoiceScoreController: React.FC<{
           }
         }
       },
-      description: t('voice_score.add_point_description'),
+      description: 'Ajouter un point (ex: "plus A")',
     },
   ];
 
@@ -89,32 +96,29 @@ export const VoiceScoreController: React.FC<{
     (text: string) => {
       const lowerText = text.toLowerCase().trim();
 
-      // Score command
-      const scoreMatch = lowerText.match(/(?:score|set)\s+([ab])\s+(\d+)/i);
+      const scoreMatch = lowerText.match(lang.score);
       if (scoreMatch) {
         commands[0].action([scoreMatch[1], scoreMatch[2]]);
-        setLastCommand(t('voice_score.score_command', { player: scoreMatch[1], score: scoreMatch[2] }));
+        setLastCommand(`Score ${scoreMatch[1].toUpperCase()}: ${scoreMatch[2]}`);
         return;
       }
 
-      // Increment command
-      const plusMatch = lowerText.match(/(?:plus|add|increment)\s+([ab])/i);
+      const plusMatch = lowerText.match(lang.increment);
       if (plusMatch) {
         commands[4].action([plusMatch[1]]);
-        setLastCommand(t('voice_score.add_point_command', { player: plusMatch[1] }));
+        setLastCommand(`+1 ${plusMatch[1].toUpperCase()}`);
         return;
       }
 
-      // Start/Pause/Finish
-      if (/démarrer|start|commencer|go/.test(lowerText)) {
+      if (lang.start.test(lowerText)) {
         commands[1].action();
-        setLastCommand(t('voice_score.match_started'));
-      } else if (/pause|stop|arrêter/.test(lowerText)) {
+        setLastCommand('▶ Démarré');
+      } else if (lang.pause.test(lowerText)) {
         commands[2].action();
-        setLastCommand(t('voice_score.match_paused'));
-      } else if (/terminer|fini|fin|end/.test(lowerText)) {
+        setLastCommand('⏸ Pause');
+      } else if (lang.finish.test(lowerText)) {
         commands[3].action();
-        setLastCommand(t('voice_score.match_finished'));
+        setLastCommand('⏹ Terminé');
       }
     },
     [commands]
@@ -122,7 +126,7 @@ export const VoiceScoreController: React.FC<{
 
   useEffect(() => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      setError(t('voice_score.speech_recognition_unsupported'));
+      setError("La reconnaissance vocale n'est pas supportée par ce navigateur");
       return;
     }
 
@@ -132,7 +136,7 @@ export const VoiceScoreController: React.FC<{
 
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = 'fr-FR';
+    recognition.lang = lang.locale;
 
     recognition.onresult = (event: any) => {
       const current = event.resultIndex;
@@ -145,7 +149,7 @@ export const VoiceScoreController: React.FC<{
     };
 
     recognition.onerror = (event: any) => {
-      setError(t('voice_score.error_prefix', { error: event.error }));
+      setError(`Erreur: ${event.error}`);
       setIsListening(false);
     };
 
@@ -186,9 +190,9 @@ export const VoiceScoreController: React.FC<{
           🎤
         </div>
         <div>
-          <h3 style={{ margin: 0, fontSize: '18px' }}>{t('voice_score.title')}</h3>
+          <h3 style={{ margin: 0, fontSize: '18px' }}>Contrôle Vocal</h3>
           <p style={{ margin: '4px 0 0 0', color: '#6b7280', fontSize: '14px' }}>
-            {isListening ? t('voice_score.listening') : t('voice_score.press_to_activate')}
+            {isListening ? 'Écoute en cours...' : 'Appuyez pour activer'}
           </p>
         </div>
       </div>
@@ -223,7 +227,7 @@ export const VoiceScoreController: React.FC<{
           transition: 'all 0.2s',
         }}
       >
-        {isListening ? t('voice_score.stop_listening') : t('voice_score.enable_voice')}
+        {isListening ? "Arrêter l'écoute" : 'Activer la voix'}
       </button>
 
       {transcript && (
@@ -236,7 +240,7 @@ export const VoiceScoreController: React.FC<{
             fontSize: '14px',
           }}
         >
-          <strong>{t('voice_score.last_command')}:</strong> {transcript}
+          <strong>Dernière commande:</strong> {transcript}
         </div>
       )}
 
@@ -257,7 +261,7 @@ export const VoiceScoreController: React.FC<{
 
       <div style={{ marginTop: '16px' }}>
         <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#374151' }}>
-          {t('voice_score.available_commands')}:
+          Commandes disponibles:
         </h4>
         <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#6b7280' }}>
           {commands.map((cmd, idx) => (
@@ -269,4 +273,4 @@ export const VoiceScoreController: React.FC<{
   );
 };
 
-export default VoiceScoreController;
+export default React.memo(VoiceScoreController);

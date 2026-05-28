@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git *)",
+      "Bash(gh *)",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Skill(commit-commands:commit-push-pr)",
+      "Skill(commit-commands:commit)",
+      "Skill(commit-commands:commit:*)"
+    ]
+  }
+}

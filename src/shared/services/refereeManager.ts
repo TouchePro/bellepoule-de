@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-import { Referee, Match, Pool, Fencer } from '../types';
+import { Referee, Match, Pool } from '../types';
 
 export interface RefereeAssignment {
   referee: Referee;
@@ -18,12 +18,15 @@ export interface RefereeRotationConfig {
   minRestTimeMinutes: number;
   avoidSameClub: boolean;
   balanceAssignment: boolean;
+  maxRefereesPerPool?: number;
+  maxRefereesPerMatch?: number;
 }
 
 export class RefereeManager {
   private referees: Referee[];
   private assignments: Map<string, RefereeAssignment[]> = new Map();
   private config: RefereeRotationConfig;
+  private currentMatches: Match[] = [];
 
   constructor(referees: Referee[], config: Partial<RefereeRotationConfig> = {}) {
     this.referees = referees.filter(r => r.status !== 'unavailable');
@@ -42,7 +45,8 @@ export class RefereeManager {
    */
   assignRefereesToMatches(matches: Match[], pools: Pool[]): Map<string, Referee> {
     const assignments = new Map<string, Referee>();
-    const matchQueue = [...matches].sort((a, b) => this.getMatchPriority(a) - getMatchPriority(b));
+    this.currentMatches = matches;
+    const matchQueue = [...matches].sort((a, b) => this.getMatchPriority(a) - this.getMatchPriority(b));
 
     for (const match of matchQueue) {
       const bestReferee = this.findBestRefereeForMatch(match, pools, assignments);
@@ -63,9 +67,28 @@ export class RefereeManager {
     pools: Pool[],
     currentAssignments: Map<string, Referee>
   ): Referee | null {
-    const availableReferees = this.referees.filter(referee =>
+    let availableReferees = this.referees.filter(referee =>
       this.isRefereeAvailable(referee, match, currentAssignments)
     );
+
+    // Respecte maxRefereesPerPool : si la poule a déjà atteint la limite,
+    // seuls les arbitres déjà assignés à cette poule peuvent être utilisés.
+    const maxPerPool = this.config.maxRefereesPerPool;
+    if (maxPerPool && match.poolId) {
+      const pool = pools.find(p => p.id === match.poolId);
+      if (pool) {
+        const poolMatchIds = pool.matches.map(m => m.id);
+        const assignedInPool = new Set(
+          poolMatchIds
+            .map(id => currentAssignments.get(id))
+            .filter((r): r is Referee => r !== undefined)
+            .map(r => r.id)
+        );
+        if (assignedInPool.size >= maxPerPool) {
+          availableReferees = availableReferees.filter(r => assignedInPool.has(r.id));
+        }
+      }
+    }
 
     if (availableReferees.length === 0) return null;
 
@@ -262,8 +285,7 @@ export class RefereeManager {
   }
 
   private findMatchById(matchId: string): Match | undefined {
-    // This would need access to all matches - simplified for now
-    return undefined;
+    return this.currentMatches.find(m => m.id === matchId);
   }
 
   private getMatchPriority(match: Match): number {
@@ -273,14 +295,6 @@ export class RefereeManager {
     }
     return 999;
   }
-}
-
-// Helper function for sorting
-function getMatchPriority(match: Match): number {
-  if (match.round) {
-    return match.round;
-  }
-  return 999;
 }
 
 export default RefereeManager;

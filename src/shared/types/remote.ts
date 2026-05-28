@@ -97,10 +97,22 @@ export interface Arena {
   name: string;
   number: number;
   currentMatch: ArenaMatch | null;
+  activePoolId?: string; // dernière poule assignée (persiste après currentMatch=null)
   status: 'idle' | 'ready' | 'in_progress' | 'finished';
   startTime: Date | null;
   settings: ArenaSettings;
   password?: string;
+  swapped?: boolean;
+}
+
+export type DisplayTheme = 'dark' | 'light' | 'neon' | 'custom';
+
+/** Variables CSS personnalisées pour un thème d'arène */
+export interface CustomTheme {
+  id: string;
+  name: string;
+  /** Valeurs des variables CSS (ex: { '--bg': '#000', '--score-green': '#0f0' }) */
+  variables: Record<string, string>;
 }
 
 export interface ArenaSettings {
@@ -108,6 +120,9 @@ export interface ArenaSettings {
   breakDuration: number; // between matches
   autoAdvance: boolean; // automatically load next match
   showPhotos?: boolean; // afficher les photos avant le combat
+  cardAnnounce?: boolean; // annoncer les cartons avec raison sur les affichages
+  theme?: DisplayTheme; // thème visuel de l'affichage distant
+  customTheme?: CustomTheme; // thème personnalisé (si theme === 'custom')
 }
 
 export interface ArenaMatch {
@@ -118,10 +133,11 @@ export interface ArenaMatch {
   fencerB: Fencer;
   scoreA: number;
   scoreB: number;
-  status: 'pending' | 'in_progress' | 'finished' | 'not_started';
+  status: 'pending' | 'in_progress' | 'finished' | 'not_started' | 'ready';
   startTime: Date | null;
   endTime: Date | null;
   duration?: number; // in seconds
+  referee?: { id: string; name: string }; // Arbitre assigné au match
 }
 
 export interface ArenaUpdate {
@@ -137,7 +153,19 @@ export interface ArenaUpdate {
   cardsA?: string[];
   cardsB?: string[];
   suddenDeath?: boolean;
+  overtimeType?: string | null;
+  waitingOvertime?: boolean;
   showPhotos?: boolean; // afficher les photos avant le combat
+  cardAnnounce?: boolean; // annoncer les cartons avec raison sur les affichages
+  theme?: DisplayTheme; // thème visuel de l'affichage distant
+  customTheme?: CustomTheme; // thème personnalisé (si theme === 'custom')
+  nextMatch?: ArenaMatch | null; // prochain combat (affiché quand status=finished)
+  swapped?: boolean;
+  refereeFeatureEnabled?: boolean; // fonctionnalité arbitres activée
+  referees?: RemoteReferee[]; // liste de tous les arbitres de la compétition
+  timerDuration?: number; // durée du chrono en secondes pour ce match
+  poolComplete?: boolean; // vrai quand tous les matchs de la poule sont terminés
+  completedPoolId?: string; // id de la poule terminée
 }
 
 export interface RefereeControl {
@@ -147,4 +175,12 @@ export interface RefereeControl {
   setScore: (scoreA: number, scoreB: number) => void;
   finishMatch: () => void;
   nextMatch: () => void;
+}
+
+export interface OrgNote {
+  type: 'target_time' | 'free';
+  message: string; // texte libre affiché sous le titre
+  targetTime?: string; // "HH:MM" uniquement pour type target_time
+  countdownPrefix?: string; // mot affiché avant l'heure (ex: "Reprise", "Début")
+  createdAt: string; // ISO timestamp
 }

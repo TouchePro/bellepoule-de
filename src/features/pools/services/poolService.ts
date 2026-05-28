@@ -4,40 +4,93 @@
  * Licensed under GPL-3.0
  */
 
-import { Pool, PoolRanking, Match, Fencer } from '../../../shared/types';
+import { Pool, PoolRanking } from '../../../shared/types';
 import { PoolGenerationConfig, ScoreUpdateDTO } from '../types/pool.types';
+import {
+  distributeFencersToPoolsSerpentine,
+  generatePoolMatchOrder,
+  calculatePoolRanking,
+} from '../../../shared/utils/poolCalculations';
+import { PoolCalculator } from './poolCalculator';
 
 export class PoolService {
   /**
-   * Get all pools for a competition
+   * Get all pools for a competition via available phase/pool relations
    */
   async getByCompetition(competitionId: string): Promise<Pool[]> {
-    // In a real implementation, this would query the database
-    // For now, return an empty array as a placeholder
-    return [];
+    if (typeof window === 'undefined' || !window.electronAPI?.db) return [];
+
+    const phases = await window.electronAPI.db.getPhasesByCompetition(competitionId);
+    const pools: Pool[] = [];
+
+    for (const phase of phases) {
+      const phasePools = await window.electronAPI.db.getPoolsByPhase(phase.id);
+      pools.push(...phasePools);
+    }
+
+    return pools;
   }
 
   /**
    * Generate pools for a competition based on configuration
    */
   async generatePools(competitionId: string, config: PoolGenerationConfig): Promise<Pool[]> {
-    // In a real implementation, this would:
-    // 1. Get all fencers for the competition
-    // 2. Distribute them into pools based on the strategy
-    // 3. Create matches for each pool
-    // 4. Save to database
-    return [];
+    if (typeof window === 'undefined' || !window.electronAPI?.db) return [];
+
+    const fencers = await window.electronAPI.db.getFencersByCompetition(competitionId);
+    if (!fencers.length) return [];
+
+    const { poolCount } = PoolCalculator.calculatePoolDistribution(
+      fencers.length,
+      config.minPoolSize,
+      config.maxPoolSize
+    );
+
+    const fencerGroups = distributeFencersToPoolsSerpentine(fencers, poolCount, {
+      byClub: config.strategy === 'club_balanced',
+      byRegion: false,
+      byNation: false,
+    });
+
+    // Create or reuse the pool phase
+    const existingPhases = await window.electronAPI.db.getPhasesByCompetition(competitionId);
+    const poolPhase =
+      existingPhases.find(p => p.type === 'pool') ??
+      (await window.electronAPI.db.createPhase(competitionId, 'pool', 0, 'Poules'));
+
+    const pools: Pool[] = [];
+
+    for (let i = 0; i < fencerGroups.length; i++) {
+      const group = fencerGroups[i];
+      const pool = await window.electronAPI.db.createPool(poolPhase.id, i + 1);
+
+      for (let j = 0; j < group.length; j++) {
+        await window.electronAPI.db.addFencerToPool(pool.id, group[j].id, j);
+      }
+
+      const matchOrder = generatePoolMatchOrder(group.length);
+      const matches = await Promise.all(
+        matchOrder.map(([a, b], idx) =>
+          window.electronAPI.db.createMatch({
+            number: idx + 1,
+            fencerAId: group[a - 1].id,
+            fencerBId: group[b - 1].id,
+            maxScore: 5,
+            poolId: pool.id,
+          })
+        )
+      );
+
+      pools.push({ ...pool, fencers: group, matches });
+    }
+
+    return pools;
   }
 
   /**
    * Update match score
    */
   async updateScore(poolId: string, matchId: string, data: ScoreUpdateDTO): Promise<void> {
-    // In a real implementation, this would:
-    // 1. Validate the score update
-    // 2. Update the match in the database
-    // 3. Recalculate rankings if needed
-
     if (typeof window !== 'undefined' && window.electronAPI?.db?.updateMatch) {
       await window.electronAPI.db.updateMatch(matchId, {
         scoreA:
@@ -66,13 +119,25 @@ export class PoolService {
   }
 
   /**
-   * Compute overall ranking for a competition
+   * Compute overall ranking across all pools of a competition
    */
   async computeOverallRanking(competitionId: string): Promise<PoolRanking[]> {
-    // In a real implementation, this would:
-    // 1. Get all pools for the competition
-    // 2. Calculate rankings based on pool results
-    // 3. Handle ties and special cases
-    return [];
+    const pools = await this.getByCompetition(competitionId);
+    if (!pools.length) return [];
+
+    const allRankings = pools.flatMap(pool => calculatePoolRanking(pool));
+
+    // Sort by victories ratio desc, then index desc
+    allRankings.sort((a, b) => {
+      if (b.ratio !== a.ratio) return b.ratio - a.ratio;
+      return b.index - a.index;
+    });
+
+    // Assign overall ranks
+    allRankings.forEach((r, i) => {
+      r.rank = i + 1;
+    });
+
+    return allRankings;
   }
 }

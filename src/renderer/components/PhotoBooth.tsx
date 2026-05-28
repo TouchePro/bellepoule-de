@@ -1,51 +1,48 @@
 /**
  * BellePoule Modern - Photo Booth Component
- * Fun photo capture for fencers
+ * Webcam selfie capture for fencers
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useRef, useCallback } from 'react';
-import { useTranslation } from '../contexts/TranslationContext';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { logger, LogCategory } from '@shared/services/logger';
 
 interface PhotoBoothProps {
-  fencerName: string;
-  onPhotoCapture: (photoData: string) => void;
+  onConfirm: (photoData: string) => void;
+  onClose: () => void;
 }
 
-export const PhotoBooth: React.FC<PhotoBoothProps> = ({ fencerName, onPhotoCapture }) => {
-  const { t } = useTranslation();
+export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) => {
   const [isCapturing, setIsCapturing] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [photo, setPhoto] = useState<string | null>(null);
-  const [selectedOverlay, setSelectedOverlay] = useState<string>('none');
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const [error, setError] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const overlays = [
-    { id: 'none', label: 'Aucun', icon: '✨' },
-    { id: 'champion', label: 'Champion', icon: '🏆' },
-    { id: 'gold', label: 'Or', icon: '🥇' },
-    { id: 'fencing', label: 'Escrime', icon: '🤺' },
-    { id: 'cool', label: 'Cool', icon: '😎' },
-  ];
-
-  const startCamera = useCallback(async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480 },
-        audio: false,
-      });
-
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-      setIsCapturing(true);
-    } catch (err) {
-      console.error('Error accessing camera:', err);
-      alert(t('photo_booth.camera_access_error'));
+  const videoCallbackRef = useCallback((video: HTMLVideoElement | null) => {
+    videoRef.current = video;
+    console.log('[PhotoBooth] video ref mounted, stream available:', !!streamRef.current);
+    if (video && streamRef.current) {
+      video.srcObject = streamRef.current;
+      video.play()
+        .then(() => console.log('[PhotoBooth] video.play() resolved'))
+        .catch(err => {
+          console.error('[PhotoBooth] video.play() rejected:', err);
+          logger.error(LogCategory.UI, 'Error playing video stream', err as Error);
+          setError(`Erreur lecture vidéo : ${(err as Error).message}`);
+        });
     }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
   }, []);
 
   const stopCamera = useCallback(() => {
@@ -56,70 +53,101 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ fencerName, onPhotoCaptu
     setIsCapturing(false);
   }, []);
 
-  const capturePhoto = useCallback(() => {
-    setCountdown(3);
-
-    const countdownInterval = setInterval(() => {
-      setCountdown(prev => {
-        if (prev <= 1) {
-          clearInterval(countdownInterval);
-          takePhoto();
-          return 0;
-        }
-        return prev - 1;
+  const startCamera = useCallback(async () => {
+    setError(null);
+    console.log('[PhotoBooth] startCamera — navigator.mediaDevices:', !!navigator.mediaDevices?.getUserMedia);
+    if (!navigator.mediaDevices?.getUserMedia) {
+      const msg = "L'accès à la webcam n'est pas disponible dans ce contexte (mediaDevices absent).";
+      setError(msg);
+      return;
+    }
+    try {
+      console.log('[PhotoBooth] calling getUserMedia...');
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 640, height: 480 },
+        audio: false,
       });
-    }, 1000);
+      console.log('[PhotoBooth] getUserMedia OK, tracks:', stream.getVideoTracks().length);
+      streamRef.current = stream;
+      setIsCapturing(true);
+    } catch (err) {
+      console.error('[PhotoBooth] getUserMedia error:', err);
+      logger.error(LogCategory.UI, 'Error accessing camera', err as Error);
+      const domErr = err as DOMException;
+      const msg =
+        domErr.name === 'NotAllowedError'
+          ? `Permission refusée [${domErr.name}]. Vérifiez que l'application a accès à la caméra dans les paramètres système.`
+          : domErr.name === 'NotFoundError'
+            ? `Aucune caméra détectée [${domErr.name}]. Vérifiez que la webcam est connectée.`
+            : `Impossible d'accéder à la caméra [${domErr.name}] : ${domErr.message || String(err)}`;
+      setError(msg);
+    }
   }, []);
 
-  const takePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
+  // Ref so capturePhoto closure always calls the latest takePhoto
+  const takePhotoRef = useRef<() => void>(() => {});
 
-      if (ctx) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        ctx.drawImage(video, 0, 0);
+  const takePhoto = useCallback(() => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas) return;
 
-        // Add overlay
-        addOverlay(ctx, canvas.width, canvas.height);
+    console.log('[PhotoBooth] takePhoto — readyState:', video.readyState, 'size:', video.videoWidth, 'x', video.videoHeight);
+    if (video.readyState < 2 || video.videoWidth === 0 || video.videoHeight === 0) {
+      setError(`Caméra pas encore prête (readyState=${video.readyState}, ${video.videoWidth}×${video.videoHeight}). Réessayez.`);
+      return;
+    }
 
-        const photoData = canvas.toDataURL('image/jpeg', 0.9);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    try {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      // Mirror to match selfie preview
+      ctx.save();
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0);
+      ctx.restore();
+
+      // Resize to 300×300 with centered square crop
+      const outputCanvas = document.createElement('canvas');
+      outputCanvas.width = 300;
+      outputCanvas.height = 300;
+      const outCtx = outputCanvas.getContext('2d');
+      if (outCtx) {
+        const side = Math.min(canvas.width, canvas.height);
+        const sx = (canvas.width - side) / 2;
+        const sy = (canvas.height - side) / 2;
+        outCtx.drawImage(canvas, sx, sy, side, side, 0, 0, 300, 300);
+        const photoData = outputCanvas.toDataURL('image/jpeg', 0.8);
         setPhoto(photoData);
-        onPhotoCapture(photoData);
         stopCamera();
       }
+    } catch (err) {
+      console.error('[PhotoBooth] capture error:', err);
+      logger.error(LogCategory.UI, 'Error capturing photo', err as Error);
+      setError(`Erreur capture : ${(err as Error).message || String(err)}`);
     }
-  };
+  }, [stopCamera]);
 
-  const addOverlay = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    ctx.font = 'bold 80px Arial';
-    ctx.textAlign = 'center';
+  takePhotoRef.current = takePhoto;
 
-    switch (selectedOverlay) {
-      case 'champion':
-        ctx.fillText('🏆', width / 2, height / 3);
-        break;
-      case 'gold':
-        ctx.fillText('🥇', width / 2, height / 3);
-        break;
-      case 'fencing':
-        ctx.fillText('🤺', width / 2, height / 3);
-        break;
-      case 'cool':
-        ctx.fillText('😎', width / 2, height / 3);
-        break;
-    }
-
-    // Add name
-    ctx.font = 'bold 40px Arial';
-    ctx.fillStyle = 'white';
-    ctx.shadowColor = 'rgba(0,0,0,0.5)';
-    ctx.shadowBlur = 4;
-    ctx.fillText(fencerName || t('photo_booth.default_fencer_name'), width / 2, height - 40);
-    ctx.shadowBlur = 0;
-  };
+  const capturePhoto = useCallback(() => {
+    let count = 3;
+    setCountdown(count);
+    intervalRef.current = setInterval(() => {
+      count -= 1;
+      setCountdown(count);
+      if (count <= 0) {
+        clearInterval(intervalRef.current!);
+        intervalRef.current = null;
+        takePhotoRef.current();
+      }
+    }, 1000);
+  }, []);
 
   const retake = () => {
     setPhoto(null);
@@ -127,65 +155,63 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ fencerName, onPhotoCaptu
   };
 
   return (
-    <div
-      style={{
-        padding: '24px',
-        backgroundColor: 'white',
-        borderRadius: '20px',
-        boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
-        maxWidth: '500px',
-        margin: '0 auto',
-      }}
-    >
-      <h2 style={{ margin: '0 0 20px 0', textAlign: 'center', fontSize: '24px' }}>
-        📸 {t('photo_booth.title')}
-      </h2>
+    <div>
+      {error && (
+        <div
+          style={{
+            background: '#fef2f2',
+            border: '1px solid #fca5a5',
+            borderRadius: '6px',
+            color: '#b91c1c',
+            padding: '10px 14px',
+            marginBottom: '12px',
+            fontSize: '13px',
+            wordBreak: 'break-word',
+          }}
+        >
+          <strong>Erreur webcam :</strong> {error}
+        </div>
+      )}
 
       {!isCapturing && !photo && (
         <div style={{ textAlign: 'center' }}>
           <div
             style={{
-              width: '200px',
-              height: '200px',
+              width: '160px',
+              height: '160px',
               borderRadius: '50%',
               backgroundColor: '#f3f4f6',
               margin: '0 auto 20px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '80px',
+              fontSize: '64px',
             }}
           >
             📷
           </div>
-          <button
-            onClick={startCamera}
-            style={{
-              padding: '16px 32px',
-              backgroundColor: '#3b82f6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '12px',
-              fontSize: '18px',
-              fontWeight: '600',
-              cursor: 'pointer',
-            }}
-          >
-            📸 {t('photo_booth.start_button')}
-          </button>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+            <button type="button" className="btn btn-secondary" onClick={onClose}>
+              Annuler
+            </button>
+            <button type="button" className="btn btn-primary" onClick={startCamera}>
+              Démarrer la caméra
+            </button>
+          </div>
         </div>
       )}
 
       {isCapturing && (
         <div style={{ position: 'relative' }}>
           <video
-            ref={videoRef}
+            ref={videoCallbackRef}
             autoPlay
             playsInline
+            muted
             style={{
               width: '100%',
-              borderRadius: '12px',
-              transform: 'scaleX(-1)', // Mirror effect
+              borderRadius: '8px',
+              transform: 'scaleX(-1)',
             }}
           />
 
@@ -196,77 +222,32 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ fencerName, onPhotoCaptu
                 top: '50%',
                 left: '50%',
                 transform: 'translate(-50%, -50%)',
-                fontSize: '120px',
+                fontSize: '100px',
                 fontWeight: 'bold',
                 color: 'white',
                 textShadow: '0 4px 20px rgba(0,0,0,0.5)',
-                animation: 'pulse 1s infinite',
               }}
             >
               {countdown}
             </div>
           )}
 
-          {/* Overlay selector */}
-          <div
-            style={{
-              display: 'flex',
-              gap: '8px',
-              justifyContent: 'center',
-              marginTop: '16px',
-              flexWrap: 'wrap',
-            }}
-          >
-            {overlays.map(overlay => (
-              <button
-                key={overlay.id}
-                onClick={() => setSelectedOverlay(overlay.id)}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '20px',
-                  border:
-                    selectedOverlay === overlay.id ? '2px solid #3b82f6' : '2px solid #e5e7eb',
-                  backgroundColor: selectedOverlay === overlay.id ? '#eff6ff' : 'white',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                }}
-              >
-                {overlay.icon} {overlay.label}
-              </button>
-            ))}
-          </div>
-
-          <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+          <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
             <button
+              type="button"
               onClick={capturePhoto}
               disabled={countdown > 0}
-              style={{
-                flex: 1,
-                padding: '16px',
-                backgroundColor: countdown > 0 ? '#9ca3af' : '#10b981',
-                color: 'white',
-                border: 'none',
-                borderRadius: '12px',
-                fontSize: '18px',
-                fontWeight: '600',
-                cursor: countdown > 0 ? 'not-allowed' : 'pointer',
-              }}
+              className="btn btn-primary"
+              style={{ flex: 1 }}
             >
-              {countdown > 0 ? '⏳ ...' : `📸 ${t('photo_booth.capture_button')}`}
+              {countdown > 0 ? `${countdown}…` : '📸 Capturer'}
             </button>
             <button
-              onClick={stopCamera}
-              style={{
-                padding: '16px 24px',
-                backgroundColor: '#ef4444',
-                color: 'white',
-                border: 'none',
-                borderRadius: '12px',
-                fontSize: '16px',
-                cursor: 'pointer',
-              }}
+              type="button"
+              onClick={() => { stopCamera(); onClose(); }}
+              className="btn btn-secondary"
             >
-              ✕
+              Annuler
             </button>
           </div>
         </div>
@@ -276,46 +257,19 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ fencerName, onPhotoCaptu
         <div style={{ textAlign: 'center' }}>
           <img
             src={photo}
-            alt={t('photo_booth.captured_photo')}
+            alt="Aperçu"
             style={{
               width: '100%',
-              borderRadius: '12px',
-              marginBottom: '16px',
+              borderRadius: '8px',
+              marginBottom: '12px',
             }}
           />
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-            <button
-              onClick={retake}
-              style={{
-                padding: '12px 24px',
-                backgroundColor: '#3b82f6',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '16px',
-                cursor: 'pointer',
-              }}
-            >
-              🔄 {t('photo_booth.retake_button')}
+            <button type="button" onClick={retake} className="btn btn-secondary">
+              Recommencer
             </button>
-            <button
-              onClick={() => {
-                const link = document.createElement('a');
-                link.download = `${fencerName || t('photo_booth.photo_filename')}.jpg`;
-                link.href = photo;
-                link.click();
-              }}
-              style={{
-                padding: '12px 24px',
-                backgroundColor: '#10b981',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '16px',
-                cursor: 'pointer',
-              }}
-            >
-              💾 {t('photo_booth.download_button')}
+            <button type="button" onClick={() => onConfirm(photo)} className="btn btn-primary">
+              Utiliser cette photo
             </button>
           </div>
         </div>
@@ -326,4 +280,4 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ fencerName, onPhotoCaptu
   );
 };
 
-export default PhotoBooth;
+export default React.memo(PhotoBooth);

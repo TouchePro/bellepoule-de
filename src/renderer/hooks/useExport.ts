@@ -7,9 +7,9 @@
 import { useCallback } from 'react';
 import { Competition, Fencer, Pool, PoolRanking, FencerStatus } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
-import { FinalResult } from '../components/TableauView';
+import { FinalResult } from '../components/tableau/tableauTypes';
 import { exportFencersToTXT, exportFencersToFFF } from '../../shared/utils/fencerExport';
-import { exportMultiplePoolsToPDF } from '../../shared/utils/pdfExport';
+import { usePdfTemplateStore } from '../../features/pdfTemplates/hooks/usePdfTemplateStore';
 import { useToast } from '../components/Toast';
 import {
   exportResultsHTML,
@@ -24,6 +24,8 @@ interface UseExportProps {
 }
 
 export const useExport = ({ competition, showToast }: UseExportProps) => {
+  const poolTemplate = usePdfTemplateStore(s => s.templates.pool);
+
   // Helper pour télécharger un fichier
   const downloadFile = useCallback((content: string, filename: string, mimeType: string) => {
     const blob = new Blob([content], { type: mimeType });
@@ -207,13 +209,18 @@ export const useExport = ({ competition, showToast }: UseExportProps) => {
     [competition.title, competition.date, downloadFile, showToast]
   );
 
-  // Export PDF de toutes les poules
+  // Export PDF de toutes les poules — jsPDF chargé à la demande
   const exportPoolsPDF = useCallback(
     async (pools: Pool[], currentPoolRound: number) => {
       try {
+        const { exportMultiplePoolsToPDF } = await import('../../shared/utils/pdfExport');
+        const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
         await exportMultiplePoolsToPDF(
           pools,
-          `Toutes les Poules - ${competition.title} - Tour ${currentPoolRound}`
+          `Toutes les Poules - ${competition.title} - Tour ${currentPoolRound}`,
+          logo,
+          poolTemplate,
+          competition.title
         );
         showToast(`Export PDF de ${pools.length} poules généré avec succès`, 'success');
       } catch (error) {
@@ -224,7 +231,7 @@ export const useExport = ({ competition, showToast }: UseExportProps) => {
         );
       }
     },
-    [competition.title, showToast]
+    [competition.title, showToast, poolTemplate]
   );
 
   // Export HTML des résultats
@@ -261,9 +268,9 @@ export const useExport = ({ competition, showToast }: UseExportProps) => {
 
   // Export XML FFE
   const exportResultsXML = useCallback(
-    (poolRanking: PoolRanking[], finalResults: FinalResult[]) => {
+    (poolRanking: PoolRanking[], finalResults: FinalResult[], pools?: Pool[]) => {
       try {
-        const content = exportResultsXMLFFE(competition, poolRanking, finalResults);
+        const content = exportResultsXMLFFE(competition, poolRanking, finalResults, pools);
         const filename = `resultats_${competition.title.replace(/[^a-z0-9]/gi, '_')}.xml`;
         downloadFile(content, filename, 'application/xml');
         showToast('Export XML FFE réussi', 'success');

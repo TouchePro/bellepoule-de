@@ -4,12 +4,12 @@
  * Licensed under GPL-3.0
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Pool, PoolRanking } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
-import { TableauMatch, FinalResult } from '../components/TableauView';
+import { TableauMatch, FinalResult } from '../components/tableau/tableauTypes';
 
-export type Phase = 'checkin' | 'poolprep' | 'pools' | 'ranking' | 'tableau' | 'results' | 'remote';
+export type Phase = 'checkin' | 'poolprep' | 'pools' | 'ranking' | 'quest' | 'tableau' | 'results' | 'remote' | 'logs' | 'referees';
 
 interface SessionState {
   currentPhase: number;
@@ -19,6 +19,8 @@ interface SessionState {
   tableauMatches: TableauMatch[];
   finalResults: FinalResult[];
   currentPoolRound: number;
+  skipPoolPhase: boolean;
+  remoteArenaCount?: number;
   poolPrepParams: {
     poolCount: number;
     minFencersPerPool: number;
@@ -40,6 +42,8 @@ interface UseCompetitionSessionProps {
   overallRanking: PoolRanking[];
   tableauMatches: TableauMatch[];
   finalResults: FinalResult[];
+  skipPoolPhase: boolean;
+  remoteArenaCount: number;
   poolPrepParams: {
     poolCount: number;
     minFencersPerPool: number;
@@ -50,6 +54,11 @@ interface UseCompetitionSessionProps {
 export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [restoredState, setRestoredState] = useState<Partial<SessionState> | null>(null);
+  const propsRef = useRef(props);
+  const isLoadedRef = useRef(false);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  propsRef.current = props;
+  isLoadedRef.current = isLoaded;
 
   // Phase mapping entre string et number
   const phaseToNumber: Record<Phase, number> = {
@@ -57,9 +66,12 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
     poolprep: 1,
     pools: 2,
     ranking: 3,
-    tableau: 4,
-    results: 5,
-    remote: 6,
+    quest: 4,
+    tableau: 5,
+    results: 6,
+    remote: 7,
+    logs: 8,
+    referees: 9,
   };
 
   const numberToPhase: Record<number, Phase> = {
@@ -67,41 +79,47 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
     1: 'poolprep',
     2: 'pools',
     3: 'ranking',
-    4: 'tableau',
-    5: 'results',
-    6: 'remote',
+    4: 'quest',
+    5: 'tableau',
+    6: 'results',
+    7: 'remote',
+    8: 'logs',
+    9: 'referees',
   };
 
-  // Sauvegarder l'état
+  // Sauvegarder l'état - lit depuis propsRef pour rester stable (pas de re-création à chaque render)
   const saveState = useCallback(async () => {
-    if (!window.electronAPI?.db?.saveSessionState || !isLoaded) return;
+    if (!window.electronAPI?.db?.saveSessionState || !isLoadedRef.current) return;
+    const p = propsRef.current;
 
     const state: SessionState = {
-      currentPhase: phaseToNumber[props.currentPhase],
-      pools: props.pools,
-      poolHistory: props.poolHistory,
-      overallRanking: props.overallRanking,
-      tableauMatches: props.tableauMatches,
-      finalResults: props.finalResults,
-      currentPoolRound: props.currentPoolRound,
+      currentPhase: phaseToNumber[p.currentPhase],
+      pools: p.pools,
+      poolHistory: p.poolHistory,
+      overallRanking: p.overallRanking,
+      tableauMatches: p.tableauMatches,
+      finalResults: p.finalResults,
+      currentPoolRound: p.currentPoolRound,
+      skipPoolPhase: p.skipPoolPhase,
+      remoteArenaCount: p.remoteArenaCount,
       poolPrepParams: {
-        poolCount: props.poolPrepParams?.poolCount || 0,
-        minFencersPerPool: props.poolPrepParams?.minFencersPerPool || 5,
-        maxFencersPerPool: props.poolPrepParams?.maxFencersPerPool || 7,
+        poolCount: p.poolPrepParams?.poolCount || 0,
+        minFencersPerPool: p.poolPrepParams?.minFencersPerPool || 5,
+        maxFencersPerPool: p.poolPrepParams?.maxFencersPerPool || 7,
       },
       uiState: {
-        currentPhase: props.currentPhase,
-        currentPoolRound: props.currentPoolRound,
-        pools: props.pools.length,
+        currentPhase: p.currentPhase,
+        currentPoolRound: p.currentPoolRound,
+        pools: p.pools.length,
       },
     };
 
     try {
-      await window.electronAPI.db.saveSessionState(props.competitionId, state);
+      await window.electronAPI.db.saveSessionState(p.competitionId, state);
     } catch (e) {
       logger.error(LogCategory.UI, 'Failed to save session state', e as Error);
     }
-  }, [props, isLoaded]);
+  }, []); // stable - lit les props depuis propsRef
 
   // Restaurer l'état
   const restoreState = useCallback(async () => {
@@ -124,6 +142,8 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
           tableauMatches: typedState.tableauMatches || [],
           finalResults: typedState.finalResults || [],
           currentPoolRound: typedState.uiState?.currentPoolRound || 1,
+          skipPoolPhase: typedState.skipPoolPhase ?? false,
+          remoteArenaCount: typedState.remoteArenaCount,
           poolPrepParams: typedState.poolPrepParams || {
             poolCount: 0,
             minFencersPerPool: 5,
@@ -144,12 +164,70 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
     restoreState();
   }, [restoreState]);
 
-  // Sauvegarder à chaque changement
+  // Sauvegarde synchrone avant fermeture fenêtre (saveState async non awaitable dans beforeunload)
   useEffect(() => {
-    if (isLoaded) {
+    const handleBeforeUnload = () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+      if (!window.electronAPI?.db?.saveSessionStateSync || !isLoadedRef.current) return;
+      const p = propsRef.current;
+      const phaseMap: Record<Phase, number> = {
+        checkin: 0, poolprep: 1, pools: 2, ranking: 3,
+        quest: 4, tableau: 5, results: 6, remote: 7, logs: 8, referees: 9,
+      };
+      window.electronAPI.db.saveSessionStateSync(p.competitionId, {
+        currentPhase: phaseMap[p.currentPhase],
+        pools: p.pools,
+        poolHistory: p.poolHistory,
+        overallRanking: p.overallRanking,
+        tableauMatches: p.tableauMatches,
+        finalResults: p.finalResults,
+        currentPoolRound: p.currentPoolRound,
+        skipPoolPhase: p.skipPoolPhase,
+        remoteArenaCount: p.remoteArenaCount,
+        poolPrepParams: p.poolPrepParams,
+        uiState: {
+          currentPhase: p.currentPhase,
+          currentPoolRound: p.currentPoolRound,
+          pools: p.pools.length,
+        },
+      });
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
+  // Sauvegarder à chaque changement - debounced 500ms pour éviter les écritures en rafale
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      saveTimerRef.current = null;
       saveState();
-    }
-  }, [saveState, isLoaded]);
+    }, 500);
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+        saveState(); // fire immédiatement sur unmount
+      }
+    };
+  }, [
+    isLoaded,
+    props.currentPhase,
+    props.currentPoolRound,
+    props.pools,
+    props.poolHistory,
+    props.overallRanking,
+    props.tableauMatches,
+    props.finalResults,
+    props.skipPoolPhase,
+    props.remoteArenaCount,
+    props.poolPrepParams,
+    saveState,
+  ]);
 
   return {
     isLoaded,

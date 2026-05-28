@@ -7,9 +7,9 @@
 import { useEffect, useCallback } from 'react';
 import { PoolRanking } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
-import { FinalResult } from '../components/TableauView';
+import { FinalResult } from '../components/tableau/tableauTypes';
 
-type Phase = 'checkin' | 'poolprep' | 'pools' | 'ranking' | 'tableau' | 'results' | 'remote';
+type Phase = 'checkin' | 'poolprep' | 'pools' | 'ranking' | 'quest' | 'tableau' | 'results' | 'remote' | 'logs' | 'referees';
 
 interface UseMenuEventsProps {
   currentPhase: Phase;
@@ -17,6 +17,7 @@ interface UseMenuEventsProps {
   onShowAddFencer: () => void;
   onExportFencers: (format: 'txt' | 'fff') => void;
   onExportFencersBpf: () => void;
+  onExportPhotos: () => void;
   onExportRanking: (format: 'csv' | 'json') => void;
   onExportResults: (format: 'csv' | 'json') => void;
   onImport: (format: string, filepath: string, content: string) => void;
@@ -35,6 +36,7 @@ export const useMenuEvents = ({
   onShowAddFencer,
   onExportFencers,
   onExportFencersBpf,
+  onExportPhotos,
   onExportRanking,
   onExportResults,
   onImport,
@@ -60,6 +62,10 @@ export const useMenuEvents = ({
       }
       if (format === 'fencers-bpf') {
         onExportFencersBpf();
+        return;
+      }
+      if (format === 'photos') {
+        onExportPhotos();
         return;
       }
 
@@ -95,6 +101,7 @@ export const useMenuEvents = ({
       finalResults,
       onExportFencers,
       onExportFencersBpf,
+      onExportPhotos,
       onExportRanking,
       onExportResults,
     ]

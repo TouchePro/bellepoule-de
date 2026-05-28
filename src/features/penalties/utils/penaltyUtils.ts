@@ -22,6 +22,7 @@ export function getPenaltyDescription(reason: PenaltyReason): string {
 
 export function getPenaltyColor(cardType: CardType): string {
   const colors: Record<CardType, string> = {
+    [CardType.WHITE]: '#ffffff', // white
     [CardType.YELLOW]: '#fbbf24', // amber-400
     [CardType.RED]: '#ef4444', // red-500
     [CardType.BLACK]: '#000000', // black
@@ -57,6 +58,7 @@ export function validatePenalty(penalty: Partial<Penalty>): { valid: boolean; er
 
 export function getCardTypeLabel(cardType: CardType): string {
   const labels: Record<CardType, string> = {
+    [CardType.WHITE]: 'Carton Blanc',
     [CardType.YELLOW]: 'Carton Jaune',
     [CardType.RED]: 'Carton Rouge',
     [CardType.BLACK]: 'Carton Noir',
@@ -66,6 +68,8 @@ export function getCardTypeLabel(cardType: CardType): string {
 
 export function getImpactDescription(cardType: CardType, touches: number): string {
   switch (cardType) {
+    case CardType.WHITE:
+      return 'Avertissement (carton blanc)';
     case CardType.YELLOW:
       return 'Avertissement';
     case CardType.RED:

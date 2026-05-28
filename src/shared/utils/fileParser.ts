@@ -4,7 +4,8 @@
  * Licensed under GPL-3.0
  */
 
-import { Fencer, FencerStatus, Gender } from '../types';
+import { Fencer, FencerStatus, Gender, Referee } from '../types';
+import { logger, LogCategory } from '../services/logger';
 
 export interface ImportResult {
   success: boolean;
@@ -45,7 +46,7 @@ export function parseSimpleTXTFile(content: string): ImportResult {
     return result;
   }
 
-  console.log(`Parsing TXT file with ${lines.length} lines`);
+  logger.debug(LogCategory.BUSINESS, 'Parsing TXT file', { lines: lines.length });
 
   // Pour chaque ligne, essayer de parser un tireur
   for (let i = 0; i < lines.length; i++) {
@@ -64,7 +65,7 @@ export function parseSimpleTXTFile(content: string): ImportResult {
         line.toLowerCase().includes('club') ||
         line.toLowerCase().includes('ligue'))
     ) {
-      console.log(`Skipping header line: ${line}`);
+      logger.debug(LogCategory.BUSINESS, 'Skipping header line', { line });
       continue;
     }
 
@@ -74,7 +75,7 @@ export function parseSimpleTXTFile(content: string): ImportResult {
         result.fencers.push(fencer);
       }
     } catch (error) {
-      console.error(`Error parsing line ${i + 1}: ${line}`, error);
+      logger.error(LogCategory.BUSINESS, `Error parsing line ${i + 1}`, error instanceof Error ? error : undefined, { line });
       result.errors.push(
         `Ligne ${i + 1}: ${error instanceof Error ? error.message : 'Erreur de parsing'}`
       );
@@ -87,7 +88,7 @@ export function parseSimpleTXTFile(content: string): ImportResult {
     result.warnings.push('Aucun tireur trouvé dans le fichier. Vérifiez le format.');
   }
 
-  console.log(`Parsed ${result.fencers.length} fencers from TXT file`);
+  logger.debug(LogCategory.BUSINESS, 'Parsed TXT file', { fencers: result.fencers.length });
   return result;
 }
 
@@ -137,15 +138,20 @@ function parseTXTLine(line: string, lineNumber: number): Partial<Fencer> | null 
   }
 
   if (bestParts.length < 2) {
-    console.warn(`Line ${lineNumber}: Not enough parts to extract name (${bestParts.length})`);
+    logger.warn(LogCategory.BUSINESS, `Line ${lineNumber}: Not enough parts to extract name`, { parts: bestParts.length });
     return null;
+  }
+
+  // Sauter le premier champ s'il est purement numérique (colonne N° du format TXT BellePoule)
+  if (/^\d+$/.test(bestParts[0]) && bestParts.length >= 3) {
+    bestParts = bestParts.slice(1);
   }
 
   const lastName = bestParts[0]?.toUpperCase().trim();
   const firstName = bestParts[1]?.trim();
 
   if (!lastName || !firstName) {
-    console.warn(`Line ${lineNumber}: Missing name or first name`);
+    logger.warn(LogCategory.BUSINESS, `Line ${lineNumber}: Missing name or first name`);
     return null;
   }
 
@@ -180,7 +186,7 @@ function parseTXTLine(line: string, lineNumber: number): Partial<Fencer> | null 
     status: FencerStatus.NOT_CHECKED_IN,
   };
 
-  console.log(`Parsed fencer: ${firstName} ${lastName} (${gender})`);
+  logger.debug(LogCategory.BUSINESS, 'Parsed fencer', { firstName, lastName, gender });
 
   return fencer;
 }
@@ -211,9 +217,7 @@ export function parseFFEFile(content: string): ImportResult {
 
   // Détecter le format et le(s) séparateur(s)
   const formatInfo = detectFormat(lines);
-  console.log(`Format détecté: ${formatInfo.type}`);
-  console.log(`Séparateur principal: "${formatInfo.primarySeparator}"`);
-  console.log(`Première ligne: ${lines[0]}`);
+  logger.debug(LogCategory.BUSINESS, 'Format détecté', { type: formatInfo.type, separator: formatInfo.primarySeparator });
 
   // Vérifier si la première ligne est un en-tête
   const firstLineLower = lines[0].toLowerCase();
@@ -361,7 +365,7 @@ function detectFormat(lines: string[]): FormatInfo {
       const firstSectionCommas = (parts[0].match(/,/g) || []).length;
       // Format FFF typique: NOM,PRENOM,DATE,SEXE,NATION (4 virgules)
       if (firstSectionCommas >= 3 && firstSectionCommas <= 5) {
-        console.log('Format FFF détecté: première virgule = séparateur NOM/PRÉNOM');
+        logger.debug(LogCategory.BUSINESS, 'Format FFF détecté: première virgule = séparateur NOM/PRÉNOM');
         return {
           type: 'mixed',
           primarySeparator: ';',
@@ -374,7 +378,7 @@ function detectFormat(lines: string[]): FormatInfo {
   // Détecter si c'est le format où seule la première partie utilise des virgules
   const parts = dataLine.split(';');
   if (parts.length >= 2 && parts[0].includes(',')) {
-    console.log('Format mixte détecté: virgules dans première section, points-virgules ensuite');
+    logger.debug(LogCategory.BUSINESS, 'Format mixte détecté: virgules dans première section, points-virgules ensuite');
     return {
       type: 'mixed',
       primarySeparator: ';',
@@ -384,9 +388,7 @@ function detectFormat(lines: string[]): FormatInfo {
 
   // Détecter si le format utilise des virgules dans une structure tabulaire
   if (dataLine.includes(',') && dataLine.includes('\t')) {
-    console.log(
-      'Format mixte détecté: virgules dans les données, tabulations comme séparateurs de tableaux'
-    );
+    logger.debug(LogCategory.BUSINESS, 'Format mixte détecté: virgules dans les données, tabulations comme séparateurs de tableaux');
     return {
       type: 'mixed',
       primarySeparator: '\t',
@@ -396,7 +398,7 @@ function detectFormat(lines: string[]): FormatInfo {
 
   // Format standard avec un seul séparateur
   const separator = detectSeparator(lines);
-  console.log(`Format standard détecté avec séparateur: "${separator}"`);
+  logger.debug(LogCategory.BUSINESS, 'Format standard détecté', { separator });
   return {
     type: 'standard',
     primarySeparator: separator,
@@ -412,7 +414,7 @@ function parseLineWithFormat(line: string, formatInfo: FormatInfo): string[] {
     if (formatInfo.primarySeparator === ',' && formatInfo.secondarySeparator === ',') {
       // Parser directement avec les virgules comme séparateurs
       const parts = parseLine(line, ',');
-      console.log(`Format FFF compact: ${parts.length} colonnes détectées`);
+      logger.debug(LogCategory.BUSINESS, 'Format FFF compact', { columns: parts.length });
       return parts;
     }
 
@@ -592,7 +594,7 @@ function detectSeparator(lines: string[]): string {
     }
   }
 
-  console.log('Scores de séparateurs:', scores);
+  logger.debug(LogCategory.BUSINESS, 'Scores de séparateurs', { scores });
 
   // Si aucun bon séparateur trouvé, essayer point-virgule par défaut (FFE)
   return bestScore > 0 ? bestSep : ';';
@@ -718,7 +720,7 @@ function parseFFELine(
     } else if (['F', 'FEMME', 'FEMALE', 'FEMININ', 'DAME', 'FILLE', 'D'].includes(genderField)) {
       gender = Gender.FEMALE;
     } else {
-      console.warn(`Ligne ${lineNumber}: Sexe non reconnu "${genderField}", mixte par défaut`);
+      logger.warn(LogCategory.BUSINESS, `Ligne ${lineNumber}: Sexe non reconnu`, { genderField });
     }
   }
 
@@ -745,14 +747,14 @@ function parseFFELine(
         const day = parseInt(dateMatch[3]);
         birthDate = new Date(year, month, day);
       } else {
-        console.warn(`Ligne ${lineNumber}: Date non reconnue "${dateStr}"`);
+        logger.warn(LogCategory.BUSINESS, `Ligne ${lineNumber}: Date non reconnue`, { dateStr });
       }
     }
   }
 
   // Nettoyer les autres champs en fonction du format
   let nationality: string;
-  let league: string | undefined;
+  let region: string | undefined;
   let club: string | undefined;
   let license: string | undefined;
   let ranking: number | undefined;
@@ -766,24 +768,23 @@ function parseFFELine(
       // Champs inconnus (indices 5, 6, 7) - ignorés pour l'instant
       // Section club (indices 8-13): Licence,Ligue,Club,Classement,Nationalité?,?
       license = (parts[8] || '').trim() || undefined;
-      league = (parts[9] || '').trim() || undefined;
+      region = (parts[9] || '').trim() || undefined;
       club = (parts[10] || '').trim() || undefined;
 
-      // La position finale est dans la section positionInfo (indice 14)
-      // Format: "Position,Statut" (ex: "2,t")
-      const positionField = (parts[14] || '').trim();
-      if (positionField && positionField !== '?') {
-        const parsedRanking = parseInt(positionField);
+      // Le classement FFE est à l'index 11 (4e champ de section2: Licence,Ligue,Club,Classement,...)
+      // NE PAS utiliser parts[14] (position séquentielle "1,t","2,t"...) comme classement
+      const rankingAtIdx11 = (parts[11] || '').trim();
+      if (rankingAtIdx11 && rankingAtIdx11 !== '?') {
+        const parsedRanking = parseInt(rankingAtIdx11);
         if (!isNaN(parsedRanking) && parsedRanking > 0) {
           ranking = parsedRanking;
         }
       }
 
-      // Fallback: si pas de position finale trouvée, chercher dans clubInfo
-      // Le classement est à l'index 10 (4ème position dans section 2: Licence,Ligue,Club,Classement,?,?)
+      // Fallback: certains formats placent le classement en parts[10] (3e champ section2)
       if (ranking === undefined) {
         const rankingField = (parts[10] || '').trim();
-        if (rankingField && rankingField !== '?') {
+        if (rankingField && rankingField !== '?' && !/^[A-Za-zÀ-ÿ]/.test(rankingField)) {
           const parsedRanking = parseInt(rankingField);
           if (!isNaN(parsedRanking) && parsedRanking > 0 && parsedRanking < 10000) {
             ranking = parsedRanking;
@@ -795,13 +796,13 @@ function parseFFELine(
       nationality = (parts[4] || '').trim() || 'FRA';
 
       license = (parts[8] || '').trim() || undefined;
-      league = (parts[9] || '').trim() || undefined;
+      region = (parts[9] || '').trim() || undefined;
       club = (parts[10] || '').trim() || undefined;
 
-      // Chercher le classement à l'index 10 (4ème position dans section 2: Licence,Ligue,Club,Classement,?,?)
-      const rankingField = (parts[10] || '').trim();
-      if (rankingField && rankingField !== '?') {
-        const parsedRanking = parseInt(rankingField);
+      // Classement à l'index 11 (4e champ section2: Licence,Ligue,Club,Classement,...)
+      const rankingField11 = (parts[11] || '').trim();
+      if (rankingField11 && rankingField11 !== '?') {
+        const parsedRanking = parseInt(rankingField11);
         if (!isNaN(parsedRanking) && parsedRanking > 0 && parsedRanking < 10000) {
           ranking = parsedRanking;
         }
@@ -812,7 +813,7 @@ function parseFFELine(
 
       // Essayer d'extraire les infos club des champs disponibles
       license = (parts[7] || '').trim() || undefined;
-      league = (parts[8] || '').trim() || undefined;
+      region = (parts[8] || '').trim() || undefined;
       club = (parts[9] || '').trim() || undefined;
 
       // Chercher le classement dans les derniers champs (avant le ? final)
@@ -833,7 +834,7 @@ function parseFFELine(
   } else {
     // Format standard: NOM, PRENOM, SEXE, DATE, NATION, LIGUE, CLUB, LICENCE
     nationality = (parts[4] || '').trim() || 'FRA';
-    league = (parts[5] || '').trim() || undefined;
+    region = (parts[5] || '').trim() || undefined;
     club = (parts[6] || '').trim() || undefined;
     license = (parts[7] || '').trim() || undefined;
   }
@@ -859,7 +860,7 @@ function parseFFELine(
     gender,
     birthDate,
     nationality,
-    league,
+    region,
     club,
     license,
     ranking,
@@ -904,7 +905,7 @@ export function parseXMLFile(content: string): ImportResult {
           firstName,
           gender,
           nationality: getName('Nation') || 'FRA',
-          league: getName('Ligue') || undefined,
+          region: getName('Ligue') || undefined,
           club: getName('Club') || undefined,
           license: getName('Licence') || undefined,
           ranking: parseInt(getName('Classement')) || undefined,
@@ -1070,7 +1071,7 @@ export function importRankingFromFFF(
       });
     } catch (error) {
       result.skipped++;
-      console.error(`Error parsing line ${i + 1}: ${line}`, error);
+      logger.error(LogCategory.BUSINESS, `Error parsing line ${i + 1}`, error instanceof Error ? error : undefined, { line });
       result.errors.push(
         `Ligne ${i + 1}: ${error instanceof Error ? error.message : 'Erreur de parsing'}`
       );
@@ -1265,4 +1266,60 @@ function normalizeName(name: string): string {
     .replace(/[\u0300-\u036f]/g, '') // Supprime les accents
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+// ============================================================================
+// Import arbitres Engarde
+// ============================================================================
+
+export interface RefereeImportResult {
+  referees: Array<Omit<Referee, 'id' | 'ref' | 'createdAt' | 'updatedAt' | 'status'>>;
+  errors: string[];
+  skipped: number;
+}
+
+/**
+ * Parse un fichier arbitres au format Engarde (TXT semicolon-separated).
+ * En-tête attendu: nom;prenom;sexe;categorie;club;ligue;nation;date_nais;licence_fie;licence;
+ */
+export function parseEngardeRefereeFile(content: string): RefereeImportResult {
+  const result: RefereeImportResult = { referees: [], errors: [], skipped: 0 };
+
+  let clean = content;
+  if (clean.charCodeAt(0) === 0xfeff) clean = clean.slice(1);
+
+  const lines = clean.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (lines.length === 0) {
+    result.errors.push('Fichier vide');
+    return result;
+  }
+
+  // Détecter et sauter l'en-tête
+  const firstLower = lines[0].toLowerCase();
+  const startIdx = firstLower.includes('nom') || firstLower.includes('prenom') || firstLower.includes('sexe') ? 1 : 0;
+
+  for (let i = startIdx; i < lines.length; i++) {
+    const parts = lines[i].split(';');
+    if (parts.length < 2) { result.skipped++; continue; }
+
+    const lastName = parts[0]?.trim() || '';
+    const firstName = parts[1]?.trim() || '';
+    if (!lastName && !firstName) { result.skipped++; continue; }
+
+    const sexe = parts[2]?.trim().toUpperCase();
+    const gender: Gender = sexe === 'M' ? Gender.MALE : Gender.FEMALE;
+    const category = parts[3]?.trim() || undefined;
+    const club = parts[4]?.trim() || undefined;
+    const region = parts[5]?.trim() || undefined;
+    const nationality = parts[6]?.trim() || 'FRA';
+    // date_nais ignoré pour les arbitres
+    // licence_fie = parts[8], licence FFE = parts[9]
+    const licenseFIE = parts[8]?.trim() || '';
+    const licenseFFE = parts[9]?.trim() || '';
+    const license = licenseFFE || licenseFIE || undefined;
+
+    result.referees.push({ lastName, firstName, gender, nationality, club, region, license, category });
+  }
+
+  return result;
 }

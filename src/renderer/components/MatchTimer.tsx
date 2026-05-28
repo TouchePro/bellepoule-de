@@ -89,7 +89,7 @@ export const MatchTimer: React.FC<MatchTimerProps> = ({
 
   return (
     <div className="timer-container flex flex-col items-center gap-4">
-      <div className={`timer font-mono font-bold rounded-2xl ${sizeClasses} ${getTimerStyle()}`}>
+      <div className={`timer font-digital font-bold rounded-2xl ${sizeClasses} ${getTimerStyle()}`}>
         {formatTime(remaining)}
       </div>
 
@@ -120,4 +120,4 @@ export const MatchTimer: React.FC<MatchTimerProps> = ({
   );
 };
 
-export default MatchTimer;
+export default React.memo(MatchTimer);

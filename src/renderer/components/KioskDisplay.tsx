@@ -7,8 +7,8 @@
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Competition, Pool, Weapon, MatchStatus, Fencer } from '../../shared/types';
-import { TableauMatch } from './TableauView';
-import { useTranslation } from '../contexts/TranslationContext';
+import { OrgNote } from '../../shared/types/remote';
+import { TableauMatch } from './tableau/tableauTypes';
 import {
   calculateOverallRanking,
   calculateOverallRankingQuest,
@@ -17,6 +17,318 @@ import {
 } from '../../shared/utils/poolCalculations';
 
 type KioskView = 'pools' | 'ranking' | 'tableau';
+
+// ─── Static style constants (extracted to avoid new object on every render) ───
+
+const KIOSK_STYLES = {
+  root: {
+    position: 'fixed' as const,
+    inset: 0,
+    backgroundColor: '#0f172a',
+    color: 'white',
+    zIndex: 9999,
+    fontFamily: 'system-ui, -apple-system, sans-serif',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    overflow: 'hidden',
+  },
+  menu: {
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10000,
+    padding: '1rem 2rem',
+    background: 'rgba(0,0,0,0.85)',
+    backdropFilter: 'blur(8px)',
+    display: 'flex',
+    alignItems: 'center' as const,
+    gap: '0.75rem',
+  },
+  menuLabel: { fontSize: '1rem', color: '#94a3b8', marginRight: '0.5rem', fontWeight: 600 },
+  menuFlex: { flex: 1 },
+  menuEscHint: { fontSize: '0.8rem', color: '#64748b' },
+  menuCloseBtn: {
+    padding: '0.5rem 1rem',
+    borderRadius: '8px',
+    border: '1px solid #475569',
+    background: 'transparent',
+    color: '#94a3b8',
+    cursor: 'pointer',
+    fontSize: '0.9rem',
+  },
+  poolsWrapper: { flex: 1, display: 'flex', flexDirection: 'column' as const, padding: '70px 40px 40px' },
+  poolsHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center' as const,
+    marginBottom: '24px',
+    borderBottom: '2px solid #334155',
+    paddingBottom: '20px',
+  },
+  poolsTitle: { margin: 0, fontSize: '2.2rem', fontWeight: 'bold' as const },
+  poolsSubtitle: { margin: '8px 0 0', fontSize: '1.1rem', color: '#94a3b8' },
+  poolsNavHint: { marginLeft: '1rem', fontSize: '0.9rem' },
+  poolsScoreBox: { textAlign: 'right' as const },
+  poolsScoreNum: { fontSize: '2.5rem', fontWeight: 'bold' as const, color: '#3b82f6' },
+  poolsScoreLabel: { fontSize: '0.9rem', color: '#64748b' },
+  poolsProgressTrack: {
+    width: '100%',
+    height: '6px',
+    backgroundColor: '#1e293b',
+    borderRadius: '3px',
+    marginBottom: '32px',
+    overflow: 'hidden',
+  },
+  poolsProgressFill: { height: '100%', backgroundColor: '#3b82f6', transition: 'width 0.5s ease' },
+  poolsContent: { flex: 1, display: 'flex', gap: '24px', minHeight: 0 },
+  poolsRankingCol: { flex: 1 },
+  poolsRankingTitle: { marginBottom: '16px', fontSize: '1.3rem', color: '#94a3b8' },
+  poolsRankingList: { display: 'flex', flexDirection: 'column' as const, gap: '10px' },
+  poolsMatchesCol: { width: '360px', flexShrink: 0 },
+  poolsMatchesTitle: { marginBottom: '16px', fontSize: '1.3rem', color: '#94a3b8' },
+  poolsMatchesList: { display: 'flex', flexDirection: 'column' as const, gap: '12px' },
+  poolsMatchCard: { padding: '16px', backgroundColor: '#dc2626', borderRadius: '10px' },
+  poolsMatchCardRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center' as const,
+    fontSize: '1.2rem',
+    fontWeight: 'bold' as const,
+  },
+  poolsMatchVs: { color: '#fca5a5', fontSize: '0.9rem' },
+  poolsMatchStrip: { textAlign: 'center' as const, marginTop: '8px', fontSize: '1rem', color: '#fca5a5' },
+  poolsMatchEmpty: { padding: '32px', textAlign: 'center' as const, color: '#64748b', fontSize: '1.1rem' },
+  poolsRankRow: {
+    display: 'flex',
+    alignItems: 'center' as const,
+    padding: '16px',
+    borderRadius: '10px',
+  },
+  poolsRankAvatar: {
+    width: '44px',
+    height: '44px',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center' as const,
+    justifyContent: 'center',
+    fontSize: '1.3rem',
+    fontWeight: 'bold' as const,
+    marginRight: '16px',
+    flexShrink: 0,
+  },
+  poolsRankInfo: { flex: 1 },
+  poolsRankName: { fontSize: '1.3rem', fontWeight: 'bold' as const },
+  poolsRankClub: { fontSize: '0.9rem', color: '#64748b' },
+  poolsRankStats: { textAlign: 'right' as const, flexShrink: 0 },
+  poolsRankScore: { fontSize: '1.5rem', fontWeight: 'bold' as const, color: '#3b82f6' },
+  poolsRankMatches: { fontSize: '0.85rem', color: '#94a3b8' },
+  poolsRankTouches: { fontSize: '0.85rem', color: '#64748b' },
+  poolsDotsRow: { display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '20px' },
+  rankingWrapper: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    padding: '70px 40px 0',
+    minHeight: 0,
+  },
+  rankingHeader: {
+    marginBottom: '24px',
+    borderBottom: '2px solid #334155',
+    paddingBottom: '16px',
+    flexShrink: 0,
+  },
+  rankingTitle: { margin: 0, fontSize: '2rem', fontWeight: 'bold' as const },
+  rankingSubtitle: { margin: '6px 0 0', fontSize: '1.1rem', color: '#94a3b8' },
+  rankingScrollArea: { flex: 1, overflowY: 'auto' as const, paddingBottom: '40px' },
+  rankingTable: { width: '100%', borderCollapse: 'collapse' as const, fontSize: '1.05rem' },
+  rankingThead: { color: '#64748b', textAlign: 'left' as const, borderBottom: '1px solid #334155' },
+  rankingThRg: { padding: '10px 12px', width: '60px' },
+  rankingThName: { padding: '10px 12px' },
+  rankingThVm: { padding: '10px 12px', textAlign: 'center' as const, width: '70px' },
+  rankingThTd: { padding: '10px 12px', textAlign: 'center' as const, width: '60px' },
+  rankingThTr: { padding: '10px 12px', textAlign: 'center' as const, width: '60px' },
+  rankingThQuest: { padding: '10px 12px', textAlign: 'center' as const, width: '80px', color: '#a78bfa' },
+  rankingThIndice: { padding: '10px 12px', textAlign: 'center' as const, width: '70px' },
+  rankingTdRank: { padding: '12px', fontWeight: 'bold' as const, fontSize: '1.2rem' },
+  rankingTdLast: { padding: '12px', fontWeight: 600, fontSize: '1.1rem' },
+  rankingTdFirst: { padding: '12px', fontSize: '1.05rem' },
+  rankingTdClub: { padding: '12px', color: '#94a3b8', fontSize: '0.95rem' },
+  rankingTdRatio: { padding: '12px', textAlign: 'center' as const },
+  rankingTdTouches: { padding: '12px', textAlign: 'center' as const },
+  rankingTdQuest: { padding: '12px', textAlign: 'center' as const, color: '#a78bfa', fontWeight: 600 },
+  rankingTdIndice: { padding: '12px', textAlign: 'center' as const, fontWeight: 600 },
+  tableauWrapper: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    padding: '70px 40px 0',
+    minHeight: 0,
+  },
+  tableauHeader: {
+    marginBottom: '24px',
+    borderBottom: '2px solid #334155',
+    paddingBottom: '16px',
+    flexShrink: 0,
+  },
+  tableauTitle: { margin: 0, fontSize: '2rem', fontWeight: 'bold' as const },
+  tableauRoundLabel: { margin: '6px 0 0', fontSize: '1.3rem', color: '#3b82f6', fontWeight: 600 },
+  tableauScrollArea: { flex: 1, overflowY: 'auto' as const, paddingBottom: '40px' },
+  tableauGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))',
+    gap: '16px',
+  },
+  matchCardBye: {
+    padding: '20px 24px',
+    backgroundColor: '#1e293b',
+    borderRadius: '12px',
+    border: '1px solid #334155',
+    opacity: 0.5,
+  },
+  matchCardByeLabel: { textAlign: 'center' as const, color: '#64748b', fontSize: '1rem' },
+  matchCardByeName: { textAlign: 'center' as const, fontWeight: 'bold' as const, fontSize: '1.2rem', marginTop: '4px' },
+  matchCardVs: { textAlign: 'center' as const, fontSize: '0.75rem', color: '#475569', margin: '2px 0' },
+  finishedWrapper: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    minHeight: 0,
+    gap: '24px',
+  },
+  finishedTitle: {
+    textAlign: 'center' as const,
+    fontSize: '1.4rem',
+    fontWeight: 700,
+    color: '#fbbf24',
+    letterSpacing: '0.05em',
+    flexShrink: 0,
+  },
+  podiumRow: {
+    display: 'flex',
+    alignItems: 'flex-end' as const,
+    justifyContent: 'center',
+    gap: '16px',
+    flexShrink: 0,
+  },
+  podiumCol: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center' as const,
+    gap: '8px',
+  },
+  podiumMedal2: { fontSize: '2.2rem' },
+  podiumName2: { fontWeight: 700, fontSize: '1.2rem', textAlign: 'center' as const, maxWidth: '200px' },
+  podiumClub2: { fontSize: '0.85rem', color: '#94a3b8', textAlign: 'center' as const },
+  podiumBlock2: {
+    width: '180px',
+    height: '80px',
+    backgroundColor: '#475569',
+    borderRadius: '6px 6px 0 0',
+    display: 'flex',
+    alignItems: 'center' as const,
+    justifyContent: 'center',
+    fontSize: '1.4rem',
+    fontWeight: 800,
+    color: '#94a3b8',
+  },
+  podiumMedal1: { fontSize: '3rem' },
+  podiumName1: { fontWeight: 800, fontSize: '1.5rem', textAlign: 'center' as const, maxWidth: '220px', color: '#fbbf24' },
+  podiumClub1: { fontSize: '0.9rem', color: '#fbbf24', opacity: 0.8, textAlign: 'center' as const },
+  podiumBlock1: {
+    width: '200px',
+    height: '120px',
+    backgroundColor: '#b45309',
+    borderRadius: '6px 6px 0 0',
+    display: 'flex',
+    alignItems: 'center' as const,
+    justifyContent: 'center',
+    fontSize: '2rem',
+    fontWeight: 800,
+    color: '#fbbf24',
+  },
+  podiumMedal3: { fontSize: '2.2rem' },
+  podiumName3: { fontWeight: 700, fontSize: '1.2rem', textAlign: 'center' as const, maxWidth: '200px' },
+  podiumClub3: { fontSize: '0.85rem', color: '#94a3b8', textAlign: 'center' as const },
+  podiumBlock3: {
+    width: '180px',
+    height: '60px',
+    backgroundColor: '#713f12',
+    borderRadius: '6px 6px 0 0',
+    display: 'flex',
+    alignItems: 'center' as const,
+    justifyContent: 'center',
+    fontSize: '1.4rem',
+    fontWeight: 800,
+    color: '#d97706',
+  },
+  podiumEmpty: { textAlign: 'center' as const, color: '#94a3b8', fontSize: '1.3rem' },
+  elimRankingWrapper: {
+    flex: 1,
+    overflowY: 'hidden' as const,
+    borderTop: '1px solid #334155',
+    paddingTop: '16px',
+  },
+  elimRankingLabel: {
+    color: '#64748b',
+    fontSize: '0.85rem',
+    fontWeight: 600,
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.08em',
+    marginBottom: '10px',
+    paddingLeft: '4px',
+  },
+  elimTable: { width: '100%', borderCollapse: 'collapse' as const, fontSize: '1rem' },
+  elimThead: { color: '#64748b', textAlign: 'left' as const, borderBottom: '1px solid #334155' },
+  elimThRg: { padding: '6px 10px', width: '50px' },
+  elimThName: { padding: '6px 10px' },
+  elimThElimAt: { padding: '6px 10px', color: '#475569', fontStyle: 'italic' as const },
+  elimTdRank: { padding: '8px 10px', fontWeight: 'bold' as const, fontSize: '1.1rem' },
+  elimTdRankSmall: { color: '#64748b' },
+  elimTdLast: { padding: '8px 10px', fontWeight: 600 },
+  elimTdFirst: { padding: '8px 10px' },
+  elimTdClub: { padding: '8px 10px', color: '#94a3b8', fontSize: '0.9rem' },
+  elimTdElimAt: { padding: '8px 10px', color: '#475569', fontSize: '0.85rem', fontStyle: 'italic' as const },
+  orgNoteOverlay: {
+    position: 'absolute' as const,
+    inset: 0,
+    zIndex: 10500,
+    background: 'rgba(2, 6, 23, 0.88)',
+    backdropFilter: 'blur(6px)',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-evenly' as const,
+    textAlign: 'center' as const,
+    padding: '3rem',
+  },
+  orgNotePauseLabel: {
+    fontSize: 'clamp(2rem, 5vw, 4rem)' as const,
+    color: '#64748b',
+    fontWeight: 600,
+    letterSpacing: '0.2em',
+    textTransform: 'uppercase' as const,
+  },
+  orgNoteResumeTime: { fontSize: 'clamp(4rem, 14vw, 12rem)' as const, fontWeight: 700, color: '#f1f5f9' },
+  orgNoteCountdown: {
+    fontSize: 'clamp(3rem, 10vw, 8rem)' as const,
+    fontWeight: 800,
+    color: '#3b82f6',
+    fontVariantNumeric: 'tabular-nums' as const,
+  },
+  orgNoteMessage: { fontSize: 'clamp(2rem, 7vw, 6rem)' as const, color: '#94a3b8', fontStyle: 'italic' as const },
+} satisfies Record<string, React.CSSProperties>;
+
+const roundNames: Record<number, string> = {
+  2: 'Finale',
+  3: 'Petite finale',
+  4: 'Demi-finales',
+  8: 'Quarts de finale',
+  16: '1/8 de finale',
+  32: '1/16 de finale',
+  64: '1/32 de finale',
+  128: '1/64 de finale',
+};
 
 interface KioskDisplayProps {
   competition: Competition;
@@ -33,29 +345,13 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
   tableauMatches,
   onClose,
 }) => {
-  const { t, language } = useTranslation();
   const isLaserSabre = weapon === 'L';
-
-  const getRoundName = (round: number): string => {
-    const key: Record<number, string> = {
-      2: 'kiosk.round_finale',
-      3: 'kiosk.round_bronze',
-      4: 'kiosk.round_semi',
-      8: 'kiosk.round_quarter',
-      16: 'kiosk.round_16',
-      32: 'kiosk.round_32',
-      64: 'kiosk.round_64',
-      128: 'kiosk.round_128',
-    };
-    return key[round] ? t(key[round]) : t('kiosk.round_tour', { n: String(round) });
-  };
 
   // Déterminer la vue initiale selon les données disponibles
   const initialView = useMemo((): KioskView => {
     if (tableauMatches.length > 0) return 'tableau';
-    const allDone = pools.length > 0 && pools.every(p =>
-      p.matches.every(m => m.status === MatchStatus.FINISHED)
-    );
+    const allDone =
+      pools.length > 0 && pools.every(p => p.matches.every(m => m.status === MatchStatus.FINISHED));
     if (allDone) return 'ranking';
     return 'pools';
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -86,9 +382,7 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
 
   // Round actif du tableau
   const activeRound = useMemo(() => {
-    const incomplete = tableauMatches.filter(
-      m => m.fencerA && m.fencerB && !m.winner && !m.isBye
-    );
+    const incomplete = tableauMatches.filter(m => m.fencerA && m.fencerB && !m.winner && !m.isBye);
     if (incomplete.length === 0) return null;
     return Math.max(...incomplete.map(m => m.round));
   }, [tableauMatches]);
@@ -121,37 +415,44 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
     const first = finalMatch.winner;
     const second = finalMatch.fencerA?.id === first.id ? finalMatch.fencerB : finalMatch.fencerA;
     results.push({ place: 1, fencer: first, eliminatedAt: '' });
-    if (second) results.push({ place: 2, fencer: second, eliminatedAt: t('kiosk.round_finale') });
+    if (second) results.push({ place: 2, fencer: second, eliminatedAt: 'Finale' });
 
     const thirdMatch = tableauMatches.find(m => m.round === 3);
     if (thirdMatch?.winner) {
       const third = thirdMatch.winner;
       const fourth = thirdMatch.fencerA?.id === third.id ? thirdMatch.fencerB : thirdMatch.fencerA;
       results.push({ place: 3, fencer: third, eliminatedAt: '' });
-      if (fourth) results.push({ place: 4, fencer: fourth, eliminatedAt: t('kiosk.round_bronze') });
+      if (fourth) results.push({ place: 4, fencer: fourth, eliminatedAt: 'Petite finale' });
     } else {
+      // Sans petite finale : perdants des demi-finales ex-aequo 3e
       const semis = tableauMatches.filter(m => m.round === 4 && m.winner);
       let place = 3;
       for (const semi of semis) {
         const loser = semi.fencerA?.id === semi.winner!.id ? semi.fencerB : semi.fencerA;
-        if (loser) results.push({ place, fencer: loser, eliminatedAt: t('kiosk.round_semi') });
+        if (loser) results.push({ place, fencer: loser, eliminatedAt: 'Demi-finales' });
         place++;
       }
     }
 
+    // Tours suivants : perdants de chaque round
     let currentPlace = results.length + 1;
     for (const round of [8, 16, 32, 64, 128]) {
       const roundMatches = tableauMatches.filter(m => m.round === round && m.winner);
       if (roundMatches.length === 0) break;
       for (const m of roundMatches) {
         const loser = m.fencerA?.id === m.winner!.id ? m.fencerB : m.fencerA;
-        if (loser) results.push({ place: currentPlace, fencer: loser, eliminatedAt: getRoundName(round) });
+        if (loser)
+          results.push({
+            place: currentPlace,
+            fencer: loser,
+            eliminatedAt: roundNames[round] || `Tour ${round}`,
+          });
       }
       currentPlace += roundMatches.length;
     }
 
     return results;
-  }, [tableauMatches, activeRound, language]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [tableauMatches, activeRound]);
 
   // Menu auto-masquant
   const showMenu = useCallback(() => {
@@ -220,8 +521,13 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
       last = t;
       animId = requestAnimationFrame(step);
     };
-    delayId = setTimeout(() => { animId = requestAnimationFrame(step); }, 2000);
-    return () => { clearTimeout(delayId); cancelAnimationFrame(animId); };
+    delayId = setTimeout(() => {
+      animId = requestAnimationFrame(step);
+    }, 2000);
+    return () => {
+      clearTimeout(delayId);
+      cancelAnimationFrame(animId);
+    };
   }, [currentView, overallRanking]);
 
   // Auto-scroll tableau
@@ -245,9 +551,49 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
       last = t;
       animId = requestAnimationFrame(step);
     };
-    delayId = setTimeout(() => { animId = requestAnimationFrame(step); }, 2000);
-    return () => { clearTimeout(delayId); cancelAnimationFrame(animId); };
+    delayId = setTimeout(() => {
+      animId = requestAnimationFrame(step);
+    }, 2000);
+    return () => {
+      clearTimeout(delayId);
+      cancelAnimationFrame(animId);
+    };
   }, [currentView, activeRound]);
+
+  // Note d'organisation
+  const [orgNote, setOrgNote] = useState<OrgNote | null>(null);
+  const [orgNoteCountdown, setOrgNoteCountdown] = useState<string>('');
+
+  useEffect(() => {
+    if (!window.electronAPI?.onKioskNoteUpdate) return;
+    const unsub = window.electronAPI.onKioskNoteUpdate(note => setOrgNote(note));
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    if (!orgNote || orgNote.type !== 'target_time' || !orgNote.targetTime) {
+      setOrgNoteCountdown('');
+      return;
+    }
+    const compute = () => {
+      const now = new Date();
+      const [hh, mm] = orgNote.targetTime!.split(':').map(Number);
+      const target = new Date(now);
+      target.setHours(hh, mm, 0, 0);
+      if (target <= now) target.setDate(target.getDate() + 1); // lendemain si dépassé
+      const diffSec = Math.max(0, Math.floor((target.getTime() - now.getTime()) / 1000));
+      if (diffSec === 0) {
+        window.electronAPI.remote.clearOrgNote(competition.id);
+        return;
+      }
+      const m = Math.floor(diffSec / 60);
+      const s = diffSec % 60;
+      setOrgNoteCountdown(`${m} min ${s.toString().padStart(2, '0')} s`);
+    };
+    compute();
+    const id = setInterval(compute, 1000);
+    return () => clearInterval(id);
+  }, [orgNote]);
 
   // Données de la poule courante
   const currentPool = pools[currentPoolIndex];
@@ -277,136 +623,132 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
   return (
     <div
       onMouseMove={showMenu}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        backgroundColor: '#0f172a',
-        color: 'white',
-        zIndex: 9999,
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-      }}
+      style={KIOSK_STYLES.root}
     >
       {/* Menu auto-masquant */}
       <div
         style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 10000,
-          padding: '1rem 2rem',
-          background: 'rgba(0,0,0,0.85)',
-          backdropFilter: 'blur(8px)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.75rem',
+          ...KIOSK_STYLES.menu,
           opacity: menuVisible ? 1 : 0,
           pointerEvents: menuVisible ? 'auto' : 'none',
           transition: 'opacity 0.4s ease',
         }}
       >
-        <span style={{ fontSize: '1rem', color: '#94a3b8', marginRight: '0.5rem', fontWeight: 600 }}>
-          {t('kiosk.mode_label')}
+        <span style={KIOSK_STYLES.menuLabel}>
+          Mode Kiosk
         </span>
         <button
           style={btnStyle(currentView === 'pools', !hasPoolData)}
           disabled={!hasPoolData}
-          onClick={() => { if (hasPoolData) setCurrentView('pools'); }}
+          onClick={() => {
+            if (hasPoolData) setCurrentView('pools');
+          }}
         >
-          🏆 {t('kiosk.btn_pools')}
+          🏆 Poules
         </button>
         <button
           style={btnStyle(currentView === 'ranking', !hasRankingData)}
           disabled={!hasRankingData}
-          onClick={() => { if (hasRankingData) setCurrentView('ranking'); }}
+          onClick={() => {
+            if (hasRankingData) setCurrentView('ranking');
+          }}
         >
-          📊 {t('kiosk.btn_ranking')}
+          📊 Classement
         </button>
         <button
           style={btnStyle(currentView === 'tableau', !hasTableauData)}
           disabled={!hasTableauData}
-          onClick={() => { if (hasTableauData) setCurrentView('tableau'); }}
-        >
-          🥇 {t('kiosk.btn_tableau')}
-        </button>
-        <div style={{ flex: 1 }} />
-        <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{t('kiosk.hint_escape')}</span>
-        <button
-          onClick={onClose}
-          style={{
-            padding: '0.5rem 1rem',
-            borderRadius: '8px',
-            border: '1px solid #475569',
-            background: 'transparent',
-            color: '#94a3b8',
-            cursor: 'pointer',
-            fontSize: '0.9rem',
+          onClick={() => {
+            if (hasTableauData) setCurrentView('tableau');
           }}
         >
-          ✕ {t('kiosk.btn_close')}
+          🥇 Tableau
+        </button>
+        <div style={KIOSK_STYLES.menuFlex} />
+        <span style={KIOSK_STYLES.menuEscHint}>Echap pour quitter</span>
+        <button
+          onClick={onClose}
+          style={KIOSK_STYLES.menuCloseBtn}
+        >
+          ✕ Fermer
         </button>
       </div>
 
       {/* ===== VUE POULES ===== */}
       {currentView === 'pools' && currentPool && (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '70px 40px 40px' }}>
+        <div style={KIOSK_STYLES.poolsWrapper}>
           {/* Header poule */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '2px solid #334155', paddingBottom: '20px' }}>
+          <div style={KIOSK_STYLES.poolsHeader}>
             <div>
-              <h1 style={{ margin: 0, fontSize: '2.2rem', fontWeight: 'bold' }}>{competition.title}</h1>
-              <p style={{ margin: '8px 0 0', fontSize: '1.1rem', color: '#94a3b8' }}>
-                {t('kiosk.pool_label')} {currentPool.number} / {pools.length}
-                <span style={{ marginLeft: '1rem', fontSize: '0.9rem' }}>
-                  {pools.length > 1 && t('kiosk.pool_navigation')}
+              <h1 style={KIOSK_STYLES.poolsTitle}>
+                {competition.title}
+              </h1>
+              <p style={KIOSK_STYLES.poolsSubtitle}>
+                Poule {currentPool.number} / {pools.length}
+                <span style={KIOSK_STYLES.poolsNavHint}>
+                  {pools.length > 1 && '← → naviguer'}
                 </span>
               </p>
             </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#3b82f6' }}>
+            <div style={KIOSK_STYLES.poolsScoreBox}>
+              <div style={KIOSK_STYLES.poolsScoreNum}>
                 {poolCompleted}/{poolTotal}
               </div>
-              <div style={{ fontSize: '0.9rem', color: '#64748b' }}>{t('kiosk.matches_done')}</div>
+              <div style={KIOSK_STYLES.poolsScoreLabel}>matchs terminés</div>
             </div>
           </div>
 
           {/* Barre de progression */}
-          <div style={{ width: '100%', height: '6px', backgroundColor: '#1e293b', borderRadius: '3px', marginBottom: '32px', overflow: 'hidden' }}>
-            <div style={{ width: `${poolProgress}%`, height: '100%', backgroundColor: '#3b82f6', transition: 'width 0.5s ease' }} />
+          <div style={KIOSK_STYLES.poolsProgressTrack}>
+            <div
+              style={{
+                ...KIOSK_STYLES.poolsProgressFill,
+                width: `${poolProgress}%`,
+              }}
+            />
           </div>
 
           {/* Contenu */}
-          <div style={{ flex: 1, display: 'flex', gap: '24px', minHeight: 0 }}>
+          <div style={KIOSK_STYLES.poolsContent}>
             {/* Classement poule */}
-            <div style={{ flex: 1 }}>
-              <h2 style={{ marginBottom: '16px', fontSize: '1.3rem', color: '#94a3b8' }}>{t('kiosk.pool_ranking')}</h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={KIOSK_STYLES.poolsRankingCol}>
+              <h2 style={KIOSK_STYLES.poolsRankingTitle}>
+                Classement
+              </h2>
+              <div style={KIOSK_STYLES.poolsRankingList}>
                 {currentPool.ranking?.slice(0, 8).map((rank, i) => (
-                  <div key={rank.fencer.id} style={{
-                    display: 'flex', alignItems: 'center', padding: '16px',
-                    backgroundColor: i < 3 ? '#1e3a5f' : '#1e293b',
-                    borderRadius: '10px',
-                    border: i < 3 ? '2px solid #3b82f6' : '2px solid transparent',
-                  }}>
-                    <div style={{ width: '44px', height: '44px', borderRadius: '50%', backgroundColor: i < 3 ? '#3b82f6' : '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', fontWeight: 'bold', marginRight: '16px', flexShrink: 0 }}>
+                  <div
+                    key={rank.fencer.id}
+                    style={{
+                      ...KIOSK_STYLES.poolsRankRow,
+                      backgroundColor: i < 3 ? '#1e3a5f' : '#1e293b',
+                      border: i < 3 ? '2px solid #3b82f6' : '2px solid transparent',
+                    }}
+                  >
+                    <div
+                      style={{
+                        ...KIOSK_STYLES.poolsRankAvatar,
+                        backgroundColor: i < 3 ? '#3b82f6' : '#475569',
+                      }}
+                    >
                       {i + 1}
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '1.3rem', fontWeight: 'bold' }}>
+                    <div style={KIOSK_STYLES.poolsRankInfo}>
+                      <div style={KIOSK_STYLES.poolsRankName}>
                         {rank.fencer.lastName} {rank.fencer.firstName}
                       </div>
-                      <div style={{ fontSize: '0.9rem', color: '#64748b' }}>{rank.fencer.club || t('kiosk.no_club')}</div>
+                      <div style={KIOSK_STYLES.poolsRankClub}>
+                        {rank.fencer.club || 'Sans club'}
+                      </div>
                     </div>
-                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#3b82f6' }}>
+                    <div style={KIOSK_STYLES.poolsRankStats}>
+                      <div style={KIOSK_STYLES.poolsRankScore}>
                         {rank.victories}V – {rank.defeats}D
                       </div>
-                      <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
-                        {rank.matchesPlayed} {rank.matchesPlayed !== 1 ? t('kiosk.match_plural') : t('kiosk.match_singular')}
+                      <div style={KIOSK_STYLES.poolsRankMatches}>
+                        {rank.matchesPlayed} match{rank.matchesPlayed !== 1 ? 's' : ''}
                       </div>
-                      <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                      <div style={KIOSK_STYLES.poolsRankTouches}>
                         TD {rank.touchesScored} / TR {rank.touchesReceived}
                       </div>
                     </div>
@@ -416,24 +758,33 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
             </div>
 
             {/* Matchs en cours */}
-            <div style={{ width: '360px', flexShrink: 0 }}>
-              <h2 style={{ marginBottom: '16px', fontSize: '1.3rem', color: '#94a3b8' }}>{t('kiosk.matches_live')}</h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {currentPool.matches.filter(m => m.status === MatchStatus.IN_PROGRESS).slice(0, 4).map((match, idx) => (
-                  <div key={match.id} style={{ padding: '16px', backgroundColor: '#dc2626', borderRadius: '10px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '1.2rem', fontWeight: 'bold' }}>
-                      <span>{match.fencerA?.lastName || 'TBD'}</span>
-                      <span style={{ color: '#fca5a5', fontSize: '0.9rem' }}>VS</span>
-                      <span>{match.fencerB?.lastName || 'TBD'}</span>
+            <div style={KIOSK_STYLES.poolsMatchesCol}>
+              <h2 style={KIOSK_STYLES.poolsMatchesTitle}>
+                Matchs en cours
+              </h2>
+              <div style={KIOSK_STYLES.poolsMatchesList}>
+                {currentPool.matches
+                  .filter(m => m.status === MatchStatus.IN_PROGRESS)
+                  .slice(0, 4)
+                  .map((match, idx) => (
+                    <div
+                      key={match.id}
+                      style={KIOSK_STYLES.poolsMatchCard}
+                    >
+                      <div style={KIOSK_STYLES.poolsMatchCardRow}>
+                        <span>{match.fencerA?.lastName || 'TBD'}</span>
+                        <span style={KIOSK_STYLES.poolsMatchVs}>VS</span>
+                        <span>{match.fencerB?.lastName || 'TBD'}</span>
+                      </div>
+                      <div style={KIOSK_STYLES.poolsMatchStrip}>
+                        Piste {match.strip || idx + 1}
+                      </div>
                     </div>
-                    <div style={{ textAlign: 'center', marginTop: '8px', fontSize: '1rem', color: '#fca5a5' }}>
-                      {t('kiosk.strip')} {match.strip || idx + 1}
-                    </div>
-                  </div>
-                ))}
-                {currentPool.matches.filter(m => m.status === MatchStatus.IN_PROGRESS).length === 0 && (
-                  <div style={{ padding: '32px', textAlign: 'center', color: '#64748b', fontSize: '1.1rem' }}>
-                    {t('kiosk.no_matches_live')}
+                  ))}
+                {currentPool.matches.filter(m => m.status === MatchStatus.IN_PROGRESS).length ===
+                  0 && (
+                  <div style={KIOSK_STYLES.poolsMatchEmpty}>
+                    Aucun match en cours
                   </div>
                 )}
               </div>
@@ -442,9 +793,20 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
 
           {/* Navigation dots */}
           {pools.length > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '20px' }}>
+            <div style={KIOSK_STYLES.poolsDotsRow}>
               {pools.map((_, i) => (
-                <div key={i} onClick={() => setCurrentPoolIndex(i)} style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: i === currentPoolIndex ? '#3b82f6' : '#334155', cursor: 'pointer', transition: 'background 0.2s' }} />
+                <div
+                  key={i}
+                  onClick={() => setCurrentPoolIndex(i)}
+                  style={{
+                    width: '10px',
+                    height: '10px',
+                    borderRadius: '50%',
+                    backgroundColor: i === currentPoolIndex ? '#3b82f6' : '#334155',
+                    cursor: 'pointer',
+                    transition: 'background 0.2s',
+                  }}
+                />
               ))}
             </div>
           )}
@@ -453,45 +815,80 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
 
       {/* ===== VUE CLASSEMENT ===== */}
       {currentView === 'ranking' && (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '70px 40px 0', minHeight: 0 }}>
+        <div style={KIOSK_STYLES.rankingWrapper}>
           {/* Header */}
-          <div style={{ marginBottom: '24px', borderBottom: '2px solid #334155', paddingBottom: '16px', flexShrink: 0 }}>
-            <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: 'bold' }}>{competition.title}</h1>
-            <p style={{ margin: '6px 0 0', fontSize: '1.1rem', color: '#94a3b8' }}>
-              {t('kiosk.provisional_ranking')} · {overallRanking.length} {overallRanking.length > 1 ? t('kiosk.fencer_plural') : t('kiosk.fencer_singular')}
+          <div style={KIOSK_STYLES.rankingHeader}>
+            <h1 style={KIOSK_STYLES.rankingTitle}>{competition.title}</h1>
+            <p style={KIOSK_STYLES.rankingSubtitle}>
+              Classement Provisoire · {overallRanking.length} tireur
+              {overallRanking.length > 1 ? 's' : ''}
             </p>
           </div>
 
           {/* Tableau défilant */}
-          <div ref={rankingScrollRef} data-kiosk-scroll="" style={{ flex: 1, overflowY: 'auto', paddingBottom: '40px' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '1.05rem' }}>
+          <div
+            ref={rankingScrollRef}
+            data-kiosk-scroll=""
+            style={KIOSK_STYLES.rankingScrollArea}
+          >
+            <table style={KIOSK_STYLES.rankingTable}>
               <thead>
-                <tr style={{ color: '#64748b', textAlign: 'left', borderBottom: '1px solid #334155' }}>
-                  <th style={{ padding: '10px 12px', width: '60px' }}>{t('kiosk.col_rank')}</th>
-                  <th style={{ padding: '10px 12px' }}>{t('kiosk.col_last_name')}</th>
-                  <th style={{ padding: '10px 12px' }}>{t('kiosk.col_first_name')}</th>
-                  <th style={{ padding: '10px 12px' }}>{t('kiosk.col_club')}</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'center', width: '70px' }}>{t('kiosk.col_vm')}</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'center', width: '60px' }}>{t('kiosk.col_td')}</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'center', width: '60px' }}>{t('kiosk.col_tr')}</th>
-                  {isLaserSabre && <th style={{ padding: '10px 12px', textAlign: 'center', width: '80px', color: '#a78bfa' }}>Quest</th>}
-                  <th style={{ padding: '10px 12px', textAlign: 'center', width: '70px' }}>{t('kiosk.col_index')}</th>
+                <tr style={KIOSK_STYLES.rankingThead}>
+                  <th style={KIOSK_STYLES.rankingThRg}>Rg</th>
+                  <th style={KIOSK_STYLES.rankingThName}>Nom</th>
+                  <th style={KIOSK_STYLES.rankingThName}>Prénom</th>
+                  <th style={KIOSK_STYLES.rankingThName}>Club</th>
+                  <th style={KIOSK_STYLES.rankingThVm}>V/M</th>
+                  <th style={KIOSK_STYLES.rankingThTd}>TD</th>
+                  <th style={KIOSK_STYLES.rankingThTr}>TR</th>
+                  {isLaserSabre && (
+                    <th style={KIOSK_STYLES.rankingThQuest}>
+                      Quest
+                    </th>
+                  )}
+                  <th style={KIOSK_STYLES.rankingThIndice}>
+                    Indice
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {overallRanking.map((r, i) => (
-                  <tr key={r.fencer.id} style={{ borderBottom: '1px solid #1e293b', backgroundColor: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
-                    <td style={{ padding: '12px', fontWeight: 'bold', fontSize: '1.2rem', color: i < 3 ? '#3b82f6' : 'white' }}>
+                  <tr
+                    key={r.fencer.id}
+                    style={{
+                      borderBottom: '1px solid #1e293b',
+                      backgroundColor: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)',
+                    }}
+                  >
+                    <td
+                      style={{
+                        ...KIOSK_STYLES.rankingTdRank,
+                        color: i < 3 ? '#3b82f6' : 'white',
+                      }}
+                    >
                       {r.rank}
                     </td>
-                    <td style={{ padding: '12px', fontWeight: 600, fontSize: '1.1rem' }}>{r.fencer.lastName}</td>
-                    <td style={{ padding: '12px', fontSize: '1.05rem' }}>{r.fencer.firstName}</td>
-                    <td style={{ padding: '12px', color: '#94a3b8', fontSize: '0.95rem' }}>{r.fencer.club || '–'}</td>
-                    <td style={{ padding: '12px', textAlign: 'center' }}>{formatRatio(r.ratio)}</td>
-                    <td style={{ padding: '12px', textAlign: 'center' }}>{r.touchesScored}</td>
-                    <td style={{ padding: '12px', textAlign: 'center' }}>{r.touchesReceived}</td>
-                    {isLaserSabre && <td style={{ padding: '12px', textAlign: 'center', color: '#a78bfa', fontWeight: 600 }}>{r.questPoints || 0}</td>}
-                    <td style={{ padding: '12px', textAlign: 'center', fontWeight: 600, color: r.index >= 0 ? '#10b981' : '#f87171' }}>
+                    <td style={KIOSK_STYLES.rankingTdLast}>
+                      {r.fencer.lastName}
+                    </td>
+                    <td style={KIOSK_STYLES.rankingTdFirst}>{r.fencer.firstName}</td>
+                    <td style={KIOSK_STYLES.rankingTdClub}>
+                      {r.fencer.club || '–'}
+                    </td>
+                    <td style={KIOSK_STYLES.rankingTdRatio}>{formatRatio(r.ratio)}</td>
+                    <td style={KIOSK_STYLES.rankingTdTouches}>{r.touchesScored}</td>
+                    <td style={KIOSK_STYLES.rankingTdTouches}>{r.touchesReceived}</td>
+                    {isLaserSabre && (
+                      <td style={KIOSK_STYLES.rankingTdQuest}>
+                        {r.questPoints || 0}
+                      </td>
+                    )}
+                    <td
+                      style={{
+                        ...KIOSK_STYLES.rankingTdIndice,
+                        color: r.index >= 0 ? '#10b981' : '#f87171',
+                      }}
+                    >
                       {formatIndex(r.index)}
                     </td>
                   </tr>
@@ -504,73 +901,161 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
 
       {/* ===== VUE TABLEAU ===== */}
       {currentView === 'tableau' && (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '70px 40px 0', minHeight: 0 }}>
+        <div style={KIOSK_STYLES.tableauWrapper}>
           {/* Header */}
-          <div style={{ marginBottom: '24px', borderBottom: '2px solid #334155', paddingBottom: '16px', flexShrink: 0 }}>
-            <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: 'bold' }}>{competition.title}</h1>
-            <p style={{ margin: '6px 0 0', fontSize: '1.3rem', color: '#3b82f6', fontWeight: 600 }}>
+          <div style={KIOSK_STYLES.tableauHeader}>
+            <h1 style={KIOSK_STYLES.tableauTitle}>{competition.title}</h1>
+            <p style={KIOSK_STYLES.tableauRoundLabel}>
               {activeRound !== null
-                ? getRoundName(activeRound)
-                : t('kiosk.tableau_done')}
+                ? roundNames[activeRound] || `Tour ${activeRound}`
+                : 'Tableau terminé'}
             </p>
           </div>
 
           {/* Contenu */}
           {activeRound !== null ? (
-            <div ref={tableauScrollRef} data-kiosk-scroll="" style={{ flex: 1, overflowY: 'auto', paddingBottom: '40px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '16px' }}>
+            <div
+              ref={tableauScrollRef}
+              data-kiosk-scroll=""
+              style={KIOSK_STYLES.tableauScrollArea}
+            >
+              <div style={KIOSK_STYLES.tableauGrid}>
                 {activeRoundMatches.map(match => {
                   if (match.isBye) {
                     return (
-                      <div key={match.id} style={{ padding: '20px 24px', backgroundColor: '#1e293b', borderRadius: '12px', border: '1px solid #334155', opacity: 0.5 }}>
-                        <div style={{ textAlign: 'center', color: '#64748b', fontSize: '1rem' }}>{t('kiosk.bye')}</div>
-                        <div style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '1.2rem', marginTop: '4px' }}>
+                      <div
+                        key={match.id}
+                        style={KIOSK_STYLES.matchCardBye}
+                      >
+                        <div style={KIOSK_STYLES.matchCardByeLabel}>
+                          EXEMPT
+                        </div>
+                        <div style={KIOSK_STYLES.matchCardByeName}>
                           {match.fencerA?.lastName || match.fencerB?.lastName || '–'}
                         </div>
                       </div>
                     );
                   }
 
-                  const winnerIsA = match.winner && match.fencerA && match.winner.id === match.fencerA.id;
-                  const winnerIsB = match.winner && match.fencerB && match.winner.id === match.fencerB.id;
+                  const winnerIsA =
+                    match.winner && match.fencerA && match.winner.id === match.fencerA.id;
+                  const winnerIsB =
+                    match.winner && match.fencerB && match.winner.id === match.fencerB.id;
                   const isFinished = match.winner !== null;
 
                   return (
-                    <div key={match.id} style={{ padding: '20px 24px', backgroundColor: '#1e293b', borderRadius: '12px', border: `2px solid ${isFinished ? '#334155' : '#3b82f6'}` }}>
+                    <div
+                      key={match.id}
+                      style={{
+                        padding: '20px 24px',
+                        backgroundColor: '#1e293b',
+                        borderRadius: '12px',
+                        border: `2px solid ${isFinished ? '#334155' : '#3b82f6'}`,
+                      }}
+                    >
                       {/* Tireur A */}
-                      <div style={{
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        padding: '10px 12px', borderRadius: '8px', marginBottom: '6px',
-                        backgroundColor: winnerIsA ? 'rgba(16,185,129,0.2)' : winnerIsB ? 'rgba(255,255,255,0.03)' : 'transparent',
-                        border: winnerIsA ? '1px solid #10b981' : '1px solid transparent',
-                      }}>
-                        <span style={{ fontSize: '1.2rem', fontWeight: 600, color: winnerIsB ? '#475569' : 'white' }}>
-                          {match.fencerA ? `${match.fencerA.lastName} ${match.fencerA.firstName.charAt(0)}.` : t('kiosk.tbd')}
-                          {match.fencerA?.club && <span style={{ fontSize: '0.8rem', color: '#64748b', marginLeft: '8px' }}>{match.fencerA.club}</span>}
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          marginBottom: '6px',
+                          backgroundColor: winnerIsA
+                            ? 'rgba(16,185,129,0.2)'
+                            : winnerIsB
+                              ? 'rgba(255,255,255,0.03)'
+                              : 'transparent',
+                          border: winnerIsA ? '1px solid #10b981' : '1px solid transparent',
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: '1.2rem',
+                            fontWeight: 600,
+                            color: winnerIsB ? '#475569' : 'white',
+                          }}
+                        >
+                          {match.fencerA
+                            ? `${match.fencerA.lastName} ${match.fencerA.firstName.charAt(0)}.`
+                            : 'À déterminer'}
+                          {match.fencerA?.club && (
+                            <span
+                              style={{ fontSize: '0.8rem', color: '#64748b', marginLeft: '8px' }}
+                            >
+                              {match.fencerA.club}
+                            </span>
+                          )}
                         </span>
                         {isFinished && match.scoreA !== null && (
-                          <span style={{ fontSize: '1.6rem', fontWeight: 'bold', color: winnerIsA ? '#10b981' : '#475569' }}>
+                          <span
+                            style={{
+                              fontSize: '1.6rem',
+                              fontWeight: 'bold',
+                              color: winnerIsA ? '#10b981' : '#475569',
+                            }}
+                          >
                             {match.scoreA}
                           </span>
                         )}
                       </div>
 
                       {/* Séparateur */}
-                      <div style={{ textAlign: 'center', fontSize: '0.75rem', color: '#475569', margin: '2px 0' }}>VS</div>
+                      <div
+                        style={{
+                          textAlign: 'center',
+                          fontSize: '0.75rem',
+                          color: '#475569',
+                          margin: '2px 0',
+                        }}
+                      >
+                        VS
+                      </div>
 
                       {/* Tireur B */}
-                      <div style={{
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        padding: '10px 12px', borderRadius: '8px', marginTop: '6px',
-                        backgroundColor: winnerIsB ? 'rgba(16,185,129,0.2)' : winnerIsA ? 'rgba(255,255,255,0.03)' : 'transparent',
-                        border: winnerIsB ? '1px solid #10b981' : '1px solid transparent',
-                      }}>
-                        <span style={{ fontSize: '1.2rem', fontWeight: 600, color: winnerIsA ? '#475569' : 'white' }}>
-                          {match.fencerB ? `${match.fencerB.lastName} ${match.fencerB.firstName.charAt(0)}.` : t('kiosk.tbd')}
-                          {match.fencerB?.club && <span style={{ fontSize: '0.8rem', color: '#64748b', marginLeft: '8px' }}>{match.fencerB.club}</span>}
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          marginTop: '6px',
+                          backgroundColor: winnerIsB
+                            ? 'rgba(16,185,129,0.2)'
+                            : winnerIsA
+                              ? 'rgba(255,255,255,0.03)'
+                              : 'transparent',
+                          border: winnerIsB ? '1px solid #10b981' : '1px solid transparent',
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: '1.2rem',
+                            fontWeight: 600,
+                            color: winnerIsA ? '#475569' : 'white',
+                          }}
+                        >
+                          {match.fencerB
+                            ? `${match.fencerB.lastName} ${match.fencerB.firstName.charAt(0)}.`
+                            : 'À déterminer'}
+                          {match.fencerB?.club && (
+                            <span
+                              style={{ fontSize: '0.8rem', color: '#64748b', marginLeft: '8px' }}
+                            >
+                              {match.fencerB.club}
+                            </span>
+                          )}
                         </span>
                         {isFinished && match.scoreB !== null && (
-                          <span style={{ fontSize: '1.6rem', fontWeight: 'bold', color: winnerIsB ? '#10b981' : '#475569' }}>
+                          <span
+                            style={{
+                              fontSize: '1.6rem',
+                              fontWeight: 'bold',
+                              color: winnerIsB ? '#10b981' : '#475569',
+                            }}
+                          >
                             {match.scoreB}
                           </span>
                         )}
@@ -582,76 +1067,87 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
             </div>
           ) : (
             /* Tableau terminé – podium + classement */
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, gap: '24px' }}>
+            <div style={KIOSK_STYLES.finishedWrapper}>
               {/* Titre */}
-              <div style={{ textAlign: 'center', fontSize: '1.4rem', fontWeight: 700, color: '#fbbf24', letterSpacing: '0.05em', flexShrink: 0 }}>
-                🏆 {t('kiosk.final_results')}
+              <div style={KIOSK_STYLES.finishedTitle}>
+                🏆 RÉSULTATS FINAUX
               </div>
 
               {/* Podium visuel */}
               {podium ? (
-                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '16px', flexShrink: 0 }}>
+                <div style={KIOSK_STYLES.podiumRow}>
                   {/* 2e place */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ fontSize: '2.2rem' }}>🥈</div>
-                    <div style={{ fontWeight: 700, fontSize: '1.2rem', textAlign: 'center', maxWidth: '200px' }}>
+                  <div style={KIOSK_STYLES.podiumCol}>
+                    <div style={KIOSK_STYLES.podiumMedal2}>🥈</div>
+                    <div style={KIOSK_STYLES.podiumName2}>
                       {podium.second ? `${podium.second.lastName} ${podium.second.firstName}` : '–'}
                     </div>
-                    {podium.second?.club && <div style={{ fontSize: '0.85rem', color: '#94a3b8', textAlign: 'center' }}>{podium.second.club}</div>}
-                    <div style={{ width: '180px', height: '80px', backgroundColor: '#475569', borderRadius: '6px 6px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: 800, color: '#94a3b8' }}>2</div>
+                    {podium.second?.club && (
+                      <div style={KIOSK_STYLES.podiumClub2}>{podium.second.club}</div>
+                    )}
+                    <div style={KIOSK_STYLES.podiumBlock2}>2</div>
                   </div>
                   {/* 1re place */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ fontSize: '3rem' }}>🥇</div>
-                    <div style={{ fontWeight: 800, fontSize: '1.5rem', textAlign: 'center', maxWidth: '220px', color: '#fbbf24' }}>
+                  <div style={KIOSK_STYLES.podiumCol}>
+                    <div style={KIOSK_STYLES.podiumMedal1}>🥇</div>
+                    <div style={KIOSK_STYLES.podiumName1}>
                       {podium.first.lastName} {podium.first.firstName}
                     </div>
-                    {podium.first.club && <div style={{ fontSize: '0.9rem', color: '#fbbf24', opacity: 0.8, textAlign: 'center' }}>{podium.first.club}</div>}
-                    <div style={{ width: '200px', height: '120px', backgroundColor: '#b45309', borderRadius: '6px 6px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 800, color: '#fbbf24' }}>1</div>
+                    {podium.first.club && (
+                      <div style={KIOSK_STYLES.podiumClub1}>{podium.first.club}</div>
+                    )}
+                    <div style={KIOSK_STYLES.podiumBlock1}>1</div>
                   </div>
                   {/* 3e place */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ fontSize: '2.2rem' }}>🥉</div>
-                    <div style={{ fontWeight: 700, fontSize: '1.2rem', textAlign: 'center', maxWidth: '200px' }}>
+                  <div style={KIOSK_STYLES.podiumCol}>
+                    <div style={KIOSK_STYLES.podiumMedal3}>🥉</div>
+                    <div style={KIOSK_STYLES.podiumName3}>
                       {podium.third ? `${podium.third.lastName} ${podium.third.firstName}` : '–'}
                     </div>
-                    {podium.third?.club && <div style={{ fontSize: '0.85rem', color: '#94a3b8', textAlign: 'center' }}>{podium.third.club}</div>}
-                    <div style={{ width: '180px', height: '60px', backgroundColor: '#713f12', borderRadius: '6px 6px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: 800, color: '#d97706' }}>3</div>
+                    {podium.third?.club && (
+                      <div style={KIOSK_STYLES.podiumClub3}>{podium.third.club}</div>
+                    )}
+                    <div style={KIOSK_STYLES.podiumBlock3}>3</div>
                   </div>
                 </div>
               ) : (
-                <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: '1.3rem' }}>{t('kiosk.tableau_done')}</div>
+                <div style={KIOSK_STYLES.podiumEmpty}>Tableau terminé</div>
               )}
 
               {/* Classement général */}
               {elimRanking.length > 0 && (
-                <div ref={tableauScrollRef} style={{ flex: 1, overflowY: 'hidden', borderTop: '1px solid #334155', paddingTop: '16px' }}>
-                  <div style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px', paddingLeft: '4px' }}>
-                    {t('kiosk.overall_ranking')}
-                  </div>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '1rem' }}>
+                <div ref={tableauScrollRef} style={KIOSK_STYLES.elimRankingWrapper}>
+                  <div style={KIOSK_STYLES.elimRankingLabel}>Classement général</div>
+                  <table style={KIOSK_STYLES.elimTable}>
                     <thead>
-                      <tr style={{ color: '#64748b', textAlign: 'left', borderBottom: '1px solid #334155' }}>
-                        <th style={{ padding: '6px 10px', width: '50px' }}>{t('kiosk.col_rank')}</th>
-                        <th style={{ padding: '6px 10px' }}>{t('kiosk.col_last_name')}</th>
-                        <th style={{ padding: '6px 10px' }}>{t('kiosk.col_first_name')}</th>
-                        <th style={{ padding: '6px 10px' }}>{t('kiosk.col_club')}</th>
-                        <th style={{ padding: '6px 10px', color: '#475569', fontStyle: 'italic' }}>{t('kiosk.col_eliminated_at')}</th>
+                      <tr style={KIOSK_STYLES.elimThead}>
+                        <th style={KIOSK_STYLES.elimThRg}>Rg</th>
+                        <th style={KIOSK_STYLES.elimThName}>Nom</th>
+                        <th style={KIOSK_STYLES.elimThName}>Prénom</th>
+                        <th style={KIOSK_STYLES.elimThName}>Club</th>
+                        <th style={KIOSK_STYLES.elimThElimAt}>Éliminé en</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {elimRanking.map((r) => {
+                      {elimRanking.map(r => {
                         const medals: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
-                        const isTop3 = r.place <= 3;
                         return (
-                          <tr key={r.fencer.id} style={{ borderBottom: '1px solid #1e293b', backgroundColor: isTop3 ? 'rgba(251,191,36,0.06)' : 'transparent' }}>
-                            <td style={{ padding: '8px 10px', fontWeight: 'bold', fontSize: '1.1rem' }}>
-                              {medals[r.place] ?? <span style={{ color: '#64748b' }}>{r.place}</span>}
+                          <tr
+                            key={r.fencer.id}
+                            style={{
+                              borderBottom: '1px solid #1e293b',
+                              backgroundColor: r.place <= 3 ? 'rgba(251,191,36,0.06)' : 'transparent',
+                            }}
+                          >
+                            <td style={KIOSK_STYLES.elimTdRank}>
+                              {medals[r.place] ?? (
+                                <span style={KIOSK_STYLES.elimTdRankSmall}>{r.place}</span>
+                              )}
                             </td>
-                            <td style={{ padding: '8px 10px', fontWeight: 600 }}>{r.fencer.lastName}</td>
-                            <td style={{ padding: '8px 10px' }}>{r.fencer.firstName}</td>
-                            <td style={{ padding: '8px 10px', color: '#94a3b8', fontSize: '0.9rem' }}>{r.fencer.club || '–'}</td>
-                            <td style={{ padding: '8px 10px', color: '#475569', fontSize: '0.85rem', fontStyle: 'italic' }}>{r.eliminatedAt}</td>
+                            <td style={KIOSK_STYLES.elimTdLast}>{r.fencer.lastName}</td>
+                            <td style={KIOSK_STYLES.elimTdFirst}>{r.fencer.firstName}</td>
+                            <td style={KIOSK_STYLES.elimTdClub}>{r.fencer.club || '–'}</td>
+                            <td style={KIOSK_STYLES.elimTdElimAt}>{r.eliminatedAt}</td>
                           </tr>
                         );
                       })}
@@ -660,6 +1156,24 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
                 </div>
               )}
             </div>
+          )}
+        </div>
+      )}
+
+      {/* ===== OVERLAY NOTE D'ORGANISATION ===== */}
+      {orgNote && (
+        <div style={KIOSK_STYLES.orgNoteOverlay}>
+          <div style={KIOSK_STYLES.orgNotePauseLabel}>⏸ Pause</div>
+          {orgNote.type === 'target_time' && orgNote.targetTime && (
+            <>
+              <div style={KIOSK_STYLES.orgNoteResumeTime}>
+                Reprise à {orgNote.targetTime.replace(':', 'h')}
+              </div>
+              <div style={KIOSK_STYLES.orgNoteCountdown}>dans {orgNoteCountdown}</div>
+            </>
+          )}
+          {orgNote.message && (
+            <div style={KIOSK_STYLES.orgNoteMessage}>«&nbsp;{orgNote.message}&nbsp;»</div>
           )}
         </div>
       )}
@@ -676,4 +1190,4 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
   );
 };
 
-export default KioskDisplay;
+export default React.memo(KioskDisplay);

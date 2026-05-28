@@ -5,37 +5,37 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useTranslation } from '../hooks/useTranslation';
+import { useTranslation } from '../contexts/TranslationContext';
 
 interface Shortcut {
   key: string;
-  description: string;
+  descriptionKey: string;
   category: 'navigation' | 'actions' | 'competition' | 'global';
 }
 
 const SHORTCUTS: Shortcut[] = [
   // Global
-  { key: '?', description: 'keyboard_shortcuts.shortcut_show_help', category: 'global' },
-  { key: 'Ctrl + K', description: 'keyboard_shortcuts.shortcut_quick_search', category: 'global' },
-  { key: 'Esc', description: 'keyboard_shortcuts.shortcut_close_modal', category: 'global' },
+  { key: '?', descriptionKey: 'shortcuts.show_help', category: 'global' },
+  { key: 'Ctrl + K', descriptionKey: 'shortcuts.quick_search', category: 'global' },
+  { key: 'Esc', descriptionKey: 'shortcuts.close_modal', category: 'global' },
 
   // Navigation
-  { key: 'Ctrl + 1', description: 'keyboard_shortcuts.shortcut_go_to_poules', category: 'navigation' },
-  { key: 'Ctrl + 2', description: 'keyboard_shortcuts.shortcut_go_to_table', category: 'navigation' },
-  { key: 'Ctrl + 3', description: 'keyboard_shortcuts.shortcut_go_to_results', category: 'navigation' },
-  { key: 'Tab', description: 'keyboard_shortcuts.shortcut_tab_navigation', category: 'navigation' },
+  { key: 'Ctrl + 1', descriptionKey: 'shortcuts.go_pools', category: 'navigation' },
+  { key: 'Ctrl + 2', descriptionKey: 'shortcuts.go_tableau', category: 'navigation' },
+  { key: 'Ctrl + 3', descriptionKey: 'shortcuts.go_results', category: 'navigation' },
+  { key: 'Tab', descriptionKey: 'shortcuts.nav_fields', category: 'navigation' },
 
   // Actions
-  { key: 'Ctrl + S', description: 'keyboard_shortcuts.shortcut_save', category: 'actions' },
-  { key: 'Ctrl + Z', description: 'keyboard_shortcuts.shortcut_undo', category: 'actions' },
-  { key: 'Ctrl + Y', description: 'keyboard_shortcuts.shortcut_redo', category: 'actions' },
-  { key: 'Ctrl + N', description: 'keyboard_shortcuts.shortcut_new_competition', category: 'actions' },
+  { key: 'Ctrl + S', descriptionKey: 'shortcuts.save', category: 'actions' },
+  { key: 'Ctrl + Z', descriptionKey: 'shortcuts.undo', category: 'actions' },
+  { key: 'Ctrl + Y', descriptionKey: 'shortcuts.redo', category: 'actions' },
+  { key: 'Ctrl + N', descriptionKey: 'shortcuts.new_competition', category: 'actions' },
 
   // Competition
-  { key: 'F5', description: 'keyboard_shortcuts.shortcut_refresh_data', category: 'competition' },
-  { key: 'Space', description: 'keyboard_shortcuts.shortcut_start_pause_timer', category: 'competition' },
-  { key: '↑ ↓', description: 'keyboard_shortcuts.shortcut_navigate_list', category: 'competition' },
-  { key: 'Enter', description: 'keyboard_shortcuts.shortcut_validate_open', category: 'competition' },
+  { key: 'F5', descriptionKey: 'shortcuts.refresh_data', category: 'competition' },
+  { key: 'Space', descriptionKey: 'shortcuts.timer', category: 'competition' },
+  { key: '↑ ↓', descriptionKey: 'shortcuts.nav_list', category: 'competition' },
+  { key: 'Enter', descriptionKey: 'shortcuts.validate', category: 'competition' },
 ];
 
 export const KeyboardShortcutsHelp: React.FC = () => {
@@ -61,11 +61,11 @@ export const KeyboardShortcutsHelp: React.FC = () => {
   if (!isOpen) return null;
 
   const categories = [
-    { id: 'all', label: 'keyboard_shortcuts.category_all', icon: '⌨️' },
-    { id: 'global', label: 'keyboard_shortcuts.category_global', icon: '🌍' },
-    { id: 'navigation', label: 'keyboard_shortcuts.category_navigation', icon: '🧭' },
-    { id: 'actions', label: 'keyboard_shortcuts.category_actions', icon: '⚡' },
-    { id: 'competition', label: 'keyboard_shortcuts.category_competition', icon: '🤺' },
+    { id: 'all', label: t('shortcuts.category_all'), icon: '⌨️' },
+    { id: 'global', label: t('shortcuts.category_global'), icon: '🌍' },
+    { id: 'navigation', label: t('shortcuts.category_navigation'), icon: '🧭' },
+    { id: 'actions', label: t('shortcuts.category_actions'), icon: '⚡' },
+    { id: 'competition', label: t('shortcuts.category_competition'), icon: '🤺' },
   ];
 
   const filteredShortcuts =
@@ -106,11 +106,9 @@ export const KeyboardShortcutsHelp: React.FC = () => {
           }}
         >
           <div>
-            <h2 style={{ margin: 0, fontSize: '24px', color: '#111827' }}>
-              ⌨️ {t('keyboard_shortcuts.header')}
-            </h2>
+            <h2 style={{ margin: 0, fontSize: '24px', color: '#111827' }}>⌨️ {t('shortcuts.title')}</h2>
             <p style={{ margin: '4px 0 0 0', color: '#6b7280', fontSize: '14px' }}>
-              {t('keyboard_shortcuts.subheader')}
+              {t('shortcuts.subtitle')}
             </p>
           </div>
           <button
@@ -158,7 +156,7 @@ export const KeyboardShortcutsHelp: React.FC = () => {
                 color: activeCategory === cat.id ? 'white' : '#374151',
               }}
             >
-              {cat.icon} {t(cat.label)}
+              {cat.icon} {cat.label}
             </button>
           ))}
         </div>
@@ -204,7 +202,7 @@ export const KeyboardShortcutsHelp: React.FC = () => {
                     paddingLeft: '8px',
                   }}
                 >
-                  {t(shortcut.description)}
+                  {t(shortcut.descriptionKey)}
                 </span>
               </React.Fragment>
             ))}
@@ -222,7 +220,7 @@ export const KeyboardShortcutsHelp: React.FC = () => {
             textAlign: 'center',
           }}
         >
-          {t('keyboard_shortcuts.footer_press')}{' '}
+          {t('shortcuts.footer').split('?')[0]}
           <kbd
             style={{
               padding: '2px 6px',
@@ -233,12 +231,12 @@ export const KeyboardShortcutsHelp: React.FC = () => {
             }}
           >
             ?
-          </kbd>{' '}
-          {t('keyboard_shortcuts.footer_to_show')}
+          </kbd>
+          {t('shortcuts.footer').split('?')[1]}
         </div>
       </div>
     </div>
   );
 };
 
-export default KeyboardShortcutsHelp;
+export default React.memo(KeyboardShortcutsHelp);

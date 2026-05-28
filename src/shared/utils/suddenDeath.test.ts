@@ -14,6 +14,7 @@ import {
   getMatchDuration,
   formatSuddenDeathTime,
   getSuddenDeathRules,
+  isSupplementaryTime,
 } from './suddenDeath';
 import { MatchMode, TargetZone } from '../types';
 
@@ -66,17 +67,34 @@ describe('checkChallengerSuddenDeath', () => {
 
 describe('checkTimeoutSuddenDeath', () => {
   describe('Déclenchement', () => {
-    it('se déclenche si temps = 0 ET égalité', () => {
+    it('retourne SUPPLEMENTARY_TIME si scores < 10 à égalité', () => {
       const result = checkTimeoutSuddenDeath(0, 7, 7);
 
       expect(result.shouldTrigger).toBe(true);
-      expect(result.mode).toBe(MatchMode.SUDDEN_DEATH_TIMEOUT);
+      expect(result.mode).toBe(MatchMode.SUPPLEMENTARY_TIME);
+    });
+
+    it('retourne SUPPLEMENTARY_TIME si scores = 9 à égalité (sous le seuil)', () => {
+      expect(checkTimeoutSuddenDeath(0, 9, 9).mode).toBe(MatchMode.SUPPLEMENTARY_TIME);
     });
 
     it('se déclenche même avec égalité à 0-0', () => {
       const result = checkTimeoutSuddenDeath(0, 0, 0);
 
       expect(result.shouldTrigger).toBe(true);
+      expect(result.mode).toBe(MatchMode.SUPPLEMENTARY_TIME);
+    });
+
+    it('retourne SUDDEN_DEATH_TIMEOUT si scores = 10 à égalité', () => {
+      const result = checkTimeoutSuddenDeath(0, 10, 10);
+
+      expect(result.shouldTrigger).toBe(true);
+      expect(result.mode).toBe(MatchMode.SUDDEN_DEATH_TIMEOUT);
+    });
+
+    it('retourne SUDDEN_DEATH_TIMEOUT si scores > 10 à égalité', () => {
+      expect(checkTimeoutSuddenDeath(0, 11, 11).mode).toBe(MatchMode.SUDDEN_DEATH_TIMEOUT);
+      expect(checkTimeoutSuddenDeath(0, 13, 13).mode).toBe(MatchMode.SUDDEN_DEATH_TIMEOUT);
     });
   });
 
@@ -129,6 +147,18 @@ describe('isValidSuddenDeathTouch', () => {
     });
   });
 
+  describe('En mode Temps Supplémentaire', () => {
+    it('Toutes les zones sont VALIDES (A, B, C)', () => {
+      const resultA = isValidSuddenDeathTouch(TargetZone.ZONE_A, MatchMode.SUPPLEMENTARY_TIME);
+      const resultB = isValidSuddenDeathTouch(TargetZone.ZONE_B, MatchMode.SUPPLEMENTARY_TIME);
+      const resultC = isValidSuddenDeathTouch(TargetZone.ZONE_C, MatchMode.SUPPLEMENTARY_TIME);
+
+      expect(resultA.isValid).toBe(true);
+      expect(resultB.isValid).toBe(true);
+      expect(resultC.isValid).toBe(true);
+    });
+  });
+
   describe('En mode Normal', () => {
     it('Toutes les zones sont VALIDES', () => {
       const resultA = isValidSuddenDeathTouch(TargetZone.ZONE_A, MatchMode.NORMAL);
@@ -161,6 +191,18 @@ describe('shouldEndMatch', () => {
     it('respecte un maxScore personnalisé', () => {
       expect(shouldEndMatch(MatchMode.NORMAL, 10, 5, undefined, 10)).toBe(true);
       expect(shouldEndMatch(MatchMode.NORMAL, 9, 5, undefined, 10)).toBe(false);
+    });
+  });
+
+  describe('Mode Temps Supplémentaire', () => {
+    it('termine dès qu\'il y a un écart de score', () => {
+      expect(shouldEndMatch(MatchMode.SUPPLEMENTARY_TIME, 11, 10)).toBe(true);
+      expect(shouldEndMatch(MatchMode.SUPPLEMENTARY_TIME, 10, 12)).toBe(true);
+    });
+
+    it('ne termine PAS s\'il y a égalité', () => {
+      expect(shouldEndMatch(MatchMode.SUPPLEMENTARY_TIME, 10, 10)).toBe(false);
+      expect(shouldEndMatch(MatchMode.SUPPLEMENTARY_TIME, 0, 0)).toBe(false);
     });
   });
 
@@ -232,5 +274,21 @@ describe('Constantes et formatage', () => {
 
     expect(rules.length).toBeGreaterThan(0);
     expect(rules.some(r => r.includes('ZONE C'))).toBe(true);
+  });
+});
+
+// ============================================================================
+// Tests pour isSupplementaryTime
+// ============================================================================
+
+describe('isSupplementaryTime', () => {
+  it('retourne true pour SUPPLEMENTARY_TIME', () => {
+    expect(isSupplementaryTime(MatchMode.SUPPLEMENTARY_TIME)).toBe(true);
+  });
+
+  it('retourne false pour les autres modes', () => {
+    expect(isSupplementaryTime(MatchMode.NORMAL)).toBe(false);
+    expect(isSupplementaryTime(MatchMode.SUDDEN_DEATH_CHALLENGER)).toBe(false);
+    expect(isSupplementaryTime(MatchMode.SUDDEN_DEATH_TIMEOUT)).toBe(false);
   });
 });

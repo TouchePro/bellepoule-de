@@ -13,6 +13,7 @@ export enum Weapon {
   FOIL = 'F',
   SABRE = 'S',
   LASER = 'L', // Sabre Laser
+  CUSTOM = 'C', // Formule à la carte
 }
 
 export enum Gender {
@@ -74,6 +75,19 @@ export interface Card {
   resultingExclusion: boolean;
 }
 
+export interface WeaponCardScoreImpact {
+  white: number;
+  yellow: number;
+  red: number;
+  black: number;
+}
+
+export interface WeaponCardConfig {
+  availableReasons: CardReason[];
+  reasonToGroup: Partial<Record<CardReason, CardGroup>>;
+  scoreImpact: WeaponCardScoreImpact;
+}
+
 // ============================================================================
 // Match Mode (Sudden Death)
 // ============================================================================
@@ -82,6 +96,7 @@ export enum MatchMode {
   NORMAL = 'normal',
   SUDDEN_DEATH_CHALLENGER = 'sudden_death_challenger',
   SUDDEN_DEATH_TIMEOUT = 'sudden_death_timeout',
+  SUPPLEMENTARY_TIME = 'supplementary_time',
 }
 
 // ============================================================================
@@ -136,6 +151,7 @@ export enum MatchStatus {
 export enum PhaseType {
   CHECKIN = 'checkin',
   POOL = 'pool',
+  QUEST = 'quest',
   DIRECT_ELIMINATION = 'direct_elimination',
   CLASSIFICATION = 'classification',
 }
@@ -174,7 +190,7 @@ export interface Fencer extends BaseEntity {
   birthDate?: Date; // Date de naissance
   gender: Gender; // Sexe
   nationality: string; // Nation (code ISO)
-  league?: string; // Ligue/Région
+  region?: string; // Région
   club?: string; // Club
   license?: string; // Numéro de licence
   ranking?: number; // Classement
@@ -202,6 +218,7 @@ export interface PoolStats {
   index: number; // Indice (TD - TR)
   matchesPlayed: number; // Matchs joués
   victoryRatio: number; // V/M (ratio victoires/matchs)
+  maxSingleMatchScore?: number; // Meilleur score marqué en un seul match
   poolRank?: number; // Rang dans la poule
   overallRank?: number; // Rang général après poules
 }
@@ -217,7 +234,7 @@ export interface Referee extends BaseEntity {
   birthDate?: Date;
   gender: Gender;
   nationality: string;
-  league?: string;
+  region?: string;
   club?: string; // Club d'affiliation pour éviter les conflits d'intérêts
   license?: string;
   category?: string; // Niveau d'arbitrage (Régional, National, International)
@@ -303,6 +320,37 @@ export interface PoolRanking {
   questVictories3?: number; // Nombre de victoires à 3 points (écart 8-11)
   questVictories2?: number; // Nombre de victoires à 2 points (écart 4-7)
   questVictories1?: number; // Nombre de victoires à 1 point (écart ≤3)
+  totalCards?: number;      // Nombre total de cartons reçus (critère de départage Quest)
+  maxSingleMatchScore?: number; // Meilleur score marqué en un seul match
+}
+
+// ============================================================================
+// Statistiques par combattant
+// ============================================================================
+
+export interface FencerCompetitionStats {
+  fencerId: string;
+  fencerLastName: string;
+  fencerFirstName: string;
+  fencerClub?: string;
+  competitionId: string;
+  // Touches Laser Sabre (zones A=1pt, B=3pts, C=5pts)
+  touchesZoneA: number;
+  touchesZoneB: number;
+  touchesZoneC: number;
+  totalTouchPoints: number;
+  // Cartons
+  whiteCards: number;
+  yellowCards: number;
+  redCards: number;
+  cardsByReason: Partial<Record<CardReason, number>>;
+  // Sorties d'arène
+  arenaExits: number;
+  // Durée des matchs
+  matchesPlayed: number;
+  totalDurationSeconds: number;
+  averageDurationSeconds: number;
+  matchesFinishedEarly: number; // durée < 180s (avant le temps réglementaire)
 }
 
 // ============================================================================
@@ -327,9 +375,99 @@ export interface PoolPhaseConfig {
   seeding: 'serpentine' | 'sequential' | 'random'; // Méthode de répartition
   separation: {
     byClub: boolean; // Séparer par club
-    byLeague: boolean; // Séparer par ligue
+    byRegion: boolean; // Séparer par région
     byNation: boolean; // Séparer par nation
   };
+}
+
+// ============================================================================
+// Custom Formula Types (Arme CUSTOM — Formule à la carte)
+// ============================================================================
+
+export type RankingCriterionId =
+  | 'vm_ratio'
+  | 'index'
+  | 'touches_scored'
+  | 'touches_received'
+  | 'direct_bout'
+  | 'initial_ranking'
+  | 'custom_points';
+
+export interface RankingCriterion {
+  id: RankingCriterionId;
+  direction: 'asc' | 'desc';
+  enabled: boolean;
+}
+
+export type AdvancementMode = 'all' | 'percentage' | 'fixed_count' | 'fixed_bracket';
+
+export interface AdvancementRule {
+  mode: AdvancementMode;
+  percentage?: number; // 0-100, utilisé si mode === 'percentage'
+  count?: number; // utilisé si mode === 'fixed_count' ou 'fixed_bracket'
+}
+
+export interface CustomTouchZone {
+  id: string;
+  label: string; // ex: "Tête", "Corps", "Bras"
+  points: number; // ex: 3, 2, 1
+  color?: string; // couleur pour l'UI
+}
+
+export interface CustomScoringConfig {
+  type: 'standard' | 'zones';
+  maxScore: number;
+  zones?: CustomTouchZone[]; // si type === 'zones'
+}
+
+export interface CustomPoolRoundConfig extends PoolPhaseConfig {
+  roundIndex: number;
+  maxScore: number;
+  timerSeconds: number;
+  scoring: CustomScoringConfig;
+  rankingCriteria: RankingCriterion[];
+  advancementRule: AdvancementRule;
+}
+
+export interface CustomDEConfig extends DirectEliminationConfig {
+  timerSeconds: number;
+  bracketSizeOverride?: number; // forcer 32/64/etc au lieu d'auto
+  fifthPlaceMatch?: boolean;
+  scoring: CustomScoringConfig;
+}
+
+export type FormulaPhaseNodeType = 'pool_round' | 'direct_elimination' | 'classification';
+
+export interface FormulaPhaseNode {
+  id: string;
+  type: FormulaPhaseNodeType;
+  label?: string;
+  config: CustomPoolRoundConfig | CustomDEConfig;
+}
+
+export interface CustomFormulaConfig {
+  version: 1;
+  phases: FormulaPhaseNode[];
+  formulaName?: string;
+  notes?: string;
+}
+
+export interface FormulaPhaseSimulation {
+  phaseIndex: number;
+  type: FormulaPhaseNodeType;
+  inputFencers: number;
+  poolCount?: number;
+  poolSizes?: number[];
+  matchCount?: number;
+  advancingFencers?: number;
+  bracketSize?: number;
+}
+
+export interface FormulaSimulation {
+  phases: FormulaPhaseSimulation[];
+  totalMatches: number;
+  estimatedDurationMinutes: number;
+  warnings: string[];
 }
 
 // ============================================================================
@@ -406,9 +544,25 @@ export interface Competition extends BaseEntity {
   status: 'draft' | 'in_progress' | 'completed' | 'cancelled';
 }
 
+// ============================================================================
+// Quest Phase Configuration (Sabre Laser)
+// ============================================================================
+
+export interface QuestPhaseConfig {
+  enabled: boolean;
+  hasPreliminaryPools: boolean;
+  qualifiersCount?: number;
+  fightsPerFencer?: number;
+  availableTimeMinutes?: number;
+  numberOfArenas?: number;
+  opponentConstraint: 'none' | 'club' | 'region' | 'nation';
+}
+
 export interface CompetitionSettings {
   defaultPoolMaxScore: number; // Score max en poules (défaut: 5)
   defaultTableMaxScore: number; // Score max en tableau (défaut: 10 ou 15)
+  defaultPoolTimerSeconds: number; // Durée chrono poules en secondes (défaut: 180)
+  defaultTableTimerSeconds: number; // Durée chrono tableau en secondes (défaut: 180)
   poolRounds: number; // Nombre de tours de poules (défaut: 1)
   hasDirectElimination: boolean; // Phase d'élimination directe activée (défaut: true)
   thirdPlaceMatch: boolean; // Match pour la 3ème place activé (défaut: false)
@@ -416,6 +570,13 @@ export interface CompetitionSettings {
   defaultRanking: number; // Classement par défaut pour non-classés
   randomScore: boolean; // Scores aléatoires (pour tests)
   minTeamSize: number; // Taille min équipe (compétitions par équipes)
+  questConfig?: QuestPhaseConfig; // Configuration du Tour Quest (Sabre Laser uniquement)
+  refereeFeatureEnabled?: boolean; // Activer la gestion des arbitres sur arènes et saisie distante
+  customFormula?: CustomFormulaConfig; // Formule à la carte (arme CUSTOM uniquement)
+  playAllPositions?: boolean; // Jouer toutes les places (tableaux de classement)
+  expertMode?: boolean; // Mode expert : édition avancée des pistes et arbitres
+  maxRefereesPerPool?: number; // Nombre max d'arbitres par poule (mode expert)
+  maxRefereesPerMatch?: number; // Nombre max d'arbitres par match DE (mode expert)
 }
 
 export interface Phase extends BaseEntity {
@@ -490,4 +651,40 @@ export interface UISettings {
   showTips: boolean;
   autoSave: boolean;
   autoSaveInterval: number; // En secondes
+}
+
+// ============================================================================
+// Match Timeline (Audit Log) Types
+// ============================================================================
+
+export type MatchEventType = 'score_change' | 'touch' | 'card' | 'arena_exit';
+
+export interface MatchEventEntry {
+  id: string;
+  matchId: string;
+  eventType: MatchEventType;
+  timestamp: string; // ISO 8601
+  fencerId: string | null;
+  fencerLastName: string | null;
+  fencerFirstName: string | null;
+  fencerSide: 'A' | 'B' | null;
+  // score_change
+  previousScoreA: { value: number | null } | null;
+  previousScoreB: { value: number | null } | null;
+  newScoreA: { value: number | null } | null;
+  newScoreB: { value: number | null } | null;
+  changedBy: string | null;
+  refereeName: string | null;
+  ipAddress: string | null;
+  changeReason: string | null;
+  // touch
+  zone: string | null;
+  points: number | null;
+  // card
+  cardType: string | null;
+  cardReason: string | null;
+  cardGroup: number | null;
+  resultingExclusion: boolean | null;
+  // arena_exit
+  exitType: string | null;
 }

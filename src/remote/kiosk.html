@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Kiosk - BellePoule Modern</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/i18n.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -131,10 +133,11 @@
       .kiosk-view {
         position: fixed;
         inset: 0;
-        padding: 2.5rem 2.5rem 1.5rem;
+        padding: 1.25rem 1rem 0.5rem;
         overflow: hidden;
         display: none;
         flex-direction: column;
+        background: #0f172a;
       }
 
       .kiosk-view.active {
@@ -146,12 +149,12 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 1.5rem;
+        margin-bottom: 0.6rem;
         flex-shrink: 0;
       }
 
       .view-title {
-        font-size: 1.75rem;
+        font-size: 1.2rem;
         font-weight: 800;
         background: linear-gradient(90deg, #fbbf24, #f59e0b);
         -webkit-background-clip: text;
@@ -177,10 +180,12 @@
       /* Vue Poules */
       #view-poules .pools-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-        gap: 1rem;
+        grid-template-columns: repeat(auto-fill, minmax(275px, 1fr));
+        gap: 0.5rem;
         overflow-y: auto;
         flex: 1;
+        align-items: start;
+        align-content: start;
       }
 
       .pool-card {
@@ -191,7 +196,7 @@
       }
 
       .pool-card-header {
-        padding: 0.75rem 1rem;
+        padding: 0.35rem 0.7rem;
         background: rgba(59, 130, 246, 0.15);
         display: flex;
         justify-content: space-between;
@@ -228,7 +233,7 @@
       }
 
       .pool-table th {
-        padding: 0.5rem 0.75rem;
+        padding: 0.25rem 0.5rem;
         text-align: left;
         font-size: 0.7rem;
         font-weight: 600;
@@ -238,7 +243,7 @@
       }
 
       .pool-table td {
-        padding: 0.5rem 0.75rem;
+        padding: 0.25rem 0.5rem;
         border-bottom: 1px solid rgba(255, 255, 255, 0.04);
       }
 
@@ -252,7 +257,13 @@
       .rank-3 { color: #b45309; }
 
       .fencer-name { font-weight: 500; }
-      .fencer-club { font-size: 0.7rem; color: #64748b; }
+      .fencer-club {
+        font-size: 0.62rem;
+        color: #64748b;
+        display: inline;
+        margin-left: 0.35em;
+      }
+      .fencer-club::before { content: '· '; }
 
       td.victories { text-align: center; color: #10b981; font-weight: 600; }
       td.ind { text-align: center; color: #60a5fa; }
@@ -324,6 +335,7 @@
         gap: 1.25rem;
         flex: 1;
         overflow-y: auto;
+        align-content: start;
       }
 
       .arena-card {
@@ -406,6 +418,8 @@
 
       .score-a { color: #ef4444; }
       .score-b { color: #10b981; }
+      .fencer-red { border-left: 3px solid #ef4444; padding-left: 0.5rem; }
+      .fencer-green { border-right: 3px solid #10b981; padding-right: 0.5rem; }
 
       .arena-vs {
         font-size: 1rem;
@@ -418,6 +432,96 @@
         padding: 1.5rem;
         color: #475569;
         font-size: 0.875rem;
+      }
+
+      /* Vue Matchs suivants */
+      #view-suivants .suivants-list {
+        flex: 1;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        border-radius: 0.75rem;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .suivants-pool-header {
+        padding: 0.35rem 1rem;
+        background: rgba(59, 130, 246, 0.12);
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #93c5fd;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        border-bottom: 1px solid rgba(59, 130, 246, 0.15);
+        position: sticky;
+        top: 0;
+        z-index: 1;
+      }
+
+      .suivants-row {
+        display: grid;
+        grid-template-columns: 2.5rem 1fr auto 1fr auto;
+        align-items: center;
+        padding: 0.55rem 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        transition: background 0.15s;
+      }
+
+      .suivants-row:last-child {
+        border-bottom: none;
+      }
+
+      .suivants-row.ongoing {
+        background: rgba(16, 185, 129, 0.06);
+        border-left: 3px solid #10b981;
+      }
+
+      .suivants-num {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #475569;
+        text-align: center;
+      }
+
+      .suivants-fencer {
+        font-weight: 500;
+        color: #e2e8f0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .suivants-fencer .fclub {
+        font-size: 0.68rem;
+        color: #64748b;
+        margin-left: 0.3em;
+      }
+
+      .suivants-vs {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #475569;
+        flex-shrink: 0;
+      }
+
+      .suivants-status {
+        font-size: 0.65rem;
+        padding: 0.15rem 0.5rem;
+        border-radius: 1rem;
+        background: rgba(100, 116, 139, 0.2);
+        color: #94a3b8;
+        white-space: nowrap;
+        justify-self: end;
+      }
+
+      .suivants-status.en-cours {
+        background: rgba(16, 185, 129, 0.2);
+        color: #10b981;
+        animation: blink 1.5s ease infinite;
       }
 
       /* No data */
@@ -439,6 +543,283 @@
       ::-webkit-scrollbar { width: 4px; height: 4px; }
       ::-webkit-scrollbar-track { background: transparent; }
       ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+      /* ── Animations de score ────────────────────────────────────────────── */
+
+      /* inline-block requis pour que transform fonctionne sur les <span> */
+      .arena-score { display: inline-block; }
+
+      /* Option A — Flash doré + micro-bounce (principal) */
+      @keyframes score-pop-flash {
+        0%   { transform: scale(1);    color: inherit; filter: none; }
+        25%  { transform: scale(1.35); color: #fbbf24; filter: drop-shadow(0 0 10px rgba(251,191,36,0.9)); }
+        65%  { transform: scale(1.1);  color: #f59e0b; filter: drop-shadow(0 0 4px rgba(251,191,36,0.4)); }
+        100% { transform: scale(1);    color: inherit; filter: none; }
+      }
+
+      .score-updated {
+        animation: score-pop-flash 0.65s ease-out forwards;
+      }
+
+      /* Option C — Épéiste slash (fun 🤺) */
+      /* Déclenché quand le score augmente d'un coup important (≥3 pts) */
+      @keyframes epee-slash {
+        0%   { left: -1.8em; opacity: 1;   transform: translateY(-55%) rotate(-15deg); }
+        70%  {               opacity: 1; }
+        100% { left: 115%;   opacity: 0;   transform: translateY(-55%) rotate(-15deg); }
+      }
+
+      .score-slash {
+        position: relative;
+      }
+
+      .score-slash::after {
+        content: '🤺';
+        position: absolute;
+        top: 50%;
+        transform: translateY(-55%) rotate(-15deg);
+        font-size: 0.85rem;
+        pointer-events: none;
+        animation: epee-slash 0.55s ease-in forwards;
+      }
+
+      /* ── Bouton & panneau de configuration des vues ─────────────────────── */
+      .settings-btn {
+        padding: 0.4rem 0.75rem;
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 0.5rem;
+        background: rgba(255,255,255,0.05);
+        color: white;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .settings-btn:hover { background: #374151; }
+
+      .settings-panel {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        right: 0;
+        background: #1e293b;
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 0.75rem;
+        padding: 0.75rem 1rem;
+        min-width: 180px;
+        z-index: 200;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      }
+
+      .settings-panel.hidden { display: none; }
+
+      .settings-title {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+      }
+
+      .settings-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.35rem 0;
+        font-size: 0.875rem;
+        cursor: pointer;
+        color: #e2e8f0;
+        user-select: none;
+      }
+
+      .settings-item input[type="checkbox"] {
+        accent-color: #3b82f6;
+        width: 14px;
+        height: 14px;
+        cursor: pointer;
+      }
+    /* ─── Overlay note d'organisation ── */
+    #org-note-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 10500;
+      background: rgba(2, 6, 23, 0.88);
+      backdrop-filter: blur(6px);
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-evenly;
+      text-align: center;
+      padding: 3rem;
+    }
+    #org-note-overlay.visible { display: flex; }
+    #org-note-label {
+      font-size: clamp(2rem, 5vw, 4rem);
+      color: #64748b;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+    #org-note-time {
+      font-size: clamp(4rem, 14vw, 12rem);
+      font-weight: 700;
+      color: #f1f5f9;
+    }
+    #org-note-countdown {
+      font-size: clamp(3rem, 10vw, 8rem);
+      font-weight: 800;
+      color: #3b82f6;
+      font-variant-numeric: tabular-nums;
+    }
+    #org-note-message {
+      font-size: clamp(2rem, 7vw, 6rem);
+      color: #94a3b8;
+      font-style: italic;
+    }
+      /* ── Vue Tableau d'élimination directe ─────────────────────────────── */
+      #view-tableau .bracket-outer {
+        flex: 1;
+        overflow-x: auto;
+        overflow-y: hidden;
+        position: relative;
+        scroll-behavior: smooth;
+      }
+
+      #view-tableau .bracket-inner {
+        position: relative;
+        display: inline-block;
+        min-width: 100%;
+      }
+
+      .bracket-round-labels {
+        position: relative;
+        height: 28px;
+        margin-bottom: 6px;
+        flex-shrink: 0;
+      }
+
+      .bracket-round-label {
+        position: absolute;
+        text-align: center;
+        font-size: 0.62rem;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        padding: 0.2rem 0;
+        border-radius: 0.3rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .bracket-round-label.active-round {
+        color: #fbbf24;
+        background: rgba(251, 191, 36, 0.08);
+      }
+
+      .bracket-matches-layer {
+        position: relative;
+        flex-shrink: 0;
+      }
+
+      .bracket-match {
+        position: absolute;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        border-radius: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        transition: border-color 0.3s;
+      }
+
+      .bracket-match.match--live {
+        border-color: rgba(16, 185, 129, 0.6);
+        background: rgba(16, 185, 129, 0.06);
+        animation: bracket-pulse 2s ease infinite;
+      }
+
+      .bracket-match.match--finished {
+        border-color: rgba(100, 116, 139, 0.25);
+      }
+
+      .bracket-match.match--bye {
+        opacity: 0.2;
+      }
+
+      @keyframes bracket-pulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.3); }
+        50%       { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+      }
+
+      .bm-row {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 0.4rem;
+        gap: 0.25rem;
+        min-width: 0;
+      }
+
+      .bm-winner { background: rgba(251, 191, 36, 0.12); }
+      .bm-loser  { opacity: 0.38; }
+
+      .bm-name {
+        font-size: 0.75rem;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+        flex: 1;
+      }
+
+      .bm-score {
+        font-size: 0.88rem;
+        font-weight: 900;
+        color: #fbbf24;
+        min-width: 1.1rem;
+        text-align: right;
+        flex-shrink: 0;
+      }
+
+      .bm-divider {
+        height: 1px;
+        background: rgba(255, 255, 255, 0.07);
+        flex-shrink: 0;
+      }
+
+      .bm-arena {
+        font-size: 0.55rem;
+        color: #475569;
+        text-align: center;
+        padding: 0.05rem 0;
+        flex-shrink: 0;
+      }
+
+      .bracket-svg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        overflow: visible;
+        pointer-events: none;
+      }
+
+      .bracket-trophy-banner {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.3rem 0.6rem;
+        background: rgba(251, 191, 36, 0.12);
+        border-radius: 0.4rem;
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #fbbf24;
+        margin-top: 4px;
+        flex-shrink: 0;
+      }
     </style>
   </head>
   <body>
@@ -447,16 +828,55 @@
       <div id="progress-bar"></div>
     </div>
 
+    <!-- Overlay note d'organisation -->
+    <div id="org-note-overlay">
+      <div id="org-note-label" data-i18n="kiosk.pause">⏸ Pause</div>
+      <div id="org-note-time"></div>
+      <div id="org-note-countdown"></div>
+      <div id="org-note-message"></div>
+    </div>
+
     <!-- Menu escamotable -->
     <div id="kiosk-menu">
       <div style="display:flex;align-items:center">
+        <img id="org-logo" src="" alt="Logo" style="max-height:36px;max-width:120px;object-fit:contain;display:none;margin-right:10px;border-radius:3px;" />
         <span class="menu-title">🏆 BellePoule</span>
         <span class="menu-competition" id="menu-competition-name">—</span>
       </div>
       <div class="menu-nav">
-        <button id="btn-poules" class="active" onclick="switchView('poules')">Poules</button>
-        <button id="btn-classement" onclick="switchView('classement')">Classement</button>
-        <button id="btn-direct" onclick="switchView('direct')">Matchs en direct</button>
+        <button id="btn-poules" class="active" onclick="switchView('poules')" data-i18n="kiosk.pools">Poules</button>
+        <button id="btn-classement" onclick="switchView('classement')" data-i18n="kiosk.ranking">Classement</button>
+        <button id="btn-direct" onclick="switchView('direct')" data-i18n="kiosk.live">Matchs en direct</button>
+        <button id="btn-suivants" onclick="switchView('suivants')" data-i18n="kiosk.next_matches">Matchs suivants</button>
+        <button id="btn-tableau" onclick="switchView('tableau')">Tableau DE</button>
+      </div>
+      <div style="position:relative;margin-left:0.5rem">
+        <button id="btn-settings" class="settings-btn" title="Configurer les vues">⚙</button>
+        <div id="settings-panel" class="settings-panel hidden">
+          <div class="settings-title" data-i18n="kiosk.settings_title">Vues affichées</div>
+          <label class="settings-item">
+            <input type="checkbox" id="cb-poules" checked> <span data-i18n="kiosk.pools">Poules</span>
+          </label>
+          <label class="settings-item">
+            <input type="checkbox" id="cb-classement" checked> <span data-i18n="kiosk.ranking">Classement</span>
+          </label>
+          <label class="settings-item">
+            <input type="checkbox" id="cb-direct" checked> <span data-i18n="kiosk.live_matches">Matchs en cours</span>
+          </label>
+          <label class="settings-item">
+            <input type="checkbox" id="cb-suivants" checked> Matchs suivants
+          </label>
+          <label class="settings-item">
+            <input type="checkbox" id="cb-tableau" checked> Tableau DE
+          </label>
+          <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:0.5rem 0">
+          <div class="settings-title" data-i18n="kiosk.rotation_label">Rafraîchissement</div>
+          <div class="settings-item">
+            <input type="number" id="rotation-input" min="3" max="300" value="15"
+              style="width:56px;background:#0f172a;border:1px solid rgba(255,255,255,0.2);border-radius:0.4rem;color:#e2e8f0;padding:0.2rem 0.4rem;font-size:0.875rem">
+            <span data-i18n="kiosk.rotation_unit">s</span>
+          </div>
+        </div>
       </div>
       <div class="menu-status">
         <div id="status-dot" class="status-dot"></div>
@@ -468,16 +888,16 @@
     <div id="view-poules" class="kiosk-view active">
       <div class="view-header">
         <div>
-          <div class="view-title">Poules</div>
-          <div class="view-subtitle" id="poules-subtitle">Classements des poules</div>
+          <div class="view-title" data-i18n="kiosk.pools">Poules</div>
+          <div class="view-subtitle" id="poules-subtitle" data-i18n="kiosk.pools_subtitle">Classements des poules</div>
         </div>
         <div class="view-badge" id="poules-badge">—</div>
       </div>
       <div class="pools-grid" id="pools-container">
         <div class="no-data">
           <div class="no-data-icon">🤺</div>
-          <h3>Aucune poule disponible</h3>
-          <p>Démarrez la compétition pour voir les poules</p>
+          <h3 data-i18n="kiosk.no_pools">Aucune poule disponible</h3>
+          <p data-i18n="kiosk.no_pools_hint">Démarrez la compétition pour voir les poules</p>
         </div>
       </div>
     </div>
@@ -514,6 +934,44 @@
       </div>
     </div>
 
+    <!-- Vue Matchs suivants -->
+    <div id="view-suivants" class="kiosk-view">
+      <div class="view-header">
+        <div>
+          <div class="view-title">Matchs Suivants</div>
+          <div class="view-subtitle">Ordre de passage</div>
+        </div>
+        <div class="view-badge" id="suivants-badge">—</div>
+      </div>
+      <div class="suivants-list" id="suivants-container">
+        <div class="no-data">
+          <div class="no-data-icon">📋</div>
+          <h3>Aucun match à venir</h3>
+          <p>Les matchs suivants apparaîtront ici</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vue Tableau d'élimination directe -->
+    <div id="view-tableau" class="kiosk-view">
+      <div class="view-header">
+        <div>
+          <div class="view-title">Tableau d'Élimination</div>
+          <div class="view-subtitle" id="tableau-subtitle">Tableau direct</div>
+        </div>
+        <div class="view-badge" id="tableau-badge">—</div>
+      </div>
+      <div class="bracket-outer" id="bracket-outer">
+        <div class="bracket-inner" id="bracket-inner">
+          <div class="no-data">
+            <div class="no-data-icon">🏆</div>
+            <h3>Tableau non disponible</h3>
+            <p>Le tableau apparaîtra lors de la phase d'élimination directe</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Vue Matchs en direct -->
     <div id="view-direct" class="kiosk-view">
       <div class="view-header">
@@ -534,20 +992,69 @@
 
     <script>
       // ─── État ────────────────────────────────────────────────────────────────
+      const ALL_VIEWS = ['poules', 'classement', 'direct', 'suivants', 'tableau'];
+
       const state = {
         currentView: 'poules',
-        views: ['poules', 'classement', 'direct'],
+        views: ['poules', 'classement', 'direct', 'suivants', 'tableau'],
         rotationMs: 15000,
         rotationTimer: null,
         progressTimer: null,
         progressStart: null,
         menuTimer: null,
         session: null,
-        poolsData: [],   // pools avec rankings
-        arenasData: [],  // arènes
+        poolsData: [],
+        arenasData: [],
+        upcomingData: [],
         overallRanking: [],
         lastUpdate: null,
+        prevArenaScores: {},
+        bracketData: null,
+        bracketPanTimer: null,
+        bracketPanIndex: 0,
       };
+
+      // ─── Note d'organisation ─────────────────────────────────────────────────
+      let _orgNoteInterval = null;
+      let _currentOrgNote = null;
+
+      function renderOrgNote(note) {
+        clearInterval(_orgNoteInterval);
+        _orgNoteInterval = null;
+        _currentOrgNote = note;
+        const overlay = document.getElementById('org-note-overlay');
+        if (!note) { overlay.classList.remove('visible'); return; }
+
+        document.getElementById('org-note-message').innerHTML = note.message
+          ? '\u00ab\u00a0' + escHtml(note.message) + '\u00a0\u00bb'
+          : '';
+
+        if (note.type === 'target_time' && note.targetTime) {
+          const [hh, mm] = note.targetTime.split(':').map(Number);
+          const fmtTime = String(hh).padStart(2, '0') + 'h' + String(mm).padStart(2, '0');
+          document.getElementById('org-note-time').textContent = (note.countdownPrefix || window.T('kiosk.resume_at')) + ' à ' + fmtTime;
+
+          const computeCountdown = () => {
+            const now = new Date();
+            const target = new Date(now);
+            target.setHours(hh, mm, 0, 0);
+            if (target <= now) target.setDate(target.getDate() + 1);
+            const diffSec = Math.max(0, Math.floor((target.getTime() - now.getTime()) / 1000));
+            const m = Math.floor(diffSec / 60);
+            const s = diffSec % 60;
+            document.getElementById('org-note-countdown').textContent =
+              window.T('kiosk.countdown_prefix') + ' ' + m + ' min ' + String(s).padStart(2, '0') + ' s';
+            if (diffSec === 0) { clearInterval(_orgNoteInterval); overlay.classList.remove('visible'); }
+          };
+          computeCountdown();
+          _orgNoteInterval = setInterval(computeCountdown, 1000);
+        } else {
+          document.getElementById('org-note-time').textContent = '';
+          document.getElementById('org-note-countdown').textContent = '';
+        }
+
+        overlay.classList.add('visible');
+      }
 
       // ─── Rotation automatique ────────────────────────────────────────────────
       function startRotation() {
@@ -571,17 +1078,32 @@
       function switchView(name) {
         state.currentView = name;
 
-        state.views.forEach(v => {
+        // Stopper le pan du bracket si on quitte la vue tableau
+        clearInterval(state.bracketPanTimer);
+        state.bracketPanTimer = null;
+
+        ALL_VIEWS.forEach(v => {
           document.getElementById('view-' + v).classList.toggle('active', v === name);
           const btn = document.getElementById('btn-' + v);
           if (btn) btn.classList.toggle('active', v === name);
         });
 
-        // Reset scroll for classement
         if (name === 'classement') {
           const wrapper = document.getElementById('ranking-scroll-wrapper');
           wrapper.scrollTop = 0;
           startAutoScroll(wrapper);
+        }
+
+        if (name === 'tableau') {
+          state.bracketPanIndex = 0;
+          if (state.bracketData) {
+            renderBracket();
+            // Scroll vers le round actif après rendu
+            setTimeout(() => {
+              if (state.bracketData?.currentRound) scrollToBracketRound(state.bracketData.currentRound);
+            }, 120);
+          }
+          startBracketPan();
         }
 
         document.getElementById('progress-bar').style.width = '0%';
@@ -639,6 +1161,84 @@
         }
       });
 
+      // ─── Configuration locale des vues ───────────────────────────────────────
+      function saveLocalViews() {
+        const v = {};
+        ALL_VIEWS.forEach(n => { v[n] = document.getElementById('cb-' + n).checked; });
+        localStorage.setItem('kioskViewsLocal', JSON.stringify(v));
+      }
+
+      function loadLocalViews() {
+        try {
+          const stored = localStorage.getItem('kioskViewsLocal');
+          if (stored) return JSON.parse(stored);
+        } catch {}
+        return null;
+      }
+
+      // ─── Configuration locale du délai de rotation ───────────────────────────
+      function saveLocalRotation(sec) {
+        localStorage.setItem('kioskRotationSec', String(sec));
+      }
+
+      function loadLocalRotation() {
+        const v = parseInt(localStorage.getItem('kioskRotationSec'), 10);
+        return (!isNaN(v) && v >= 3) ? v : 15;
+      }
+
+      function applyLocalViews() {
+        const enabled = ALL_VIEWS.filter(v => document.getElementById('cb-' + v).checked);
+        state.views = enabled.length > 0 ? enabled : ALL_VIEWS.slice();
+        ALL_VIEWS.forEach(v => {
+          const btn = document.getElementById('btn-' + v);
+          if (btn) btn.style.display = state.views.includes(v) ? '' : 'none';
+        });
+        if (!state.views.includes(state.currentView)) switchView(state.views[0]);
+      }
+
+      // Bouton ⚙ – toggle panneau
+      document.getElementById('btn-settings').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const panel = document.getElementById('settings-panel');
+        panel.classList.toggle('hidden');
+        // Prolonger le timer menu tant que le panneau est ouvert
+        if (!panel.classList.contains('hidden')) {
+          clearTimeout(state.menuTimer);
+        } else {
+          showMenu(); // relance le timer d'auto-masquage
+        }
+      });
+
+      // Fermer le panneau au clic à l'extérieur
+      document.addEventListener('click', (e) => {
+        const panel = document.getElementById('settings-panel');
+        const btn = document.getElementById('btn-settings');
+        if (!panel.classList.contains('hidden') && !panel.contains(e.target) && e.target !== btn) {
+          panel.classList.add('hidden');
+          showMenu();
+        }
+      });
+
+      // Changement d'une checkbox
+      ALL_VIEWS.forEach(v => {
+        document.getElementById('cb-' + v).addEventListener('change', () => {
+          saveLocalViews();
+          applyLocalViews();
+          clearTimeout(state.menuTimer); // garder le menu visible pendant la config
+        });
+      });
+
+      // Changement du délai de rotation
+      document.getElementById('rotation-input').addEventListener('change', () => {
+        const raw = parseInt(document.getElementById('rotation-input').value, 10);
+        const sec = (!isNaN(raw) && raw >= 3) ? Math.min(raw, 300) : 15;
+        document.getElementById('rotation-input').value = sec;
+        state.rotationMs = sec * 1000;
+        saveLocalRotation(sec);
+        startRotation();
+        clearTimeout(state.menuTimer);
+      });
+
       // ─── Statut connexion ────────────────────────────────────────────────────
       function setStatus(ok, text) {
         const dot = document.getElementById('status-dot');
@@ -661,12 +1261,37 @@
           document.getElementById('menu-competition-name').textContent =
             state.session.competitionName || '';
 
+          // Note d'organisation
+          renderOrgNote(state.session.orgNote || null);
+
+          // Appliquer les vues kiosk : localStorage en priorité, sinon config serveur
+          const localViews = loadLocalViews();
+          if (localViews) {
+            // Restaurer l'état des checkboxes depuis localStorage
+            ALL_VIEWS.forEach(v => {
+              const cb = document.getElementById('cb-' + v);
+              if (cb) cb.checked = localViews[v] !== false;
+            });
+          } else if (state.session.kioskViews) {
+            // Initialiser les checkboxes depuis la config serveur (premier chargement)
+            const kv = state.session.kioskViews;
+            ALL_VIEWS.forEach(v => {
+              const cb = document.getElementById('cb-' + v);
+              if (cb) cb.checked = kv[v] !== false;
+            });
+          }
+          applyLocalViews();
+
           // 2. Données poules + classements
           const poolsRes = await fetch('/api/competitions/' + competitionId + '/results-data');
           if (poolsRes.ok) {
             const data = await poolsRes.json();
             state.poolsData = data.pools || [];
-            buildOverallRanking();
+            if (data.overallRanking && data.overallRanking.length > 0) {
+              state.overallRanking = data.overallRanking;
+            } else {
+              buildOverallRanking();
+            }
             renderPools();
             renderRanking();
           }
@@ -676,6 +1301,14 @@
           if (arenasRes.ok) {
             state.arenasData = await arenasRes.json();
             renderArenas();
+          }
+
+          // 4. Matchs suivants
+          const suivantsRes = await fetch('/api/session/upcoming-matches');
+          if (suivantsRes.ok) {
+            const suivantsData = await suivantsRes.json();
+            state.upcomingData = suivantsData.upcoming || [];
+            renderSuivants();
           }
 
           state.lastUpdate = new Date();
@@ -724,15 +1357,15 @@
 
         container.innerHTML = pools.map(pool => {
           const rankings = pool.rankings || [];
-          const isComplete = rankings.every(r => (r.matchCount || 0) > 0);
+          const expectedMatches = Math.max(0, rankings.length - 1);
+          const isComplete = rankings.length > 0 && rankings.every(r => (r.matchesPlayed || 0) >= expectedMatches);
           const rows = rankings.map((r, i) => {
             const ind = (r.index >= 0 ? '+' : '') + (r.index || 0);
             const rankClass = i < 3 ? ' rank-' + (i + 1) : '';
             return `<tr>
               <td class="rank-col${rankClass}">${i + 1}</td>
               <td>
-                <div class="fencer-name">${escHtml(r.lastName)} ${escHtml(r.firstName || '')}</div>
-                <div class="fencer-club">${escHtml(r.club || '')}</div>
+                <span class="fencer-name">${escHtml(r.lastName)} ${escHtml(r.firstName || '')}</span><span class="fencer-club">${escHtml(r.club || '')}</span>
               </td>
               <td style="text-align:center;color:#94a3b8">${r.matchesPlayed || 0}</td>
               <td class="victories">${r.victories || 0}</td>
@@ -770,14 +1403,10 @@
           return;
         }
 
-        const medals = ['🥇', '🥈', '🥉'];
         tbody.innerHTML = ranking.map((r, i) => {
           const ind = (r.index >= 0 ? '+' : '') + (r.index || 0);
-          const topClass = i < 3 ? ' class="top-row"' : '';
-          const rankDisplay = i < 3
-            ? `<span class="rank-medal">${medals[i]}</span>`
-            : `<span style="color:#64748b;font-weight:700">${i + 1}</span>`;
-          return `<tr${topClass}>
+          const rankDisplay = `<span style="color:#64748b;font-weight:700">${i + 1}</span>`;
+          return `<tr>
             <td>${rankDisplay}</td>
             <td>
               <div style="font-weight:500">${escHtml(r.lastName)} ${escHtml(r.firstName || '')}</div>
@@ -788,6 +1417,56 @@
             <td style="text-align:center;color:#94a3b8">${r.touchesFor || 0}</td>
           </tr>`;
         }).join('');
+      }
+
+      // ─── Rendu Matchs suivants ───────────────────────────────────────────────
+      function renderSuivants() {
+        const container = document.getElementById('suivants-container');
+        const matches = state.upcomingData;
+
+        const pending = matches.filter(m => m.status !== 'finished');
+        document.getElementById('suivants-badge').textContent =
+          pending.length + ' match' + (pending.length > 1 ? 's' : '');
+
+        if (!matches || matches.length === 0) {
+          container.innerHTML = '<div class="no-data"><div class="no-data-icon">📋</div><h3>Aucun match à venir</h3><p>Tous les matchs sont terminés ou aucune session active</p></div>';
+          return;
+        }
+
+        // Grouper par pool
+        const byPool = new Map();
+        for (const m of matches) {
+          const key = m.poolName || 'Sans poule';
+          if (!byPool.has(key)) byPool.set(key, []);
+          byPool.get(key).push(m);
+        }
+
+        let html = '';
+        for (const [poolName, poolMatches] of byPool) {
+          html += `<div class="suivants-pool-header">${escHtml(poolName)}</div>`;
+          for (const m of poolMatches) {
+            const nameA = m.fencerA
+              ? escHtml(m.fencerA.lastName) + (m.fencerA.firstName ? ' ' + escHtml(m.fencerA.firstName[0]) + '.' : '')
+              : '?';
+            const clubA = m.fencerA?.club ? `<span class="fclub">${escHtml(m.fencerA.club)}</span>` : '';
+            const nameB = m.fencerB
+              ? escHtml(m.fencerB.lastName) + (m.fencerB.firstName ? ' ' + escHtml(m.fencerB.firstName[0]) + '.' : '')
+              : '?';
+            const clubB = m.fencerB?.club ? `<span class="fclub">${escHtml(m.fencerB.club)}</span>` : '';
+            const isOngoing = m.status === 'in_progress';
+            const statusLabel = isOngoing
+              ? (m.arenaName ? escHtml(m.arenaName) : 'En cours')
+              : 'À venir';
+            html += `<div class="suivants-row${isOngoing ? ' ongoing' : ''}">
+              <span class="suivants-num">${m.number || ''}</span>
+              <span class="suivants-fencer">${nameA}${clubA}</span>
+              <span class="suivants-vs">vs</span>
+              <span class="suivants-fencer">${nameB}${clubB}</span>
+              <span class="suivants-status${isOngoing ? ' en-cours' : ''}">${statusLabel}</span>
+            </div>`;
+          }
+        }
+        container.innerHTML = html;
       }
 
       // ─── Rendu Arènes ────────────────────────────────────────────────────────
@@ -803,14 +1482,41 @@
           return;
         }
 
+        // ── Détecter les changements de score avant de reconstruire le DOM ───
+        const changedScores = [];   // ids des éléments à animer
+        const slashScores = [];     // ids pour l'animation épéiste (≥3 pts d'un coup)
+        for (const arena of arenas) {
+          const aid = arena.id || arena.arenaId;
+          const m = arena.currentMatch;
+          if (!m || !aid) continue;
+          const prev = state.prevArenaScores[aid];
+          if (prev) {
+            const newA = m.scoreA ?? null;
+            const newB = m.scoreB ?? null;
+            if (prev.scoreA !== newA) {
+              changedScores.push('sa-' + aid);
+              if (typeof newA === 'number' && typeof prev.scoreA === 'number' && newA - prev.scoreA >= 3) {
+                slashScores.push('sa-' + aid);
+              }
+            }
+            if (prev.scoreB !== newB) {
+              changedScores.push('sb-' + aid);
+              if (typeof newB === 'number' && typeof prev.scoreB === 'number' && newB - prev.scoreB >= 3) {
+                slashScores.push('sb-' + aid);
+              }
+            }
+          }
+        }
+
         container.innerHTML = arenas.map(arena => {
+          const aid = arena.id || arena.arenaId || '?';
           const m = arena.currentMatch;
           const isActive = arena.status === 'in_progress' && m;
 
           if (!m) {
             return `<div class="arena-card">
               <div class="arena-card-header">
-                <span class="arena-name">Piste ${arena.id || arena.arenaId || '?'}</span>
+                <span class="arena-name">Piste ${aid}</span>
                 <span class="arena-status-pill">En attente</span>
               </div>
               <div class="arena-idle">Aucun match assigné</div>
@@ -826,26 +1532,285 @@
 
           return `<div class="arena-card ${isActive ? 'match-active' : ''}">
             <div class="arena-card-header">
-              <span class="arena-name">Piste ${arena.id || arena.arenaId || '?'}</span>
+              <span class="arena-name">Piste ${aid}</span>
               <span class="arena-status-pill ${isActive ? 'in-progress' : ''}">${isActive ? 'En cours' : 'Assigné'}</span>
             </div>
             <div class="arena-matchup">
-              <div class="arena-fencer">
+              <div class="arena-fencer fencer-red">
                 <div class="fname">${escHtml(nameA)}</div>
                 <div class="fclub">${escHtml(clubA)}</div>
               </div>
               <div class="arena-scores">
-                <span class="arena-score score-a">${scoreA}</span>
+                <span class="arena-score score-a" id="sa-${aid}">${scoreA}</span>
                 <span class="arena-vs">-</span>
-                <span class="arena-score score-b">${scoreB}</span>
+                <span class="arena-score score-b" id="sb-${aid}">${scoreB}</span>
               </div>
-              <div class="arena-fencer">
+              <div class="arena-fencer fencer-green">
                 <div class="fname">${escHtml(nameB)}</div>
                 <div class="fclub">${escHtml(clubB)}</div>
               </div>
             </div>
           </div>`;
         }).join('');
+
+        // ── Appliquer les animations après reconstruction du DOM ─────────────
+        for (const elemId of changedScores) {
+          const el = document.getElementById(elemId);
+          if (!el) continue;
+          el.classList.remove('score-updated', 'score-slash');
+          void el.offsetWidth;  // force reflow pour relancer l'animation
+          el.classList.add('score-updated');
+          if (slashScores.includes(elemId)) el.classList.add('score-slash');
+          el.addEventListener('animationend', () => {
+            el.classList.remove('score-updated', 'score-slash');
+          }, { once: true });
+        }
+
+        // ── Persister les scores courants pour la prochaine comparaison ───────
+        for (const arena of arenas) {
+          const aid = arena.id || arena.arenaId;
+          if (!aid) continue;
+          const m = arena.currentMatch;
+          state.prevArenaScores[aid] = {
+            scoreA: m ? (m.scoreA ?? null) : null,
+            scoreB: m ? (m.scoreB ?? null) : null,
+          };
+        }
+      }
+
+      // ─── Bracket d'élimination directe ──────────────────────────────────────
+
+      function getBracketDims(data) {
+        const n = data.rounds.length > 0 ? data.rounds[0].round : 8;
+        if (n <= 8)  return { cardW: 210, cardH: 66, colGap: 70, rowGap: 10 };
+        if (n <= 16) return { cardW: 188, cardH: 60, colGap: 62, rowGap: 8 };
+        if (n <= 32) return { cardW: 158, cardH: 52, colGap: 54, rowGap: 6 };
+        return              { cardW: 130, cardH: 44, colGap: 46, rowGap: 4 };
+      }
+
+      async function fetchBracket() {
+        try {
+          const res = await fetch('/api/bracket');
+          if (!res.ok) return;
+          const data = await res.json();
+          state.bracketData = data;
+          if (state.currentView === 'tableau') renderBracket();
+        } catch { /* optionnel */ }
+      }
+
+      function startBracketPan() {
+        clearInterval(state.bracketPanTimer);
+        if (!state.bracketData?.rounds?.length) return;
+        state.bracketPanTimer = setInterval(() => {
+          if (!state.bracketData?.rounds?.length) return;
+          state.bracketPanIndex = (state.bracketPanIndex + 1) % state.bracketData.rounds.length;
+          const r = state.bracketData.rounds[state.bracketPanIndex];
+          if (r) scrollToBracketRound(r.round);
+        }, 8000);
+      }
+
+      function scrollToBracketRound(roundValue) {
+        const outer = document.getElementById('bracket-outer');
+        if (!outer || !state.bracketData?.rounds) return;
+        const { cardW, colGap } = getBracketDims(state.bracketData);
+        const orderedRounds = getBracketRoundOrder(state.bracketData.rounds);
+        const idx = orderedRounds.findIndex(r => r.round === roundValue);
+        if (idx < 0) return;
+        const colX = idx * (cardW + colGap) + colGap / 2;
+        const viewW = outer.clientWidth;
+        const targetLeft = Math.max(0, colX - viewW / 2 + cardW / 2);
+        outer.scrollTo({ left: targetLeft, behavior: 'smooth' });
+      }
+
+      function getBracketRoundOrder(rounds) {
+        // Rounds principaux (hors petite finale round=3) triés décroissants, puis petite finale à la fin
+        const main = rounds.filter(r => r.round !== 3).sort((a, b) => b.round - a.round);
+        const pf = rounds.find(r => r.round === 3);
+        return pf ? [...main, pf] : main;
+      }
+
+      function renderBracket() {
+        const container = document.getElementById('bracket-inner');
+        if (!container) return;
+
+        const data = state.bracketData;
+        if (!data || !data.rounds || data.rounds.length === 0) {
+          document.getElementById('tableau-badge').textContent = '—';
+          container.innerHTML = '<div class="no-data"><div class="no-data-icon">🏆</div><h3>Tableau non disponible</h3><p>Le tableau apparaîtra lors de la phase d\'élimination directe</p></div>';
+          return;
+        }
+
+        const orderedRounds = getBracketRoundOrder(data.rounds);
+        if (orderedRounds.length === 0) {
+          container.innerHTML = '<div class="no-data"><div class="no-data-icon">🏆</div><h3>Aucun match disponible</h3></div>';
+          return;
+        }
+
+        const { cardW, cardH, colGap, rowGap } = getBracketDims(data);
+        const firstRound = orderedRounds[0].round; // ex: 16 pour T16
+        const cardSlot = cardH + rowGap;
+
+        // Hauteur totale = nombre de matchs dans le 1er round * cardSlot
+        const firstRoundMatchCount = firstRound / 2;
+        let totalH = firstRoundMatchCount * cardSlot;
+
+        // Adapter si trop grand pour la fenêtre
+        const availH = Math.max(200, (window.innerHeight || 800) - 220);
+        let scale = 1;
+        if (totalH > availH) {
+          scale = availH / totalH;
+          totalH = availH;
+        }
+        const sCardW  = Math.round(cardW  * scale);
+        const sCardH  = Math.round(cardH  * scale);
+        const sColGap = Math.round(colGap * scale);
+
+        const totalW = orderedRounds.length * (sCardW + sColGap) + sColGap;
+        const labelH = 28;
+
+        // Fonction Y-center d'un match (pos 1-indexed, round = round value)
+        const yCenter = (pos, round) => (2 * pos - 1) / round * totalH;
+
+        let cardsHtml = '';
+        const connectors = []; // { x1, y1, x2, y2 }
+
+        for (let ci = 0; ci < orderedRounds.length; ci++) {
+          const rd = orderedRounds[ci];
+          const r = rd.round;
+          const colX = ci * (sCardW + sColGap) + sColGap / 2;
+          const isActive = r === data.currentRound;
+
+          for (const match of rd.matches) {
+            if (match.isBye) continue;
+            const p = match.position || 1;
+            const yc = yCenter(p, r);
+            const yTop = Math.round(yc - sCardH / 2);
+            const cls = [
+              'bracket-match',
+              match.status === 'live'     ? 'match--live' :
+              match.status === 'finished' ? 'match--finished' : 'match--pending',
+            ].join(' ');
+
+            const fA = match.fencerA;
+            const fB = match.fencerB;
+            const nameA = fA ? escHtml(fA.lastName + (fA.firstName ? ' ' + fA.firstName[0] + '.' : '')) : '?';
+            const nameB = fB ? escHtml(fB.lastName + (fB.firstName ? ' ' + fB.firstName[0] + '.' : '')) : (r === 2 ? 'TBD' : '?');
+            const winA = match.winnerId && fA && match.winnerId === fA.id;
+            const winB = match.winnerId && fB && match.winnerId === fB.id;
+            const sA = match.scoreA !== null && match.scoreA !== undefined ? match.scoreA : '';
+            const sB = match.scoreB !== null && match.scoreB !== undefined ? match.scoreB : '';
+
+            // Trophée finale
+            const isFinal = r === 2 && match.position === 1;
+            const winnerName = isFinal && winA ? nameA : isFinal && winB ? nameB : null;
+
+            const arenaHtml = match.arenaName
+              ? `<div class="bm-arena">${escHtml(match.arenaName)}</div>`
+              : '';
+            const fontSize = scale < 0.7 ? 'style="font-size:0.62rem"' : '';
+
+            cardsHtml += `<div class="${cls}" style="position:absolute;left:${colX}px;top:${yTop}px;width:${sCardW}px;height:${sCardH}px">
+              <div class="bm-row ${winA ? 'bm-winner' : winB ? 'bm-loser' : ''}" ${fontSize}>
+                <span class="bm-name">${nameA}</span>
+                <span class="bm-score">${sA}</span>
+              </div>
+              <div class="bm-divider"></div>
+              ${arenaHtml}
+              <div class="bm-row ${winB ? 'bm-winner' : winA ? 'bm-loser' : ''}" ${fontSize}>
+                <span class="bm-name">${nameB}</span>
+                <span class="bm-score">${sB}</span>
+              </div>
+            </div>`;
+
+            // Connecteurs SVG vers le round suivant (sauf petite finale)
+            if (ci < orderedRounds.length - 1) {
+              const nextRd = orderedRounds[ci + 1];
+              // Ne pas connecter si l'un des deux est la petite finale (round=3)
+              if (r !== 3 && nextRd.round !== 3) {
+                const nextP = Math.ceil(p / 2);
+                const nextYc = yCenter(nextP, nextRd.round);
+                connectors.push({
+                  x1: colX + sCardW,
+                  y1: Math.round(yc),
+                  x2: (ci + 1) * (sCardW + sColGap) + sColGap / 2,
+                  y2: Math.round(nextYc),
+                });
+              }
+            }
+          }
+        }
+
+        // Labels de round
+        let labelsHtml = '';
+        for (let ci = 0; ci < orderedRounds.length; ci++) {
+          const rd = orderedRounds[ci];
+          const colX = ci * (sCardW + sColGap) + sColGap / 2;
+          const isActive = rd.round === data.currentRound;
+          labelsHtml += `<div class="bracket-round-label${isActive ? ' active-round' : ''}" style="left:${colX}px;width:${sCardW}px">${escHtml(rd.label)}</div>`;
+        }
+
+        // Chemins SVG
+        const svgPaths = connectors.map(c => {
+          const xMid = Math.round((c.x1 + c.x2) / 2);
+          return `<path d="M${c.x1},${c.y1} L${xMid},${c.y1} L${xMid},${c.y2} L${c.x2},${c.y2}" />`;
+        }).join('');
+
+        // Chercher le vainqueur final
+        const finaleRound = orderedRounds.find(r => r.round === 2);
+        const finaleMatch = finaleRound?.matches?.[0];
+        let winnerBanner = '';
+        if (finaleMatch?.winnerId && (finaleMatch.fencerA || finaleMatch.fencerB)) {
+          const winner = finaleMatch.winnerId === finaleMatch.fencerA?.id
+            ? finaleMatch.fencerA : finaleMatch.fencerB;
+          if (winner) {
+            winnerBanner = `<div class="bracket-trophy-banner">🏆 ${escHtml(winner.lastName + ' ' + (winner.firstName || ''))}</div>`;
+          }
+        }
+
+        // Compter les matchs restants pour le badge
+        const pending = data.rounds.reduce((n, r) => n + r.matches.filter(m => m.status !== 'finished' && !m.isBye).length, 0);
+        const total   = data.rounds.reduce((n, r) => n + r.matches.filter(m => !m.isBye).length, 0);
+        document.getElementById('tableau-badge').textContent = 'T' + data.tableSize + ' · ' + (total - pending) + '/' + total;
+        document.getElementById('tableau-subtitle').textContent =
+          data.currentRound ? orderedRounds.find(r => r.round === data.currentRound)?.label || 'En cours' : 'Phase terminée';
+
+        container.style.width = totalW + 'px';
+        container.style.minWidth = '';
+        container.innerHTML = `
+          <div class="bracket-round-labels" style="width:${totalW}px;position:relative;height:${labelH}px;flex-shrink:0;margin-bottom:6px">
+            ${labelsHtml}
+          </div>
+          <div class="bracket-matches-layer" style="position:relative;width:${totalW}px;height:${totalH}px">
+            ${cardsHtml}
+            <svg class="bracket-svg" width="${totalW}" height="${totalH}"
+                 style="position:absolute;top:0;left:0;overflow:visible;pointer-events:none">
+              <g stroke="rgba(100,116,139,0.45)" stroke-width="1.5" fill="none">${svgPaths}</g>
+            </svg>
+          </div>
+          ${winnerBanner}`;
+      }
+
+      // ─── Logo organisateur ───────────────────────────────────────────────────
+      function applyLogo(logo) {
+        const el = document.getElementById('org-logo');
+        if (!el) return;
+        if (logo) {
+          el.src = logo;
+          el.style.display = 'block';
+        } else {
+          el.style.display = 'none';
+          el.src = '';
+        }
+      }
+
+      async function fetchLogo() {
+        try {
+          const res = await fetch('/api/logo');
+          if (res.ok) {
+            const { logo } = await res.json();
+            applyLogo(logo || null);
+          }
+        } catch { /* logo optionnel */ }
       }
 
       // ─── Helpers ─────────────────────────────────────────────────────────────
@@ -855,17 +1820,35 @@
       }
 
       // ─── Init ─────────────────────────────────────────────────────────────────
-      window.addEventListener('DOMContentLoaded', () => {
+      window.addEventListener('DOMContentLoaded', async () => {
+        await window.initRemoteI18n();
+
+        const savedSec = loadLocalRotation();
+        state.rotationMs = savedSec * 1000;
+        document.getElementById('rotation-input').value = savedSec;
+
         fetchData();
+        fetchLogo();
+        fetchBracket();
         setInterval(fetchData, 15000);
+        setInterval(fetchLogo, 30000);
+        setInterval(fetchBracket, 15000);
         startRotation();
 
-        // Plein écran automatique au clic
+        // Socket.IO : mise à jour temps réel du bracket
+        try {
+          const socket = io();
+          socket.on('bracket:update', fetchBracket);
+        } catch { /* Socket.IO optionnel */ }
+
+        // Plein écran automatique au premier clic seulement
+        let _fsRequested = false;
         document.addEventListener('click', () => {
-          if (!document.fullscreenElement) {
+          if (!_fsRequested && !document.fullscreenElement) {
+            _fsRequested = true;
             document.documentElement.requestFullscreen().catch(() => {});
           }
-        });
+        }, { capture: true });
       });
     </script>
   </body>

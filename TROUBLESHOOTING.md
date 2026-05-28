@@ -421,11 +421,13 @@ BellePoule Modern has automatic backup:
 
 #### 2. Manual Database Recovery
 
-**Database Locations**:
+**Database Locations** (fichier `bellepoule.db`) :
 
-- **Windows**: `%APPDATA%/bellepoule-modern/`
-- **Mac**: `~/Library/Application Support/bellepoule-modern/`
-- **Linux**: `~/.config/bellepoule-modern/`
+- **Windows**: `%APPDATA%\BellePoule Modern\bellepoule.db`
+- **macOS**: `~/Library/Application Support/BellePoule Modern/bellepoule.db`
+- **Linux**: `~/.config/BellePoule Modern/bellepoule.db`
+
+> **Sauvegarde automatique** : La base est sauvegardée toutes les **2 minutes** via autosave, et à chaque fermeture de l'application. L'écriture est atomique (fichier `.tmp` puis renommage) pour éviter la corruption en cas de coupure.
 
 **Recovery Steps**:
 

@@ -4,10 +4,10 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useMemo } from 'react';
-import { Referee, Match, Pool, Competition } from '../../shared/types';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { Referee, Match, Pool, Competition, MatchStatus } from '../../shared/types';
 import { RefereeManager, RefereeRotationConfig } from '../../shared/services/refereeManager';
-import { useTranslation } from '../contexts/TranslationContext';
+import { parseEngardeRefereeFile } from '../../shared/utils/fileParser';
 
 interface RefereeManagerProps {
   competition: Competition;
@@ -26,7 +26,6 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
   onRefereesChange,
   onAssignmentsChange,
 }) => {
-  const { t } = useTranslation();
   const [config, setConfig] = useState<RefereeRotationConfig>({
     maxConsecutiveMatches: 3,
     minRestTimeMinutes: 15,
@@ -35,13 +34,52 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
   });
   const [assignments, setAssignments] = useState<Map<string, Referee>>(new Map());
   const [showReport, setShowReport] = useState(false);
+  const [activeTab, setActiveTab] = useState<'referees' | 'assignments' | 'history'>('referees');
+  const [newReferee, setNewReferee] = useState({ name: '', club: '', license: '', category: '', nationality: 'FRA' });
+  const [addError, setAddError] = useState('');
+  const [importStatus, setImportStatus] = useState<{ count: number; errors: string[] } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [historyRows, setHistoryRows] = useState<Array<{
+    matchId: string; matchNumber: number; poolName: string | null;
+    fencerAName: string; fencerBName: string;
+    scoreA: number | null; scoreB: number | null; status: string;
+    refereeId: string | null; refereeName: string | null;
+  }>>([]);
+
+  const loadHistory = useCallback(async () => {
+    try {
+      const rows = await window.electronAPI.db.getMatchesWithReferees(competition.id);
+      setHistoryRows(rows);
+    } catch { /* silencieux */ }
+  }, [competition.id]);
+
+  useEffect(() => {
+    const initial = new Map<string, Referee>();
+    for (const m of matches) {
+      if (m.referee) initial.set(m.id, m.referee);
+    }
+    setAssignments(initial);
+  }, [matches]);
+
+  useEffect(() => {
+    if (activeTab === 'history') loadHistory();
+  }, [activeTab, loadHistory]);
 
   const manager = useMemo(() => new RefereeManager(referees, config), [referees, config]);
 
+  const persistAssignments = async (map: Map<string, Referee>) => {
+    for (const [matchId, referee] of map.entries()) {
+      try {
+        await window.electronAPI.db.updateMatch(matchId, { refereeId: referee.id });
+      } catch { /* non bloquant */ }
+    }
+  };
+
   const handleAutoAssign = () => {
-    const newAssignments = manager.assignRefereesToMatches(matches, pools);
+    const newAssignments = manager.assignRefereesToMatches(pendingMatches, pools);
     setAssignments(newAssignments);
     onAssignmentsChange(newAssignments);
+    persistAssignments(newAssignments);
   };
 
   const handleManualAssign = (matchId: string, refereeId: string) => {
@@ -51,6 +89,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
       newAssignments.set(matchId, referee);
       setAssignments(newAssignments);
       onAssignmentsChange(newAssignments);
+      window.electronAPI.db.updateMatch(matchId, { refereeId: referee.id }).catch(() => {});
     }
   };
 
@@ -67,10 +106,59 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
     const fencerBClub = match.fencerB?.club;
 
     if (referee.club && (fencerAClub === referee.club || fencerBClub === referee.club)) {
-      return `⚠️ ${t('referee_manager.conflict_warning', { club: referee.club })}`;
+      return `⚠️ Conflit: Arbitre du club ${referee.club}`;
     }
     return null;
   };
+
+  const handleExportFile = useCallback(() => {
+    if (referees.length === 0) return;
+    const lines = referees.map(r => {
+      const sexe = r.gender === 'F' ? 'F' : 'M';
+      return [r.lastName, r.firstName, sexe, r.category ?? '', r.club ?? '', r.region ?? '', r.nationality].join(';');
+    });
+    const content = 'NOM;Prenom;Sexe;Categorie;Club;Region;Nationalite\n' + lines.join('\n');
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'arbitres.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [referees]);
+
+  const handleImportFile = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const content = await file.text();
+    const parsed = parseEngardeRefereeFile(content);
+    const errors: string[] = [...parsed.errors];
+    const created: typeof referees = [];
+    for (const ref of parsed.referees) {
+      try {
+        const name = `${ref.firstName} ${ref.lastName}`.trim();
+        const newRef = await window.electronAPI.db.createReferee(competition.id, {
+          name,
+          club: ref.club,
+          license: ref.license,
+          category: ref.category,
+          nationality: ref.nationality,
+          gender: ref.gender,
+        });
+        created.push(newRef);
+      } catch (err: any) {
+        errors.push(err?.message ?? 'Erreur import');
+      }
+    }
+    if (created.length > 0) onRefereesChange([...referees, ...created]);
+    setImportStatus({ count: created.length, errors });
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }, [competition.id, referees, onRefereesChange]);
+
+  const pendingMatches = useMemo(
+    () => matches.filter(m => m.status !== MatchStatus.FINISHED && m.status !== MatchStatus.CANCELLED),
+    [matches]
+  );
 
   return (
     <div
@@ -79,14 +167,214 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
     >
       <h2
         style={{
-          marginBottom: '1.5rem',
+          marginBottom: '1rem',
           color: '#1f2937',
           borderBottom: '2px solid #e5e7eb',
           paddingBottom: '0.5rem',
         }}
       >
-        👨‍⚖️ {t('referee_manager.title')}
+        👨‍⚖️ Gestion des Arbitres
       </h2>
+
+      {/* Onglets */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+        {(['referees', 'assignments', 'history'] as const).map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            style={{
+              padding: '0.5rem 1.25rem',
+              borderRadius: '6px',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: activeTab === tab ? '700' : '400',
+              background: activeTab === tab ? '#3b82f6' : '#e5e7eb',
+              color: activeTab === tab ? 'white' : '#374151',
+            }}
+          >
+            {tab === 'referees' ? '👥 Arbitres' : tab === 'assignments' ? '📋 Assignations' : '📜 Historique'}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'referees' && (
+        <div>
+          {/* Formulaire ajout */}
+          <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '1rem', marginBottom: '1.5rem' }}>
+            <h3 style={{ marginBottom: '0.75rem', fontSize: '1rem', color: '#374151' }}>Ajouter un arbitre</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem', marginBottom: '0.75rem' }}>
+              <input
+                placeholder="Prénom Nom *"
+                value={newReferee.name}
+                onChange={e => setNewReferee({ ...newReferee, name: e.target.value })}
+                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #d1d5db' }}
+              />
+              <input
+                placeholder="Club"
+                value={newReferee.club}
+                onChange={e => setNewReferee({ ...newReferee, club: e.target.value })}
+                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #d1d5db' }}
+              />
+              <input
+                placeholder="Licence"
+                value={newReferee.license}
+                onChange={e => setNewReferee({ ...newReferee, license: e.target.value })}
+                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #d1d5db' }}
+              />
+              <input
+                placeholder="Catégorie (Régional…)"
+                value={newReferee.category}
+                onChange={e => setNewReferee({ ...newReferee, category: e.target.value })}
+                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #d1d5db' }}
+              />
+              <input
+                placeholder="Nationalité (FRA)"
+                value={newReferee.nationality}
+                onChange={e => setNewReferee({ ...newReferee, nationality: e.target.value })}
+                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #d1d5db' }}
+              />
+            </div>
+            {addError && <p style={{ color: '#dc2626', fontSize: '0.875rem', marginBottom: '0.5rem' }}>{addError}</p>}
+            <button
+              onClick={async () => {
+                if (!newReferee.name.trim()) { setAddError('Le nom est obligatoire'); return; }
+                try {
+                  const created = await window.electronAPI.db.createReferee(competition.id, {
+                    name: newReferee.name.trim(),
+                    club: newReferee.club || undefined,
+                    license: newReferee.license || undefined,
+                    category: newReferee.category || undefined,
+                    nationality: newReferee.nationality || 'FRA',
+                  });
+                  onRefereesChange([...referees, created]);
+                  setNewReferee({ name: '', club: '', license: '', category: '', nationality: 'FRA' });
+                  setAddError('');
+                } catch (e: any) { setAddError(e?.message ?? 'Erreur'); }
+              }}
+              style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.5rem 1.25rem', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' }}
+            >
+              ＋ Ajouter
+            </button>
+          </div>
+
+          {/* Import fichier Arbitres */}
+          <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <input ref={fileInputRef} type="file" accept=".txt,.csv" style={{ display: 'none' }} onChange={handleImportFile} />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              title="Format attendu : NOM;Prénom;Sexe(M/F);Catégorie;Club;Région;Nationalité — une ligne par arbitre, séparateur « ; », .txt ou .csv"
+              style={{ background: '#6d28d9', color: 'white', border: 'none', padding: '0.5rem 1.25rem', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' }}
+            >
+              📂 Importer fichier Arbitres
+            </button>
+            <button
+              onClick={handleExportFile}
+              disabled={referees.length === 0}
+              title="Exporte la liste en CSV — même format que l'import : NOM;Prénom;Sexe(M/F);Catégorie;Club;Région;Nationalité"
+              style={{ background: '#059669', color: 'white', border: 'none', padding: '0.5rem 1.25rem', borderRadius: '6px', cursor: referees.length === 0 ? 'not-allowed' : 'pointer', fontWeight: '500', opacity: referees.length === 0 ? 0.5 : 1 }}
+            >
+              💾 Exporter fichier Arbitres
+            </button>
+            {importStatus && (
+              <span style={{ fontSize: '0.875rem', color: importStatus.errors.length ? '#dc2626' : '#166534' }}>
+                {importStatus.count} arbitre(s) importé(s)
+                {importStatus.errors.length > 0 && ` — ${importStatus.errors.length} erreur(s)`}
+              </span>
+            )}
+          </div>
+
+          {/* Liste arbitres */}
+          {referees.length === 0 ? (
+            <p style={{ color: '#6b7280', fontStyle: 'italic' }}>Aucun arbitre enregistré.</p>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+              <thead>
+                <tr style={{ background: '#f3f4f6' }}>
+                  {['#', 'Nom', 'Club', 'Licence', 'Catégorie', 'Nationalité', 'Statut', ''].map(h => (
+                    <th key={h} style={{ padding: '0.5rem 0.75rem', textAlign: 'left', borderBottom: '2px solid #e5e7eb' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {referees.map(ref => (
+                  <tr key={ref.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                    <td style={{ padding: '0.45rem 0.75rem', color: '#9ca3af' }}>{ref.ref}</td>
+                    <td style={{ padding: '0.45rem 0.75rem', fontWeight: '500' }}>{ref.firstName} {ref.lastName}</td>
+                    <td style={{ padding: '0.45rem 0.75rem' }}>{ref.club ?? '—'}</td>
+                    <td style={{ padding: '0.45rem 0.75rem' }}>{ref.license ?? '—'}</td>
+                    <td style={{ padding: '0.45rem 0.75rem' }}>{ref.category ?? '—'}</td>
+                    <td style={{ padding: '0.45rem 0.75rem' }}>{ref.nationality}</td>
+                    <td style={{ padding: '0.45rem 0.75rem' }}>
+                      <span style={{ color: ref.status === 'available' ? '#166534' : '#9ca3af' }}>
+                        {ref.status === 'available' ? '✓ Disponible' : ref.status}
+                      </span>
+                    </td>
+                    <td style={{ padding: '0.45rem 0.75rem' }}>
+                      <button
+                        onClick={async () => {
+                          try {
+                            await window.electronAPI.db.deleteReferee(ref.id);
+                            onRefereesChange(referees.filter(r => r.id !== ref.id));
+                          } catch { /* silencieux */ }
+                        }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: '1rem' }}
+                        title="Supprimer"
+                      >
+                        🗑
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'history' && (
+        <div>
+          <div style={{ marginBottom: '0.75rem', display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              onClick={loadHistory}
+              style={{ padding: '0.4rem 1rem', borderRadius: '5px', border: '1px solid #d1d5db', cursor: 'pointer', background: 'white' }}
+            >
+              ↻ Actualiser
+            </button>
+          </div>
+          {historyRows.length === 0 ? (
+            <p style={{ color: '#6b7280', fontStyle: 'italic' }}>Aucun match avec arbitre assigné.</p>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+              <thead>
+                <tr style={{ background: '#f3f4f6' }}>
+                  {['Poule', 'Match', 'Tireur A', 'Tireur B', 'Score', 'Statut', 'Arbitre'].map(h => (
+                    <th key={h} style={{ padding: '0.5rem 0.75rem', textAlign: 'left', borderBottom: '2px solid #e5e7eb' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {historyRows.map(row => (
+                  <tr key={row.matchId} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                    <td style={{ padding: '0.45rem 0.75rem' }}>{row.poolName ?? '—'}</td>
+                    <td style={{ padding: '0.45rem 0.75rem' }}>#{row.matchNumber}</td>
+                    <td style={{ padding: '0.45rem 0.75rem' }}>{row.fencerAName}</td>
+                    <td style={{ padding: '0.45rem 0.75rem' }}>{row.fencerBName}</td>
+                    <td style={{ padding: '0.45rem 0.75rem', textAlign: 'center' }}>
+                      {row.scoreA !== null && row.scoreB !== null ? `${row.scoreA} – ${row.scoreB}` : '—'}
+                    </td>
+                    <td style={{ padding: '0.45rem 0.75rem', color: row.status === 'finished' ? '#166534' : '#6b7280' }}>
+                      {row.status === 'finished' ? '✓ Terminé' : row.status}
+                    </td>
+                    <td style={{ padding: '0.45rem 0.75rem', fontWeight: '500' }}>{row.refereeName ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'assignments' && (<>
 
       {/* Configuration */}
       <div
@@ -99,7 +387,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
         }}
       >
         <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', color: '#374151' }}>
-          {t('referee_manager.rotation_config')}
+          Configuration de Rotation
         </h3>
         <div
           style={{
@@ -114,7 +402,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
               checked={config.avoidSameClub}
               onChange={e => setConfig({ ...config, avoidSameClub: e.target.checked })}
             />
-            {t('referee_manager.avoid_same_club')}
+            Éviter les arbitres du même club
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <input
@@ -122,10 +410,10 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
               checked={config.balanceAssignment}
               onChange={e => setConfig({ ...config, balanceAssignment: e.target.checked })}
             />
-            {t('referee_manager.balance_assignments')}
+            Équilibrer les assignations
           </label>
           <label>
-            {t('referee_manager.max_consecutive_matches')}
+            Matchs consécutifs max:
             <input
               type="number"
               value={config.maxConsecutiveMatches}
@@ -138,7 +426,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
             />
           </label>
           <label>
-            {t('referee_manager.min_rest_time')}
+            Temps de repos min (min):
             <input
               type="number"
               value={config.minRestTimeMinutes}
@@ -168,7 +456,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
             fontWeight: '500',
           }}
         >
-          🔄 {t('referee_manager.auto_assign')}
+          🔄 Assignation Automatique
         </button>
         <button
           onClick={() => setShowReport(!showReport)}
@@ -183,7 +471,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
             fontWeight: '500',
           }}
         >
-          📊 {showReport ? t('referee_manager.hide_report') : t('referee_manager.show_report')}
+          📊 {showReport ? 'Masquer' : 'Afficher'} le Rapport
         </button>
       </div>
 
@@ -198,7 +486,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
             border: '1px solid #86efac',
           }}
         >
-          <h3 style={{ marginBottom: '1rem', color: '#166534' }}>{t('referee_manager.rotation_report')}</h3>
+          <h3 style={{ marginBottom: '1rem', color: '#166534' }}>Rapport de Rotation</h3>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: '#dcfce7' }}>
@@ -209,7 +497,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
                     borderBottom: '2px solid #86efac',
                   }}
                 >
-                  {t('referee_manager.referee')}
+                  Arbitre
                 </th>
                 <th
                   style={{
@@ -218,7 +506,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
                     borderBottom: '2px solid #86efac',
                   }}
                 >
-                  {t('referee_manager.matches')}
+                  Matchs
                 </th>
                 <th
                   style={{
@@ -227,7 +515,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
                     borderBottom: '2px solid #86efac',
                   }}
                 >
-                  {t('referee_manager.rest_violations')}
+                  Violations Repos
                 </th>
                 <th
                   style={{
@@ -236,7 +524,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
                     borderBottom: '2px solid #86efac',
                   }}
                 >
-                  {t('referee_manager.conflicts')}
+                  Conflits
                 </th>
               </tr>
             </thead>
@@ -272,7 +560,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
 
       {/* Arbitres List */}
       <div style={{ marginBottom: '1.5rem' }}>
-        <h3 style={{ marginBottom: '1rem', color: '#374151' }}>{t('referee_manager.available_referees')}</h3>
+        <h3 style={{ marginBottom: '1rem', color: '#374151' }}>Arbitres Disponibles</h3>
         <div
           style={{
             display: 'grid',
@@ -297,12 +585,12 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
                   {referee.firstName} {referee.lastName}
                 </div>
                 <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-                  {referee.category} • {referee.club || t('referee_manager.no_club')}
+                  {referee.category} • {referee.club || 'Sans club'}
                 </div>
                 <div style={{ marginTop: '0.5rem', fontSize: '0.875rem' }}>
-                  <span style={{ color: '#374151' }}>{t('referee_manager.today_matches', { count: stats.todayMatches })}</span>
+                  <span style={{ color: '#374151' }}>Matchs aujourd'hui: {stats.todayMatches}</span>
                   <br />
-                  <span style={{ color: '#374151' }}>{t('referee_manager.total_matches', { count: stats.totalMatches })}</span>
+                  <span style={{ color: '#374151' }}>Total: {stats.totalMatches}</span>
                 </div>
               </div>
             );
@@ -312,9 +600,12 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
 
       {/* Match Assignments */}
       <div>
-        <h3 style={{ marginBottom: '1rem', color: '#374151' }}>{t('referee_manager.match_assignments')}</h3>
+        <h3 style={{ marginBottom: '1rem', color: '#374151' }}>Assignations des Matchs</h3>
+        {pendingMatches.length === 0 && (
+          <p style={{ color: '#6b7280', fontStyle: 'italic' }}>Aucun match en attente d'arbitre.</p>
+        )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          {matches.map(match => {
+          {pendingMatches.map(match => {
             const assignedReferee = assignments.get(match.id);
             const conflictWarning = assignedReferee
               ? getConflictWarning(match, assignedReferee)
@@ -341,7 +632,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
                   </div>
                   {match.poolId && (
                     <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-                      {t('referee_manager.pool', { number: pools.find(p => p.id === match.poolId)?.number ?? '' })}
+                      Poule {pools.find(p => p.id === match.poolId)?.number}
                     </div>
                   )}
                 </div>
@@ -362,7 +653,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
                       background: 'white',
                     }}
                   >
-                    <option value="">{t('referee_manager.select_referee')}</option>
+                    <option value="">-- Choisir un arbitre --</option>
                     {referees.map(referee => (
                       <option key={referee.id} value={referee.id}>
                         {referee.firstName} {referee.lastName}
@@ -375,8 +666,9 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
           })}
         </div>
       </div>
+      </>)}
     </div>
   );
 };
 
-export default RefereeManagerComponent;
+export default React.memo(RefereeManagerComponent);

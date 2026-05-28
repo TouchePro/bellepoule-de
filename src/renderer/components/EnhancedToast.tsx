@@ -36,7 +36,7 @@ export const useToast = () => {
   return context;
 };
 
-export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+const ToastProvider_: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const addToast = (toast: Omit<Toast, 'id'>) => {
@@ -256,3 +256,4 @@ export const useToastHelpers = () => {
     ) => addToast({ type: 'info', title, message, ...options }),
   };
 };
+export const ToastProvider = React.memo(ToastProvider_);

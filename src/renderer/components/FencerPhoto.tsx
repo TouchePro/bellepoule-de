@@ -5,7 +5,8 @@
  */
 
 import React, { useState, useRef, useCallback } from 'react';
-import { useTranslation } from '../contexts/TranslationContext';
+import { logger, LogCategory } from '@shared/services/logger';
+import PhotoBooth from './PhotoBooth';
 
 interface FencerPhotoProps {
   photo?: string;
@@ -26,8 +27,8 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showWebcam, setShowWebcam] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { t } = useTranslation();
 
   const sizeClasses = {
     small: 'w-10 h-10 text-xs',
@@ -92,13 +93,13 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
 
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        alert(t('fencer_photo.invalid_image'));
+        alert('Veuillez sélectionner une image valide');
         return;
       }
 
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        alert(t('fencer_photo.image_too_large'));
+        alert("L'image ne doit pas dépasser 5 Mo");
         return;
       }
 
@@ -107,13 +108,13 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
         const base64 = await resizeImage(file);
         onPhotoChange?.(base64);
       } catch (error) {
-        console.error('Error processing image:', error);
-        alert(t('fencer_photo.processing_error'));
+        logger.error(LogCategory.UI, 'Error processing image', error as Error);
+        alert("Erreur lors du traitement de l'image");
       } finally {
         setIsLoading(false);
       }
     },
-    [onPhotoChange, t]
+    [onPhotoChange]
   );
 
   const handleDrop = useCallback(
@@ -125,12 +126,12 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
       if (!file) return;
 
       if (!file.type.startsWith('image/')) {
-        alert(t('fencer_photo.invalid_image'));
+        alert('Veuillez déposer une image valide');
         return;
       }
 
       if (file.size > 5 * 1024 * 1024) {
-        alert(t('fencer_photo.image_too_large'));
+        alert("L'image ne doit pas dépasser 5 Mo");
         return;
       }
 
@@ -139,13 +140,13 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
         const base64 = await resizeImage(file);
         onPhotoChange?.(base64);
       } catch (error) {
-        console.error('Error processing image:', error);
-        alert(t('fencer_photo.processing_error'));
+        logger.error(LogCategory.UI, 'Error processing image', error as Error);
+        alert("Erreur lors du traitement de l'image");
       } finally {
         setIsLoading(false);
       }
     },
-    [onPhotoChange, t]
+    [onPhotoChange]
   );
 
   const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
@@ -178,7 +179,7 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
         onDrop={editable ? handleDrop : undefined}
         onDragOver={editable ? handleDragOver : undefined}
         onDragLeave={editable ? handleDragLeave : undefined}
-        title={editable ? t('fencer_photo.click_or_drag') : ''}
+        title={editable ? 'Cliquer ou glisser-déposer une photo' : ''}
       >
         {isLoading ? (
           <div className="animate-spin rounded-full h-1/2 w-1/2 border-2 border-white border-t-transparent" />
@@ -195,14 +196,30 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
 
       {editable && photo && (
         <button
+          type="button"
           onClick={e => {
             e.stopPropagation();
             handleRemovePhoto();
           }}
           className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600 transition-colors shadow-md"
-          title={t('fencer_photo.delete_photo')}
+          title="Supprimer la photo"
         >
           ×
+        </button>
+      )}
+
+      {editable && (
+        <button
+          type="button"
+          onClick={e => {
+            e.stopPropagation();
+            setShowWebcam(true);
+          }}
+          className="absolute -bottom-1 -right-1 h-8 px-2 bg-blue-500 text-white rounded-md flex items-center justify-center gap-1 hover:bg-blue-600 transition-colors shadow-md"
+          title="Prendre une photo avec la webcam"
+          style={{ fontSize: '14px' }}
+        >
+          📷 <span style={{ fontSize: '11px', fontWeight: 500 }}>Webcam</span>
         </button>
       )}
 
@@ -218,11 +235,66 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
 
       {isDragging && (
         <div className="absolute inset-0 bg-blue-500 bg-opacity-20 rounded-full flex items-center justify-center pointer-events-none">
-          <span className="text-blue-700 text-xs font-medium">{t('fencer_photo.drop_here')}</span>
+          <span className="text-blue-700 text-xs font-medium">Déposer ici</span>
+        </div>
+      )}
+
+      {editable && showWebcam && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1100,
+          }}
+          onClick={() => setShowWebcam(false)}
+        >
+          <div
+            style={{
+              background: 'var(--color-surface)',
+              borderRadius: 'var(--radius-lg)',
+              boxShadow: 'var(--shadow-lg)',
+              padding: '1.5rem',
+              width: '480px',
+              maxWidth: '90vw',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1rem',
+              }}
+            >
+              <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: 600 }}>
+                Prendre une photo
+              </h3>
+              <button
+                type="button"
+                className="btn btn-icon btn-secondary"
+                onClick={() => setShowWebcam(false)}
+                style={{ padding: '0.25rem' }}
+              >
+                ✕
+              </button>
+            </div>
+            <PhotoBooth
+              onConfirm={photoData => {
+                onPhotoChange?.(photoData);
+                setShowWebcam(false);
+              }}
+              onClose={() => setShowWebcam(false)}
+            />
+          </div>
         </div>
       )}
     </div>
   );
 };
 
-export default FencerPhoto;
+export default React.memo(FencerPhoto);

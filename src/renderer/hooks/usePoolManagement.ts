@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   Pool,
   Fencer,
@@ -13,9 +13,11 @@ import {
   FencerStatus,
   Weapon,
   PoolRanking,
+  Score,
 } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
 import { useToast } from '../components/Toast';
+import type { AbandonSnapshot } from '../../shared/types/preload';
 import {
   distributeFencersToPoolsSerpentine,
   calculateOptimalPoolCount,
@@ -30,12 +32,14 @@ interface UsePoolManagementProps {
   isLaserSabre: boolean;
   poolMaxScore: number;
   showToast: ReturnType<typeof useToast>['showToast'];
+  competitionId?: string;
 }
 
 export const usePoolManagement = ({
   isLaserSabre,
   poolMaxScore,
   showToast,
+  competitionId,
 }: UsePoolManagementProps) => {
   const [pools, setPools] = useState<Pool[]>([]);
   const [poolHistory, setPoolHistory] = useState<Pool[][]>([]);
@@ -59,6 +63,23 @@ export const usePoolManagement = ({
     [isLaserSabre]
   );
 
+  // Inclut l'historique des tours précédents pour un classement cumulatif
+  const computeOverallRankingAllRounds = useCallback(
+    (currentPools: Pool[], extraHistory?: Pool[][]) => {
+      const history = extraHistory ?? poolHistory;
+      const allPools = [...history.flat(), ...currentPools];
+      return computeOverallRanking(allPools);
+    },
+    [poolHistory, computeOverallRanking]
+  );
+
+  // Classement global courant mémoïsé — recalculé seulement quand pools ou poolHistory change
+  const currentOverallRanking = useMemo(
+    () => computeOverallRankingAllRounds(pools),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [pools, poolHistory, isLaserSabre]
+  );
+
   // Générer les poules
   const generatePools = useCallback(
     (checkedInFencers: Fencer[]) => {
@@ -70,15 +91,15 @@ export const usePoolManagement = ({
       const poolCount = calculateOptimalPoolCount(checkedInFencers.length, 5, 7);
       const distribution = distributeFencersToPoolsSerpentine(checkedInFencers, poolCount, {
         byClub: true,
-        byLeague: true,
+        byRegion: true,
         byNation: false,
       });
 
       const generatedPools: Pool[] = distribution.map((poolFencers, index) => {
-        const poolId = `pool-${index}`;
+        const poolId = crypto.randomUUID();
         const matchOrder = generatePoolMatchOrder(poolFencers.length);
         const matches: Match[] = matchOrder.map(([a, b], matchIndex) => ({
-          id: `match-${index}-${matchIndex}`,
+          id: crypto.randomUUID(),
           poolId,
           number: matchIndex + 1,
           fencerA: poolFencers[a - 1],
@@ -167,14 +188,71 @@ export const usePoolManagement = ({
 
         updatedPools[poolIndex] = pool;
 
-        // Recalculer le classement général
-        const newOverallRanking = computeOverallRanking(updatedPools);
+        // Recalculer le classement général (tous les tours cumulés)
+        const newOverallRanking = computeOverallRankingAllRounds(updatedPools);
         setOverallRanking(newOverallRanking);
 
         return updatedPools;
       });
     },
-    [computePoolRanking, computeOverallRanking]
+    [computePoolRanking, computeOverallRankingAllRounds]
+  );
+
+  // Annuler un match terminé pour le remettre à NOT_STARTED
+  const cancelMatch = useCallback(
+    (poolIndex: number, matchIndex: number) => {
+      setPools(prevPools => {
+        const updatedPools = [...prevPools];
+        const pool = { ...updatedPools[poolIndex] };
+        const match = { ...pool.matches[matchIndex] };
+
+        match.scoreA = null;
+        match.scoreB = null;
+        match.status = MatchStatus.NOT_STARTED;
+        match.updatedAt = new Date();
+
+        pool.matches = [...pool.matches];
+        pool.matches[matchIndex] = match;
+        pool.updatedAt = new Date();
+        pool.ranking = computePoolRanking(pool);
+
+        updatedPools[poolIndex] = pool;
+
+        const newOverallRanking = computeOverallRankingAllRounds(updatedPools);
+        setOverallRanking(newOverallRanking);
+
+        return updatedPools;
+      });
+    },
+    [computePoolRanking, computeOverallRankingAllRounds]
+  );
+
+  const resetMatch = useCallback(
+    (poolIndex: number, matchIndex: number) => {
+      setPools(prevPools => {
+        const updatedPools = [...prevPools];
+        const pool = { ...updatedPools[poolIndex] };
+        const match = { ...pool.matches[matchIndex] };
+
+        match.scoreA = null;
+        match.scoreB = null;
+        match.status = MatchStatus.NOT_STARTED;
+        match.updatedAt = new Date();
+
+        pool.matches = [...pool.matches];
+        pool.matches[matchIndex] = match;
+        pool.updatedAt = new Date();
+        pool.ranking = computePoolRanking(pool);
+
+        updatedPools[poolIndex] = pool;
+
+        const newOverallRanking = computeOverallRankingAllRounds(updatedPools);
+        setOverallRanking(newOverallRanking);
+
+        return updatedPools;
+      });
+    },
+    [computePoolRanking, computeOverallRankingAllRounds]
   );
 
   // Passer au tour de poules suivant
@@ -189,15 +267,15 @@ export const usePoolManagement = ({
       const newPoolCount = calculateOptimalPoolCount(checkedInFencers.length, 5, 7);
       const distribution = distributeFencersToPoolsSerpentine(checkedInFencers, newPoolCount, {
         byClub: true,
-        byLeague: true,
+        byRegion: true,
         byNation: false,
       });
 
       const newPools: Pool[] = distribution.map((poolFencers, index) => {
-        const poolId = `pool-round${currentPoolRound + 1}-${index}`;
+        const poolId = crypto.randomUUID();
         const matchOrder = generatePoolMatchOrder(poolFencers.length);
         const matches: Match[] = matchOrder.map(([a, b], matchIndex) => ({
-          id: `match-round${currentPoolRound + 1}-${index}-${matchIndex}`,
+          id: crypto.randomUUID(),
           poolId,
           number: matchIndex + 1,
           fencerA: poolFencers[a - 1],
@@ -228,17 +306,32 @@ export const usePoolManagement = ({
       setPools(newPools);
       setCurrentPoolRound(prev => prev + 1);
 
-      const ranking = computeOverallRanking(newPools);
+      // Classement cumulatif sur tous les tours terminés (historique + tour courant)
+      // newPools est vide, le classement reflète l'état après le tour qui vient de finir
+      const allCompletedPools = [...poolHistory, pools];
+      const ranking = computeOverallRanking(allCompletedPools.flat());
       setOverallRanking(ranking);
 
       showToast(`Tour ${currentPoolRound + 1} de poules créé`, 'success');
     },
-    [pools, currentPoolRound, poolMaxScore, computeOverallRanking, showToast]
+    [pools, poolHistory, currentPoolRound, poolMaxScore, computeOverallRanking, showToast]
   );
 
   // Vérifier si toutes les poules sont complètes
   const areAllPoolsComplete = useCallback(() => {
-    return pools.every(pool => pool.matches.every(match => match.status === MatchStatus.FINISHED));
+    const inactiveStatuses = new Set<FencerStatus>([
+      FencerStatus.ABANDONED,
+      FencerStatus.FORFAIT,
+      FencerStatus.EXCLUDED,
+    ]);
+    return pools.every(pool =>
+      pool.matches.every(match => {
+        const hasInactive =
+          inactiveStatuses.has(match.fencerA?.status as FencerStatus) ||
+          inactiveStatuses.has(match.fencerB?.status as FencerStatus);
+        return hasInactive || match.status === MatchStatus.FINISHED;
+      })
+    );
   }, [pools]);
 
   // Obtenir les statistiques des poules
@@ -260,7 +353,32 @@ export const usePoolManagement = ({
   // Gérer le forfait/abandon/exclusion d'un tireur sur tous ses matchs non encore disputés
   // Met à jour le statut du tireur et grise ses matchs restants dans la grille
   const handleFencerForfeit = useCallback(
-    (fencerId: string, status: 'abandon' | 'forfait' | 'exclusion') => {
+    async (fencerId: string, status: 'abandon' | 'forfait' | 'exclusion') => {
+      // --- Snapshot AVANT modification (pour pouvoir annuler) ---
+      const previousStatus =
+        pools.flatMap(p => p.fencers).find(f => f.id === fencerId)?.status ??
+        FencerStatus.CHECKED_IN;
+
+      const affectedSnapshots = pools.flatMap(pool =>
+        pool.matches
+          .filter(m => m.fencerA?.id === fencerId || m.fencerB?.id === fencerId)
+          .map(m => ({
+            matchId: m.id,
+            status: m.status as string,
+            scoreA: m.scoreA ? { ...m.scoreA } : null,
+            scoreB: m.scoreB ? { ...m.scoreB } : null,
+          }))
+      );
+
+      if (competitionId && window.electronAPI?.db?.saveAbandonSnapshot) {
+        await window.electronAPI.db
+          .saveAbandonSnapshot(fencerId, competitionId, previousStatus, status, affectedSnapshots)
+          .catch((e: Error) =>
+            logger.warn(LogCategory.DATABASE, 'Snapshot abandon échoué', e)
+          );
+      }
+
+      // --- Logique existante ---
       const newFencerStatus =
         status === 'abandon'
           ? FencerStatus.ABANDONED
@@ -269,67 +387,80 @@ export const usePoolManagement = ({
             : FencerStatus.EXCLUDED;
 
       setPools(prevPools => {
-        const updatedPools = [...prevPools];
         let modifiedCount = 0;
 
-        updatedPools.forEach(pool => {
-          // Mettre à jour le statut du tireur dans la liste des tireurs de la poule
-          const poolFencer = pool.fencers.find(f => f.id === fencerId);
-          if (poolFencer) {
-            poolFencer.status = newFencerStatus;
-          }
+        const updatedPools = prevPools.map(pool => {
+          const hasFencer =
+            pool.fencers.some(f => f.id === fencerId) ||
+            pool.matches.some(m => m.fencerA?.id === fencerId || m.fencerB?.id === fencerId);
+          if (!hasFencer) return pool;
 
-          pool.matches.forEach(match => {
-            // Vérifier si le tireur est dans ce match
+          const newFencers = pool.fencers.map(f =>
+            f.id === fencerId ? { ...f, status: newFencerStatus } : f
+          );
+
+          const newMatches = pool.matches.map(match => {
             const isFencerA = match.fencerA?.id === fencerId;
             const isFencerB = match.fencerB?.id === fencerId;
+            if (!isFencerA && !isFencerB) return match;
 
-            if (!isFencerA && !isFencerB) return;
-
-            // Ne pas écraser les matchs déjà disputés avec de vrais scores
+            // Ne pas écraser les matchs déjà disputés avec de vrais scores,
+            // mais propager quand même le statut dans la référence fencer
+            // pour que calculateFencerPoolStats annule ces matchs pour les adversaires.
             const isAlreadyPlayed =
               match.status === MatchStatus.FINISHED &&
               !match.scoreA?.isForfait &&
               !match.scoreB?.isForfait;
-            if (isAlreadyPlayed) return;
 
-            // Mettre à jour le statut du tireur dans les références du match
-            if (isFencerA && match.fencerA) {
-              match.fencerA.status = newFencerStatus;
-              match.scoreA = {
-                value: 0,
-                isVictory: false,
-                isAbstention: status === 'abandon',
-                isExclusion: status === 'exclusion',
-                isForfait: status === 'forfait',
-              };
-            } else if (isFencerB && match.fencerB) {
-              match.fencerB.status = newFencerStatus;
-              match.scoreB = {
-                value: 0,
-                isVictory: false,
-                isAbstention: status === 'abandon',
-                isExclusion: status === 'exclusion',
-                isForfait: status === 'forfait',
-              };
+            const newMatch = {
+              ...match,
+              fencerA:
+                isFencerA && match.fencerA
+                  ? { ...match.fencerA, status: newFencerStatus }
+                  : match.fencerA,
+              fencerB:
+                isFencerB && match.fencerB
+                  ? { ...match.fencerB, status: newFencerStatus }
+                  : match.fencerB,
+            };
+
+            if (!isAlreadyPlayed) {
+              if (isFencerA) {
+                newMatch.scoreA = {
+                  value: 0,
+                  isVictory: false,
+                  isAbstention: status === 'abandon',
+                  isExclusion: status === 'exclusion',
+                  isForfait: status === 'forfait',
+                };
+              } else {
+                newMatch.scoreB = {
+                  value: 0,
+                  isVictory: false,
+                  isAbstention: status === 'abandon',
+                  isExclusion: status === 'exclusion',
+                  isForfait: status === 'forfait',
+                };
+              }
+              newMatch.status = MatchStatus.FINISHED;
+              newMatch.updatedAt = new Date();
+              modifiedCount++;
             }
 
-            // Marquer le match comme terminé (non disputé)
-            match.status = MatchStatus.FINISHED;
-            match.updatedAt = new Date();
-            modifiedCount++;
+            return newMatch;
           });
 
-          // Recalculer le classement de la poule
+          const newPool = { ...pool, fencers: newFencers, matches: newMatches };
           if (modifiedCount > 0) {
-            pool.ranking = computePoolRanking(pool);
-            pool.updatedAt = new Date();
+            newPool.ranking = computePoolRanking(newPool);
+            newPool.updatedAt = new Date();
           }
+          return newPool;
         });
 
-        // Recalculer le classement général
+        // Recalculer le classement général (tous les tours cumulés)
         if (modifiedCount > 0) {
-          const newOverallRanking = computeOverallRanking(updatedPools);
+          const newOverallRanking = computeOverallRankingAllRounds(updatedPools);
           setOverallRanking(newOverallRanking);
           showToast(
             `${modifiedCount} match(s) marqué(s) comme non disputés (${status})`,
@@ -340,12 +471,120 @@ export const usePoolManagement = ({
         return updatedPools;
       });
     },
-    [computePoolRanking, computeOverallRanking, showToast]
+    [competitionId, pools, computePoolRanking, computeOverallRankingAllRounds, showToast]
+  );
+
+  // Annuler un abandon/forfait/exclusion et restaurer les matchs affectés
+  const handleUndoAbandon = useCallback(
+    async (fencerId: string) => {
+      let snapshot: AbandonSnapshot | null = null;
+
+      if (competitionId && window.electronAPI?.db?.getAbandonSnapshot) {
+        snapshot = await window.electronAPI.db
+          .getAbandonSnapshot(fencerId)
+          .catch(() => null);
+      }
+
+      setPools(prevPools => {
+        let restoredCount = 0;
+        const restoredStatus = snapshot
+          ? (snapshot.previousStatus as FencerStatus)
+          : FencerStatus.CHECKED_IN;
+
+        const updatedPools = prevPools.map(pool => {
+          const hasFencer =
+            pool.fencers.some(f => f.id === fencerId) ||
+            pool.matches.some(m => m.fencerA?.id === fencerId || m.fencerB?.id === fencerId);
+          if (!hasFencer) return pool;
+
+          const newFencers = pool.fencers.map(f =>
+            f.id === fencerId ? { ...f, status: restoredStatus } : f
+          );
+
+          const newMatches = pool.matches.map(match => {
+            const isFencerA = match.fencerA?.id === fencerId;
+            const isFencerB = match.fencerB?.id === fencerId;
+            if (!isFencerA && !isFencerB) return match;
+
+            if (snapshot) {
+              // Restauration depuis le snapshot
+              const saved = snapshot.matchSnapshots.find(s => s.matchId === match.id);
+              if (!saved) return match;
+              restoredCount++;
+              return {
+                ...match,
+                status: saved.status as MatchStatus,
+                scoreA: saved.scoreA as Score | null,
+                scoreB: saved.scoreB as Score | null,
+                fencerA:
+                  isFencerA && match.fencerA
+                    ? { ...match.fencerA, status: restoredStatus }
+                    : match.fencerA,
+                fencerB:
+                  isFencerB && match.fencerB
+                    ? { ...match.fencerB, status: restoredStatus }
+                    : match.fencerB,
+              };
+            } else {
+              // Fallback sans snapshot : réinitialise les matchs marqués abandon/forfait/exclusion
+              // uniquement si l'adversaire n'est pas lui-même en statut spécial
+              const myScore = isFencerA ? match.scoreA : match.scoreB;
+              const oppScore = isFencerA ? match.scoreB : match.scoreA;
+              if (
+                (myScore?.isAbstention || myScore?.isForfait || myScore?.isExclusion) &&
+                !oppScore?.isAbstention &&
+                !oppScore?.isForfait &&
+                !oppScore?.isExclusion
+              ) {
+                restoredCount++;
+                return {
+                  ...match,
+                  status: MatchStatus.NOT_STARTED,
+                  scoreA: null,
+                  scoreB: null,
+                  fencerA:
+                    isFencerA && match.fencerA
+                      ? { ...match.fencerA, status: FencerStatus.CHECKED_IN }
+                      : match.fencerA,
+                  fencerB:
+                    isFencerB && match.fencerB
+                      ? { ...match.fencerB, status: FencerStatus.CHECKED_IN }
+                      : match.fencerB,
+                };
+              }
+              return match;
+            }
+          });
+
+          const newPool = { ...pool, fencers: newFencers, matches: newMatches };
+          newPool.ranking = computePoolRanking(newPool);
+          newPool.updatedAt = new Date();
+          return newPool;
+        });
+
+        const newOverallRanking = computeOverallRankingAllRounds(updatedPools);
+        setOverallRanking(newOverallRanking);
+
+        if (restoredCount > 0) {
+          showToast(`Abandon annulé — ${restoredCount} match(s) restauré(s)`, 'success');
+        } else {
+          showToast('Statut restauré (aucun match à rétablir)', 'info');
+        }
+
+        return updatedPools;
+      });
+
+      // Supprimer le snapshot après restauration
+      if (snapshot && window.electronAPI?.db?.deleteAbandonSnapshot) {
+        await window.electronAPI.db.deleteAbandonSnapshot(fencerId).catch(() => {});
+      }
+    },
+    [competitionId, computePoolRanking, computeOverallRankingAllRounds, showToast]
   );
 
   // Mettre à jour un match depuis une source externe (serveur distant)
   const updateMatchFromRemote = useCallback(
-    (matchId: string, scoreA: number, scoreB: number, status: MatchStatus) => {
+    (matchId: string, scoreA: number, scoreB: number, status: MatchStatus, winnerOverride?: 'A' | 'B') => {
       setPools(prevPools => {
         const updatedPools = [...prevPools];
         let matchFound = false;
@@ -356,7 +595,11 @@ export const usePoolManagement = ({
             if (pool.matches[matchIdx].id === matchId) {
               matchFound = true;
               const match = pool.matches[matchIdx];
-              const winner = scoreA > scoreB ? 'A' : scoreB > scoreA ? 'B' : null;
+              // Pour le tirage au sort : scores égaux mais vainqueur explicite
+              const winner =
+                scoreA > scoreB ? 'A' :
+                scoreB > scoreA ? 'B' :
+                (winnerOverride ?? null);
 
               pool.matches[matchIdx] = {
                 ...match,
@@ -393,8 +636,8 @@ export const usePoolManagement = ({
           return prevPools;
         }
 
-        // Recalculer le classement général
-        const newOverallRanking = computeOverallRanking(updatedPools);
+        // Recalculer le classement général (tous les tours cumulés)
+        const newOverallRanking = computeOverallRankingAllRounds(updatedPools);
         setOverallRanking(newOverallRanking);
 
         logger.debug(
@@ -404,7 +647,7 @@ export const usePoolManagement = ({
         return updatedPools;
       });
     },
-    [computePoolRanking, computeOverallRanking]
+    [computePoolRanking, computeOverallRankingAllRounds]
   );
 
   // Synchroniser les données des tireurs (ex: photo) dans les matches de poule
@@ -442,15 +685,21 @@ export const usePoolManagement = ({
     setOverallRanking,
     generatePools,
     updateScore,
+    resetMatch,
+    cancelMatch,
     updateMatchFromRemote,
     nextPoolRound,
     areAllPoolsComplete,
     getPoolStats,
     computePoolRanking,
     computeOverallRanking,
+    computeOverallRankingAllRounds,
+    currentOverallRanking,
     handleFencerForfeit,
+    handleUndoAbandon,
     syncFencersToPool,
   };
 };
 
 export default usePoolManagement;
+

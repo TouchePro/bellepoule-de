@@ -1,6 +1,12 @@
-{
+﻿{
   "app": {
-    "title": "BellePoule Modern"
+    "title": "BellePoule Modern",
+    "home": "General",
+    "back_to_list": "Tornar a la llista de competicions",
+    "close_tab": "Tancar la pestanya",
+    "load_error_title": "Error de càrrega",
+    "load_error_message": "S'ha produït un error en carregar la llista de competicions.",
+    "reload": "Recarregar l'aplicació"
   },
   "menu": {
     "new_competition": "Nova Competició",
@@ -24,7 +30,9 @@
     "third_place_match_ok": "Feu clic a D'acord per afegir la petita final",
     "third_place_match_cancel": "Feu clic a Cancel·lar per acabar després de les semifinals",
     "third_place_match_label": "Petita final (combat pel 3r lloc)",
-    "third_place_match_description": "Organitza un combat addicional entre els dos semifinalistes perdedors per determinar el 3r i 4t lloc"
+    "third_place_match_description": "Organitza un combat addicional entre els dos semifinalistes perdedors per determinar el 3r i 4t lloc",
+    "comparisons": "Comparacions",
+    "analytics": "Analytics"
   },
   "weapons": {
     "epee": "Espasa",
@@ -43,7 +51,11 @@
     "U15": "Sub-15",
     "U17": "Sub-17",
     "U20": "Sub-20",
-    "senior": "Sènior"
+    "senior": "Sènior",
+    "V1": "Veterans 1",
+    "V2": "Veterans 2",
+    "V3": "Veterans 3",
+    "V4": "Veterans 4"
   },
   "fencer": {
     "last_name": "Cognom",
@@ -63,7 +75,9 @@
     "abandon": "Abandonar",
     "forfait": "No Presentar-se",
     "reactivate": "Reactivar",
-    "points": "Punts"
+    "points": "Punts",
+    "label": "tiradors",
+    "present_label": "registrats"
   },
   "status": {
     "checked_in": "Registrat",
@@ -79,11 +93,18 @@
   },
   "phases": {
     "checkin": "Registre",
+    "poolprep": "Preparació",
     "pools": "Poules",
+    "pools_skip": "Poules (saltades)",
+    "pools_round": "Poules ({{current}}/{{total}})",
+    "pools_skip_tooltip": "Fase de poules ignorada (0 poules)",
+    "pools_locked_tooltip": "Completeu primer la preparació de les poules",
+    "tableau_locked_tooltip": "Completeu totes les poules i valideu la classificació per accedir al quadre",
     "ranking": "Classificació",
     "tableau": "Quadre",
     "results": "Resultats",
-    "remote": "Entrada Remota"
+    "remote": "Entrada Remota",
+    "referees": "Àrbitres"
   },
   "pools": {
     "generate": "Generar Poules",
@@ -98,7 +119,9 @@
     "no_pools": "Sense Poules",
     "return_to_checkin": "Tornar al Registre",
     "pool_number": "Poule",
-    "change_pool": "Canviar de Poule"
+    "change_pool": "Canviar de Poule",
+    "next_round_n": "Ronda {{n}} →",
+    "view_ranking_action": "Veure classificació →"
   },
   "ranking": {
     "rank": "Pos",
@@ -204,12 +227,111 @@
     "warning": "Avís",
     "info": "Informació",
     "connection_lost": "Connexió perduda",
-    "connection_restored": "Connexió restablerta"
+    "connection_restored": "Connexió restablerta",
+    "name_required": "El cognom i el nom són obligatoris"
   },
   "time": {
     "minutes": "minuts",
     "seconds": "segons",
     "hours": "hores",
     "days": "dies"
+  },
+  "pdfTemplate": {
+    "modalTitle": "Personalitzar exportacions PDF",
+    "openButton": "Personalitzar PDFs",
+    "docType": { "pool": "Grups", "tableau": "Quadre", "ranking": "Classificació" },
+    "customTitle": "Títol personalitzat",
+    "customTitlePlaceholder": "Deixar buit per al títol automàtic",
+    "colors": { "navy": "Color principal", "gold": "Color d'accent", "green": "Color de victòria" },
+    "elements": {
+      "header": "Capçalera", "gold-bar": "Separador daurat", "competition-name": "Nom de la competició", "meta-chips": "Xips d'info",
+      "score-grid": "Quadrícula de puntuació", "pending-matches": "Combats pendents",
+      "finished-matches": "Resultats", "match-cards": "Fitxes de combat",
+      "ranking-table": "Taula de classificació", "footer": "Peu de pàgina"
+    },
+    "reset": "Restablir", "exportJson": "Exportar JSON", "importJson": "Importar JSON", "importError": "Fitxer JSON no vàlid"
+  },
+  "cardModal": {
+    "title": "Targeta per a {{name}}",
+    "previous_cards": "Targetes anteriors:",
+    "card_white": "⬜ TARGETA BLANCA",
+    "card_yellow": "🟨 TARGETA GROGA",
+    "card_red": "🟥 TARGETA VERMELLA",
+    "card_black": "⬛ TARGETA NEGRA",
+    "abbr_white": "B",
+    "abbr_yellow": "G",
+    "abbr_red": "V",
+    "abbr_black": "N",
+    "points_for": "+{{points}} punt per a {{name}}",
+    "exclusion": "⚠️ EXCLUSIÓ DE LA COMPETICIÓ"
+  },
+  "cardReasons": {
+    "EARLY_START": "Sortida anticipada",
+    "LATE_STOP": "Continuar després de \"Alto!\"",
+    "BODY_CONTACT": "Contacte corporal voluntari",
+    "COUNTER_ATTACK": "Contraatac",
+    "TARGET_SUBSTITUTION": "Substitució de diana",
+    "VOLUNTARY_DROP": "Deixar caure el sabre voluntàriament",
+    "TIME_WASTING": "Pèrdua de temps",
+    "NON_COMPLIANT_GEAR": "Material no conforme",
+    "ESTOC": "Cop de punta (estocada)",
+    "UNARMED_HAND": "Ús de la mà desarmada",
+    "VOLUNTARY_EXIT": "Sortida voluntària de la pista",
+    "HEAVY_HIT": "Cop fort",
+    "BRUTALITY": "Brutalitat",
+    "DANGEROUS": "Comportament perillós",
+    "REFUSAL": "Negativa a combatre",
+    "UNSPORTSMANLIKE": "Conducta antiesportiva",
+    "CHEATING": "Trampa"
+  },
+  "cardGroups": {
+    "GROUP_1": "Grup 1 (Blanc → Groc → Groc)",
+    "GROUP_2": "Grup 2 (Groc → Vermell → Vermell)",
+    "GROUP_3": "Grup 3 (Vermell → Exclusió)",
+    "GROUP_4": "Grup 4 (Exclusió immediata)"
+  },
+  "stats": {
+    "title": "Estadístiques per tirador",
+    "zone_a": "Zona A (1 pt)",
+    "zone_b": "Zona B (3 pts)",
+    "zone_c": "Zona C (5 pts)",
+    "total_points": "Pts totals",
+    "white_cards": "Targetes blanques",
+    "yellow_cards": "Targetes grogues",
+    "red_cards": "Targetes vermelles",
+    "arena_exits": "Sortides de pista",
+    "matches_played": "Combats",
+    "avg_duration": "Durada mit.",
+    "early_finishes": "< 3 min",
+    "export_pdf": "Exportar estadístiques (PDF)",
+    "export_fencer_pdf": "Exportar tirador (PDF)",
+    "export_competition_pdf": "Exportar competició PDF",
+    "no_data": "No hi ha estadístiques disponibles per a aquesta competició.",
+    "laser_only": "Les zones de toc (A/B/C) només estan disponibles en mode Sabre Làser."
+  },
+  "shortcuts": {
+    "title": "Dreceres de Teclat",
+    "subtitle": "Domina BellePoule com un professional",
+    "footer": "Premeu ? per mostrar aquesta ajuda en qualsevol moment",
+    "category_all": "Tots",
+    "category_global": "Global",
+    "category_navigation": "Navegació",
+    "category_actions": "Accions",
+    "category_competition": "Competició",
+    "show_help": "Mostrar ajuda de dreceres",
+    "quick_search": "Cerca ràpida",
+    "close_modal": "Tancar modal / Cancel·lar",
+    "go_pools": "Anar a poules",
+    "go_tableau": "Anar al quadre",
+    "go_results": "Anar als resultats",
+    "nav_fields": "Navegar entre camps",
+    "save": "Desar",
+    "undo": "Desfer",
+    "redo": "Refer",
+    "new_competition": "Nova competició",
+    "refresh_data": "Actualitzar dades",
+    "timer": "Iniciar/Pausar cronòmetre",
+    "nav_list": "Navegar a la llista",
+    "validate": "Validar / Obrir"
   }
 }

@@ -128,4 +128,4 @@ export const useConfirm = (): ConfirmContextType => {
   return context;
 };
 
-export default ConfirmProvider;
+export default React.memo(ConfirmProvider);

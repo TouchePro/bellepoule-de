@@ -72,21 +72,28 @@ export const Tooltip: React.FC<TooltipProps> = ({
     };
   }, []);
 
+  const BG = 'rgba(26, 25, 22, 0.82)';
+  const ARROW_SIZE = 5;
+
   const getTooltipStyle = (): React.CSSProperties => {
     const base: React.CSSProperties = {
       position: 'fixed',
-      backgroundColor: '#1f2937',
-      color: 'white',
-      padding: '8px 12px',
-      borderRadius: '6px',
-      fontSize: '13px',
+      background: BG,
+      backdropFilter: 'blur(12px) saturate(160%)',
+      WebkitBackdropFilter: 'blur(12px) saturate(160%)',
+      color: 'rgba(255,255,255,0.92)',
+      padding: '6px 10px',
+      borderRadius: '8px',
+      fontSize: '12px',
+      fontWeight: 500,
+      letterSpacing: '-0.01em',
       whiteSpace: 'nowrap',
       zIndex: 9999,
       pointerEvents: 'none',
       opacity: isVisible ? 1 : 0,
-      transform: isVisible ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -50%) scale(0.9)',
-      transition: 'opacity 0.2s, transform 0.2s',
-      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+      transition: 'opacity 0.15s ease, transform 0.15s ease',
+      boxShadow: '0 4px 16px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.08)',
+      border: '1px solid rgba(255,255,255,0.12)',
     };
 
     switch (position) {
@@ -95,28 +102,32 @@ export const Tooltip: React.FC<TooltipProps> = ({
           ...base,
           left: coords.x,
           top: coords.y - 20,
-          transform: `translate(-50%, -100%) scale(${isVisible ? 1 : 0.9})`,
+          transform: `translate(-50%, -100%) scale(${isVisible ? 1 : 0.92})`,
+          transformOrigin: 'bottom center',
         };
       case 'bottom':
         return {
           ...base,
           left: coords.x,
           top: coords.y + 20,
-          transform: `translate(-50%, 0) scale(${isVisible ? 1 : 0.9})`,
+          transform: `translate(-50%, 0) scale(${isVisible ? 1 : 0.92})`,
+          transformOrigin: 'top center',
         };
       case 'left':
         return {
           ...base,
           left: coords.x - 20,
           top: coords.y,
-          transform: `translate(-100%, -50%) scale(${isVisible ? 1 : 0.9})`,
+          transform: `translate(-100%, -50%) scale(${isVisible ? 1 : 0.92})`,
+          transformOrigin: 'right center',
         };
       case 'right':
         return {
           ...base,
           left: coords.x + 20,
           top: coords.y,
-          transform: `translate(0, -50%) scale(${isVisible ? 1 : 0.9})`,
+          transform: `translate(0, -50%) scale(${isVisible ? 1 : 0.92})`,
+          transformOrigin: 'left center',
         };
       default:
         return base;
@@ -131,41 +142,41 @@ export const Tooltip: React.FC<TooltipProps> = ({
       borderStyle: 'solid',
       zIndex: 9999,
       opacity: isVisible ? 1 : 0,
-      transition: 'opacity 0.2s',
+      transition: 'opacity 0.15s ease',
     };
 
     switch (position) {
       case 'top':
         return {
           ...base,
-          left: coords.x - 5,
+          left: coords.x - ARROW_SIZE,
           top: coords.y - 20,
-          borderWidth: '5px 5px 0 5px',
-          borderColor: '#1f2937 transparent transparent transparent',
+          borderWidth: `${ARROW_SIZE}px ${ARROW_SIZE}px 0 ${ARROW_SIZE}px`,
+          borderColor: `${BG} transparent transparent transparent`,
         };
       case 'bottom':
         return {
           ...base,
-          left: coords.x - 5,
+          left: coords.x - ARROW_SIZE,
           top: coords.y + 20,
-          borderWidth: '0 5px 5px 5px',
-          borderColor: 'transparent transparent #1f2937 transparent',
+          borderWidth: `0 ${ARROW_SIZE}px ${ARROW_SIZE}px ${ARROW_SIZE}px`,
+          borderColor: `transparent transparent ${BG} transparent`,
         };
       case 'left':
         return {
           ...base,
           left: coords.x - 20,
-          top: coords.y - 5,
-          borderWidth: '5px 0 5px 5px',
-          borderColor: 'transparent transparent transparent #1f2937',
+          top: coords.y - ARROW_SIZE,
+          borderWidth: `${ARROW_SIZE}px 0 ${ARROW_SIZE}px ${ARROW_SIZE}px`,
+          borderColor: `transparent transparent transparent ${BG}`,
         };
       case 'right':
         return {
           ...base,
           left: coords.x + 20,
-          top: coords.y - 5,
-          borderWidth: '5px 5px 5px 0',
-          borderColor: 'transparent #1f2937 transparent transparent',
+          top: coords.y - ARROW_SIZE,
+          borderWidth: `${ARROW_SIZE}px ${ARROW_SIZE}px ${ARROW_SIZE}px 0`,
+          borderColor: `transparent ${BG} transparent transparent`,
         };
       default:
         return base;
@@ -282,4 +293,4 @@ export const HelpTooltip: React.FC<HelpTooltipProps> = ({ text }) => {
   );
 };
 
-export default Tooltip;
+export default React.memo(Tooltip);

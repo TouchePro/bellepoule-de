@@ -5,6 +5,10 @@
  */
 
 import { Pool, Fencer, PoolRanking } from '../../../shared/types';
+import {
+  calculatePoolRanking,
+  calculateFencerPoolStats,
+} from '../../../shared/utils/poolCalculations';
 
 export interface PoolCalculationResult {
   rankings: PoolRanking[];
@@ -44,17 +48,23 @@ export class PoolCalculator {
   }
 
   /**
-   * Calculate pool rankings
+   * Calculate pool rankings using standard FIE rules
    */
   static calculateRankings(pool: Pool): PoolCalculationResult {
-    // Placeholder implementation
+    const rankings = calculatePoolRanking(pool);
+    const matches = pool.matches ?? [];
+    const completedMatches = matches.filter(m => m.status === 'finished').length;
+    const totalTouches = matches
+      .filter(m => m.status === 'finished')
+      .reduce((sum, m) => sum + (m.scoreA?.value ?? 0) + (m.scoreB?.value ?? 0), 0);
+
     return {
-      rankings: [],
-      isComplete: false,
+      rankings,
+      isComplete: PoolCalculator.isPoolComplete(pool),
       stats: {
-        totalMatches: pool.matches?.length || 0,
-        completedMatches: 0,
-        averageTouchesPerMatch: 0,
+        totalMatches: matches.length,
+        completedMatches,
+        averageTouchesPerMatch: completedMatches > 0 ? totalTouches / completedMatches : 0,
       },
     };
   }
@@ -68,10 +78,10 @@ export class PoolCalculator {
   }
 
   /**
-   * Calculate victory ratio for a fencer
+   * Calculate victory ratio for a fencer in a pool
    */
   static calculateVictoryRatio(fencer: Fencer, pool: Pool): number {
-    // Placeholder implementation
-    return 0;
+    const stats = calculateFencerPoolStats(fencer, pool.matches ?? []);
+    return stats.victoryRatio;
   }
 }

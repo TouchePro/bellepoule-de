@@ -1,0 +1,16 @@
+{
+  "entryPoints": [
+    "src/shared/types/preload.ts",
+    "src/shared/services/cloudSyncService.ts",
+    "src/shared/services/errorService.ts",
+    "src/shared/services/ffeConnectService.ts",
+    "src/shared/services/refereeManager.ts",
+    "src/shared/services/tournamentFlow.ts"
+  ],
+  "out": "docs/api",
+  "name": "BellePoule Modern — API IPC",
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "readme": "none",
+  "tsconfig": "tsconfig.json"
+}

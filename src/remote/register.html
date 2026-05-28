@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Inscription tireur</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --border: #334155;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --danger: #ef4444;
+      --success: #22c55e;
+      --radius: 10px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem 1rem 3rem;
+    }
+
+    header {
+      width: 100%;
+      max-width: 480px;
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      margin-top: 0.25rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      width: 100%;
+      max-width: 480px;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.4rem;
+    }
+
+    label .req { color: var(--accent); }
+
+    input, select {
+      width: 100%;
+      padding: 0.625rem 0.875rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.15s;
+      -webkit-appearance: none;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+    }
+
+    select option { background: var(--bg); }
+
+    .row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    /* ── Camera section ── */
+    .photo-section {
+      margin-top: 1.25rem;
+      border-top: 1px solid var(--border);
+      padding-top: 1.25rem;
+    }
+
+    .photo-section h2 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      color: var(--text);
+    }
+
+    #camera-area {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4/3;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      display: none;
+    }
+
+    #camera-area video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    #preview-area {
+      width: 100%;
+      aspect-ratio: 4/3;
+      border-radius: 8px;
+      overflow: hidden;
+      display: none;
+      background: #000;
+    }
+
+    #preview-area img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    canvas { display: none; }
+
+    .camera-btns {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.7rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: opacity 0.15s, background 0.15s;
+    }
+
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .btn-primary { background: var(--accent); color: #fff; width: 100%; }
+    .btn-primary:not(:disabled):hover { background: var(--accent-hover); }
+
+    .btn-secondary { background: var(--border); color: var(--text); flex: 1; }
+    .btn-secondary:not(:disabled):hover { background: #475569; }
+
+    .btn-danger-outline {
+      background: transparent;
+      color: var(--danger);
+      border: 1px solid var(--danger);
+      flex: 1;
+    }
+
+    .btn-submit {
+      margin-top: 1.5rem;
+      font-size: 1.1rem;
+      padding: 0.85rem;
+    }
+
+    /* ── Toast / alert ── */
+    #toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(120%);
+      background: var(--success);
+      color: #fff;
+      padding: 0.75rem 1.5rem;
+      border-radius: 100px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: transform 0.3s;
+      white-space: nowrap;
+      z-index: 100;
+    }
+
+    #toast.error { background: var(--danger); }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── Closed banner ── */
+    #closed-banner {
+      display: none;
+      text-align: center;
+      padding: 2rem 1rem;
+    }
+
+    #closed-banner .icon { font-size: 3rem; margin-bottom: 0.75rem; }
+    #closed-banner h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem; }
+    #closed-banner p { color: var(--text-muted); font-size: 0.9rem; }
+
+    /* ── Spinner ── */
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<header>
+  <h1>⚔️ Inscription compétiteur</h1>
+  <p id="subtitle">Remplissez le formulaire puis prenez un selfie</p>
+</header>
+
+<!-- Closed state -->
+<div id="closed-banner">
+  <div class="icon">🔒</div>
+  <h2>Inscription fermée</h2>
+  <p>Les poules ont été générées.<br>Contactez l'organisateur pour toute modification.</p>
+</div>
+
+<!-- Form -->
+<div class="card" id="form-card">
+  <form id="reg-form" novalidate>
+
+    <div class="row-2">
+      <div class="form-group">
+        <label for="lastName">Nom <span class="req">*</span></label>
+        <input id="lastName" type="text" autocomplete="family-name" autocapitalize="words" placeholder="DUPONT" required />
+      </div>
+      <div class="form-group">
+        <label for="firstName">Prénom <span class="req">*</span></label>
+        <input id="firstName" type="text" autocomplete="given-name" autocapitalize="words" placeholder="Jean" required />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="gender">Genre <span class="req">*</span></label>
+      <select id="gender" required>
+        <option value="">— Sélectionner —</option>
+        <option value="M">Homme</option>
+        <option value="F">Femme</option>
+        <option value="X">Autre</option>
+      </select>
+    </div>
+
+    <div class="row-2">
+      <div class="form-group">
+        <label for="club">Club</label>
+        <input id="club" type="text" autocapitalize="words" placeholder="Nom du club" />
+      </div>
+      <div class="form-group">
+        <label for="license">Licence</label>
+        <input id="license" type="text" placeholder="N° licence" />
+      </div>
+    </div>
+
+    <div class="row-2">
+      <div class="form-group">
+        <label for="nationality">Nationalité</label>
+        <input id="nationality" type="text" maxlength="3" placeholder="FRA" style="text-transform:uppercase" />
+      </div>
+      <div class="form-group">
+        <label for="birthDate">Date naissance</label>
+        <input id="birthDate" type="date" />
+      </div>
+    </div>
+
+    <!-- Camera -->
+    <div class="photo-section">
+      <h2>📷 Photo (selfie)</h2>
+      <div id="placeholder-area" style="text-align:center;padding:1.5rem 0;color:var(--text-muted);font-size:0.875rem;">
+        Aucune photo — optionnelle
+      </div>
+      <div id="camera-area">
+        <video id="video" autoplay playsinline muted></video>
+      </div>
+      <div id="preview-area">
+        <img id="preview-img" src="" alt="selfie" />
+      </div>
+      <canvas id="canvas"></canvas>
+
+      <div class="camera-btns" id="camera-btns-open" style="margin-top:0.75rem;">
+        <button type="button" class="btn btn-secondary" id="btn-open-camera">📷 Ouvrir caméra</button>
+      </div>
+      <div class="camera-btns" id="camera-btns-live" style="display:none;">
+        <button type="button" class="btn btn-secondary" id="btn-capture">📸 Prendre selfie</button>
+        <button type="button" class="btn btn-danger-outline" id="btn-cancel-camera">✕ Annuler</button>
+      </div>
+      <div class="camera-btns" id="camera-btns-preview" style="display:none;">
+        <button type="button" class="btn btn-secondary" id="btn-retake">🔄 Reprendre</button>
+        <button type="button" class="btn btn-danger-outline" id="btn-remove-photo">✕ Supprimer</button>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-submit" id="btn-submit">
+      ✅ S'inscrire
+    </button>
+
+  </form>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  let photoBase64 = null;
+  let stream = null;
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+  const previewImg = document.getElementById('preview-img');
+  const cameraArea = document.getElementById('camera-area');
+  const previewArea = document.getElementById('preview-area');
+  const placeholderArea = document.getElementById('placeholder-area');
+  const cameraBtnsOpen = document.getElementById('camera-btns-open');
+  const cameraBtnsLive = document.getElementById('camera-btns-live');
+  const cameraBtnsPreview = document.getElementById('camera-btns-preview');
+  const btnSubmit = document.getElementById('btn-submit');
+
+  // ── Check registration status ──────────────────────────────────────────────
+  async function checkStatus() {
+    try {
+      const res = await fetch('/api/register/status');
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      if (!data.open) showClosed();
+    } catch {
+      // network issue, assume open
+    }
+  }
+
+  function showClosed() {
+    document.getElementById('form-card').style.display = 'none';
+    document.getElementById('closed-banner').style.display = 'block';
+    document.getElementById('subtitle').textContent = 'Inscription fermée';
+    stopCamera();
+  }
+
+  // ── Camera helpers ─────────────────────────────────────────────────────────
+  function stopCamera() {
+    if (stream) {
+      stream.getTracks().forEach(t => t.stop());
+      stream = null;
+    }
+  }
+
+  function showPlaceholder() {
+    placeholderArea.style.display = 'block';
+    cameraArea.style.display = 'none';
+    previewArea.style.display = 'none';
+    cameraBtnsOpen.style.display = 'flex';
+    cameraBtnsLive.style.display = 'none';
+    cameraBtnsPreview.style.display = 'none';
+  }
+
+  function showLive() {
+    placeholderArea.style.display = 'none';
+    cameraArea.style.display = 'block';
+    previewArea.style.display = 'none';
+    cameraBtnsOpen.style.display = 'none';
+    cameraBtnsLive.style.display = 'flex';
+    cameraBtnsPreview.style.display = 'none';
+  }
+
+  function showPreview() {
+    placeholderArea.style.display = 'none';
+    cameraArea.style.display = 'none';
+    previewArea.style.display = 'block';
+    cameraBtnsOpen.style.display = 'none';
+    cameraBtnsLive.style.display = 'none';
+    cameraBtnsPreview.style.display = 'flex';
+  }
+
+  document.getElementById('btn-open-camera').addEventListener('click', async () => {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+      video.srcObject = stream;
+      showLive();
+    } catch {
+      showToast('Caméra non disponible', 'error');
+    }
+  });
+
+  document.getElementById('btn-capture').addEventListener('click', () => {
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    // Mirror (selfie)
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0);
+    // Compress to JPEG, max ~400 KB → quality 0.7
+    photoBase64 = canvas.toDataURL('image/jpeg', 0.7);
+    previewImg.src = photoBase64;
+    stopCamera();
+    showPreview();
+  });
+
+  document.getElementById('btn-cancel-camera').addEventListener('click', () => {
+    stopCamera();
+    photoBase64 = null;
+    showPlaceholder();
+  });
+
+  document.getElementById('btn-retake').addEventListener('click', async () => {
+    photoBase64 = null;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+      video.srcObject = stream;
+      showLive();
+    } catch {
+      showPlaceholder();
+      showToast('Caméra non disponible', 'error');
+    }
+  });
+
+  document.getElementById('btn-remove-photo').addEventListener('click', () => {
+    photoBase64 = null;
+    showPlaceholder();
+  });
+
+  // ── Toast ──────────────────────────────────────────────────────────────────
+  let toastTimer = null;
+  function showToast(msg, type) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = type === 'error' ? 'error show' : 'show';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.className = el.className.replace(' show', '').replace('show', ''); }, 3500);
+  }
+
+  // ── Form submit ────────────────────────────────────────────────────────────
+  document.getElementById('reg-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const lastName = document.getElementById('lastName').value.trim();
+    const firstName = document.getElementById('firstName').value.trim();
+    const gender = document.getElementById('gender').value;
+
+    if (!lastName || !firstName || !gender) {
+      showToast('Nom, prénom et genre sont obligatoires', 'error');
+      return;
+    }
+
+    // Sanitize: strip HTML tags
+    function strip(s) { return s.replace(/<[^>]*>/g, '').substring(0, 100); }
+
+    const payload = {
+      lastName: strip(lastName).toUpperCase(),
+      firstName: strip(firstName),
+      gender,
+      club: strip(document.getElementById('club').value.trim()),
+      license: strip(document.getElementById('license').value.trim()),
+      nationality: document.getElementById('nationality').value.trim().toUpperCase().substring(0, 3) || 'FRA',
+      birthDate: document.getElementById('birthDate').value || null,
+      photo: photoBase64 || null,
+    };
+
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<div class="spinner"></div>';
+
+    try {
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (res.status === 403 && data.registrationClosed) {
+        showClosed();
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Erreur serveur');
+      }
+
+      // Success
+      showToast(`✅ ${payload.firstName} ${payload.lastName} inscrit(e) !`, 'success');
+      stopCamera();
+      photoBase64 = null;
+      document.getElementById('reg-form').reset();
+      showPlaceholder();
+
+    } catch (err) {
+      showToast(err.message || 'Erreur réseau', 'error');
+    } finally {
+      btnSubmit.disabled = false;
+      btnSubmit.innerHTML = '✅ S\'inscrire';
+    }
+  });
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+  checkStatus();
+  showPlaceholder();
+
+  // Nationalité : auto-majuscules
+  document.getElementById('nationality').addEventListener('input', function () {
+    this.value = this.value.toUpperCase();
+  });
+})();
+</script>
+
+</body>
+</html>

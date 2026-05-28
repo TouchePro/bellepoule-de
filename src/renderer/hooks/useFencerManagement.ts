@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Competition, Fencer, FencerStatus } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
 import { useToast } from '../components/Toast';
@@ -18,6 +18,10 @@ interface UseFencerManagementProps {
 export const useFencerManagement = ({ competition, onUpdate }: UseFencerManagementProps) => {
   const { showToast } = useToast();
   const [fencers, setFencers] = useState<Fencer[]>(competition.fencers || []);
+  const competitionRef = useRef(competition);
+  const onUpdateRef = useRef(onUpdate);
+  competitionRef.current = competition;
+  onUpdateRef.current = onUpdate;
 
   // Synchroniser avec la compétition parente
   useEffect(() => {
@@ -29,14 +33,15 @@ export const useFencerManagement = ({ competition, onUpdate }: UseFencerManageme
     if (!window.electronAPI?.db?.getFencersByCompetition) return;
 
     try {
-      const data = await window.electronAPI.db.getFencersByCompetition(competition.id);
+      const comp = competitionRef.current;
+      const data = await window.electronAPI.db.getFencersByCompetition(comp.id);
       setFencers(data);
-      onUpdate({ ...competition, fencers: data });
+      onUpdateRef.current({ ...comp, fencers: data });
     } catch (error) {
       logger.error(LogCategory.UI, 'Failed to load fencers', error as Error);
       showToast('Erreur lors du chargement des tireurs', 'error');
     }
-  }, [competition, onUpdate, showToast]);
+  }, [showToast]);
 
   // Ajouter un tireur
   const addFencer = useCallback(
@@ -189,6 +194,29 @@ export const useFencerManagement = ({ competition, onUpdate }: UseFencerManageme
     return fencers.filter(f => f.status === FencerStatus.CHECKED_IN);
   }, [fencers]);
 
+  // Importer plusieurs tireurs en une seule opération (évite N re-renders)
+  const bulkAddFencers = useCallback(
+    async (fencersData: Omit<Fencer, 'id' | 'createdAt' | 'updatedAt'>[]) => {
+      if (!window.electronAPI?.db?.addFencer) {
+        showToast('Erreur: API non disponible', 'error');
+        throw new Error('API non disponible');
+      }
+
+      const added: Fencer[] = [];
+      for (const fencerData of fencersData) {
+        const newFencer = await window.electronAPI.db.addFencer(competition.id, fencerData as any);
+        added.push(newFencer);
+      }
+
+      const updatedFencers = [...fencers, ...added];
+      setFencers(updatedFencers);
+      onUpdate({ ...competition, fencers: updatedFencers });
+      showToast(`${added.length} tireur${added.length !== 1 ? 's' : ''} importé${added.length !== 1 ? 's' : ''}`, 'success');
+      return added;
+    },
+    [fencers, competition, onUpdate, showToast]
+  );
+
   // Importer un classement depuis un fichier FFF
   const importRanking = useCallback(
     async (fileContent: string): Promise<RankingImportResult> => {
@@ -270,6 +298,7 @@ export const useFencerManagement = ({ competition, onUpdate }: UseFencerManageme
     setFencers,
     loadFencers,
     addFencer,
+    bulkAddFencers,
     updateFencer,
     deleteFencer,
     deleteAllFencers,

@@ -274,4 +274,4 @@ export const PresentationMode: React.FC<PresentationModeProps> = ({
   );
 };
 
-export default PresentationMode;
+export default React.memo(PresentationMode);

@@ -1,6 +1,12 @@
-{
+﻿{
   "app": {
-    "title": "BellePoule Modern"
+    "title": "BellePoule Modern",
+    "home": "Broadel",
+    "back_to_list": "Distro d'al roll kenstrivadegoù",
+    "close_tab": "Serriñ an ivinell",
+    "load_error_title": "Fazi kargañ",
+    "load_error_message": "Ur fazi zo chegnet en ur gargañ al roll kenstrivadegoù.",
+    "reload": "Adkargañ an arlivañ"
   },
   "menu": {
     "new_competition": "Nevezompetañ",
@@ -24,7 +30,9 @@
     "third_place_match_ok": "Klikit war OK evit ouzhpennañ ar bras bihan",
     "third_place_match_cancel": "Klikit war Nullañ evit echuiñ goude an hanter gourfenn",
     "third_place_match_label": "Bras bihan (match evit an 3de plas)",
-    "third_place_match_description": "Aoz ur match ouzhpenn etre an daou c'hoarzer a yaouank en hanter gourfenn evit derminiñ an 3de ha 4de plas"
+    "third_place_match_description": "Aoz ur match ouzhpenn etre an daou c'hoarzer a yaouank en hanter gourfenn evit derminiñ an 3de ha 4de plas",
+    "comparisons": "Kenstrivañ",
+    "analytics": "Analiz"
   },
   "weapons": {
     "epee": "Spes",
@@ -43,7 +51,11 @@
     "U15": "U15 (Minimod)",
     "U17": "U17 (Kadet)",
     "U20": "U20 (Junior)",
-    "senior": "Koskour"
+    "senior": "Koskour",
+    "V1": "Kozh 1",
+    "V2": "Kozh 2",
+    "V3": "Kozh 3",
+    "V4": "Kozh 4"
   },
   "fencer": {
     "last_name": "Anv-tiezh",
@@ -63,7 +75,9 @@
     "abandon": "Dilez",
     "forfait": "Dilez",
     "reactivate": "Adilhañ",
-    "points": "Poentoù"
+    "points": "Poentoù",
+    "label": "klezeourion",
+    "present_label": "enrollet"
   },
   "status": {
     "checked_in": "Enrollañet",
@@ -79,11 +93,18 @@
   },
   "phases": {
     "checkin": "Enrollañ",
+    "poolprep": "Hentez",
     "pools": "Poullou",
+    "pools_skip": "Poullou (treuzet)",
+    "pools_round": "Poullou ({{current}}/{{total}})",
+    "pools_skip_tooltip": "Talbenn poulloù trespasset (0 poullou)",
+    "pools_locked_tooltip": "Echuiit kentañ gant kempenn ar poulloù",
+    "tableau_locked_tooltip": "Echuiit an holl poullou ha validait ar renk evit mont d'ar daolenn",
     "ranking": "Renk",
     "tableau": "Taolenn",
     "results": "Disoc'hoùezioù",
-    "remote": "Enrollañ a-bell"
+    "remote": "Enrollañ a-bell",
+    "referees": "Varnourien"
   },
   "pools": {
     "generate": "Genelañ ar poullou",
@@ -98,7 +119,9 @@
     "no_pools": "Poull ebet ebet",
     "return_to_checkin": "Distro d'an enrollañ",
     "pool_number": "Poull",
-    "change_pool": "Kemmañ ar poullou"
+    "change_pool": "Kemmañ ar poullou",
+    "next_round_n": "Tro {{n}} →",
+    "view_ranking_action": "Gwelet ar renk →"
   },
   "ranking": {
     "rank": "Renk",
@@ -204,12 +227,111 @@
     "warning": "Diwallit",
     "info": "Stlenn",
     "connection_lost": "Kevreadur kolletet",
-    "connection_restored": "Kevreadur az adsavet"
+    "connection_restored": "Kevreadur az adsavet",
+    "name_required": "Ret eo an anv-tiezh hag an anv-bihan"
   },
   "time": {
     "minutes": "munutennoù",
     "seconds": "eil",
     "hours": "eurvezh",
     "days": "deiz"
+  },
+  "pdfTemplate": {
+    "modalTitle": "Personelañ ezporzhioù PDF",
+    "openButton": "Personelañ PDF",
+    "docType": { "pool": "Poelloù", "tableau": "Taolenn", "ranking": "Renk" },
+    "customTitle": "Titl personelaet",
+    "customTitlePlaceholder": "Lezel goullo evit titl emgefreek",
+    "colors": { "navy": "Liv pennañ", "gold": "Liv mouezh", "green": "Liv trechañ" },
+    "elements": {
+      "header": "Penn-bann", "gold-bar": "Barenn aour", "competition-name": "Anv ar genstrivadeg", "meta-chips": "Chips titouroù",
+      "score-grid": "Reizh poentoù", "pending-matches": "Emgavioù o vont",
+      "finished-matches": "Disoc'hoù", "match-cards": "Kartennoù emgav",
+      "ranking-table": "Taolenn renk", "footer": "Troad-pajenn"
+    },
+    "reset": "Adderaouiñ", "exportJson": "Ezporzhiañ JSON", "importJson": "Enporzhiañ JSON", "importError": "Restr JSON fall"
+  },
+  "cardModal": {
+    "title": "Kartennik evit {{name}}",
+    "previous_cards": "Kartennoù a-raok:",
+    "card_white": "⬜ KARTENN WENN",
+    "card_yellow": "🟨 KARTENN VELEN",
+    "card_red": "🟥 KARTENN RUZ",
+    "card_black": "⬛ KARTENN DU",
+    "abbr_white": "G",
+    "abbr_yellow": "M",
+    "abbr_red": "R",
+    "abbr_black": "D",
+    "points_for": "+{{points}} poent evit {{name}}",
+    "exclusion": "⚠️ SKARZHADUR EUS AR GENSTRIVADEG"
+  },
+  "cardReasons": {
+    "EARLY_START": "Loc'h a-raok",
+    "LATE_STOP": "Kenderc'hel goude \"Paouez!\"",
+    "BODY_CONTACT": "Darempred korf dre youl",
+    "COUNTER_ATTACK": "Enkontraduri",
+    "TARGET_SUBSTITUTION": "Amprouiñ an hent",
+    "VOLUNTARY_DROP": "Leuskel ar sabr dre youl",
+    "TIME_WASTING": "Kollet amzer",
+    "NON_COMPLIANT_GEAR": "Binvioù didalvoudek",
+    "ESTOC": "Frapp poent (estoc)",
+    "UNARMED_HAND": "Arver an dorn hep arm",
+    "VOLUNTARY_EXIT": "Kuitaat an douar dre youl",
+    "HEAVY_HIT": "Frapp trumm",
+    "BRUTALITY": "Broutalded",
+    "DANGEROUS": "Emzalc'h dañjerus",
+    "REFUSAL": "Refuz da emgann",
+    "UNSPORTSMANLIKE": "Emzalc'h disgwir",
+    "CHEATING": "Trubuilh"
+  },
+  "cardGroups": {
+    "GROUP_1": "Strollad 1 (Gwenn → Melen → Melen)",
+    "GROUP_2": "Strollad 2 (Melen → Ruz → Ruz)",
+    "GROUP_3": "Strollad 3 (Ruz → Skarzhadur)",
+    "GROUP_4": "Strollad 4 (Skarzhadur diouzhtu)"
+  },
+  "stats": {
+    "title": "Stadegoù dre gombatour",
+    "zone_a": "Zonenn A (1 poent)",
+    "zone_b": "Zonenn B (3 poent)",
+    "zone_c": "Zonenn C (5 poent)",
+    "total_points": "Poent. hollek",
+    "white_cards": "Kartennoù gwenn",
+    "yellow_cards": "Kartennoù melen",
+    "red_cards": "Kartennoù ruz",
+    "arena_exits": "Ezhamoù arena",
+    "matches_played": "Emgannioù",
+    "avg_duration": "Padelezh keiñv.",
+    "early_finishes": "< 3 min",
+    "export_pdf": "Ezporzhiañ stadegoù (PDF)",
+    "export_fencer_pdf": "Ezporzhiañ treuzour (PDF)",
+    "export_competition_pdf": "PDF kenstrivadeg",
+    "no_data": "Stadegoù ebet evit ar genstrivadeg-mañ.",
+    "laser_only": "Zonennoù taolioù (A/B/C) hepken el l'izili Sabre Laser."
+  },
+  "shortcuts": {
+    "title": "Birvikerezh Klavier",
+    "subtitle": "Mestrañ BellePoule evel ur prof",
+    "footer": "Stailhit ? evit diskouez an sikour-mañ",
+    "category_all": "Holl",
+    "category_global": "Hollvedel",
+    "category_navigation": "Levenez",
+    "category_actions": "Oberoù",
+    "category_competition": "Kenstrivadeg",
+    "show_help": "Diskouez sikour birvikerezh",
+    "quick_search": "Klask tost",
+    "close_modal": "Serriñ / Nullañ",
+    "go_pools": "Mont d'ar poellou",
+    "go_tableau": "Mont d'an daolenn",
+    "go_results": "Mont d'an disoc'hoù",
+    "nav_fields": "Levenez etre maezioù",
+    "save": "Enrollañ",
+    "undo": "Diret",
+    "redo": "Adober",
+    "new_competition": "Kenstrivadeg nevez",
+    "refresh_data": "Hizivaat roadennoù",
+    "timer": "Krogañ/Paouez kronometr",
+    "nav_list": "Levenez en rol",
+    "validate": "Gwiriañ / Digeriñ"
   }
 }

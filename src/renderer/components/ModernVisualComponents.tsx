@@ -1,13 +1,11 @@
 import React from 'react';
-import { useTranslation } from '../hooks/useTranslation';
 
 interface ThemeToggleProps {
   isDark: boolean;
   onToggle: () => void;
 }
 
-export const ModernThemeToggle: React.FC<ThemeToggleProps> = ({ isDark, onToggle }) => {
-  const { t } = useTranslation();
+const ModernThemeToggle_: React.FC<ThemeToggleProps> = ({ isDark, onToggle }) => {
   return (
     <button
       onClick={onToggle}
@@ -24,7 +22,7 @@ export const ModernThemeToggle: React.FC<ThemeToggleProps> = ({ isDark, onToggle
         display: 'flex',
         alignItems: 'center',
       }}
-      aria-label={isDark ? t('theme_toggle.to_light') : t('theme_toggle.to_dark')}
+      aria-label={isDark ? 'Passer en mode clair' : 'Passer en mode sombre'}
     >
       {/* Sun Icon */}
       <span
@@ -74,7 +72,7 @@ export const ModernThemeToggle: React.FC<ThemeToggleProps> = ({ isDark, onToggle
 };
 
 // Glassmorphism Card
-export const GlassCard: React.FC<{ children: React.ReactNode; style?: React.CSSProperties }> = ({
+const GlassCard_: React.FC<{ children: React.ReactNode; style?: React.CSSProperties }> = ({
   children,
   style,
 }) => {
@@ -96,7 +94,7 @@ export const GlassCard: React.FC<{ children: React.ReactNode; style?: React.CSSP
 };
 
 // Animated Counter
-export const AnimatedCounter: React.FC<{ value: number; duration?: number }> = ({
+const AnimatedCounter_: React.FC<{ value: number; duration?: number }> = ({
   value,
   duration = 1000,
 }) => {
@@ -136,7 +134,7 @@ export const AnimatedCounter: React.FC<{ value: number; duration?: number }> = (
 };
 
 // Ripple Button
-export const RippleButton: React.FC<
+const RippleButton_: React.FC<
   React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'danger' }
 > = ({ children, variant = 'primary', style, ...props }) => {
   const [ripples, setRipples] = React.useState<{ x: number; y: number; id: number }[]>([]);
@@ -221,7 +219,7 @@ export const RippleButton: React.FC<
 };
 
 // Gradient Text
-export const GradientText: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const GradientText_: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <span
       style={{
@@ -238,7 +236,7 @@ export const GradientText: React.FC<{ children: React.ReactNode }> = ({ children
 };
 
 // Status Badge
-export const StatusBadge: React.FC<{
+const StatusBadge_: React.FC<{
   status: 'success' | 'warning' | 'error' | 'info' | 'neutral';
   children: React.ReactNode;
   pulse?: boolean;
@@ -291,7 +289,7 @@ export const StatusBadge: React.FC<{
 };
 
 // Floating Action Button
-export const FloatingActionButton: React.FC<{
+const FloatingActionButton_: React.FC<{
   icon: string;
   onClick: () => void;
   label?: string;
@@ -335,7 +333,7 @@ export const FloatingActionButton: React.FC<{
 };
 
 // Progress Ring
-export const ProgressRing: React.FC<{
+const ProgressRing_: React.FC<{
   progress: number;
   size?: number;
   strokeWidth?: number;
@@ -387,7 +385,7 @@ export const ProgressRing: React.FC<{
 };
 
 // Hover Card
-export const HoverCard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const HoverCard_: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <div
       style={{
@@ -415,7 +413,7 @@ export const HoverCard: React.FC<{ children: React.ReactNode }> = ({ children })
 };
 
 // Confetti Celebration
-export const Confetti: React.FC<{ trigger: boolean }> = ({ trigger }) => {
+const Confetti_: React.FC<{ trigger: boolean }> = ({ trigger }) => {
   const [particles, setParticles] = React.useState<
     Array<{
       id: number;
@@ -484,6 +482,17 @@ export const Confetti: React.FC<{ trigger: boolean }> = ({ trigger }) => {
     </div>
   );
 };
+
+export const ModernThemeToggle = React.memo(ModernThemeToggle_);
+export const GlassCard = React.memo(GlassCard_);
+export const AnimatedCounter = React.memo(AnimatedCounter_);
+export const RippleButton = React.memo(RippleButton_);
+export const GradientText = React.memo(GradientText_);
+export const StatusBadge = React.memo(StatusBadge_);
+export const FloatingActionButton = React.memo(FloatingActionButton_);
+export const ProgressRing = React.memo(ProgressRing_);
+export const HoverCard = React.memo(HoverCard_);
+export const Confetti = React.memo(Confetti_);
 
 export default {
   ModernThemeToggle,
