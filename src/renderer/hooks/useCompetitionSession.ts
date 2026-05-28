@@ -7,7 +7,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Pool, PoolRanking } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
-import { TableauMatch, FinalResult } from '../components/tableau/tableauTypes';
+import { TableauMatch, FinalResult, ConsolationBracket } from '../components/tableau/tableauTypes';
 
 export type Phase = 'checkin' | 'poolprep' | 'pools' | 'ranking' | 'quest' | 'tableau' | 'results' | 'remote' | 'logs' | 'referees';
 
@@ -18,6 +18,7 @@ interface SessionState {
   overallRanking: PoolRanking[];
   tableauMatches: TableauMatch[];
   finalResults: FinalResult[];
+  consolationBrackets: ConsolationBracket[];
   currentPoolRound: number;
   skipPoolPhase: boolean;
   remoteArenaCount?: number;
@@ -42,6 +43,7 @@ interface UseCompetitionSessionProps {
   overallRanking: PoolRanking[];
   tableauMatches: TableauMatch[];
   finalResults: FinalResult[];
+  consolationBrackets: ConsolationBracket[];
   skipPoolPhase: boolean;
   remoteArenaCount: number;
   poolPrepParams: {
@@ -99,6 +101,7 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
       overallRanking: p.overallRanking,
       tableauMatches: p.tableauMatches,
       finalResults: p.finalResults,
+      consolationBrackets: p.consolationBrackets,
       currentPoolRound: p.currentPoolRound,
       skipPoolPhase: p.skipPoolPhase,
       remoteArenaCount: p.remoteArenaCount,
@@ -141,6 +144,7 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
           overallRanking: typedState.overallRanking || [],
           tableauMatches: typedState.tableauMatches || [],
           finalResults: typedState.finalResults || [],
+          consolationBrackets: typedState.consolationBrackets || [],
           currentPoolRound: typedState.uiState?.currentPoolRound || 1,
           skipPoolPhase: typedState.skipPoolPhase ?? false,
           remoteArenaCount: typedState.remoteArenaCount,
@@ -184,6 +188,7 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
         overallRanking: p.overallRanking,
         tableauMatches: p.tableauMatches,
         finalResults: p.finalResults,
+        consolationBrackets: p.consolationBrackets,
         currentPoolRound: p.currentPoolRound,
         skipPoolPhase: p.skipPoolPhase,
         remoteArenaCount: p.remoteArenaCount,
@@ -223,6 +228,7 @@ export const useCompetitionSession = (props: UseCompetitionSessionProps) => {
     props.overallRanking,
     props.tableauMatches,
     props.finalResults,
+    props.consolationBrackets,
     props.skipPoolPhase,
     props.remoteArenaCount,
     props.poolPrepParams,
