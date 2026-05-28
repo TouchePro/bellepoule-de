@@ -1744,21 +1744,26 @@ export class RemoteScoreServer {
       try {
         if (!this.session) return res.status(404).json({ error: 'Aucune session active' });
 
-        const deMatches = (this.sessionMatches as any[]).filter((m: any) => m.isTableau);
+        // Lire depuis la DB (inclut les matchs terminés) ; fallback sur sessionMatches (pending only)
+        const sessionState = this.db.getSessionState(this.session.competitionId);
+        const dbTableauMatches: any[] = sessionState?.tableauMatches || [];
+        const deMatches = dbTableauMatches.length > 0
+          ? dbTableauMatches
+          : (this.sessionMatches as any[]).filter((m: any) => m.isTableau);
 
         if (deMatches.length === 0) {
           return res.json({ tableSize: 0, currentRound: null, rounds: [] });
         }
 
         const roundLabels: Record<number, string> = {
-          1: 'Finale',
-          2: 'Demi-finales',
-          4: 'Quarts de finale',
-          8: '8èmes de finale',
-          16: '16èmes de finale',
-          32: '32èmes de finale',
-          64: '64èmes de finale',
-          128: '128èmes de finale',
+          2: 'Finale',
+          3: 'Petite finale',
+          4: 'Demi-finales',
+          8: 'Quarts de finale',
+          16: '1/8 de finale',
+          32: '1/16 de finale',
+          64: '1/32 de finale',
+          128: '1/64 de finale',
         };
 
         // Arène par matchId pour l'affichage
@@ -1793,7 +1798,7 @@ export class RemoteScoreServer {
               arenaByMatchId.has(m.id));
           roundMap.get(round)!.push({
             id: m.id,
-            position: m.position || 1,
+            position: m.position + 1,
             fencerA: m.fencerA
               ? { lastName: m.fencerA.lastName, firstName: m.fencerA.firstName, club: m.fencerA.club ?? '', id: m.fencerA.id }
               : null,
