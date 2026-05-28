@@ -141,6 +141,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     upsertTableauMatch: (params: any) => ipcRenderer.invoke('db:upsertTableauMatch', params),
     upsertMultipleTableauMatches: (competitionId: string, matches: any[]) =>
       ipcRenderer.invoke('db:upsertMultipleTableauMatches', competitionId, matches),
+    getTableauMatchesForExport: (competitionId: string) =>
+      ipcRenderer.invoke('db:getTableauMatchesForExport', competitionId),
 
     // Pools
     createPool: (phaseId: string, number: number, poolId?: string) => {

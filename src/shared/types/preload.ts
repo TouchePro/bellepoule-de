@@ -479,6 +479,13 @@ export interface DatabaseAPI {
       isBye?: boolean;
     }>
   ) => Promise<void>;
+  getTableauMatchesForExport: (competitionId: string) => Promise<Array<{
+    id: string; round: number; position: number; isBye: boolean;
+    fencerA: { firstName?: string; lastName: string; club?: string } | null;
+    fencerB: { firstName?: string; lastName: string; club?: string } | null;
+    scoreA: number | null; scoreB: number | null;
+    winner: { id: string } | null;
+  }>>;
 
   // Pools
   createPool: (phaseId: string, number: number, poolId?: string) => Promise<Pool>;

@@ -962,6 +962,68 @@ export class DatabaseManager {
     this.save();
   }
 
+  public getTableauMatchesForExport(competitionId: string): Array<{
+    id: string; round: number; position: number; isBye: boolean;
+    fencerA: { firstName?: string; lastName: string; club?: string } | null;
+    fencerB: { firstName?: string; lastName: string; club?: string } | null;
+    scoreA: number | null; scoreB: number | null;
+    winner: { id: string } | null;
+  }> {
+    if (!this.db) throw new Error('Database not open');
+    const stmt = this.db.prepare(
+      `SELECT m.id, m.round, m.position, m.is_bye,
+              m.fencer_a_id, m.fencer_b_id, m.score_a, m.score_b,
+              fa.first_name AS fa_first, fa.last_name AS fa_last, fa.club AS fa_club,
+              fb.first_name AS fb_first, fb.last_name AS fb_last, fb.club AS fb_club
+       FROM matches m
+       LEFT JOIN fencers fa ON fa.id = m.fencer_a_id
+       LEFT JOIN fencers fb ON fb.id = m.fencer_b_id
+       WHERE m.table_id = ? AND m.round IS NOT NULL
+       ORDER BY m.round, m.position`
+    );
+    stmt.bind([competitionId]);
+    const results: ReturnType<typeof this.getTableauMatchesForExport> = [];
+    while (stmt.step()) {
+      const row = stmt.getAsObject();
+      let scoreAVal: number | null = null;
+      let scoreBVal: number | null = null;
+      let winner: { id: string } | null = null;
+      try {
+        if (row.score_a) {
+          const sa = JSON.parse(row.score_a as string);
+          scoreAVal = sa.value ?? null;
+          if (sa.isVictory && row.fencer_a_id) winner = { id: row.fencer_a_id as string };
+        }
+        if (row.score_b) {
+          const sb = JSON.parse(row.score_b as string);
+          scoreBVal = sb.value ?? null;
+          if (sb.isVictory && row.fencer_b_id) winner = { id: row.fencer_b_id as string };
+        }
+      } catch { /* skip bad score JSON */ }
+      results.push({
+        id: row.id as string,
+        round: row.round as number,
+        position: row.position as number,
+        isBye: (row.is_bye as number) === 1,
+        fencerA: row.fencer_a_id ? {
+          firstName: row.fa_first as string | undefined,
+          lastName: (row.fa_last as string) || '',
+          club: row.fa_club as string | undefined,
+        } : null,
+        fencerB: row.fencer_b_id ? {
+          firstName: row.fb_first as string | undefined,
+          lastName: (row.fb_last as string) || '',
+          club: row.fb_club as string | undefined,
+        } : null,
+        scoreA: scoreAVal,
+        scoreB: scoreBVal,
+        winner,
+      });
+    }
+    stmt.free();
+    return results;
+  }
+
   public getMatch(id: string): Match | null {
     if (!this.db) throw new Error('Database not open');
     const stmt = this.db.prepare('SELECT * FROM matches WHERE id = ?');
