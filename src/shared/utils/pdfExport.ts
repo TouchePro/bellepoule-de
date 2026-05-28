@@ -1841,7 +1841,7 @@ export async function exportFullCompetitionPDF(data: FullCompetitionExportData):
       sorted,
       ['ref', 'lastName', 'firstName', 'birthDate', 'club', 'ranking', 'status'],
       `Feuille d'appel — ${competitionTitle}`,
-      competitionTitle, logo, template
+      competitionTitle, logo, undefined
     ));
   }
 
