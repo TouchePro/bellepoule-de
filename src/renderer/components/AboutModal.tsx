@@ -5,10 +5,12 @@ interface Props {
   onClose: () => void;
 }
 
+// 5 clashes sur 10s : 0s, 2s, 4s, 6s, 8s
+const CLASH_DELAYS = [0, 2, 4, 6, 8];
+
 function playCluck(delaySeconds: number): void {
   try {
     const ctx = new AudioContext();
-    // "cot-cot" = deux notes sawtooth descendantes
     [520, 380].forEach((freq, i) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -22,20 +24,20 @@ function playCluck(delaySeconds: number): void {
       osc.start(ctx.currentTime + delaySeconds + i * 0.18);
       osc.stop(ctx.currentTime + delaySeconds + i * 0.18 + 0.15);
     });
-    // clash sound : bref bruit blanc
-    const bufSize = ctx.sampleRate * 0.08;
+    // bruit de clash
+    const bufSize = ctx.sampleRate * 0.09;
     const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
     const data = buf.getChannelData(0);
-    for (let k = 0; k < bufSize; k++) data[k] = (Math.random() * 2 - 1) * 0.15;
+    for (let k = 0; k < bufSize; k++) data[k] = (Math.random() * 2 - 1) * 0.18;
     const noise = ctx.createBufferSource();
     noise.buffer = buf;
     const noiseGain = ctx.createGain();
-    noiseGain.gain.setValueAtTime(0.2, ctx.currentTime + delaySeconds + 0.36);
-    noiseGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delaySeconds + 0.44);
+    noiseGain.gain.setValueAtTime(0.22, ctx.currentTime + delaySeconds + 0.38);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delaySeconds + 0.47);
     noise.connect(noiseGain);
     noiseGain.connect(ctx.destination);
-    noise.start(ctx.currentTime + delaySeconds + 0.36);
-    noise.stop(ctx.currentTime + delaySeconds + 0.45);
+    noise.start(ctx.currentTime + delaySeconds + 0.38);
+    noise.stop(ctx.currentTime + delaySeconds + 0.48);
   } catch {
     // AudioContext non disponible
   }
@@ -55,7 +57,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '12px',
     padding: '2rem',
     minWidth: '380px',
-    maxWidth: '480px',
+    maxWidth: '500px',
     color: 'var(--text-primary, #e0e0e0)',
     boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
     position: 'relative',
@@ -65,133 +67,130 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: '0.5rem',
     color: 'var(--accent-color, #7c9ef5)',
   },
+  versionLine: {
+    display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap',
+  },
   versionBadge: {
     display: 'inline-block',
-    cursor: 'pointer',
     padding: '2px 8px',
     borderRadius: '6px',
     background: 'var(--bg-tertiary, #2a2a3e)',
     border: '1px solid var(--border-color, #444)',
     fontSize: '0.9rem',
     fontFamily: 'monospace',
-    userSelect: 'none',
-    transition: 'box-shadow 0.2s',
+    color: 'var(--text-muted, #aaa)',
   },
-  meta: { fontSize: '0.82rem', color: 'var(--text-muted, #888)', marginTop: '0.3rem' },
+  buildBadge: {
+    display: 'inline-block',
+    cursor: 'pointer',
+    padding: '2px 10px',
+    borderRadius: '6px',
+    background: 'var(--bg-tertiary, #2a2a3e)',
+    border: '1px solid var(--border-color, #444)',
+    fontSize: '0.9rem',
+    fontFamily: 'monospace',
+    userSelect: 'none',
+    animation: 'bp-build-pulse 2.5s ease-in-out infinite',
+  },
+  meta: { fontSize: '0.82rem', color: 'var(--text-muted, #888)' },
   desc: { fontSize: '0.9rem', marginTop: '1rem', lineHeight: 1.6 },
   licence: { fontSize: '0.8rem', color: 'var(--text-muted, #888)', marginTop: '0.8rem' },
-  hint: { fontSize: '0.72rem', color: 'var(--text-muted, #666)', marginTop: '0.3rem', fontStyle: 'italic' },
+  hint: { fontSize: '0.72rem', color: 'var(--text-muted, #555)', marginTop: '0.3rem', fontStyle: 'italic' },
   closeBtn: {
     position: 'absolute', top: '1rem', right: '1rem',
     background: 'none', border: 'none', cursor: 'pointer',
     fontSize: '1.2rem', color: 'var(--text-muted, #888)',
     lineHeight: 1,
   },
-  // Easter egg arena
+  // Arena
   arena: {
     marginTop: '1.2rem',
-    background: 'linear-gradient(180deg, #0a0a1a 60%, #1a0a00 100%)',
+    background: 'linear-gradient(180deg, #08081a 60%, #180800 100%)',
     borderRadius: '8px',
-    padding: '1rem',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '0',
+    border: '1px solid #2a2a3a',
     position: 'relative',
-    height: '100px',
+    width: '100%',
+    height: '110px',
     overflow: 'hidden',
-    border: '1px solid #333',
-  },
-  chickenWrap: {
-    position: 'relative',
-    display: 'flex',
-    alignItems: 'center',
-    fontSize: '2.8rem',
-    lineHeight: 1,
-  },
-  saber: {
-    position: 'absolute',
-    top: '50%',
-    width: '44px',
-    height: '5px',
-    borderRadius: '3px',
-    transformOrigin: 'left center',
-    transform: 'translateY(-50%)',
-  },
-  sparkContainer: {
-    position: 'absolute',
-    left: '50%',
-    top: '50%',
-    transform: 'translate(-50%, -50%)',
-    pointerEvents: 'none',
-    fontSize: '1.4rem',
-    zIndex: 10,
   },
   easterText: {
     fontSize: '0.72rem',
-    color: '#666',
+    color: '#555',
     textAlign: 'center',
     marginTop: '0.4rem',
+    letterSpacing: '0.05em',
   },
 };
 
-// Keyframe injection (si pas déjà présent)
+// Poules face-à-face :
+//   Gauche (🐔 mirrored → face droite) : left=5px, avance de 28px vers centre
+//   Droite (🐔 naturel → face gauche)  : left=261px, avance de 28px vers centre
+// Sabre bleu  : origin gauche, longueur 95px, tip à 5+44+95=144px → avance à 172px
+// Sabre rouge : origin droite, longueur 95px, tip à 261-95=166px → recule à 138px
+// À l'impact les tips se croisent (~155px = centre 310px/2)
+// Les sabres se croisent : bleu +22deg, rouge -22deg → X
+
 let injected = false;
 function injectKeyframes() {
   if (injected || typeof document === 'undefined') return;
   injected = true;
   const style = document.createElement('style');
   style.textContent = `
-    @keyframes bp-chicken-left {
-      0%   { transform: translateX(0px) rotate(0deg); }
-      20%  { transform: translateX(28px) rotate(-8deg); }
-      40%  { transform: translateX(2px) rotate(2deg); }
-      55%  { transform: translateX(28px) rotate(-8deg); }
-      70%  { transform: translateX(2px) rotate(2deg); }
-      85%  { transform: translateX(28px) rotate(-8deg); }
-      100% { transform: translateX(0px) rotate(0deg); }
+    /* Poule gauche miroir (face droite), avance vers centre */
+    @keyframes bp-hen-left {
+      0%,100% { left: 5px; }
+      38%,58% { left: 33px; }
     }
-    @keyframes bp-chicken-right {
-      0%   { transform: scaleX(-1) translateX(0px) rotate(0deg); }
-      20%  { transform: scaleX(-1) translateX(28px) rotate(-8deg); }
-      40%  { transform: scaleX(-1) translateX(2px) rotate(2deg); }
-      55%  { transform: scaleX(-1) translateX(28px) rotate(-8deg); }
-      70%  { transform: scaleX(-1) translateX(2px) rotate(2deg); }
-      85%  { transform: scaleX(-1) translateX(28px) rotate(-8deg); }
-      100% { transform: scaleX(-1) translateX(0px) rotate(0deg); }
+    /* Poule droite naturelle (face gauche), avance vers centre */
+    @keyframes bp-hen-right {
+      0%,100% { left: 261px; }
+      38%,58% { left: 233px; }
     }
-    @keyframes bp-spark {
-      0%,100% { opacity: 0; transform: translate(-50%,-50%) scale(0); }
-      22%     { opacity: 1; transform: translate(-50%,-50%) scale(1.3); }
-      30%     { opacity: 0; transform: translate(-50%,-50%) scale(0.5); }
-      57%     { opacity: 1; transform: translate(-50%,-50%) scale(1.3); }
-      65%     { opacity: 0; transform: translate(-50%,-50%) scale(0.5); }
-      87%     { opacity: 1; transform: translate(-50%,-50%) scale(1.3); }
-      95%     { opacity: 0; transform: translate(-50%,-50%) scale(0.5); }
-    }
+    /* Sabre bleu — part du bec de la poule gauche, pointe droite */
     @keyframes bp-saber-blue {
-      0%,100% { transform: translateY(-50%) rotate(0deg); box-shadow: 0 0 8px 3px #3af, 0 0 2px 1px #fff; }
-      20%     { transform: translateY(-50%) rotate(-25deg); box-shadow: 0 0 14px 5px #3af, 0 0 4px 2px #fff; }
-      40%     { transform: translateY(-50%) rotate(5deg); box-shadow: 0 0 8px 3px #3af, 0 0 2px 1px #fff; }
-      55%     { transform: translateY(-50%) rotate(-25deg); box-shadow: 0 0 14px 5px #3af, 0 0 4px 2px #fff; }
-      70%     { transform: translateY(-50%) rotate(5deg); }
-      85%     { transform: translateY(-50%) rotate(-25deg); box-shadow: 0 0 14px 5px #3af, 0 0 4px 2px #fff; }
+      0%,100% {
+        left: 49px;
+        transform: translateY(-50%) rotate(0deg);
+        box-shadow: 0 0 8px 3px #39f, 0 0 2px 1px #9cf;
+      }
+      38%,58% {
+        left: 77px;
+        transform: translateY(-50%) rotate(22deg);
+        box-shadow: 0 0 18px 6px #39f, 0 0 5px 2px #9cf;
+      }
     }
+    /* Sabre rouge — part du bec de la poule droite, pointe gauche */
     @keyframes bp-saber-red {
-      0%,100% { transform: translateY(-50%) rotate(180deg); box-shadow: 0 0 8px 3px #f44, 0 0 2px 1px #fff; }
-      20%     { transform: translateY(-50%) rotate(205deg); box-shadow: 0 0 14px 5px #f44, 0 0 4px 2px #fff; }
-      40%     { transform: translateY(-50%) rotate(175deg); box-shadow: 0 0 8px 3px #f44, 0 0 2px 1px #fff; }
-      55%     { transform: translateY(-50%) rotate(205deg); box-shadow: 0 0 14px 5px #f44, 0 0 4px 2px #fff; }
-      70%     { transform: translateY(-50%) rotate(175deg); }
-      85%     { transform: translateY(-50%) rotate(205deg); box-shadow: 0 0 14px 5px #f44, 0 0 4px 2px #fff; }
+      0%,100% {
+        left: 166px;
+        transform: translateY(-50%) rotate(0deg);
+        box-shadow: 0 0 8px 3px #f33, 0 0 2px 1px #f99;
+      }
+      38%,58% {
+        left: 138px;
+        transform: translateY(-50%) rotate(-22deg);
+        box-shadow: 0 0 18px 6px #f33, 0 0 5px 2px #f99;
+      }
     }
-    @keyframes bp-version-pulse {
-      0%,100% { box-shadow: 0 0 0 0 rgba(124,158,245,0); }
-      50%     { box-shadow: 0 0 0 3px rgba(124,158,245,0.3); }
+    /* Étincelles au point de croisement (~155px) */
+    @keyframes bp-spark {
+      0%,34%,64%,100% { opacity: 0; transform: translate(-50%,-50%) scale(0) rotate(0deg); }
+      44%             { opacity: 1; transform: translate(-50%,-50%) scale(1.6) rotate(15deg); }
+      52%             { opacity: 0.7; transform: translate(-50%,-50%) scale(1.1) rotate(-10deg); }
+      58%             { opacity: 0; transform: translate(-50%,-50%) scale(0.3) rotate(5deg); }
+    }
+    /* Pulsation subtile sur le numéro de build */
+    @keyframes bp-build-pulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(255,180,50,0); color: var(--text-muted,#aaa); }
+      50%     { box-shadow: 0 0 0 3px rgba(255,180,50,0.25); color: #ffa; }
     }
   `;
   document.head.appendChild(style);
 }
+
+const ANIM_DURATION = '2s';
+const ANIM_ITER = '5';
+const ANIM_EASE = 'ease-in-out';
 
 const AboutModal: React.FC<Props> = ({ onClose }) => {
   const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
@@ -209,11 +208,9 @@ const AboutModal: React.FC<Props> = ({ onClose }) => {
   const triggerEasterEgg = () => {
     if (easterActive) return;
     setEasterActive(true);
-    // 3 clashes à ~0s, 1.3s, 2.6s
-    playCluck(0);
-    playCluck(1.3);
-    playCluck(2.6);
-    timerRef.current = setTimeout(() => setEasterActive(false), 4200);
+    CLASH_DELAYS.forEach(d => playCluck(d));
+    // 5 itérations × 2s = 10s + 200ms de marge
+    timerRef.current = setTimeout(() => setEasterActive(false), 10200);
   };
 
   const handleOverlayClick = (e: React.MouseEvent) => {
@@ -226,7 +223,8 @@ const AboutModal: React.FC<Props> = ({ onClose }) => {
       })
     : '…';
 
-  const animDuration = '4s';
+  const anim = (name: string) =>
+    `${name} ${ANIM_DURATION} ${ANIM_EASE} ${ANIM_ITER} forwards`;
 
   return (
     <div style={styles.overlay} onClick={handleOverlayClick}>
@@ -235,22 +233,21 @@ const AboutModal: React.FC<Props> = ({ onClose }) => {
 
         <div style={styles.title}>BellePoule Modern</div>
 
-        <div>
+        <div style={styles.versionLine}>
+          <span style={styles.versionBadge}>
+            v{versionInfo?.version ?? '…'}
+          </span>
           <span
-            style={{
-              ...styles.versionBadge,
-              animation: 'bp-version-pulse 2s ease-in-out infinite',
-            }}
+            style={styles.buildBadge}
             onDoubleClick={triggerEasterEgg}
             title="Double-clic pour une surprise…"
           >
-            v{versionInfo?.version ?? '…'}
+            #{versionInfo?.build ?? '…'}
           </span>
-          {' '}
-          <span style={styles.meta}>Build #{versionInfo?.build ?? '…'} — {buildDate}</span>
+          <span style={styles.meta}>— {buildDate}</span>
         </div>
 
-        <div style={styles.hint}>💡 Double-clique sur la version…</div>
+        <div style={styles.hint}>💡 Double-clique sur le numéro de build…</div>
 
         <div style={styles.desc}>
           Logiciel de gestion de tournois d'escrime.<br />
@@ -262,59 +259,64 @@ const AboutModal: React.FC<Props> = ({ onClose }) => {
         </div>
 
         {easterActive && (
-          <div>
-            <div style={styles.arena}>
-              {/* Poule gauche + sabre bleu */}
-              <div
-                style={{
-                  ...styles.chickenWrap,
-                  animation: `bp-chicken-left ${animDuration} ease-in-out`,
-                  marginRight: '60px',
-                }}
-              >
-                🐔
-                <div
-                  style={{
-                    ...styles.saber,
-                    left: '90%',
-                    background: 'linear-gradient(90deg, #fff 0%, #3af 30%, #07f 100%)',
-                    animation: `bp-saber-blue ${animDuration} ease-in-out`,
-                  }}
-                />
-              </div>
+          <>
+            {/* Arena — largeur fixe 310px centrée dans le modal */}
+            <div style={{ ...styles.arena, maxWidth: '310px', margin: '1.2rem auto 0' }}>
 
-              {/* Étincelles au centre */}
-              <div
-                style={{
-                  ...styles.sparkContainer,
-                  animation: `bp-spark ${animDuration} ease-in-out`,
-                }}
-              >
-                ✨⚡✨
-              </div>
+              {/* Poule gauche — scaleX(-1) pour la faire face à droite */}
+              <div style={{
+                position: 'absolute',
+                top: '50%',
+                transform: 'translateY(-50%) scaleX(-1)',
+                fontSize: '2.6rem', lineHeight: 1,
+                animation: anim('bp-hen-left'),
+              }}>🐔</div>
 
-              {/* Poule droite + sabre rouge */}
-              <div
-                style={{
-                  ...styles.chickenWrap,
-                  animation: `bp-chicken-right ${animDuration} ease-in-out`,
-                  marginLeft: '60px',
-                }}
-              >
-                🐔
-                <div
-                  style={{
-                    ...styles.saber,
-                    right: '90%',
-                    left: 'auto',
-                    background: 'linear-gradient(270deg, #fff 0%, #f44 30%, #a00 100%)',
-                    animation: `bp-saber-red ${animDuration} ease-in-out`,
-                  }}
-                />
-              </div>
+              {/* Sabre bleu — origin gauche (bec de la poule gauche) */}
+              <div style={{
+                position: 'absolute',
+                top: '50%',
+                width: '95px', height: '5px',
+                borderRadius: '3px 1px 1px 3px',
+                background: 'linear-gradient(90deg, #fff 0%, #6cf 15%, #39f 60%, #06c 100%)',
+                transformOrigin: 'left center',
+                animation: anim('bp-saber-blue'),
+              }} />
+
+              {/* Sabre rouge — origin droite (bec de la poule droite) */}
+              <div style={{
+                position: 'absolute',
+                top: '50%',
+                width: '95px', height: '5px',
+                borderRadius: '1px 3px 3px 1px',
+                background: 'linear-gradient(270deg, #fff 0%, #f99 15%, #f33 60%, #900 100%)',
+                transformOrigin: 'right center',
+                animation: anim('bp-saber-red'),
+              }} />
+
+              {/* Poule droite — naturellement face gauche */}
+              <div style={{
+                position: 'absolute',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                fontSize: '2.6rem', lineHeight: 1,
+                animation: anim('bp-hen-right'),
+              }}>🐔</div>
+
+              {/* Étincelles au point de croisement ~155px */}
+              <div style={{
+                position: 'absolute',
+                left: '50%',
+                top: '50%',
+                fontSize: '1.3rem',
+                pointerEvents: 'none',
+                zIndex: 10,
+                animation: anim('bp-spark'),
+              }}>✨⚡✨</div>
             </div>
-            <div style={styles.easterText}>🐔 Cot-cot ! 🐔</div>
-          </div>
+
+            <div style={styles.easterText}>🐔 &nbsp; Cot-cot ! &nbsp; 🐔</div>
+          </>
         )}
       </div>
     </div>
