@@ -32,6 +32,16 @@ const ZONES = [
   { zone: TargetZone.ZONE_C, points: 5, label: 'C', desc: 'Tête', color: 'bg-pink-500' },
 ];
 
+interface CombatLogEntry {
+  id: number;
+  fencer: 'A' | 'B';
+  points: number;
+  scoreA: number;
+  scoreB: number;
+  time: number;
+  isDecrement: boolean;
+}
+
 const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
   match,
   fencerA,
@@ -52,6 +62,9 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
   const [showTiebreaker, setShowTiebreaker] = useState(false);
   const [overtimeActive, setOvertimeActive] = useState(false);
   const [supplementaryActive, setSupplementaryActive] = useState(false);
+  const [combatLog, setCombatLog] = useState<CombatLogEntry[]>([]);
+  const [showFullLog, setShowFullLog] = useState(false);
+  const logIdRef = useRef(0);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -185,11 +198,19 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
     }
   };
 
+  const pushLogEntry = (fencer: 'A' | 'B', points: number, newA: number, newB: number, isDecrement = false) => {
+    setCombatLog(prev => [
+      { id: logIdRef.current++, fencer, points, scoreA: newA, scoreB: newB, time: matchTime, isDecrement },
+      ...prev,
+    ]);
+  };
+
   const handleScoreIncrement = (fencer: 'A' | 'B', points: number = 1) => {
     if (fencer === 'A') {
       const newScore = Math.min(scoreA + points, maxScore);
       setScoreA(newScore);
       onScoreUpdate(newScore, scoreB);
+      pushLogEntry('A', points, newScore, scoreB);
 
       if (newScore >= maxScore) {
         // Pause le chronomètre pour permettre une correction d'arbitrage
@@ -199,6 +220,7 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
       const newScore = Math.min(scoreB + points, maxScore);
       setScoreB(newScore);
       onScoreUpdate(scoreA, newScore);
+      pushLogEntry('B', points, scoreA, newScore);
 
       if (newScore >= maxScore) {
         // Pause le chronomètre pour permettre une correction d'arbitrage
@@ -266,10 +288,12 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
       const newScore = Math.max(scoreA - 1, 0);
       setScoreA(newScore);
       onScoreUpdate(newScore, scoreB);
+      pushLogEntry('A', 1, newScore, scoreB, true);
     } else {
       const newScore = Math.max(scoreB - 1, 0);
       setScoreB(newScore);
       onScoreUpdate(scoreA, newScore);
+      pushLogEntry('B', 1, scoreA, newScore, true);
     }
   };
 
@@ -488,12 +512,77 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
             </div>
           </div>
 
+          {/* Combat Log */}
+          {combatLog.length > 0 && (
+            <div className="bg-white rounded-lg p-3 mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Log du combat</span>
+                {combatLog.length > 5 && (
+                  <button
+                    onClick={() => setShowFullLog(v => !v)}
+                    className="text-xs text-blue-500 underline"
+                  >
+                    {showFullLog ? 'Réduire' : `Tout voir (${combatLog.length})`}
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {(showFullLog ? combatLog : combatLog.slice(0, 5)).map(entry => {
+                  const isA = entry.fencer === 'A';
+                  const bg = entry.isDecrement
+                    ? '#f3f4f6'
+                    : isA
+                    ? '#dcfce7'
+                    : '#fee2e2';
+                  const border = entry.isDecrement
+                    ? '#d1d5db'
+                    : isA
+                    ? '#16a34a'
+                    : '#dc2626';
+                  const textColor = entry.isDecrement
+                    ? '#6b7280'
+                    : isA
+                    ? '#15803d'
+                    : '#b91c1c';
+                  const name = isA ? fencerA.lastName : fencerB.lastName;
+                  const sign = entry.isDecrement ? '−' : '+';
+                  return (
+                    <div
+                      key={entry.id}
+                      style={{
+                        background: bg,
+                        border: `1.5px solid ${border}`,
+                        borderRadius: '8px',
+                        padding: '4px 10px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        minWidth: '60px',
+                      }}
+                    >
+                      <span style={{ fontSize: '0.7rem', fontWeight: 700, color: textColor }}>
+                        {name}
+                      </span>
+                      <span style={{ fontSize: '1rem', fontWeight: 800, color: textColor }}>
+                        {sign}{entry.points}
+                      </span>
+                      <span style={{ fontSize: '0.65rem', color: '#6b7280', fontVariantNumeric: 'tabular-nums' }}>
+                        {entry.scoreA}–{entry.scoreB}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Control Buttons */}
           <div className="grid grid-cols-2 gap-4">
             <button
               onClick={() => {
                 setScoreA(0);
                 setScoreB(0);
+                setCombatLog([]);
                 onScoreUpdate(0, 0);
               }}
               className="bg-yellow-500 text-white px-6 py-4 rounded-lg font-medium text-lg active:scale-95 transition-transform"
