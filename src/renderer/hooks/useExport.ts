@@ -268,9 +268,9 @@ export const useExport = ({ competition, showToast }: UseExportProps) => {
 
   // Export XML FFE
   const exportResultsXML = useCallback(
-    (poolRanking: PoolRanking[], finalResults: FinalResult[]) => {
+    (poolRanking: PoolRanking[], finalResults: FinalResult[], pools?: Pool[]) => {
       try {
-        const content = exportResultsXMLFFE(competition, poolRanking, finalResults);
+        const content = exportResultsXMLFFE(competition, poolRanking, finalResults, pools);
         const filename = `resultats_${competition.title.replace(/[^a-z0-9]/gi, '_')}.xml`;
         downloadFile(content, filename, 'application/xml');
         showToast('Export XML FFE réussi', 'success');

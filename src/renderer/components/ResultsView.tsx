@@ -175,7 +175,8 @@ const ResultsView: React.FC<ResultsViewProps> = ({
         rank: r.rank,
         fencer: r.fencer,
         eliminatedAt: r.eliminatedAt,
-      }))
+      })),
+      pools
     );
 
     const blob = new Blob([xmlContent], { type: 'application/xml' });
