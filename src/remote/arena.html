@@ -1842,14 +1842,18 @@
             matchDisplay.classList.add('active');
             nextPanel.classList.add('hidden');
           } else if (this.matchStatus === 'finished') {
-            waitingScreen.classList.add('hidden');
             photoIntro.classList.add('hidden');
-            matchDisplay.classList.add('active');
             if (this.nextMatch) {
+              waitingScreen.classList.add('hidden');
+              matchDisplay.classList.add('active');
               this.updateNextMatchPanel();
               nextPanel.classList.remove('hidden');
             } else {
+              // Aucun match suivant : retour à l'écran idle (arène X)
+              waitingScreen.classList.remove('hidden');
+              matchDisplay.classList.remove('active');
               nextPanel.classList.add('hidden');
+              this.updateIdleNextMatchDisplay();
             }
           } else {
             // 'ready' sans photos : écran d'attente (combat pas encore démarré)
