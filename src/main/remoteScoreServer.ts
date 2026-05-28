@@ -3259,6 +3259,7 @@ export class RemoteScoreServer {
 
     const currentMatchId = arena.currentMatch?.id;
     const currentPoolId = arena.currentMatch?.poolId;
+    let completedPoolId: string | null = null;
 
     console.log(
       `[RemoteScoreServer] loadNextMatch: arena=${arenaId}, pool=${currentPoolId}, total=${this.sessionMatches.length}`
@@ -3334,6 +3335,19 @@ export class RemoteScoreServer {
       console.log(
         `[RemoteScoreServer] Plus de matches dans le pool ${currentPoolId} pour l'arène ${arenaId}`
       );
+
+      // Vérifier si la poule est entièrement terminée (tous matchs FINISHED en DB)
+      try {
+        const allPoolMatches = this.db.getMatchesByPool(currentPoolId);
+        if (
+          allPoolMatches.length > 0 &&
+          allPoolMatches.every(m => m.status === MatchStatus.FINISHED)
+        ) {
+          completedPoolId = currentPoolId;
+        }
+      } catch (e) {
+        console.warn('[RemoteScoreServer] pool completion check failed:', e);
+      }
     }
 
     // Vérifier la file d'attente DE avant de marquer l'arène comme vide
@@ -3358,6 +3372,7 @@ export class RemoteScoreServer {
       currentMatch: null,
       status: 'idle',
       startTime: null,
+      ...(completedPoolId ? { poolComplete: true, completedPoolId } : {}),
     });
     this.persistArenaState(arenaId);
     console.log(`[RemoteScoreServer] Arène ${arenaId} marquée comme vide`);

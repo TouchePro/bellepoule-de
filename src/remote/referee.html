@@ -1030,6 +1030,47 @@
         .final-score { background: #111827; color: #f3f4f6; }
         .next-matches-screen { background: rgba(0,0,0,0.5); }
       }
+
+      /* ── Overlay fin de poule / signature ── */
+      .pool-complete-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 900;
+        background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        text-align: center;
+        padding: 2rem;
+      }
+      .pool-complete-overlay.visible { display: flex; }
+      .pco-icon { font-size: 4rem; margin-bottom: 1rem; }
+      .pco-title {
+        font-size: 2rem;
+        font-weight: 900;
+        color: #e2e8f0;
+        margin-bottom: 0.5rem;
+        letter-spacing: 0.04em;
+      }
+      .pco-sub { color: #94a3b8; margin-bottom: 2.5rem; font-size: 1rem; }
+      .pco-btn {
+        font-size: 1.8rem;
+        font-weight: 700;
+        padding: 1.2rem 3rem;
+        background: #4f46e5;
+        color: #fff;
+        border: none;
+        border-radius: 1rem;
+        cursor: pointer;
+        animation: pco-pulse 2s ease-in-out infinite;
+        letter-spacing: 0.05em;
+      }
+      .pco-btn:hover { background: #4338ca; }
+      @keyframes pco-pulse {
+        0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(79,70,229,0.5); }
+        50% { transform: scale(1.03); box-shadow: 0 0 0 16px rgba(79,70,229,0); }
+      }
     </style>
   </head>
   <body>
@@ -2940,6 +2981,11 @@
 
           // Arène libérée par le serveur (match saisi depuis l'application principale)
           if (data.status === 'idle') {
+            if (data.poolComplete) {
+              this._clearActiveMatch();
+              this.showPoolCompleteOverlay();
+              return;
+            }
             if (this.matchStatus === 'in_progress') {
               this.showNotification('⚠️ Match clôturé depuis l\'application principale');
               this.stopTimer();
@@ -2956,6 +3002,7 @@
 
           // Nouveau match prêt côté serveur (chargement automatique après fin de match)
           if (data.status === 'ready' && data.match && data.match.id) {
+            this.hidePoolCompleteOverlay();
             // Ignorer si c'est déjà notre match actuel
             if (this.currentMatch && this.currentMatch.id === data.match.id) return;
             // Notifier sans interrompre un match en cours
@@ -3079,6 +3126,18 @@
 
         hideNextMatchesScreen() {
           document.getElementById('next-matches-screen').classList.remove('visible');
+        }
+
+        showPoolCompleteOverlay() {
+          document.getElementById('pool-complete-overlay').classList.add('visible');
+        }
+
+        hidePoolCompleteOverlay() {
+          document.getElementById('pool-complete-overlay').classList.remove('visible');
+        }
+
+        goToSignature() {
+          window.location.href = `/arene${this.arenaNumber}/poule`;
         }
 
         async loadNextMatches() {
@@ -3210,6 +3269,16 @@
           ✕ Annuler — carton donné sans annonce
         </button>
       </div>
+    </div>
+
+    <!-- Overlay plein-écran : fin de poule / signature -->
+    <div id="pool-complete-overlay" class="pool-complete-overlay">
+      <div class="pco-icon">✍️</div>
+      <h1 class="pco-title">POULE TERMINÉE</h1>
+      <p class="pco-sub">Tous les matchs sont terminés</p>
+      <button class="pco-btn" onclick="refereeApp.goToSignature()">
+        ✍️ SIGNATURE
+      </button>
     </div>
   </body>
 </html>
