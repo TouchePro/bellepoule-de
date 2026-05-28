@@ -72,6 +72,19 @@
         border-color: rgba(34, 197, 94, 0.4);
       }
 
+      .back-to-referee-btn {
+        font-size: 0.8rem;
+        padding: 0.3rem 0.8rem;
+        border-radius: 0.5rem;
+        background: rgba(255, 255, 255, 0.1);
+        color: #cbd5e1;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.15s;
+      }
+      .back-to-referee-btn:hover { background: rgba(255, 255, 255, 0.2); }
+
       /* ── Tabs ── */
       .tabs {
         display: flex;
@@ -652,6 +665,7 @@
         <div class="header-title" id="pool-title" data-i18n="pool.loading">Chargement…</div>
         <div class="header-badge" id="match-count-badge" style="display:none"></div>
       </div>
+      <button class="back-to-referee-btn" onclick="goBackToReferee()">← Arbitre</button>
       <div class="connection-badge" id="connection-badge">⚡ Connexion…</div>
     </div>
 
@@ -726,6 +740,11 @@
       let currentTab = 'tableau';
       let signaturesData = {};   // { fencerId: dataURL }
       let signingFencer = null;
+
+      // ── Navigation ──
+      function goBackToReferee() {
+        window.location.href = `/arene${arenaNumber}/arbitre`;
+      }
 
       // ── Onglets ──
       function switchTab(tab) {
