@@ -6,8 +6,8 @@ interface MatchCardProps {
   verticalPosition?: number;
   viewMode: 'full' | 'pending';
   baseMatchHeight: number;
-  onMatchClick: (match: TableauMatch) => void;
-  onArenaClick: (matchId: string) => void;
+  onMatchClick?: (match: TableauMatch) => void;
+  onArenaClick?: (matchId: string) => void;
   readOnly?: boolean;
 }
 
@@ -22,7 +22,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
   onArenaClick,
   readOnly = false,
 }) => {
-  const canEdit = !readOnly && !!(match.fencerA && match.fencerB && !match.isBye);
+  const canEdit = !readOnly && !!(match.fencerA && match.fencerB && !match.isBye) && !!onMatchClick;
   const hasScore = match.scoreA !== null && match.scoreB !== null;
   const isMatchComplete = match.winner !== null;
 
@@ -31,7 +31,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
 
   const handleArenaClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onArenaClick(match.id);
+    onArenaClick?.(match.id);
   };
 
   const fencerName = (f: typeof match.fencerA) =>
@@ -53,10 +53,10 @@ const MatchCard: React.FC<MatchCardProps> = ({
     <div
       className={`match-card ${canEdit ? 'match-card-clickable' : ''} ${isMatchComplete ? 'match-card-done' : ''}`}
       style={posStyle}
-      onClick={() => canEdit && onMatchClick(match)}
+      onClick={() => canEdit && onMatchClick && onMatchClick(match)}
     >
       {/* Arena badge */}
-      {canEdit && !isMatchComplete && (
+      {canEdit && !isMatchComplete && onArenaClick && (
         <button
           className={`match-arena-btn ${match.arena ? 'match-arena-btn-active' : ''}`}
           onClick={handleArenaClick}
