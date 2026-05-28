@@ -897,7 +897,8 @@
       </div>
       <div class="menu-nav">
         <button id="btn-poules" class="active" onclick="switchView('poules')" data-i18n="kiosk.pools">Poules</button>
-        <button id="btn-classement" onclick="switchView('classement')" data-i18n="kiosk.ranking">Classement</button>
+        <button id="btn-classement" onclick="switchView('classement')">Classement Provisoire</button>
+        <button id="btn-final" onclick="switchView('final')">Classement Final</button>
         <button id="btn-direct" onclick="switchView('direct')" data-i18n="kiosk.live">Matchs en direct</button>
         <button id="btn-suivants" onclick="switchView('suivants')" data-i18n="kiosk.next_matches">Matchs suivants</button>
         <button id="btn-tableau" onclick="switchView('tableau')">Tableau DE</button>
@@ -910,7 +911,10 @@
             <input type="checkbox" id="cb-poules" checked> <span data-i18n="kiosk.pools">Poules</span>
           </label>
           <label class="settings-item">
-            <input type="checkbox" id="cb-classement" checked> <span data-i18n="kiosk.ranking">Classement</span>
+            <input type="checkbox" id="cb-classement" checked> Classement Provisoire
+          </label>
+          <label class="settings-item">
+            <input type="checkbox" id="cb-final" checked> Classement Final
           </label>
           <label class="settings-item">
             <input type="checkbox" id="cb-direct" checked> <span data-i18n="kiosk.live_matches">Matchs en cours</span>
@@ -984,12 +988,19 @@
           </table>
         </div>
       </div>
-      <!-- Classement Final -->
-      <div class="final-ranking-section">
-        <div class="final-ranking-title">🏆 Classement Final</div>
-        <div id="final-ranking-body">
-          <div class="final-ranking-not-done">⏳ Compétition non terminée</div>
+    </div>
+
+    <!-- Vue Classement Final -->
+    <div id="view-final" class="kiosk-view">
+      <div class="view-header">
+        <div>
+          <div class="view-title">🏆 Classement Final</div>
+          <div class="view-subtitle">Résultats définitifs de la compétition</div>
         </div>
+        <div class="view-badge" id="final-badge">—</div>
+      </div>
+      <div id="final-ranking-body" style="display:flex;flex-direction:column;gap:0.5rem;flex:1">
+        <div class="final-ranking-not-done">⏳ Compétition non terminée</div>
       </div>
     </div>
 
@@ -1051,11 +1062,11 @@
 
     <script>
       // ─── État ────────────────────────────────────────────────────────────────
-      const ALL_VIEWS = ['poules', 'classement', 'direct', 'suivants', 'tableau'];
+      const ALL_VIEWS = ['poules', 'classement', 'final', 'direct', 'suivants', 'tableau'];
 
       const state = {
         currentView: 'poules',
-        views: ['poules', 'classement', 'direct', 'suivants', 'tableau'],
+        views: ['poules', 'classement', 'final', 'direct', 'suivants', 'tableau'],
         rotationMs: 15000,
         rotationTimer: null,
         progressTimer: null,
@@ -1151,6 +1162,10 @@
           const wrapper = document.getElementById('ranking-scroll-wrapper');
           wrapper.scrollTop = 0;
           startAutoScroll(wrapper);
+        }
+
+        if (name === 'final') {
+          renderFinalRanking();
         }
 
         if (name === 'tableau') {
@@ -1476,7 +1491,6 @@
             <td style="text-align:center;color:#94a3b8">${r.touchesFor || 0}</td>
           </tr>`;
         }).join('');
-        renderFinalRanking();
       }
 
       // ─── Rendu Classement Final ──────────────────────────────────────────────
@@ -1486,18 +1500,19 @@
 
         const data = state.bracketData;
         if (!data?.rounds?.length) {
-          el.innerHTML = '<div class="final-ranking-not-done">⏳ Compétition non terminée</div>';
+          el.innerHTML = '<div class="final-ranking-not-done">⏳ Compétition non terminée — le classement final apparaîtra à la fin du tableau d\'élimination.</div>';
+          document.getElementById('final-badge').textContent = '—';
           return;
         }
 
-        // Finale (round=2, position=1) et petite finale (round=3, position=1)
         const finaleRound = data.rounds.find(r => r.round === 2);
         const pfRound = data.rounds.find(r => r.round === 3);
         const finaleMatch = finaleRound?.matches?.[0];
         const pfMatch = pfRound?.matches?.[0];
 
         if (!finaleMatch?.winnerId) {
-          el.innerHTML = '<div class="final-ranking-not-done">⏳ Compétition non terminée</div>';
+          el.innerHTML = '<div class="final-ranking-not-done">⏳ Compétition non terminée — le classement final apparaîtra à la fin du tableau d\'élimination.</div>';
+          document.getElementById('final-badge').textContent = '—';
           return;
         }
 
@@ -1510,20 +1525,27 @@
           ? (pfMatch.winnerId === pfMatch.fencerA?.id ? pfMatch.fencerB : pfMatch.fencerA)
           : null;
 
-        const fencerHtml = (f, medal) => f ? `
-          <div class="podium-entry">
-            <span class="podium-medal">${medal}</span>
-            <div class="podium-info">
-              <div class="podium-name">${escHtml(f.lastName + ' ' + (f.firstName || ''))}</div>
-              <div class="podium-club">${escHtml(f.club || '—')}</div>
-            </div>
-          </div>` : '';
+        const medals = ['🥇', '🥈', '🥉', '4️⃣'];
+        const podium = [winner1, winner2, winner3, winner4].filter(Boolean);
+        document.getElementById('final-badge').textContent = podium.length + ' tireur' + (podium.length > 1 ? 's' : '');
 
-        el.innerHTML = `<div class="final-podium">
-          ${fencerHtml(winner1, '🥇')}
-          ${fencerHtml(winner2, '🥈')}
-          ${winner3 ? fencerHtml(winner3, '🥉') : ''}
-          ${winner4 ? fencerHtml(winner4, '4️⃣') : ''}
+        el.innerHTML = `<div class="ranking-scroll-wrapper" style="flex:1">
+          <table class="ranking-table">
+            <thead>
+              <tr>
+                <th style="width:60px">Rg</th>
+                <th>Tireur</th>
+                <th>Club</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${podium.map((f, i) => `<tr class="${i === 0 ? 'top-row' : ''}">
+                <td><span class="rank-medal">${medals[i]}</span></td>
+                <td style="font-weight:600;font-size:1.1rem">${escHtml(f.lastName + ' ' + (f.firstName || ''))}</td>
+                <td style="color:#64748b">${escHtml(f.club || '—')}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
         </div>`;
       }
 
