@@ -1632,7 +1632,7 @@
               </td>
               <td style="text-align:center;color:#94a3b8">${r.matchesPlayed || 0}</td>
               <td class="victories">${r.victories || 0}</td>
-              <td class="ind">${ind}</td>
+              <td class="ind" style="color:${r.index < 0 ? '#ef4444' : ''}">${ind}</td>
               <td class="td">${r.touchesFor || 0}</td>
             </tr>`;
           }).join('');
@@ -1676,7 +1676,7 @@
             </td>
             <td style="color:#64748b;font-size:0.85rem">${escHtml(r.club || '—')}</td>
             <td style="text-align:center;color:#10b981;font-weight:600">${r.victories || 0}</td>
-            <td style="text-align:center;color:#60a5fa">${ind}</td>
+            <td style="text-align:center;color:${r.index < 0 ? '#ef4444' : '#60a5fa'}">${ind}</td>
             <td style="text-align:center;color:#94a3b8">${r.touchesFor || 0}</td>
           </tr>`;
         }).join('');
