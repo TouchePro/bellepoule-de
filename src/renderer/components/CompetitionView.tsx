@@ -1146,6 +1146,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                         arenaCount={remoteArenaCount}
                         arenas={arenaStates}
                         isRemoteActive={isRemoteActive}
+                        remoteServerUrl={remoteServerUrl ?? undefined}
                         onMatchArenaChange={(matchId, oldArena, newArena, fencerA, fencerB) => {
                           if (!isRemoteActive || !competition?.id) return;
                           window.electronAPI.remote.updateMatchArena(

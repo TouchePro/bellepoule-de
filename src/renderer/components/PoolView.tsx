@@ -42,6 +42,7 @@ interface PoolViewProps {
   arenaCount?: number;
   arenas?: Arena[];
   isRemoteActive?: boolean;
+  remoteServerUrl?: string;
   onMatchArenaChange?: (
     matchId: string,
     oldArena: number,
@@ -68,6 +69,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   arenaCount,
   arenas,
   isRemoteActive,
+  remoteServerUrl,
   onMatchArenaChange,
 }) => {
   const { showToast } = useToast();
@@ -941,19 +943,48 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
 
   // Render Grid View
   const renderGridView = () => (
-    <PoolScoreMatrix
-      pool={pool}
-      isLaserSabre={isLaserSabre}
-      isVisible={isVisible}
-      toggleColumn={toggleColumn}
-      onCellClick={handleCellClick}
-      onFencerChangePool={onFencerChangePool}
-      isLocked={isLocked}
-      onMatchReset={!isLocked && onMatchReset ? (rowFencer, colFencer) => {
-        const matchIndex = getMatchIndex(rowFencer, colFencer);
-        if (matchIndex !== -1) onMatchReset(matchIndex);
-      } : undefined}
-    />
+    <>
+      <PoolScoreMatrix
+        pool={pool}
+        isLaserSabre={isLaserSabre}
+        isVisible={isVisible}
+        toggleColumn={toggleColumn}
+        onCellClick={handleCellClick}
+        onFencerChangePool={onFencerChangePool}
+        isLocked={isLocked}
+        onMatchReset={!isLocked && onMatchReset ? (rowFencer, colFencer) => {
+          const matchIndex = getMatchIndex(rowFencer, colFencer);
+          if (matchIndex !== -1) onMatchReset(matchIndex);
+        } : undefined}
+      />
+      {orderedMatches.finished.length > 0 && (
+        <div style={{ marginTop: '1rem' }}>
+          <div style={{ fontSize: '0.8rem', color: '#6b7280', fontWeight: 600, marginBottom: '0.25rem' }}>
+            Journal des matchs terminés
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+            {orderedMatches.finished.map(({ match, index }) => (
+              <button
+                key={index}
+                onClick={() => setAuditMatchId(match.id)}
+                style={{
+                  padding: '0.2rem 0.5rem',
+                  fontSize: '0.75rem',
+                  background: 'rgba(139,92,246,0.08)',
+                  border: '1px solid rgba(139,92,246,0.25)',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  color: '#7c3aed',
+                }}
+                title="Voir le journal du match"
+              >
+                📋 {match.fencerA?.lastName} vs {match.fencerB?.lastName}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
   );
 
   // Composant Prochain Match réutilisable
@@ -1196,6 +1227,30 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           >
             📄 PDF
           </button>
+          {pool.isComplete && isRemoteActive && remoteServerUrl && (
+            <button
+              onClick={() => {
+                const url = `${remoteServerUrl}/arene${defaultArena}/poule`;
+                if (window.electronAPI?.openExternal) {
+                  window.electronAPI.openExternal(url);
+                } else {
+                  window.open(url, '_blank');
+                }
+              }}
+              style={{
+                padding: '0.375rem 0.75rem',
+                fontSize: '0.75rem',
+                background: '#6366f1',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+              }}
+              title={`Page signatures — arène ${defaultArena}`}
+            >
+              ✍️ Signature
+            </button>
+          )}
           {competitionId && (
             <button
               onClick={() => setShowAddFencerModal(true)}
