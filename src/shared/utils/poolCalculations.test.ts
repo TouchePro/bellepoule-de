@@ -74,9 +74,9 @@ describe('generatePoolMatchOrder', () => {
     const order = generatePoolMatchOrder(3);
     expect(order).toHaveLength(3);
     expect(order).toEqual([
-      [1, 2],
       [2, 3],
       [1, 3],
+      [1, 2],
     ]);
   });
 
@@ -115,6 +115,18 @@ describe('generatePoolMatchOrder', () => {
     const order = generatePoolMatchOrder(6);
     const uniqueMatches = new Set(order.map(([a, b]) => `${a}-${b}`));
     expect(uniqueMatches.size).toBe(order.length);
+  });
+
+  it('should not have consecutive bouts for same fencer (pools 5-8)', () => {
+    [5, 6, 7, 8].forEach(n => {
+      const order = generatePoolMatchOrder(n);
+      for (let i = 0; i < order.length - 1; i++) {
+        const [a1, b1] = order[i];
+        const [a2, b2] = order[i + 1];
+        const hasConsecutive = a1 === a2 || a1 === b2 || b1 === a2 || b1 === b2;
+        expect(hasConsecutive).toBe(false);
+      }
+    });
   });
 });
 
