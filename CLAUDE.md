@@ -76,71 +76,91 @@ npm run e2e:debug       # Playwright debug mode
 
 ```
 Main Process (src/main/)
-├── main.ts              # Window management, menu (i18n: fr/en/de), IPC handlers, DB lifecycle
-├── preload.ts           # Secure IPC bridge (contextIsolation: true)
-├── remoteScoreServer.ts # Express + Socket.IO for referee tablets (port 8066)
-└── autoUpdater.ts       # Auto-update functionality
+├── main.ts                  # Window management, menu (i18n: fr/en/de), IPC handlers, DB lifecycle
+├── preload.ts               # Secure IPC bridge (contextIsolation: true)
+├── remoteScoreServer.ts     # Express + Socket.IO for referee tablets (port 8066)
+├── remoteScoreServer.test.ts
+└── autoUpdater.ts           # Auto-update functionality
 
 Renderer Process (src/renderer/)
-├── App.tsx              # Root React component (~520 lines)
-├── components/          # 47+ React components
-├── hooks/               # 14+ custom hooks
-├── contexts/            # TranslationContext (i18n)
-├── services/            # offlineStorage.ts, offlineSync.ts
-├── locales/             # i18n: fr, en, br (Breton), ca (Catalan), de (Deutsch), es (Español), zh-HK
-├── styles/              # CSS files
-└── sw.js                # Service worker (offline support)
+├── App.tsx                  # Root React component
+├── components/              # 81+ React components
+│   ├── competition/         # CompetitionHeader, CompetitionNav
+│   ├── formula/             # FormulaBuilder, FormulaPhaseCard, FormulaTemplateModal, etc.
+│   ├── pool/                # PoolMatchList, PoolScoreMatrix
+│   ├── tableau/             # MatchCard, SeedingTable, TableauScoreModal, etc.
+│   └── __tests__/
+├── hooks/                   # 17 custom hooks
+├── contexts/                # TranslationContext (i18n)
+├── services/                # offlineStorage.ts, offlineSync.ts
+├── locales/                 # i18n: fr, en, br (Breton), ca (Catalan), de (Deutsch), es (Español), zh-HK
+├── styles/                  # CSS files
+└── sw.js                    # Service worker (offline support)
 
 Feature Modules (src/features/)
-├── analytics/           # AnalyticsService + useAnalyticsStore (Zustand)
-├── bracket/             # BracketGenerator + useBracketStore
-├── competition/         # CompetitionService + useCompetitionStore
+├── analytics/           # analyticsService + useAnalyticsStore + FencerDetailModal, FencerStatsTable
+├── bracket/             # BracketGenerator + BracketService + useBracketStore
+├── competition/         # CompetitionService + useCompetitionStore + competition.types + competitionUtils
 ├── doubleelimination/   # useDEBracketStore
 ├── latefencers/         # useLateFencerStore
-├── penalties/           # PenaltyUtils + usePenaltyStore
-├── pools/               # PoolCalculator + PoolService + usePoolStore
-└── teams/               # TeamCalculations + useTeamStore
+├── matchAuditLog/       # useMatchAuditStore
+├── pdfTemplates/        # usePdfTemplateStore
+├── penalties/           # PenaltyUtils + usePenaltyStore + penalty.types
+├── pools/               # PoolCalculator + PoolService + usePoolStore + pool.types
+└── teams/               # TeamCalculations + useTeamStore + team.types
 
 Shared (src/shared/)
 ├── types/
-│   ├── index.ts         # All TypeScript definitions (enums, interfaces)
-│   ├── preload.ts       # IPC API types
-│   └── remote.ts        # Remote server types
+│   ├── index.ts              # All TypeScript definitions (enums, interfaces)
+│   ├── pdfTemplate.types.ts
+│   ├── preload.ts            # IPC API types
+│   └── remote.ts             # Remote server types
 ├── services/
 │   ├── cloudSyncService.ts    # Dropbox/Google Drive/OneDrive (AES-GCM encrypted)
+│   ├── errorService.ts
+│   ├── ffeConnectService.ts   # FFE (Fédération Française d'Escrime) integration
 │   ├── logger.ts              # Logging service
 │   ├── notificationService.ts # Browser + Discord/Slack webhooks
 │   ├── performanceService.ts  # Monitoring, caching, virtual lists
 │   ├── refereeManager.ts      # Auto referee assignment + conflict detection
 │   └── tournamentFlow.ts      # Tournament state machine
 └── utils/
-    ├── poolCalculations.ts    # Pool ranking + "Quest Points" (Laser Sabre)
-    ├── pdfExport.ts / pdfTemplates.ts  # jsPDF generation
-    ├── tableCalculations.ts   # Direct elimination bracket logic
-    ├── cardSystem.ts          # Yellow/red/black card rules
-    ├── scoreValidation.ts     # Score validation rules
-    ├── suddenDeath.ts         # Overtime / sudden death logic
-    ├── touchSystem.ts         # Sabre Laser touch zones (A=1pt, B=3pt, C=5pt)
+    ├── poolCalculations.ts       # Pool ranking + "Quest Points" (Laser Sabre)
+    ├── pdfExport.ts              # jsPDF generation
+    ├── pdfTemplates.ts           # PDF template system
+    ├── pdfPreviewData.ts         # Preview data for PDF templates
+    ├── fencerDetailPdfExport.ts  # Per-fencer PDF export
+    ├── tableCalculations.ts      # Direct elimination bracket logic
+    ├── cardSystem.ts             # Yellow/red/black card rules
+    ├── scoreValidation.ts        # Score validation rules
+    ├── suddenDeath.ts            # Overtime / sudden death logic
+    ├── touchSystem.ts            # Sabre Laser touch zones (A=1pt, B=3pt, C=5pt)
+    ├── customTouchSystem.ts      # Custom touch zone configuration
+    ├── customRankingCalculator.ts
     ├── fencerStatsCalculator.ts
-    ├── bulkImport.ts          # Bulk fencer import
-    ├── fileParser.ts          # XML / FFE / CSV parsing
-    ├── conflictResolution.ts  # Merge conflict resolution for cloud sync
-    ├── errorLogger.ts         # Structured error logging
-    ├── fencerExport.ts        # Fencer data export helpers
-    ├── multiFormatExport.ts   # Multi-format export (CSV, JSON, XML)
-    └── tournamentTemplates.ts # Predefined tournament configuration templates
+    ├── bulkImport.ts             # Bulk fencer import
+    ├── fileParser.ts             # XML / FFE / CSV parsing
+    ├── conflictResolution.ts     # Merge conflict resolution for cloud sync
+    ├── errorLogger.ts            # Structured error logging
+    ├── fencerExport.ts           # Fencer data export helpers
+    ├── multiFormatExport.ts      # Multi-format export (CSV, JSON, XML)
+    ├── questScheduler.ts         # Match scheduling for Quest/Laser Sabre phases
+    └── tournamentTemplates.ts    # Predefined tournament configuration templates
 
 Remote Assets (src/remote/)
-├── app.js               # Express + Socket.IO application
+├── app.js                   # Express + Socket.IO application
 ├── arena.html / referee.html / dashboard.html / kiosk.html
-├── login.html / pool.html / public.html
+├── login.html / pool.html / public.html / register.html
+├── overlay.html / overlay-config.html
+├── i18n.js                  # Client-side i18n for remote interfaces
 ├── styles.css
-├── sw.js                # Service worker for offline tablet support
-└── offlineQueue.ts      # Offline action queue for tablets
+├── sw.js                    # Service worker for offline tablet support
+└── offlineQueue.ts          # Offline action queue for tablets
 
 Database (src/database/)
 ├── index.ts             # DatabaseManager class (sql.js - pure JS SQLite)
-└── validation.ts        # Input validation
+├── validation.ts        # Input validation
+└── migrations/          # Schema migrations (index.ts + migrations.ts)
 ```
 
 ### Key Patterns
@@ -170,8 +190,8 @@ Database (src/database/)
 
 ## Testing
 
-- **Unit tests**: Vitest (`npm test`) – test files in `src/shared/utils/*.test.ts`
-- **E2E tests**: Playwright (`playwright.config.ts`) – test files in `e2e/`
+- **Unit tests**: Vitest (`npm test`) – test files co-located: `src/shared/utils/*.test.ts`, `src/shared/services/*.test.ts`, `src/main/*.test.ts`, `src/database/*.test.ts`, `src/features/penalties/penalties.test.ts`
+- **E2E tests**: Playwright (`playwright.config.ts`) – `e2e/` (app, competition, pools, tableau, import-export, remote-scoring, accessibility)
 - Coverage: `@vitest/coverage-v8`
 
 ## Key Domain Types (src/shared/types/index.ts)
