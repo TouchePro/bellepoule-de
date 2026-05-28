@@ -205,6 +205,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     overallRanking,
     tableauMatches,
     finalResults,
+    consolationBrackets,
     skipPoolPhase,
     remoteArenaCount,
     poolPrepParams,
@@ -247,6 +248,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       if (restoredState.overallRanking) setOverallRanking(restoredState.overallRanking);
       if (restoredState.tableauMatches) setTableauMatches(restoredState.tableauMatches);
       if (restoredState.finalResults) setFinalResults(restoredState.finalResults);
+      if (restoredState.consolationBrackets?.length) setConsolationBrackets(restoredState.consolationBrackets);
       if (restoredState.poolPrepParams) {
         setMinFencersPerPool(restoredState.poolPrepParams.minFencersPerPool);
         setMaxFencersPerPool(restoredState.poolPrepParams.maxFencersPerPool);
