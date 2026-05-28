@@ -739,6 +739,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       };
     });
 
+    setPoolHistory(prev => [...prev, pools]);
     setPools(newPools);
     setCurrentPoolRound(prev => prev + 1);
   };
@@ -1299,7 +1300,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             poolRanking={overallRanking}
             finalResults={finalResults}
             fencers={fencers}
-            pools={pools}
+            pools={[...poolHistory.flat(), ...pools]}
             tableauMatches={tableauMatches as TableauMatchForPDF[]}
             consolationBrackets={consolationBrackets}
             isLaserSabre={isLaserSabre}

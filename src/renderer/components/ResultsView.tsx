@@ -189,11 +189,21 @@ const ResultsView: React.FC<ResultsViewProps> = ({
 
   const exportFullPDF = async () => {
     try {
+      const api = (window as any).electronAPI;
+
+      const effectiveFencers = (fencers && fencers.length > 0)
+        ? fencers
+        : await api?.db?.getFencersByCompetition?.(competition.id) ?? [];
+
+      const effectiveTableauMatches = (tableauMatches && tableauMatches.length > 0)
+        ? tableauMatches
+        : await api?.db?.getTableauMatchesForExport?.(competition.id) ?? [];
+
       await exportFullCompetitionPDF({
-        fencers: fencers ?? [],
+        fencers: effectiveFencers,
         pools: pools ?? [],
         overallRanking: poolRanking,
-        tableauMatches: tableauMatches ?? [],
+        tableauMatches: effectiveTableauMatches as TableauMatchForPDF[],
         consolationBrackets: (consolationBrackets ?? []).map(b => ({
           id: b.id,
           name: b.name,

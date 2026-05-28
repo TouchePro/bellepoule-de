@@ -1002,6 +1002,10 @@ ipcMain.handle('db:upsertMultipleTableauMatches', async (_, competitionId: strin
   return db.upsertMultipleTableauMatches(competitionId, matches);
 });
 
+ipcMain.handle('db:getTableauMatchesForExport', async (_, competitionId: string) => {
+  return db.getTableauMatchesForExport(competitionId);
+});
+
 // Session State handlers
 ipcMain.handle('db:saveSessionState', async (_, competitionId, state) => {
   return db.saveSessionState(competitionId, state);
