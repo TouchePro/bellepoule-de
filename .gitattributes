@@ -1,6 +1,9 @@
 # Auto detect text files and perform LF normalization
 * text=auto
 
+# Keep our workflow version (no push trigger) on upstream syncs
+.github/workflows/build-dev.yml merge=ours
+
 # Binary files
 *.exe binary
 *.dmg binary
