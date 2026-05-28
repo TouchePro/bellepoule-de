@@ -406,6 +406,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       callback(format, filepath, content)
     ),
   onMenuReportIssue: (callback: () => void) => ipcRenderer.on('menu:report-issue', callback),
+  onShowAbout: (callback: () => void) => ipcRenderer.on('menu:show-about', callback),
   onFileOpened: (callback: (filepath: string) => void) =>
     ipcRenderer.on('file:opened', (_, filepath) => callback(filepath)),
   onFileSaved: (callback: (filepath: string) => void) =>

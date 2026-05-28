@@ -620,6 +620,7 @@ export interface MenuAPI {
   onMenuExport: (callback: (format: string) => void) => void;
   onMenuImport: (callback: (format: string, filepath: string, content: string) => void) => void;
   onMenuReportIssue: (callback: () => void) => void;
+  onShowAbout: (callback: () => void) => void;
   onFileOpened: (callback: (filepath: string) => void) => void;
   onFileSaved: (callback: (filepath: string) => void) => void;
   onAutosaveCompleted: (callback: () => void) => void;
