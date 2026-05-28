@@ -125,6 +125,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [tableauMatches, setTableauMatches] = useState<TableauMatch[]>([]);
   const [consolationBrackets, setConsolationBrackets] = useState<ConsolationBracket[]>([]);
   const [finalResults, setFinalResults] = useState<FinalResult[]>([]);
+  const [tableauEditUnlocked, setTableauEditUnlocked] = useState(false);
   const [showFencerComparison, setShowFencerComparison] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
@@ -859,8 +860,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             id: 'tableau',
             label: t('phases.tableau'),
             icon: '🏆',
-            disabled: !isTableauUnlocked,
-            title: !isTableauUnlocked
+            disabled: !isTableauUnlocked && finalResults.length === 0,
+            title: (!isTableauUnlocked && finalResults.length === 0)
               ? t('phases.tableau_locked_tooltip')
               : (undefined as string | undefined),
           },
@@ -1272,6 +1273,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             readOnly={finalResults.length > 0}
             onComplete={results => {
               setFinalResults(results);
+              setTableauEditUnlocked(false);
               setCurrentPhase('results');
             }}
             onMatchArenaChange={(matchId, oldArena, newArena, fencerAParam, fencerBParam) => {

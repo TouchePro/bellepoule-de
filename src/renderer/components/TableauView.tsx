@@ -215,6 +215,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   }, [matches, onMatchesChange, onMatchArenaChange]);
 
   useEffect(() => {
+    if (readOnly) return;
     const eligibleCount = ranking.filter(
       r =>
         r.fencer.status !== FencerStatus.ABANDONED &&
@@ -234,11 +235,12 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         setTableauSize(currentSize);
       }
     }
-  }, [ranking.length, thirdPlaceMatch, maxScore, matches.length]); // Dépend du nombre de tireurs, match pour la 3ème place et score max
+  }, [readOnly, ranking.length, thirdPlaceMatch, maxScore, matches.length]); // Dépend du nombre de tireurs, match pour la 3ème place et score max
 
   // Filet de sécurité : détecte la complétion du tableau à chaque mise à jour de matches
   // Couvre les chemins qui ne passent pas par handleScoreSubmit (saisie distante, statuts spéciaux)
   useEffect(() => {
+    if (readOnly) return;
     // Ignorer si matches n'a pas changé depuis le montage du composant.
     // Robuste au double-invoke de React StrictMode : le ref de montage reste stable
     // entre les deux passes, contrairement à un booléen consommé au premier run.
@@ -683,6 +685,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   };
 
   const handleAutoFillScores = () => {
+    if (readOnly) return;
     const confirmed = window.confirm(
       'Remplir automatiquement tous les scores des matchs non terminés ?\n\nLes scores seront générés aléatoirement pour les tests.'
     );
