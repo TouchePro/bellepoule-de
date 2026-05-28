@@ -1109,6 +1109,13 @@
           title="Appel DT (appui long = annuler)"
           aria-label="Appel DT"
         >📣</button>
+        <button
+          id="btn-journal"
+          onclick="window.open(`/arene${refereeApp?.arenaNumber || document.getElementById('arena-number').textContent}/journal`, '_blank')"
+          title="Journal du match"
+          aria-label="Journal"
+          style="background:rgba(139,92,246,0.15); border:1px solid rgba(139,92,246,0.4); color:#c4b5fd; border-radius:0.5rem; padding:0.3rem 0.6rem; font-size:1rem; cursor:pointer;"
+        >📋</button>
       </div>
     </div>
 
@@ -3278,6 +3285,9 @@
       <p class="pco-sub">Tous les matchs sont terminés</p>
       <button class="pco-btn" onclick="refereeApp.goToSignature()">
         ✍️ SIGNATURE
+      </button>
+      <button class="pco-btn" onclick="window.open(`/arene${refereeApp.arenaNumber}/journal`, '_blank')" style="margin-top:1rem; background:#4c1d95; animation:none; font-size:1.2rem; padding:0.9rem 2rem;">
+        📋 JOURNAL
       </button>
     </div>
   </body>
