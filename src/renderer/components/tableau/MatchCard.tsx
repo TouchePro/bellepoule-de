@@ -8,6 +8,7 @@ interface MatchCardProps {
   baseMatchHeight: number;
   onMatchClick: (match: TableauMatch) => void;
   onArenaClick: (matchId: string) => void;
+  readOnly?: boolean;
 }
 
 const BASE_MATCH_HEIGHT = 100;
@@ -19,8 +20,9 @@ const MatchCard: React.FC<MatchCardProps> = ({
   baseMatchHeight,
   onMatchClick,
   onArenaClick,
+  readOnly = false,
 }) => {
-  const canEdit = !!(match.fencerA && match.fencerB && !match.isBye);
+  const canEdit = !readOnly && !!(match.fencerA && match.fencerB && !match.isBye);
   const hasScore = match.scoreA !== null && match.scoreB !== null;
   const isMatchComplete = match.winner !== null;
 

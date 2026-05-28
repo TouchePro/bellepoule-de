@@ -783,9 +783,10 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const isLastPoolRound = currentPoolRound >= poolRounds;
   const isResultsLocked = hasDirectElimination && finalResults.length === 0;
   // En mode quest-sans-poules, le tableau se débloque par la complétion de la quête (rankingValidated)
-  const isTableauUnlocked = questNoPool
+  // Le tableau reste accessible en lecture seule si les résultats finaux existent déjà
+  const isTableauUnlocked = finalResults.length > 0 || (questNoPool
     ? rankingValidated
-    : canAdvanceFromPools && rankingValidated;
+    : canAdvanceFromPools && rankingValidated);
 
   // Réinitialiser la validation du classement si les poules ne sont plus toutes terminées
   // (sauf en mode quest-sans-poules ou si on est déjà en phase tableau/résultats)
@@ -1222,6 +1223,42 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
         {currentPhase === 'tableau' && (
           <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Chargement tableau…</div>}>
+          {finalResults.length > 0 && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem',
+              padding: '0.625rem 1rem',
+              marginBottom: '0.75rem',
+              background: '#fef9c3',
+              border: '1px solid #fde047',
+              borderRadius: '6px',
+              fontSize: '0.875rem',
+              color: '#713f12',
+            }}>
+              <span>🔒 Tableau en lecture seule — résultats finaux générés.</span>
+              <button
+                onClick={() => {
+                  if (window.confirm('Modifier le tableau effacera les résultats finaux. Continuer ?')) {
+                    setFinalResults([]);
+                  }
+                }}
+                style={{
+                  marginLeft: 'auto',
+                  background: '#f59e0b',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.375rem 0.75rem',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.8rem',
+                  fontWeight: '600',
+                }}
+              >
+                ✏️ Modifier le tableau
+              </button>
+            </div>
+          )}
           <TableauView
             ranking={overallRanking}
             matches={tableauMatches}
@@ -1232,6 +1269,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             thirdPlaceMatch={thirdPlaceMatch}
             playAllPositions={playAllPositions}
             arenaCount={remoteArenaCount}
+            readOnly={finalResults.length > 0}
             onComplete={results => {
               setFinalResults(results);
               setCurrentPhase('results');

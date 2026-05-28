@@ -44,6 +44,7 @@ interface TableauViewProps {
   onMatchArenaChange?: (matchId: string, oldArena: number | null, newArena: number | null, fencerA?: any, fencerB?: any) => void;
   consolationBrackets?: ConsolationBracket[];
   onConsolationBracketsChange?: (brackets: ConsolationBracket[]) => void;
+  readOnly?: boolean;
 }
 
 // ─── Static style constants ───────────────────────────────────────────────────
@@ -105,6 +106,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   onMatchArenaChange,
   consolationBrackets: consolationBracketsprop = [],
   onConsolationBracketsChange,
+  readOnly = false,
 }) => {
   const { showToast } = useToast();
   const tableauTemplate = usePdfTemplateStore(s => s.templates.tableau);
@@ -241,7 +243,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     // Robuste au double-invoke de React StrictMode : le ref de montage reste stable
     // entre les deux passes, contrairement à un booléen consommé au premier run.
     if (matches === mountMatchesRef.current) return;
-    if (matches.length === 0 || !onComplete) return;
+    if (readOnly || matches.length === 0 || !onComplete) return;
     const champion = matches.find(m => m.round === 2)?.winner;
     if (!champion) return;
     const thirdPlaceEntry = matches.find(m => m.round === 3);
@@ -251,11 +253,11 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     }
     // calculateFinalResults et onComplete sont stables pendant la phase tableau
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [matches]);
+  }, [matches, readOnly]);
 
   // playAllPositions : déclencher onComplete quand le tableau principal ET tous les brackets de consolation sont terminés
   useEffect(() => {
-    if (!playAllPositions || !onComplete || matches.length === 0) return;
+    if (readOnly || !playAllPositions || !onComplete || matches.length === 0) return;
     // Ignorer au montage (données déjà complètes restaurées depuis DB)
     if (matches === mountMatchesRef.current) return;
     const mainFinalDone = !!matches.find(m => m.round === 2)?.winner;
@@ -1219,6 +1221,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         setSelectedMatchForArena(id);
         setShowArenaModal(true);
       }}
+      readOnly={readOnly}
     />
   );
 
@@ -1499,6 +1502,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                       baseMatchHeight={BASE_MATCH_HEIGHT}
                       onMatchClick={openScoreModal}
                       onArenaClick={id => { setSelectedMatchForArena(id); setShowArenaModal(true); }}
+                      readOnly={readOnly}
                     />
                   ))}
                 </div>
@@ -1560,6 +1564,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                                   setSelectedMatchConsolationBracketId(bracket.id);
                                   setShowArenaModal(true);
                                 } : () => {}}
+                                readOnly={readOnly}
                               />
                             ))}
                           </div>
