@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback , memo} from 'react';
-import { Fencer, Match, MatchStatus, TargetZone, MatchMode } from '../../shared/types';
+import { Fencer, Match, MatchStatus, TargetZone, MatchMode, MatchEventEntry } from '../../shared/types';
 import {
   checkTimeoutSuddenDeath,
   checkChallengerSuddenDeath,
@@ -15,6 +15,7 @@ import {
   isSupplementaryTime,
 } from '../../shared/utils/suddenDeath';
 import TiebreakerAnimation from './TiebreakerAnimation';
+import { useMatchAuditStore } from '../../features/matchAuditLog/hooks/useMatchAuditStore';
 
 interface TouchOptimizedRefereeProps {
   match: Match;
@@ -32,14 +33,74 @@ const ZONES = [
   { zone: TargetZone.ZONE_C, points: 5, label: 'C', desc: 'Tête', color: 'bg-pink-500' },
 ];
 
-interface CombatLogEntry {
-  id: number;
-  fencer: 'A' | 'B';
-  points: number;
-  scoreA: number;
-  scoreB: number;
-  time: number;
-  isDecrement: boolean;
+function chipFromEntry(
+  entry: MatchEventEntry,
+  nameA: string,
+  nameB: string
+): { key: string; name: string; delta: string; score: string; bg: string; border: string; textColor: string } | null {
+  const side = entry.fencerSide;
+  const isA = side === 'A';
+  const isB = side === 'B';
+  const name = isA ? nameA : isB ? nameB : '—';
+
+  if (entry.eventType === 'score_change') {
+    const prevA = entry.previousScoreA?.value ?? 0;
+    const newA = entry.newScoreA?.value ?? 0;
+    const prevB = entry.previousScoreB?.value ?? 0;
+    const newB = entry.newScoreB?.value ?? 0;
+    const d = isA ? newA - prevA : isB ? newB - prevB : 0;
+    const isCorr = d < 0;
+    return {
+      key: entry.id,
+      name,
+      delta: d > 0 ? `+${d}` : `${d}`,
+      score: `${newA}–${newB}`,
+      bg: isCorr ? '#f3f4f6' : isA ? '#dcfce7' : isB ? '#fee2e2' : '#f3f4f6',
+      border: isCorr ? '#d1d5db' : isA ? '#16a34a' : isB ? '#dc2626' : '#d1d5db',
+      textColor: isCorr ? '#6b7280' : isA ? '#15803d' : isB ? '#b91c1c' : '#6b7280',
+    };
+  }
+
+  if (entry.eventType === 'card') {
+    const icon =
+      entry.cardType === 'yellow' ? '🟨' : entry.cardType === 'red' ? '🟥' : entry.cardType === 'black' ? '⬛' : '🃏';
+    return {
+      key: entry.id,
+      name,
+      delta: icon,
+      score: entry.cardType ?? 'carton',
+      bg: '#fffbeb',
+      border: '#f59e0b',
+      textColor: '#b45309',
+    };
+  }
+
+  if (entry.eventType === 'arena_exit') {
+    return {
+      key: entry.id,
+      name,
+      delta: '↗',
+      score: entry.exitType ?? 'sortie',
+      bg: '#fef3c7',
+      border: '#f59e0b',
+      textColor: '#92400e',
+    };
+  }
+
+  // touch — moins fréquent, affiché sobrement
+  if (entry.eventType === 'touch' && entry.points) {
+    return {
+      key: entry.id,
+      name,
+      delta: `+${entry.points}`,
+      score: entry.zone ?? '',
+      bg: isA ? '#dbeafe' : '#fce7f3',
+      border: isA ? '#3b82f6' : '#ec4899',
+      textColor: isA ? '#1d4ed8' : '#9d174d',
+    };
+  }
+
+  return null;
 }
 
 const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
@@ -62,9 +123,27 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
   const [showTiebreaker, setShowTiebreaker] = useState(false);
   const [overtimeActive, setOvertimeActive] = useState(false);
   const [supplementaryActive, setSupplementaryActive] = useState(false);
-  const [combatLog, setCombatLog] = useState<CombatLogEntry[]>([]);
   const [showFullLog, setShowFullLog] = useState(false);
-  const logIdRef = useRef(0);
+
+  const { entries, loadMatchTimeline, reset: resetAuditLog } = useMatchAuditStore();
+  const reloadTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Charge le log depuis la DB au montage, nettoie en sortie
+  useEffect(() => {
+    loadMatchTimeline(match.id);
+    return () => {
+      if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current);
+      resetAuditLog();
+    };
+  }, [match.id]);
+
+  // Déclenche un rechargement ~500ms après un événement (laisse le temps à la couche parent d'écrire en DB)
+  const scheduleReload = useCallback(() => {
+    if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current);
+    reloadTimerRef.current = setTimeout(() => {
+      loadMatchTimeline(match.id);
+    }, 500);
+  }, [match.id, loadMatchTimeline]);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -198,19 +277,12 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
     }
   };
 
-  const pushLogEntry = (fencer: 'A' | 'B', points: number, newA: number, newB: number, isDecrement = false) => {
-    setCombatLog(prev => [
-      { id: logIdRef.current++, fencer, points, scoreA: newA, scoreB: newB, time: matchTime, isDecrement },
-      ...prev,
-    ]);
-  };
-
   const handleScoreIncrement = (fencer: 'A' | 'B', points: number = 1) => {
     if (fencer === 'A') {
       const newScore = Math.min(scoreA + points, maxScore);
       setScoreA(newScore);
       onScoreUpdate(newScore, scoreB);
-      pushLogEntry('A', points, newScore, scoreB);
+      scheduleReload();
 
       if (newScore >= maxScore) {
         // Pause le chronomètre pour permettre une correction d'arbitrage
@@ -220,7 +292,7 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
       const newScore = Math.min(scoreB + points, maxScore);
       setScoreB(newScore);
       onScoreUpdate(scoreA, newScore);
-      pushLogEntry('B', points, scoreA, newScore);
+      scheduleReload();
 
       if (newScore >= maxScore) {
         // Pause le chronomètre pour permettre une correction d'arbitrage
@@ -288,12 +360,12 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
       const newScore = Math.max(scoreA - 1, 0);
       setScoreA(newScore);
       onScoreUpdate(newScore, scoreB);
-      pushLogEntry('A', 1, newScore, scoreB, true);
+      scheduleReload();
     } else {
       const newScore = Math.max(scoreB - 1, 0);
       setScoreB(newScore);
       onScoreUpdate(scoreA, newScore);
-      pushLogEntry('B', 1, scoreA, newScore, true);
+      scheduleReload();
     }
   };
 
@@ -343,6 +415,13 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
     if (!swipeDirection) return '';
     return swipeDirection === 'left' ? 'animate-swipe-left' : 'animate-swipe-right';
   };
+
+  // DB entries sont chronologiques (plus ancien en premier) — on inverse pour afficher le plus récent d'abord
+  const reversedEntries = [...entries].reverse();
+  const visibleEntries = showFullLog ? reversedEntries : reversedEntries.slice(0, 5);
+  const chips = visibleEntries
+    .map(e => chipFromEntry(e, fencerA.lastName, fencerB.lastName))
+    .filter((c): c is NonNullable<typeof c> => c !== null);
 
   return (
     <div
@@ -422,6 +501,7 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
                     onClick={() => {
                       setScoreA(0);
                       onScoreUpdate(0, scoreB);
+                      scheduleReload();
                     }}
                     className="w-16 h-16 bg-red-500 text-white rounded-full text-xl font-bold active:scale-95 transition-transform"
                   >
@@ -474,6 +554,7 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
                     onClick={() => {
                       setScoreB(0);
                       onScoreUpdate(scoreA, 0);
+                      scheduleReload();
                     }}
                     className="w-16 h-16 bg-red-500 text-white rounded-full text-xl font-bold active:scale-95 transition-transform"
                   >
@@ -488,7 +569,7 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
           </div>
 
           {/* Progress Bar */}
-          <div className="bg-white rounded-lg p-4 mb-8">
+          <div className="bg-white rounded-lg p-4 mb-4">
             <div className="flex justify-between text-sm text-gray-600 mb-2">
               <span>
                 {scoreA} / {maxScore}
@@ -512,69 +593,65 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
             </div>
           </div>
 
-          {/* Combat Log */}
-          {combatLog.length > 0 && (
-            <div className="bg-white rounded-lg p-3 mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Log du combat</span>
-                {combatLog.length > 5 && (
+          {/* Combat Log — DB-backed, reload après chaque événement */}
+          <div className="bg-white rounded-lg p-3 mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Log du combat
+                {entries.length > 0 && (
+                  <span className="ml-2 font-normal text-gray-400">({entries.length})</span>
+                )}
+              </span>
+              <div className="flex items-center gap-2">
+                {entries.length > 5 && (
                   <button
                     onClick={() => setShowFullLog(v => !v)}
                     className="text-xs text-blue-500 underline"
                   >
-                    {showFullLog ? 'Réduire' : `Tout voir (${combatLog.length})`}
+                    {showFullLog ? 'Réduire' : `Tout voir`}
                   </button>
                 )}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {(showFullLog ? combatLog : combatLog.slice(0, 5)).map(entry => {
-                  const isA = entry.fencer === 'A';
-                  const bg = entry.isDecrement
-                    ? '#f3f4f6'
-                    : isA
-                    ? '#dcfce7'
-                    : '#fee2e2';
-                  const border = entry.isDecrement
-                    ? '#d1d5db'
-                    : isA
-                    ? '#16a34a'
-                    : '#dc2626';
-                  const textColor = entry.isDecrement
-                    ? '#6b7280'
-                    : isA
-                    ? '#15803d'
-                    : '#b91c1c';
-                  const name = isA ? fencerA.lastName : fencerB.lastName;
-                  const sign = entry.isDecrement ? '−' : '+';
-                  return (
-                    <div
-                      key={entry.id}
-                      style={{
-                        background: bg,
-                        border: `1.5px solid ${border}`,
-                        borderRadius: '8px',
-                        padding: '4px 10px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        minWidth: '60px',
-                      }}
-                    >
-                      <span style={{ fontSize: '0.7rem', fontWeight: 700, color: textColor }}>
-                        {name}
-                      </span>
-                      <span style={{ fontSize: '1rem', fontWeight: 800, color: textColor }}>
-                        {sign}{entry.points}
-                      </span>
-                      <span style={{ fontSize: '0.65rem', color: '#6b7280', fontVariantNumeric: 'tabular-nums' }}>
-                        {entry.scoreA}–{entry.scoreB}
-                      </span>
-                    </div>
-                  );
-                })}
+                <button
+                  onClick={() => loadMatchTimeline(match.id)}
+                  className="text-xs text-gray-400 hover:text-gray-600"
+                  title="Actualiser"
+                >
+                  ↺
+                </button>
               </div>
             </div>
-          )}
+            {chips.length === 0 ? (
+              <div className="text-xs text-gray-400 text-center py-2">Aucun événement enregistré</div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {chips.map(chip => (
+                  <div
+                    key={chip.key}
+                    style={{
+                      background: chip.bg,
+                      border: `1.5px solid ${chip.border}`,
+                      borderRadius: '8px',
+                      padding: '4px 10px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      minWidth: '60px',
+                    }}
+                  >
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: chip.textColor }}>
+                      {chip.name}
+                    </span>
+                    <span style={{ fontSize: '1rem', fontWeight: 800, color: chip.textColor }}>
+                      {chip.delta}
+                    </span>
+                    <span style={{ fontSize: '0.65rem', color: '#6b7280', fontVariantNumeric: 'tabular-nums' }}>
+                      {chip.score}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Control Buttons */}
           <div className="grid grid-cols-2 gap-4">
@@ -582,8 +659,8 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
               onClick={() => {
                 setScoreA(0);
                 setScoreB(0);
-                setCombatLog([]);
                 onScoreUpdate(0, 0);
+                scheduleReload();
               }}
               className="bg-yellow-500 text-white px-6 py-4 rounded-lg font-medium text-lg active:scale-95 transition-transform"
             >
@@ -645,17 +722,17 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
           50% { transform: translateX(-20px); }
           100% { transform: translateX(0); }
         }
-        
+
         @keyframes swipe-right {
           0% { transform: translateX(0); }
           50% { transform: translateX(20px); }
           100% { transform: translateX(0); }
         }
-        
+
         .animate-swipe-left {
           animation: swipe-left 0.3s ease-out;
         }
-        
+
         .animate-swipe-right {
           animation: swipe-right 0.3s ease-out;
         }
