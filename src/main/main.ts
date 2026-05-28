@@ -861,42 +861,7 @@ async function handleImport(format: string): Promise<void> {
 }
 
 function showAbout(): void {
-  const L = getL();
-  const versionInfo = getVersionInfo();
-  const locale =
-    currentMenuLanguage === 'zh-HK'
-      ? 'zh-HK'
-      : currentMenuLanguage === 'de'
-        ? 'de-DE'
-        : currentMenuLanguage === 'en'
-          ? 'en-GB'
-          : 'fr-FR';
-  const buildDate = new Date(versionInfo.date).toLocaleDateString(locale, {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-
-  dialog.showMessageBox(mainWindow!, {
-    type: 'info',
-    title: L.aboutTitle,
-    message: `BellePoule Modern v${versionInfo.version}`,
-    detail: `Build #${versionInfo.build}
-Date: ${buildDate}
-
-${L.aboutSoftware}
-
-${L.aboutRewrite}
-
-Licence: GPL-3.0
-© 2024-2026 BellePoule Modern Contributors
-
-${L.aboutBugHint}
-  Version: ${versionInfo.version}
-  Build: #${versionInfo.build}`,
-  });
+  mainWindow?.webContents.send('menu:show-about');
 }
 
 // ============================================================================
