@@ -52,13 +52,15 @@ export const RANKING_COLUMNS: ColumnDefinition[] = [
 ];
 
 interface VisibilityState {
-  pool: ColumnId[];
+  pool: ColumnId[]; // défaut global appliqué aux poules sans réglage propre
   ranking: ColumnId[];
+  pools: Record<string, ColumnId[]>; // réglages indépendants par poule (clé = pool.id)
 }
 
 const DEFAULT_VISIBILITY: VisibilityState = {
   pool: POOL_COLUMNS.map(c => c.id),
   ranking: RANKING_COLUMNS.map(c => c.id),
+  pools: {},
 };
 
 const loadFromStorage = (): VisibilityState => {
@@ -69,6 +71,7 @@ const loadFromStorage = (): VisibilityState => {
       return {
         pool: parsed.pool || DEFAULT_VISIBILITY.pool,
         ranking: parsed.ranking || DEFAULT_VISIBILITY.ranking,
+        pools: parsed.pools || {},
       };
     }
   } catch (e) {
@@ -112,27 +115,59 @@ export const useColumnVisibility = () => {
     }));
   }, []);
 
-  const toggleColumn = useCallback((type: 'pool' | 'ranking', columnId: ColumnId) => {
-    setState(prev => {
-      const current = prev[type];
-      const isVisible = current.includes(columnId);
-      const newColumns = isVisible ? current.filter(id => id !== columnId) : [...current, columnId];
-      return {
-        ...prev,
-        [type]: newColumns,
-      };
-    });
+  // poolId optionnel : si fourni, le réglage est propre à cette poule (indépendance).
+  const toggleColumn = useCallback(
+    (type: 'pool' | 'ranking', columnId: ColumnId, poolId?: string) => {
+      setState(prev => {
+        if (type === 'pool' && poolId) {
+          const current = prev.pools[poolId] ?? prev.pool;
+          const isVisible = current.includes(columnId);
+          const newColumns = isVisible
+            ? current.filter(id => id !== columnId)
+            : [...current, columnId];
+          return {
+            ...prev,
+            pools: { ...prev.pools, [poolId]: newColumns },
+          };
+        }
+        const current = prev[type];
+        const isVisible = current.includes(columnId);
+        const newColumns = isVisible
+          ? current.filter(id => id !== columnId)
+          : [...current, columnId];
+        return {
+          ...prev,
+          [type]: newColumns,
+        };
+      });
+    },
+    []
+  );
+
+  // Bouton global : applique le choix à toutes les poules et efface les réglages propres.
+  const setAllPoolColumns = useCallback((columns: ColumnId[]) => {
+    setState(prev => ({
+      ...prev,
+      pool: columns,
+      pools: {},
+    }));
   }, []);
 
   const isColumnVisible = useCallback(
-    (type: 'pool' | 'ranking', columnId: ColumnId): boolean => {
+    (type: 'pool' | 'ranking', columnId: ColumnId, poolId?: string): boolean => {
+      if (type === 'pool' && poolId && visibility.pools[poolId]) {
+        return visibility.pools[poolId].includes(columnId);
+      }
       return visibility[type].includes(columnId);
     },
     [visibility]
   );
 
   const getVisibleColumns = useCallback(
-    (type: 'pool' | 'ranking'): ColumnId[] => {
+    (type: 'pool' | 'ranking', poolId?: string): ColumnId[] => {
+      if (type === 'pool' && poolId && visibility.pools[poolId]) {
+        return visibility.pools[poolId];
+      }
       return visibility[type];
     },
     [visibility]
@@ -146,6 +181,7 @@ export const useColumnVisibility = () => {
     visibility,
     setVisibleColumns,
     toggleColumn,
+    setAllPoolColumns,
     isColumnVisible,
     getVisibleColumns,
     resetToDefaults,

@@ -153,9 +153,9 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   const isVisible = useCallback(
     (columnId: ColumnId): boolean => {
       if (columnId === 'quest' && !isLaserSabre) return false;
-      return isColumnVisible('pool', columnId);
+      return isColumnVisible('pool', columnId, pool.id);
     },
-    [isLaserSabre, isColumnVisible]
+    [isLaserSabre, isColumnVisible, pool.id]
   );
 
   const columnMenuRef = useRef<HTMLDivElement>(null);
@@ -573,7 +573,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           includePoolStats: true,
           logoBase64: logo,
           competitionName,
-          visibleColumns: getVisibleColumns('pool'),
+          visibleColumns: getVisibleColumns('pool', pool.id),
           signatures,
         },
         poolTemplate
@@ -968,7 +968,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         pool={pool}
         isLaserSabre={isLaserSabre}
         isVisible={isVisible}
-        toggleColumn={toggleColumn}
+        toggleColumn={(context, columnId) => toggleColumn(context, columnId, pool.id)}
         onCellClick={handleCellClick}
         onFencerChangePool={onFencerChangePool}
         isLocked={isLocked}
@@ -1368,7 +1368,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                     <input
                       type="checkbox"
                       checked={isVisible(col.id)}
-                      onChange={() => toggleColumn('pool', col.id)}
+                      onChange={() => toggleColumn('pool', col.id, pool.id)}
                       style={{ cursor: 'pointer' }}
                     />
                     {col.label}

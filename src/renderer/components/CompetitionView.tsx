@@ -37,6 +37,7 @@ import { ScoreAuditLog } from './ScoreAuditLog';
 import { RefereeManagerComponent } from './RefereeManager';
 import CompetitionHeader from './competition/CompetitionHeader';
 import CompetitionNav from './competition/CompetitionNav';
+import GlobalPoolColumnsMenu from './pool/GlobalPoolColumnsMenu';
 
 const PoolView = React.lazy(() => import('./PoolView'));
 const TableauView = React.lazy(() => import('./TableauView'));
@@ -1089,13 +1090,22 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               </div>
             ) : (
               <>
-                {pools.length > 1 && (
-                  <div style={CV_STYLES.poolsExportRow}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    marginBottom: '2rem',
+                  }}
+                >
+                  <GlobalPoolColumnsMenu isLaserSabre={isLaserSabre} />
+                  {pools.length > 1 && (
                     <button className="btn btn-success" onClick={handleExportAllPoolsPDF}>
                       📄 Exporter toutes les poules en PDF
                     </button>
-                  </div>
-                )}
+                  )}
+                </div>
                 <div
                   style={{
                     display: 'grid',
