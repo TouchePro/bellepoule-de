@@ -1278,6 +1278,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             playAllPositions={playAllPositions}
             arenaCount={remoteArenaCount}
             readOnly={finalResults.length > 0}
+            competitionId={competition.id}
             onComplete={results => {
               setFinalResults(results);
               setTableauEditUnlocked(false);
@@ -1295,6 +1296,9 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                   fencerBParam ?? match?.fencerB ?? null
                 );
               }
+            }}
+            onMatchRefereeChange={(matchId, refereeId) => {
+              window.electronAPI.db.updateMatch(matchId, { refereeId: refereeId ?? undefined });
             }}
           />
           </Suspense>

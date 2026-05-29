@@ -1430,6 +1430,13 @@ export class DatabaseManager {
     this.save();
   }
 
+  public updatePoolReferee(poolId: string, refereeId: string | null): void {
+    if (!this.db) throw new Error('Database not open');
+    const now = new Date().toISOString();
+    this.run('UPDATE pools SET referee_id = ?, updated_at = ? WHERE id = ?', [refereeId, now, poolId]);
+    this.save();
+  }
+
   // ─── Pool CRUD ──────────────────────────────────────────────────────────────
 
   public clearPoolsForPhase(phaseId: string): void {
@@ -1521,7 +1528,7 @@ export class DatabaseManager {
     if (!this.db) throw new Error('Database not open');
     const results: Pool[] = [];
     const stmt = this.db.prepare(
-      'SELECT id, phase_id, number, is_complete, has_error, created_at, updated_at FROM pools WHERE phase_id = ? ORDER BY number'
+      'SELECT id, phase_id, number, is_complete, has_error, referee_id, created_at, updated_at FROM pools WHERE phase_id = ? ORDER BY number'
     );
     stmt.bind([phaseId]);
     while (stmt.step()) {
@@ -1529,12 +1536,18 @@ export class DatabaseManager {
       const poolId = row.id as string;
       const fencers = this.getPoolFencers(poolId);
       const matches = this.getMatchesByPool(poolId);
+      let referees: Referee[] = [];
+      if (row.referee_id) {
+        const ref = this.getReferee(row.referee_id as string);
+        if (ref) referees = [ref];
+      }
       results.push({
         id: poolId,
         phaseId: row.phase_id as string,
         number: row.number as number,
         fencers,
         matches,
+        referees,
         isComplete: row.is_complete === 1,
         hasError: row.has_error === 1,
         createdAt: new Date(row.created_at as string),

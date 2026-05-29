@@ -1000,6 +1000,9 @@ ipcMain.handle('db:clearSessionState', async (_, competitionId) => {
 ipcMain.handle('db:updatePool', async (_, pool) => {
   return db.updatePool(pool);
 });
+ipcMain.handle('db:updatePoolReferee', async (_, poolId, refereeId) => {
+  return db.updatePoolReferee(poolId, refereeId);
+});
 ipcMain.handle('db:createPool', async (_, phaseId, number, poolId) => {
   return db.createPool(phaseId, number, poolId);
 });
