@@ -511,6 +511,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                       padding: '6px 16px',
                       cursor: 'pointer',
                       fontSize: '0.875rem',
+                      color: 'var(--text-primary, #e2e8f0)',
                     }}
                   >
                     <input
