@@ -1170,7 +1170,9 @@ export class RemoteScoreServer {
               if (matchPoolId !== currentPoolId) return false;
               const scoreUpdate = this.sessionMatchScores.get(m.id);
               const effectiveStatus = scoreUpdate?.status ?? m.status;
-              return effectiveStatus !== MatchStatus.FINISHED;
+              if (effectiveStatus === MatchStatus.FINISHED) return false;
+              // Exclure les matchs où un tireur est inactif (exclu/forfait/abandon)
+              return this.isMatchPlayable(m as Match);
             })
             .map((m: any) => {
               const scoreUpdate = this.sessionMatchScores.get(m.id);
@@ -1195,12 +1197,12 @@ export class RemoteScoreServer {
           const inSession = this.sessionMatches.find((m: any) => m.id === arena.currentMatch!.id);
           const effectiveStatus =
             scoreUpdate?.status ?? inSession?.status ?? arena.currentMatch.status;
-          if (effectiveStatus !== MatchStatus.FINISHED) {
+          if (effectiveStatus !== MatchStatus.FINISHED && this.isMatchPlayable(arena.currentMatch)) {
             console.log(
               `[RemoteScoreServer] Fallback match courant pour arène ${arenaId}: ${arena.currentMatch.id}`
             );
             const queueMatches = (this.arenaMatchQueue.get(arenaId) || [])
-              .filter(m => m.fencerA && m.fencerB)
+              .filter(m => m.fencerA && m.fencerB && this.isMatchPlayable(m))
               .map(m => ({
                 id: m.id,
                 poolId: m.poolId,
@@ -1236,7 +1238,7 @@ export class RemoteScoreServer {
             `[RemoteScoreServer] ${arenaQueue.length} matchs en file DE pour arène ${arenaId}`
           );
           const queueMatches = arenaQueue
-            .filter(m => m.fencerA && m.fencerB)
+            .filter(m => m.fencerA && m.fencerB && this.isMatchPlayable(m))
             .map(m => ({
               id: m.id,
               poolId: m.poolId,
