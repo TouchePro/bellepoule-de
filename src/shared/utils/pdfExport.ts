@@ -341,13 +341,18 @@ export function generatePoolHTML(pool: Pool, options: PoolExportOptions, templat
   const weaponLabel = weapon ? `<span class="chip"><strong>Arme</strong> ${weapon}</span>` : '';
   const catLabel = category ? `<span class="chip"><strong>Catégorie</strong> ${category}</span>` : '';
 
+  const assignedReferee = pool.referees?.[0];
+  const refereeLabel = assignedReferee
+    ? `<span style="font-size:0.85em;color:#4b5563;">🧑‍⚖️ ${assignedReferee.lastName} ${assignedReferee.firstName}</span>`
+    : '';
+
   const sections: Record<string, string> = {
     'header': `
   <div class="doc-header">
     ${logoBase64 ? `<img class="doc-header-logo" src="${logoBase64}" alt="Logo" />` : ''}
     <div class="doc-header-left">
       <h1>${effectiveTitle}</h1>
-      <div class="subtitle">Grille de poule • ${finishedCount}/${matches.length} matchs joués</div>
+      <div class="subtitle">Grille de poule • ${finishedCount}/${matches.length} matchs joués${refereeLabel ? ' &nbsp;' + refereeLabel : ''}</div>
     </div>
     <div class="doc-header-badge">P${pool.number}</div>
   </div>`,

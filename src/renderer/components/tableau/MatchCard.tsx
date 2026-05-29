@@ -8,6 +8,7 @@ interface MatchCardProps {
   baseMatchHeight: number;
   onMatchClick?: (match: TableauMatch) => void;
   onArenaClick?: (matchId: string) => void;
+  onRefereeClick?: (matchId: string) => void;
   readOnly?: boolean;
 }
 
@@ -20,6 +21,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
   baseMatchHeight,
   onMatchClick,
   onArenaClick,
+  onRefereeClick,
   readOnly = false,
 }) => {
   const canEdit = !readOnly && !!(match.fencerA && match.fencerB && !match.isBye) && !!onMatchClick;
@@ -32,6 +34,11 @@ const MatchCard: React.FC<MatchCardProps> = ({
   const handleArenaClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onArenaClick?.(match.id);
+  };
+
+  const handleRefereeClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onRefereeClick?.(match.id);
   };
 
   const fencerName = (f: typeof match.fencerA) =>
@@ -63,6 +70,18 @@ const MatchCard: React.FC<MatchCardProps> = ({
           title={match.arena ? `Piste ${match.arena}` : 'Assigner une piste'}
         >
           {match.arena ? `P${match.arena}` : '+P'}
+        </button>
+      )}
+
+      {/* Referee badge */}
+      {canEdit && !isMatchComplete && onRefereeClick && (
+        <button
+          className={`match-arena-btn ${match.referee ? 'match-arena-btn-active' : ''}`}
+          onClick={handleRefereeClick}
+          title={match.referee ? `Arbitre : ${match.referee.lastName} ${match.referee.firstName}` : 'Assigner un arbitre'}
+          style={{ marginLeft: onArenaClick ? '0.25rem' : undefined }}
+        >
+          {match.referee ? `A:${match.referee.lastName.charAt(0)}${match.referee.firstName.charAt(0)}` : '+A'}
         </button>
       )}
 
