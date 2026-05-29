@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 import { logger, LogCategory } from '@shared/services/logger';
 
 const STORAGE_KEY = 'bellepoule_column_visibility';
@@ -85,22 +85,35 @@ const saveToStorage = (state: VisibilityState): void => {
   }
 };
 
-export const useColumnVisibility = () => {
-  const [visibility, setVisibilityState] = useState<VisibilityState>(loadFromStorage);
+// Store externe partagé : toutes les instances du hook lisent/écrivent le même état global.
+let currentState: VisibilityState = loadFromStorage();
+const listeners = new Set<() => void>();
 
-  useEffect(() => {
-    saveToStorage(visibility);
-  }, [visibility]);
+const getSnapshot = (): VisibilityState => currentState;
+
+const subscribe = (listener: () => void): (() => void) => {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+};
+
+const setState = (updater: (prev: VisibilityState) => VisibilityState): void => {
+  currentState = updater(currentState);
+  saveToStorage(currentState);
+  listeners.forEach(l => l());
+};
+
+export const useColumnVisibility = () => {
+  const visibility = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
   const setVisibleColumns = useCallback((type: 'pool' | 'ranking', columns: ColumnId[]) => {
-    setVisibilityState(prev => ({
+    setState(prev => ({
       ...prev,
       [type]: columns,
     }));
   }, []);
 
   const toggleColumn = useCallback((type: 'pool' | 'ranking', columnId: ColumnId) => {
-    setVisibilityState(prev => {
+    setState(prev => {
       const current = prev[type];
       const isVisible = current.includes(columnId);
       const newColumns = isVisible ? current.filter(id => id !== columnId) : [...current, columnId];
@@ -126,7 +139,7 @@ export const useColumnVisibility = () => {
   );
 
   const resetToDefaults = useCallback(() => {
-    setVisibilityState(DEFAULT_VISIBILITY);
+    setState(() => DEFAULT_VISIBILITY);
   }, []);
 
   return {
