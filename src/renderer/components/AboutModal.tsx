@@ -5,39 +5,43 @@ interface Props {
   onClose: () => void;
 }
 
-// 5 clashes sur 10s : 0s, 2s, 4s, 6s, 8s
-const CLASH_DELAYS = [0, 2, 4, 6, 8];
+// Marche impériale (Star Wars) jouée en « cot-cot » de poule.
+// Chaque note = [fréquence Hz, départ s, durée s].
+const IMPERIAL_MARCH: [number, number, number][] = [
+  [392, 0.0, 0.45], [392, 0.55, 0.45], [392, 1.1, 0.45],   // Sol Sol Sol
+  [311, 1.65, 0.33], [466, 2.05, 0.13], [392, 2.2, 0.45],  // Mib Sib Sol
+  [311, 2.75, 0.33], [466, 3.15, 0.13], [392, 3.3, 0.6],   // Mib Sib Sol
+  [587, 4.1, 0.45], [587, 4.65, 0.45], [587, 5.2, 0.45],   // Ré Ré Ré
+  [622, 5.75, 0.33], [466, 6.15, 0.13], [370, 6.3, 0.45],  // Mib Sib Solb
+  [311, 6.85, 0.33], [466, 7.25, 0.13], [392, 7.4, 0.6],   // Mib Sib Sol
+];
 
-function playCluck(delaySeconds: number): void {
+// Un « cot » : double chirp descendant accordé sur la note de la mélodie.
+function playCluck(ctx: AudioContext, freq: number, start: number, dur: number): void {
+  const t0 = ctx.currentTime + start;
+  [1, 0.82].forEach((mult, i) => {
+    const at = t0 + i * 0.07;
+    const f = freq * mult;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(f * 1.35, at);
+    osc.frequency.exponentialRampToValueAtTime(f, at + 0.05);
+    osc.frequency.exponentialRampToValueAtTime(f * 0.65, at + dur);
+    gain.gain.setValueAtTime(0.0001, at);
+    gain.gain.exponentialRampToValueAtTime(0.26, at + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, at + dur);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(at);
+    osc.stop(at + dur + 0.02);
+  });
+}
+
+function playImperialMarch(): void {
   try {
     const ctx = new AudioContext();
-    [520, 380].forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(freq, ctx.currentTime + delaySeconds + i * 0.18);
-      osc.frequency.exponentialRampToValueAtTime(freq * 0.6, ctx.currentTime + delaySeconds + i * 0.18 + 0.14);
-      gain.gain.setValueAtTime(0.28, ctx.currentTime + delaySeconds + i * 0.18);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delaySeconds + i * 0.18 + 0.14);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(ctx.currentTime + delaySeconds + i * 0.18);
-      osc.stop(ctx.currentTime + delaySeconds + i * 0.18 + 0.15);
-    });
-    // bruit de clash
-    const bufSize = ctx.sampleRate * 0.09;
-    const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
-    const data = buf.getChannelData(0);
-    for (let k = 0; k < bufSize; k++) data[k] = (Math.random() * 2 - 1) * 0.18;
-    const noise = ctx.createBufferSource();
-    noise.buffer = buf;
-    const noiseGain = ctx.createGain();
-    noiseGain.gain.setValueAtTime(0.22, ctx.currentTime + delaySeconds + 0.38);
-    noiseGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delaySeconds + 0.47);
-    noise.connect(noiseGain);
-    noiseGain.connect(ctx.destination);
-    noise.start(ctx.currentTime + delaySeconds + 0.38);
-    noise.stop(ctx.currentTime + delaySeconds + 0.48);
+    IMPERIAL_MARCH.forEach(([freq, start, dur]) => playCluck(ctx, freq, start, dur));
   } catch {
     // AudioContext non disponible
   }
@@ -217,8 +221,8 @@ const AboutModal: React.FC<Props> = ({ onClose }) => {
   const triggerEasterEgg = () => {
     if (easterActive) return;
     setEasterActive(true);
-    CLASH_DELAYS.forEach(d => playCluck(d));
-    // 5 itérations × 2s = 10s + 200ms de marge
+    playImperialMarch();
+    // Mélodie ~8s + marge animation
     timerRef.current = setTimeout(() => setEasterActive(false), 10200);
   };
 
