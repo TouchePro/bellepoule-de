@@ -712,11 +712,19 @@ export interface ArenaStateData {
   extraData?: Record<string, unknown>;
 }
 
+/** Chiffrement OS (safeStorage) pour secrets locaux. Renvoie null si indisponible. */
+export interface CryptoAPI {
+  isAvailable: () => Promise<boolean>;
+  protect: (plaintext: string) => Promise<string | null>;
+  unprotect: (ciphertext: string) => Promise<string | null>;
+}
+
 export interface ElectronAPI extends MenuAPI, UtilityAPI {
   db: DatabaseAPI;
   file: FileAPI;
   dialog: DialogAPI;
   updater: UpdaterAPI;
+  crypto: CryptoAPI;
   remote: RemoteServerAPI;
   onRemoteArenaUpdate: (callback: (data: any) => void) => () => void;
   onRemoteMatchFinished: (callback: (data: any) => void) => void;

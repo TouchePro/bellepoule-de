@@ -437,6 +437,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
     installPendingUpdate: () => ipcRenderer.invoke('updater:installPendingUpdate'),
   },
 
+  // Chiffrement OS (safeStorage) pour secrets locaux
+  crypto: {
+    isAvailable: (): Promise<boolean> => ipcRenderer.invoke('crypto:isAvailable'),
+    protect: (plaintext: string): Promise<string | null> => {
+      if (typeof plaintext !== 'string') throw new Error('plaintext must be a string');
+      return ipcRenderer.invoke('crypto:protect', plaintext);
+    },
+    unprotect: (ciphertext: string): Promise<string | null> => {
+      if (typeof ciphertext !== 'string') throw new Error('ciphertext must be a string');
+      return ipcRenderer.invoke('crypto:unprotect', ciphertext);
+    },
+  },
+
   // Remote score server functions
   remote: {
     getNetworkInterfaces: () => ipcRenderer.invoke('remote:getNetworkInterfaces'),

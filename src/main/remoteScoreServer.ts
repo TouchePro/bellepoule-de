@@ -25,6 +25,28 @@ import {
 import { Competition, Match, Fencer, MatchStatus, FencerStatus, Score } from '../shared/types';
 import { DatabaseManager } from '../database';
 
+/**
+ * Vérifie qu'une origine HTTP appartient au réseau local (localhost + plages LAN privées).
+ * Centralise la logique CORS partagée entre Socket.IO et le middleware Express.
+ */
+function isLocalNetworkOrigin(origin: string | null | undefined): boolean {
+  if (!origin) return false;
+  try {
+    const h = new URL(origin).hostname;
+    return (
+      h === 'localhost' ||
+      h === '127.0.0.1' ||
+      h === '::1' ||
+      /^10\./.test(h) ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(h) ||
+      /^192\.168\./.test(h)
+    );
+  } catch {
+    // Origine invalide / non analysable : refuser
+    return false;
+  }
+}
+
 export class RemoteScoreServer {
   private app: express.Application;
   private server: any;
@@ -104,20 +126,7 @@ export class RemoteScoreServer {
         origin: (origin, callback) => {
           // Autoriser les requêtes sans origin (ex. Electron, curl) et le réseau local
           if (!origin) return callback(null, true);
-          try {
-            const url = new URL(origin);
-            const hostname = url.hostname;
-            const isLocal =
-              hostname === 'localhost' ||
-              hostname === '127.0.0.1' ||
-              hostname === '::1' ||
-              /^10\./.test(hostname) ||
-              /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||
-              /^192\.168\./.test(hostname);
-            callback(null, isLocal);
-          } catch {
-            callback(null, false);
-          }
+          callback(null, isLocalNetworkOrigin(origin));
         },
         methods: ['GET', 'POST'],
       },
@@ -256,7 +265,8 @@ export class RemoteScoreServer {
 
   private setupMiddleware(): void {
     console.log('[RemoteScoreServer] Configuration du middleware...');
-    this.app.use(express.json());
+    // Limite de taille : les photos d'inscription (base64 ~700KB) sont le plus gros payload légitime
+    this.app.use(express.json({ limit: '1mb' }));
 
     // Déterminer le chemin des fichiers remote
     let remotePath: string;
@@ -329,24 +339,9 @@ export class RemoteScoreServer {
       console.log(`[RemoteScoreServer] ${req.method} ${req.url} - ${new Date().toISOString()}`);
       // Restreindre CORS au réseau local uniquement (même logique que Socket.IO)
       const origin = req.headers.origin;
-      if (origin) {
-        try {
-          const url = new URL(origin);
-          const h = url.hostname;
-          const isLocal =
-            h === 'localhost' ||
-            h === '127.0.0.1' ||
-            h === '::1' ||
-            /^10\./.test(h) ||
-            /^172\.(1[6-9]|2\d|3[01])\./.test(h) ||
-            /^192\.168\./.test(h);
-          if (isLocal) {
-            res.header('Access-Control-Allow-Origin', origin);
-            res.header('Access-Control-Allow-Credentials', 'true');
-          }
-        } catch {
-          // Origine invalide : ne pas définir le header CORS
-        }
+      if (origin && isLocalNetworkOrigin(origin)) {
+        res.header('Access-Control-Allow-Origin', origin);
+        res.header('Access-Control-Allow-Credentials', 'true');
       }
       res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
       res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
