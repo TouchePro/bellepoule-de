@@ -1619,7 +1619,7 @@ function generateResultsHTML(
     <div class="doc-header-badge" style="font-size:11pt">RF</div>
   </div>`,
     'gold-bar': `  <div class="gold-bar"></div>`,
-    'ranking-table': `
+    'results-table': `
   <table>
     <thead>
       <tr>
