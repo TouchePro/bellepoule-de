@@ -574,8 +574,11 @@ export function generateTableauHTML(
     const clubA = match.fencerA!.club ?? '';
     const clubB = match.fencerB!.club ?? '';
     const pisteLabel = match.arena != null ? `Piste ${match.arena}` : 'Piste ___';
-    const scoreCellA = showScores && match.scoreA != null ? String(match.scoreA) : '';
-    const scoreCellB = showScores && match.scoreB != null ? String(match.scoreB) : '';
+    const winnerId = match.winner?.id;
+    const isWinnerA = winnerId != null && winnerId === (match.fencerA as any)?.id;
+    const isWinnerB = winnerId != null && winnerId === (match.fencerB as any)?.id;
+    const scoreCellA = showScores && match.scoreA != null ? `${isWinnerA ? 'V' : ''}${match.scoreA}` : '';
+    const scoreCellB = showScores && match.scoreB != null ? `${isWinnerB ? 'V' : ''}${match.scoreB}` : '';
     return `
 <div class="match-card">
   <div class="match-card-header">
