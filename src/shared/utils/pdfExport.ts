@@ -1924,7 +1924,6 @@ ${allBodies}
 </body>
 </html>`;
 
-  const safe = competitionTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-  await savePDF(combined, `export_complet_${safe}.pdf`);
+  await savePDF(combined, `export-PDF_full.pdf`);
 }
 
