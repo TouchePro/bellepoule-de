@@ -1,86 +1,142 @@
 {
-  "date": "2026-05-28T10:15:14Z",
+  "date": "2026-05-29T10:05:03Z",
   "releases": [
     {
-      "tag": "dev-build-932",
-      "name": "🧪 BellePoule Modern Dev v1.0.3 Build #932",
-      "published_at": "2026-05-28T06:20:45Z",
-      "total_downloads": 2,
+      "tag": "dev-build-964",
+      "name": "🧪 BellePoule Modern Dev v1.0.3 Build #964",
+      "published_at": "2026-05-29T08:27:37Z",
+      "total_downloads": 1,
       "assets": [
         {
-          "name": "BellePoule.Modern-dev-1.0.3-build.932-arm64.AppImage",
+          "name": "BellePoule.Modern-dev-1.0.3-build.964-arm64.AppImage",
           "downloads": 0
         },
         {
-          "name": "BellePoule.Modern-dev-1.0.3-build.932-arm64.dmg",
-          "downloads": 1
-        },
-        {
-          "name": "BellePoule.Modern-dev-1.0.3-build.932-portable.exe",
-          "downloads": 1
-        },
-        {
-          "name": "BellePoule.Modern-dev-1.0.3-build.932-x64.dmg",
+          "name": "BellePoule.Modern-dev-1.0.3-build.964-arm64.dmg",
           "downloads": 0
         },
         {
-          "name": "BellePoule.Modern-dev-1.0.3-build.932-x86_64.AppImage",
+          "name": "BellePoule.Modern-dev-1.0.3-build.964-portable.exe",
+          "downloads": 1
+        },
+        {
+          "name": "BellePoule.Modern-dev-1.0.3-build.964-x64.dmg",
+          "downloads": 0
+        },
+        {
+          "name": "BellePoule.Modern-dev-1.0.3-build.964-x86_64.AppImage",
           "downloads": 0
         }
       ]
     },
     {
-      "tag": "dev-build-931",
-      "name": "🧪 BellePoule Modern Dev v1.0.3 Build #931",
-      "published_at": "2026-05-28T06:15:01Z",
+      "tag": "dev-build-963",
+      "name": "🧪 BellePoule Modern Dev v1.0.3 Build #963",
+      "published_at": "2026-05-29T08:19:16Z",
       "total_downloads": 0,
       "assets": [
         {
-          "name": "BellePoule.Modern-dev-1.0.3-build.931-arm64.AppImage",
+          "name": "BellePoule.Modern-dev-1.0.3-build.963-arm64.AppImage",
           "downloads": 0
         },
         {
-          "name": "BellePoule.Modern-dev-1.0.3-build.931-arm64.dmg",
+          "name": "BellePoule.Modern-dev-1.0.3-build.963-arm64.dmg",
           "downloads": 0
         },
         {
-          "name": "BellePoule.Modern-dev-1.0.3-build.931-portable.exe",
+          "name": "BellePoule.Modern-dev-1.0.3-build.963-portable.exe",
           "downloads": 0
         },
         {
-          "name": "BellePoule.Modern-dev-1.0.3-build.931-x64.dmg",
+          "name": "BellePoule.Modern-dev-1.0.3-build.963-x64.dmg",
           "downloads": 0
         },
         {
-          "name": "BellePoule.Modern-dev-1.0.3-build.931-x86_64.AppImage",
+          "name": "BellePoule.Modern-dev-1.0.3-build.963-x86_64.AppImage",
           "downloads": 0
         }
       ]
     },
     {
-      "tag": "dev-build-929",
-      "name": "🧪 BellePoule Modern Dev v1.0.3 Build #929",
-      "published_at": "2026-05-28T05:55:18Z",
+      "tag": "dev-build-962",
+      "name": "🧪 BellePoule Modern Dev v1.0.3 Build #962",
+      "published_at": "2026-05-29T08:20:43Z",
       "total_downloads": 0,
       "assets": [
         {
-          "name": "BellePoule.Modern-dev-1.0.3-build.929-arm64.AppImage",
+          "name": "BellePoule.Modern-dev-1.0.3-build.962-arm64.AppImage",
           "downloads": 0
         },
         {
-          "name": "BellePoule.Modern-dev-1.0.3-build.929-arm64.dmg",
+          "name": "BellePoule.Modern-dev-1.0.3-build.962-arm64.dmg",
           "downloads": 0
         },
         {
-          "name": "BellePoule.Modern-dev-1.0.3-build.929-portable.exe",
+          "name": "BellePoule.Modern-dev-1.0.3-build.962-portable.exe",
           "downloads": 0
         },
         {
-          "name": "BellePoule.Modern-dev-1.0.3-build.929-x64.dmg",
+          "name": "BellePoule.Modern-dev-1.0.3-build.962-x64.dmg",
           "downloads": 0
         },
         {
-          "name": "BellePoule.Modern-dev-1.0.3-build.929-x86_64.AppImage",
+          "name": "BellePoule.Modern-dev-1.0.3-build.962-x86_64.AppImage",
+          "downloads": 0
+        }
+      ]
+    },
+    {
+      "tag": "dev-build-961",
+      "name": "🧪 BellePoule Modern Dev v1.0.3 Build #961",
+      "published_at": "2026-05-29T08:17:13Z",
+      "total_downloads": 0,
+      "assets": [
+        {
+          "name": "BellePoule.Modern-dev-1.0.3-build.961-arm64.AppImage",
+          "downloads": 0
+        },
+        {
+          "name": "BellePoule.Modern-dev-1.0.3-build.961-arm64.dmg",
+          "downloads": 0
+        },
+        {
+          "name": "BellePoule.Modern-dev-1.0.3-build.961-portable.exe",
+          "downloads": 0
+        },
+        {
+          "name": "BellePoule.Modern-dev-1.0.3-build.961-x64.dmg",
+          "downloads": 0
+        },
+        {
+          "name": "BellePoule.Modern-dev-1.0.3-build.961-x86_64.AppImage",
+          "downloads": 0
+        }
+      ]
+    },
+    {
+      "tag": "dev-build-960",
+      "name": "🧪 BellePoule Modern Dev v1.0.3 Build #960",
+      "published_at": "2026-05-29T08:13:49Z",
+      "total_downloads": 0,
+      "assets": [
+        {
+          "name": "BellePoule.Modern-dev-1.0.3-build.960-arm64.AppImage",
+          "downloads": 0
+        },
+        {
+          "name": "BellePoule.Modern-dev-1.0.3-build.960-arm64.dmg",
+          "downloads": 0
+        },
+        {
+          "name": "BellePoule.Modern-dev-1.0.3-build.960-portable.exe",
+          "downloads": 0
+        },
+        {
+          "name": "BellePoule.Modern-dev-1.0.3-build.960-x64.dmg",
+          "downloads": 0
+        },
+        {
+          "name": "BellePoule.Modern-dev-1.0.3-build.960-x86_64.AppImage",
           "downloads": 0
         }
       ]
@@ -89,82 +145,26 @@
       "tag": "v1.0.3-build.928",
       "name": "🚀 BellePoule Modern v1.0.3 Build #928",
       "published_at": "2026-05-27T13:27:13Z",
-      "total_downloads": 7,
+      "total_downloads": 12,
       "assets": [
         {
           "name": "BellePoule.Modern-1.0.3-build.928-arm64.AppImage",
-          "downloads": 3
+          "downloads": 4
         },
         {
           "name": "BellePoule.Modern-1.0.3-build.928-arm64.dmg",
-          "downloads": 0
-        },
-        {
-          "name": "BellePoule.Modern-1.0.3-build.928-portable.exe",
-          "downloads": 3
-        },
-        {
-          "name": "BellePoule.Modern-1.0.3-build.928-x64.dmg",
           "downloads": 1
         },
         {
+          "name": "BellePoule.Modern-1.0.3-build.928-portable.exe",
+          "downloads": 4
+        },
+        {
+          "name": "BellePoule.Modern-1.0.3-build.928-x64.dmg",
+          "downloads": 3
+        },
+        {
           "name": "BellePoule.Modern-1.0.3-build.928-x86_64.AppImage",
-          "downloads": 0
-        }
-      ]
-    },
-    {
-      "tag": "dev-build-928",
-      "name": "🧪 BellePoule Modern Dev v1.0.3 Build #928",
-      "published_at": "2026-05-27T13:31:54Z",
-      "total_downloads": 0,
-      "assets": [
-        {
-          "name": "BellePoule.Modern-dev-1.0.3-build.928-arm64.AppImage",
-          "downloads": 0
-        },
-        {
-          "name": "BellePoule.Modern-dev-1.0.3-build.928-arm64.dmg",
-          "downloads": 0
-        },
-        {
-          "name": "BellePoule.Modern-dev-1.0.3-build.928-portable.exe",
-          "downloads": 0
-        },
-        {
-          "name": "BellePoule.Modern-dev-1.0.3-build.928-x64.dmg",
-          "downloads": 0
-        },
-        {
-          "name": "BellePoule.Modern-dev-1.0.3-build.928-x86_64.AppImage",
-          "downloads": 0
-        }
-      ]
-    },
-    {
-      "tag": "dev-build-927",
-      "name": "🧪 BellePoule Modern Dev v1.0.3 Build #927",
-      "published_at": "2026-05-27T13:25:44Z",
-      "total_downloads": 0,
-      "assets": [
-        {
-          "name": "BellePoule.Modern-dev-1.0.3-build.927-arm64.AppImage",
-          "downloads": 0
-        },
-        {
-          "name": "BellePoule.Modern-dev-1.0.3-build.927-arm64.dmg",
-          "downloads": 0
-        },
-        {
-          "name": "BellePoule.Modern-dev-1.0.3-build.927-portable.exe",
-          "downloads": 0
-        },
-        {
-          "name": "BellePoule.Modern-dev-1.0.3-build.927-x64.dmg",
-          "downloads": 0
-        },
-        {
-          "name": "BellePoule.Modern-dev-1.0.3-build.927-x86_64.AppImage",
           "downloads": 0
         }
       ]
