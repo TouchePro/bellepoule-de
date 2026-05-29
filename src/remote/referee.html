@@ -2096,7 +2096,8 @@
             const redCount = cards.filter(c => c === 'red').length;
             if (redCount >= 1) {
               this._pendingBlackCardFencer = ef;
-              const nameEl = document.getElementById(`fencer-${ef.toLowerCase()}-name`);
+              const displayPos = this._effectiveFencer(ef); // logique → position affichée
+              const nameEl = document.getElementById(`fencer-${displayPos.toLowerCase()}-name`);
               const fencerName = nameEl ? nameEl.textContent.trim() : `Tireur ${ef}`;
               document.getElementById('black-card-fencer-name').textContent = fencerName;
               document.getElementById('black-card-modal').classList.add('active');
