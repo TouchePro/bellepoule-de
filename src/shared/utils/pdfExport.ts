@@ -1066,7 +1066,7 @@ export function generateBracketTreeHTML(
         ${club ? `<text x="${x + 4}" y="${clubY}" dominant-baseline="middle"
               font-family="'Segoe UI',Arial,sans-serif" font-size="${clubFs}" fill="#94a3b8">${club}</text>` : ''}
         <text x="${x + nameW + SCORE_W / 2}" y="${rowY + ROW_H / 2}" text-anchor="middle" dominant-baseline="middle"
-              font-family="'Segoe UI',Arial,sans-serif" font-size="${scoreFs}" font-weight="700" fill="${tc}">${score !== null ? score : ''}</text>`;
+              font-family="'Segoe UI',Arial,sans-serif" font-size="${scoreFs}" font-weight="700" fill="${tc}">${score !== null ? `${isWinner ? 'V ' : ''}${score}` : isWinner ? 'V' : ''}</text>`;
     };
 
     return `<g>
@@ -1303,7 +1303,7 @@ export function generateBracketTreeMultiPageHTML(
         ${club ? `<text x="${x + 5}" y="${clubY}" dominant-baseline="middle"
               font-family="'Segoe UI',Arial,sans-serif" font-size="${clubFs}" fill="#94a3b8">${club}</text>` : ''}
         <text x="${x + nameW + SCORE_W / 2}" y="${rowY + ROW_H / 2}" text-anchor="middle" dominant-baseline="middle"
-              font-family="'Segoe UI',Arial,sans-serif" font-size="${scoreFs}" font-weight="700" fill="${tc}">${score !== null ? score : ''}</text>`;
+              font-family="'Segoe UI',Arial,sans-serif" font-size="${scoreFs}" font-weight="700" fill="${tc}">${score !== null ? `${isWinner ? 'V ' : ''}${score}` : isWinner ? 'V' : ''}</text>`;
     };
 
     return `<g>

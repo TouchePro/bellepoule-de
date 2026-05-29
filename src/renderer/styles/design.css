@@ -1321,6 +1321,12 @@ select:focus {
   color: var(--color-text-muted);
 }
 
+.match-score-victory {
+  font-weight: 800;
+  margin-right: 0.15rem;
+  color: var(--color-success);
+}
+
 .match-divider {
   height: 1px;
   background: var(--color-border);
