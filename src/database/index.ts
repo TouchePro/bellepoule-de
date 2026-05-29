@@ -971,7 +971,7 @@ export class DatabaseManager {
   }> {
     if (!this.db) throw new Error('Database not open');
     const stmt = this.db.prepare(
-      `SELECT m.id, m.round, m.position, m.is_bye,
+      `SELECT m.id, m.round, m.position,
               m.fencer_a_id, m.fencer_b_id, m.score_a, m.score_b,
               fa.first_name AS fa_first, fa.last_name AS fa_last, fa.club AS fa_club,
               fb.first_name AS fb_first, fb.last_name AS fb_last, fb.club AS fb_club
@@ -1004,7 +1004,7 @@ export class DatabaseManager {
         id: row.id as string,
         round: row.round as number,
         position: row.position as number,
-        isBye: (row.is_bye as number) === 1,
+        isBye: (!!row.fencer_a_id) !== (!!row.fencer_b_id),
         fencerA: row.fencer_a_id ? {
           firstName: row.fa_first as string | undefined,
           lastName: (row.fa_last as string) || '',
