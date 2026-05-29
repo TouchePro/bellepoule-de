@@ -101,6 +101,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
         </div>
         {hasScore && (
           <span className={`match-score ${winnerA ? 'match-score-winner' : 'match-score-loser'}`}>
+            {winnerA && <span className="match-score-victory">V</span>}
             {match.scoreA}
           </span>
         )}
@@ -125,6 +126,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
         </div>
         {hasScore && (
           <span className={`match-score ${winnerB ? 'match-score-winner' : 'match-score-loser'}`}>
+            {winnerB && <span className="match-score-victory">V</span>}
             {match.scoreB}
           </span>
         )}
