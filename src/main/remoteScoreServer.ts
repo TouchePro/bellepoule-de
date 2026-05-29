@@ -1377,6 +1377,11 @@ export class RemoteScoreServer {
             try {
               this.db.updateFencer(culpritId, { status: FencerStatus.EXCLUDED });
               console.log(`[RemoteScoreServer] Carton noir : combattant ${culpritId} exclu`);
+              // Notifier le renderer pour mettre à jour le statut dans son store
+              const mainWin = (global as any).mainWindow;
+              if (mainWin) {
+                mainWin.webContents.send('remote:fencer_excluded', { fencerId: culpritId, matchId });
+              }
             } catch (e) {
               console.error('[RemoteScoreServer] Erreur exclusion combattant:', e);
             }
