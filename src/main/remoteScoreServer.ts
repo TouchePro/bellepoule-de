@@ -1271,7 +1271,7 @@ export class RemoteScoreServer {
       }
       try {
         const { matchId } = req.params;
-        const { scoreA: rawA, scoreB: rawB, cardsA, cardsB, winner: winnerOverride } = req.body;
+        const { scoreA: rawA, scoreB: rawB, cardsA, cardsB, winner: winnerOverride, blackCardFencer } = req.body;
 
         const scoreA = Number(rawA);
         const scoreB = Number(rawB);
@@ -1300,12 +1300,15 @@ export class RemoteScoreServer {
         const winner =
           scoreA > scoreB ? 'A' : scoreB > scoreA ? 'B' : (winnerOverride === 'A' || winnerOverride === 'B' ? winnerOverride : null);
 
+        // Carton noir : le combattant fautif est exclu de la compétition
+        const blackCarded = blackCardFencer === 'A' || blackCardFencer === 'B' ? blackCardFencer : null;
+
         // Créer les objets Score
         const scoreAObj = {
           value: scoreA,
           isVictory: winner === 'A',
           isAbstention: false,
-          isExclusion: false,
+          isExclusion: blackCarded === 'A',
           isForfait: false,
         };
 
@@ -1313,7 +1316,7 @@ export class RemoteScoreServer {
           value: scoreB,
           isVictory: winner === 'B',
           isAbstention: false,
-          isExclusion: false,
+          isExclusion: blackCarded === 'B',
           isForfait: false,
         };
 
@@ -1359,6 +1362,23 @@ export class RemoteScoreServer {
               arena.currentMatch.scoreB = scoreB;
               this.finishArenaMatch(arenaId);
               break;
+            }
+          }
+        }
+
+        // Carton noir : exclure le combattant fautif de la compétition
+        if (blackCarded) {
+          const matchObj: any = dbMatch || inMemoryMatch;
+          const culpritId =
+            blackCarded === 'A'
+              ? matchObj?.fencerA?.id ?? matchObj?.fencerAId
+              : matchObj?.fencerB?.id ?? matchObj?.fencerBId;
+          if (culpritId) {
+            try {
+              this.db.updateFencer(culpritId, { status: FencerStatus.EXCLUDED });
+              console.log(`[RemoteScoreServer] Carton noir : combattant ${culpritId} exclu`);
+            } catch (e) {
+              console.error('[RemoteScoreServer] Erreur exclusion combattant:', e);
             }
           }
         }
