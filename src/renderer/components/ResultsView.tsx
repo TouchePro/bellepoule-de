@@ -199,9 +199,17 @@ const ResultsView: React.FC<ResultsViewProps> = ({
         ? tableauMatches
         : await api?.db?.getTableauMatchesForExport?.(competition.id) ?? [];
 
+      let effectivePools: Pool[] = pools && pools.length > 0 ? pools : [];
+      if (effectivePools.length === 0 && api?.db?.getPhasesByCompetition && api?.db?.getPoolsByPhase) {
+        const phases = await api.db.getPhasesByCompetition(competition.id);
+        const poolPhases = phases.filter((p: { type: string }) => p.type === 'pool');
+        const poolArrays = await Promise.all(poolPhases.map((ph: { id: string }) => api.db.getPoolsByPhase(ph.id)));
+        effectivePools = poolArrays.flat();
+      }
+
       await exportFullCompetitionPDF({
         fencers: effectiveFencers,
-        pools: pools ?? [],
+        pools: effectivePools,
         overallRanking: poolRanking,
         tableauMatches: effectiveTableauMatches as TableauMatchForPDF[],
         consolationBrackets: (consolationBrackets ?? []).map(b => ({
