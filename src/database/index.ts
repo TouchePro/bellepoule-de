@@ -25,7 +25,7 @@ import {
   MatchEventEntry,
   MatchEventType,
 } from '../shared/types';
-import { validateId, validateSessionState, sanitizeId } from './validation';
+import { validateId, validateSessionState, sanitizeId, validateCompetitionData } from './validation';
 import { logger, LogCategory } from '../shared/services/logger';
 import { MigrationManager } from './migrations';
 import { ALL_MIGRATIONS } from './migrations/migrations';
@@ -295,6 +295,15 @@ export class DatabaseManager {
     if (!this.db) throw new Error('Database not open');
     const now = new Date().toISOString();
     const id = comp.id || uuidv4();
+    const normalized: Partial<Competition> = {
+      ...comp,
+      title: comp.title || 'Nouvelle compétition',
+      date: comp.date || new Date(now),
+      weapon: comp.weapon || ('E' as any),
+      gender: comp.gender || ('M' as any),
+      category: comp.category || ('SEN' as any),
+    };
+    validateCompetitionData(normalized);
 
     this.run(
       `

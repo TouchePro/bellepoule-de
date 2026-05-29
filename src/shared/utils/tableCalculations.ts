@@ -87,6 +87,12 @@ export function placeFencersInTable(fencers: Fencer[], tableSize: number): (Fenc
   const placements: (Fencer | null)[] = new Array(tableSize).fill(null);
   const seedingChart = generateSeedingChart(tableSize);
 
+  // Précalcule seed→position en O(n) pour éviter indexOf en boucle
+  const seedToPosition = new Map<number, number>();
+  for (let pos = 0; pos < seedingChart.length; pos++) {
+    seedToPosition.set(seedingChart[pos], pos);
+  }
+
   // Trier les tireurs par classement général (après poules)
   const sortedFencers = [...fencers].sort(
     (a, b) => (a.poolStats?.overallRank ?? 999) - (b.poolStats?.overallRank ?? 999)
@@ -94,8 +100,8 @@ export function placeFencersInTable(fencers: Fencer[], tableSize: number): (Fenc
 
   // Placer chaque tireur selon son seed
   for (let i = 0; i < sortedFencers.length; i++) {
-    const position = seedingChart.indexOf(i + 1);
-    if (position !== -1) {
+    const position = seedToPosition.get(i + 1);
+    if (position !== undefined) {
       placements[position] = sortedFencers[i];
     }
   }
