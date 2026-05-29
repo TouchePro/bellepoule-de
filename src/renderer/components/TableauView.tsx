@@ -952,18 +952,25 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     }
   };
 
-  const handleSpecialStatus = (status: 'abandon' | 'forfait' | 'exclusion') => {
+  const handleSpecialStatus = (
+    status: 'abandon' | 'forfait' | 'exclusion',
+    fencerId: string
+  ) => {
     if (!editingMatch) return;
+
+    // L'adversaire du tireur sélectionné (qui abandonne / forfait / est exclu) gagne
+    const opponentWinner = (m: { fencerA?: Fencer | null; fencerB?: Fencer | null }) => {
+      if (m.fencerA?.id === fencerId) return m.fencerB ?? null;
+      if (m.fencerB?.id === fencerId) return m.fencerA ?? null;
+      return null;
+    };
 
     // Si c'est un match de consolation
     if (editingConsolationId) {
       const bracket = consolationBrackets.find(b => b.id === editingConsolationId);
       const match = bracket?.matches.find(m => m.id === editingMatch);
       if (bracket && match) {
-        let winner: Fencer | null = null;
-        if (status === 'exclusion') {
-          winner = match.fencerA && match.fencerB ? match.fencerB : match.fencerA || match.fencerB;
-        }
+        const winner = opponentWinner(match);
         updateConsolationMatch(editingConsolationId, editingMatch, match.scoreA ?? 0, match.scoreB ?? 0, winner);
       }
       setShowScoreModal(false);
@@ -975,15 +982,8 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     const match = matches.find(m => m.id === editingMatch);
     if (!match) return;
 
-    let winner: Fencer | null = null;
-
-    if (status === 'abandon' || status === 'forfait') {
-      // Le match est annulé, pas de vainqueur
-      winner = null;
-    } else if (status === 'exclusion') {
-      // Pour l'exclusion, l'adversaire gagne
-      winner = match.fencerA && match.fencerB ? match.fencerB : match.fencerA || match.fencerB;
-    }
+    // Dans un tableau à élimination directe, l'adversaire gagne dans tous les cas
+    const winner: Fencer | null = opponentWinner(match);
 
     const updatedMatches = matches.map(m => {
       if (m.id === editingMatch) {
