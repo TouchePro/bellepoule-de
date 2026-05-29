@@ -1350,6 +1350,22 @@
       </div>
     </div>
 
+    <!-- Overlay confirmation carton noir -->
+    <div class="modal-overlay" id="black-card-modal">
+      <div class="modal-content" style="border:3px solid #111">
+        <div class="modal-title" style="background:#111;color:#fff">⬛ Carton Noir</div>
+        <div class="modal-body">
+          <p id="black-card-fencer-name" style="font-size:1.1rem;font-weight:bold;text-align:center;margin-bottom:0.5rem">—</p>
+          <p style="text-align:center;color:#dc2626">2ème carton rouge = <strong>CARTON NOIR</strong></p>
+          <p style="text-align:center;font-size:0.875rem;color:#6b7280">Le combattant sera éliminé du match.</p>
+        </div>
+        <div class="modal-buttons">
+          <button class="modal-btn modal-btn-cancel" onclick="refereeApp.cancelBlackCard()">Annuler</button>
+          <button class="modal-btn modal-btn-confirm" style="background:#111;color:#fff" onclick="refereeApp.confirmBlackCard()">⬛ Confirmer l'élimination</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Overlay confirmation tirage au sort -->
     <div id="coin-flip-confirm">
       <div class="coin-flip-confirm-content">
@@ -1558,6 +1574,7 @@
           this.waitingOvertimeStart = false;
           this.overtimeType = null; // 'supplementary' | 'challenger' | null
           this.coinFlipWinner = null; // 'A' | 'B' | null — vainqueur par tirage au sort
+          this._pendingBlackCardFencer = null; // fenceur en attente de carton noir
           this.actionHistory = []; // Historique pour undo (max 10)
           this.cardAnnounceEnabled = false; // Réglé depuis les paramètres de saisie distante
           this.refereeFeatureEnabled = false; // Fonctionnalité gestion arbitres
@@ -2074,6 +2091,19 @@
             }
           }
 
+          // 2ème rouge (hors escrime moderne) = carton noir → confirmation
+          if (cardType === 'red' && !this.isModernFencing) {
+            const redCount = cards.filter(c => c === 'red').length;
+            if (redCount >= 1) {
+              this._pendingBlackCardFencer = ef;
+              const nameEl = document.getElementById(`fencer-${ef.toLowerCase()}-name`);
+              const fencerName = nameEl ? nameEl.textContent.trim() : `Tireur ${ef}`;
+              document.getElementById('black-card-fencer-name').textContent = fencerName;
+              document.getElementById('black-card-modal').classList.add('active');
+              return; // attendre confirmation
+            }
+          }
+
           cards.push(cardType);
 
           if (this.isModernFencing) {
@@ -2205,6 +2235,72 @@
           if (fencer && originalType) {
             this.addCard(fencer, originalType);
           }
+        }
+
+        cancelBlackCard() {
+          this._pendingBlackCardFencer = null;
+          document.getElementById('black-card-modal').classList.remove('active');
+        }
+
+        async confirmBlackCard() {
+          const ef = this._pendingBlackCardFencer;
+          this._pendingBlackCardFencer = null;
+          document.getElementById('black-card-modal').classList.remove('active');
+          if (!ef || !this.currentMatch) return;
+
+          const cards = ef === 'A' ? this.cardsA : this.cardsB;
+          cards.push('red'); // 2ème rouge = carton noir
+          if (ef === 'A') this.scoreB += 5;
+          else this.scoreA += 5;
+
+          this.updateScores();
+          this.updateCardsDisplay();
+          this.broadcastUpdate();
+
+          this.showNotification('⬛ Carton noir — combattant éliminé !');
+          if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
+
+          // Terminer le match : l'adversaire du fautif est vainqueur
+          this.matchStatus = 'finished';
+          this.stopTimer();
+
+          try {
+            await fetch(`/api/matches/${this.currentMatch.id}/finish`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                scoreA: this.scoreA,
+                scoreB: this.scoreB,
+                cardsA: this.cardsA,
+                cardsB: this.cardsB,
+                winner: ef === 'A' ? 'B' : 'A',
+              }),
+            });
+          } catch (e) {
+            console.error('[BlackCard] Erreur finish:', e);
+          }
+
+          this.updateMatchStatus();
+          this.updateControlButtons();
+
+          this.socket.emit('arena_control', {
+            arenaId: this.arenaId,
+            action: 'finish',
+          });
+
+          setTimeout(() => {
+            this.currentMatch = null;
+            this.scoreA = 0;
+            this.scoreB = 0;
+            this.cardsA = [];
+            this.cardsB = [];
+            this.faultHistoryA = { 1: 0, 2: 0, 3: 0 };
+            this.faultHistoryB = { 1: 0, 2: 0, 3: 0 };
+            this.matchStatus = 'not_started';
+            this.updateScores();
+            this.updateCardsDisplay();
+            this.loadNextMatchList();
+          }, 3000);
         }
 
         // ── Historique / Undo ─────────────────────────────────────────────────
