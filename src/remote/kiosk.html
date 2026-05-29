@@ -1096,6 +1096,17 @@
             <input type="checkbox" id="cb-tableau" checked> Tableau DE
           </label>
           <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:0.5rem 0">
+          <div class="settings-title">Mode tableau DE</div>
+          <label class="settings-item">
+            <input type="radio" name="tableau-mode" id="tableau-mode-auto" value="auto" checked style="accent-color:#3b82f6;cursor:pointer"> Auto
+          </label>
+          <label class="settings-item">
+            <input type="radio" name="tableau-mode" id="tableau-mode-compact" value="compact" style="accent-color:#3b82f6;cursor:pointer"> Tableau complet
+          </label>
+          <label class="settings-item">
+            <input type="radio" name="tableau-mode" id="tableau-mode-focus" value="focus" style="accent-color:#3b82f6;cursor:pointer"> Ordre de passage
+          </label>
+          <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:0.5rem 0">
           <div class="settings-title" data-i18n="kiosk.rotation_label">Rafraîchissement</div>
           <div class="settings-item">
             <input type="number" id="rotation-input" min="3" max="300" value="15"
@@ -1263,6 +1274,9 @@
         bracketData: null,
         bracketPanTimer: null,
         bracketPanIndex: 0,
+        bracketScaledCardW: 0,
+        bracketScaledColGap: 0,
+        bracketDisplayMode: 'auto', // 'auto' | 'compact' | 'focus'
       };
 
       // ─── Note d'organisation ─────────────────────────────────────────────────
@@ -1488,6 +1502,29 @@
           saveLocalViews();
           applyLocalViews();
           clearTimeout(state.menuTimer); // garder le menu visible pendant la config
+        });
+      });
+
+      // Mode tableau DE
+      function saveLocalTableauMode(mode) { localStorage.setItem('kioskTableauMode', mode); }
+      function loadLocalTableauMode() {
+        const v = localStorage.getItem('kioskTableauMode');
+        return (v === 'compact' || v === 'focus' || v === 'auto') ? v : 'auto';
+      }
+      function applyTableauMode(mode) {
+        state.bracketDisplayMode = mode;
+        document.querySelectorAll('input[name="tableau-mode"]').forEach(r => {
+          r.checked = r.value === mode;
+        });
+        // Re-render si la vue tableau est active
+        if (state.currentView === 'tableau' && state.bracketData) renderBracket();
+      }
+      document.querySelectorAll('input[name="tableau-mode"]').forEach(r => {
+        r.addEventListener('change', () => {
+          const mode = document.querySelector('input[name="tableau-mode"]:checked')?.value || 'auto';
+          saveLocalTableauMode(mode);
+          applyTableauMode(mode);
+          clearTimeout(state.menuTimer);
         });
       });
 
@@ -1912,6 +1949,9 @@
 
       function isFocusMode(data) {
         if (!data?.rounds?.length) return false;
+        if (state.bracketDisplayMode === 'focus') return true;
+        if (state.bracketDisplayMode === 'compact') return false;
+        // auto: focus si premier round > seuil
         const orderedRounds = getBracketRoundOrder(data.rounds);
         if (!orderedRounds.length) return false;
         const firstMatchCount = orderedRounds[0].round / 2;
@@ -2078,13 +2118,14 @@
       function scrollToBracketRound(roundValue) {
         const outer = document.getElementById('bracket-outer');
         if (!outer || !state.bracketData?.rounds) return;
-        const { cardW, colGap } = getBracketDims(state.bracketData);
+        const sCardW  = state.bracketScaledCardW  || getBracketDims(state.bracketData).cardW;
+        const sColGap = state.bracketScaledColGap || getBracketDims(state.bracketData).colGap;
         const orderedRounds = getBracketRoundOrder(state.bracketData.rounds);
         const idx = orderedRounds.findIndex(r => r.round === roundValue);
         if (idx < 0) return;
-        const colX = idx * (cardW + colGap) + colGap / 2;
+        const colX = idx * (sCardW + sColGap) + sColGap / 2;
         const viewW = outer.clientWidth;
-        const targetLeft = Math.max(0, colX - viewW / 2 + cardW / 2);
+        const targetLeft = Math.max(0, colX - viewW / 2 + sCardW / 2);
         outer.scrollTo({ left: targetLeft, behavior: 'smooth' });
       }
 
@@ -2150,6 +2191,8 @@
         const sCardW  = Math.round(cardW  * scale);
         const sCardH  = Math.round(cardH  * scale);
         const sColGap = Math.round(colGap * scale);
+        state.bracketScaledCardW  = sCardW;
+        state.bracketScaledColGap = sColGap;
 
         const totalW = orderedRounds.length * (sCardW + sColGap) + sColGap;
         const labelH = 28;
@@ -2306,6 +2349,8 @@
         const savedSec = loadLocalRotation();
         state.rotationMs = savedSec * 1000;
         document.getElementById('rotation-input').value = savedSec;
+
+        applyTableauMode(loadLocalTableauMode());
 
         fetchData();
         fetchLogo();
