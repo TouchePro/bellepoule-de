@@ -29,6 +29,10 @@ interface ResultsViewProps {
   tableauMatches?: TableauMatchForPDF[];
   consolationBrackets?: ConsolationBracket[];
   isLaserSabre?: boolean;
+  /** Tireurs triés/filtrés tels qu'affichés dans l'appel */
+  appelFencers?: Fencer[];
+  /** Colonnes visibles telles que configurées dans l'appel */
+  appelVisibleColumns?: string[];
 }
 
 // ─── Static style constants ───────────────────────────────────────────────────
@@ -77,6 +81,7 @@ const RV_STYLES = {
 const ResultsView: React.FC<ResultsViewProps> = ({
   competition, poolRanking, finalResults,
   fencers, pools, tableauMatches, consolationBrackets, isLaserSabre,
+  appelFencers, appelVisibleColumns,
 }) => {
   const { showToast } = useToast();
   const rankingTemplate = usePdfTemplateStore(s => s.templates.ranking);
@@ -191,9 +196,11 @@ const ResultsView: React.FC<ResultsViewProps> = ({
     try {
       const api = (window as any).electronAPI;
 
-      const effectiveFencers = (fencers && fencers.length > 0)
-        ? fencers
-        : await api?.db?.getFencersByCompetition?.(competition.id) ?? [];
+      const effectiveFencers = (appelFencers && appelFencers.length > 0)
+        ? appelFencers
+        : (fencers && fencers.length > 0)
+          ? fencers
+          : await api?.db?.getFencersByCompetition?.(competition.id) ?? [];
 
       const effectiveTableauMatches = (tableauMatches && tableauMatches.length > 0)
         ? tableauMatches
@@ -209,6 +216,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
 
       await exportFullCompetitionPDF({
         fencers: effectiveFencers,
+        appelVisibleColumns,
         pools: effectivePools,
         overallRanking: poolRanking,
         tableauMatches: effectiveTableauMatches as TableauMatchForPDF[],
