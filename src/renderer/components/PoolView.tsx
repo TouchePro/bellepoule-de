@@ -79,6 +79,10 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [editingMatch, setEditingMatch] = useState<number | null>(null);
   const [isMatchInverted, setIsMatchInverted] = useState(false);
+  // Statut spécial en attente de désignation du combattant (abandon/forfait/exclusion)
+  const [pendingSpecialStatus, setPendingSpecialStatus] = useState<
+    'abandon' | 'forfait' | 'exclusion' | null
+  >(null);
   const [showColumnMenu, setShowColumnMenu] = useState(false);
 
   const [editScoreA, setEditScoreA] = useState('');
@@ -495,25 +499,27 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   // Mettre à jour la ref avec la fonction actuelle
   handleScoreSubmitRef.current = handleScoreSubmit;
 
-  const handleSpecialStatus = async (status: 'abandon' | 'forfait' | 'exclusion') => {
+  // Ouvre la modale « Quel est le combattant … ? ». Les erreurs arrivent : on
+  // ne déclenche rien tant que le référent n'a pas désigné un combattant.
+  const handleSpecialStatus = (status: 'abandon' | 'forfait' | 'exclusion') => {
     if (editingMatch === null) return;
+    setPendingSpecialStatus(status);
+  };
+
+  // Le référent a désigné le combattant concerné (côté affiché) dans la modale
+  const applySpecialStatus = (side: 'left' | 'right') => {
+    const status = pendingSpecialStatus;
+    if (status === null || editingMatch === null) {
+      setPendingSpecialStatus(null);
+      return;
+    }
 
     const match = pool.matches[editingMatch];
     // Respecter l'ordre d'affichage : le tireur affiché à gauche est "fencerLeft"
     const fencerLeft = isMatchInverted ? match.fencerB : match.fencerA;
     const fencerRight = isMatchInverted ? match.fencerA : match.fencerB;
 
-    const statusVerb =
-      status === 'abandon' ? 'abandonne' : status === 'forfait' ? 'déclare forfait' : 'est exclu';
-    const statusInf =
-      status === 'abandon' ? 'abandonner' : status === 'forfait' ? 'déclarer forfait' : 'exclure';
-    const leftAbandons = await confirm({
-      message: `${fencerLeft?.lastName} ${fencerLeft?.firstName?.charAt(0)}. ${statusVerb} ?\n\nCliquez sur Annuler pour ${statusInf} ${fencerRight?.lastName} ${fencerRight?.firstName?.charAt(0)}.`,
-      confirmLabel: `${fencerLeft?.lastName}`,
-      cancelLabel: `${fencerRight?.lastName}`,
-    });
-
-    if (leftAbandons) {
+    if (side === 'left') {
       // Le tireur affiché à gauche abandonne
       const winner: 'A' | 'B' = isMatchInverted ? 'A' : 'B';
       onScoreUpdate(
@@ -544,7 +550,8 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     // Forcer la mise à jour de l'ordre des matchs
     setMatchesUpdateTrigger(prev => prev + 1);
 
-    // Fermer le modal immédiatement après la mise à jour
+    // Fermer les modales immédiatement après la mise à jour
+    setPendingSpecialStatus(null);
     setEditingMatch(null);
     setIsMatchInverted(false);
     setEditScoreA('');
@@ -955,6 +962,76 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
             </button>
             <button className="btn btn-primary" onClick={handleScoreSubmit}>
               Valider
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Modale de désignation du combattant pour abandon / forfait / exclusion.
+  // Un bouton par combattant + un bouton Annuler (les erreurs, ça arrive).
+  const renderSpecialStatusModal = () => {
+    if (pendingSpecialStatus === null || editingMatch === null) return null;
+
+    const match = pool.matches[editingMatch];
+    const fencerLeft = isMatchInverted ? match.fencerB : match.fencerA;
+    const fencerRight = isMatchInverted ? match.fencerA : match.fencerB;
+
+    const statusLabel =
+      pendingSpecialStatus === 'abandon'
+        ? 'abandonné'
+        : pendingSpecialStatus === 'forfait'
+          ? 'forfait'
+          : 'exclu';
+    const statusHint =
+      pendingSpecialStatus === 'abandon'
+        ? 'Il perd ce match ; son adversaire est déclaré vainqueur.'
+        : pendingSpecialStatus === 'forfait'
+          ? 'Il perd ce match ; son adversaire est déclaré vainqueur.'
+          : 'Il est exclu ; son adversaire est déclaré vainqueur de ce match.';
+
+    const fencerName = (f?: typeof fencerLeft) =>
+      f ? `${f.lastName} ${f.firstName ?? ''}`.trim() : '—';
+
+    return (
+      <div
+        className="modal-overlay"
+        onClick={() => setPendingSpecialStatus(null)}
+        style={{ zIndex: 11000 }}
+      >
+        <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '420px' }}>
+          <div className="modal-header">
+            <h2 className="modal-title">Quel est le combattant {statusLabel} ?</h2>
+          </div>
+          <div className="modal-body">
+            <p style={{ marginTop: 0, color: '#6b7280', fontSize: '0.875rem' }}>{statusHint}</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <button
+                type="button"
+                className="btn btn-warning"
+                onClick={() => applySpecialStatus('left')}
+                style={{ width: '100%', padding: '0.75rem', fontWeight: 600 }}
+              >
+                {fencerName(fencerLeft)}
+              </button>
+              <button
+                type="button"
+                className="btn btn-warning"
+                onClick={() => applySpecialStatus('right')}
+                style={{ width: '100%', padding: '0.75rem', fontWeight: 600 }}
+              >
+                {fencerName(fencerRight)}
+              </button>
+            </div>
+          </div>
+          <div className="modal-footer">
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => setPendingSpecialStatus(null)}
+            >
+              Annuler
             </button>
           </div>
         </div>
@@ -1454,6 +1531,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           />
 )}
         {renderScoreModal()}
+        {renderSpecialStatusModal()}
       </div>
     </div>
     {showAddFencerModal && competitionId && (
