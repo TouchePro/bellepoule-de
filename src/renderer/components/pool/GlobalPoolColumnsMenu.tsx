@@ -50,8 +50,10 @@ const GlobalPoolColumnsMenu: React.FC<GlobalPoolColumnsMenuProps> = ({ isLaserSa
             border: '1px solid #e5e7eb',
             borderRadius: '6px',
             boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            zIndex: 100,
-            minWidth: '220px',
+            zIndex: 2000,
+            minWidth: '240px',
+            maxHeight: '60vh',
+            overflowY: 'auto',
             padding: '0.5rem',
           }}
         >
