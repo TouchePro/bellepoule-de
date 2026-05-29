@@ -1860,7 +1860,7 @@ export async function exportFullCompetitionPDF(data: FullCompetitionExportData):
     sections.push(generatePoolHTML(
       pool,
       { title: `Poule ${pool.number} — ${competitionTitle}`, logoBase64: logo, competitionName: competitionTitle },
-      template
+      undefined
     ));
   }
 
@@ -1881,7 +1881,7 @@ export async function exportFullCompetitionPDF(data: FullCompetitionExportData):
     sections.push(generateTableauHTML(
       roundMatches, MAX_MATCHES_PER_PAGE_TABLEAU,
       `${getTableauRoundName(round)} — ${competitionTitle}`,
-      logo, template
+      logo, undefined
     ));
   }
 
@@ -1893,13 +1893,13 @@ export async function exportFullCompetitionPDF(data: FullCompetitionExportData):
       sections.push(generateTableauHTML(
         roundMatches, MAX_MATCHES_PER_PAGE_TABLEAU,
         `${bracket.name} — ${getTableauRoundName(round)} — ${competitionTitle}`,
-        logo, template
+        logo, undefined
       ));
     }
   }
 
   if (finalResults.length > 0) {
-    sections.push(generateResultsHTML(finalResults, `Classement final — ${competitionTitle}`, logo, template));
+    sections.push(generateResultsHTML(finalResults, `Classement final — ${competitionTitle}`, logo, undefined));
   }
 
   if (sections.length === 0) throw new Error('Aucune donnée à exporter');
