@@ -13,6 +13,7 @@ import { exportResultsToPDF, exportFullCompetitionPDF } from '../../shared/utils
 import type { TableauMatchForPDF, FinalResultForPDF } from '../../shared/utils/pdfExport';
 import { usePdfTemplateStore } from '../../features/pdfTemplates/hooks/usePdfTemplateStore';
 import type { ConsolationBracket } from './tableau/tableauTypes';
+import { logger, LogCategory } from '@shared/services/logger';
 
 interface FinalResult {
   rank: number;
@@ -196,22 +197,32 @@ const ResultsView: React.FC<ResultsViewProps> = ({
     try {
       const api = (window as any).electronAPI;
 
+      // Chaque fetch de secours est isolé : un échec ne doit pas vider tout l'export
+      const safe = async <T,>(fn: () => Promise<T>, label: string, fallback: T): Promise<T> => {
+        try { return await fn(); } catch (e) {
+          logger.warn(LogCategory.DATABASE, `export complet — ${label} échoué`, e instanceof Error ? e : undefined);
+          return fallback;
+        }
+      };
+
       const effectiveFencers = (appelFencers && appelFencers.length > 0)
         ? appelFencers
         : (fencers && fencers.length > 0)
           ? fencers
-          : await api?.db?.getFencersByCompetition?.(competition.id) ?? [];
+          : await safe(() => api?.db?.getFencersByCompetition?.(competition.id) ?? [], 'tireurs', []);
 
       const effectiveTableauMatches = (tableauMatches && tableauMatches.length > 0)
         ? tableauMatches
-        : await api?.db?.getTableauMatchesForExport?.(competition.id) ?? [];
+        : await safe(() => api?.db?.getTableauMatchesForExport?.(competition.id) ?? [], 'matchs tableau', []);
 
       let effectivePools: Pool[] = pools && pools.length > 0 ? pools : [];
       if (effectivePools.length === 0 && api?.db?.getPhasesByCompetition && api?.db?.getPoolsByPhase) {
-        const phases = await api.db.getPhasesByCompetition(competition.id);
-        const poolPhases = phases.filter((p: { type: string }) => p.type === 'pool');
-        const poolArrays = await Promise.all(poolPhases.map((ph: { id: string }) => api.db.getPoolsByPhase(ph.id)));
-        effectivePools = poolArrays.flat();
+        effectivePools = await safe(async () => {
+          const phases = await api.db.getPhasesByCompetition(competition.id);
+          const poolPhases = phases.filter((p: { type: string }) => p.type === 'pool');
+          const poolArrays = await Promise.all(poolPhases.map((ph: { id: string }) => api.db.getPoolsByPhase(ph.id)));
+          return poolArrays.flat();
+        }, 'poules', []);
       }
 
       await exportFullCompetitionPDF({
