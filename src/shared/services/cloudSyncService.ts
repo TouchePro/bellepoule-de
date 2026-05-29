@@ -8,6 +8,13 @@ import { Competition, Fencer, Match } from '../types';
 import { detectConflicts, mergeActionsById } from '../utils/conflictResolution';
 import { logger, LogCategory } from './logger';
 
+/** Pont minimal vers le chiffrement OS exposé par le preload (safeStorage). */
+interface CryptoBridge {
+  isAvailable: () => Promise<boolean>;
+  protect: (plaintext: string) => Promise<string | null>;
+  unprotect: (ciphertext: string) => Promise<string | null>;
+}
+
 export interface CloudSyncConfig {
   provider: 'dropbox' | 'gdrive' | 'onedrive' | 'custom';
   apiKey?: string;
@@ -79,33 +86,74 @@ export class CloudSyncService {
    * La clé AES-GCM est persistée en localStorage (JWK) pour survivre aux redémarrages.
    */
   private async initializeEncryption(): Promise<void> {
+    // Clé claire historique (retro-compat) + clé chiffrée via safeStorage OS.
     const STORAGE_KEY = 'bellepoule-sync-key';
+    const SECURE_STORAGE_KEY = 'bellepoule-sync-key-secure';
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        // Importer la clé existante
-        const jwk = JSON.parse(stored) as JsonWebKey;
-        this.encryptionKey = await window.crypto.subtle.importKey(
-          'jwk',
-          jwk,
-          { name: 'AES-GCM', length: 256 },
-          true,
-          ['encrypt', 'decrypt']
-        );
-      } else {
-        // Générer une nouvelle clé et la persister
-        this.encryptionKey = await window.crypto.subtle.generateKey(
-          { name: 'AES-GCM', length: 256 },
-          true,
-          ['encrypt', 'decrypt']
-        );
-        const jwk = await window.crypto.subtle.exportKey('jwk', this.encryptionKey);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(jwk));
-      }
+      const jwk = await this.loadOrCreateKeyJwk(STORAGE_KEY, SECURE_STORAGE_KEY);
+      this.encryptionKey = await window.crypto.subtle.importKey(
+        'jwk',
+        jwk,
+        { name: 'AES-GCM', length: 256 },
+        true,
+        ['encrypt', 'decrypt']
+      );
     } catch (error) {
       logger.error(LogCategory.SYSTEM, 'Encryption init failed', error as Error);
       throw new Error('Encryption initialization failed');
     }
+  }
+
+  /**
+   * Charge la clé JWK depuis le stockage chiffré (safeStorage) si dispo,
+   * sinon migre l'ancienne clé en clair, sinon en génère une nouvelle.
+   */
+  private async loadOrCreateKeyJwk(
+    legacyKey: string,
+    secureKey: string
+  ): Promise<JsonWebKey> {
+    const crypto = (window as { electronAPI?: { crypto?: CryptoBridge } }).electronAPI?.crypto;
+    const secureAvailable = crypto ? await crypto.isAvailable().catch(() => false) : false;
+
+    // 1. Clé déjà chiffrée par l'OS
+    if (secureAvailable && crypto) {
+      const enc = localStorage.getItem(secureKey);
+      if (enc) {
+        const plain = await crypto.unprotect(enc).catch(() => null);
+        if (plain) return JSON.parse(plain) as JsonWebKey;
+      }
+    }
+
+    // 2. Migration : ancienne clé en clair -> chiffrer puis effacer le clair
+    const legacy = localStorage.getItem(legacyKey);
+    if (legacy) {
+      if (secureAvailable && crypto) {
+        const enc = await crypto.protect(legacy).catch(() => null);
+        if (enc) {
+          localStorage.setItem(secureKey, enc);
+          localStorage.removeItem(legacyKey);
+        }
+      }
+      return JSON.parse(legacy) as JsonWebKey;
+    }
+
+    // 3. Nouvelle clé
+    const key = await window.crypto.subtle.generateKey(
+      { name: 'AES-GCM', length: 256 },
+      true,
+      ['encrypt', 'decrypt']
+    );
+    const jwk = await window.crypto.subtle.exportKey('jwk', key);
+    if (secureAvailable && crypto) {
+      const enc = await crypto.protect(JSON.stringify(jwk)).catch(() => null);
+      if (enc) {
+        localStorage.setItem(secureKey, enc);
+        return jwk;
+      }
+    }
+    // Fallback (ex. environnement web sans safeStorage) : stockage clair
+    localStorage.setItem(legacyKey, JSON.stringify(jwk));
+    return jwk;
   }
 
   /**

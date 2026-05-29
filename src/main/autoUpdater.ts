@@ -8,6 +8,7 @@ import { app, dialog, shell, BrowserWindow } from 'electron';
 import https from 'https';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 
 interface UpdateInfo {
   hasUpdate: boolean;
@@ -499,11 +500,6 @@ export class AutoUpdater {
     filename: string,
     onProgress?: (downloaded: number, total: number) => void
   ): Promise<string | null> {
-    const https = require('https');
-    const fs = require('fs');
-    const path = require('path');
-    const os = require('os');
-
     return new Promise((resolve, reject) => {
       const tempDir = os.tmpdir();
       const downloadPath = path.join(tempDir, `bellepoule-update-${filename}`);
@@ -590,11 +586,8 @@ export class AutoUpdater {
     };
 
     // Sauvegarder dans un fichier de config
-    const configPath = require('path').join(
-      require('os').tmpdir(),
-      'bellepoule-pending-update.json'
-    );
-    require('fs').writeFileSync(configPath, JSON.stringify(updateData, null, 2));
+    const configPath = path.join(os.tmpdir(), 'bellepoule-pending-update.json');
+    fs.writeFileSync(configPath, JSON.stringify(updateData, null, 2));
   }
 
   /**
@@ -602,22 +595,19 @@ export class AutoUpdater {
    */
   checkAndInstallPendingUpdate(): void {
     try {
-      const configPath = require('path').join(
-        require('os').tmpdir(),
-        'bellepoule-pending-update.json'
-      );
+      const configPath = path.join(os.tmpdir(), 'bellepoule-pending-update.json');
 
-      if (require('fs').existsSync(configPath)) {
-        const updateData = JSON.parse(require('fs').readFileSync(configPath, 'utf8'));
+      if (fs.existsSync(configPath)) {
+        const updateData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 
-        if (require('fs').existsSync(updateData.path)) {
+        if (fs.existsSync(updateData.path)) {
           console.log(`🔄 Installation de la mise à jour ${updateData.version}...`);
 
           // Lancer l'installateur
           this.launchInstaller(updateData.path);
 
           // Supprimer le fichier de config
-          require('fs').unlinkSync(configPath);
+          fs.unlinkSync(configPath);
         }
       }
     } catch (error) {

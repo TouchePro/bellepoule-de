@@ -3,7 +3,7 @@
  * Licensed under GPL-3.0
  */
 
-import { app, BrowserWindow, ipcMain, dialog, Menu, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, Menu, shell, safeStorage } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -1923,6 +1923,26 @@ ipcMain.handle('updater:installPendingUpdate', async () => {
     return { success: true };
   }
   return { success: false, error: 'AutoUpdater not initialized' };
+});
+
+// ============================================================================
+// safeStorage : chiffrement OS (Keychain/DPAPI/libsecret) pour secrets locaux
+// (ex. clé de synchronisation cloud). Renvoie une chaîne base64.
+// ============================================================================
+ipcMain.handle('crypto:isAvailable', async () => {
+  return safeStorage.isEncryptionAvailable();
+});
+
+ipcMain.handle('crypto:protect', async (_, plaintext: string) => {
+  if (typeof plaintext !== 'string') throw new Error('plaintext must be a string');
+  if (!safeStorage.isEncryptionAvailable()) return null;
+  return safeStorage.encryptString(plaintext).toString('base64');
+});
+
+ipcMain.handle('crypto:unprotect', async (_, ciphertextB64: string) => {
+  if (typeof ciphertextB64 !== 'string') throw new Error('ciphertext must be a string');
+  if (!safeStorage.isEncryptionAvailable()) return null;
+  return safeStorage.decryptString(Buffer.from(ciphertextB64, 'base64'));
 });
 
 // ============================================================================
