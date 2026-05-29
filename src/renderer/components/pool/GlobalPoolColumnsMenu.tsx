@@ -5,7 +5,8 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useColumnVisibility, POOL_COLUMNS, ColumnId } from '../../hooks/useColumnVisibility';
 
 interface GlobalPoolColumnsMenuProps {
@@ -15,16 +16,37 @@ interface GlobalPoolColumnsMenuProps {
 const GlobalPoolColumnsMenu: React.FC<GlobalPoolColumnsMenuProps> = ({ isLaserSabre }) => {
   const { visibility, setAllPoolColumns } = useColumnVisibility();
   const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const ref = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Positionne le menu sous le bouton (coordonnées viewport pour position: fixed)
+  const updatePos = useCallback(() => {
+    const r = btnRef.current?.getBoundingClientRect();
+    if (r) setPos({ top: r.bottom + 4, left: r.left });
+  }, []);
 
   useEffect(() => {
     if (!open) return;
+    updatePos();
     const handleClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (
+        ref.current && !ref.current.contains(t) &&
+        menuRef.current && !menuRef.current.contains(t)
+      )
+        setOpen(false);
     };
     document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [open]);
+    window.addEventListener('resize', updatePos);
+    window.addEventListener('scroll', updatePos, true);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      window.removeEventListener('resize', updatePos);
+      window.removeEventListener('scroll', updatePos, true);
+    };
+  }, [open, updatePos]);
 
   const columns = POOL_COLUMNS.filter(col => col.id !== 'quest' || isLaserSabre);
 
@@ -35,22 +57,22 @@ const GlobalPoolColumnsMenu: React.FC<GlobalPoolColumnsMenuProps> = ({ isLaserSa
   };
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
-      <button className="btn btn-secondary" onClick={() => setOpen(o => !o)}>
+    <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
+      <button ref={btnRef} className="btn btn-secondary" onClick={() => setOpen(o => !o)}>
         🧱 Colonnes (toutes les poules)
       </button>
-      {open && (
+      {open && createPortal(
         <div
+          ref={menuRef}
           style={{
-            position: 'absolute',
-            top: '100%',
-            left: 0,
-            marginTop: '0.25rem',
+            position: 'fixed',
+            top: pos.top,
+            left: pos.left,
             background: 'white',
             border: '1px solid #e5e7eb',
             borderRadius: '6px',
             boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            zIndex: 2000,
+            zIndex: 9999,
             minWidth: '240px',
             maxHeight: '60vh',
             overflowY: 'auto',
@@ -92,7 +114,8 @@ const GlobalPoolColumnsMenu: React.FC<GlobalPoolColumnsMenuProps> = ({ isLaserSa
               {col.label}
             </label>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
