@@ -529,6 +529,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onRemoteMatchFinished: (callback: (data: any) => void) => {
     ipcRenderer.on('match:finished', (_, data) => callback(data));
   },
+  onRemoteFencerExcluded: (callback: (data: { fencerId: string; matchId: string }) => void) => {
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on('remote:fencer_excluded', handler);
+    return () => ipcRenderer.removeListener('remote:fencer_excluded', handler);
+  },
   onKioskNoteUpdate: (callback: (note: any) => void) => {
     const handler = (_: any, note: any) => callback(note);
     ipcRenderer.on('kiosk:note', handler);

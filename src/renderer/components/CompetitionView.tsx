@@ -395,10 +395,17 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
     window.electronAPI.onRemoteMatchFinished(handleMatchFinished);
 
+    // Carton noir distant : exclure le combattant fautif dans le store
+    const offExcluded = window.electronAPI.onRemoteFencerExcluded?.(({ fencerId }) => {
+      logger.debug(LogCategory.UI, `[CompetitionView] Combattant exclu (carton noir): ${fencerId}`);
+      updateFencer(fencerId, { status: FencerStatus.EXCLUDED });
+    });
+
     return () => {
       window.electronAPI.removeAllListeners?.('match:finished');
+      offExcluded?.();
     };
-  }, [updateMatchFromRemote]);
+  }, [updateMatchFromRemote, updateFencer]);
 
   // Sync scores/statuts des matches de poule vers la DB quand ils changent
   const prevPoolsRef = useRef(pools);
