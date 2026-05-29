@@ -742,6 +742,41 @@
         min-width: 100%;
       }
 
+      /* ── Mode ciné (pan-zoom auto type Ken Burns) ──────────────────────── */
+      #view-tableau .bracket-outer.cinema {
+        overflow: hidden;
+      }
+      #view-tableau .bracket-outer.cinema .bracket-inner {
+        transform-origin: 0 0;
+        transition: transform var(--cinema-dur, 1.2s) cubic-bezier(0.4, 0.0, 0.2, 1);
+        will-change: transform;
+      }
+
+      /* Minimap repère spatial */
+      #cinema-minimap {
+        display: none;
+        position: absolute;
+        right: 14px;
+        bottom: 14px;
+        z-index: 30;
+        background: rgba(15, 23, 42, 0.78);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 8px;
+        padding: 6px;
+        backdrop-filter: blur(6px);
+        pointer-events: none;
+      }
+      #view-tableau .bracket-outer.cinema #cinema-minimap { display: block; }
+      #cinema-minimap canvas { display: block; }
+      #cinema-minimap .mm-viewport {
+        position: absolute;
+        border: 2px solid #fbbf24;
+        border-radius: 3px;
+        box-shadow: 0 0 8px rgba(251,191,36,0.5);
+        transition: all var(--cinema-dur, 1.2s) cubic-bezier(0.4, 0.0, 0.2, 1);
+        pointer-events: none;
+      }
+
       /* ── Mode focus-round (grand tableau) ──────────────────────────────── */
       #bracket-focus-outer {
         display: none;
@@ -1106,6 +1141,9 @@
           <label class="settings-item">
             <input type="radio" name="tableau-mode" id="tableau-mode-focus" value="focus" style="accent-color:#3b82f6;cursor:pointer"> Ordre de passage
           </label>
+          <label class="settings-item">
+            <input type="radio" name="tableau-mode" id="tableau-mode-cinema" value="cinema" style="accent-color:#3b82f6;cursor:pointer"> Ciné (zoom auto)
+          </label>
           <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:0.5rem 0">
           <div class="settings-title" data-i18n="kiosk.rotation_label">Rafraîchissement</div>
           <div class="settings-item">
@@ -1219,6 +1257,10 @@
             <h3>Tableau non disponible</h3>
             <p>Le tableau apparaîtra lors de la phase d'élimination directe</p>
           </div>
+        </div>
+        <div id="cinema-minimap">
+          <canvas id="cinema-minimap-canvas" width="180" height="120"></canvas>
+          <div class="mm-viewport" id="cinema-minimap-viewport"></div>
         </div>
       </div>
       <!-- Mode focus-round pour les grands tableaux -->
@@ -1350,6 +1392,7 @@
         clearInterval(focusState.progressTimer);
         cancelAnimationFrame(focusState.scrollAnim);
         focusState.panTimer = null;
+        if (name !== 'tableau') stopCinemaMode();
 
         ALL_VIEWS.forEach(v => {
           document.getElementById('view-' + v).classList.toggle('active', v === name);
@@ -1371,14 +1414,14 @@
           state.bracketPanIndex = 0;
           if (state.bracketData) {
             renderBracket();
-            // En mode compact : scroll vers le round actif
-            if (!isFocusMode(state.bracketData)) {
+            // En mode compact : scroll vers le round actif (ciné gère son propre pan-zoom)
+            if (state.bracketDisplayMode !== 'cinema' && !isFocusMode(state.bracketData)) {
               setTimeout(() => {
                 if (state.bracketData?.currentRound) scrollToBracketRound(state.bracketData.currentRound);
               }, 120);
               startBracketPan();
             }
-          } else {
+          } else if (state.bracketDisplayMode !== 'cinema') {
             startBracketPan();
           }
         }
@@ -1509,7 +1552,7 @@
       function saveLocalTableauMode(mode) { localStorage.setItem('kioskTableauMode', mode); }
       function loadLocalTableauMode() {
         const v = localStorage.getItem('kioskTableauMode');
-        return (v === 'compact' || v === 'focus' || v === 'auto') ? v : 'auto';
+        return (v === 'compact' || v === 'focus' || v === 'auto' || v === 'cinema') ? v : 'auto';
       }
       function applyTableauMode(mode) {
         state.bracketDisplayMode = mode;
@@ -1947,10 +1990,21 @@
         scrollAnim: null,
       };
 
+      // État du mode ciné (pan-zoom auto)
+      const cinemaState = {
+        layout: null,
+        step: 0,        // 0 = vue d'ensemble, 1..N = rounds
+        timer: null,
+        overviewMs: 4500,
+        roundMs: 6500,
+        scanFrac: 0.55, // part du temps consacrée au défilement vertical d'un round
+      };
+
       function isFocusMode(data) {
         if (!data?.rounds?.length) return false;
         if (state.bracketDisplayMode === 'focus') return true;
         if (state.bracketDisplayMode === 'compact') return false;
+        if (state.bracketDisplayMode === 'cinema') return false;
         // auto: focus si premier round > seuil
         const orderedRounds = getBracketRoundOrder(data.rounds);
         if (!orderedRounds.length) return false;
@@ -1982,6 +2036,129 @@
         document.getElementById('bracket-outer').style.display = '';
         const focusOuter = document.getElementById('bracket-focus-outer');
         focusOuter.classList.remove('active');
+      }
+
+      // ─── Mode ciné : pan-zoom automatique sur le tableau complet ───────────
+      function clampNum(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+      function buildCinemaFrames(L, vw, vh) {
+        const frames = [];
+        const overviewScale = Math.min(vw / L.totalW, vh / L.innerH) * 0.95;
+
+        // 1. Vue d'ensemble du tableau entier
+        frames.push({
+          tx: (vw - L.totalW * overviewScale) / 2,
+          ty: (vh - L.innerH * overviewScale) / 2,
+          scale: overviewScale,
+          transMs: 1200,
+          holdMs: cinemaState.overviewMs,
+        });
+
+        // 2. Un (ou deux) plan(s) par round : zoom lisible + scan vertical
+        for (let i = 0; i < L.colX.length; i++) {
+          const colCenterX = L.colX[i] + L.cardW / 2;
+          // Largeur de colonne visée ~ 32% de la largeur écran
+          const sc = clampNum((vw * 0.32) / L.cardW, overviewScale * 1.25, 1.5);
+          const tx = vw / 2 - colCenterX * sc;
+          const contentH = L.innerH * sc;
+          const scanMs = Math.round(cinemaState.roundMs * cinemaState.scanFrac);
+          const holdMs = Math.round((cinemaState.roundMs - scanMs) / 2);
+
+          if (contentH <= vh) {
+            // Tout le round tient à l'écran : simple centrage
+            frames.push({ tx, ty: (vh - contentH) / 2, scale: sc, transMs: 1100, holdMs: cinemaState.roundMs });
+          } else {
+            // Scan vertical haut -> bas
+            const tyTop = 0;
+            const tyBottom = vh - contentH;
+            frames.push({ tx, ty: tyTop, scale: sc, transMs: 1100, holdMs });
+            frames.push({ tx, ty: tyBottom, scale: sc, transMs: scanMs, holdMs });
+          }
+        }
+        return frames;
+      }
+
+      function applyCinemaFrame(f) {
+        const inner = document.getElementById('bracket-inner');
+        if (!inner) return;
+        inner.style.setProperty('--cinema-dur', f.transMs + 'ms');
+        inner.style.transform = `translate(${f.tx}px, ${f.ty}px) scale(${f.scale})`;
+        updateCinemaMinimap(f);
+      }
+
+      function startCinemaMode() {
+        const L = cinemaState.layout;
+        const outer = document.getElementById('bracket-outer');
+        if (!L || !outer) return;
+        const vw = outer.clientWidth || window.innerWidth;
+        const vh = outer.clientHeight || (window.innerHeight - 200);
+
+        drawCinemaMinimap(L, vw, vh);
+        const frames = buildCinemaFrames(L, vw, vh);
+        cinemaState.frames = frames;
+        cinemaState.step = 0;
+
+        clearTimeout(cinemaState.timer);
+        const run = () => {
+          const f = cinemaState.frames[cinemaState.step];
+          applyCinemaFrame(f);
+          cinemaState.timer = setTimeout(() => {
+            cinemaState.step = (cinemaState.step + 1) % cinemaState.frames.length;
+            run();
+          }, f.transMs + f.holdMs);
+        };
+        run();
+      }
+
+      function stopCinemaMode() {
+        clearTimeout(cinemaState.timer);
+        cinemaState.timer = null;
+        const inner = document.getElementById('bracket-inner');
+        if (inner) inner.style.transform = '';
+        const outer = document.getElementById('bracket-outer');
+        if (outer) outer.classList.remove('cinema');
+      }
+
+      // Minimap : dessine un schéma du tableau (lanes par round)
+      function drawCinemaMinimap(L, vw, vh) {
+        const canvas = document.getElementById('cinema-minimap-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width, H = canvas.height;
+        const mm = Math.min(W / L.totalW, H / L.innerH);
+        cinemaState.mm = { mm, ox: (W - L.totalW * mm) / 2, oy: (H - L.innerH * mm) / 2, vw, vh, W, H };
+        ctx.clearRect(0, 0, W, H);
+        ctx.fillStyle = 'rgba(148,163,184,0.5)';
+        const { ox, oy } = cinemaState.mm;
+        for (let i = 0; i < L.colX.length; i++) {
+          const rd = L.orderedRounds[i];
+          const x = ox + L.colX[i] * mm;
+          const w = Math.max(2, L.cardW * mm);
+          for (const m of rd.matches) {
+            if (m.isBye) continue;
+            const yc = oy + (L.matchTop + L.yCenter(m.position || 1, rd.round)) * mm;
+            const h = Math.max(1.5, L.cardH * mm);
+            ctx.fillStyle = m.status === 'live' ? '#22c55e'
+              : m.status === 'finished' ? 'rgba(148,163,184,0.7)' : 'rgba(148,163,184,0.35)';
+            ctx.fillRect(x, yc - h / 2, w, h);
+          }
+        }
+      }
+
+      function updateCinemaMinimap(f) {
+        const vp = document.getElementById('cinema-minimap-viewport');
+        const mmd = cinemaState.mm;
+        if (!vp || !mmd) return;
+        // Région de contenu visible (coords contenu) -> coords minimap
+        const visX = -f.tx / f.scale;
+        const visY = -f.ty / f.scale;
+        const visW = mmd.vw / f.scale;
+        const visH = mmd.vh / f.scale;
+        vp.style.setProperty('--cinema-dur', f.transMs + 'ms');
+        vp.style.left   = (mmd.ox + visX * mmd.mm) + 'px';
+        vp.style.top    = (mmd.oy + visY * mmd.mm) + 'px';
+        vp.style.width  = (visW * mmd.mm) + 'px';
+        vp.style.height = (visH * mmd.mm) + 'px';
       }
 
       function renderFocusDots() {
@@ -2164,8 +2341,9 @@
           return;
         }
 
-        // Sinon mode compact classique
+        // Sinon mode compact classique (ou ciné)
         stopFocusMode();
+        const cinema = state.bracketDisplayMode === 'cinema';
 
         const orderedRounds = getBracketRoundOrder(data.rounds);
         if (orderedRounds.length === 0) {
@@ -2181,8 +2359,9 @@
         const firstRoundMatchCount = firstRound / 2;
         let totalH = firstRoundMatchCount * cardSlot;
 
-        // Adapter si trop grand pour la fenêtre
-        const availH = Math.max(200, (window.innerHeight || 800) - 220);
+        // Adapter si trop grand pour la fenêtre.
+        // En mode ciné : pas de réduction, on garde la taille naturelle (le zoom gère).
+        const availH = cinema ? Infinity : Math.max(200, (window.innerHeight || 800) - 220);
         let scale = 1;
         if (totalH > availH) {
           scale = availH / totalH;
@@ -2311,6 +2490,28 @@
             </svg>
           </div>
           ${winnerBanner}`;
+
+        // Mode ciné : mémoriser la géométrie et lancer le pan-zoom auto.
+        const outer = document.getElementById('bracket-outer');
+        if (cinema) {
+          cinemaState.layout = {
+            orderedRounds,
+            colX: orderedRounds.map((rd, ci) => ci * (sCardW + sColGap) + sColGap / 2),
+            cardW: sCardW,
+            cardH: sCardH,
+            totalW,
+            totalH,
+            matchTop: labelH + 6, // décalage de la couche matchs sous les labels
+            innerH: labelH + 6 + totalH,
+            yCenter,
+            currentRound: data.currentRound,
+          };
+          outer.classList.add('cinema');
+          startCinemaMode();
+        } else {
+          outer.classList.remove('cinema');
+          stopCinemaMode();
+        }
       }
 
       // ─── Logo organisateur ───────────────────────────────────────────────────
