@@ -136,6 +136,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   const [showPoolConfetti, setShowPoolConfetti] = useState(false);
   const [showAddFencerModal, setShowAddFencerModal] = useState(false);
   const [auditMatchId, setAuditMatchId] = useState<string | null>(null);
+  const [showFinishedLog, setShowFinishedLog] = useState(false);
   const prevIsComplete = useRef(pool.isComplete);
 
   useEffect(() => {
@@ -979,9 +980,29 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
       />
       {orderedMatches.finished.length > 0 && (
         <div style={{ marginTop: '1rem' }}>
-          <div style={{ fontSize: '0.8rem', color: '#6b7280', fontWeight: 600, marginBottom: '0.25rem' }}>
-            Journal des matchs terminés
-          </div>
+          <button
+            onClick={() => setShowFinishedLog((v) => !v)}
+            aria-expanded={showFinishedLog}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              fontSize: '0.8rem',
+              color: '#6b7280',
+              fontWeight: 600,
+              marginBottom: '0.25rem',
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+            }}
+          >
+            <span style={{ transition: 'transform 0.15s', transform: showFinishedLog ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+              ▶
+            </span>
+            Journal des matchs terminés ({orderedMatches.finished.length})
+          </button>
+          {showFinishedLog && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
             {orderedMatches.finished.map(({ match, index }) => (
               <button
@@ -1002,6 +1023,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               </button>
             ))}
           </div>
+          )}
         </div>
       )}
     </>
