@@ -222,7 +222,15 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   }, [matches, onMatchesChange, onMatchArenaChange]);
 
   useEffect(() => {
-    if (readOnly) return;
+    if (readOnly) {
+      // En lecture seule, ne pas régénérer le tableau, mais déduire sa taille
+      // des matches existants pour permettre l'affichage des rounds.
+      if (matches.length > 0) {
+        const currentSize = Math.max(...matches.filter(m => m.round !== 3).map(m => m.round));
+        setTableauSize(currentSize);
+      }
+      return;
+    }
     const eligibleCount = ranking.filter(
       r =>
         r.fencer.status !== FencerStatus.ABANDONED &&
