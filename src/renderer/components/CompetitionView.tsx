@@ -125,6 +125,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [tableauMatches, setTableauMatches] = useState<TableauMatch[]>([]);
   const [consolationBrackets, setConsolationBrackets] = useState<ConsolationBracket[]>([]);
   const [finalResults, setFinalResults] = useState<FinalResult[]>([]);
+  const [appelFencers, setAppelFencers] = useState<Fencer[]>([]);
+  const [appelVisibleColumns, setAppelVisibleColumns] = useState<string[]>([]);
   const [tableauEditUnlocked, setTableauEditUnlocked] = useState(false);
   const [showFencerComparison, setShowFencerComparison] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
@@ -1026,6 +1028,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             onUncheckAll={uncheckAll}
             onImport={(type) => handleOpenImportDialog(type)}
             onFencersImported={loadFencers}
+            onAppelStateChange={(f, cols) => { setAppelFencers(f); setAppelVisibleColumns(cols); }}
             onSetFencerStatus={(id, status) => {
               // Si forfait, abandon ou exclusion, mettre à jour tous les matchs du tireur
               if (status === FencerStatus.FORFAIT) {
@@ -1307,6 +1310,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             tableauMatches={tableauMatches as TableauMatchForPDF[]}
             consolationBrackets={consolationBrackets}
             isLaserSabre={isLaserSabre}
+            appelFencers={appelFencers.length > 0 ? appelFencers : undefined}
+            appelVisibleColumns={appelVisibleColumns.length > 0 ? appelVisibleColumns : undefined}
           />
         )}
 

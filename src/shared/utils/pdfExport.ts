@@ -1814,6 +1814,8 @@ function extractStyleContent(html: string): string {
 
 export interface FullCompetitionExportData {
   fencers: Fencer[];
+  /** Colonnes visibles de la feuille d'appel (respecte la config UI) */
+  appelVisibleColumns?: string[];
   pools: Pool[];
   overallRanking: PoolRanking[];
   tableauMatches: TableauMatchForPDF[];
@@ -1827,19 +1829,23 @@ export interface FullCompetitionExportData {
 export async function exportFullCompetitionPDF(data: FullCompetitionExportData): Promise<void> {
   const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
   const {
-    fencers, pools, overallRanking, tableauMatches, consolationBrackets,
+    fencers, appelVisibleColumns, pools, overallRanking, tableauMatches, consolationBrackets,
     finalResults, competitionTitle, isLaserSabre = false, template,
   } = data;
 
   const sections: string[] = [];
 
   if (fencers.length > 0) {
-    const sorted = [...fencers].sort(
-      (a, b) => (a.ranking ?? Infinity) - (b.ranking ?? Infinity) || a.lastName.localeCompare(b.lastName)
-    );
+    const appelCols = appelVisibleColumns ?? ['ref', 'lastName', 'firstName', 'birthDate', 'club', 'ranking', 'status'];
+    // Si les tireurs viennent de l'appel, ils sont déjà triés ; sinon tri par défaut
+    const appelFencerList = appelVisibleColumns
+      ? fencers
+      : [...fencers].sort(
+          (a, b) => (a.ranking ?? Infinity) - (b.ranking ?? Infinity) || a.lastName.localeCompare(b.lastName)
+        );
     sections.push(generateAppelHTML(
-      sorted,
-      ['ref', 'lastName', 'firstName', 'birthDate', 'club', 'ranking', 'status'],
+      appelFencerList,
+      appelCols,
       `Feuille d'appel — ${competitionTitle}`,
       competitionTitle, logo, undefined
     ));
