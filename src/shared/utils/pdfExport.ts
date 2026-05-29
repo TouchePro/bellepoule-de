@@ -561,7 +561,8 @@ export function generateTableauHTML(
   matchesPerPage: number,
   title: string,
   logoBase64?: string,
-  template?: PdfTemplate
+  template?: PdfTemplate,
+  showScores = false
 ): string {
   const real = matches.filter(m => !m.isBye && m.fencerA && m.fencerB);
   const now = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -573,6 +574,8 @@ export function generateTableauHTML(
     const clubA = match.fencerA!.club ?? '';
     const clubB = match.fencerB!.club ?? '';
     const pisteLabel = match.arena != null ? `Piste ${match.arena}` : 'Piste ___';
+    const scoreCellA = showScores && match.scoreA != null ? String(match.scoreA) : '';
+    const scoreCellB = showScores && match.scoreB != null ? String(match.scoreB) : '';
     return `
 <div class="match-card">
   <div class="match-card-header">
@@ -598,13 +601,13 @@ export function generateTableauHTML(
       <tr class="row-a">
         <td class="row-letter">A</td>
         <td class="fencer-name">${nameA}${clubA ? `<br><span class="fencer-club">${clubA}</span>` : ''}</td>
-        <td class="score-box"></td>
+        <td class="score-box">${scoreCellA}</td>
         <td class="sig-box"></td>
       </tr>
       <tr class="row-b">
         <td class="row-letter">B</td>
         <td class="fencer-name">${nameB}${clubB ? `<br><span class="fencer-club">${clubB}</span>` : ''}</td>
-        <td class="score-box"></td>
+        <td class="score-box">${scoreCellB}</td>
         <td class="sig-box"></td>
       </tr>
     </tbody>
@@ -1881,7 +1884,7 @@ export async function exportFullCompetitionPDF(data: FullCompetitionExportData):
     sections.push(generateTableauHTML(
       roundMatches, MAX_MATCHES_PER_PAGE_TABLEAU,
       `${getTableauRoundName(round)} — ${competitionTitle}`,
-      logo, undefined
+      logo, undefined, true
     ));
   }
 
@@ -1893,7 +1896,7 @@ export async function exportFullCompetitionPDF(data: FullCompetitionExportData):
       sections.push(generateTableauHTML(
         roundMatches, MAX_MATCHES_PER_PAGE_TABLEAU,
         `${bracket.name} — ${getTableauRoundName(round)} — ${competitionTitle}`,
-        logo, undefined
+        logo, undefined, true
       ));
     }
   }
