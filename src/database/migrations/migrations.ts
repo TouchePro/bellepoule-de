@@ -297,4 +297,11 @@ export const ALL_MIGRATIONS: Migration[] = [
       db.run(`CREATE INDEX IF NOT EXISTS idx_formula_snapshots_comp ON formula_snapshots(competition_id)`);
     },
   },
+  {
+    version: 9,
+    description: 'Arbitre assigné à une poule (referee_id sur pools)',
+    up(db) {
+      try { db.run(`ALTER TABLE pools ADD COLUMN referee_id TEXT`); } catch { /* */ }
+    },
+  },
 ];

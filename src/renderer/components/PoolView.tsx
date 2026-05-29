@@ -6,7 +6,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useModalResize } from '../hooks/useModalResize';
-import { Pool, Fencer, MatchStatus, Score, Weapon, FencerStatus } from '../../shared/types';
+import { Pool, Fencer, MatchStatus, Score, Weapon, FencerStatus, Referee } from '../../shared/types';
 import { Arena } from '../../shared/types/remote';
 import { logger, LogCategory } from '@shared/services/logger';
 import { useToast } from './Toast';
@@ -42,6 +42,7 @@ interface PoolViewProps {
   arenaCount?: number;
   arenas?: Arena[];
   isRemoteActive?: boolean;
+  remoteServerUrl?: string;
   onMatchArenaChange?: (
     matchId: string,
     oldArena: number,
@@ -68,6 +69,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   arenaCount,
   arenas,
   isRemoteActive,
+  remoteServerUrl,
   onMatchArenaChange,
 }) => {
   const { showToast } = useToast();
@@ -87,6 +89,9 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   const [keyboardFocusField, setKeyboardFocusField] = useState<'A' | 'B'>('A');
   const [signedFencerIds, setSignedFencerIds] = useState<string[]>([]);
   const [matchArenaOverrides, setMatchArenaOverrides] = useState<Map<string, number>>(new Map());
+  const [showRefereeModal, setShowRefereeModal] = useState(false);
+  const [competitionReferees, setCompetitionReferees] = useState<Referee[]>([]);
+  const [assignedReferee, setAssignedReferee] = useState<Referee | null>(pool.referees?.[0] ?? null);
 
   const defaultArena = (pool.strip != null && pool.strip > 0 ? pool.strip : pool.number) ?? 1;
 
@@ -109,6 +114,23 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     onMatchArenaChange?.(matchId, oldArena, newArena, fencerA, fencerB);
   }, [onMatchArenaChange]);
 
+
+  const openRefereeModal = useCallback(() => {
+    if (competitionId) {
+      window.electronAPI.db.getRefereesByCompetition(competitionId).then(refs => {
+        setCompetitionReferees(refs);
+        setShowRefereeModal(true);
+      });
+    } else {
+      setShowRefereeModal(true);
+    }
+  }, [competitionId]);
+
+  const handleAssignReferee = useCallback((referee: Referee | null) => {
+    window.electronAPI.db.updatePoolReferee(pool.id, referee?.id ?? null);
+    setAssignedReferee(referee);
+    setShowRefereeModal(false);
+  }, [pool.id]);
 
   const { addAction, undo, redo, canUndo, canRedo } = useHistory();
   const [showPoolConfetti, setShowPoolConfetti] = useState(false);
@@ -941,19 +963,48 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
 
   // Render Grid View
   const renderGridView = () => (
-    <PoolScoreMatrix
-      pool={pool}
-      isLaserSabre={isLaserSabre}
-      isVisible={isVisible}
-      toggleColumn={toggleColumn}
-      onCellClick={handleCellClick}
-      onFencerChangePool={onFencerChangePool}
-      isLocked={isLocked}
-      onMatchReset={!isLocked && onMatchReset ? (rowFencer, colFencer) => {
-        const matchIndex = getMatchIndex(rowFencer, colFencer);
-        if (matchIndex !== -1) onMatchReset(matchIndex);
-      } : undefined}
-    />
+    <>
+      <PoolScoreMatrix
+        pool={pool}
+        isLaserSabre={isLaserSabre}
+        isVisible={isVisible}
+        toggleColumn={toggleColumn}
+        onCellClick={handleCellClick}
+        onFencerChangePool={onFencerChangePool}
+        isLocked={isLocked}
+        onMatchReset={!isLocked && onMatchReset ? (rowFencer, colFencer) => {
+          const matchIndex = getMatchIndex(rowFencer, colFencer);
+          if (matchIndex !== -1) onMatchReset(matchIndex);
+        } : undefined}
+      />
+      {orderedMatches.finished.length > 0 && (
+        <div style={{ marginTop: '1rem' }}>
+          <div style={{ fontSize: '0.8rem', color: '#6b7280', fontWeight: 600, marginBottom: '0.25rem' }}>
+            Journal des matchs terminés
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+            {orderedMatches.finished.map(({ match, index }) => (
+              <button
+                key={index}
+                onClick={() => setAuditMatchId(match.id)}
+                style={{
+                  padding: '0.2rem 0.5rem',
+                  fontSize: '0.75rem',
+                  background: 'rgba(139,92,246,0.08)',
+                  border: '1px solid rgba(139,92,246,0.25)',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  color: '#7c3aed',
+                }}
+                title="Voir le journal du match"
+              >
+                📋 {match.fencerA?.lastName} vs {match.fencerB?.lastName}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
   );
 
   // Composant Prochain Match réutilisable
@@ -1132,6 +1183,25 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               </span>
             );
           })()}
+          <button
+            onClick={openRefereeModal}
+            title={assignedReferee ? `Arbitre : ${assignedReferee.lastName} ${assignedReferee.firstName}` : 'Assigner un arbitre'}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+              padding: '0.2rem 0.5rem',
+              borderRadius: '12px',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              background: assignedReferee ? '#dbeafe' : '#f3f4f6',
+              color: assignedReferee ? '#1d4ed8' : '#6b7280',
+              border: `1px solid ${assignedReferee ? '#93c5fd' : '#e5e7eb'}`,
+            }}
+          >
+            🧑‍⚖️ {assignedReferee ? `${assignedReferee.lastName}` : '+Arbitre'}
+          </button>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button
@@ -1196,6 +1266,30 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           >
             📄 PDF
           </button>
+          {pool.isComplete && isRemoteActive && remoteServerUrl && (
+            <button
+              onClick={() => {
+                const url = `${remoteServerUrl}/arene${defaultArena}/poule`;
+                if (window.electronAPI?.openExternal) {
+                  window.electronAPI.openExternal(url);
+                } else {
+                  window.open(url, '_blank');
+                }
+              }}
+              style={{
+                padding: '0.375rem 0.75rem',
+                fontSize: '0.75rem',
+                background: '#6366f1',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+              }}
+              title={`Page signatures — arène ${defaultArena}`}
+            >
+              ✍️ Signature
+            </button>
+          )}
           {competitionId && (
             <button
               onClick={() => setShowAddFencerModal(true)}
@@ -1356,6 +1450,46 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
       <React.Suspense fallback={null}>
         <MatchAuditLog matchId={auditMatchId} onClose={() => setAuditMatchId(null)} />
       </React.Suspense>
+    )}
+    {showRefereeModal && (
+      <div className="modal-overlay" onClick={() => setShowRefereeModal(false)}>
+        <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+          <div className="modal-header">
+            <h3 className="modal-title">Assigner un arbitre</h3>
+            <button className="btn-close" onClick={() => setShowRefereeModal(false)}>&times;</button>
+          </div>
+          <div className="modal-body" style={{ padding: '1.5rem' }}>
+            <p style={{ marginBottom: '1rem', color: '#6b7280', fontSize: '0.875rem' }}>
+              Sélectionnez l'arbitre pour la poule {pool.number} :
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <button
+                className={`btn ${!assignedReferee ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => handleAssignReferee(null)}
+                style={{ padding: '0.75rem', fontSize: '0.875rem' }}
+              >
+                ✕ Aucun arbitre
+              </button>
+              {competitionReferees.length === 0 && (
+                <p style={{ color: '#9ca3af', fontSize: '0.875rem', textAlign: 'center' }}>
+                  Aucun arbitre enregistré pour cette compétition
+                </p>
+              )}
+              {competitionReferees.map(ref => (
+                <button
+                  key={ref.id}
+                  className={`btn ${assignedReferee?.id === ref.id ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => handleAssignReferee(ref)}
+                  style={{ padding: '0.75rem', fontSize: '0.875rem', textAlign: 'left' }}
+                >
+                  🧑‍⚖️ {ref.lastName} {ref.firstName}
+                  {ref.club && <span style={{ marginLeft: '0.5rem', opacity: 0.6, fontSize: '0.8rem' }}>({ref.club})</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
     )}
     </>
   );

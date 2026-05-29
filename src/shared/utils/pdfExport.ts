@@ -341,13 +341,18 @@ export function generatePoolHTML(pool: Pool, options: PoolExportOptions, templat
   const weaponLabel = weapon ? `<span class="chip"><strong>Arme</strong> ${weapon}</span>` : '';
   const catLabel = category ? `<span class="chip"><strong>Catégorie</strong> ${category}</span>` : '';
 
+  const assignedReferee = pool.referees?.[0];
+  const refereeLabel = assignedReferee
+    ? `<span style="font-size:0.85em;color:#4b5563;">🧑‍⚖️ ${assignedReferee.lastName} ${assignedReferee.firstName}</span>`
+    : '';
+
   const sections: Record<string, string> = {
     'header': `
   <div class="doc-header">
     ${logoBase64 ? `<img class="doc-header-logo" src="${logoBase64}" alt="Logo" />` : ''}
     <div class="doc-header-left">
       <h1>${effectiveTitle}</h1>
-      <div class="subtitle">Grille de poule • ${finishedCount}/${matches.length} matchs joués</div>
+      <div class="subtitle">Grille de poule • ${finishedCount}/${matches.length} matchs joués${refereeLabel ? ' &nbsp;' + refereeLabel : ''}</div>
     </div>
     <div class="doc-header-badge">P${pool.number}</div>
   </div>`,
@@ -1814,6 +1819,8 @@ function extractStyleContent(html: string): string {
 
 export interface FullCompetitionExportData {
   fencers: Fencer[];
+  /** Colonnes visibles de la feuille d'appel (respecte la config UI) */
+  appelVisibleColumns?: string[];
   pools: Pool[];
   overallRanking: PoolRanking[];
   tableauMatches: TableauMatchForPDF[];
@@ -1827,21 +1834,25 @@ export interface FullCompetitionExportData {
 export async function exportFullCompetitionPDF(data: FullCompetitionExportData): Promise<void> {
   const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
   const {
-    fencers, pools, overallRanking, tableauMatches, consolationBrackets,
+    fencers, appelVisibleColumns, pools, overallRanking, tableauMatches, consolationBrackets,
     finalResults, competitionTitle, isLaserSabre = false, template,
   } = data;
 
   const sections: string[] = [];
 
   if (fencers.length > 0) {
-    const sorted = [...fencers].sort(
-      (a, b) => (a.ranking ?? Infinity) - (b.ranking ?? Infinity) || a.lastName.localeCompare(b.lastName)
-    );
+    const appelCols = appelVisibleColumns ?? ['ref', 'lastName', 'firstName', 'birthDate', 'club', 'ranking', 'status'];
+    // Si les tireurs viennent de l'appel, ils sont déjà triés ; sinon tri par défaut
+    const appelFencerList = appelVisibleColumns
+      ? fencers
+      : [...fencers].sort(
+          (a, b) => (a.ranking ?? Infinity) - (b.ranking ?? Infinity) || a.lastName.localeCompare(b.lastName)
+        );
     sections.push(generateAppelHTML(
-      sorted,
-      ['ref', 'lastName', 'firstName', 'birthDate', 'club', 'ranking', 'status'],
+      appelFencerList,
+      appelCols,
       `Feuille d'appel — ${competitionTitle}`,
-      competitionTitle, logo, template
+      competitionTitle, logo, undefined
     ));
   }
 
@@ -1913,7 +1924,6 @@ ${allBodies}
 </body>
 </html>`;
 
-  const safe = competitionTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-  await savePDF(combined, `export_complet_${safe}.pdf`);
+  await savePDF(combined, `export-PDF_full.pdf`);
 }
 

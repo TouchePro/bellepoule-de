@@ -861,42 +861,7 @@ async function handleImport(format: string): Promise<void> {
 }
 
 function showAbout(): void {
-  const L = getL();
-  const versionInfo = getVersionInfo();
-  const locale =
-    currentMenuLanguage === 'zh-HK'
-      ? 'zh-HK'
-      : currentMenuLanguage === 'de'
-        ? 'de-DE'
-        : currentMenuLanguage === 'en'
-          ? 'en-GB'
-          : 'fr-FR';
-  const buildDate = new Date(versionInfo.date).toLocaleDateString(locale, {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-
-  dialog.showMessageBox(mainWindow!, {
-    type: 'info',
-    title: L.aboutTitle,
-    message: `BellePoule Modern v${versionInfo.version}`,
-    detail: `Build #${versionInfo.build}
-Date: ${buildDate}
-
-${L.aboutSoftware}
-
-${L.aboutRewrite}
-
-Licence: GPL-3.0
-© 2024-2026 BellePoule Modern Contributors
-
-${L.aboutBugHint}
-  Version: ${versionInfo.version}
-  Build: #${versionInfo.build}`,
-  });
+  mainWindow?.webContents.send('menu:show-about');
 }
 
 // ============================================================================
@@ -1034,6 +999,9 @@ ipcMain.handle('db:clearSessionState', async (_, competitionId) => {
 // Pool handlers
 ipcMain.handle('db:updatePool', async (_, pool) => {
   return db.updatePool(pool);
+});
+ipcMain.handle('db:updatePoolReferee', async (_, poolId, refereeId) => {
+  return db.updatePoolReferee(poolId, refereeId);
 });
 ipcMain.handle('db:createPool', async (_, phaseId, number, poolId) => {
   return db.createPool(phaseId, number, poolId);
@@ -1323,15 +1291,17 @@ ipcMain.handle('file:printHtml', async (_, html: string) => {
     printWin.loadFile(tmpFile);
 
     printWin.webContents.once('did-finish-load', () => {
-      printWin.webContents.print({ silent: false, printBackground: true }, (success: boolean) => {
-        try {
-          fs.unlinkSync(tmpFile);
-        } catch {
-          /* ignore */
-        }
-        printWin.destroy();
-        resolve({ success });
-      });
+      setTimeout(() => {
+        printWin.webContents.print({ silent: false, printBackground: true }, (success: boolean) => {
+          try {
+            fs.unlinkSync(tmpFile);
+          } catch {
+            /* ignore */
+          }
+          printWin.destroy();
+          resolve({ success });
+        });
+      }, 800);
     });
 
     printWin.webContents.once('did-fail-load', () => {
@@ -1372,6 +1342,7 @@ ipcMain.handle('file:printHtmlToPDF', async (_, html: string, outputPath: string
     pdfWin.loadFile(tmpFile);
 
     pdfWin.webContents.once('did-finish-load', () => {
+      setTimeout(() => {
       pdfWin.webContents
         .printToPDF({
           printBackground: true,
@@ -1404,6 +1375,7 @@ ipcMain.handle('file:printHtmlToPDF', async (_, html: string, outputPath: string
           pdfWin.destroy();
           resolve({ success: false, error: err.message });
         });
+      }, 800);
     });
 
     pdfWin.webContents.once('did-fail-load', () => {

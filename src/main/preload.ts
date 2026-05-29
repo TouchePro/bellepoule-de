@@ -195,6 +195,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
     getPoolsByPhase: (phaseId: string) => ipcRenderer.invoke('db:getPoolsByPhase', phaseId),
     getPoolSignatures: (poolId: string) => ipcRenderer.invoke('db:getPoolSignatures', poolId),
+    updatePoolReferee: (poolId: string, refereeId: string | null) =>
+      ipcRenderer.invoke('db:updatePoolReferee', poolId, refereeId),
 
     // Phases
     createPhase: (competitionId: string, type: string, order: number, name: string) =>
@@ -406,6 +408,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       callback(format, filepath, content)
     ),
   onMenuReportIssue: (callback: () => void) => ipcRenderer.on('menu:report-issue', callback),
+  onShowAbout: (callback: () => void) => ipcRenderer.on('menu:show-about', callback),
   onFileOpened: (callback: (filepath: string) => void) =>
     ipcRenderer.on('file:opened', (_, filepath) => callback(filepath)),
   onFileSaved: (callback: (filepath: string) => void) =>

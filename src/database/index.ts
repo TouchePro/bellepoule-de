@@ -971,7 +971,7 @@ export class DatabaseManager {
   }> {
     if (!this.db) throw new Error('Database not open');
     const stmt = this.db.prepare(
-      `SELECT m.id, m.round, m.position, m.is_bye,
+      `SELECT m.id, m.round, m.position,
               m.fencer_a_id, m.fencer_b_id, m.score_a, m.score_b,
               fa.first_name AS fa_first, fa.last_name AS fa_last, fa.club AS fa_club,
               fb.first_name AS fb_first, fb.last_name AS fb_last, fb.club AS fb_club
@@ -1004,7 +1004,7 @@ export class DatabaseManager {
         id: row.id as string,
         round: row.round as number,
         position: row.position as number,
-        isBye: (row.is_bye as number) === 1,
+        isBye: (!!row.fencer_a_id) !== (!!row.fencer_b_id),
         fencerA: row.fencer_a_id ? {
           firstName: row.fa_first as string | undefined,
           lastName: (row.fa_last as string) || '',
@@ -1430,6 +1430,13 @@ export class DatabaseManager {
     this.save();
   }
 
+  public updatePoolReferee(poolId: string, refereeId: string | null): void {
+    if (!this.db) throw new Error('Database not open');
+    const now = new Date().toISOString();
+    this.run('UPDATE pools SET referee_id = ?, updated_at = ? WHERE id = ?', [refereeId, now, poolId]);
+    this.save();
+  }
+
   // ─── Pool CRUD ──────────────────────────────────────────────────────────────
 
   public clearPoolsForPhase(phaseId: string): void {
@@ -1521,7 +1528,7 @@ export class DatabaseManager {
     if (!this.db) throw new Error('Database not open');
     const results: Pool[] = [];
     const stmt = this.db.prepare(
-      'SELECT id, phase_id, number, is_complete, has_error, created_at, updated_at FROM pools WHERE phase_id = ? ORDER BY number'
+      'SELECT id, phase_id, number, is_complete, has_error, referee_id, created_at, updated_at FROM pools WHERE phase_id = ? ORDER BY number'
     );
     stmt.bind([phaseId]);
     while (stmt.step()) {
@@ -1529,12 +1536,18 @@ export class DatabaseManager {
       const poolId = row.id as string;
       const fencers = this.getPoolFencers(poolId);
       const matches = this.getMatchesByPool(poolId);
+      let referees: Referee[] = [];
+      if (row.referee_id) {
+        const ref = this.getReferee(row.referee_id as string);
+        if (ref) referees = [ref];
+      }
       results.push({
         id: poolId,
         phaseId: row.phase_id as string,
         number: row.number as number,
         fencers,
         matches,
+        referees,
         isComplete: row.is_complete === 1,
         hasError: row.has_error === 1,
         createdAt: new Date(row.created_at as string),

@@ -16,6 +16,7 @@ export interface TableauMatch {
   winner: Fencer | null;
   isBye: boolean;
   arena?: number | null;
+  referee?: { id: string; firstName: string; lastName: string } | null;
 }
 
 export interface FinalResult {

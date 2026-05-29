@@ -12,6 +12,7 @@ const CompetitionView = React.lazy(() => import('./components/CompetitionView'))
 const CommandPalette = React.lazy(() => import('./components/CommandPalette'));
 const NewCompetitionModal = React.lazy(() => import('./components/NewCompetitionModal'));
 const ReportIssueModal = React.lazy(() => import('./components/ReportIssueModal'));
+const AboutModal = React.lazy(() => import('./components/AboutModal'));
 const SettingsModal = React.lazy(() => import('./components/SettingsModal'));
 const DTCallNotification = React.lazy(() => import('./components/DTCallNotification'));
 const UpdateNotification = React.lazy(() => import('./components/UpdateNotification'));
@@ -37,6 +38,7 @@ const AppContent: React.FC = () => {
   const { showToast } = useToast();
   const { confirm } = useConfirm();
   const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [showAboutModal, setShowAboutModal] = useState(false);
   const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
 
   const {
@@ -86,6 +88,7 @@ const AppContent: React.FC = () => {
     if (window.electronAPI) {
       window.electronAPI.onMenuNewCompetition(() => setShowNewCompetitionModal(true));
       window.electronAPI.onMenuReportIssue(() => setShowReportIssueModal(true));
+      window.electronAPI.onShowAbout(() => setShowAboutModal(true));
 
       // Listen for file operations
       window.electronAPI.onFileOpened(async (filepath: string) => {
@@ -115,6 +118,7 @@ const AppContent: React.FC = () => {
       if (window.electronAPI?.removeAllListeners) {
         window.electronAPI.removeAllListeners('menu:new-competition');
         window.electronAPI.removeAllListeners('menu:report-issue');
+        window.electronAPI.removeAllListeners('menu:show-about');
         window.electronAPI.removeAllListeners('file:opened');
         window.electronAPI.removeAllListeners('file:saved');
         window.electronAPI.removeAllListeners('menu:save');
@@ -579,6 +583,12 @@ const AppContent: React.FC = () => {
         {showReportIssueModal && (
           <Suspense fallback={null}>
             <ReportIssueModal onClose={() => setShowReportIssueModal(false)} />
+          </Suspense>
+        )}
+
+        {showAboutModal && (
+          <Suspense fallback={null}>
+            <AboutModal onClose={() => setShowAboutModal(false)} />
           </Suspense>
         )}
 

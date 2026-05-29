@@ -496,6 +496,7 @@ export interface DatabaseAPI {
   getPoolsByPhase: (phaseId: string) => Promise<Pool[]>;
   updatePool: (pool: Pool) => Promise<void>;
   getPoolSignatures: (poolId: string) => Promise<{ fencerId: string; signatureData: string }[]>;
+  updatePoolReferee: (poolId: string, refereeId: string | null) => Promise<void>;
 
   // Phases
   createPhase: (competitionId: string, type: string, order: number, name: string) => Promise<Phase>;
@@ -620,6 +621,7 @@ export interface MenuAPI {
   onMenuExport: (callback: (format: string) => void) => void;
   onMenuImport: (callback: (format: string, filepath: string, content: string) => void) => void;
   onMenuReportIssue: (callback: () => void) => void;
+  onShowAbout: (callback: () => void) => void;
   onFileOpened: (callback: (filepath: string) => void) => void;
   onFileSaved: (callback: (filepath: string) => void) => void;
   onAutosaveCompleted: (callback: () => void) => void;

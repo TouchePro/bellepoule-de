@@ -42,6 +42,8 @@ interface FencerListProps {
   registerUrl?: string;
   /** Callback pour recharger la liste après inscription distante */
   onFencersChanged?: () => void;
+  /** Notifie le parent des tireurs triés/filtrés et des colonnes visibles actuels */
+  onAppelStateChange?: (fencers: Fencer[], visibleColumns: string[]) => void;
 }
 
 const FencerListComponent: React.FC<FencerListProps> = ({
@@ -59,6 +61,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
   onFencersImported,
   registerUrl,
   onFencersChanged,
+  onAppelStateChange,
 }) => {
   const { t } = useTranslation();
   const { confirm } = useConfirm();
@@ -366,6 +369,11 @@ const FencerListComponent: React.FC<FencerListProps> = ({
     .filter(c => c && !hiddenCols.has(c.id));
   const colSpanTotal = visibleCols.length + 1;
 
+  const visibleColIds = useMemo(() => visibleCols.map(c => c.id), [visibleCols]);
+  useEffect(() => {
+    onAppelStateChange?.(filteredFencers, visibleColIds);
+  }, [filteredFencers, visibleColIds, onAppelStateChange]);
+
   const handleExportPDF = async () => {
     await exportAppelToPDF(filteredFencers, visibleCols.map(c => c.id));
   };
@@ -511,6 +519,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                       padding: '6px 16px',
                       cursor: 'pointer',
                       fontSize: '0.875rem',
+                      color: 'var(--text-primary, #e2e8f0)',
                     }}
                   >
                     <input
