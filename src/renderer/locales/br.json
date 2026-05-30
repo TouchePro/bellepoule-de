@@ -38,7 +38,8 @@
     "epee": "Spes",
     "foil": "Fleuret",
     "sabre": "Sabr",
-    "laser": "Spaser Laser"
+    "laser": "Spaser Laser",
+    "custom": "Reoladur personelaet"
   },
   "genders": {
     "male": "Gourel",
@@ -104,7 +105,8 @@
     "tableau": "Taolenn",
     "results": "Disoc'hoùezioù",
     "remote": "Enrollañ a-bell",
-    "referees": "Varnourien"
+    "referees": "Varnourien",
+    "logs": "Istor"
   },
   "pools": {
     "generate": "Genelañ ar poullou",
@@ -333,5 +335,31 @@
     "timer": "Krogañ/Paouez kronometr",
     "nav_list": "Levenez en rol",
     "validate": "Gwiriañ / Digeriñ"
+  },
+  "formula": {
+    "builder_title": "Saver reoladur",
+    "add_pool_round": "Ouzhpennañ ur c’helc’hiad poull",
+    "add_de": "Ouzhpennañ dilamadur war-eeun",
+    "add_classification": "Ouzhpennañ renkadur",
+    "save_template": "Enrollañ evel patrom",
+    "load_template": "Kargañ ur patrom",
+    "advancement_rule": "Reol araokaat",
+    "advancement_all": "Pep hini a ya war-raok",
+    "advancement_percent": "Top %",
+    "advancement_fixed": "Niver fest",
+    "advancement_bracket": "Taolenn da-heul",
+    "ranking_criteria": "Dezvarennoù renkañ",
+    "criterion_vm": "V/M (feur trec’h)",
+    "criterion_index": "Menegad (TD−TR)",
+    "criterion_td": "Taolioù roet",
+    "criterion_tr": "Taolioù resevet",
+    "criterion_direct": "Emgann war-eeun",
+    "criterion_initial": "Renkadur kentañ",
+    "simulation_title": "Gwefile",
+    "pool_round_n": "Kelc’hiad poull {{n}}",
+    "scoring_standard": "Standard (1 taol = 1 poent)",
+    "scoring_zones": "Takadoù personelaet",
+    "zone_label": "Takad",
+    "zone_points": "Poentoù"
   }
 }
