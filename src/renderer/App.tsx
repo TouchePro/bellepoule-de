@@ -16,6 +16,7 @@ const AboutModal = React.lazy(() => import('./components/AboutModal'));
 const SettingsModal = React.lazy(() => import('./components/SettingsModal'));
 const DTCallNotification = React.lazy(() => import('./components/DTCallNotification'));
 const UpdateNotification = React.lazy(() => import('./components/UpdateNotification'));
+const KeyboardShortcutsHelp = React.lazy(() => import('./components/KeyboardShortcutsHelp'));
 import { ToastProvider, useToast } from './components/Toast';
 import { ConfirmProvider, useConfirm } from './components/ConfirmDialog';
 import { TranslationProvider, useTranslation, Theme } from './contexts/TranslationContext';
@@ -618,6 +619,11 @@ const AppContent: React.FC = () => {
             />
           </Suspense>
         )}
+
+        {/* Overlay d'aide raccourcis clavier (autonome : touche « ? », Échap pour fermer) */}
+        <Suspense fallback={null}>
+          <KeyboardShortcutsHelp />
+        </Suspense>
       </div>
     </>
   );
