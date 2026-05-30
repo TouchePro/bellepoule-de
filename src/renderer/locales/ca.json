@@ -38,7 +38,8 @@
     "epee": "Espasa",
     "foil": "Floret",
     "sabre": "Sabre",
-    "laser": "Sabre Làser"
+    "laser": "Sabre Làser",
+    "custom": "Fórmula personalitzada"
   },
   "genders": {
     "male": "Masculí",
@@ -104,7 +105,8 @@
     "tableau": "Quadre",
     "results": "Resultats",
     "remote": "Entrada Remota",
-    "referees": "Àrbitres"
+    "referees": "Àrbitres",
+    "logs": "Historial"
   },
   "pools": {
     "generate": "Generar Poules",
@@ -333,5 +335,31 @@
     "timer": "Iniciar/Pausar cronòmetre",
     "nav_list": "Navegar a la llista",
     "validate": "Validar / Obrir"
+  },
+  "formula": {
+    "builder_title": "Constructor de fórmules",
+    "add_pool_round": "Afegir ronda de grups",
+    "add_de": "Afegir eliminació directa",
+    "add_classification": "Afegir classificació",
+    "save_template": "Desar com a plantilla",
+    "load_template": "Carregar una plantilla",
+    "advancement_rule": "Regla d’avançament",
+    "advancement_all": "Tots avancen",
+    "advancement_percent": "Top %",
+    "advancement_fixed": "Nombre fix",
+    "advancement_bracket": "Quadre següent",
+    "ranking_criteria": "Criteris de classificació",
+    "criterion_vm": "V/M (ràtio de victòries)",
+    "criterion_index": "Índex (TD−TR)",
+    "criterion_td": "Tocades fetes",
+    "criterion_tr": "Tocades rebudes",
+    "criterion_direct": "Enfrontament directe",
+    "criterion_initial": "Classificació inicial",
+    "simulation_title": "Simulació",
+    "pool_round_n": "Ronda de grups {{n}}",
+    "scoring_standard": "Estàndard (1 tocada = 1 punt)",
+    "scoring_zones": "Zones personalitzades",
+    "zone_label": "Zona",
+    "zone_points": "Punts"
   }
 }

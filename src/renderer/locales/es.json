@@ -38,7 +38,8 @@
     "epee": "Espada",
     "foil": "Florete",
     "sabre": "Sable",
-    "laser": "Sable Láser"
+    "laser": "Sable Láser",
+    "custom": "Fórmula personalizada"
   },
   "genders": {
     "male": "Masculino",
@@ -104,7 +105,8 @@
     "tableau": "Cuadro",
     "results": "Resultados",
     "remote": "Entrada Remota",
-    "referees": "Árbitros"
+    "referees": "Árbitros",
+    "logs": "Historial"
   },
   "pools": {
     "generate": "Generar Poules",
@@ -333,5 +335,31 @@
     "timer": "Iniciar/Pausar cronómetro",
     "nav_list": "Navegar en la lista",
     "validate": "Validar / Abrir"
+  },
+  "formula": {
+    "builder_title": "Constructor de fórmulas",
+    "add_pool_round": "Añadir ronda de grupos",
+    "add_de": "Añadir eliminación directa",
+    "add_classification": "Añadir clasificación",
+    "save_template": "Guardar como plantilla",
+    "load_template": "Cargar una plantilla",
+    "advancement_rule": "Regla de avance",
+    "advancement_all": "Todos avanzan",
+    "advancement_percent": "Top %",
+    "advancement_fixed": "Número fijo",
+    "advancement_bracket": "Cuadro siguiente",
+    "ranking_criteria": "Criterios de clasificación",
+    "criterion_vm": "V/M (ratio de victorias)",
+    "criterion_index": "Índice (TD−TR)",
+    "criterion_td": "Tocados dados",
+    "criterion_tr": "Tocados recibidos",
+    "criterion_direct": "Enfrentamiento directo",
+    "criterion_initial": "Clasificación inicial",
+    "simulation_title": "Simulación",
+    "pool_round_n": "Ronda de grupos {{n}}",
+    "scoring_standard": "Estándar (1 tocado = 1 punto)",
+    "scoring_zones": "Zonas personalizadas",
+    "zone_label": "Zona",
+    "zone_points": "Puntos"
   }
 }
