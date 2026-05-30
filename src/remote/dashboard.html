@@ -579,7 +579,7 @@
 
       // WebSocket Connection
       function connectWebSocket() {
-        dashboard.socket = io();
+        dashboard.socket = io({ reconnection: true, reconnectionDelay: 200, reconnectionDelayMax: 5000, randomizationFactor: 0.5 });
 
         dashboard.socket.on('connect', () => {
           updateConnectionStatus(true);

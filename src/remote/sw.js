@@ -31,22 +31,45 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
+// Durée de validité du cache (24 h) : au-delà on privilégie le réseau si disponible.
+const CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+function isCacheableRequest(request) {
+  const url = new URL(request.url);
+  // On ne met en cache que la navigation et les assets statiques de l'app,
+  // jamais les appels API ni socket.io (données temps réel).
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/socket.io/')) {
+    return false;
+  }
+  return request.method === 'GET' && url.origin === self.location.origin;
+}
+
 self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') {
+  if (!isCacheableRequest(event.request)) {
     return;
   }
 
+  // Network-first avec repli sur cache : la tablette voit les données fraîches
+  // quand le réseau est là, et reste fonctionnelle hors-ligne.
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        const responseClone = response.clone();
-        caches.open(CACHE_NAME).then(cache => {
-          cache.put(event.request, responseClone);
-        });
+        if (response.ok) {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
+        }
         return response;
       })
-      .catch(() => {
-        return caches.match(event.request);
+      .catch(async () => {
+        const cached = await caches.match(event.request);
+        if (cached) {
+          // Purge l'entrée si elle est trop ancienne (best effort, on la sert quand même hors-ligne)
+          const dateHeader = cached.headers.get('date');
+          if (dateHeader && Date.now() - new Date(dateHeader).getTime() > CACHE_MAX_AGE_MS) {
+            caches.open(CACHE_NAME).then(cache => cache.delete(event.request));
+          }
+        }
+        return cached || Response.error();
       })
   );
 });

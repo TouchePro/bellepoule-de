@@ -755,7 +755,7 @@
       }
 
       // ── Socket.IO ──
-      const socket = io();
+      const socket = io({ reconnection: true, reconnectionDelay: 200, reconnectionDelayMax: 5000, randomizationFactor: 0.5 });
 
       socket.on('connect', () => {
         document.getElementById('connection-badge').textContent = window.T('pool.connected');
