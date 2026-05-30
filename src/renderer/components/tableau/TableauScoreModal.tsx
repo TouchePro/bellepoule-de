@@ -6,6 +6,7 @@
 
 import React, { useState } from 'react';
 import { TableauMatch } from './tableauTypes';
+import NumericKeypad from '../common/NumericKeypad';
 
 interface TableauScoreModalProps {
   match: TableauMatch;
@@ -54,6 +55,8 @@ const TableauScoreModalComponent: React.FC<TableauScoreModalProps> = ({
   const [pendingStatus, setPendingStatus] = useState<
     'abandon' | 'forfait' | 'exclusion' | null
   >(null);
+  // Champ ciblé par le pavé numérique tactile (saisie sur tablette)
+  const [keypadField, setKeypadField] = useState<'A' | 'B'>('A');
 
   const fencerName = (f: TableauMatch['fencerA']) =>
     f ? `${f.lastName} ${f.firstName}`.trim() : '';
@@ -122,6 +125,7 @@ const TableauScoreModalComponent: React.FC<TableauScoreModalProps> = ({
               }}
               value={editScoreA}
               onChange={e => setEditScoreA(e.target.value)}
+              onFocus={() => setKeypadField('A')}
               min="0"
               max={isUnlimitedScore ? undefined : maxScore}
               autoFocus
@@ -167,6 +171,7 @@ const TableauScoreModalComponent: React.FC<TableauScoreModalProps> = ({
               }}
               value={editScoreB}
               onChange={e => setEditScoreB(e.target.value)}
+              onFocus={() => setKeypadField('B')}
               min="0"
               max={isUnlimitedScore ? undefined : maxScore}
               onKeyDown={e => {
@@ -216,6 +221,27 @@ const TableauScoreModalComponent: React.FC<TableauScoreModalProps> = ({
               💡 Score maximum : {maxScore} touches
             </p>
           )}
+
+          {/* Pavé numérique tactile (tablette) — cible le champ actif */}
+          <div style={{ maxWidth: '280px', margin: '0 auto 1rem' }}>
+            <div
+              style={{
+                textAlign: 'center',
+                fontSize: '0.8rem',
+                color: '#6b7280',
+                marginBottom: '0.5rem',
+              }}
+            >
+              Saisie tactile → tireur {keypadField === 'A' ? 'A' : 'B'}
+            </div>
+            <NumericKeypad
+              value={keypadField === 'A' ? editScoreA : editScoreB}
+              onChange={v => (keypadField === 'A' ? setEditScoreA(v) : setEditScoreB(v))}
+              maxValue={isUnlimitedScore ? undefined : maxScore}
+              maxDigits={3}
+              onConfirm={onSubmit}
+            />
+          </div>
 
           {/* Boutons spéciaux sur une ligne */}
           {!pendingStatus ? (
