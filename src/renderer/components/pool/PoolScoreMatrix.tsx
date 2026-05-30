@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Pool, Fencer, Score, MatchStatus, FencerStatus } from '../../../shared/types';
 import { formatRatio, formatIndex } from '../../../shared/utils/poolCalculations';
 import { ColumnId } from '../../hooks/useColumnVisibility';
@@ -42,34 +42,56 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
     prevMatchesRef.current = pool.matches;
   }, [pool.matches]);
 
-  const getScore = (fencerA: Fencer, fencerB: Fencer): Score | null => {
-    const match = pool.matches.find(
-      m =>
-        (m.fencerA?.id === fencerA.id && m.fencerB?.id === fencerB.id) ||
-        (m.fencerA?.id === fencerB.id && m.fencerB?.id === fencerA.id)
-    );
-    if (!match || match.status !== MatchStatus.FINISHED) return null;
-    return match.fencerA?.id === fencerA.id ? match.scoreA : match.scoreB;
-  };
+  // Index unique des matchs terminés : O(m) au lieu de O(n²·m) par rendu.
+  const scoreMap = useMemo(() => {
+    const map = new Map<string, Score | null>();
+    for (const m of pool.matches) {
+      if (m.status !== MatchStatus.FINISHED) continue;
+      const a = m.fencerA?.id;
+      const b = m.fencerB?.id;
+      if (!a || !b) continue;
+      map.set(`${a}-${b}`, m.scoreA ?? null);
+      map.set(`${b}-${a}`, m.scoreB ?? null);
+    }
+    return map;
+  }, [pool.matches]);
 
-  const calculateFencerStats = (fencer: Fencer) => {
-    let v = 0, d = 0, td = 0, tr = 0;
+  type Stats = { v: number; d: number; td: number; tr: number; index: number; ratio: number };
+  const statsMap = useMemo(() => {
+    const map = new Map<string, Stats>();
+    const ensure = (id: string) =>
+      map.get(id) ?? map.set(id, { v: 0, d: 0, td: 0, tr: 0, index: 0, ratio: 0 }).get(id)!;
     for (const match of pool.matches) {
       if (match.status !== MatchStatus.FINISHED) continue;
-      if (match.fencerA?.id === fencer.id) {
-        if (match.scoreA?.isVictory) v++;
-        else d++;
-        td += match.scoreA?.value || 0;
-        tr += match.scoreB?.value || 0;
-      } else if (match.fencerB?.id === fencer.id) {
-        if (match.scoreB?.isVictory) v++;
-        else d++;
-        td += match.scoreB?.value || 0;
-        tr += match.scoreA?.value || 0;
+      const a = match.fencerA?.id;
+      const b = match.fencerB?.id;
+      if (a) {
+        const s = ensure(a);
+        if (match.scoreA?.isVictory) s.v++;
+        else s.d++;
+        s.td += match.scoreA?.value || 0;
+        s.tr += match.scoreB?.value || 0;
+      }
+      if (b) {
+        const s = ensure(b);
+        if (match.scoreB?.isVictory) s.v++;
+        else s.d++;
+        s.td += match.scoreB?.value || 0;
+        s.tr += match.scoreA?.value || 0;
       }
     }
-    return { v, d, td, tr, index: td - tr, ratio: v + d > 0 ? v / (v + d) : 0 };
-  };
+    for (const s of map.values()) {
+      s.index = s.td - s.tr;
+      s.ratio = s.v + s.d > 0 ? s.v / (s.v + s.d) : 0;
+    }
+    return map;
+  }, [pool.matches]);
+
+  const getScore = (fencerA: Fencer, fencerB: Fencer): Score | null =>
+    scoreMap.get(`${fencerA.id}-${fencerB.id}`) ?? null;
+
+  const calculateFencerStats = (fencer: Fencer): Stats =>
+    statsMap.get(fencer.id) ?? { v: 0, d: 0, td: 0, tr: 0, index: 0, ratio: 0 };
 
   return (
     <div className="pool-grid">
@@ -295,6 +317,17 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
                   key={colIndex}
                   className={`pool-cell ${cellClass} ${isFlashing ? 'pool-cell-flash' : ''}`}
                   onClick={() => !isLocked && onCellClick(rowFencer, colFencer)}
+                  onKeyDown={e => {
+                    if (!isLocked && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault();
+                      onCellClick(rowFencer, colFencer);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={isLocked ? -1 : 0}
+                  aria-label={`${rowFencer.lastName} ${rowFencer.firstName} contre ${colFencer.lastName} ${colFencer.firstName}${
+                    score ? ` : ${score.isVictory ? 'victoire ' : 'défaite '}${score.value}` : ', saisir le score'
+                  }`}
                   style={{ cursor: isLocked ? 'default' : 'pointer', position: 'relative' }}
                 >
                   {score ? (

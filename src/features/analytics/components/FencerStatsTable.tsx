@@ -21,7 +21,7 @@ function formatDuration(seconds: number): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-export const FencerStatsTable: React.FC<FencerStatsTableProps> = ({ competition }) => {
+const FencerStatsTableComponent: React.FC<FencerStatsTableProps> = ({ competition }) => {
   const { t } = useTranslation();
   const [stats, setStats] = useState<FencerCompetitionStats[]>([]);
   const [loading, setLoading] = useState(true);
@@ -251,3 +251,5 @@ export const FencerStatsTable: React.FC<FencerStatsTableProps> = ({ competition 
     </>
   );
 };
+
+export const FencerStatsTable = React.memo(FencerStatsTableComponent);

@@ -2563,7 +2563,7 @@
 
         // Socket.IO : mise à jour temps réel du bracket
         try {
-          const socket = io();
+          const socket = io({ reconnection: true, reconnectionDelay: 200, reconnectionDelayMax: 5000, randomizationFactor: 0.5 });
           socket.on('bracket:update', fetchBracket);
         } catch { /* Socket.IO optionnel */ }
 
