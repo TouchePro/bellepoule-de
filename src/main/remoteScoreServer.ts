@@ -2552,7 +2552,7 @@ export class RemoteScoreServer {
     return session;
   }
 
-  private isMatchPlayable(m: Match): boolean {
+  private isMatchPlayable(m: Match | ArenaMatch): boolean {
     const inactive = new Set([FencerStatus.ABANDONED, FencerStatus.FORFAIT, FencerStatus.EXCLUDED]);
     return (
       !inactive.has(m.fencerA?.status as FencerStatus) &&
