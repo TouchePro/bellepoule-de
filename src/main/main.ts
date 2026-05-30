@@ -481,7 +481,7 @@ function createWindow(): void {
         ...details.responseHeaders,
         'Content-Security-Policy': [
           "default-src 'self'; " +
-            "script-src 'self' https://cdn.socket.io; " +
+            "script-src 'self'; " +
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
             "font-src 'self' https://fonts.gstatic.com; " +
             "img-src 'self' data: blob:; " +
@@ -1138,7 +1138,15 @@ ipcMain.handle('file:import', async (_, filepath) => {
 
 // File content write handler
 ipcMain.handle('file:writeContent', async (_, filepath: string, content: string) => {
-  fs.writeFileSync(filepath, content, 'utf-8');
+  if (!filepath || typeof filepath !== 'string' || !path.isAbsolute(filepath)) {
+    throw new Error('Invalid file path');
+  }
+  const resolved = path.resolve(filepath);
+  const appDir = path.resolve(app.getAppPath());
+  if (resolved.startsWith(appDir)) {
+    throw new Error('Writing inside app directory is not allowed');
+  }
+  fs.writeFileSync(resolved, content, 'utf-8');
 });
 
 // Photo ZIP export handler

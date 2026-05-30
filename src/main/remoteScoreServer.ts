@@ -132,6 +132,14 @@ export class RemoteScoreServer {
       },
     });
 
+    // Purge des entrées expirées dans loginAttempts toutes les 5 minutes
+    setInterval(() => {
+      const now = Date.now();
+      for (const [ip, attempt] of this.loginAttempts) {
+        if (now >= attempt.resetAt) this.loginAttempts.delete(ip);
+      }
+    }, 5 * 60_000);
+
     // Charger les fichiers HTML en mémoire au démarrage
     this.loadHtmlFiles();
 
@@ -234,9 +242,13 @@ export class RemoteScoreServer {
     for (const part of header.split(';')) {
       const idx = part.indexOf('=');
       if (idx < 0) continue;
-      const key = decodeURIComponent(part.slice(0, idx).trim());
-      const val = decodeURIComponent(part.slice(idx + 1).trim());
-      if (key) result[key] = val;
+      try {
+        const key = decodeURIComponent(part.slice(0, idx).trim());
+        const val = decodeURIComponent(part.slice(idx + 1).trim());
+        if (key) result[key] = val;
+      } catch {
+        // Ignore malformed cookie parts
+      }
     }
     return result;
   }
@@ -775,11 +787,16 @@ export class RemoteScoreServer {
 
       try {
         const strip = (s: string | null | undefined, max = 100) =>
-          s ? s.replace(/<[^>]*>/g, '').trim().substring(0, max) : undefined;
+          s ? s.replace(/<[^>]*>/g, '').replace(/&[a-z]+;/gi, '').trim().substring(0, max) : undefined;
+
+        const strippedLast = strip(lastName, 100);
+        const strippedFirst = strip(firstName, 100);
+        if (!strippedLast) return res.status(400).json({ error: 'Nom invalide après nettoyage' });
+        if (!strippedFirst) return res.status(400).json({ error: 'Prénom invalide après nettoyage' });
 
         const fencerData = {
-          lastName: strip(lastName, 100)!.toUpperCase(),
-          firstName: strip(firstName, 100)!,
+          lastName: strippedLast.toUpperCase(),
+          firstName: strippedFirst,
           gender,
           club: strip(club) || undefined,
           license: strip(license, 50) || undefined,

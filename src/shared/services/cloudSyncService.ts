@@ -151,7 +151,8 @@ export class CloudSyncService {
         return jwk;
       }
     }
-    // Fallback (ex. environnement web sans safeStorage) : stockage clair
+    // Fallback (ex. environnement web sans safeStorage) : stockage clair — à éviter en production
+    logger.warn(LogCategory.SYSTEM, 'Clé AES stockée en clair dans localStorage (safeStorage indisponible)');
     localStorage.setItem(legacyKey, JSON.stringify(jwk));
     return jwk;
   }
