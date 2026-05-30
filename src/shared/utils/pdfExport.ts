@@ -341,13 +341,18 @@ export function generatePoolHTML(pool: Pool, options: PoolExportOptions, templat
   const weaponLabel = weapon ? `<span class="chip"><strong>Arme</strong> ${weapon}</span>` : '';
   const catLabel = category ? `<span class="chip"><strong>Catégorie</strong> ${category}</span>` : '';
 
+  const assignedReferee = pool.referees?.[0];
+  const refereeLabel = assignedReferee
+    ? `<span style="font-size:0.85em;color:#4b5563;">🧑‍⚖️ ${assignedReferee.lastName} ${assignedReferee.firstName}</span>`
+    : '';
+
   const sections: Record<string, string> = {
     'header': `
   <div class="doc-header">
     ${logoBase64 ? `<img class="doc-header-logo" src="${logoBase64}" alt="Logo" />` : ''}
     <div class="doc-header-left">
       <h1>${effectiveTitle}</h1>
-      <div class="subtitle">Grille de poule • ${finishedCount}/${matches.length} matchs joués</div>
+      <div class="subtitle">Grille de poule • ${finishedCount}/${matches.length} matchs joués${refereeLabel ? ' &nbsp;' + refereeLabel : ''}</div>
     </div>
     <div class="doc-header-badge">P${pool.number}</div>
   </div>`,
@@ -556,7 +561,8 @@ export function generateTableauHTML(
   matchesPerPage: number,
   title: string,
   logoBase64?: string,
-  template?: PdfTemplate
+  template?: PdfTemplate,
+  showScores = false
 ): string {
   const real = matches.filter(m => !m.isBye && m.fencerA && m.fencerB);
   const now = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -568,6 +574,11 @@ export function generateTableauHTML(
     const clubA = match.fencerA!.club ?? '';
     const clubB = match.fencerB!.club ?? '';
     const pisteLabel = match.arena != null ? `Piste ${match.arena}` : 'Piste ___';
+    const winnerId = match.winner?.id;
+    const isWinnerA = winnerId != null && winnerId === (match.fencerA as any)?.id;
+    const isWinnerB = winnerId != null && winnerId === (match.fencerB as any)?.id;
+    const scoreCellA = showScores && match.scoreA != null ? `${isWinnerA ? 'V' : ''}${match.scoreA}` : '';
+    const scoreCellB = showScores && match.scoreB != null ? `${isWinnerB ? 'V' : ''}${match.scoreB}` : '';
     return `
 <div class="match-card">
   <div class="match-card-header">
@@ -593,13 +604,13 @@ export function generateTableauHTML(
       <tr class="row-a">
         <td class="row-letter">A</td>
         <td class="fencer-name">${nameA}${clubA ? `<br><span class="fencer-club">${clubA}</span>` : ''}</td>
-        <td class="score-box"></td>
+        <td class="score-box">${scoreCellA}</td>
         <td class="sig-box"></td>
       </tr>
       <tr class="row-b">
         <td class="row-letter">B</td>
         <td class="fencer-name">${nameB}${clubB ? `<br><span class="fencer-club">${clubB}</span>` : ''}</td>
-        <td class="score-box"></td>
+        <td class="score-box">${scoreCellB}</td>
         <td class="sig-box"></td>
       </tr>
     </tbody>
@@ -1058,7 +1069,7 @@ export function generateBracketTreeHTML(
         ${club ? `<text x="${x + 4}" y="${clubY}" dominant-baseline="middle"
               font-family="'Segoe UI',Arial,sans-serif" font-size="${clubFs}" fill="#94a3b8">${club}</text>` : ''}
         <text x="${x + nameW + SCORE_W / 2}" y="${rowY + ROW_H / 2}" text-anchor="middle" dominant-baseline="middle"
-              font-family="'Segoe UI',Arial,sans-serif" font-size="${scoreFs}" font-weight="700" fill="${tc}">${score !== null ? score : ''}</text>`;
+              font-family="'Segoe UI',Arial,sans-serif" font-size="${scoreFs}" font-weight="700" fill="${tc}">${score !== null ? `${isWinner ? 'V ' : ''}${score}` : isWinner ? 'V' : ''}</text>`;
     };
 
     return `<g>
@@ -1295,7 +1306,7 @@ export function generateBracketTreeMultiPageHTML(
         ${club ? `<text x="${x + 5}" y="${clubY}" dominant-baseline="middle"
               font-family="'Segoe UI',Arial,sans-serif" font-size="${clubFs}" fill="#94a3b8">${club}</text>` : ''}
         <text x="${x + nameW + SCORE_W / 2}" y="${rowY + ROW_H / 2}" text-anchor="middle" dominant-baseline="middle"
-              font-family="'Segoe UI',Arial,sans-serif" font-size="${scoreFs}" font-weight="700" fill="${tc}">${score !== null ? score : ''}</text>`;
+              font-family="'Segoe UI',Arial,sans-serif" font-size="${scoreFs}" font-weight="700" fill="${tc}">${score !== null ? `${isWinner ? 'V ' : ''}${score}` : isWinner ? 'V' : ''}</text>`;
     };
 
     return `<g>
@@ -1611,7 +1622,7 @@ function generateResultsHTML(
     <div class="doc-header-badge" style="font-size:11pt">RF</div>
   </div>`,
     'gold-bar': `  <div class="gold-bar"></div>`,
-    'ranking-table': `
+    'results-table': `
   <table>
     <thead>
       <tr>
@@ -1814,6 +1825,8 @@ function extractStyleContent(html: string): string {
 
 export interface FullCompetitionExportData {
   fencers: Fencer[];
+  /** Colonnes visibles de la feuille d'appel (respecte la config UI) */
+  appelVisibleColumns?: string[];
   pools: Pool[];
   overallRanking: PoolRanking[];
   tableauMatches: TableauMatchForPDF[];
@@ -1827,21 +1840,25 @@ export interface FullCompetitionExportData {
 export async function exportFullCompetitionPDF(data: FullCompetitionExportData): Promise<void> {
   const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
   const {
-    fencers, pools, overallRanking, tableauMatches, consolationBrackets,
+    fencers, appelVisibleColumns, pools, overallRanking, tableauMatches, consolationBrackets,
     finalResults, competitionTitle, isLaserSabre = false, template,
   } = data;
 
   const sections: string[] = [];
 
   if (fencers.length > 0) {
-    const sorted = [...fencers].sort(
-      (a, b) => (a.ranking ?? Infinity) - (b.ranking ?? Infinity) || a.lastName.localeCompare(b.lastName)
-    );
+    const appelCols = appelVisibleColumns ?? ['ref', 'lastName', 'firstName', 'birthDate', 'club', 'ranking', 'status'];
+    // Si les tireurs viennent de l'appel, ils sont déjà triés ; sinon tri par défaut
+    const appelFencerList = appelVisibleColumns
+      ? fencers
+      : [...fencers].sort(
+          (a, b) => (a.ranking ?? Infinity) - (b.ranking ?? Infinity) || a.lastName.localeCompare(b.lastName)
+        );
     sections.push(generateAppelHTML(
-      sorted,
-      ['ref', 'lastName', 'firstName', 'birthDate', 'club', 'ranking', 'status'],
+      appelFencerList,
+      appelCols,
       `Feuille d'appel — ${competitionTitle}`,
-      competitionTitle, logo, template
+      competitionTitle, logo, undefined
     ));
   }
 
@@ -1849,7 +1866,7 @@ export async function exportFullCompetitionPDF(data: FullCompetitionExportData):
     sections.push(generatePoolHTML(
       pool,
       { title: `Poule ${pool.number} — ${competitionTitle}`, logoBase64: logo, competitionName: competitionTitle },
-      template
+      undefined
     ));
   }
 
@@ -1870,7 +1887,7 @@ export async function exportFullCompetitionPDF(data: FullCompetitionExportData):
     sections.push(generateTableauHTML(
       roundMatches, MAX_MATCHES_PER_PAGE_TABLEAU,
       `${getTableauRoundName(round)} — ${competitionTitle}`,
-      logo, template
+      logo, undefined, true
     ));
   }
 
@@ -1882,13 +1899,13 @@ export async function exportFullCompetitionPDF(data: FullCompetitionExportData):
       sections.push(generateTableauHTML(
         roundMatches, MAX_MATCHES_PER_PAGE_TABLEAU,
         `${bracket.name} — ${getTableauRoundName(round)} — ${competitionTitle}`,
-        logo, template
+        logo, undefined, true
       ));
     }
   }
 
   if (finalResults.length > 0) {
-    sections.push(generateResultsHTML(finalResults, `Classement final — ${competitionTitle}`, logo, template));
+    sections.push(generateResultsHTML(finalResults, `Classement final — ${competitionTitle}`, logo, undefined));
   }
 
   if (sections.length === 0) throw new Error('Aucune donnée à exporter');
@@ -1913,7 +1930,6 @@ ${allBodies}
 </body>
 </html>`;
 
-  const safe = competitionTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-  await savePDF(combined, `export_complet_${safe}.pdf`);
+  await savePDF(combined, `export-PDF_full.pdf`);
 }
 

@@ -32,7 +32,14 @@ export class FFEConnectService {
 
   constructor(config?: FFEConnectConfig) {
     this.apiKey = config?.apiKey;
-    this.baseUrl = config?.baseUrl ?? DEFAULT_BASE_URL;
+    const base = config?.baseUrl ?? DEFAULT_BASE_URL;
+    try {
+      const parsed = new URL(base);
+      if (parsed.protocol !== 'https:') throw new Error('HTTPS requis pour l\'API FFE');
+    } catch (e) {
+      throw new Error(`URL API FFE invalide: ${e instanceof Error ? e.message : e}`);
+    }
+    this.baseUrl = base;
   }
 
   async importParticipants(competitionCode: string): Promise<{
@@ -70,8 +77,11 @@ export class FFEConnectService {
         };
       }
 
-      const data = (await response.json()) as FFEParticipant[];
-      return { success: true, participants: data, errors: [] };
+      const data = await response.json();
+      if (!Array.isArray(data)) {
+        return { success: false, participants: [], errors: ['Réponse API invalide: tableau attendu'] };
+      }
+      return { success: true, participants: data as FFEParticipant[], errors: [] };
     } catch (err: unknown) {
       clearTimeout(timeoutId);
       if (err instanceof Error && err.name === 'AbortError') {

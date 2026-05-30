@@ -25,7 +25,7 @@ import {
   MatchEventEntry,
   MatchEventType,
 } from '../shared/types';
-import { validateId, validateSessionState, sanitizeId } from './validation';
+import { validateId, validateSessionState, sanitizeId, validateCompetitionData } from './validation';
 import { logger, LogCategory } from '../shared/services/logger';
 import { MigrationManager } from './migrations';
 import { ALL_MIGRATIONS } from './migrations/migrations';
@@ -295,6 +295,15 @@ export class DatabaseManager {
     if (!this.db) throw new Error('Database not open');
     const now = new Date().toISOString();
     const id = comp.id || uuidv4();
+    const normalized: Partial<Competition> = {
+      ...comp,
+      title: comp.title || 'Nouvelle compétition',
+      date: comp.date || new Date(now),
+      weapon: comp.weapon || ('E' as any),
+      gender: comp.gender || ('M' as any),
+      category: comp.category || ('SEN' as any),
+    };
+    validateCompetitionData(normalized);
 
     this.run(
       `
@@ -962,6 +971,68 @@ export class DatabaseManager {
     this.save();
   }
 
+  public getTableauMatchesForExport(competitionId: string): Array<{
+    id: string; round: number; position: number; isBye: boolean;
+    fencerA: { firstName?: string; lastName: string; club?: string } | null;
+    fencerB: { firstName?: string; lastName: string; club?: string } | null;
+    scoreA: number | null; scoreB: number | null;
+    winner: { id: string } | null;
+  }> {
+    if (!this.db) throw new Error('Database not open');
+    const stmt = this.db.prepare(
+      `SELECT m.id, m.round, m.position,
+              m.fencer_a_id, m.fencer_b_id, m.score_a, m.score_b,
+              fa.first_name AS fa_first, fa.last_name AS fa_last, fa.club AS fa_club,
+              fb.first_name AS fb_first, fb.last_name AS fb_last, fb.club AS fb_club
+       FROM matches m
+       LEFT JOIN fencers fa ON fa.id = m.fencer_a_id
+       LEFT JOIN fencers fb ON fb.id = m.fencer_b_id
+       WHERE m.table_id = ? AND m.round IS NOT NULL
+       ORDER BY m.round, m.position`
+    );
+    stmt.bind([competitionId]);
+    const results: ReturnType<typeof this.getTableauMatchesForExport> = [];
+    while (stmt.step()) {
+      const row = stmt.getAsObject();
+      let scoreAVal: number | null = null;
+      let scoreBVal: number | null = null;
+      let winner: { id: string } | null = null;
+      try {
+        if (row.score_a) {
+          const sa = JSON.parse(row.score_a as string);
+          scoreAVal = sa.value ?? null;
+          if (sa.isVictory && row.fencer_a_id) winner = { id: row.fencer_a_id as string };
+        }
+        if (row.score_b) {
+          const sb = JSON.parse(row.score_b as string);
+          scoreBVal = sb.value ?? null;
+          if (sb.isVictory && row.fencer_b_id) winner = { id: row.fencer_b_id as string };
+        }
+      } catch { /* skip bad score JSON */ }
+      results.push({
+        id: row.id as string,
+        round: row.round as number,
+        position: row.position as number,
+        isBye: (!!row.fencer_a_id) !== (!!row.fencer_b_id),
+        fencerA: row.fencer_a_id ? {
+          firstName: row.fa_first as string | undefined,
+          lastName: (row.fa_last as string) || '',
+          club: row.fa_club as string | undefined,
+        } : null,
+        fencerB: row.fencer_b_id ? {
+          firstName: row.fb_first as string | undefined,
+          lastName: (row.fb_last as string) || '',
+          club: row.fb_club as string | undefined,
+        } : null,
+        scoreA: scoreAVal,
+        scoreB: scoreBVal,
+        winner,
+      });
+    }
+    stmt.free();
+    return results;
+  }
+
   public getMatch(id: string): Match | null {
     if (!this.db) throw new Error('Database not open');
     const stmt = this.db.prepare('SELECT * FROM matches WHERE id = ?');
@@ -1368,6 +1439,13 @@ export class DatabaseManager {
     this.save();
   }
 
+  public updatePoolReferee(poolId: string, refereeId: string | null): void {
+    if (!this.db) throw new Error('Database not open');
+    const now = new Date().toISOString();
+    this.run('UPDATE pools SET referee_id = ?, updated_at = ? WHERE id = ?', [refereeId, now, poolId]);
+    this.save();
+  }
+
   // ─── Pool CRUD ──────────────────────────────────────────────────────────────
 
   public clearPoolsForPhase(phaseId: string): void {
@@ -1426,11 +1504,13 @@ export class DatabaseManager {
         [poolId, fencerId, nextPosition]
       );
 
-      const maxNumRow = this.db.exec(
-        `SELECT COALESCE(MAX(number), 0) AS max_num FROM matches WHERE pool_id = '${poolId}'`
+      const maxNumStmt = this.db.prepare(
+        'SELECT COALESCE(MAX(number), 0) AS max_num FROM matches WHERE pool_id = ?'
       );
-      let nextMatchNumber: number =
-        (maxNumRow[0]?.values[0]?.[0] as number | null) ?? 0;
+      maxNumStmt.bind([poolId]);
+      maxNumStmt.step();
+      let nextMatchNumber: number = (maxNumStmt.getAsObject().max_num as number | null) ?? 0;
+      maxNumStmt.free();
 
       const now = new Date().toISOString();
       for (const existing of existingFencers) {
@@ -1448,7 +1528,12 @@ export class DatabaseManager {
     }
 
     this.save();
-    const phaseId = this.db.exec(`SELECT phase_id FROM pools WHERE id = '${poolId}'`)[0]?.values[0]?.[0] as string | undefined;
+    const phaseStmt = this.db.prepare('SELECT phase_id FROM pools WHERE id = ?');
+    phaseStmt.bind([poolId]);
+    const phaseId = (phaseStmt.step() ? phaseStmt.getAsObject().phase_id : undefined) as
+      | string
+      | undefined;
+    phaseStmt.free();
     if (!phaseId) throw new Error(`Pool ${poolId} introuvable après ajout`);
     const updated = this.getPoolsByPhase(phaseId).find(p => p.id === poolId);
     if (!updated) throw new Error(`Poule mise à jour introuvable`);
@@ -1459,7 +1544,7 @@ export class DatabaseManager {
     if (!this.db) throw new Error('Database not open');
     const results: Pool[] = [];
     const stmt = this.db.prepare(
-      'SELECT id, phase_id, number, is_complete, has_error, created_at, updated_at FROM pools WHERE phase_id = ? ORDER BY number'
+      'SELECT id, phase_id, number, is_complete, has_error, referee_id, created_at, updated_at FROM pools WHERE phase_id = ? ORDER BY number'
     );
     stmt.bind([phaseId]);
     while (stmt.step()) {
@@ -1467,12 +1552,18 @@ export class DatabaseManager {
       const poolId = row.id as string;
       const fencers = this.getPoolFencers(poolId);
       const matches = this.getMatchesByPool(poolId);
+      let referees: Referee[] = [];
+      if (row.referee_id) {
+        const ref = this.getReferee(row.referee_id as string);
+        if (ref) referees = [ref];
+      }
       results.push({
         id: poolId,
         phaseId: row.phase_id as string,
         number: row.number as number,
         fencers,
         matches,
+        referees,
         isComplete: row.is_complete === 1,
         hasError: row.has_error === 1,
         createdAt: new Date(row.created_at as string),
@@ -2198,13 +2289,19 @@ export class DatabaseManager {
     }
     const row = stmt.getAsObject();
     stmt.free();
+    let matchSnapshots: { matchId: string; status: string; scoreA: unknown; scoreB: unknown }[] = [];
+    try {
+      matchSnapshots = JSON.parse((row.match_snapshots as string) || '[]');
+    } catch (err) {
+      console.error('[Database] match_snapshots JSON invalide, ignoré:', err);
+    }
     return {
       id: row.id as string,
       fencerId: row.fencer_id as string,
       competitionId: row.competition_id as string,
       previousStatus: row.previous_status as string,
       abandonType: row.abandon_type as string,
-      matchSnapshots: JSON.parse(row.match_snapshots as string),
+      matchSnapshots,
       createdAt: row.created_at as string,
     };
   }

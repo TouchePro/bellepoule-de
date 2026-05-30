@@ -164,6 +164,8 @@ export interface ArenaUpdate {
   refereeFeatureEnabled?: boolean; // fonctionnalité arbitres activée
   referees?: RemoteReferee[]; // liste de tous les arbitres de la compétition
   timerDuration?: number; // durée du chrono en secondes pour ce match
+  poolComplete?: boolean; // vrai quand tous les matchs de la poule sont terminés
+  completedPoolId?: string; // id de la poule terminée
 }
 
 export interface RefereeControl {

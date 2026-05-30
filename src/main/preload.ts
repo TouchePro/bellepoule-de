@@ -141,6 +141,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     upsertTableauMatch: (params: any) => ipcRenderer.invoke('db:upsertTableauMatch', params),
     upsertMultipleTableauMatches: (competitionId: string, matches: any[]) =>
       ipcRenderer.invoke('db:upsertMultipleTableauMatches', competitionId, matches),
+    getTableauMatchesForExport: (competitionId: string) =>
+      ipcRenderer.invoke('db:getTableauMatchesForExport', competitionId),
 
     // Pools
     createPool: (phaseId: string, number: number, poolId?: string) => {
@@ -193,6 +195,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
     getPoolsByPhase: (phaseId: string) => ipcRenderer.invoke('db:getPoolsByPhase', phaseId),
     getPoolSignatures: (poolId: string) => ipcRenderer.invoke('db:getPoolSignatures', poolId),
+    updatePoolReferee: (poolId: string, refereeId: string | null) =>
+      ipcRenderer.invoke('db:updatePoolReferee', poolId, refereeId),
 
     // Phases
     createPhase: (competitionId: string, type: string, order: number, name: string) =>
@@ -404,6 +408,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       callback(format, filepath, content)
     ),
   onMenuReportIssue: (callback: () => void) => ipcRenderer.on('menu:report-issue', callback),
+  onShowAbout: (callback: () => void) => ipcRenderer.on('menu:show-about', callback),
   onFileOpened: (callback: (filepath: string) => void) =>
     ipcRenderer.on('file:opened', (_, filepath) => callback(filepath)),
   onFileSaved: (callback: (filepath: string) => void) =>
@@ -430,6 +435,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
     hasPendingUpdate: () => ipcRenderer.invoke('updater:hasPendingUpdate'),
     getPendingUpdateInfo: () => ipcRenderer.invoke('updater:getPendingUpdateInfo'),
     installPendingUpdate: () => ipcRenderer.invoke('updater:installPendingUpdate'),
+  },
+
+  // Chiffrement OS (safeStorage) pour secrets locaux
+  crypto: {
+    isAvailable: (): Promise<boolean> => ipcRenderer.invoke('crypto:isAvailable'),
+    protect: (plaintext: string): Promise<string | null> => {
+      if (typeof plaintext !== 'string') throw new Error('plaintext must be a string');
+      return ipcRenderer.invoke('crypto:protect', plaintext);
+    },
+    unprotect: (ciphertext: string): Promise<string | null> => {
+      if (typeof ciphertext !== 'string') throw new Error('ciphertext must be a string');
+      return ipcRenderer.invoke('crypto:unprotect', ciphertext);
+    },
   },
 
   // Remote score server functions
@@ -510,6 +528,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   onRemoteMatchFinished: (callback: (data: any) => void) => {
     ipcRenderer.on('match:finished', (_, data) => callback(data));
+  },
+  onRemoteFencerExcluded: (callback: (data: { fencerId: string; matchId: string }) => void) => {
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on('remote:fencer_excluded', handler);
+    return () => ipcRenderer.removeListener('remote:fencer_excluded', handler);
   },
   onKioskNoteUpdate: (callback: (note: any) => void) => {
     const handler = (_: any, note: any) => callback(note);

@@ -272,6 +272,7 @@
       /* Vue Classement */
       #view-classement {
         overflow: hidden;
+        gap: 0.75rem;
       }
 
       .ranking-scroll-wrapper {
@@ -280,7 +281,58 @@
         border-radius: 0.75rem;
         border: 1px solid rgba(255, 255, 255, 0.08);
         background: rgba(255, 255, 255, 0.03);
+        min-height: 0;
       }
+
+      /* Classement final */
+      .final-ranking-section {
+        flex-shrink: 0;
+        border-radius: 0.75rem;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.03);
+        overflow: hidden;
+      }
+
+      .final-ranking-title {
+        padding: 0.5rem 1rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        background: rgba(0,0,0,0.15);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .final-ranking-not-done {
+        padding: 0.75rem 1.25rem;
+        color: #475569;
+        font-size: 0.9rem;
+        font-style: italic;
+      }
+
+      .final-podium {
+        display: flex;
+        gap: 0;
+      }
+
+      .podium-entry {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.6rem 1rem;
+        border-right: 1px solid rgba(255,255,255,0.05);
+      }
+      .podium-entry:last-child { border-right: none; }
+
+      .podium-medal { font-size: 1.3rem; flex-shrink: 0; }
+      .podium-info { min-width: 0; }
+      .podium-name { font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .podium-club { font-size: 0.72rem; color: #64748b; }
 
       .ranking-scroll-inner {
         /* auto-scroll via JS */
@@ -690,6 +742,211 @@
         min-width: 100%;
       }
 
+      /* ── Mode ciné (pan-zoom auto type Ken Burns) ──────────────────────── */
+      #view-tableau .bracket-outer.cinema {
+        overflow: hidden;
+      }
+      #view-tableau .bracket-outer.cinema .bracket-inner {
+        transform-origin: 0 0;
+        transition: transform var(--cinema-dur, 1.2s) cubic-bezier(0.4, 0.0, 0.2, 1);
+        will-change: transform;
+      }
+
+      /* Minimap repère spatial */
+      #cinema-minimap {
+        display: none;
+        position: absolute;
+        right: 14px;
+        bottom: 14px;
+        z-index: 30;
+        background: rgba(15, 23, 42, 0.78);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 8px;
+        padding: 6px;
+        backdrop-filter: blur(6px);
+        pointer-events: none;
+      }
+      #view-tableau .bracket-outer.cinema #cinema-minimap { display: block; }
+      #cinema-minimap canvas { display: block; }
+      #cinema-minimap .mm-viewport {
+        position: absolute;
+        border: 2px solid #fbbf24;
+        border-radius: 3px;
+        box-shadow: 0 0 8px rgba(251,191,36,0.5);
+        transition: all var(--cinema-dur, 1.2s) cubic-bezier(0.4, 0.0, 0.2, 1);
+        pointer-events: none;
+      }
+
+      /* ── Mode focus-round (grand tableau) ──────────────────────────────── */
+      #bracket-focus-outer {
+        display: none;
+        flex: 1;
+        flex-direction: column;
+        overflow: hidden;
+        position: relative;
+      }
+
+      #bracket-focus-outer.active {
+        display: flex;
+      }
+
+      #bracket-focus-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.4rem 1rem;
+        flex-shrink: 0;
+        border-bottom: 1px solid rgba(255,255,255,0.07);
+      }
+
+      .focus-round-label {
+        font-size: 1rem;
+        font-weight: 800;
+        color: #fbbf24;
+        letter-spacing: 0.04em;
+      }
+
+      .focus-round-dots {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .focus-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.15);
+        transition: background 0.3s, transform 0.3s;
+      }
+
+      .focus-dot.active {
+        background: #fbbf24;
+        transform: scale(1.4);
+      }
+
+      .focus-round-progress {
+        height: 2px;
+        background: rgba(255,255,255,0.08);
+        flex-shrink: 0;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .focus-round-progress-bar {
+        position: absolute;
+        left: 0; top: 0; bottom: 0;
+        background: linear-gradient(90deg, #fbbf24, #f59e0b);
+        width: 0%;
+        transition: width 0.1s linear;
+      }
+
+      #bracket-focus-scroll {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 0.5rem 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        scroll-behavior: smooth;
+      }
+
+      .focus-match-card {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.10);
+        border-radius: 0.75rem;
+        display: flex;
+        align-items: stretch;
+        overflow: hidden;
+        flex-shrink: 0;
+        transition: border-color 0.3s;
+      }
+
+      .focus-match-card.match--live {
+        border-color: rgba(16,185,129,0.6);
+        background: rgba(16,185,129,0.06);
+        animation: bracket-pulse 2s ease infinite;
+      }
+
+      .focus-match-card.match--finished {
+        border-color: rgba(100,116,139,0.25);
+        opacity: 0.75;
+      }
+
+      .focus-match-num {
+        width: 2.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: #475569;
+        background: rgba(0,0,0,0.2);
+        flex-shrink: 0;
+      }
+
+      .focus-match-fencers {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-width: 0;
+      }
+
+      .focus-fencer-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.45rem 0.75rem;
+        gap: 0.5rem;
+      }
+
+      .focus-fencer-row + .focus-fencer-row {
+        border-top: 1px solid rgba(255,255,255,0.06);
+      }
+
+      .focus-fencer-name {
+        font-size: 1rem;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+        flex: 1;
+      }
+
+      .focus-fencer-club {
+        font-size: 0.7rem;
+        color: #64748b;
+        margin-left: 0.4em;
+      }
+
+      .focus-fencer-score {
+        font-size: 1.4rem;
+        font-weight: 900;
+        color: #fbbf24;
+        min-width: 1.8rem;
+        text-align: right;
+        flex-shrink: 0;
+      }
+
+      .focus-fencer-row.fm-winner { background: rgba(251,191,36,0.10); }
+      .focus-fencer-row.fm-loser  { opacity: 0.38; }
+
+      .focus-match-arena {
+        width: 3.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.62rem;
+        color: #475569;
+        background: rgba(0,0,0,0.15);
+        flex-shrink: 0;
+        text-align: center;
+        padding: 0.25rem;
+      }
+
       .bracket-round-labels {
         position: relative;
         height: 28px;
@@ -845,7 +1102,8 @@
       </div>
       <div class="menu-nav">
         <button id="btn-poules" class="active" onclick="switchView('poules')" data-i18n="kiosk.pools">Poules</button>
-        <button id="btn-classement" onclick="switchView('classement')" data-i18n="kiosk.ranking">Classement</button>
+        <button id="btn-classement" onclick="switchView('classement')">Classement Provisoire</button>
+        <button id="btn-final" onclick="switchView('final')">Classement Final</button>
         <button id="btn-direct" onclick="switchView('direct')" data-i18n="kiosk.live">Matchs en direct</button>
         <button id="btn-suivants" onclick="switchView('suivants')" data-i18n="kiosk.next_matches">Matchs suivants</button>
         <button id="btn-tableau" onclick="switchView('tableau')">Tableau DE</button>
@@ -858,7 +1116,10 @@
             <input type="checkbox" id="cb-poules" checked> <span data-i18n="kiosk.pools">Poules</span>
           </label>
           <label class="settings-item">
-            <input type="checkbox" id="cb-classement" checked> <span data-i18n="kiosk.ranking">Classement</span>
+            <input type="checkbox" id="cb-classement" checked> Classement Provisoire
+          </label>
+          <label class="settings-item">
+            <input type="checkbox" id="cb-final" checked> Classement Final
           </label>
           <label class="settings-item">
             <input type="checkbox" id="cb-direct" checked> <span data-i18n="kiosk.live_matches">Matchs en cours</span>
@@ -868,6 +1129,20 @@
           </label>
           <label class="settings-item">
             <input type="checkbox" id="cb-tableau" checked> Tableau DE
+          </label>
+          <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:0.5rem 0">
+          <div class="settings-title">Mode tableau DE</div>
+          <label class="settings-item">
+            <input type="radio" name="tableau-mode" id="tableau-mode-auto" value="auto" checked style="accent-color:#3b82f6;cursor:pointer"> Auto
+          </label>
+          <label class="settings-item">
+            <input type="radio" name="tableau-mode" id="tableau-mode-compact" value="compact" style="accent-color:#3b82f6;cursor:pointer"> Tableau complet
+          </label>
+          <label class="settings-item">
+            <input type="radio" name="tableau-mode" id="tableau-mode-focus" value="focus" style="accent-color:#3b82f6;cursor:pointer"> Ordre de passage
+          </label>
+          <label class="settings-item">
+            <input type="radio" name="tableau-mode" id="tableau-mode-cinema" value="cinema" style="accent-color:#3b82f6;cursor:pointer"> Ciné (zoom auto)
           </label>
           <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:0.5rem 0">
           <div class="settings-title" data-i18n="kiosk.rotation_label">Rafraîchissement</div>
@@ -906,8 +1181,8 @@
     <div id="view-classement" class="kiosk-view">
       <div class="view-header">
         <div>
-          <div class="view-title">Classement Général</div>
-          <div class="view-subtitle">Tous tireurs confondus</div>
+          <div class="view-title">Classement Provisoire</div>
+          <div class="view-subtitle">Résultats des poules</div>
         </div>
         <div class="view-badge" id="classement-badge">—</div>
       </div>
@@ -931,6 +1206,20 @@
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+
+    <!-- Vue Classement Final -->
+    <div id="view-final" class="kiosk-view">
+      <div class="view-header">
+        <div>
+          <div class="view-title">🏆 Classement Final</div>
+          <div class="view-subtitle">Résultats définitifs de la compétition</div>
+        </div>
+        <div class="view-badge" id="final-badge">—</div>
+      </div>
+      <div id="final-ranking-body" style="display:flex;flex-direction:column;gap:0.5rem;flex:1">
+        <div class="final-ranking-not-done">⏳ Compétition non terminée</div>
       </div>
     </div>
 
@@ -969,6 +1258,21 @@
             <p>Le tableau apparaîtra lors de la phase d'élimination directe</p>
           </div>
         </div>
+        <div id="cinema-minimap">
+          <canvas id="cinema-minimap-canvas" width="180" height="120"></canvas>
+          <div class="mm-viewport" id="cinema-minimap-viewport"></div>
+        </div>
+      </div>
+      <!-- Mode focus-round pour les grands tableaux -->
+      <div id="bracket-focus-outer">
+        <div id="bracket-focus-header">
+          <span class="focus-round-label" id="focus-round-label">—</span>
+          <div class="focus-round-dots" id="focus-round-dots"></div>
+        </div>
+        <div class="focus-round-progress">
+          <div class="focus-round-progress-bar" id="focus-round-progress-bar"></div>
+        </div>
+        <div id="bracket-focus-scroll"></div>
       </div>
     </div>
 
@@ -992,11 +1296,11 @@
 
     <script>
       // ─── État ────────────────────────────────────────────────────────────────
-      const ALL_VIEWS = ['poules', 'classement', 'direct', 'suivants', 'tableau'];
+      const ALL_VIEWS = ['poules', 'classement', 'final', 'direct', 'suivants', 'tableau'];
 
       const state = {
         currentView: 'poules',
-        views: ['poules', 'classement', 'direct', 'suivants', 'tableau'],
+        views: ['poules', 'classement', 'final', 'direct', 'suivants', 'tableau'],
         rotationMs: 15000,
         rotationTimer: null,
         progressTimer: null,
@@ -1012,6 +1316,9 @@
         bracketData: null,
         bracketPanTimer: null,
         bracketPanIndex: 0,
+        bracketScaledCardW: 0,
+        bracketScaledColGap: 0,
+        bracketDisplayMode: 'auto', // 'auto' | 'compact' | 'focus'
       };
 
       // ─── Note d'organisation ─────────────────────────────────────────────────
@@ -1078,9 +1385,14 @@
       function switchView(name) {
         state.currentView = name;
 
-        // Stopper le pan du bracket si on quitte la vue tableau
+        // Stopper le pan/focus du bracket si on quitte la vue tableau
         clearInterval(state.bracketPanTimer);
         state.bracketPanTimer = null;
+        clearInterval(focusState.panTimer);
+        clearInterval(focusState.progressTimer);
+        cancelAnimationFrame(focusState.scrollAnim);
+        focusState.panTimer = null;
+        if (name !== 'tableau') stopCinemaMode();
 
         ALL_VIEWS.forEach(v => {
           document.getElementById('view-' + v).classList.toggle('active', v === name);
@@ -1094,16 +1406,24 @@
           startAutoScroll(wrapper);
         }
 
+        if (name === 'final') {
+          renderFinalRanking();
+        }
+
         if (name === 'tableau') {
           state.bracketPanIndex = 0;
           if (state.bracketData) {
             renderBracket();
-            // Scroll vers le round actif après rendu
-            setTimeout(() => {
-              if (state.bracketData?.currentRound) scrollToBracketRound(state.bracketData.currentRound);
-            }, 120);
+            // En mode compact : scroll vers le round actif (ciné gère son propre pan-zoom)
+            if (state.bracketDisplayMode !== 'cinema' && !isFocusMode(state.bracketData)) {
+              setTimeout(() => {
+                if (state.bracketData?.currentRound) scrollToBracketRound(state.bracketData.currentRound);
+              }, 120);
+              startBracketPan();
+            }
+          } else if (state.bracketDisplayMode !== 'cinema') {
+            startBracketPan();
           }
-          startBracketPan();
         }
 
         document.getElementById('progress-bar').style.width = '0%';
@@ -1225,6 +1545,29 @@
           saveLocalViews();
           applyLocalViews();
           clearTimeout(state.menuTimer); // garder le menu visible pendant la config
+        });
+      });
+
+      // Mode tableau DE
+      function saveLocalTableauMode(mode) { localStorage.setItem('kioskTableauMode', mode); }
+      function loadLocalTableauMode() {
+        const v = localStorage.getItem('kioskTableauMode');
+        return (v === 'compact' || v === 'focus' || v === 'auto' || v === 'cinema') ? v : 'auto';
+      }
+      function applyTableauMode(mode) {
+        state.bracketDisplayMode = mode;
+        document.querySelectorAll('input[name="tableau-mode"]').forEach(r => {
+          r.checked = r.value === mode;
+        });
+        // Re-render si la vue tableau est active
+        if (state.currentView === 'tableau' && state.bracketData) renderBracket();
+      }
+      document.querySelectorAll('input[name="tableau-mode"]').forEach(r => {
+        r.addEventListener('change', () => {
+          const mode = document.querySelector('input[name="tableau-mode"]:checked')?.value || 'auto';
+          saveLocalTableauMode(mode);
+          applyTableauMode(mode);
+          clearTimeout(state.menuTimer);
         });
       });
 
@@ -1369,7 +1712,7 @@
               </td>
               <td style="text-align:center;color:#94a3b8">${r.matchesPlayed || 0}</td>
               <td class="victories">${r.victories || 0}</td>
-              <td class="ind">${ind}</td>
+              <td class="ind" style="color:${r.index < 0 ? '#ef4444' : ''}">${ind}</td>
               <td class="td">${r.touchesFor || 0}</td>
             </tr>`;
           }).join('');
@@ -1413,10 +1756,66 @@
             </td>
             <td style="color:#64748b;font-size:0.85rem">${escHtml(r.club || '—')}</td>
             <td style="text-align:center;color:#10b981;font-weight:600">${r.victories || 0}</td>
-            <td style="text-align:center;color:#60a5fa">${ind}</td>
+            <td style="text-align:center;color:${r.index < 0 ? '#ef4444' : '#60a5fa'}">${ind}</td>
             <td style="text-align:center;color:#94a3b8">${r.touchesFor || 0}</td>
           </tr>`;
         }).join('');
+      }
+
+      // ─── Rendu Classement Final ──────────────────────────────────────────────
+      function renderFinalRanking() {
+        const el = document.getElementById('final-ranking-body');
+        if (!el) return;
+
+        const data = state.bracketData;
+        if (!data?.rounds?.length) {
+          el.innerHTML = '<div class="final-ranking-not-done">⏳ Compétition non terminée — le classement final apparaîtra à la fin du tableau d\'élimination.</div>';
+          document.getElementById('final-badge').textContent = '—';
+          return;
+        }
+
+        const finaleRound = data.rounds.find(r => r.round === 2);
+        const pfRound = data.rounds.find(r => r.round === 3);
+        const finaleMatch = finaleRound?.matches?.[0];
+        const pfMatch = pfRound?.matches?.[0];
+
+        if (!finaleMatch?.winnerId) {
+          el.innerHTML = '<div class="final-ranking-not-done">⏳ Compétition non terminée — le classement final apparaîtra à la fin du tableau d\'élimination.</div>';
+          document.getElementById('final-badge').textContent = '—';
+          return;
+        }
+
+        const winner1 = finaleMatch.winnerId === finaleMatch.fencerA?.id ? finaleMatch.fencerA : finaleMatch.fencerB;
+        const winner2 = finaleMatch.winnerId === finaleMatch.fencerA?.id ? finaleMatch.fencerB : finaleMatch.fencerA;
+        const winner3 = pfMatch?.winnerId
+          ? (pfMatch.winnerId === pfMatch.fencerA?.id ? pfMatch.fencerA : pfMatch.fencerB)
+          : null;
+        const winner4 = pfMatch?.winnerId
+          ? (pfMatch.winnerId === pfMatch.fencerA?.id ? pfMatch.fencerB : pfMatch.fencerA)
+          : null;
+
+        const medals = ['🥇', '🥈', '🥉', '4️⃣'];
+        const podium = [winner1, winner2, winner3, winner4].filter(Boolean);
+        document.getElementById('final-badge').textContent = podium.length + ' tireur' + (podium.length > 1 ? 's' : '');
+
+        el.innerHTML = `<div class="ranking-scroll-wrapper" style="flex:1">
+          <table class="ranking-table">
+            <thead>
+              <tr>
+                <th style="width:60px">Rg</th>
+                <th>Tireur</th>
+                <th>Club</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${podium.map((f, i) => `<tr class="${i === 0 ? 'top-row' : ''}">
+                <td><span class="rank-medal">${medals[i]}</span></td>
+                <td style="font-weight:600;font-size:1.1rem">${escHtml(f.lastName + ' ' + (f.firstName || ''))}</td>
+                <td style="color:#64748b">${escHtml(f.club || '—')}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`;
       }
 
       // ─── Rendu Matchs suivants ───────────────────────────────────────────────
@@ -1578,6 +1977,290 @@
         }
       }
 
+      // ─── Focus-round mode (grands tableaux T32+) ────────────────────────
+      const FOCUS_THRESHOLD = 16; // nbre de matchs en 1er round au-delà duquel on bascule
+
+      const focusState = {
+        rounds: [],
+        currentIdx: 0,
+        panTimer: null,
+        progressTimer: null,
+        progressStart: null,
+        durationMs: 7000,
+        scrollAnim: null,
+      };
+
+      // État du mode ciné (pan-zoom auto)
+      const cinemaState = {
+        layout: null,
+        step: 0,        // 0 = vue d'ensemble, 1..N = rounds
+        timer: null,
+        overviewMs: 4500,
+        roundMs: 6500,
+        scanFrac: 0.55, // part du temps consacrée au défilement vertical d'un round
+      };
+
+      function isFocusMode(data) {
+        if (!data?.rounds?.length) return false;
+        if (state.bracketDisplayMode === 'focus') return true;
+        if (state.bracketDisplayMode === 'compact') return false;
+        if (state.bracketDisplayMode === 'cinema') return false;
+        // auto: focus si premier round > seuil
+        const orderedRounds = getBracketRoundOrder(data.rounds);
+        if (!orderedRounds.length) return false;
+        const firstMatchCount = orderedRounds[0].round / 2;
+        return firstMatchCount > FOCUS_THRESHOLD;
+      }
+
+      function startFocusMode(data) {
+        document.getElementById('bracket-outer').style.display = 'none';
+        const focusOuter = document.getElementById('bracket-focus-outer');
+        focusOuter.classList.add('active');
+
+        focusState.rounds = getBracketRoundOrder(data.rounds);
+        // Démarrer sur le round courant si possible
+        const curIdx = focusState.rounds.findIndex(r => r.round === data.currentRound);
+        focusState.currentIdx = curIdx >= 0 ? curIdx : 0;
+
+        renderFocusDots();
+        renderFocusRound();
+        startFocusPan();
+      }
+
+      function stopFocusMode() {
+        clearInterval(focusState.panTimer);
+        clearInterval(focusState.progressTimer);
+        cancelAnimationFrame(focusState.scrollAnim);
+        focusState.panTimer = null;
+        focusState.progressTimer = null;
+        document.getElementById('bracket-outer').style.display = '';
+        const focusOuter = document.getElementById('bracket-focus-outer');
+        focusOuter.classList.remove('active');
+      }
+
+      // ─── Mode ciné : pan-zoom automatique sur le tableau complet ───────────
+      function clampNum(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+      function buildCinemaFrames(L, vw, vh) {
+        const frames = [];
+        const overviewScale = Math.min(vw / L.totalW, vh / L.innerH) * 0.95;
+
+        // 1. Vue d'ensemble du tableau entier
+        frames.push({
+          tx: (vw - L.totalW * overviewScale) / 2,
+          ty: (vh - L.innerH * overviewScale) / 2,
+          scale: overviewScale,
+          transMs: 1200,
+          holdMs: cinemaState.overviewMs,
+        });
+
+        // 2. Un (ou deux) plan(s) par round : zoom lisible + scan vertical
+        for (let i = 0; i < L.colX.length; i++) {
+          const colCenterX = L.colX[i] + L.cardW / 2;
+          // Largeur de colonne visée ~ 32% de la largeur écran
+          const sc = clampNum((vw * 0.32) / L.cardW, overviewScale * 1.25, 1.5);
+          const tx = vw / 2 - colCenterX * sc;
+          const contentH = L.innerH * sc;
+          const scanMs = Math.round(cinemaState.roundMs * cinemaState.scanFrac);
+          const holdMs = Math.round((cinemaState.roundMs - scanMs) / 2);
+
+          if (contentH <= vh) {
+            // Tout le round tient à l'écran : simple centrage
+            frames.push({ tx, ty: (vh - contentH) / 2, scale: sc, transMs: 1100, holdMs: cinemaState.roundMs });
+          } else {
+            // Scan vertical haut -> bas
+            const tyTop = 0;
+            const tyBottom = vh - contentH;
+            frames.push({ tx, ty: tyTop, scale: sc, transMs: 1100, holdMs });
+            frames.push({ tx, ty: tyBottom, scale: sc, transMs: scanMs, holdMs });
+          }
+        }
+        return frames;
+      }
+
+      function applyCinemaFrame(f) {
+        const inner = document.getElementById('bracket-inner');
+        if (!inner) return;
+        inner.style.setProperty('--cinema-dur', f.transMs + 'ms');
+        inner.style.transform = `translate(${f.tx}px, ${f.ty}px) scale(${f.scale})`;
+        updateCinemaMinimap(f);
+      }
+
+      function startCinemaMode() {
+        const L = cinemaState.layout;
+        const outer = document.getElementById('bracket-outer');
+        if (!L || !outer) return;
+        const vw = outer.clientWidth || window.innerWidth;
+        const vh = outer.clientHeight || (window.innerHeight - 200);
+
+        drawCinemaMinimap(L, vw, vh);
+        const frames = buildCinemaFrames(L, vw, vh);
+        cinemaState.frames = frames;
+        cinemaState.step = 0;
+
+        clearTimeout(cinemaState.timer);
+        const run = () => {
+          const f = cinemaState.frames[cinemaState.step];
+          applyCinemaFrame(f);
+          cinemaState.timer = setTimeout(() => {
+            cinemaState.step = (cinemaState.step + 1) % cinemaState.frames.length;
+            run();
+          }, f.transMs + f.holdMs);
+        };
+        run();
+      }
+
+      function stopCinemaMode() {
+        clearTimeout(cinemaState.timer);
+        cinemaState.timer = null;
+        const inner = document.getElementById('bracket-inner');
+        if (inner) inner.style.transform = '';
+        const outer = document.getElementById('bracket-outer');
+        if (outer) outer.classList.remove('cinema');
+      }
+
+      // Minimap : dessine un schéma du tableau (lanes par round)
+      function drawCinemaMinimap(L, vw, vh) {
+        const canvas = document.getElementById('cinema-minimap-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width, H = canvas.height;
+        const mm = Math.min(W / L.totalW, H / L.innerH);
+        cinemaState.mm = { mm, ox: (W - L.totalW * mm) / 2, oy: (H - L.innerH * mm) / 2, vw, vh, W, H };
+        ctx.clearRect(0, 0, W, H);
+        ctx.fillStyle = 'rgba(148,163,184,0.5)';
+        const { ox, oy } = cinemaState.mm;
+        for (let i = 0; i < L.colX.length; i++) {
+          const rd = L.orderedRounds[i];
+          const x = ox + L.colX[i] * mm;
+          const w = Math.max(2, L.cardW * mm);
+          for (const m of rd.matches) {
+            if (m.isBye) continue;
+            const yc = oy + (L.matchTop + L.yCenter(m.position || 1, rd.round)) * mm;
+            const h = Math.max(1.5, L.cardH * mm);
+            ctx.fillStyle = m.status === 'live' ? '#22c55e'
+              : m.status === 'finished' ? 'rgba(148,163,184,0.7)' : 'rgba(148,163,184,0.35)';
+            ctx.fillRect(x, yc - h / 2, w, h);
+          }
+        }
+      }
+
+      function updateCinemaMinimap(f) {
+        const vp = document.getElementById('cinema-minimap-viewport');
+        const mmd = cinemaState.mm;
+        if (!vp || !mmd) return;
+        // Région de contenu visible (coords contenu) -> coords minimap
+        const visX = -f.tx / f.scale;
+        const visY = -f.ty / f.scale;
+        const visW = mmd.vw / f.scale;
+        const visH = mmd.vh / f.scale;
+        vp.style.setProperty('--cinema-dur', f.transMs + 'ms');
+        vp.style.left   = (mmd.ox + visX * mmd.mm) + 'px';
+        vp.style.top    = (mmd.oy + visY * mmd.mm) + 'px';
+        vp.style.width  = (visW * mmd.mm) + 'px';
+        vp.style.height = (visH * mmd.mm) + 'px';
+      }
+
+      function renderFocusDots() {
+        const dotsEl = document.getElementById('focus-round-dots');
+        dotsEl.innerHTML = focusState.rounds.map((r, i) =>
+          `<div class="focus-dot${i === focusState.currentIdx ? ' active' : ''}"></div>`
+        ).join('');
+      }
+
+      function renderFocusRound() {
+        const rd = focusState.rounds[focusState.currentIdx];
+        if (!rd) return;
+
+        document.getElementById('focus-round-label').textContent = rd.label || ('Round ' + rd.round);
+
+        // Update dots
+        const dots = document.querySelectorAll('#focus-round-dots .focus-dot');
+        dots.forEach((d, i) => d.classList.toggle('active', i === focusState.currentIdx));
+
+        const scroll = document.getElementById('bracket-focus-scroll');
+        const matches = rd.matches.filter(m => !m.isBye);
+
+        scroll.innerHTML = matches.map((match, idx) => {
+          const fA = match.fencerA;
+          const fB = match.fencerB;
+          const nameA = fA ? escHtml(fA.lastName + (fA.firstName ? ' ' + fA.firstName[0] + '.' : '')) : '?';
+          const nameB = fB ? escHtml(fB.lastName + (fB.firstName ? ' ' + fB.firstName[0] + '.' : '')) : 'TBD';
+          const clubA = fA?.club ? `<span class="focus-fencer-club">${escHtml(fA.club)}</span>` : '';
+          const clubB = fB?.club ? `<span class="focus-fencer-club">${escHtml(fB.club)}</span>` : '';
+          const winA = match.winnerId && fA && match.winnerId === fA.id;
+          const winB = match.winnerId && fB && match.winnerId === fB.id;
+          const sA = match.scoreA !== null && match.scoreA !== undefined ? match.scoreA : '';
+          const sB = match.scoreB !== null && match.scoreB !== undefined ? match.scoreB : '';
+          const cls = match.status === 'live' ? 'match--live' : match.status === 'finished' ? 'match--finished' : '';
+          const arenaHtml = match.arenaName
+            ? `<div class="focus-match-arena">${escHtml(match.arenaName)}</div>`
+            : '';
+
+          return `<div class="focus-match-card ${cls}">
+            <div class="focus-match-num">${match.position || (idx + 1)}</div>
+            <div class="focus-match-fencers">
+              <div class="focus-fencer-row ${winA ? 'fm-winner' : winB ? 'fm-loser' : ''}">
+                <span class="focus-fencer-name">${nameA}${clubA}</span>
+                <span class="focus-fencer-score">${sA}</span>
+              </div>
+              <div class="focus-fencer-row ${winB ? 'fm-winner' : winA ? 'fm-loser' : ''}">
+                <span class="focus-fencer-name">${nameB}${clubB}</span>
+                <span class="focus-fencer-score">${sB}</span>
+              </div>
+            </div>
+            ${arenaHtml}
+          </div>`;
+        }).join('');
+
+        // Auto-scroll vertical si le contenu dépasse
+        scroll.scrollTop = 0;
+        startFocusScroll(scroll);
+      }
+
+      function startFocusScroll(wrapper) {
+        cancelAnimationFrame(focusState.scrollAnim);
+        const duration = focusState.durationMs * 0.75; // scroll sur 75% du temps du round
+        const startTime = performance.now();
+
+        function step(now) {
+          const elapsed = now - startTime;
+          const maxScroll = wrapper.scrollHeight - wrapper.clientHeight;
+          if (maxScroll <= 0) return;
+          const progress = Math.min(1, elapsed / duration);
+          wrapper.scrollTop = progress * maxScroll;
+          if (progress < 1) {
+            focusState.scrollAnim = requestAnimationFrame(step);
+          }
+        }
+
+        // Délai avant de commencer le scroll (laisser le temps de lire le haut)
+        setTimeout(() => {
+          focusState.scrollAnim = requestAnimationFrame(step);
+        }, 1500);
+      }
+
+      function startFocusPan() {
+        clearInterval(focusState.panTimer);
+        clearInterval(focusState.progressTimer);
+
+        focusState.progressStart = Date.now();
+        document.getElementById('focus-round-progress-bar').style.width = '0%';
+
+        focusState.progressTimer = setInterval(() => {
+          const elapsed = Date.now() - focusState.progressStart;
+          const pct = Math.min(100, (elapsed / focusState.durationMs) * 100);
+          document.getElementById('focus-round-progress-bar').style.width = pct + '%';
+        }, 100);
+
+        focusState.panTimer = setInterval(() => {
+          focusState.currentIdx = (focusState.currentIdx + 1) % focusState.rounds.length;
+          document.getElementById('focus-round-progress-bar').style.width = '0%';
+          focusState.progressStart = Date.now();
+          renderFocusRound();
+        }, focusState.durationMs);
+      }
+
       // ─── Bracket d'élimination directe ──────────────────────────────────────
 
       function getBracketDims(data) {
@@ -1612,13 +2295,14 @@
       function scrollToBracketRound(roundValue) {
         const outer = document.getElementById('bracket-outer');
         if (!outer || !state.bracketData?.rounds) return;
-        const { cardW, colGap } = getBracketDims(state.bracketData);
+        const sCardW  = state.bracketScaledCardW  || getBracketDims(state.bracketData).cardW;
+        const sColGap = state.bracketScaledColGap || getBracketDims(state.bracketData).colGap;
         const orderedRounds = getBracketRoundOrder(state.bracketData.rounds);
         const idx = orderedRounds.findIndex(r => r.round === roundValue);
         if (idx < 0) return;
-        const colX = idx * (cardW + colGap) + colGap / 2;
+        const colX = idx * (sCardW + sColGap) + sColGap / 2;
         const viewW = outer.clientWidth;
-        const targetLeft = Math.max(0, colX - viewW / 2 + cardW / 2);
+        const targetLeft = Math.max(0, colX - viewW / 2 + sCardW / 2);
         outer.scrollTo({ left: targetLeft, behavior: 'smooth' });
       }
 
@@ -1636,9 +2320,30 @@
         const data = state.bracketData;
         if (!data || !data.rounds || data.rounds.length === 0) {
           document.getElementById('tableau-badge').textContent = '—';
+          stopFocusMode();
           container.innerHTML = '<div class="no-data"><div class="no-data-icon">🏆</div><h3>Tableau non disponible</h3><p>Le tableau apparaîtra lors de la phase d\'élimination directe</p></div>';
           return;
         }
+
+        // Badge & subtitle communs
+        const pending = data.rounds.reduce((n, r) => n + r.matches.filter(m => m.status !== 'finished' && !m.isBye).length, 0);
+        const total   = data.rounds.reduce((n, r) => n + r.matches.filter(m => !m.isBye).length, 0);
+        document.getElementById('tableau-badge').textContent = 'T' + data.tableSize + ' · ' + (total - pending) + '/' + total;
+        const orderedForLabel = getBracketRoundOrder(data.rounds);
+        document.getElementById('tableau-subtitle').textContent =
+          data.currentRound ? orderedForLabel.find(r => r.round === data.currentRound)?.label || 'En cours' : 'Phase terminée';
+
+        // Basculer en mode focus pour les grands tableaux
+        if (isFocusMode(data)) {
+          stopFocusMode();
+          startFocusMode(data);
+          renderFinalRanking();
+          return;
+        }
+
+        // Sinon mode compact classique (ou ciné)
+        stopFocusMode();
+        const cinema = state.bracketDisplayMode === 'cinema';
 
         const orderedRounds = getBracketRoundOrder(data.rounds);
         if (orderedRounds.length === 0) {
@@ -1654,8 +2359,9 @@
         const firstRoundMatchCount = firstRound / 2;
         let totalH = firstRoundMatchCount * cardSlot;
 
-        // Adapter si trop grand pour la fenêtre
-        const availH = Math.max(200, (window.innerHeight || 800) - 220);
+        // Adapter si trop grand pour la fenêtre.
+        // En mode ciné : pas de réduction, on garde la taille naturelle (le zoom gère).
+        const availH = cinema ? Infinity : Math.max(200, (window.innerHeight || 800) - 220);
         let scale = 1;
         if (totalH > availH) {
           scale = availH / totalH;
@@ -1664,6 +2370,8 @@
         const sCardW  = Math.round(cardW  * scale);
         const sCardH  = Math.round(cardH  * scale);
         const sColGap = Math.round(colGap * scale);
+        state.bracketScaledCardW  = sCardW;
+        state.bracketScaledColGap = sColGap;
 
         const totalW = orderedRounds.length * (sCardW + sColGap) + sColGap;
         const labelH = 28;
@@ -1767,13 +2475,7 @@
           }
         }
 
-        // Compter les matchs restants pour le badge
-        const pending = data.rounds.reduce((n, r) => n + r.matches.filter(m => m.status !== 'finished' && !m.isBye).length, 0);
-        const total   = data.rounds.reduce((n, r) => n + r.matches.filter(m => !m.isBye).length, 0);
-        document.getElementById('tableau-badge').textContent = 'T' + data.tableSize + ' · ' + (total - pending) + '/' + total;
-        document.getElementById('tableau-subtitle').textContent =
-          data.currentRound ? orderedRounds.find(r => r.round === data.currentRound)?.label || 'En cours' : 'Phase terminée';
-
+        renderFinalRanking();
         container.style.width = totalW + 'px';
         container.style.minWidth = '';
         container.innerHTML = `
@@ -1788,6 +2490,28 @@
             </svg>
           </div>
           ${winnerBanner}`;
+
+        // Mode ciné : mémoriser la géométrie et lancer le pan-zoom auto.
+        const outer = document.getElementById('bracket-outer');
+        if (cinema) {
+          cinemaState.layout = {
+            orderedRounds,
+            colX: orderedRounds.map((rd, ci) => ci * (sCardW + sColGap) + sColGap / 2),
+            cardW: sCardW,
+            cardH: sCardH,
+            totalW,
+            totalH,
+            matchTop: labelH + 6, // décalage de la couche matchs sous les labels
+            innerH: labelH + 6 + totalH,
+            yCenter,
+            currentRound: data.currentRound,
+          };
+          outer.classList.add('cinema');
+          startCinemaMode();
+        } else {
+          outer.classList.remove('cinema');
+          stopCinemaMode();
+        }
       }
 
       // ─── Logo organisateur ───────────────────────────────────────────────────
@@ -1826,6 +2550,8 @@
         const savedSec = loadLocalRotation();
         state.rotationMs = savedSec * 1000;
         document.getElementById('rotation-input').value = savedSec;
+
+        applyTableauMode(loadLocalTableauMode());
 
         fetchData();
         fetchLogo();

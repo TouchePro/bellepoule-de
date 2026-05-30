@@ -3,7 +3,7 @@
  * Licensed under GPL-3.0
  */
 
-import { Competition, Fencer, Pool, PoolRanking, FencerStatus, MatchEventEntry } from '../types';
+import { Competition, Fencer, Pool, PoolRanking, FencerStatus, MatchStatus, MatchEventEntry } from '../types';
 
 /**
  * Export results as HTML web page
@@ -229,51 +229,110 @@ export function exportRankingCSV(
 }
 
 /**
- * Export results as XML FFE format
+ * Export results as BellePoule/FIE XML format (BaseCompetition spec).
+ * Structure: BaseCompetition attrs → Tireurs → PhaseDePoules (optional).
  */
 export function exportResultsXMLFFE(
   competition: Competition,
   poolRanking: PoolRanking[],
-  finalResults: any[]
+  finalResults: any[],
+  pools?: Pool[]
 ): string {
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<Competition>
-  <Informations>
-    <Nom>${escapeXml(competition.title)}</Nom>
-    <Date>${competition.date}</Date>
-    <Lieu>${escapeXml(competition.location || '')}</Lieu>
-    <Arme>${competition.weapon}</Arme>
-    <Genre>${competition.gender}</Genre>
-    <Categorie>${competition.category}</Categorie>
-  </Informations>
-  <Participants Nombre="${poolRanking.length}">
-    ${poolRanking
-      .map(
-        (r, i) => `
-    <Tireur Rang="${i + 1}">
-      <Nom>${escapeXml(r.fencer.lastName)}</Nom>
-      <Prenom>${escapeXml(r.fencer.firstName)}</Prenom>
-      <Club>${escapeXml(r.fencer.club || '')}</Club>
-      <Licence>${r.fencer.license || ''}</Licence>
-      <Nation>${r.fencer.nationality || ''}</Nation>
-    </Tireur>`
-      )
-      .join('')}
-  </Participants>
-  <Classement>
-    ${finalResults
-      .map(
-        r => `
-    <Classe Rang="${r.rank}">
-      <Nom>${escapeXml(r.fencer.lastName)}</Nom>
-      <Prenom>${escapeXml(r.fencer.firstName)}</Prenom>
-    </Classe>`
-      )
-      .join('')}
-  </Classement>
-</Competition>`;
+  const mapStatut = (status: FencerStatus): string => {
+    switch (status) {
+      case FencerStatus.ABANDONED: return 'Abandonne';
+      case FencerStatus.EXCLUDED:  return 'Exclu';
+      case FencerStatus.FORFAIT:   return 'Forfait';
+      case FencerStatus.ELIMINATED: return 'Elimine';
+      default: return 'Qualifie';
+    }
+  };
 
-  return xml;
+  const finalRankMap = new Map<string, number>();
+  for (const r of finalResults) {
+    if (r.fencer?.id) finalRankMap.set(r.fencer.id, r.rank);
+  }
+
+  const dateStr =
+    competition.date instanceof Date
+      ? competition.date.toISOString().slice(0, 10)
+      : String(competition.date).slice(0, 10);
+
+  const lines: string[] = [];
+  lines.push('<?xml version="1.0" encoding="UTF-8"?>');
+  lines.push(
+    `<BaseCompetition` +
+    ` Arme="${escapeXml(competition.weapon)}"` +
+    ` Sexe="${escapeXml(competition.gender)}"` +
+    ` Categorie="${escapeXml(competition.category)}"` +
+    ` Format="${competition.isTeamEvent ? 'Equipes' : 'Individuel'}"` +
+    ` ID="${escapeXml(competition.id)}"` +
+    ` Organisateur="${escapeXml(competition.organizer || '')}"` +
+    ` Lieu="${escapeXml(competition.location || '')}"` +
+    ` Date="${dateStr}"` +
+    ` Label="${escapeXml(competition.title)}"` +
+    ` NbTireurs="${poolRanking.length}">`
+  );
+
+  lines.push('  <Tireurs>');
+  for (const r of poolRanking) {
+    const f = r.fencer;
+    const finalRank = finalRankMap.get(f.id) ?? r.rank;
+    lines.push(
+      `    <Tireur` +
+      ` ID="${f.ref}"` +
+      ` Nom="${escapeXml(f.lastName)}"` +
+      ` Prenom="${escapeXml(f.firstName)}"` +
+      ` Sexe="${escapeXml(f.gender)}"` +
+      ` Nation="${escapeXml(f.nationality || '')}"` +
+      ` Ligue="${escapeXml(f.region || '')}"` +
+      ` Club="${escapeXml(f.club || '')}"` +
+      ` Licence="${escapeXml(f.license || '')}"` +
+      ` Classement="${f.ranking ?? ''}"` +
+      ` Statut="${mapStatut(f.status)}"` +
+      ` NbVictoires="${r.victories}"` +
+      ` NbDefaites="${r.defeats}"` +
+      ` TD="${r.touchesScored}"` +
+      ` TR="${r.touchesReceived}"` +
+      ` Indice="${r.index}"` +
+      ` RangPoules="${r.rank}"` +
+      ` RangFinal="${finalRank}"/>`
+    );
+  }
+  lines.push('  </Tireurs>');
+
+  if (pools && pools.length > 0) {
+    lines.push(`  <PhaseDePoules NbPoules="${pools.length}" NbTours="1">`);
+    for (const pool of pools) {
+      const arbName =
+        pool.referees?.[0]
+          ? escapeXml(`${pool.referees[0].lastName} ${pool.referees[0].firstName}`)
+          : '';
+      lines.push(
+        `    <Poule ID="${pool.number}" Piste="${pool.strip ?? pool.number}" Arbitre="${arbName}">`
+      );
+      for (const f of pool.fencers) {
+        lines.push(`      <Tireur REF="${f.ref}"/>`);
+      }
+      let matchId = 1;
+      for (const match of pool.matches) {
+        if (!match.fencerA || !match.fencerB || match.status !== MatchStatus.FINISHED) continue;
+        const sA = match.scoreA;
+        const sB = match.scoreB;
+        const stA = sA?.isAbstention ? 'A' : sA?.isForfait ? 'F' : sA?.isExclusion ? 'E' : sA?.isVictory ? 'V' : 'D';
+        const stB = sB?.isAbstention ? 'A' : sB?.isForfait ? 'F' : sB?.isExclusion ? 'E' : sB?.isVictory ? 'V' : 'D';
+        lines.push(`      <Match ID="${matchId++}">`);
+        lines.push(`        <Tireur REF="${match.fencerA.ref}" Score="${sA?.value ?? 0}" Statut="${stA}"/>`);
+        lines.push(`        <Tireur REF="${match.fencerB.ref}" Score="${sB?.value ?? 0}" Statut="${stB}"/>`);
+        lines.push(`      </Match>`);
+      }
+      lines.push(`    </Poule>`);
+    }
+    lines.push(`  </PhaseDePoules>`);
+  }
+
+  lines.push('</BaseCompetition>');
+  return lines.join('\n');
 }
 
 /**

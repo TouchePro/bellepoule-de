@@ -42,8 +42,11 @@ interface TableauViewProps {
   playAllPositions?: boolean;
   arenaCount?: number;
   onMatchArenaChange?: (matchId: string, oldArena: number | null, newArena: number | null, fencerA?: any, fencerB?: any) => void;
+  onMatchRefereeChange?: (matchId: string, refereeId: string | null) => void;
+  competitionId?: string;
   consolationBrackets?: ConsolationBracket[];
   onConsolationBracketsChange?: (brackets: ConsolationBracket[]) => void;
+  readOnly?: boolean;
 }
 
 // ─── Static style constants ───────────────────────────────────────────────────
@@ -103,8 +106,11 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   playAllPositions = false,
   arenaCount = 4,
   onMatchArenaChange,
+  onMatchRefereeChange,
+  competitionId,
   consolationBrackets: consolationBracketsprop = [],
   onConsolationBracketsChange,
+  readOnly = false,
 }) => {
   const { showToast } = useToast();
   const tableauTemplate = usePdfTemplateStore(s => s.templates.tableau);
@@ -121,6 +127,9 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   const [expandedRounds, setExpandedRounds] = useState<Set<number>>(new Set());
   const [showArenaModal, setShowArenaModal] = useState(false);
   const [selectedMatchForArena, setSelectedMatchForArena] = useState<string | null>(null);
+  const [showRefereeModal, setShowRefereeModal] = useState(false);
+  const [selectedMatchForReferee, setSelectedMatchForReferee] = useState<string | null>(null);
+  const [competitionReferees, setCompetitionReferees] = useState<Array<{ id: string; firstName: string; lastName: string; club?: string }>>([]);
   const [selectedMatchConsolationBracketId, setSelectedMatchConsolationBracketId] = useState<string | null>(null);
   const [pyramidViewMode, setPyramidViewMode] = useState<boolean>(false);
   const [showPdfModal, setShowPdfModal] = useState(false);
@@ -213,6 +222,15 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   }, [matches, onMatchesChange, onMatchArenaChange]);
 
   useEffect(() => {
+    if (readOnly) {
+      // En lecture seule, ne pas régénérer le tableau, mais déduire sa taille
+      // des matches existants pour permettre l'affichage des rounds.
+      if (matches.length > 0) {
+        const currentSize = Math.max(...matches.filter(m => m.round !== 3).map(m => m.round));
+        setTableauSize(currentSize);
+      }
+      return;
+    }
     const eligibleCount = ranking.filter(
       r =>
         r.fencer.status !== FencerStatus.ABANDONED &&
@@ -232,16 +250,17 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         setTableauSize(currentSize);
       }
     }
-  }, [ranking.length, thirdPlaceMatch, maxScore, matches.length]); // Dépend du nombre de tireurs, match pour la 3ème place et score max
+  }, [readOnly, ranking.length, thirdPlaceMatch, maxScore, matches.length]); // Dépend du nombre de tireurs, match pour la 3ème place et score max
 
   // Filet de sécurité : détecte la complétion du tableau à chaque mise à jour de matches
   // Couvre les chemins qui ne passent pas par handleScoreSubmit (saisie distante, statuts spéciaux)
   useEffect(() => {
+    if (readOnly) return;
     // Ignorer si matches n'a pas changé depuis le montage du composant.
     // Robuste au double-invoke de React StrictMode : le ref de montage reste stable
     // entre les deux passes, contrairement à un booléen consommé au premier run.
     if (matches === mountMatchesRef.current) return;
-    if (matches.length === 0 || !onComplete) return;
+    if (readOnly || matches.length === 0 || !onComplete) return;
     const champion = matches.find(m => m.round === 2)?.winner;
     if (!champion) return;
     const thirdPlaceEntry = matches.find(m => m.round === 3);
@@ -251,11 +270,11 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     }
     // calculateFinalResults et onComplete sont stables pendant la phase tableau
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [matches]);
+  }, [matches, readOnly]);
 
   // playAllPositions : déclencher onComplete quand le tableau principal ET tous les brackets de consolation sont terminés
   useEffect(() => {
-    if (!playAllPositions || !onComplete || matches.length === 0) return;
+    if (readOnly || !playAllPositions || !onComplete || matches.length === 0) return;
     // Ignorer au montage (données déjà complètes restaurées depuis DB)
     if (matches === mountMatchesRef.current) return;
     const mainFinalDone = !!matches.find(m => m.round === 2)?.winner;
@@ -681,6 +700,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   };
 
   const handleAutoFillScores = () => {
+    if (readOnly) return;
     const confirmed = window.confirm(
       'Remplir automatiquement tous les scores des matchs non terminés ?\n\nLes scores seront générés aléatoirement pour les tests.'
     );
@@ -932,18 +952,25 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     }
   };
 
-  const handleSpecialStatus = (status: 'abandon' | 'forfait' | 'exclusion') => {
+  const handleSpecialStatus = (
+    status: 'abandon' | 'forfait' | 'exclusion',
+    fencerId: string
+  ) => {
     if (!editingMatch) return;
+
+    // L'adversaire du tireur sélectionné (qui abandonne / forfait / est exclu) gagne
+    const opponentWinner = (m: { fencerA?: Fencer | null; fencerB?: Fencer | null }) => {
+      if (m.fencerA?.id === fencerId) return m.fencerB ?? null;
+      if (m.fencerB?.id === fencerId) return m.fencerA ?? null;
+      return null;
+    };
 
     // Si c'est un match de consolation
     if (editingConsolationId) {
       const bracket = consolationBrackets.find(b => b.id === editingConsolationId);
       const match = bracket?.matches.find(m => m.id === editingMatch);
       if (bracket && match) {
-        let winner: Fencer | null = null;
-        if (status === 'exclusion') {
-          winner = match.fencerA && match.fencerB ? match.fencerB : match.fencerA || match.fencerB;
-        }
+        const winner = opponentWinner(match);
         updateConsolationMatch(editingConsolationId, editingMatch, match.scoreA ?? 0, match.scoreB ?? 0, winner);
       }
       setShowScoreModal(false);
@@ -955,15 +982,8 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     const match = matches.find(m => m.id === editingMatch);
     if (!match) return;
 
-    let winner: Fencer | null = null;
-
-    if (status === 'abandon' || status === 'forfait') {
-      // Le match est annulé, pas de vainqueur
-      winner = null;
-    } else if (status === 'exclusion') {
-      // Pour l'exclusion, l'adversaire gagne
-      winner = match.fencerA && match.fencerB ? match.fencerB : match.fencerA || match.fencerB;
-    }
+    // Dans un tableau à élimination directe, l'adversaire gagne dans tous les cas
+    const winner: Fencer | null = opponentWinner(match);
 
     const updatedMatches = matches.map(m => {
       if (m.id === editingMatch) {
@@ -1219,6 +1239,16 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         setSelectedMatchForArena(id);
         setShowArenaModal(true);
       }}
+      onRefereeClick={id => {
+        if (competitionId) {
+          window.electronAPI.db.getRefereesByCompetition(competitionId).then(refs => {
+            setCompetitionReferees(refs.map(r => ({ id: r.id, firstName: r.firstName, lastName: r.lastName, club: r.club })));
+          });
+        }
+        setSelectedMatchForReferee(id);
+        setShowRefereeModal(true);
+      }}
+      readOnly={readOnly}
     />
   );
 
@@ -1499,6 +1529,8 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                       baseMatchHeight={BASE_MATCH_HEIGHT}
                       onMatchClick={openScoreModal}
                       onArenaClick={id => { setSelectedMatchForArena(id); setShowArenaModal(true); }}
+                      onRefereeClick={id => { setSelectedMatchForReferee(id); setShowRefereeModal(true); }}
+                      readOnly={readOnly}
                     />
                   ))}
                 </div>
@@ -1560,6 +1592,8 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                                   setSelectedMatchConsolationBracketId(bracket.id);
                                   setShowArenaModal(true);
                                 } : () => {}}
+                                onRefereeClick={match.winner === null ? () => { setSelectedMatchForReferee(match.id); setShowRefereeModal(true); } : undefined}
+                                readOnly={readOnly}
                               />
                             ))}
                           </div>
@@ -1762,6 +1796,65 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                       </button>
                     );
                   })}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {showRefereeModal && selectedMatchForReferee && (() => {
+        const currentReferee = matches.find(m => m.id === selectedMatchForReferee)?.referee ?? null;
+
+        const closeModal = () => {
+          setShowRefereeModal(false);
+          setSelectedMatchForReferee(null);
+        };
+
+        const assignReferee = (ref: { id: string; firstName: string; lastName: string } | null) => {
+          const updatedMatches = matches.map(m =>
+            m.id === selectedMatchForReferee ? { ...m, referee: ref } : m
+          );
+          onMatchesChange(updatedMatches);
+          onMatchRefereeChange?.(selectedMatchForReferee!, ref?.id ?? null);
+          closeModal();
+        };
+
+        return (
+          <div className="modal-overlay" onClick={closeModal}>
+            <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+              <div className="modal-header">
+                <h3 className="modal-title">Assigner un arbitre</h3>
+                <button className="btn-close" onClick={closeModal}>&times;</button>
+              </div>
+              <div className="modal-body" style={{ padding: '1.5rem' }}>
+                <p style={{ marginBottom: '1rem', color: '#6b7280', fontSize: '0.875rem' }}>
+                  Sélectionnez l'arbitre pour ce match :
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <button
+                    className={`btn ${!currentReferee ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => assignReferee(null)}
+                    style={{ padding: '0.75rem', fontSize: '0.875rem' }}
+                  >
+                    ✕ Aucun arbitre
+                  </button>
+                  {competitionReferees.length === 0 && (
+                    <p style={{ color: '#9ca3af', fontSize: '0.875rem', textAlign: 'center' }}>
+                      Aucun arbitre enregistré pour cette compétition
+                    </p>
+                  )}
+                  {competitionReferees.map(ref => (
+                    <button
+                      key={ref.id}
+                      className={`btn ${currentReferee?.id === ref.id ? 'btn-primary' : 'btn-secondary'}`}
+                      onClick={() => assignReferee(ref)}
+                      style={{ padding: '0.75rem', fontSize: '0.875rem', textAlign: 'left' }}
+                    >
+                      🧑‍⚖️ {ref.lastName} {ref.firstName}
+                      {ref.club && <span style={{ marginLeft: '0.5rem', opacity: 0.6, fontSize: '0.8rem' }}>({ref.club})</span>}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>

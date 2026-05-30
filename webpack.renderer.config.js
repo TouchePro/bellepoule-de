@@ -38,7 +38,8 @@ module.exports = (env = {}) => ({
   },
   entry: './src/renderer/index.tsx',
   target: 'electron-renderer',
-  devtool: 'source-map',
+  // Pas de source maps en production : évite d'exposer le code source original
+  devtool: process.env.NODE_ENV === 'production' ? false : 'source-map',
   output: {
     path: path.resolve(__dirname, 'dist/renderer'),
     filename: '[name].js',
@@ -47,11 +48,12 @@ module.exports = (env = {}) => ({
   },
   devServer: {
     port: 8066,
-    host: '0.0.0.0', // Accessible depuis l'extérieur
+    // Restreint le serveur de dev à la machine locale (évite l'exposition réseau du source non minifié)
+    host: '127.0.0.1',
     hot: true,
     open: false,
     historyApiFallback: true,
-    allowedHosts: 'all', // Permet les connexions depuis n'importe quelle source
+    allowedHosts: 'auto',
     static: {
       directory: path.join(__dirname, 'dist/renderer'),
       publicPath: '/',

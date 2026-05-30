@@ -479,6 +479,13 @@ export interface DatabaseAPI {
       isBye?: boolean;
     }>
   ) => Promise<void>;
+  getTableauMatchesForExport: (competitionId: string) => Promise<Array<{
+    id: string; round: number; position: number; isBye: boolean;
+    fencerA: { firstName?: string; lastName: string; club?: string } | null;
+    fencerB: { firstName?: string; lastName: string; club?: string } | null;
+    scoreA: number | null; scoreB: number | null;
+    winner: { id: string } | null;
+  }>>;
 
   // Pools
   createPool: (phaseId: string, number: number, poolId?: string) => Promise<Pool>;
@@ -489,6 +496,7 @@ export interface DatabaseAPI {
   getPoolsByPhase: (phaseId: string) => Promise<Pool[]>;
   updatePool: (pool: Pool) => Promise<void>;
   getPoolSignatures: (poolId: string) => Promise<{ fencerId: string; signatureData: string }[]>;
+  updatePoolReferee: (poolId: string, refereeId: string | null) => Promise<void>;
 
   // Phases
   createPhase: (competitionId: string, type: string, order: number, name: string) => Promise<Phase>;
@@ -613,6 +621,7 @@ export interface MenuAPI {
   onMenuExport: (callback: (format: string) => void) => void;
   onMenuImport: (callback: (format: string, filepath: string, content: string) => void) => void;
   onMenuReportIssue: (callback: () => void) => void;
+  onShowAbout: (callback: () => void) => void;
   onFileOpened: (callback: (filepath: string) => void) => void;
   onFileSaved: (callback: (filepath: string) => void) => void;
   onAutosaveCompleted: (callback: () => void) => void;
@@ -703,14 +712,23 @@ export interface ArenaStateData {
   extraData?: Record<string, unknown>;
 }
 
+/** Chiffrement OS (safeStorage) pour secrets locaux. Renvoie null si indisponible. */
+export interface CryptoAPI {
+  isAvailable: () => Promise<boolean>;
+  protect: (plaintext: string) => Promise<string | null>;
+  unprotect: (ciphertext: string) => Promise<string | null>;
+}
+
 export interface ElectronAPI extends MenuAPI, UtilityAPI {
   db: DatabaseAPI;
   file: FileAPI;
   dialog: DialogAPI;
   updater: UpdaterAPI;
+  crypto: CryptoAPI;
   remote: RemoteServerAPI;
   onRemoteArenaUpdate: (callback: (data: any) => void) => () => void;
   onRemoteMatchFinished: (callback: (data: any) => void) => void;
+  onRemoteFencerExcluded: (callback: (data: { fencerId: string; matchId: string }) => void) => (() => void);
   onKioskNoteUpdate: (
     callback: (note: import('../types/remote').OrgNote | null) => void
   ) => () => void;

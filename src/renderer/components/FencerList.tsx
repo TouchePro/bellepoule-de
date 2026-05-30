@@ -42,6 +42,8 @@ interface FencerListProps {
   registerUrl?: string;
   /** Callback pour recharger la liste après inscription distante */
   onFencersChanged?: () => void;
+  /** Notifie le parent des tireurs triés/filtrés et des colonnes visibles actuels */
+  onAppelStateChange?: (fencers: Fencer[], visibleColumns: string[]) => void;
 }
 
 const FencerListComponent: React.FC<FencerListProps> = ({
@@ -59,6 +61,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
   onFencersImported,
   registerUrl,
   onFencersChanged,
+  onAppelStateChange,
 }) => {
   const { t } = useTranslation();
   const { confirm } = useConfirm();
@@ -77,6 +80,18 @@ const FencerListComponent: React.FC<FencerListProps> = ({
   const [sortBy, setSortBy] = useState<SortableCol>('ranking');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set());
+  const [colOrder, setColOrder] = useState<SortableCol[]>(() => {
+    try {
+      const saved = localStorage.getItem('bellepoule-fencer-col-order');
+      if (saved) {
+        const parsed = JSON.parse(saved) as SortableCol[];
+        if (parsed.length === COLUMNS.length && COLUMNS.every(c => parsed.includes(c.id))) return parsed;
+      }
+    } catch { /* ignore */ }
+    return COLUMNS.map(c => c.id);
+  });
+  const [dragCol, setDragCol] = useState<SortableCol | null>(null);
+  const [dragOverCol, setDragOverCol] = useState<SortableCol | null>(null);
   const [colMenuOpen, setColMenuOpen] = useState(false);
   const colMenuRef = useRef<HTMLDivElement>(null);
   const [photoMessage, setPhotoMessage] = useState<string | null>(null);
@@ -118,6 +133,31 @@ const FencerListComponent: React.FC<FencerListProps> = ({
     const id = setInterval(onFencersChanged, 5000);
     return () => clearInterval(id);
   }, [showRegisterQR, onFencersChanged]);
+
+  useEffect(() => {
+    localStorage.setItem('bellepoule-fencer-col-order', JSON.stringify(colOrder));
+  }, [colOrder]);
+
+  const handleColDragStart = (id: SortableCol) => setDragCol(id);
+  const handleColDragOver = (e: React.DragEvent, id: SortableCol) => {
+    e.preventDefault();
+    setDragOverCol(id);
+  };
+  const handleColDrop = (targetId: SortableCol) => {
+    if (!dragCol || dragCol === targetId) return;
+    setColOrder(prev => {
+      const next = [...prev];
+      const from = next.indexOf(dragCol);
+      const to = next.indexOf(targetId);
+      next.splice(from, 1);
+      next.splice(to, 0, dragCol);
+      return next;
+    });
+    setDragCol(null);
+    setDragOverCol(null);
+  };
+  const handleColDragEnd = () => { setDragCol(null); setDragOverCol(null); };
+
   const filteredFencers = useMemo(() => {
     const dir = sortOrder === 'asc' ? 1 : -1;
     return fencers
@@ -324,13 +364,19 @@ const FencerListComponent: React.FC<FencerListProps> = ({
     }
   }, [sortBy]);
 
-  const handleExportPDF = async () => {
-    const visibleColIds = COLUMNS.filter(c => !hiddenCols.has(c.id)).map(c => c.id);
-    await exportAppelToPDF(filteredFencers, visibleColIds);
-  };
+  const visibleCols = colOrder
+    .map(id => COLUMNS.find(c => c.id === id)!)
+    .filter(c => c && !hiddenCols.has(c.id));
+  const colSpanTotal = visibleCols.length + 1;
 
-  const visibleCols = COLUMNS.filter(c => !hiddenCols.has(c.id));
-  const colSpanTotal = visibleCols.length + 1; // +1 for Actions
+  const visibleColIds = useMemo(() => visibleCols.map(c => c.id), [visibleCols]);
+  useEffect(() => {
+    onAppelStateChange?.(filteredFencers, visibleColIds);
+  }, [filteredFencers, visibleColIds, onAppelStateChange]);
+
+  const handleExportPDF = async () => {
+    await exportAppelToPDF(filteredFencers, visibleCols.map(c => c.id));
+  };
 
   return (
     <div className="content">
@@ -473,6 +519,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                       padding: '6px 16px',
                       cursor: 'pointer',
                       fontSize: '0.875rem',
+                      color: 'var(--text-primary, #e2e8f0)',
                     }}
                   >
                     <input
@@ -490,6 +537,14 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                     {col.label}
                   </label>
                 ))}
+                <div style={{ borderTop: '1px solid var(--border-color, #444)', margin: '4px 0' }} />
+                <button
+                  className="btn btn-ghost"
+                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '6px 16px', borderRadius: 0, fontSize: '0.8rem', color: 'var(--text-muted, #94a3b8)' }}
+                  onClick={() => setColOrder(COLUMNS.map(c => c.id))}
+                >
+                  ↺ Réinitialiser l&apos;ordre
+                </button>
               </div>
             )}
           </div>
@@ -672,7 +727,17 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                   {visibleCols.map(col => (
                     <th
                       key={col.id}
-                      style={{ cursor: 'pointer', userSelect: 'none' }}
+                      draggable
+                      onDragStart={() => handleColDragStart(col.id)}
+                      onDragOver={e => handleColDragOver(e, col.id)}
+                      onDrop={() => handleColDrop(col.id)}
+                      onDragEnd={handleColDragEnd}
+                      style={{
+                        cursor: 'grab',
+                        userSelect: 'none',
+                        opacity: dragCol === col.id ? 0.4 : 1,
+                        borderLeft: dragOverCol === col.id && dragCol !== col.id ? '2px solid var(--primary, #6366f1)' : undefined,
+                      }}
                       onClick={() => handleSort(col.id)}
                     >
                       {col.label}{sortBy === col.id ? (sortOrder === 'asc' ? ' ▲' : ' ▼') : ''}
@@ -703,7 +768,18 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                     {visibleCols.map(col => (
                       <th
                         key={col.id}
-                        style={{ width: col.width, cursor: 'pointer', userSelect: 'none' }}
+                        draggable
+                        onDragStart={() => handleColDragStart(col.id)}
+                        onDragOver={e => handleColDragOver(e, col.id)}
+                        onDrop={() => handleColDrop(col.id)}
+                        onDragEnd={handleColDragEnd}
+                        style={{
+                          width: col.width,
+                          cursor: 'grab',
+                          userSelect: 'none',
+                          opacity: dragCol === col.id ? 0.4 : 1,
+                          borderLeft: dragOverCol === col.id && dragCol !== col.id ? '2px solid var(--primary, #6366f1)' : undefined,
+                        }}
                         onClick={() => handleSort(col.id)}
                       >
                         {col.label}{sortBy === col.id ? (sortOrder === 'asc' ? ' ▲' : ' ▼') : ''}

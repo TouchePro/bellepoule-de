@@ -3,7 +3,7 @@
  * Licensed under GPL-3.0
  */
 
-import { app, BrowserWindow, ipcMain, dialog, Menu, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, Menu, shell, safeStorage } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -481,7 +481,7 @@ function createWindow(): void {
         ...details.responseHeaders,
         'Content-Security-Policy': [
           "default-src 'self'; " +
-            "script-src 'self' https://cdn.socket.io; " +
+            "script-src 'self'; " +
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
             "font-src 'self' https://fonts.gstatic.com; " +
             "img-src 'self' data: blob:; " +
@@ -861,42 +861,7 @@ async function handleImport(format: string): Promise<void> {
 }
 
 function showAbout(): void {
-  const L = getL();
-  const versionInfo = getVersionInfo();
-  const locale =
-    currentMenuLanguage === 'zh-HK'
-      ? 'zh-HK'
-      : currentMenuLanguage === 'de'
-        ? 'de-DE'
-        : currentMenuLanguage === 'en'
-          ? 'en-GB'
-          : 'fr-FR';
-  const buildDate = new Date(versionInfo.date).toLocaleDateString(locale, {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-
-  dialog.showMessageBox(mainWindow!, {
-    type: 'info',
-    title: L.aboutTitle,
-    message: `BellePoule Modern v${versionInfo.version}`,
-    detail: `Build #${versionInfo.build}
-Date: ${buildDate}
-
-${L.aboutSoftware}
-
-${L.aboutRewrite}
-
-Licence: GPL-3.0
-© 2024-2026 BellePoule Modern Contributors
-
-${L.aboutBugHint}
-  Version: ${versionInfo.version}
-  Build: #${versionInfo.build}`,
-  });
+  mainWindow?.webContents.send('menu:show-about');
 }
 
 // ============================================================================
@@ -1002,6 +967,10 @@ ipcMain.handle('db:upsertMultipleTableauMatches', async (_, competitionId: strin
   return db.upsertMultipleTableauMatches(competitionId, matches);
 });
 
+ipcMain.handle('db:getTableauMatchesForExport', async (_, competitionId: string) => {
+  return db.getTableauMatchesForExport(competitionId);
+});
+
 // Session State handlers
 ipcMain.handle('db:saveSessionState', async (_, competitionId, state) => {
   return db.saveSessionState(competitionId, state);
@@ -1030,6 +999,9 @@ ipcMain.handle('db:clearSessionState', async (_, competitionId) => {
 // Pool handlers
 ipcMain.handle('db:updatePool', async (_, pool) => {
   return db.updatePool(pool);
+});
+ipcMain.handle('db:updatePoolReferee', async (_, poolId, refereeId) => {
+  return db.updatePoolReferee(poolId, refereeId);
 });
 ipcMain.handle('db:createPool', async (_, phaseId, number, poolId) => {
   return db.createPool(phaseId, number, poolId);
@@ -1166,7 +1138,15 @@ ipcMain.handle('file:import', async (_, filepath) => {
 
 // File content write handler
 ipcMain.handle('file:writeContent', async (_, filepath: string, content: string) => {
-  fs.writeFileSync(filepath, content, 'utf-8');
+  if (!filepath || typeof filepath !== 'string' || !path.isAbsolute(filepath)) {
+    throw new Error('Invalid file path');
+  }
+  const resolved = path.resolve(filepath);
+  const appDir = path.resolve(app.getAppPath());
+  if (resolved.startsWith(appDir)) {
+    throw new Error('Writing inside app directory is not allowed');
+  }
+  fs.writeFileSync(resolved, content, 'utf-8');
 });
 
 // Photo ZIP export handler
@@ -1319,15 +1299,17 @@ ipcMain.handle('file:printHtml', async (_, html: string) => {
     printWin.loadFile(tmpFile);
 
     printWin.webContents.once('did-finish-load', () => {
-      printWin.webContents.print({ silent: false, printBackground: true }, (success: boolean) => {
-        try {
-          fs.unlinkSync(tmpFile);
-        } catch {
-          /* ignore */
-        }
-        printWin.destroy();
-        resolve({ success });
-      });
+      setTimeout(() => {
+        printWin.webContents.print({ silent: false, printBackground: true }, (success: boolean) => {
+          try {
+            fs.unlinkSync(tmpFile);
+          } catch {
+            /* ignore */
+          }
+          printWin.destroy();
+          resolve({ success });
+        });
+      }, 800);
     });
 
     printWin.webContents.once('did-fail-load', () => {
@@ -1368,6 +1350,7 @@ ipcMain.handle('file:printHtmlToPDF', async (_, html: string, outputPath: string
     pdfWin.loadFile(tmpFile);
 
     pdfWin.webContents.once('did-finish-load', () => {
+      setTimeout(() => {
       pdfWin.webContents
         .printToPDF({
           printBackground: true,
@@ -1400,6 +1383,7 @@ ipcMain.handle('file:printHtmlToPDF', async (_, html: string, outputPath: string
           pdfWin.destroy();
           resolve({ success: false, error: err.message });
         });
+      }, 800);
     });
 
     pdfWin.webContents.once('did-fail-load', () => {
@@ -1947,6 +1931,26 @@ ipcMain.handle('updater:installPendingUpdate', async () => {
     return { success: true };
   }
   return { success: false, error: 'AutoUpdater not initialized' };
+});
+
+// ============================================================================
+// safeStorage : chiffrement OS (Keychain/DPAPI/libsecret) pour secrets locaux
+// (ex. clé de synchronisation cloud). Renvoie une chaîne base64.
+// ============================================================================
+ipcMain.handle('crypto:isAvailable', async () => {
+  return safeStorage.isEncryptionAvailable();
+});
+
+ipcMain.handle('crypto:protect', async (_, plaintext: string) => {
+  if (typeof plaintext !== 'string') throw new Error('plaintext must be a string');
+  if (!safeStorage.isEncryptionAvailable()) return null;
+  return safeStorage.encryptString(plaintext).toString('base64');
+});
+
+ipcMain.handle('crypto:unprotect', async (_, ciphertextB64: string) => {
+  if (typeof ciphertextB64 !== 'string') throw new Error('ciphertext must be a string');
+  if (!safeStorage.isEncryptionAvailable()) return null;
+  return safeStorage.decryptString(Buffer.from(ciphertextB64, 'base64'));
 });
 
 // ============================================================================
