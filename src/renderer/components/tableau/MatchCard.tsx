@@ -62,27 +62,30 @@ const MatchCard: React.FC<MatchCardProps> = ({
       style={posStyle}
       onClick={() => canEdit && onMatchClick && onMatchClick(match)}
     >
-      {/* Arena badge */}
-      {canEdit && !isMatchComplete && onArenaClick && (
-        <button
-          className={`match-arena-btn ${match.arena ? 'match-arena-btn-active' : ''}`}
-          onClick={handleArenaClick}
-          title={match.arena ? `Piste ${match.arena}` : 'Assigner une piste'}
-        >
-          {match.arena ? `P${match.arena}` : '+P'}
-        </button>
-      )}
-
-      {/* Referee badge */}
-      {canEdit && !isMatchComplete && onRefereeClick && (
-        <button
-          className={`match-arena-btn ${match.referee ? 'match-arena-btn-active' : ''}`}
-          onClick={handleRefereeClick}
-          title={match.referee ? `Arbitre : ${match.referee.lastName} ${match.referee.firstName}` : 'Assigner un arbitre'}
-          style={{ marginLeft: onArenaClick ? '0.25rem' : undefined }}
-        >
-          {match.referee ? `A:${match.referee.lastName.charAt(0)}${match.referee.firstName.charAt(0)}` : '+A'}
-        </button>
+      {/* Arena + Referee badges */}
+      {canEdit && !isMatchComplete && (onArenaClick || onRefereeClick) && (
+        <div style={{ position: 'absolute', top: '4px', right: '4px', display: 'flex', gap: '0.2rem' }}>
+          {onArenaClick && (
+            <button
+              className={`match-arena-btn ${match.arena ? 'match-arena-btn-active' : ''}`}
+              style={{ position: 'static' }}
+              onClick={handleArenaClick}
+              title={match.arena ? `Piste ${match.arena}` : 'Assigner une piste'}
+            >
+              {match.arena ? `P${match.arena}` : '+P'}
+            </button>
+          )}
+          {onRefereeClick && (
+            <button
+              className={`match-arena-btn ${match.referee ? 'match-arena-btn-active' : ''}`}
+              style={{ position: 'static' }}
+              onClick={handleRefereeClick}
+              title={match.referee ? `Arbitre : ${match.referee.lastName} ${match.referee.firstName}` : 'Assigner un arbitre'}
+            >
+              {match.referee ? `A:${match.referee.lastName.charAt(0)}${match.referee.firstName.charAt(0)}` : '+A'}
+            </button>
+          )}
+        </div>
       )}
 
       {/* Fencer A */}

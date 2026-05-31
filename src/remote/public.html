@@ -1027,7 +1027,7 @@
             this.updateStatusBadge();
           }
 
-          if (data.match) {
+          if (data.match && (data.refereeSelected || data.status === 'in_progress' || data.status === 'finished')) {
             this.currentMatch = data.match;
             this.updateMatchDisplay();
             if (this.matchStatus === 'ready' && this.showPhotos) {

@@ -219,7 +219,10 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     }
     if (fingerprint === sessionMatchesFingerprintRef.current) return;
     sessionMatchesFingerprintRef.current = fingerprint;
-    const poolsData = pools.map(pool => ({ poolId: pool.id, matches: pool.matches ?? [] }));
+    const poolsData = pools.map(pool => ({
+      poolId: pool.id,
+      matches: (pool.matches ?? []).map((m: any) => ({ ...m, poolNumber: pool.number })),
+    }));
     window.electronAPI.remote.syncPoolMatches(competition.id, poolsData).catch((err: unknown) => {
       logger.warn(
         LogCategory.NETWORK,
