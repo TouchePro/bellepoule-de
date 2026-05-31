@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Competition, CustomFormulaConfig, Weapon, Gender, Category, CompetitionSettings, QuestPhaseConfig } from '../../shared/types';
+import { Competition, CustomFormulaConfig, Weapon, Gender, Category, CompetitionSettings, QuestPhaseConfig, PostPoolSplitCriteria } from '../../shared/types';
 import { useTranslation } from '../hooks/useTranslation';
 import { createDefaultCustomFormula } from '../../shared/utils/tournamentTemplates';
 import { FormulaBuilder } from './formula/FormulaBuilder';
@@ -56,6 +56,12 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
     competition.settings?.refereeFeatureEnabled ?? false
   );
   const [expertMode, setExpertMode] = useState(competition.settings?.expertMode ?? false);
+  const [poolWinnersOnly, setPoolWinnersOnly] = useState(
+    competition.settings?.poolWinnersOnly ?? false
+  );
+  const [postPoolSplitCriteria, setPostPoolSplitCriteria] = useState<PostPoolSplitCriteria | ''>(
+    competition.settings?.postPoolSplitCriteria ?? ''
+  );
   const [maxRefereesPerPool, setMaxRefereesPerPool] = useState(
     competition.settings?.maxRefereesPerPool ?? 1
   );
@@ -127,6 +133,8 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
       expertMode,
       ...(expertMode ? { maxRefereesPerPool, maxRefereesPerMatch } : {}),
       ...(weapon === Weapon.CUSTOM ? { customFormula } : {}),
+      poolWinnersOnly,
+      ...(postPoolSplitCriteria ? { postPoolSplitCriteria } : { postPoolSplitCriteria: undefined }),
     };
 
     onSave({
@@ -275,9 +283,42 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
                   Les perdants de chaque tour forment un tableau de classement
                 </small>
               </div>
+              <div className="form-group">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={poolWinnersOnly}
+                    onChange={e => setPoolWinnersOnly(e.target.checked)}
+                    style={{ marginRight: '0.5rem' }}
+                  />
+                  Seuls les vainqueurs de poule accèdent au tableau
+                </label>
+                <small style={{ color: '#6b7280', fontSize: '0.75rem', marginLeft: '1.5rem' }}>
+                  Seul le 1er de chaque poule est qualifié pour le tableau d'élimination
+                </small>
+              </div>
             </>
           )}
         </div>
+        {(!questEnabled) && (
+          <div style={{ marginTop: '1rem' }}>
+            <div className="form-group">
+              <label htmlFor="postPoolSplitCriteria">Compétition couplée (séparation après poules)</label>
+              <select
+                id="postPoolSplitCriteria"
+                className="form-input form-select"
+                value={postPoolSplitCriteria}
+                onChange={e => setPostPoolSplitCriteria(e.target.value as PostPoolSplitCriteria | '')}
+              >
+                <option value="">Aucune — compétition standard</option>
+                <option value="gender">Par genre (H/F) — poules mixtes, tableaux séparés</option>
+              </select>
+              <small style={{ color: '#6b7280', fontSize: '0.75rem' }}>
+                Utile quand H et F partagent les mêmes poules faute d'effectif suffisant
+              </small>
+            </div>
+          </div>
+        )}
       </React.Fragment>
     );
   }
