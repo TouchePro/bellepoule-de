@@ -895,7 +895,11 @@
           const checkbox = document.getElementById('inversion-checkbox');
           checkbox.checked = this.inversionEnabled;
           checkbox.addEventListener('change', () => {
-            this.socket.emit('arena_control', { arenaId: this.arenaId, action: 'toggle_swap' });
+            this.inversionEnabled = checkbox.checked;
+            localStorage.setItem('publicInversionEnabled', this.inversionEnabled);
+            this.applyInversionColors();
+            if (this.currentMatch) this.updateMatchDisplay();
+            this.updateCardsDisplay();
           });
         }
 
@@ -1013,14 +1017,7 @@
             this.showPhotos = data.showPhotos;
           }
 
-          // Mise à jour état d'inversion (synchronisé avec le serveur)
-          if (data.swapped !== undefined) {
-            this.inversionEnabled = data.swapped;
-            const cb = document.getElementById('inversion-checkbox');
-            if (cb) cb.checked = data.swapped;
-            localStorage.setItem('publicInversionEnabled', data.swapped);
-            this.applyInversionColors();
-          }
+          // L'inversion public est locale — on ignore data.swapped
 
           if (data.status) {
             this.matchStatus = data.status;
