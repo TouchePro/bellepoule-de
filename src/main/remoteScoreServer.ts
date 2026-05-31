@@ -2196,6 +2196,8 @@ export class RemoteScoreServer {
   private arenaSuddenDeath: Map<string, boolean> = new Map();
   private arenaOvertimeType: Map<string, string | null> = new Map();
   private arenaWaitingOvertime: Map<string, boolean> = new Map();
+  // Vrai quand l'arbitre a explicitement sélectionné le match depuis sa tablette
+  private arenaRefereeSelected: Map<string, boolean> = new Map();
   // Debounce par socket pour update_score : clé = socketId:arenaId, valeur = timestamp dernier envoi
   private scoreUpdateDebounce: Map<string, number> = new Map();
   private readonly SCORE_UPDATE_DEBOUNCE_MS = 200;
@@ -2240,7 +2242,7 @@ export class RemoteScoreServer {
 
     switch (data.action) {
       case 'select_match':
-        // Sélection d'un match par l'arbitre
+        // Sélection d'un match par l'arbitre (depuis sa tablette)
         if (data.match) {
           const m = data.match;
           this.assignMatchToArena(data.arenaId, {
@@ -2253,7 +2255,7 @@ export class RemoteScoreServer {
               typeof (m.scoreB as unknown) === 'object'
                 ? ((m.scoreB as unknown as { value?: number })?.value ?? 0)
                 : (m.scoreB ?? 0),
-          });
+          }, true);
           this.arenaCards.set(data.arenaId, { cardsA: [], cardsB: [] });
           this.arenaTouches.set(data.arenaId, { touchesA: [], touchesB: [] });
           this.arenaExits.set(data.arenaId, []);
@@ -2768,15 +2770,18 @@ export class RemoteScoreServer {
     });
   }
 
-  public assignMatchToArena(arenaId: string, match: ArenaMatch): void {
+  public assignMatchToArena(arenaId: string, match: ArenaMatch, fromReferee = false): void {
     console.log(
-      `[RemoteScoreServer] assignMatchToArena called: arenaId=${arenaId}, matchId=${match.id}`
+      `[RemoteScoreServer] assignMatchToArena called: arenaId=${arenaId}, matchId=${match.id}, fromReferee=${fromReferee}`
     );
     const arena = this.arenas.get(arenaId);
     if (!arena) {
       console.error(`[RemoteScoreServer] ERREUR: Arène ${arenaId} n'existe pas!`);
       return;
     }
+
+    // Mettre à jour le flag de sélection arbitre avant le broadcast
+    this.arenaRefereeSelected.set(arenaId, fromReferee);
 
     arena.currentMatch = match;
     arena.status = 'ready';
@@ -3025,6 +3030,9 @@ export class RemoteScoreServer {
     if (!arena || !arena.currentMatch) return;
     // Éviter le double-déclenchement (REST + Socket.IO)
     if (arena.status === 'finished') return;
+
+    // Réinitialiser le flag de sélection arbitre (match terminé)
+    this.arenaRefereeSelected.set(arenaId, false);
 
     const finishedMatch = { ...arena.currentMatch };
 
@@ -3513,6 +3521,7 @@ export class RemoteScoreServer {
       refereeFeatureEnabled: this.sessionRefereeFeatureEnabled,
       referees: this.session?.referees ?? [],
       timerDuration: isPoolMatch ? this.sessionPoolTimerSeconds : this.sessionTableTimerSeconds,
+      refereeSelected: this.arenaRefereeSelected.get(arenaId) ?? false,
     };
 
     // Stocker dans le buffer de replay (TTL + max size)

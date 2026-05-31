@@ -166,6 +166,7 @@ export interface ArenaUpdate {
   timerDuration?: number; // durée du chrono en secondes pour ce match
   poolComplete?: boolean; // vrai quand tous les matchs de la poule sont terminés
   completedPoolId?: string; // id de la poule terminée
+  refereeSelected?: boolean; // vrai quand l'arbitre a explicitement sélectionné le match
 }
 
 export interface RefereeControl {

@@ -1122,6 +1122,13 @@
     <div class="main-container">
       <!-- Match actif -->
       <div class="active-match" id="active-match">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:0.5rem;">
+          <button
+            onclick="window.location.reload()"
+            style="background:rgba(0,0,0,0.12);border:none;border-radius:0.5rem;color:#374151;padding:0.35rem 0.85rem;font-size:0.85rem;cursor:pointer;"
+            title="Retour à la liste des matchs"
+          >← Retour</button>
+        </div>
         <div class="fencers-container">
           <!-- Tireur A (Rouge) -->
           <div class="fencer-box red-side" id="fencer-a-box">
@@ -3295,9 +3302,9 @@
           };
           container.innerHTML = matches
             .map(match => {
-              const poolNum = match.poolId ? match.poolId.replace(/\D/g, '') || '?' : '';
-              const poolLabel = match.poolId
-                ? `<span style="opacity:0.5;font-size:0.72rem;">Poule ${escHtml(poolNum)}</span>`
+              const poolNum = match.poolNumber ?? (match.poolId ? match.poolId.replace(/\D/g, '') || '?' : '');
+              const poolLabel = (match.poolNumber !== undefined || match.poolId)
+                ? `<span style="opacity:0.5;font-size:0.72rem;">Poule ${escHtml(String(poolNum))}</span>`
                 : '';
               const safeId = escHtml(match.id);
               const clubLine =

@@ -179,7 +179,8 @@ export const usePoolManagement = ({
         match.status = MatchStatus.FINISHED;
         match.updatedAt = new Date();
 
-        // Mettre à jour le pool
+        // Mettre à jour le pool (nouveau tableau pour invalider le useMemo)
+        pool.matches = [...pool.matches];
         pool.matches[matchIndex] = match;
         pool.updatedAt = new Date();
 
