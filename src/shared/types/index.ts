@@ -399,7 +399,10 @@ export interface RankingCriterion {
   enabled: boolean;
 }
 
-export type AdvancementMode = 'all' | 'percentage' | 'fixed_count' | 'fixed_bracket';
+export type AdvancementMode = 'all' | 'percentage' | 'fixed_count' | 'fixed_bracket' | 'pool_winner';
+
+// Critère de séparation post-poules en deux tableaux distincts (compétition couplée)
+export type PostPoolSplitCriteria = 'gender';
 
 export interface AdvancementRule {
   mode: AdvancementMode;
@@ -577,6 +580,9 @@ export interface CompetitionSettings {
   expertMode?: boolean; // Mode expert : édition avancée des pistes et arbitres
   maxRefereesPerPool?: number; // Nombre max d'arbitres par poule (mode expert)
   maxRefereesPerMatch?: number; // Nombre max d'arbitres par match DE (mode expert)
+  // Modes spéciaux post-poules
+  poolWinnersOnly?: boolean; // Seuls les 1ers de chaque poule accèdent au tableau
+  postPoolSplitCriteria?: PostPoolSplitCriteria; // Séparation en deux tableaux après les poules
 }
 
 export interface Phase extends BaseEntity {
