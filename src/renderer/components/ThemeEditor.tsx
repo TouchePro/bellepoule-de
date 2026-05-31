@@ -274,45 +274,42 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
     setVars({ ...DARK_DEFAULTS, ...theme.variables });
   };
 
-  // ── Import / Export ──
-  const handleExport = () => {
+  // ── Import / Export (IPC Electron natif) ──
+  const handleExport = async () => {
     const theme: CustomTheme = {
       id: initialTheme?.id ?? `custom-${Date.now()}`,
       name: themeName.trim() || 'Mon thème',
       variables: vars,
     };
     const json = JSON.stringify(theme, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `theme-${theme.name.replace(/\s+/g, '-')}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const safeName = theme.name.replace(/[^a-z0-9_-]/gi, '-');
+    const result = await window.electronAPI.dialog.saveFile({
+      defaultPath: `theme-${safeName}.json`,
+      filters: [{ name: 'Thème JSON', extensions: ['json'] }],
+    });
+    if (result && !result.canceled && result.filePath) {
+      await window.electronAPI.file.writeContent(result.filePath, json);
+    }
   };
 
-  const handleImport = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-      try {
-        const text = await file.text();
-        const parsed: CustomTheme = JSON.parse(text);
-        if (!parsed.variables || typeof parsed.variables !== 'object') {
-          setImportError('Fichier invalide : propriété "variables" manquante');
-          return;
-        }
-        setThemeName(parsed.name ?? 'Thème importé');
-        setVars({ ...DARK_DEFAULTS, ...parsed.variables });
-        setImportError('');
-      } catch {
-        setImportError('Fichier JSON invalide');
+  const handleImport = async () => {
+    const result = await window.electronAPI.dialog.openFile({
+      filters: [{ name: 'Thème JSON', extensions: ['json'] }],
+      properties: ['openFile'],
+    });
+    if (!result || !result.content) return;
+    try {
+      const parsed: CustomTheme = JSON.parse(result.content);
+      if (!parsed.variables || typeof parsed.variables !== 'object') {
+        setImportError('Fichier invalide : propriété "variables" manquante');
+        return;
       }
-    };
-    input.click();
+      setThemeName(parsed.name ?? 'Thème importé');
+      setVars({ ...DARK_DEFAULTS, ...parsed.variables });
+      setImportError('');
+    } catch {
+      setImportError('Fichier JSON invalide');
+    }
   };
 
   // ── Application ──
@@ -341,10 +338,10 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
             </div>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <button className="theme-editor-btn secondary" onClick={handleImport} title="Importer un thème JSON">
+            <button className="theme-editor-btn secondary" onClick={() => { void handleImport(); }} title="Importer un thème JSON">
               ↑ Importer
             </button>
-            <button className="theme-editor-btn secondary" onClick={handleExport} title="Exporter comme JSON">
+            <button className="theme-editor-btn secondary" onClick={() => { void handleExport(); }} title="Exporter comme JSON">
               ↓ Exporter
             </button>
             <button className="theme-editor-btn close" onClick={onClose}>✕</button>
