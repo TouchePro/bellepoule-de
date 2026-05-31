@@ -2335,6 +2335,7 @@
         callDT() {
           const btn = document.getElementById('btn-dt-icon');
           if (!btn || btn.classList.contains('dt-active') || btn.classList.contains('dt-ack')) return;
+          if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
           btn.classList.add('dt-active');
           this.socket.emit('arena_control', { arenaId: this.arenaId, action: 'dt_call' });
           this.showNotification(window.T('referee.dt_called'));
@@ -2356,6 +2357,7 @@
 
         undoLastAction() {
           if (this.actionHistory.length === 0) return;
+          if (navigator.vibrate) navigator.vibrate([40, 30, 40]);
           const prev = this.actionHistory.pop();
           this.scoreA = prev.scoreA;
           this.scoreB = prev.scoreB;
@@ -2417,6 +2419,7 @@
           if (this.matchStatus === 'finished') return;
 
           this.pushHistory('arena_exit');
+          if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
           const ef = this._effectiveFencer(fencer);
           const points = 3;
           if (ef === 'A') {
@@ -2455,6 +2458,7 @@
           if (this.matchStatus === 'not_started') return;
           if (this.matchStatus === 'finished') return;
 
+          if (navigator.vibrate) navigator.vibrate(30);
           const ef = this._effectiveFencer(fencer);
           const zone = points === 1 ? 'A' : points === 3 ? 'B' : 'C';
           if (ef === 'A') {
@@ -2503,6 +2507,7 @@
             return;
           }
 
+          if (navigator.vibrate) navigator.vibrate(30);
           const lastCard = cards.pop();
 
           // Restituer les points accordés à l'adversaire
@@ -2638,6 +2643,7 @@
 
               if (this.timerSeconds === 0) {
                 this.stopTimer();
+                if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
                 if (this.scoreA === this.scoreB &&
                     (!this.isSuddenDeath || this.overtimeType === 'challenger')) {
                   // Égalité : attente manuelle de l'arbitre pour lancer les 30s
@@ -2904,6 +2910,7 @@
         startMatch() {
           if (!this.currentMatch) return;
 
+          if (navigator.vibrate) navigator.vibrate([30, 20, 30, 20, 80]);
           this.matchStatus = 'in_progress';
           this.startTimer();
           this.updateScores();
@@ -3065,10 +3072,12 @@
 
           if (this.timerRunning) {
             this.pauseTimer();
+            if (navigator.vibrate) navigator.vibrate(30);
             this.updateControlButtons();
             this.showNotification(window.T('referee.match_paused'));
           } else {
             this.startTimer();
+            if (navigator.vibrate) navigator.vibrate(30);
             this.updateControlButtons();
             this.showNotification(window.T('referee.match_resumed'));
           }
