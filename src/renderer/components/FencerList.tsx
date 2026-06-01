@@ -13,6 +13,7 @@ import { exportFencersToTXT, exportFencersToFFF } from '../../shared/utils/fence
 // pdfExport (jsPDF) chargé à la demande pour alléger le bundle initial
 import { useConfirm } from './ConfirmDialog';
 import { useDebounce } from '../hooks/useDebounce';
+import { MENU_ITEM, SMALL_BTN, W250, DROPDOWN_WRAP } from './fencerList.styles';
 
 type SortableCol = 'ref' | 'lastName' | 'firstName' | 'birthDate' | 'club' | 'ranking' | 'status';
 
@@ -423,7 +424,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
             </button>
           )}
           {onImport && (
-            <div ref={importMenuRef} style={{ position: 'relative', display: 'inline-block' }}>
+            <div ref={importMenuRef} style={DROPDOWN_WRAP}>
               <button
                 className="btn btn-secondary"
                 onClick={() => setImportMenuOpen(o => !o)}
@@ -449,21 +450,21 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                 }}>
                   <button
                     className="btn btn-ghost"
-                    style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 16px', borderRadius: 0 }}
+                    style={MENU_ITEM}
                     onClick={() => { handleImportFencers('xml'); setImportMenuOpen(false); }}
                   >
                     Importer XML (BellePoule)
                   </button>
                   <button
                     className="btn btn-ghost"
-                    style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 16px', borderRadius: 0 }}
+                    style={MENU_ITEM}
                     onClick={() => { handleImportFencers('fff'); setImportMenuOpen(false); }}
                   >
                     Importer liste FFE (.fff)
                   </button>
                   <button
                     className="btn btn-ghost"
-                    style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 16px', borderRadius: 0 }}
+                    style={MENU_ITEM}
                     onClick={() => { handleImportFencers('ranking'); setImportMenuOpen(false); }}
                   >
                     Importer classement FFE
@@ -472,14 +473,14 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                     <>
                       <button
                         className="btn btn-ghost"
-                        style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 16px', borderRadius: 0 }}
+                        style={MENU_ITEM}
                         onClick={() => { handleImportFencersArchive(); setImportMenuOpen(false); }}
                       >
                         Importer tireurs + photos (.bpf)
                       </button>
                       <button
                         className="btn btn-ghost"
-                        style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 16px', borderRadius: 0 }}
+                        style={MENU_ITEM}
                         onClick={() => { handleImportPhotos(); setImportMenuOpen(false); }}
                       >
                         Importer photos (.zip)
@@ -490,7 +491,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
               )}
             </div>
           )}
-          <div ref={colMenuRef} style={{ position: 'relative', display: 'inline-block' }}>
+          <div ref={colMenuRef} style={DROPDOWN_WRAP}>
             <button
               className="btn btn-secondary"
               onClick={() => setColMenuOpen(o => !o)}
@@ -551,7 +552,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
               </div>
             )}
           </div>
-          <div ref={exportMenuRef} style={{ position: 'relative', display: 'inline-block' }}>
+          <div ref={exportMenuRef} style={DROPDOWN_WRAP}>
             <button
               className="btn btn-secondary"
               onClick={() => setExportMenuOpen(o => !o)}
@@ -577,35 +578,35 @@ const FencerListComponent: React.FC<FencerListProps> = ({
               }}>
                 <button
                   className="btn btn-ghost"
-                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 16px', borderRadius: 0 }}
+                  style={MENU_ITEM}
                   onClick={() => { handleExportPDF(); setExportMenuOpen(false); }}
                 >
                   Exporter PDF (appel)
                 </button>
                 <button
                   className="btn btn-ghost"
-                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 16px', borderRadius: 0 }}
+                  style={MENU_ITEM}
                   onClick={() => { handleExportFencers('txt'); setExportMenuOpen(false); }}
                 >
                   Exporter TXT
                 </button>
                 <button
                   className="btn btn-ghost"
-                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 16px', borderRadius: 0 }}
+                  style={MENU_ITEM}
                   onClick={() => { handleExportFencers('fff'); setExportMenuOpen(false); }}
                 >
                   Exporter FFF
                 </button>
                 <button
                   className="btn btn-ghost"
-                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 16px', borderRadius: 0 }}
+                  style={MENU_ITEM}
                   onClick={() => { handleExportFencersArchive(); setExportMenuOpen(false); }}
                 >
                   Exporter tireurs + photos (.bpf)
                 </button>
                 <button
                   className="btn btn-ghost"
-                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 16px', borderRadius: 0 }}
+                  style={MENU_ITEM}
                   onClick={() => { handleExportPhotos(); setExportMenuOpen(false); }}
                 >
                   Exporter photos (.zip)
@@ -723,7 +724,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                 {visibleCols.map(col => (
                   <col key={col.id} style={col.width ? { width: col.width } : undefined} />
                 ))}
-                <col style={{ width: '250px' }} />
+                <col style={W250} />
               </colgroup>
               <thead>
                 <tr>
@@ -762,7 +763,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                   {visibleCols.map(col => (
                     <col key={col.id} style={col.width ? { width: col.width } : undefined} />
                   ))}
-                  <col style={{ width: '250px' }} />
+                  <col style={W250} />
                 </colgroup>
               )}
               {!useVirtual && (
@@ -788,7 +789,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                         {col.label}{sortBy === col.id ? (sortOrder === 'asc' ? ' ▲' : ' ▼') : ''}
                       </th>
                     ))}
-                    <th style={{ width: '250px' }}>Actions</th>
+                    <th style={W250}>Actions</th>
                   </tr>
                 </thead>
               )}
@@ -823,14 +824,14 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                         className="btn btn-sm btn-secondary"
                         onClick={() => setEditingFencer(fencer)}
                         title="Modifier"
-                        style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                        style={SMALL_BTN}
                       >
                         ✏️
                       </button>
                       <button
                         className={`btn btn-sm ${fencer.status === FencerStatus.CHECKED_IN ? 'btn-secondary' : 'btn-primary'}`}
                         onClick={() => onCheckIn(fencer.id)}
-                        style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                        style={SMALL_BTN}
                       >
                         {fencer.status === FencerStatus.CHECKED_IN ? 'Annuler' : 'Pointer'}
                       </button>
@@ -848,7 +849,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                               )
                             }
                             title="Abandonner"
-                            style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                            style={SMALL_BTN}
                           >
                             🚶
                           </button>
@@ -864,7 +865,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                               )
                             }
                             title="Forfait"
-                            style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                            style={SMALL_BTN}
                           >
                             📋
                           </button>
@@ -885,7 +886,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                               )
                             }
                             title="Réactiver"
-                            style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                            style={SMALL_BTN}
                           >
                             ✅
                           </button>
@@ -895,7 +896,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                           className="btn btn-sm btn-danger"
                           onClick={() => handleDeleteFencer(fencer.id)}
                           title="Supprimer"
-                          style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                          style={SMALL_BTN}
                         >
                           🗑️
                         </button>
