@@ -5,7 +5,7 @@
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useVirtualList } from '../../shared/services/performanceService';
-import QRCode from 'qrcode';
+// qrcode chargé à la demande (génération du QR uniquement à l'affichage)
 import { Fencer, FencerStatus } from '../../shared/types';
 import EditFencerModal from './EditFencerModal';
 import { useTranslation } from '../hooks/useTranslation';
@@ -124,7 +124,8 @@ const FencerListComponent: React.FC<FencerListProps> = ({
   // Générer le QR code quand l'URL d'inscription change
   useEffect(() => {
     if (!registerUrl) { setRegisterQRDataUrl(null); return; }
-    QRCode.toDataURL(registerUrl, { width: 220, margin: 1 })
+    import('qrcode')
+      .then(m => m.default.toDataURL(registerUrl, { width: 220, margin: 1 }))
       .then(setRegisterQRDataUrl)
       .catch(() => setRegisterQRDataUrl(null));
   }, [registerUrl]);

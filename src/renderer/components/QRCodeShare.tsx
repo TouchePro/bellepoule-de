@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect , memo} from 'react';
-import QRCode from 'qrcode';
+// qrcode chargé à la demande (génération du QR uniquement à l'affichage)
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { logger, LogCategory } from '@shared/services/logger';
 import { Competition } from '../../shared/types';
@@ -51,6 +51,7 @@ const QRCodeShare_: React.FC<QRCodeShareProps> = ({ competition, onClose, mode: 
       const url = `${info.serverInfo.url}${path}`;
       setShareUrl(url);
 
+      const QRCode = (await import('qrcode')).default;
       const dataUrl = await QRCode.toDataURL(url, { width: 300, margin: 1 });
       setQrCodeUrl(dataUrl);
     } catch (err) {
