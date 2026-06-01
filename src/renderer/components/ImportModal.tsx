@@ -5,6 +5,7 @@
 
 import React, { useState } from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { TD, TD_CENTER, TD_LEFT, LIST_INDENT, TABLE, STICKY_HEAD } from './importModal.styles';
 import { Fencer } from '../../shared/types';
 import {
   parseFFEFile,
@@ -142,7 +143,7 @@ const ImportModal: React.FC<ImportModalProps> = ({
                   }}
                 >
                   <strong>Erreurs:</strong>
-                  <ul style={{ margin: '0.5rem 0 0 1rem', padding: 0 }}>
+                  <ul style={LIST_INDENT}>
                     {rankingResult.errors.map((err, i) => (
                       <li key={i}>{err}</li>
                     ))}
@@ -159,7 +160,7 @@ const ImportModal: React.FC<ImportModalProps> = ({
                 }}
               >
                 <strong>Résultat:</strong>
-                <ul style={{ margin: '0.5rem 0 0 1rem', padding: 0 }}>
+                <ul style={LIST_INDENT}>
                   <li>
                     <span style={{ color: '#059669', fontWeight: 'bold' }}>
                       {rankingResult.updated}
@@ -189,15 +190,15 @@ const ImportModal: React.FC<ImportModalProps> = ({
                     }}
                   >
                     <table
-                      style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}
+                      style={TABLE}
                     >
-                      <thead style={{ position: 'sticky', top: 0, background: 'var(--color-bg)' }}>
+                      <thead style={STICKY_HEAD}>
                         <tr>
-                          <th style={{ padding: '0.5rem', textAlign: 'left' }}>Nom</th>
-                          <th style={{ padding: '0.5rem', textAlign: 'left' }}>Prénom</th>
-                          <th style={{ padding: '0.5rem', textAlign: 'left' }}>Club</th>
-                          <th style={{ padding: '0.5rem', textAlign: 'center' }}>Classement</th>
-                          <th style={{ padding: '0.5rem', textAlign: 'center' }}>Statut</th>
+                          <th style={TD_LEFT}>Nom</th>
+                          <th style={TD_LEFT}>Prénom</th>
+                          <th style={TD_LEFT}>Club</th>
+                          <th style={TD_CENTER}>Classement</th>
+                          <th style={TD_CENTER}>Statut</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -209,15 +210,15 @@ const ImportModal: React.FC<ImportModalProps> = ({
                               borderBottom: '1px solid var(--color-border)',
                             }}
                           >
-                            <td style={{ padding: '0.5rem' }}>{detail.lastName}</td>
-                            <td style={{ padding: '0.5rem' }}>{detail.firstName}</td>
-                            <td style={{ padding: '0.5rem' }}>{detail.club || '-'}</td>
+                            <td style={TD}>{detail.lastName}</td>
+                            <td style={TD}>{detail.firstName}</td>
+                            <td style={TD}>{detail.club || '-'}</td>
                             <td
                               style={{ padding: '0.5rem', textAlign: 'center', fontWeight: 'bold' }}
                             >
                               {detail.ranking}
                             </td>
-                            <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                            <td style={TD_CENTER}>
                               {detail.matched ? (
                                 <span style={{ color: '#059669' }}>✓ Mis à jour</span>
                               ) : (
@@ -246,7 +247,7 @@ const ImportModal: React.FC<ImportModalProps> = ({
               }}
             >
               <strong>Erreurs:</strong>
-              <ul style={{ margin: '0.5rem 0 0 1rem', padding: 0 }}>
+              <ul style={LIST_INDENT}>
                 {result.errors.map((err, i) => (
                   <li key={i}>{err}</li>
                 ))}
@@ -319,15 +320,15 @@ const ImportModal: React.FC<ImportModalProps> = ({
                   overflow: 'auto',
                 }}
               >
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
-                  <thead style={{ position: 'sticky', top: 0, background: 'var(--color-bg)' }}>
+                <table style={TABLE}>
+                  <thead style={STICKY_HEAD}>
                     <tr>
                       <th style={{ padding: '0.5rem', textAlign: 'center', width: '40px' }}>✓</th>
-                      <th style={{ padding: '0.5rem', textAlign: 'left' }}>Nom</th>
-                      <th style={{ padding: '0.5rem', textAlign: 'left' }}>Prénom</th>
-                      <th style={{ padding: '0.5rem', textAlign: 'center' }}>Sexe</th>
-                      <th style={{ padding: '0.5rem', textAlign: 'left' }}>Club</th>
-                      <th style={{ padding: '0.5rem', textAlign: 'center' }}>Classement</th>
+                      <th style={TD_LEFT}>Nom</th>
+                      <th style={TD_LEFT}>Prénom</th>
+                      <th style={TD_CENTER}>Sexe</th>
+                      <th style={TD_LEFT}>Club</th>
+                      <th style={TD_CENTER}>Classement</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -344,7 +345,7 @@ const ImportModal: React.FC<ImportModalProps> = ({
                           borderBottom: '1px solid var(--color-border)',
                         }}
                       >
-                        <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                        <td style={TD_CENTER}>
                           <input
                             type="checkbox"
                             checked={selectedFencers.has(index)}
@@ -354,11 +355,11 @@ const ImportModal: React.FC<ImportModalProps> = ({
                             }}
                           />
                         </td>
-                        <td style={{ padding: '0.5rem' }}>{fencer.lastName}</td>
-                        <td style={{ padding: '0.5rem' }}>{fencer.firstName}</td>
-                        <td style={{ padding: '0.5rem', textAlign: 'center' }}>{fencer.gender}</td>
-                        <td style={{ padding: '0.5rem' }}>{fencer.club || '-'}</td>
-                        <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                        <td style={TD}>{fencer.lastName}</td>
+                        <td style={TD}>{fencer.firstName}</td>
+                        <td style={TD_CENTER}>{fencer.gender}</td>
+                        <td style={TD}>{fencer.club || '-'}</td>
+                        <td style={TD_CENTER}>
                           {fencer.ranking || '-'}
                         </td>
                       </tr>
