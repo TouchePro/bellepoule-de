@@ -7,6 +7,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Fencer, Pool } from '../../shared/types';
 import { useToast } from './Toast';
+import { useDebounce } from '../hooks/useDebounce';
 
 interface AddFencerToPoolModalProps {
   pool: Pool;
@@ -29,8 +30,10 @@ const AddFencerToPoolModalComponent: React.FC<AddFencerToPoolModalProps> = ({
   const [search, setSearch] = useState('');
   const [selectedFencer, setSelectedFencer] = useState<Fencer | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
 
   useEffect(() => {
+    setIsFetching(true);
     Promise.all([
       window.electronAPI.db.getFencersByCompetition(competitionId),
       window.electronAPI.db.getPhasesByCompetition(competitionId).then(phases =>
@@ -47,12 +50,13 @@ const AddFencerToPoolModalComponent: React.FC<AddFencerToPoolModalProps> = ({
         for (const f of arr as Fencer[]) ids.add(f.id);
       }
       setAllPoolFencerIds(ids);
-    });
+    }).finally(() => setIsFetching(false));
   }, [competitionId]);
 
+  const debouncedSearch = useDebounce(search, 250);
   const available = useMemo(() => {
     const poolFencerIds = new Set(pool.fencers.map(f => f.id));
-    const q = search.toLowerCase();
+    const q = debouncedSearch.toLowerCase();
     return allFencers.filter(
       f =>
         !poolFencerIds.has(f.id) &&
@@ -60,7 +64,7 @@ const AddFencerToPoolModalComponent: React.FC<AddFencerToPoolModalProps> = ({
         (`${f.firstName} ${f.lastName}`.toLowerCase().includes(q) ||
           f.lastName.toLowerCase().includes(q))
     );
-  }, [allFencers, allPoolFencerIds, pool.fencers, search]);
+  }, [allFencers, allPoolFencerIds, pool.fencers, debouncedSearch]);
 
   const handleAdd = async () => {
     if (!selectedFencer) return;
@@ -84,9 +88,16 @@ const AddFencerToPoolModalComponent: React.FC<AddFencerToPoolModalProps> = ({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '420px' }}>
+      <div
+        className="modal"
+        onClick={e => e.stopPropagation()}
+        style={{ maxWidth: '420px' }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-fencer-title"
+      >
         <div className="modal-header">
-          <h2>Ajouter un tireur – Poule {pool.number}</h2>
+          <h2 id="add-fencer-title">Ajouter un tireur – Poule {pool.number}</h2>
           <button className="btn-close" onClick={onClose}>&times;</button>
         </div>
 
@@ -108,6 +119,7 @@ const AddFencerToPoolModalComponent: React.FC<AddFencerToPoolModalProps> = ({
           <input
             type="text"
             placeholder="Rechercher par nom…"
+            aria-label="Rechercher un tireur par nom"
             value={search}
             onChange={e => setSearch(e.target.value)}
             autoFocus
@@ -130,7 +142,18 @@ const AddFencerToPoolModalComponent: React.FC<AddFencerToPoolModalProps> = ({
               borderRadius: '6px',
             }}
           >
-            {available.length === 0 ? (
+            {isFetching ? (
+              <div
+                style={{
+                  padding: '1rem',
+                  textAlign: 'center',
+                  color: '#6b7280',
+                  fontSize: '0.875rem',
+                }}
+              >
+                Chargement des tireurs…
+              </div>
+            ) : available.length === 0 ? (
               <div
                 style={{
                   padding: '1rem',

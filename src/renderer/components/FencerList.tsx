@@ -10,8 +10,9 @@ import { Fencer, FencerStatus } from '../../shared/types';
 import EditFencerModal from './EditFencerModal';
 import { useTranslation } from '../hooks/useTranslation';
 import { exportFencersToTXT, exportFencersToFFF } from '../../shared/utils/fencerExport';
-import { exportAppelToPDF } from '../../shared/utils/pdfExport';
+// pdfExport (jsPDF) chargé à la demande pour alléger le bundle initial
 import { useConfirm } from './ConfirmDialog';
+import { useDebounce } from '../hooks/useDebounce';
 
 type SortableCol = 'ref' | 'lastName' | 'firstName' | 'birthDate' | 'club' | 'ranking' | 'status';
 
@@ -158,11 +159,12 @@ const FencerListComponent: React.FC<FencerListProps> = ({
   };
   const handleColDragEnd = () => { setDragCol(null); setDragOverCol(null); };
 
+  const debouncedSearchTerm = useDebounce(searchTerm, 250);
   const filteredFencers = useMemo(() => {
     const dir = sortOrder === 'asc' ? 1 : -1;
+    const search = debouncedSearchTerm.toLowerCase();
     return fencers
       .filter(f => {
-        const search = searchTerm.toLowerCase();
         return (
           f.lastName.toLowerCase().includes(search) ||
           f.firstName.toLowerCase().includes(search) ||
@@ -181,7 +183,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
           default:          return 0;
         }
       });
-  }, [fencers, searchTerm, sortBy, sortOrder]);
+  }, [fencers, debouncedSearchTerm, sortBy, sortOrder]);
 
   const VIRTUAL_THRESHOLD = 50;
   const ROW_HEIGHT = 52;
@@ -375,6 +377,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
   }, [filteredFencers, visibleColIds, onAppelStateChange]);
 
   const handleExportPDF = async () => {
+    const { exportAppelToPDF } = await import('../../shared/utils/pdfExport');
     await exportAppelToPDF(filteredFencers, visibleCols.map(c => c.id));
   };
 

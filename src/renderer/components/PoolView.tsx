@@ -11,7 +11,7 @@ import { Arena } from '../../shared/types/remote';
 import { logger, LogCategory } from '@shared/services/logger';
 import { useToast } from './Toast';
 import { useConfirm } from './ConfirmDialog';
-import { exportPoolToPDF } from '../../shared/utils/pdfExport';
+// pdfExport (jsPDF) chargé à la demande pour alléger le bundle initial
 import { useColumnVisibility, POOL_COLUMNS, ColumnId } from '../hooks/useColumnVisibility';
 import { usePdfTemplateStore } from '../../features/pdfTemplates/hooks/usePdfTemplateStore';
 import { useHistory } from '../hooks/useHistory';
@@ -95,6 +95,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   const [matchArenaOverrides, setMatchArenaOverrides] = useState<Map<string, number>>(new Map());
   const [showRefereeModal, setShowRefereeModal] = useState(false);
   const [competitionReferees, setCompetitionReferees] = useState<Referee[]>([]);
+  const [isLoadingReferees, setIsLoadingReferees] = useState(false);
   const [assignedReferee, setAssignedReferee] = useState<Referee | null>(pool.referees?.[0] ?? null);
 
   const defaultArena = (pool.strip != null && pool.strip > 0 ? pool.strip : pool.number) ?? 1;
@@ -120,13 +121,12 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
 
 
   const openRefereeModal = useCallback(() => {
+    setShowRefereeModal(true);
     if (competitionId) {
-      window.electronAPI.db.getRefereesByCompetition(competitionId).then(refs => {
-        setCompetitionReferees(refs);
-        setShowRefereeModal(true);
-      });
-    } else {
-      setShowRefereeModal(true);
+      setIsLoadingReferees(true);
+      window.electronAPI.db.getRefereesByCompetition(competitionId)
+        .then(refs => setCompetitionReferees(refs))
+        .finally(() => setIsLoadingReferees(false));
     }
   }, [competitionId]);
 
@@ -195,6 +195,12 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
 
   // Raccourcis clavier
 
+  // Clé de statut stable : recalculée seulement quand un statut change réellement
+  const matchesStatusKey = useMemo(
+    () => pool.matches.map(m => m.status).join(','),
+    [pool.matches]
+  );
+
   const orderedMatches = useMemo(() => {
     const cancelled = pool.matches
       .map((m, idx) => ({ match: m, index: idx }))
@@ -257,7 +263,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     }
 
     return { pending: ordered, finished, cancelled };
-  }, [pool.matches.length, pool.matches.map(m => m.status).join(',')]);
+  }, [pool.matches, matchesStatusKey]);
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ne pas interférer si un input natif est actif (sauf ceux du modal)
@@ -572,6 +578,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
       const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
       const sigsArray = await window.electronAPI.db.getPoolSignatures(pool.id);
       const signatures = Object.fromEntries(sigsArray.map(s => [s.fencerId, s.signatureData]));
+      const { exportPoolToPDF } = await import('../../shared/utils/pdfExport');
       await exportPoolToPDF(
         pool,
         {
@@ -1316,6 +1323,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               cursor: canUndo ? 'pointer' : 'not-allowed',
             }}
             title="Annuler (Ctrl+Z)"
+            aria-label="Annuler la dernière action"
           >
             ↩
           </button>
@@ -1332,6 +1340,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               cursor: canRedo ? 'pointer' : 'not-allowed',
             }}
             title="Rétablir (Ctrl+Y)"
+            aria-label="Rétablir l'action annulée"
           >
             ↪
           </button>
@@ -1553,9 +1562,16 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     )}
     {showRefereeModal && (
       <div className="modal-overlay" onClick={() => setShowRefereeModal(false)}>
-        <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+        <div
+          className="modal"
+          onClick={e => e.stopPropagation()}
+          style={{ maxWidth: '400px' }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="referee-modal-title"
+        >
           <div className="modal-header">
-            <h3 className="modal-title">Assigner un arbitre</h3>
+            <h3 className="modal-title" id="referee-modal-title">Assigner un arbitre</h3>
             <button className="btn-close" onClick={() => setShowRefereeModal(false)}>&times;</button>
           </div>
           <div className="modal-body" style={{ padding: '1.5rem' }}>
@@ -1570,12 +1586,17 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               >
                 ✕ Aucun arbitre
               </button>
-              {competitionReferees.length === 0 && (
+              {isLoadingReferees && (
+                <p style={{ color: '#9ca3af', fontSize: '0.875rem', textAlign: 'center' }}>
+                  Chargement des arbitres…
+                </p>
+              )}
+              {!isLoadingReferees && competitionReferees.length === 0 && (
                 <p style={{ color: '#9ca3af', fontSize: '0.875rem', textAlign: 'center' }}>
                   Aucun arbitre enregistré pour cette compétition
                 </p>
               )}
-              {competitionReferees.map(ref => (
+              {!isLoadingReferees && competitionReferees.map(ref => (
                 <button
                   key={ref.id}
                   className={`btn ${assignedReferee?.id === ref.id ? 'btn-primary' : 'btn-secondary'}`}
