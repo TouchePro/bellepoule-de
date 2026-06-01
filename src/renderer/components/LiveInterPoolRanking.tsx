@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { Pool, PoolRanking, Weapon, MatchStatus } from '../../shared/types';
 import { calculateOverallRanking, calculateOverallRankingQuest } from '../../shared/utils/poolCalculations';
 import { formatRatio, formatIndex } from '../../shared/utils/poolCalculations';
@@ -26,6 +27,7 @@ export const LiveInterPoolRanking: React.FC<LiveInterPoolRankingProps> = ({
   isLaserSabre,
   onClose,
 }) => {
+  const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
   const [ranking, setRanking] = useState<RankedEntry[]>([]);
   const [lastUpdate, setLastUpdate] = useState(new Date());
 
@@ -66,9 +68,12 @@ export const LiveInterPoolRanking: React.FC<LiveInterPoolRankingProps> = ({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
+        ref={modalRef}
         className="modal"
         onClick={e => e.stopPropagation()}
         style={{ maxWidth: '900px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}
+        role="dialog"
+        aria-modal="true"
       >
         <div className="modal-header" style={{ flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>

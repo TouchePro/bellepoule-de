@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useMemo , memo} from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { Fencer, Pool } from '../../shared/types';
 import { TableauMatch } from './tableau/tableauTypes';
 import { FencerStatsCalculator } from '../../shared/utils/fencerStatsCalculator';
@@ -60,6 +61,7 @@ const FencerComparison_: React.FC<FencerComparisonProps> = ({
   tableauMatches,
   onClose,
 }) => {
+  const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
   const [fencer1Id, setFencer1Id] = useState<string>('');
   const [fencer2Id, setFencer2Id] = useState<string>('');
 
@@ -185,7 +187,7 @@ const FencerComparison_: React.FC<FencerComparisonProps> = ({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal modal--lg" onClick={e => e.stopPropagation()}>
+      <div ref={modalRef} className="modal modal--lg" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
         <div className="modal__header">
           <h2 className="modal__title">⚔️ Comparaison Head-to-Head</h2>
           <button className="modal__close" onClick={onClose}>

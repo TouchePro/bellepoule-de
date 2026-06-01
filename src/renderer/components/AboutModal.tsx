@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import type { VersionInfo } from '../../shared/types/preload';
 
 interface Props {
@@ -206,6 +207,7 @@ const ANIM_ITER = '5';
 const ANIM_EASE = 'ease-in-out';
 
 const AboutModal: React.FC<Props> = ({ onClose }) => {
+  const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
   const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
   const [easterActive, setEasterActive] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -241,7 +243,7 @@ const AboutModal: React.FC<Props> = ({ onClose }) => {
 
   return (
     <div style={styles.overlay} onClick={handleOverlayClick}>
-      <div style={styles.modal}>
+      <div ref={modalRef} style={styles.modal} role="dialog" aria-modal="true">
         <button style={styles.closeBtn} onClick={onClose} title="Fermer">✕</button>
 
         <div style={styles.title}>BellePoule Modern</div>

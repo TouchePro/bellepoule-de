@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useToast } from './Toast';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface ReportIssueModalProps {
   onClose: () => void;
@@ -18,6 +19,7 @@ interface VersionInfo {
 }
 
 const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ onClose }) => {
+  const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
   const { showToast } = useToast();
   const [issueType, setIssueType] = useState<'bug' | 'feature'>('bug');
   const [title, setTitle] = useState('');
@@ -111,7 +113,7 @@ _Issue créée automatiquement depuis BellePoule Modern_`;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+      <div ref={modalRef} className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }} role="dialog" aria-modal="true">
         <div className="modal-header">
           <h2>📝 Signaler un bug / Suggestion</h2>
           <button className="btn-close" onClick={onClose}>
