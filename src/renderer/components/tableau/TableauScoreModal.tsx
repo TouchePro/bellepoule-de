@@ -69,6 +69,8 @@ const TableauScoreModalComponent: React.FC<TableauScoreModalProps> = ({
           minHeight: '400px',
         }}
         onClick={e => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
       >
         <div className="modal-header" style={{ cursor: 'move' }}>
           <h3 className="modal-title">{getRoundName(match.round)} - Saisie rapide</h3>

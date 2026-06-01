@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useRef } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { Fencer, Pool, MatchStatus } from '../../shared/types';
 
 interface ChangePoolModalProps {
@@ -22,6 +23,7 @@ const ChangePoolModalComponent: React.FC<ChangePoolModalProps> = ({
   onMove,
   onClose,
 }) => {
+  const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
   const [selectedPoolIndex, setSelectedPoolIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const dragRef = useRef<boolean>(false);
@@ -47,7 +49,7 @@ const ChangePoolModalComponent: React.FC<ChangePoolModalProps> = ({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px' }}>
+      <div ref={modalRef} className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px' }} role="dialog" aria-modal="true">
         <div className="modal-header">
           <h2>Changer de poule</h2>
           <button className="btn-close" onClick={onClose}>

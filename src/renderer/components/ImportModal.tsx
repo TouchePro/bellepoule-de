@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { Fencer } from '../../shared/types';
 import {
   parseFFEFile,
@@ -33,6 +34,7 @@ const ImportModal: React.FC<ImportModalProps> = ({
   onImportRanking,
   onClose,
 }) => {
+  const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [rankingResult, setRankingResult] = useState<RankingImportResult | null>(null);
   const [selectedFencers, setSelectedFencers] = useState<Set<number>>(new Set());
@@ -98,9 +100,12 @@ const ImportModal: React.FC<ImportModalProps> = ({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
+        ref={modalRef}
         className="modal"
         onClick={e => e.stopPropagation()}
         style={{ maxWidth: '800px', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}
+        role="dialog"
+        aria-modal="true"
       >
         <div className="modal-header">
           <h2>{isRankingImport ? 'Importer un classement' : 'Importer des tireurs'}</h2>

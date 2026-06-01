@@ -37,33 +37,34 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  const staticCommands: Command[] = [
-    {
-      id: 'new-competition',
-      label: t('menu.new_competition'),
-      icon: '➕',
-      action: () => { onClose(); onNewCompetition(); },
-      keywords: ['new', 'nouveau', 'creer', 'create'],
-    },
-    {
-      id: 'settings',
-      label: t('settings.title'),
-      icon: '⚙️',
-      action: () => { onClose(); onOpenSettings(); },
-      keywords: ['settings', 'parametres', 'config', 'theme', 'langue'],
-    },
-  ];
-
-  const competitionCommands: Command[] = competitions.map(c => ({
-    id: `comp-${c.id}`,
-    label: c.title,
-    description: `${c.weapon} · ${c.category} · ${c.fencers.length} tireurs`,
-    icon: '🏆',
-    action: () => { onClose(); onSelectCompetition(c.id); },
-    keywords: [c.title.toLowerCase(), c.weapon, c.category],
-  }));
-
-  const allCommands = [...staticCommands, ...competitionCommands];
+  // Liste des commandes mémoïsée : ne se reconstruit que si les entrées changent
+  const allCommands = useMemo<Command[]>(() => {
+    const staticCommands: Command[] = [
+      {
+        id: 'new-competition',
+        label: t('menu.new_competition'),
+        icon: '➕',
+        action: () => { onClose(); onNewCompetition(); },
+        keywords: ['new', 'nouveau', 'creer', 'create'],
+      },
+      {
+        id: 'settings',
+        label: t('settings.title'),
+        icon: '⚙️',
+        action: () => { onClose(); onOpenSettings(); },
+        keywords: ['settings', 'parametres', 'config', 'theme', 'langue'],
+      },
+    ];
+    const competitionCommands: Command[] = competitions.map(c => ({
+      id: `comp-${c.id}`,
+      label: c.title,
+      description: `${c.weapon} · ${c.category} · ${c.fencers.length} tireurs`,
+      icon: '🏆',
+      action: () => { onClose(); onSelectCompetition(c.id); },
+      keywords: [c.title.toLowerCase(), c.weapon, c.category],
+    }));
+    return [...staticCommands, ...competitionCommands];
+  }, [competitions, t, onClose, onNewCompetition, onOpenSettings, onSelectCompetition]);
 
   // Mémoïsé pour éviter le recalcul à chaque changement de selectedIndex
   const filtered = useMemo(() => {
@@ -75,7 +76,6 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
         cmd.description?.toLowerCase().includes(q) ||
         cmd.keywords?.some(k => k.includes(q))
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, allCommands]);
 
   useEffect(() => {
