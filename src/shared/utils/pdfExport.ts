@@ -540,7 +540,8 @@ export interface TableauMatchForPDF {
   arena?: number | null;
 }
 
-export const MAX_MATCHES_PER_PAGE_TABLEAU = 5;
+export { MAX_MATCHES_PER_PAGE_TABLEAU } from './pdfConstants';
+import { MAX_MATCHES_PER_PAGE_TABLEAU } from './pdfConstants';
 
 function getTableauRoundName(round: number): string {
   const names: Record<number, string> = {
