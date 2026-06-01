@@ -6,6 +6,16 @@
 import React, { useState } from 'react';
 import { Match, Fencer, FencerStatus } from '../../../shared/types';
 import { Arena } from '../../../shared/types/remote';
+import {
+  ROW_BETWEEN,
+  CELL_CENTER,
+  SUB_TEXT,
+  VS_SEP,
+  NAME_BIG,
+  COL_GAP,
+  NUM_BADGE,
+  SECTION_TITLE,
+} from './poolMatchList.styles';
 
 interface OrderedMatchEntry {
   match: Match;
@@ -179,9 +189,9 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
                 <span>✕ Match non disputé</span>
               </div>
               <div
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                style={ROW_BETWEEN}
               >
-                <div style={{ flex: 1, textAlign: 'center' }}>
+                <div style={CELL_CENTER}>
                   <div
                     style={{
                       fontSize: '1.5rem',
@@ -192,14 +202,14 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
                     {nextMatch.match.fencerA?.lastName}
                     {fencerAAbandoned && ' ✕'}
                   </div>
-                  <div style={{ fontSize: '0.875rem', opacity: 0.8 }}>
+                  <div style={SUB_TEXT}>
                     {nextMatch.match.fencerA?.firstName}
                   </div>
                 </div>
-                <div style={{ padding: '0 1rem', fontSize: '1.25rem', fontWeight: '600' }}>
+                <div style={VS_SEP}>
                   vs
                 </div>
-                <div style={{ flex: 1, textAlign: 'center' }}>
+                <div style={CELL_CENTER}>
                   <div
                     style={{
                       fontSize: '1.5rem',
@@ -210,7 +220,7 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
                     {nextMatch.match.fencerB?.lastName}
                     {fencerBAbandoned && ' ✕'}
                   </div>
-                  <div style={{ fontSize: '0.875rem', opacity: 0.8 }}>
+                  <div style={SUB_TEXT}>
                     {nextMatch.match.fencerB?.firstName}
                   </div>
                 </div>
@@ -252,22 +262,22 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
               />
             </div>
             <div
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+              style={ROW_BETWEEN}
             >
-              <div style={{ flex: 1, textAlign: 'center' }}>
-                <div style={{ fontSize: '1.5rem', fontWeight: '700' }}>
+              <div style={CELL_CENTER}>
+                <div style={NAME_BIG}>
                   {orderedMatches.pending[0].match.fencerA?.lastName}
                 </div>
-                <div style={{ fontSize: '0.875rem', opacity: 0.8 }}>
+                <div style={SUB_TEXT}>
                   {orderedMatches.pending[0].match.fencerA?.firstName}
                 </div>
               </div>
-              <div style={{ padding: '0 1rem', fontSize: '1.25rem', fontWeight: '600' }}>VS</div>
-              <div style={{ flex: 1, textAlign: 'center' }}>
-                <div style={{ fontSize: '1.5rem', fontWeight: '700' }}>
+              <div style={VS_SEP}>VS</div>
+              <div style={CELL_CENTER}>
+                <div style={NAME_BIG}>
                   {orderedMatches.pending[0].match.fencerB?.lastName}
                 </div>
-                <div style={{ fontSize: '0.875rem', opacity: 0.8 }}>
+                <div style={SUB_TEXT}>
                   {orderedMatches.pending[0].match.fencerB?.firstName}
                 </div>
               </div>
@@ -306,7 +316,7 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
         >
           Matches à venir ({orderedMatches.pending.length - 1})
         </h4>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div style={COL_GAP}>
           {orderedMatches.pending.slice(1).map(({ match, index }, i) => {
             const fencerAAbandoned =
               match.fencerA?.status === FencerStatus.ABANDONED ||
@@ -335,7 +345,7 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
                   gap: '0.5rem',
                 }}
               >
-                <span style={{ color: '#9ca3af', fontSize: '0.875rem', minWidth: '30px' }}>
+                <span style={NUM_BADGE}>
                   #{i + 2}
                 </span>
                 <span
@@ -392,7 +402,7 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
         >
           Matches terminés ({orderedMatches.finished.length})
         </h4>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div style={COL_GAP}>
           {orderedMatches.finished.map(({ match, index }) => {
             const fencerAAbandoned =
               match.fencerA?.status === FencerStatus.ABANDONED ||
@@ -531,10 +541,10 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
     {/* Matches annulés */}
     {orderedMatches.cancelled.length > 0 && (
       <div style={{ marginBottom: '1.5rem' }}>
-        <h4 style={{ fontSize: '0.875rem', fontWeight: '600', marginBottom: '0.5rem', color: '#6b7280' }}>
+        <h4 style={SECTION_TITLE}>
           Matches annulés ({orderedMatches.cancelled.length})
         </h4>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div style={COL_GAP}>
           {orderedMatches.cancelled.map(({ match, index }) => (
             <div
               key={index}
