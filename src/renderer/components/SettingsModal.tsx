@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from '../hooks/useTranslation';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { HINT, SECTION_DIVIDER, BOLD, SMALL_BTN } from './settingsModal.styles';
 import type { Language } from '../contexts/TranslationContext';
 import LanguageSelector from './LanguageSelector';
 // Chargé à la demande : embarque jsPDF, lourd pour le bundle initial
@@ -251,7 +252,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
           {/* Logo organisateur */}
           <div className="form-group">
             <label>Logo organisateur</label>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted, #6b7280)', marginBottom: '0.5rem' }}>
+            <p style={HINT}>
               Affiché en haut à gauche des PDF exportés et dans le mode kiosque.
             </p>
             <div
@@ -305,9 +306,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
             )}
           </div>
           {/* PDF Templates */}
-          <div className="form-group" style={{ marginTop: '1rem', borderTop: '1px solid var(--border, #e5e7eb)', paddingTop: '1rem' }}>
-            <label style={{ fontWeight: 600 }}>Exports PDF</label>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted, #6b7280)', marginBottom: '0.5rem' }}>
+          <div className="form-group" style={SECTION_DIVIDER}>
+            <label style={BOLD}>Exports PDF</label>
+            <p style={HINT}>
               Personnalisez l'apparence de chaque type d'export PDF.
             </p>
             <button
@@ -320,9 +321,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
           </div>
 
           {/* Journal des scores */}
-          <div className="form-group" style={{ marginTop: '1rem', borderTop: '1px solid var(--border, #e5e7eb)', paddingTop: '1rem' }}>
-            <label style={{ fontWeight: 600 }}>Journal des scores</label>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted, #6b7280)', marginBottom: '0.5rem' }}>
+          <div className="form-group" style={SECTION_DIVIDER}>
+            <label style={BOLD}>Journal des scores</label>
+            <p style={HINT}>
               Active l'onglet "Historique des scores" dans la vue compétition.
             </p>
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
@@ -336,9 +337,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
           </div>
 
           {/* Notifications webhook */}
-          <div className="form-group" style={{ marginTop: '1rem', borderTop: '1px solid var(--border, #e5e7eb)', paddingTop: '1rem' }}>
-            <label style={{ fontWeight: 600 }}>Notifications webhook</label>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted, #6b7280)', marginBottom: '0.5rem' }}>
+          <div className="form-group" style={SECTION_DIVIDER}>
+            <label style={BOLD}>Notifications webhook</label>
+            <p style={HINT}>
               URL Discord / Slack / personnalisée (HTTPS uniquement).
             </p>
             <input
@@ -352,7 +353,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
               <button
                 className="btn btn-secondary"
-                style={{ fontSize: '0.8rem', padding: '0.25rem 0.75rem' }}
+                style={SMALL_BTN}
                 onClick={handleTestWebhook}
                 disabled={!webhookUrl.trim() || webhookTestStatus === 'testing'}
               >
@@ -361,7 +362,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
               {webhookUrl && (
                 <button
                   className="btn btn-secondary"
-                  style={{ fontSize: '0.8rem', padding: '0.25rem 0.75rem' }}
+                  style={SMALL_BTN}
                   onClick={() => handleWebhookUrlChange('')}
                 >
                   Supprimer
