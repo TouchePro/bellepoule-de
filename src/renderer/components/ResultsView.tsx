@@ -9,7 +9,7 @@ import { Fencer, PoolRanking, Competition, FencerStatus } from '../../shared/typ
 import type { Pool } from '../../shared/types';
 import { useToast } from './Toast';
 import { exportResultsXMLFFE } from '../../shared/utils/multiFormatExport';
-import { exportResultsToPDF, exportFullCompetitionPDF } from '../../shared/utils/pdfExport';
+// pdfExport (jsPDF) chargé à la demande pour alléger le bundle initial
 import type { TableauMatchForPDF, FinalResultForPDF } from '../../shared/utils/pdfExport';
 import { usePdfTemplateStore } from '../../features/pdfTemplates/hooks/usePdfTemplateStore';
 import type { ConsolationBracket } from './tableau/tableauTypes';
@@ -166,6 +166,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
   const exportPDF = async () => {
     try {
       const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
+      const { exportResultsToPDF } = await import('../../shared/utils/pdfExport');
       await exportResultsToPDF(
         resultsToDisplay,
         `Résultats — ${competition.title}`,
@@ -231,6 +232,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
         }, 'poules', []);
       }
 
+      const { exportFullCompetitionPDF } = await import('../../shared/utils/pdfExport');
       await exportFullCompetitionPDF({
         fencers: effectiveFencers,
         appelVisibleColumns,
