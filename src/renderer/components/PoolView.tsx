@@ -21,6 +21,19 @@ import PoolMatchList from './pool/PoolMatchList';
 import Confetti from './Confetti';
 import AddFencerToPoolModal from './AddFencerToPoolModal';
 import { MatchAuditLog } from './MatchAuditLog';
+import {
+  TOOLBAR_BTN,
+  ICON_BTN,
+  SPECIAL_BTN,
+  ROW_BETWEEN,
+  MATCH_LABEL,
+  MATCH_CENTER,
+  COL_GAP,
+  REF_EMPTY,
+  REF_BTN,
+  FENCER_NAME,
+  NEXT_MATCH_BOX,
+} from './poolView.styles';
 
 interface PoolViewProps {
   pool: Pool;
@@ -920,21 +933,21 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               <button
                 className="btn btn-warning"
                 onClick={() => handleSpecialStatus('abandon')}
-                style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
+                style={SPECIAL_BTN}
               >
                 🚴 Abandon
               </button>
               <button
                 className="btn btn-warning"
                 onClick={() => handleSpecialStatus('forfait')}
-                style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
+                style={SPECIAL_BTN}
               >
                 📋 Forfait
               </button>
               <button
                 className="btn btn-danger"
                 onClick={() => handleSpecialStatus('exclusion')}
-                style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
+                style={SPECIAL_BTN}
               >
                 🚫 Exclusion
               </button>
@@ -951,7 +964,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                     setVictoryA(false);
                     setVictoryB(false);
                   }}
-                  style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
+                  style={SPECIAL_BTN}
                 >
                   ⏸ Annuler match
                 </button>
@@ -1017,7 +1030,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           </div>
           <div className="modal-body">
             <p style={{ marginTop: 0, color: '#6b7280', fontSize: '0.875rem' }}>{statusHint}</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div style={COL_GAP}>
               <button
                 type="button"
                 className="btn btn-warning"
@@ -1136,29 +1149,12 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
 
     if (isAbandonMatch) {
       return (
-        <div
-          style={{
-            background: '#6b7280',
-            borderRadius: '8px',
-            padding: '1rem',
-            marginTop: '1rem',
-            color: 'white',
-            opacity: 0.7,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', opacity: 0.8 }}>
+        <div style={{ ...NEXT_MATCH_BOX, background: '#6b7280', opacity: 0.7 }}>
+          <div style={ROW_BETWEEN}>
+            <div style={MATCH_LABEL}>
               ✕ Match non disputé
             </div>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-                flex: 1,
-                justifyContent: 'center',
-              }}
-            >
+            <div style={MATCH_CENTER}>
               <span
                 style={{
                   fontWeight: '600',
@@ -1185,34 +1181,18 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     }
 
     return (
-      <div
-        style={{
-          background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-          borderRadius: '8px',
-          padding: '1rem',
-          marginTop: '1rem',
-          color: 'white',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', opacity: 0.8 }}>
+      <div style={{ ...NEXT_MATCH_BOX, background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' }}>
+        <div style={ROW_BETWEEN}>
+          <div style={MATCH_LABEL}>
             ⚔️ Prochain match
           </div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem',
-              flex: 1,
-              justifyContent: 'center',
-            }}
-          >
-            <span style={{ fontWeight: '600' }}>
+          <div style={MATCH_CENTER}>
+            <span style={FENCER_NAME}>
               {nextMatch.match.fencerA?.lastName} {nextMatch.match.fencerA?.firstName?.charAt(0)}.
               {nextMatch.match.fencerA?.ranking && ` #${nextMatch.match.fencerA.ranking}`}
             </span>
             <span style={{ opacity: 0.7 }}>vs</span>
-            <span style={{ fontWeight: '600' }}>
+            <span style={FENCER_NAME}>
               {nextMatch.match.fencerB?.lastName} {nextMatch.match.fencerB?.firstName?.charAt(0)}.
               {nextMatch.match.fencerB?.ranking && ` #${nextMatch.match.fencerB.ranking}`}
             </span>
@@ -1261,7 +1241,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
       )}
       <div
         className="card-header"
-        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+        style={ROW_BETWEEN}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <span>Poule {pool.number}</span>
@@ -1318,12 +1298,9 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
             onClick={undo}
             disabled={!canUndo}
             style={{
-              padding: '0.375rem 0.6rem',
-              fontSize: '0.8rem',
+              ...ICON_BTN,
               background: canUndo ? '#6b7280' : '#e5e7eb',
               color: canUndo ? 'white' : '#9ca3af',
-              border: 'none',
-              borderRadius: '4px',
               cursor: canUndo ? 'pointer' : 'not-allowed',
             }}
             title="Annuler (Ctrl+Z)"
@@ -1335,12 +1312,9 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
             onClick={redo}
             disabled={!canRedo}
             style={{
-              padding: '0.375rem 0.6rem',
-              fontSize: '0.8rem',
+              ...ICON_BTN,
               background: canRedo ? '#6b7280' : '#e5e7eb',
               color: canRedo ? 'white' : '#9ca3af',
-              border: 'none',
-              borderRadius: '4px',
               cursor: canRedo ? 'pointer' : 'not-allowed',
             }}
             title="Rétablir (Ctrl+Y)"
@@ -1350,30 +1324,14 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           </button>
           <button
             onClick={handleAutoFillScores}
-            style={{
-              padding: '0.375rem 0.75rem',
-              fontSize: '0.75rem',
-              background: '#f59e0b',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
+            style={{ ...TOOLBAR_BTN, background: '#f59e0b', color: 'white' }}
             title="Remplir automatiquement les scores (test)"
           >
             🎲 Auto
           </button>
           <button
             onClick={handleExportPDF}
-            style={{
-              padding: '0.375rem 0.75rem',
-              fontSize: '0.75rem',
-              background: '#10b981',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
+            style={{ ...TOOLBAR_BTN, background: '#10b981', color: 'white' }}
             title="Exporter la pôle en PDF"
           >
             📄 PDF
@@ -1388,15 +1346,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                   window.open(url, '_blank');
                 }
               }}
-              style={{
-                padding: '0.375rem 0.75rem',
-                fontSize: '0.75rem',
-                background: '#6366f1',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-              }}
+              style={{ ...TOOLBAR_BTN, background: '#6366f1', color: 'white' }}
               title={`Page signatures — arène ${defaultArena}`}
             >
               ✍️ Signature
@@ -1405,15 +1355,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           {competitionId && (
             <button
               onClick={() => setShowAddFencerModal(true)}
-              style={{
-                padding: '0.375rem 0.75rem',
-                fontSize: '0.75rem',
-                background: '#e5e7eb',
-                color: '#374151',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-              }}
+              style={{ ...TOOLBAR_BTN, background: '#e5e7eb', color: '#374151' }}
               title="Ajouter un tireur à cette poule"
             >
               ➕ Tireur
@@ -1423,13 +1365,9 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
             <button
               onClick={() => setShowColumnMenu(!showColumnMenu)}
               style={{
-                padding: '0.375rem 0.75rem',
-                fontSize: '0.75rem',
+                ...TOOLBAR_BTN,
                 background: showColumnMenu ? '#6b7280' : '#e5e7eb',
                 color: showColumnMenu ? 'white' : '#374151',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
               }}
               title="Afficher/masquer les colonnes"
             >
@@ -1493,13 +1431,10 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
             <button
               onClick={() => setViewMode('grid')}
               style={{
-                padding: '0.375rem 0.75rem',
-                fontSize: '0.75rem',
+                ...TOOLBAR_BTN,
                 background: viewMode === 'grid' ? '#3b82f6' : '#e5e7eb',
                 color: viewMode === 'grid' ? 'white' : '#374151',
-                border: 'none',
                 borderRadius: '4px 0 0 4px',
-                cursor: 'pointer',
               }}
             >
               📊 Tableau
@@ -1507,13 +1442,10 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
             <button
               onClick={() => setViewMode('matches')}
               style={{
-                padding: '0.375rem 0.75rem',
-                fontSize: '0.75rem',
+                ...TOOLBAR_BTN,
                 background: viewMode === 'matches' ? '#3b82f6' : '#e5e7eb',
                 color: viewMode === 'matches' ? 'white' : '#374151',
-                border: 'none',
                 borderRadius: '0 4px 4px 0',
-                cursor: 'pointer',
               }}
             >
               ⚔️ Matches
@@ -1583,21 +1515,21 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
             <p style={{ marginBottom: '1rem', color: '#6b7280', fontSize: '0.875rem' }}>
               Sélectionnez l'arbitre pour la poule {pool.number} :
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div style={COL_GAP}>
               <button
                 className={`btn ${!assignedReferee ? 'btn-primary' : 'btn-secondary'}`}
                 onClick={() => handleAssignReferee(null)}
-                style={{ padding: '0.75rem', fontSize: '0.875rem' }}
+                style={REF_BTN}
               >
                 ✕ Aucun arbitre
               </button>
               {isLoadingReferees && (
-                <p style={{ color: '#9ca3af', fontSize: '0.875rem', textAlign: 'center' }}>
+                <p style={REF_EMPTY}>
                   Chargement des arbitres…
                 </p>
               )}
               {!isLoadingReferees && competitionReferees.length === 0 && (
-                <p style={{ color: '#9ca3af', fontSize: '0.875rem', textAlign: 'center' }}>
+                <p style={REF_EMPTY}>
                   Aucun arbitre enregistré pour cette compétition
                 </p>
               )}
@@ -1606,7 +1538,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                   key={ref.id}
                   className={`btn ${assignedReferee?.id === ref.id ? 'btn-primary' : 'btn-secondary'}`}
                   onClick={() => handleAssignReferee(ref)}
-                  style={{ padding: '0.75rem', fontSize: '0.875rem', textAlign: 'left' }}
+                  style={{ ...REF_BTN, textAlign: 'left' }}
                 >
                   🧑‍⚖️ {ref.lastName} {ref.firstName}
                   {ref.club && <span style={{ marginLeft: '0.5rem', opacity: 0.6, fontSize: '0.8rem' }}>({ref.club})</span>}
