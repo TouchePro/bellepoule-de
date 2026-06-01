@@ -11,7 +11,8 @@ import { TableauMatch, FinalResult, ConsolationBracket, propagateWinners } from 
 import { useToast } from './Toast';
 import { useModalResize } from '../hooks/useModalResize';
 import Bracket from './Bracket';
-import { exportTableauToPDF, printTableauHTML, MAX_MATCHES_PER_PAGE_TABLEAU, exportBracketTreeToPDF } from '../../shared/utils/pdfExport';
+// pdfExport (jsPDF) chargé à la demande ; seule la constante reste en import statique léger
+import { MAX_MATCHES_PER_PAGE_TABLEAU } from '../../shared/utils/pdfConstants';
 import { usePdfTemplateStore } from '../../features/pdfTemplates/hooks/usePdfTemplateStore';
 import MatchCard from './tableau/MatchCard';
 import SeedingTable from './tableau/SeedingTable';
@@ -931,6 +932,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     const title = `Tableau de ${tableauSize}${roundLabel ? ` — ${roundLabel}` : ''}`;
     const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
     try {
+      const { printTableauHTML, exportTableauToPDF } = await import('../../shared/utils/pdfExport');
       if (pdfMode === 'print') {
         await printTableauHTML(filteredMatches, perPage, title, logo, tableauTemplate);
       } else {
@@ -946,6 +948,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     const title = `Arbre — Tableau de ${tableauSize}`;
     const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
     try {
+      const { exportBracketTreeToPDF } = await import('../../shared/utils/pdfExport');
       await exportBracketTreeToPDF(matches, title, logo, tableauTemplate);
     } catch (e) {
       showToast((e as Error).message, 'error');
