@@ -66,3 +66,91 @@ export const NEXT_MATCH_BOX: CSSProperties = {
   marginTop: '1rem',
   color: 'white',
 };
+
+// ── Modal de saisie rapide ────────────────────────────────────────────────
+export const SCORE_ROW: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '1.5rem',
+  marginBottom: '1.5rem',
+};
+
+export const nameCol = (align: 'flex-start' | 'flex-end'): CSSProperties => ({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: align,
+  flex: 1,
+  minWidth: '200px',
+});
+
+export const nameLast = (align: 'left' | 'right'): CSSProperties => ({
+  fontSize: '1.5rem',
+  fontWeight: 600,
+  textAlign: align,
+});
+
+export const nameFirst = (align: 'left' | 'right'): CSSProperties => ({
+  fontSize: '1rem',
+  color: '#6b7280',
+  textAlign: align,
+});
+
+export const victoryBtn = (active: boolean): CSSProperties => ({
+  padding: '0.75rem 1rem',
+  background: active ? '#22c55e' : '#e5e7eb',
+  color: active ? 'white' : '#374151',
+  border: 'none',
+  borderRadius: '6px',
+  cursor: 'pointer',
+  fontWeight: '600',
+  fontSize: '1.1rem',
+});
+
+export const SCORE_SEP: CSSProperties = { fontSize: '3rem', fontWeight: 'bold', color: '#9ca3af' };
+
+export const SPECIAL_ROW: CSSProperties = {
+  display: 'flex',
+  gap: '0.5rem',
+  justifyContent: 'center',
+  borderTop: '1px solid #e5e7eb',
+  paddingTop: '1rem',
+  marginTop: '0.5rem',
+};
+
+export const FOOTER_RIGHT: CSSProperties = {
+  display: 'flex',
+  gap: '0.5rem',
+  justifyContent: 'flex-end',
+};
+
+// ── Modal de statut spécial ───────────────────────────────────────────────
+export const MUTED_HINT: CSSProperties = { marginTop: 0, color: '#6b7280', fontSize: '0.875rem' };
+export const STATUS_BTN: CSSProperties = { width: '100%', padding: '0.75rem', fontWeight: 600 };
+
+// ── Journal des matchs terminés ───────────────────────────────────────────
+export const LOG_TOGGLE: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.35rem',
+  fontSize: '0.8rem',
+  color: '#6b7280',
+  fontWeight: 600,
+  marginBottom: '0.25rem',
+  background: 'none',
+  border: 'none',
+  padding: 0,
+  cursor: 'pointer',
+};
+
+export const LOG_WRAP: CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: '0.4rem' };
+
+export const LOG_ITEM: CSSProperties = {
+  padding: '0.2rem 0.5rem',
+  fontSize: '0.75rem',
+  background: 'rgba(139,92,246,0.08)',
+  border: '1px solid rgba(139,92,246,0.25)',
+  borderRadius: '4px',
+  cursor: 'pointer',
+  color: '#7c3aed',
+};
