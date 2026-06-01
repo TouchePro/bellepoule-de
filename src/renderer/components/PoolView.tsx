@@ -6,6 +6,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useModalResize } from '../hooks/useModalResize';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { Pool, Fencer, MatchStatus, Score, Weapon, FencerStatus, Referee } from '../../shared/types';
 import { Arena } from '../../shared/types/remote';
 import { logger, LogCategory } from '@shared/services/logger';
@@ -129,6 +130,9 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         .finally(() => setIsLoadingReferees(false));
     }
   }, [competitionId]);
+
+  const closeRefereeModal = useCallback(() => setShowRefereeModal(false), []);
+  const refereeModalRef = useFocusTrap<HTMLDivElement>(showRefereeModal, closeRefereeModal);
 
   const handleAssignReferee = useCallback((referee: Referee | null) => {
     window.electronAPI.db.updatePoolReferee(pool.id, referee?.id ?? null);
@@ -1563,6 +1567,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     {showRefereeModal && (
       <div className="modal-overlay" onClick={() => setShowRefereeModal(false)}>
         <div
+          ref={refereeModalRef}
           className="modal"
           onClick={e => e.stopPropagation()}
           style={{ maxWidth: '400px' }}

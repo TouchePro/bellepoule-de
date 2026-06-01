@@ -8,6 +8,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Fencer, Pool } from '../../shared/types';
 import { useToast } from './Toast';
 import { useDebounce } from '../hooks/useDebounce';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface AddFencerToPoolModalProps {
   pool: Pool;
@@ -25,6 +26,7 @@ const AddFencerToPoolModalComponent: React.FC<AddFencerToPoolModalProps> = ({
   onClose,
 }) => {
   const { showToast } = useToast();
+  const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
   const [allFencers, setAllFencers] = useState<Fencer[]>([]);
   const [allPoolFencerIds, setAllPoolFencerIds] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
@@ -89,6 +91,7 @@ const AddFencerToPoolModalComponent: React.FC<AddFencerToPoolModalProps> = ({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
+        ref={modalRef}
         className="modal"
         onClick={e => e.stopPropagation()}
         style={{ maxWidth: '420px' }}

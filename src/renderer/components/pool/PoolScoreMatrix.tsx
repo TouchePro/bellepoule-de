@@ -93,12 +93,29 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
   const calculateFencerStats = (fencer: Fencer): Stats =>
     statsMap.get(fencer.id) ?? { v: 0, d: 0, td: 0, tr: 0, index: 0, ratio: 0 };
 
+  // Données par ligne précalculées : sparkline + rang. Évite un filtre O(n·m) par rendu.
+  const rowDataMap = useMemo(() => {
+    const rankById = new Map(pool.ranking?.map(r => [r.fencer.id, r]) ?? []);
+    const sparkById = new Map<string, boolean[]>();
+    for (const f of fencers) sparkById.set(f.id, []);
+    for (const m of pool.matches) {
+      if (m.status !== MatchStatus.FINISHED) continue;
+      if (m.fencerA?.id && sparkById.has(m.fencerA.id)) {
+        sparkById.get(m.fencerA.id)!.push(!!m.scoreA?.isVictory);
+      }
+      if (m.fencerB?.id && sparkById.has(m.fencerB.id)) {
+        sparkById.get(m.fencerB.id)!.push(!!m.scoreB?.isVictory);
+      }
+    }
+    return { rankById, sparkById };
+  }, [pool.matches, pool.ranking, fencers]);
+
   return (
     <div className="pool-grid">
       <div className="pool-row">
         <div className="pool-cell pool-cell-header pool-cell-name"></div>
-        {fencers.map((_, i) => (
-          <div key={i} className="pool-cell pool-cell-header">
+        {fencers.map((f, i) => (
+          <div key={f.id} className="pool-cell pool-cell-header">
             {i + 1}
           </div>
         ))}
@@ -197,7 +214,7 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
 
       {fencers.map((rowFencer, rowIndex) => {
         const stats = calculateFencerStats(rowFencer);
-        const rankEntry = pool.ranking?.find(r => r.fencer.id === rowFencer.id);
+        const rankEntry = rowDataMap.rankById.get(rowFencer.id);
         const rankRatio = (rankEntry?.rank ?? fencers.length) / fencers.length;
         const rowBg =
           rankRatio <= 0.7
@@ -206,16 +223,7 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
               ? 'rgba(245,158,11,0.10)'
               : 'rgba(239,68,68,0.08)';
 
-        const fencerMatches = pool.matches.filter(
-          m =>
-            m.status === MatchStatus.FINISHED &&
-            (m.fencerA?.id === rowFencer.id || m.fencerB?.id === rowFencer.id)
-        );
-        const sparkBars = fencerMatches.map(m => {
-          const isA = m.fencerA?.id === rowFencer.id;
-          const won = isA ? m.scoreA?.isVictory : m.scoreB?.isVictory;
-          return won;
-        });
+        const sparkBars = rowDataMap.sparkById.get(rowFencer.id) ?? [];
 
         return (
           <div key={rowFencer.id} className="pool-row" style={{ backgroundColor: rowBg }}>
@@ -272,7 +280,7 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
 
             {fencers.map((colFencer, colIndex) => {
               if (rowIndex === colIndex) {
-                return <div key={colIndex} className="pool-cell pool-cell-diagonal"></div>;
+                return <div key={colFencer.id} className="pool-cell pool-cell-diagonal"></div>;
               }
 
               const rowFencerAbandoned =
@@ -287,7 +295,7 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
               if (rowFencerAbandoned || colFencerAbandoned) {
                 return (
                   <div
-                    key={colIndex}
+                    key={colFencer.id}
                     className="pool-cell pool-cell-forfeit"
                     style={{
                       cursor: 'not-allowed',
@@ -314,7 +322,7 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
 
               return (
                 <div
-                  key={colIndex}
+                  key={colFencer.id}
                   className={`pool-cell ${cellClass} ${isFlashing ? 'pool-cell-flash' : ''}`}
                   onClick={() => !isLocked && onCellClick(rowFencer, colFencer)}
                   onKeyDown={e => {
