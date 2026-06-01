@@ -3,7 +3,7 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Competition } from '../../shared/types';
 import { useTranslation } from '../contexts/TranslationContext';
 
@@ -65,16 +65,18 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   const allCommands = [...staticCommands, ...competitionCommands];
 
-  const filtered = query.trim()
-    ? allCommands.filter(cmd => {
-        const q = query.toLowerCase();
-        return (
-          cmd.label.toLowerCase().includes(q) ||
-          cmd.description?.toLowerCase().includes(q) ||
-          cmd.keywords?.some(k => k.includes(q))
-        );
-      })
-    : allCommands;
+  // Mémoïsé pour éviter le recalcul à chaque changement de selectedIndex
+  const filtered = useMemo(() => {
+    if (!query.trim()) return allCommands;
+    const q = query.toLowerCase();
+    return allCommands.filter(
+      cmd =>
+        cmd.label.toLowerCase().includes(q) ||
+        cmd.description?.toLowerCase().includes(q) ||
+        cmd.keywords?.some(k => k.includes(q))
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, allCommands]);
 
   useEffect(() => {
     setSelectedIndex(0);
