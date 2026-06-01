@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { Competition, CustomFormulaConfig, Weapon, Gender, Category, CompetitionSettings, QuestPhaseConfig, PostPoolSplitCriteria } from '../../shared/types';
 import { useTranslation } from '../hooks/useTranslation';
 import { createDefaultCustomFormula } from '../../shared/utils/tournamentTemplates';
@@ -20,6 +21,7 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
   onSave,
   onClose,
 }) => {
+  const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
   const { t } = useTranslation();
   const [title, setTitle] = useState(competition.title);
   const [date, setDate] = useState(new Date(competition.date).toISOString().split('T')[0]);
@@ -326,9 +328,12 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
+        ref={modalRef}
         className="modal"
         onClick={e => e.stopPropagation()}
         style={{ maxWidth: weapon === Weapon.CUSTOM ? '92vw' : '550px', width: weapon === Weapon.CUSTOM ? '1100px' : undefined }}
+        role="dialog"
+        aria-modal="true"
       >
         <div className="modal-header">
           <h2>Propriétés de la compétition</h2>

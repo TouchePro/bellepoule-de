@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import '@testing-library/jest-dom';
 import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
@@ -33,5 +34,13 @@ describe('useFocusTrap', () => {
     last.focus();
     fireEvent.keyDown(getByTestId('modal'), { key: 'Tab' });
     expect(document.activeElement).toBe(getByText('premier'));
+  });
+
+  it('boucle du premier au dernier avec Shift+Tab', () => {
+    const { getByText, getByTestId } = render(<Modal onClose={() => {}} />);
+    const first = getByText('premier');
+    first.focus();
+    fireEvent.keyDown(getByTestId('modal'), { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(getByText('dernier'));
   });
 });

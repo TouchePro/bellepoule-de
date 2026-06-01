@@ -3,6 +3,7 @@
  */
 
 import React, { useRef, useState , memo} from 'react';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { CustomFormulaConfig } from '../../../shared/types';
 import {
   deleteCustomFormulaTemplate,
@@ -25,6 +26,7 @@ const FormulaTemplateModal_: React.FC<Props> = ({
   onLoad,
   onClose,
 }) => {
+  const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
   const [name, setName] = useState('');
   const [templates, setTemplates] = useState(() => getCustomFormulaTemplates());
   const [error, setError] = useState('');
@@ -79,7 +81,7 @@ const FormulaTemplateModal_: React.FC<Props> = ({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
+      <div ref={modalRef} className="modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
         <div className="modal-header">
           <h2 className="modal-title">
             {mode === 'save' ? 'Enregistrer la formule' : 'Charger une formule'}

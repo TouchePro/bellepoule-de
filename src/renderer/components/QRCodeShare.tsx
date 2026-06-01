@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect , memo} from 'react';
 import QRCode from 'qrcode';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { logger, LogCategory } from '@shared/services/logger';
 import { Competition } from '../../shared/types';
 
@@ -17,6 +18,7 @@ interface QRCodeShareProps {
 }
 
 const QRCodeShare_: React.FC<QRCodeShareProps> = ({ competition, onClose, mode: initialMode = 'results' }) => {
+  const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
   const [activeMode, setActiveMode] = useState<QRMode>(initialMode);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(true);
@@ -93,7 +95,7 @@ const QRCodeShare_: React.FC<QRCodeShareProps> = ({ competition, onClose, mode: 
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal modal--md" onClick={e => e.stopPropagation()}>
+      <div ref={modalRef} className="modal modal--md" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
         <div className="modal__header">
           <h2 className="modal__title">📱 {cfg.title}</h2>
           <button className="modal__close" onClick={onClose}>×</button>

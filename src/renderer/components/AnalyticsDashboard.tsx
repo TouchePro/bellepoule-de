@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect, useMemo , memo} from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { Competition, Fencer, Pool, Match, MatchStatus } from '../../shared/types';
 import { FencerStatsTable } from '../../features/analytics/components/FencerStatsTable';
 
@@ -270,6 +271,7 @@ const AnalyticsDashboard_: React.FC<AnalyticsDashboardProps> = ({
   className = '',
   onClose,
 }) => {
+  const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
   const [activeTab, setActiveTab] = useState<'performance' | 'stats'>('performance');
   const [selectedTimeframe, setSelectedTimeframe] = useState<'live' | 'last30min' | 'all'>('live');
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -292,7 +294,7 @@ const AnalyticsDashboard_: React.FC<AnalyticsDashboardProps> = ({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-    <div className={`modal modal--lg analytics-dashboard ${className}`} onClick={e => e.stopPropagation()}>
+    <div ref={modalRef} className={`modal modal--lg analytics-dashboard ${className}`} onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <div>

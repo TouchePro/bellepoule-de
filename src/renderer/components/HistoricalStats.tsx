@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { logger, LogCategory } from '@shared/services/logger';
 
 interface CompetitionResult {
@@ -30,6 +31,7 @@ export const HistoricalStats: React.FC<HistoricalStatsProps> = ({
   fencerName,
   onClose,
 }) => {
+  const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
   const [results, setResults] = useState<CompetitionResult[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -66,9 +68,12 @@ export const HistoricalStats: React.FC<HistoricalStatsProps> = ({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
+        ref={modalRef}
         className="modal"
         onClick={e => e.stopPropagation()}
         style={{ maxWidth: '750px', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}
+        role="dialog"
+        aria-modal="true"
       >
         <div className="modal-header" style={{ flexShrink: 0 }}>
           <h2 style={{ margin: 0 }}>Historique — {fencerName}</h2>
