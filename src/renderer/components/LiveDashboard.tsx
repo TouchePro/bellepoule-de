@@ -7,6 +7,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Competition, Pool, Match, MatchStatus, PoolRanking, Weapon } from '../../shared/types';
 import { formatIndex } from '../../shared/utils/poolCalculations';
+import {
+  PANEL_TITLE,
+  TABLE,
+  CELL_CENTER_FLEX,
+  TH,
+  MONO_CELL,
+  STAT_VALUE,
+  SUB_TEXT,
+  ROW_TEXT,
+} from './liveDashboard.styles';
 
 interface LiveDashboardProps {
   competition: Competition;
@@ -193,7 +203,7 @@ export const LiveDashboard: React.FC<LiveDashboardProps> = ({
             {/* Live Matches */}
             {matchesInProgress.length > 0 && (
               <div style={{ marginBottom: '2rem' }}>
-                <h2 style={{ color: 'white', marginBottom: '1rem', fontSize: '1.5rem' }}>
+                <h2 style={PANEL_TITLE}>
                   🔴 Matchs en cours ({matchesInProgress.length})
                 </h2>
                 <div
@@ -212,7 +222,7 @@ export const LiveDashboard: React.FC<LiveDashboardProps> = ({
 
             {/* Pool Results */}
             <div>
-              <h2 style={{ color: 'white', marginBottom: '1rem', fontSize: '1.5rem' }}>
+              <h2 style={PANEL_TITLE}>
                 📋 Résultats des Poules
               </h2>
               <div
@@ -232,7 +242,7 @@ export const LiveDashboard: React.FC<LiveDashboardProps> = ({
 
         {activeTab === 'tableau' && (
           <div>
-            <h2 style={{ color: 'white', marginBottom: '1rem', fontSize: '1.5rem' }}>
+            <h2 style={PANEL_TITLE}>
               ⚔️ Phase Éliminatoire
             </h2>
             <TableauView matches={tableauMatches} />
@@ -241,7 +251,7 @@ export const LiveDashboard: React.FC<LiveDashboardProps> = ({
 
         {activeTab === 'ranking' && (
           <div>
-            <h2 style={{ color: 'white', marginBottom: '1rem', fontSize: '1.5rem' }}>
+            <h2 style={PANEL_TITLE}>
               🏅 Classement Final
             </h2>
             <FinalRankingView results={finalResults} />
@@ -322,11 +332,11 @@ const LiveMatchCard_: React.FC<{ match: Match; index: number }> = ({ match, inde
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ textAlign: 'center', flex: 1 }}>
-          <div style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1f2937' }}>
+        <div style={CELL_CENTER_FLEX}>
+          <div style={STAT_VALUE}>
             {match.fencerA?.firstName} {match.fencerA?.lastName}
           </div>
-          <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>{match.fencerA?.club}</div>
+          <div style={SUB_TEXT}>{match.fencerA?.club}</div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0 1.5rem' }}>
@@ -339,11 +349,11 @@ const LiveMatchCard_: React.FC<{ match: Match; index: number }> = ({ match, inde
           </span>
         </div>
 
-        <div style={{ textAlign: 'center', flex: 1 }}>
-          <div style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1f2937' }}>
+        <div style={CELL_CENTER_FLEX}>
+          <div style={STAT_VALUE}>
             {match.fencerB?.firstName} {match.fencerB?.lastName}
           </div>
-          <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>{match.fencerB?.club}</div>
+          <div style={SUB_TEXT}>{match.fencerB?.club}</div>
         </div>
       </div>
     </div>
@@ -391,7 +401,7 @@ const PoolResultsCard_: React.FC<{ pool: Pool; isLaserSabre?: boolean }> = ({
       </div>
 
       {pool.ranking.length > 0 ? (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <table style={TABLE}>
           <thead>
             <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
               <th
@@ -500,10 +510,10 @@ const PoolResultsCard_: React.FC<{ pool: Pool; isLaserSabre?: boolean }> = ({
                     {rank.questPoints || 0}
                   </td>
                 )}
-                <td style={{ padding: '0.5rem', textAlign: 'center', fontFamily: 'monospace' }}>
+                <td style={MONO_CELL}>
                   {rank.touchesScored}
                 </td>
-                <td style={{ padding: '0.5rem', textAlign: 'center', fontFamily: 'monospace' }}>
+                <td style={MONO_CELL}>
                   {rank.touchesReceived}
                 </td>
                 <td
@@ -587,7 +597,7 @@ const TableauView_: React.FC<{ matches: Match[] }> = ({ matches }) => {
                           marginBottom: '0.5rem',
                         }}
                       >
-                        <span style={{ fontSize: '0.875rem', color: '#1f2937', fontWeight: '500' }}>
+                        <span style={ROW_TEXT}>
                           {match.fencerA?.firstName?.charAt(0)}. {match.fencerA?.lastName}
                         </span>
                         <span
@@ -611,7 +621,7 @@ const TableauView_: React.FC<{ matches: Match[] }> = ({ matches }) => {
                           alignItems: 'center',
                         }}
                       >
-                        <span style={{ fontSize: '0.875rem', color: '#1f2937', fontWeight: '500' }}>
+                        <span style={ROW_TEXT}>
                           {match.fencerB?.firstName?.charAt(0)}. {match.fencerB?.lastName}
                         </span>
                         <span
@@ -656,7 +666,7 @@ const FinalRankingView_: React.FC<{ results: any[] }> = ({ results }) => {
           La compétition n'est pas encore terminée
         </p>
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <table style={TABLE}>
           <thead>
             <tr style={{ background: '#f3f4f6' }}>
               <th
@@ -670,12 +680,12 @@ const FinalRankingView_: React.FC<{ results: any[] }> = ({ results }) => {
                 Rang
               </th>
               <th
-                style={{ padding: '1rem', textAlign: 'left', color: '#374151', fontWeight: '600' }}
+                style={TH}
               >
                 Tireur
               </th>
               <th
-                style={{ padding: '1rem', textAlign: 'left', color: '#374151', fontWeight: '600' }}
+                style={TH}
               >
                 Club
               </th>
