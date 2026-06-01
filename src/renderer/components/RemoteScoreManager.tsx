@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import QRCode from 'qrcode';
+// qrcode chargé à la demande (génération du QR uniquement à l'affichage)
 import { Competition, Pool } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
 import { TableauMatch, ConsolationBracket } from './tableau/tableauTypes';
@@ -164,7 +164,8 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       setQrDataUrl(null);
       return;
     }
-    QRCode.toDataURL(activeQR.url, { width: 220, margin: 1 })
+    import('qrcode')
+      .then(m => m.default.toDataURL(activeQR.url, { width: 220, margin: 1 }))
       .then(setQrDataUrl)
       .catch(() => setQrDataUrl(null));
   }, [activeQR]);
