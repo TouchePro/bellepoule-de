@@ -8,6 +8,7 @@ import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react'
 import { PoolRanking, Pool, Weapon, FencerStatus, PostPoolSplitCriteria, Gender } from '../../shared/types';
 import { exportRankingToPDF } from '../../shared/utils/pdfExport';
 import { usePdfTemplateStore } from '../../features/pdfTemplates/hooks/usePdfTemplateStore';
+import { CENTER, W40, W50, W60, SM, FLEX_GAP } from './poolRankingView.styles';
 import {
   formatRatio,
   formatIndex,
@@ -332,7 +333,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
             {isEditing && ' (mode édition)'}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={FLEX_GAP}>
           {!isInitialRanking && (
             <button
               className="btn btn-secondary"
@@ -446,7 +447,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
           <button
             className={splitTab === 'all' ? 'btn btn-primary' : 'btn btn-secondary'}
-            style={{ fontSize: '0.8rem' }}
+            style={SM}
             onClick={() => setSplitTab('all')}
           >
             🌐 Général
@@ -455,7 +456,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
             <button
               key={g}
               className={splitTab === g ? 'btn btn-primary' : 'btn btn-secondary'}
-              style={{ fontSize: '0.8rem' }}
+              style={SM}
               onClick={() => { if (isEditing) saveChanges(); setSplitTab(g); }}
             >
               {g === Gender.MALE ? '♂ Hommes' : g === Gender.FEMALE ? '♀ Femmes' : g}
@@ -468,19 +469,19 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
         <table className="table">
           <thead>
             <tr>
-              {isVisible('rank') && <th style={{ width: '50px' }}>Rg</th>}
+              {isVisible('rank') && <th style={W50}>Rg</th>}
               {isVisible('lastName') && <th>Nom</th>}
               {isVisible('firstName') && <th>Prénom</th>}
               {isVisible('club') && <th>Club</th>}
-              {isVisible('victories') && <th style={{ width: '40px' }}>V</th>}
-              {isVisible('matches') && <th style={{ width: '40px' }}>M</th>}
-              {isVisible('ratio') && <th style={{ width: '60px' }}>V/M</th>}
-              {isVisible('td') && <th style={{ width: '50px' }}>TD</th>}
-              {isVisible('tr') && <th style={{ width: '50px' }}>TR</th>}
+              {isVisible('victories') && <th style={W40}>V</th>}
+              {isVisible('matches') && <th style={W40}>M</th>}
+              {isVisible('ratio') && <th style={W60}>V/M</th>}
+              {isVisible('td') && <th style={W50}>TD</th>}
+              {isVisible('tr') && <th style={W50}>TR</th>}
               {isVisible('quest') && isLaserSabre && (
                 <th style={{ width: '70px', color: '#7c3aed' }}>Quest</th>
               )}
-              {isVisible('index') && <th style={{ width: '60px' }}>Indice</th>}
+              {isVisible('index') && <th style={W60}>Indice</th>}
               {poolWinnersOnly && <th style={{ width: '70px' }}>Qualif.</th>}
             </tr>
           </thead>
@@ -586,16 +587,16 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
                   <td style={{ textAlign: 'center', fontWeight: '600' }}>{ranking.victories}</td>
                 )}
                 {isVisible('matches') && (
-                  <td style={{ textAlign: 'center' }}>{ranking.victories + ranking.defeats}</td>
+                  <td style={CENTER}>{ranking.victories + ranking.defeats}</td>
                 )}
                 {isVisible('ratio') && (
-                  <td style={{ textAlign: 'center' }}>{formatRatio(ranking.ratio)}</td>
+                  <td style={CENTER}>{formatRatio(ranking.ratio)}</td>
                 )}
                 {isVisible('td') && (
-                  <td style={{ textAlign: 'center' }}>{ranking.touchesScored}</td>
+                  <td style={CENTER}>{ranking.touchesScored}</td>
                 )}
                 {isVisible('tr') && (
-                  <td style={{ textAlign: 'center' }}>{ranking.touchesReceived}</td>
+                  <td style={CENTER}>{ranking.touchesReceived}</td>
                 )}
                 {isVisible('quest') && isLaserSabre && (
                   <td style={{ textAlign: 'center', fontWeight: '600', color: '#7c3aed' }}>
@@ -629,7 +630,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
                   </td>
                 )}
                 {poolWinnersOnly && (
-                  <td style={{ textAlign: 'center' }}>
+                  <td style={CENTER}>
                     {poolWinnerIds?.has(ranking.fencer.id) ? (
                       <span style={{ color: '#059669', fontWeight: '700', fontSize: '0.85rem' }}>
                         ✓ Q
@@ -661,7 +662,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
           {', Indice = TD - TR'}
           {' • (A) = Abandon • (F) = Forfait • (X) = Exclu'}
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={FLEX_GAP}>
           {hasDirectElimination ? (
             splitCriteria && splitGroups.length > 1 ? (
               splitGroups.map(g => (
