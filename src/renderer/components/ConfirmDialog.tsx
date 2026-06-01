@@ -84,9 +84,16 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
           onKeyDown={handleKeyDown}
           style={{ zIndex: 11000 }}
         >
-          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '420px' }}>
+          <div
+            className="modal"
+            onClick={e => e.stopPropagation()}
+            style={{ maxWidth: '420px' }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-dialog-title"
+          >
             <div className="modal-header">
-              <h2 className="modal-title">Confirmation</h2>
+              <h2 className="modal-title" id="confirm-dialog-title">Confirmation</h2>
             </div>
             <div className="modal-body">
               <p style={{ whiteSpace: 'pre-line', margin: 0 }}>{pending.message}</p>

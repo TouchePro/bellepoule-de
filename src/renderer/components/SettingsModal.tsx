@@ -5,9 +5,11 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from '../hooks/useTranslation';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import type { Language } from '../contexts/TranslationContext';
 import LanguageSelector from './LanguageSelector';
-import PdfTemplateModal from './PdfTemplateModal';
+// Chargé à la demande : embarque jsPDF, lourd pour le bundle initial
+const PdfTemplateModal = React.lazy(() => import('./PdfTemplateModal'));
 import { logger, LogCategory } from '@shared/services/logger';
 
 const LOGO_STORAGE_KEY = 'bellepoule-logo';
@@ -67,6 +69,7 @@ interface SettingsModalProps {
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
+  const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
   const { t, language, theme, changeLanguage, changeTheme } = useTranslation();
   const [showPdfEditor, setShowPdfEditor] = useState(false);
   const [settings, setSettings] = useState({
@@ -218,7 +221,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
   return (
     <>
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+      <div ref={modalRef} className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }} role="dialog" aria-modal="true">
         <div className="modal-header">
           <h2 className="modal-title">{t('settings.title')}</h2>
         </div>
@@ -387,7 +390,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
         </div>
       </div>
     </div>
-    {showPdfEditor && <PdfTemplateModal onClose={() => setShowPdfEditor(false)} />}
+    {showPdfEditor && (
+      <React.Suspense fallback={null}>
+        <PdfTemplateModal onClose={() => setShowPdfEditor(false)} />
+      </React.Suspense>
+    )}
     </>
   );
 };

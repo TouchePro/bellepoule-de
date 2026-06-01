@@ -24,7 +24,7 @@ export function useFocusTrap<T extends HTMLElement>(
     // Focus initial : élément marqué autofocus sinon premier focusable
     const focusables = () =>
       Array.from(container?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []).filter(
-        el => el.offsetParent !== null
+        el => !el.hasAttribute('hidden') && el.getAttribute('aria-hidden') !== 'true'
       );
     const preferred = container?.querySelector<HTMLElement>('[autofocus], [data-autofocus]');
     (preferred ?? focusables()[0])?.focus();

@@ -260,6 +260,7 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
                     onFencerChangePool(rowFencer);
                   }}
                   title="Changer de poule"
+                  aria-label={`Changer ${rowFencer.lastName} de poule`}
                   style={{
                     padding: '0.125rem 0.25rem',
                     fontSize: '0.625rem',
@@ -351,6 +352,7 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
                             onMatchReset(rowFencer, colFencer);
                           }}
                           title="Annuler ce résultat"
+                          aria-label="Annuler ce résultat"
                           className="pool-cell-reset-btn"
                           style={{
                             position: 'absolute',

@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { Fencer, Gender, FencerStatus } from '../../shared/types';
 import FencerPhoto from './FencerPhoto';
 
@@ -14,6 +15,7 @@ interface EditFencerModalProps {
 }
 
 const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClose }) => {
+  const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
   const [lastName, setLastName] = useState(fencer.lastName);
   const [firstName, setFirstName] = useState(fencer.firstName);
   const [gender, setGender] = useState<Gender>(fencer.gender);
@@ -46,7 +48,7 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+      <div ref={modalRef} className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }} role="dialog" aria-modal="true">
         <div className="modal-header">
           <h2>Modifier le tireur</h2>
           <button className="btn-close" onClick={onClose}>
