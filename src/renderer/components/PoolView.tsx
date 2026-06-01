@@ -46,6 +46,19 @@ import {
   LOG_TOGGLE,
   LOG_WRAP,
   LOG_ITEM,
+  LOCKED_BANNER,
+  HEADER_LEFT,
+  TOOLBAR_GROUP,
+  VIEW_GROUP,
+  RELATIVE,
+  VS,
+  BADGE_PILL,
+  COL_MENU,
+  COL_MENU_HEADER,
+  COL_MENU_LABEL,
+  NEXT_MATCH_SUBMIT,
+  abandonName,
+  scoreInput,
 } from './poolView.styles';
 
 interface PoolViewProps {
@@ -748,26 +761,12 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               <input
                 type="number"
                 className="form-input"
-                style={{
-                  width: '120px',
-                  textAlign: 'center',
-                  fontSize: '3rem',
-                  padding: '0.75rem',
-                  borderColor:
-                    (parseInt(editScoreA, 10) || 0) >
+                style={scoreInput(
+                  (parseInt(editScoreA, 10) || 0) >
                     ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) ||
                       maxScore ||
                       999)
-                      ? '#ef4444'
-                      : undefined,
-                  borderWidth:
-                    (parseInt(editScoreA, 10) || 0) >
-                    ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) ||
-                      maxScore ||
-                      999)
-                      ? '2px'
-                      : undefined,
-                }}
+                )}
                 value={editScoreA}
                 onChange={e => setEditScoreA(e.target.value)}
                 min="0"
@@ -803,26 +802,12 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               <input
                 type="number"
                 className="form-input"
-                style={{
-                  width: '120px',
-                  textAlign: 'center',
-                  fontSize: '3rem',
-                  padding: '0.75rem',
-                  borderColor:
-                    (parseInt(editScoreB, 10) || 0) >
+                style={scoreInput(
+                  (parseInt(editScoreB, 10) || 0) >
                     ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) ||
                       maxScore ||
                       999)
-                      ? '#ef4444'
-                      : undefined,
-                  borderWidth:
-                    (parseInt(editScoreB, 10) || 0) >
-                    ((editingMatch !== null ? pool.matches[editingMatch]?.maxScore : 0) ||
-                      maxScore ||
-                      999)
-                      ? '2px'
-                      : undefined,
-                }}
+                )}
                 value={editScoreB}
                 onChange={e => setEditScoreB(e.target.value)}
                 min="0"
@@ -1097,22 +1082,12 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               ✕ Match non disputé
             </div>
             <div style={MATCH_CENTER}>
-              <span
-                style={{
-                  fontWeight: '600',
-                  textDecoration: fencerAAbandoned ? 'line-through' : 'none',
-                }}
-              >
+              <span style={abandonName(fencerAAbandoned)}>
                 {nextMatch.match.fencerA?.lastName} {nextMatch.match.fencerA?.firstName?.charAt(0)}.
                 {fencerAAbandoned && ' ✕'}
               </span>
-              <span style={{ opacity: 0.7 }}>vs</span>
-              <span
-                style={{
-                  fontWeight: '600',
-                  textDecoration: fencerBAbandoned ? 'line-through' : 'none',
-                }}
-              >
+              <span style={VS}>vs</span>
+              <span style={abandonName(fencerBAbandoned)}>
                 {nextMatch.match.fencerB?.lastName} {nextMatch.match.fencerB?.firstName?.charAt(0)}.
                 {fencerBAbandoned && ' ✕'}
               </span>
@@ -1133,7 +1108,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               {nextMatch.match.fencerA?.lastName} {nextMatch.match.fencerA?.firstName?.charAt(0)}.
               {nextMatch.match.fencerA?.ranking && ` #${nextMatch.match.fencerA.ranking}`}
             </span>
-            <span style={{ opacity: 0.7 }}>vs</span>
+            <span style={VS}>vs</span>
             <span style={FENCER_NAME}>
               {nextMatch.match.fencerB?.lastName} {nextMatch.match.fencerB?.firstName?.charAt(0)}.
               {nextMatch.match.fencerB?.ranking && ` #${nextMatch.match.fencerB.ranking}`}
@@ -1141,16 +1116,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           </div>
           <button
             onClick={() => openScoreModal(nextMatch.index)}
-            style={{
-              padding: '0.5rem 1rem',
-              background: 'rgba(255,255,255,0.2)',
-              border: '1px solid rgba(255,255,255,0.3)',
-              borderRadius: '6px',
-              color: 'white',
-              cursor: 'pointer',
-              fontWeight: '500',
-              fontSize: '0.875rem',
-            }}
+            style={NEXT_MATCH_SUBMIT}
           >
             Saisir
           </button>
@@ -1165,19 +1131,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     <div className="card">
       <Confetti active={showPoolConfetti} particleCount={100} origin={{ x: 0.5, y: 0.5 }} />
       {isLocked && (
-        <div style={{
-          background: '#fef2f2',
-          border: '1px solid #fca5a5',
-          borderRadius: '6px',
-          padding: '0.5rem 1rem',
-          marginBottom: '0.5rem',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          color: '#991b1b',
-          fontWeight: 600,
-          fontSize: '0.875rem',
-        }}>
+        <div style={LOCKED_BANNER}>
           🔒 Feuille signée par tous les combattants — scores verrouillés
         </div>
       )}
@@ -1185,7 +1139,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         className="card-header"
         style={ROW_BETWEEN}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={HEADER_LEFT}>
           <span>Poule {pool.number}</span>
           <span className={`badge ${pool.isComplete ? 'badge-success' : 'badge-warning'}`}>
             {pool.isComplete ? 'Terminée' : `${finishedCount}/${totalMatches}`}
@@ -1199,13 +1153,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               <span
                 title={allSigned ? 'Tous les combattants ont signé — PDF disponible' : `${signed}/${total} signature(s)`}
                 style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.25rem',
-                  padding: '0.2rem 0.5rem',
-                  borderRadius: '12px',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
+                  ...BADGE_PILL,
                   background: allSigned ? '#d1fae5' : noneSigned ? '#f3f4f6' : '#fef3c7',
                   color: allSigned ? '#065f46' : noneSigned ? '#6b7280' : '#92400e',
                   border: `1px solid ${allSigned ? '#6ee7b7' : noneSigned ? '#e5e7eb' : '#fcd34d'}`,
@@ -1219,13 +1167,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
             onClick={openRefereeModal}
             title={assignedReferee ? `Arbitre : ${assignedReferee.lastName} ${assignedReferee.firstName}` : 'Assigner un arbitre'}
             style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.25rem',
-              padding: '0.2rem 0.5rem',
-              borderRadius: '12px',
-              fontSize: '0.75rem',
-              fontWeight: 600,
+              ...BADGE_PILL,
               cursor: 'pointer',
               background: assignedReferee ? '#dbeafe' : '#f3f4f6',
               color: assignedReferee ? '#1d4ed8' : '#6b7280',
@@ -1235,7 +1177,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
             🧑‍⚖️ {assignedReferee ? `${assignedReferee.lastName}` : '+Arbitre'}
           </button>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={TOOLBAR_GROUP}>
           <button
             onClick={undo}
             disabled={!canUndo}
@@ -1303,7 +1245,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               ➕ Tireur
             </button>
           )}
-          <div style={{ position: 'relative' }} ref={columnMenuRef}>
+          <div style={RELATIVE} ref={columnMenuRef}>
             <button
               onClick={() => setShowColumnMenu(!showColumnMenu)}
               style={{
@@ -1316,44 +1258,14 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               ⚙️
             </button>
             {showColumnMenu && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '100%',
-                  right: 0,
-                  marginTop: '0.25rem',
-                  background: 'white',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '6px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                  zIndex: 100,
-                  minWidth: '180px',
-                  padding: '0.5rem',
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    padding: '0.25rem 0.5rem',
-                    borderBottom: '1px solid #e5e7eb',
-                    marginBottom: '0.25rem',
-                  }}
-                >
+              <div style={COL_MENU}>
+                <div style={COL_MENU_HEADER}>
                   Colonnes à afficher
                 </div>
                 {POOL_COLUMNS.filter(col => col.id !== 'quest' || isLaserSabre).map(col => (
                   <label
                     key={col.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      padding: '0.375rem 0.5rem',
-                      cursor: 'pointer',
-                      borderRadius: '4px',
-                      fontSize: '0.8rem',
-                    }}
+                    style={COL_MENU_LABEL}
                     onMouseEnter={e => (e.currentTarget.style.background = '#f3f4f6')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                   >
@@ -1369,7 +1281,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               </div>
             )}
           </div>
-          <div style={{ display: 'flex', gap: '0.25rem' }}>
+          <div style={VIEW_GROUP}>
             <button
               onClick={() => setViewMode('grid')}
               style={{

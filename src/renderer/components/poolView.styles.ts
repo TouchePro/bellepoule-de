@@ -154,3 +154,96 @@ export const LOG_ITEM: CSSProperties = {
   cursor: 'pointer',
   color: '#7c3aed',
 };
+
+// ── En-tête de carte + bandeau verrouillage ───────────────────────────────
+export const LOCKED_BANNER: CSSProperties = {
+  background: '#fef2f2',
+  border: '1px solid #fca5a5',
+  borderRadius: '6px',
+  padding: '0.5rem 1rem',
+  marginBottom: '0.5rem',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem',
+  color: '#991b1b',
+  fontWeight: 600,
+  fontSize: '0.875rem',
+};
+
+export const HEADER_LEFT: CSSProperties = { display: 'flex', alignItems: 'center', gap: '0.75rem' };
+export const TOOLBAR_GROUP: CSSProperties = { display: 'flex', gap: '0.5rem' };
+export const VIEW_GROUP: CSSProperties = { display: 'flex', gap: '0.25rem' };
+export const RELATIVE: CSSProperties = { position: 'relative' };
+export const VS: CSSProperties = { opacity: 0.7 };
+
+// Pastille (badge) en-tête : base commune signatures/arbitre
+export const BADGE_PILL: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.25rem',
+  padding: '0.2rem 0.5rem',
+  borderRadius: '12px',
+  fontSize: '0.75rem',
+  fontWeight: 600,
+};
+
+// ── Menu de colonnes ──────────────────────────────────────────────────────
+export const COL_MENU: CSSProperties = {
+  position: 'absolute',
+  top: '100%',
+  right: 0,
+  marginTop: '0.25rem',
+  background: 'white',
+  border: '1px solid #e5e7eb',
+  borderRadius: '6px',
+  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+  zIndex: 100,
+  minWidth: '180px',
+  padding: '0.5rem',
+};
+
+export const COL_MENU_HEADER: CSSProperties = {
+  fontSize: '0.75rem',
+  fontWeight: 600,
+  padding: '0.25rem 0.5rem',
+  borderBottom: '1px solid #e5e7eb',
+  marginBottom: '0.25rem',
+};
+
+export const COL_MENU_LABEL: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem',
+  padding: '0.375rem 0.5rem',
+  cursor: 'pointer',
+  borderRadius: '4px',
+  fontSize: '0.8rem',
+};
+
+// Bouton « Saisir » du bloc prochain match
+export const NEXT_MATCH_SUBMIT: CSSProperties = {
+  padding: '0.5rem 1rem',
+  background: 'rgba(255,255,255,0.2)',
+  border: '1px solid rgba(255,255,255,0.3)',
+  borderRadius: '6px',
+  color: 'white',
+  cursor: 'pointer',
+  fontWeight: '500',
+  fontSize: '0.875rem',
+};
+
+// Nom de tireur dans le bloc « match non disputé » (barré si abandon)
+export const abandonName = (struck: boolean): CSSProperties => ({
+  fontWeight: '600',
+  textDecoration: struck ? 'line-through' : 'none',
+});
+
+// Input de score (bordure rouge si dépassement du score max)
+export const scoreInput = (overflow: boolean): CSSProperties => ({
+  width: '120px',
+  textAlign: 'center',
+  fontSize: '3rem',
+  padding: '0.75rem',
+  borderColor: overflow ? '#ef4444' : undefined,
+  borderWidth: overflow ? '2px' : undefined,
+});
