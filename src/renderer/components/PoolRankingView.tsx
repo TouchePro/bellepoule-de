@@ -6,7 +6,7 @@
 
 import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { PoolRanking, Pool, Weapon, FencerStatus, PostPoolSplitCriteria, Gender } from '../../shared/types';
-import { exportRankingToPDF } from '../../shared/utils/pdfExport';
+// pdfExport (jsPDF) chargé à la demande pour alléger le bundle initial
 import { usePdfTemplateStore } from '../../features/pdfTemplates/hooks/usePdfTemplateStore';
 import { CENTER, W40, W50, W60, SM, FLEX_GAP } from './poolRankingView.styles';
 import {
@@ -205,6 +205,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
     try {
       const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
       const cols = getVisibleColumns('ranking').filter(col => col !== 'quest' || isLaserSabre);
+      const { exportRankingToPDF } = await import('../../shared/utils/pdfExport');
       await exportRankingToPDF(overallRanking, 'Classement Général', weapon, cols, logo, rankingTemplate);
     } catch (e) {
       showToast((e as Error).message, 'error');
