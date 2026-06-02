@@ -529,6 +529,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('remote:clientListUpdate', handler);
       return () => ipcRenderer.removeListener('remote:clientListUpdate', handler);
     },
+    renameClient: (competitionId: string, socketId: string, label: string) =>
+      ipcRenderer.invoke('remote:renameClient', competitionId, socketId, label),
+    identifyClient: (competitionId: string, socketId: string) =>
+      ipcRenderer.invoke('remote:identifyClient', competitionId, socketId),
+    setClientKioskMode: (competitionId: string, socketId: string, config: any) =>
+      ipcRenderer.invoke('remote:setClientKioskMode', competitionId, socketId, config),
   },
 
   // Remote event listeners (for real-time updates)

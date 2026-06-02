@@ -1896,6 +1896,39 @@ ipcMain.handle('remote:broadcastCommand', async (_, competitionId: string, comma
   }
 });
 
+ipcMain.handle('remote:renameClient', async (_, competitionId: string, socketId: string, label: string) => {
+  try {
+    const entry = remoteServers.get(competitionId);
+    if (!entry) return { success: false, error: 'Serveur non démarré' };
+    entry.server.renameClient(socketId, label);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
+ipcMain.handle('remote:identifyClient', async (_, competitionId: string, socketId: string) => {
+  try {
+    const entry = remoteServers.get(competitionId);
+    if (!entry) return { success: false, error: 'Serveur non démarré' };
+    entry.server.identifyClient(socketId);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
+ipcMain.handle('remote:setClientKioskMode', async (_, competitionId: string, socketId: string, config: any) => {
+  try {
+    const entry = remoteServers.get(competitionId);
+    if (!entry) return { success: false, error: 'Serveur non démarré' };
+    entry.server.setClientKioskMode(socketId, config);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
 ipcMain.handle('app:getLogo', async () => {
   const logoPath = path.join(app.getPath('userData'), 'logo.dat');
   try {

@@ -123,7 +123,11 @@ export class RemoteScoreServer {
     connectedAt: string;
     lastSeen: string;
     label?: string;
+    screenId?: string;
   }> = new Map();
+
+  // Labels persistants par screenId (survivent aux reconnexions)
+  private screenLabels: Map<string, string> = new Map();
 
   constructor(db: DatabaseManager, port: number = 8066, host: string = '0.0.0.0') {
     console.log('[RemoteScoreServer] Initialisation du serveur de saisie distante...');
@@ -2199,8 +2203,11 @@ export class RemoteScoreServer {
         clientType: 'arena' | 'kiosk' | 'public' | 'pool' | 'dashboard';
         arenaId?: string;
         userAgent?: string;
+        screenId?: string;
       }) => {
         const now = new Date().toISOString();
+        const screenId = data.screenId;
+        const label = screenId ? this.screenLabels.get(screenId) : undefined;
         this.connectedClients.set(socket.id, {
           socketId: socket.id,
           clientType: data.clientType ?? 'arena',
@@ -2209,6 +2216,8 @@ export class RemoteScoreServer {
           userAgent: data.userAgent ?? '',
           connectedAt: now,
           lastSeen: now,
+          label,
+          screenId,
         });
         this.broadcastClientList();
       });
@@ -2250,6 +2259,31 @@ export class RemoteScoreServer {
 
   broadcastCommand(command: { type: string; url?: string; text?: string; duration?: number }): void {
     this.io.emit('server:command', command);
+  }
+
+  renameClient(socketId: string, label: string): void {
+    const client = this.connectedClients.get(socketId);
+    if (client) {
+      client.label = label;
+      if (client.screenId) this.screenLabels.set(client.screenId, label);
+      this.broadcastClientList();
+      // Notifier l'écran de son nouveau nom
+      this.io.to(socketId).emit('server:command', { type: 'identify', screenLabel: label, duration: 3000 });
+    }
+  }
+
+  identifyClient(socketId: string): void {
+    const client = this.connectedClients.get(socketId);
+    const label = client?.label ?? client?.screenId ?? socketId.slice(0, 8);
+    this.io.to(socketId).emit('server:command', { type: 'identify', screenLabel: label, duration: 5000 });
+  }
+
+  setClientKioskMode(socketId: string, config: {
+    poules: boolean; classement: boolean; direct: boolean;
+    suivants: boolean; tableau: boolean; rotationSec: number;
+  }): void {
+    this.io.to(socketId).emit('server:command', { type: 'kiosk:config', kioskConfig: config });
+    this.io.to(socketId).emit('server:command', { type: 'navigate', url: '/kiosk' });
   }
 
   // Stockage des cartons par arène
