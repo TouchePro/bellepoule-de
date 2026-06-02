@@ -32,7 +32,10 @@ afterEach(() => {
   delete (window as any).electronAPI;
 });
 
-const setup = () => renderHook(() => useExport({ competition, showToast })).result.current;
+const setup = () =>
+  renderHook(() =>
+    useExport({ competition, showToast: showToast as unknown as (m: string, t?: any) => void })
+  ).result.current;
 
 describe('exportFencersList', () => {
   it('écrit un contenu FFF et notifie le succès', async () => {
