@@ -1124,7 +1124,8 @@
       <div class="active-match" id="active-match">
         <div style="display:flex;justify-content:flex-end;margin-bottom:0.5rem;">
           <button
-            onclick="window.location.reload()"
+            id="btn-back-to-list"
+            onclick="if(!refereeApp.timerRunning) window.location.reload();"
             style="background:rgba(0,0,0,0.12);border:none;border-radius:0.5rem;color:#374151;padding:0.35rem 0.85rem;font-size:0.85rem;cursor:pointer;"
             title="Retour à la liste des matchs"
           >← Retour</button>
@@ -2628,10 +2629,27 @@
           }
         }
 
+        updateBackButton() {
+          const btn = document.getElementById('btn-back-to-list');
+          if (!btn) return;
+          if (this.timerRunning) {
+            btn.disabled = true;
+            btn.style.opacity = '0.4';
+            btn.style.cursor = 'not-allowed';
+            btn.title = 'Retour désactivé pendant le chrono';
+          } else {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+            btn.title = 'Retour à la liste des matchs';
+          }
+        },
+
         startTimer() {
           if (this.timerRunning) return;
 
           this.timerRunning = true;
+          this.updateBackButton();
           this.updateTimerDisplay();
           this.broadcastTimerUpdate();
 
@@ -2671,6 +2689,7 @@
             this.timerInterval = null;
           }
           this.timerRunning = false;
+          this.updateBackButton();
         }
 
         resetTimer() {

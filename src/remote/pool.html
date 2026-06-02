@@ -941,7 +941,7 @@
           lbl.className = 'section-label';
           lbl.textContent = `À jouer (${pending.length})`;
           view.appendChild(lbl);
-          pending.forEach((m, i) => view.appendChild(buildMatchItem(m, fencers, i + 1, false, locked)));
+          pending.forEach(m => view.appendChild(buildMatchItem(m, fencers, m.number, false, locked)));
         }
 
         if (finished.length > 0) {
@@ -949,7 +949,7 @@
           lbl.className = 'section-label';
           lbl.textContent = `Terminés (${finished.length})`;
           view.appendChild(lbl);
-          finished.forEach((m, i) => view.appendChild(buildMatchItem(m, fencers, i + 1, true, locked)));
+          finished.forEach(m => view.appendChild(buildMatchItem(m, fencers, m.number, true, locked)));
         }
 
         if (matches.length === 0) {
