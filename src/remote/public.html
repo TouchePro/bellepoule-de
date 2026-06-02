@@ -907,7 +907,22 @@
           this.socket.on('connect', () => {
             this.updateConnectionStatus(true);
             this.socket.emit('join_arena', { arenaId: this.arenaId, role: 'public' });
+            this.socket.emit('client:register', { clientType: 'public', arenaId: this.arenaId, userAgent: navigator.userAgent });
           });
+
+          this.socket.on('server:command', cmd => {
+            if (cmd.type === 'refresh') { location.reload(); return; }
+            if (cmd.type === 'navigate' && cmd.url) { location.href = cmd.url; return; }
+            if (cmd.type === 'ping') { this.socket.emit('client:pong'); return; }
+            if (cmd.type === 'message' && cmd.text) {
+              let b = document.getElementById('remote-msg-banner');
+              if (!b) { b = document.createElement('div'); b.id = 'remote-msg-banner'; b.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.82);color:#fff;font-size:1.3rem;padding:0.7rem 1.2rem;text-align:center;z-index:9999;pointer-events:none;transition:opacity 0.4s;'; document.body.appendChild(b); }
+              b.textContent = cmd.text; b.style.opacity = '1';
+              clearTimeout(b._t); b._t = setTimeout(() => { b.style.opacity = '0'; }, cmd.duration ?? 5000);
+            }
+          });
+
+          setInterval(() => { if (this.socket.connected) this.socket.emit('client:pong'); }, 30000);
 
           this.socket.on('disconnect', () => {
             this.updateConnectionStatus(false);

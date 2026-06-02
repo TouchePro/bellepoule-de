@@ -335,6 +335,24 @@ export interface RemoteServerInfo {
   port: number;
 }
 
+export interface ConnectedClient {
+  socketId: string;
+  clientType: 'arena' | 'kiosk' | 'public' | 'pool' | 'dashboard';
+  arenaId?: string;
+  ip: string;
+  userAgent: string;
+  connectedAt: string;
+  lastSeen: string;
+  label?: string;
+}
+
+export interface TVCommand {
+  type: 'refresh' | 'navigate' | 'message' | 'ping';
+  url?: string;
+  text?: string;
+  duration?: number;
+}
+
 export interface RemoteServerAPI {
   getNetworkInterfaces: () => Promise<{
     success: boolean;
@@ -424,6 +442,10 @@ export interface RemoteServerAPI {
     competitionId: string,
     enabled: boolean
   ) => Promise<{ success: boolean; error?: string }>;
+  getConnectedClients: (competitionId: string) => Promise<{ success: boolean; clients: ConnectedClient[]; error?: string }>;
+  sendClientCommand: (competitionId: string, socketId: string, command: TVCommand) => Promise<{ success: boolean; error?: string }>;
+  broadcastCommand: (competitionId: string, command: TVCommand) => Promise<{ success: boolean; error?: string }>;
+  onClientListUpdate: (cb: (clients: ConnectedClient[]) => void) => () => void;
 }
 
 // ============================================================================
