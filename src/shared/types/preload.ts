@@ -337,7 +337,7 @@ export interface RemoteServerInfo {
 
 export interface ConnectedClient {
   socketId: string;
-  clientType: 'arena' | 'kiosk' | 'public' | 'pool' | 'dashboard';
+  clientType: 'arena' | 'kiosk' | 'public' | 'pool' | 'dashboard' | 'lobby';
   arenaId?: string;
   ip: string;
   userAgent: string;
