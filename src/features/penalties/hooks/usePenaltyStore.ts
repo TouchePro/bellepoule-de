@@ -17,7 +17,7 @@ import {
   CreatePenaltyDTO,
   DEFAULT_PENALTY_CONFIG,
   PenaltyConfig,
-} from './types/penalty.types';
+} from '../types/penalty.types';
 
 interface PenaltyState {
   penalties: Penalty[];
