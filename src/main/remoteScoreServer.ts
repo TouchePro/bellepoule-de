@@ -175,6 +175,7 @@ export class RemoteScoreServer {
       'index.html',
       'pool.html',
       'kiosk.html',
+      'lobby.html',
       'login.html',
       'public.html',
       'overlay.html',
@@ -739,6 +740,11 @@ export class RemoteScoreServer {
     this.app.get('/kiosk', (req, res) => {
       console.log('[RemoteScoreServer] Accès au mode kiosk');
       this.sendHtmlFromMemory('kiosk.html', res);
+    });
+
+    // Page d'attente sans arène assignée (lobby)
+    this.app.get('/lobby', (_req, res) => {
+      this.sendHtmlFromMemory('lobby.html', res);
     });
 
     // Page de connexion pour les pages protégées par mot de passe

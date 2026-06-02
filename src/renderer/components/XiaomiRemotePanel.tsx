@@ -16,6 +16,7 @@ interface XiaomiRemotePanelProps {
 
 const CLIENT_TYPE_LABELS: Record<string, string> = {
   arena: 'Arène',
+  lobby: 'Lobby',
   kiosk: 'Kiosk',
   public: 'Public',
   pool: 'Poules',
@@ -33,8 +34,7 @@ function formatLastSeen(lastSeen: string): string {
   const diff = Math.floor((Date.now() - new Date(lastSeen).getTime()) / 1000);
   if (diff < 10) return 'à l\'instant';
   if (diff < 60) return `il y a ${diff}s`;
-  const m = Math.floor(diff / 60);
-  return `il y a ${m}m`;
+  return `il y a ${Math.floor(diff / 60)}m`;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -42,6 +42,21 @@ const STATUS_COLORS: Record<string, string> = {
   warn: '#f59e0b',
   offline: '#6b7280',
 };
+
+function clientDisplayUrl(base: string, client: ConnectedClient): string {
+  if (client.clientType === 'lobby' || !client.arenaId) return `${base}/lobby`;
+  const num = client.arenaId.replace('arena', '');
+  return `${base}/arene${num}`;
+}
+
+function clientLabel(client: ConnectedClient): string {
+  const type = CLIENT_TYPE_LABELS[client.clientType] ?? client.clientType;
+  if (client.clientType === 'arena' && client.arenaId) {
+    const num = client.arenaId.replace('arena', '');
+    return `${type} ${num}`;
+  }
+  return type;
+}
 
 const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
   competitionId,
@@ -54,9 +69,11 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
   const [message, setMessage] = useState('');
   const [msgDuration, setMsgDuration] = useState(5);
   const [openNav, setOpenNav] = useState<string | null>(null);
+  const [swapSet, setSwapSet] = useState<Set<string>>(new Set());
   const navRef = useRef<HTMLDivElement>(null);
 
-  const navTargets = buildNavTargets(serverUrl, arenaCount);
+  const base = serverUrl.replace(/\/$/, '');
+  const allNavTargets = buildNavTargets(base, arenaCount);
 
   const fetchClients = useCallback(async () => {
     const res = await window.electronAPI.remote.getConnectedClients(competitionId);
@@ -73,9 +90,7 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
   useEffect(() => {
     if (!openNav) return;
     const handler = (e: MouseEvent) => {
-      if (navRef.current && !navRef.current.contains(e.target as Node)) {
-        setOpenNav(null);
-      }
+      if (navRef.current && !navRef.current.contains(e.target as Node)) setOpenNav(null);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -89,40 +104,61 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
     window.electronAPI.remote.broadcastCommand(competitionId, cmd);
   }, [competitionId]);
 
+  const toggleSwap = (socketId: string) => {
+    setSwapSet(prev => {
+      const next = new Set(prev);
+      if (next.has(socketId)) {
+        next.delete(socketId);
+      } else if (next.size < 2) {
+        next.add(socketId);
+      }
+      return next;
+    });
+  };
+
+  const confirmSwap = () => {
+    const [idA, idB] = [...swapSet];
+    const clientA = clients.find(c => c.socketId === idA);
+    const clientB = clients.find(c => c.socketId === idB);
+    if (!clientA || !clientB) return;
+    const urlA = clientDisplayUrl(base, clientA);
+    const urlB = clientDisplayUrl(base, clientB);
+    sendCmd(idA, { type: 'navigate', url: urlB });
+    sendCmd(idB, { type: 'navigate', url: urlA });
+    setSwapSet(new Set());
+  };
+
   const sendMessage = () => {
     if (!message.trim()) return;
     broadcastCmd({ type: 'message', text: message.trim(), duration: msgDuration * 1000 });
   };
 
+  const swapCandidates = clients.filter(c => swapSet.has(c.socketId));
+  const canSwap = swapSet.size === 2;
+  const isArenaOrLobby = (c: ConnectedClient) => c.clientType === 'arena' || c.clientType === 'lobby';
+
   return (
     <div
-      style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-      }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
         ref={modalRef}
-        style={{
-          background: 'var(--bg-card, #1e293b)',
-          border: '1px solid var(--border-color, rgba(255,255,255,0.1))',
-          borderRadius: '12px',
-          width: '560px',
-          maxWidth: '95vw',
-          maxHeight: '85vh',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-        }}
+        style={{ background: 'var(--bg-card, #1e293b)', border: '1px solid var(--border-color, rgba(255,255,255,0.1))', borderRadius: '12px', width: '600px', maxWidth: '96vw', maxHeight: '88vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
       >
         {/* Header */}
-        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border-color, rgba(255,255,255,0.1))', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <span style={{ fontSize: '1.25rem' }}>📺</span>
+        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border-color, rgba(255,255,255,0.1))', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <span style={{ fontSize: '1.2rem' }}>📺</span>
           <span style={{ fontWeight: 600, fontSize: '1rem', flex: 1 }}>Télécommande TV</span>
-          <button className="btn btn-secondary" onClick={fetchClients} style={{ padding: '0.25rem 0.6rem', fontSize: '0.8rem' }}>↻</button>
-          <button className="btn btn-primary" onClick={() => broadcastCmd({ type: 'refresh' })} style={{ padding: '0.25rem 0.6rem', fontSize: '0.8rem' }}>Tout rafraîchir</button>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted, #6b7280)', fontSize: '1.2rem', padding: '0 0.25rem' }}>×</button>
+          <button className="btn btn-secondary" onClick={fetchClients} style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem' }} title="Actualiser">↻</button>
+          <button className="btn btn-primary" onClick={() => broadcastCmd({ type: 'refresh' })} style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem' }}>Tout rafraîchir</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted, #6b7280)', fontSize: '1.2rem', padding: '0 0.2rem' }}>×</button>
+        </div>
+
+        {/* Lobby URL hint */}
+        <div style={{ padding: '0.55rem 1.25rem', background: 'rgba(56,189,248,0.07)', borderBottom: '1px solid var(--border-color, rgba(255,255,255,0.06))', fontSize: '0.78rem', color: '#7dd3fc', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span>💡</span>
+          <span>URL sans arène : <strong>{base}/lobby</strong> — les écrans y attendent leur affectation</span>
         </div>
 
         {/* Client list */}
@@ -130,82 +166,100 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
           {clients.length === 0 ? (
             <div style={{ color: 'var(--text-muted, #6b7280)', textAlign: 'center', padding: '2rem', fontSize: '0.9rem' }}>
               Aucun écran connecté.<br />
-              <span style={{ fontSize: '0.8rem' }}>Les TV apparaissent ici dès qu'elles ouvrent une page arena ou kiosk.</span>
+              <span style={{ fontSize: '0.8rem' }}>Ouvrez <strong>{base}/lobby</strong> sur une TV pour qu'elle apparaisse ici.</span>
             </div>
           ) : (
             clients.map((client) => {
               const status = getOnlineStatus(client.lastSeen);
+              const inSwap = swapSet.has(client.socketId);
+              const swapFull = swapSet.size >= 2 && !inSwap;
               return (
                 <div
                   key={client.socketId}
-                  style={{
-                    background: 'var(--bg-secondary, rgba(255,255,255,0.04))',
-                    border: '1px solid var(--border-color, rgba(255,255,255,0.08))',
-                    borderRadius: '8px',
-                    padding: '0.6rem 0.85rem',
-                    marginBottom: '0.5rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                  }}
+                  style={{ background: inSwap ? 'rgba(249,115,22,0.12)' : 'var(--bg-secondary, rgba(255,255,255,0.04))', border: `1px solid ${inSwap ? 'rgba(249,115,22,0.4)' : 'var(--border-color, rgba(255,255,255,0.08))'}`, borderRadius: '8px', padding: '0.6rem 0.85rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}
                 >
-                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: STATUS_COLORS[status], flexShrink: 0 }} />
+                  <span style={{ width: 9, height: 9, borderRadius: '50%', background: STATUS_COLORS[status], flexShrink: 0 }} />
+
+                  {/* Label + IP */}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 500, fontSize: '0.88rem' }}>
-                      {CLIENT_TYPE_LABELS[client.clientType] ?? client.clientType}
-                      {client.arenaId ? ` — ${client.arenaId}` : ''}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted, #6b7280)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontWeight: 500, fontSize: '0.88rem' }}>{clientLabel(client)}</div>
+                    <div style={{ fontSize: '0.73rem', color: 'var(--text-muted, #6b7280)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {client.ip} · {formatLastSeen(client.lastSeen)}
                     </div>
                   </div>
-                  <button
-                    className="btn btn-secondary"
-                    style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}
-                    onClick={() => sendCmd(client.socketId, { type: 'refresh' })}
-                  >
-                    ↻
-                  </button>
-                  <div ref={openNav === client.socketId ? navRef : null} style={{ position: 'relative' }}>
-                    <button
-                      className="btn btn-secondary"
-                      style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}
-                      onClick={() => setOpenNav(openNav === client.socketId ? null : client.socketId)}
+
+                  {/* Affecter à (arena/lobby only) */}
+                  {isArenaOrLobby(client) && (
+                    <select
+                      value={clientDisplayUrl(base, client)}
+                      onChange={e => sendCmd(client.socketId, { type: 'navigate', url: e.target.value })}
+                      style={{ padding: '0.2rem 0.3rem', fontSize: '0.75rem', background: 'var(--bg-secondary, rgba(255,255,255,0.06))', border: '1px solid var(--border-color, rgba(255,255,255,0.15))', borderRadius: '5px', color: 'inherit', maxWidth: '120px' }}
+                      title="Affecter à…"
                     >
-                      Naviguer ▾
-                    </button>
+                      <option value={`${base}/lobby`}>Lobby</option>
+                      {Array.from({ length: arenaCount }, (_, i) => (
+                        <option key={i + 1} value={`${base}/arene${i + 1}`}>Arène {i + 1}</option>
+                      ))}
+                    </select>
+                  )}
+
+                  {/* Rafraîchir */}
+                  <button className="btn btn-secondary" style={{ padding: '0.2rem 0.45rem', fontSize: '0.75rem' }} onClick={() => sendCmd(client.socketId, { type: 'refresh' })} title="Rafraîchir">↻</button>
+
+                  {/* Naviguer (tous types) */}
+                  <div ref={openNav === client.socketId ? navRef : null} style={{ position: 'relative' }}>
+                    <button className="btn btn-secondary" style={{ padding: '0.2rem 0.45rem', fontSize: '0.75rem' }} onClick={() => setOpenNav(openNav === client.socketId ? null : client.socketId)}>▾</button>
                     {openNav === client.socketId && (
-                      <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 4px)', background: 'var(--bg-card, #1e293b)', border: '1px solid var(--border-color, rgba(255,255,255,0.15))', borderRadius: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.4)', minWidth: '180px', zIndex: 300, overflow: 'hidden' }}>
-                        {navTargets.map(t => (
-                          <button
-                            key={t.url}
-                            className="comp-header-dropdown-item"
-                            style={{ width: '100%', textAlign: 'left', fontSize: '0.82rem' }}
-                            onClick={() => { sendCmd(client.socketId, { type: 'navigate', url: t.url }); setOpenNav(null); }}
-                          >
+                      <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 4px)', background: 'var(--bg-card, #1e293b)', border: '1px solid var(--border-color, rgba(255,255,255,0.15))', borderRadius: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.4)', minWidth: '170px', zIndex: 300, overflow: 'hidden' }}>
+                        {allNavTargets.map(t => (
+                          <button key={t.url} className="comp-header-dropdown-item" style={{ width: '100%', textAlign: 'left', fontSize: '0.82rem' }} onClick={() => { sendCmd(client.socketId, { type: 'navigate', url: t.url }); setOpenNav(null); }}>
                             {t.label}
                           </button>
                         ))}
                       </div>
                     )}
                   </div>
-                  <button
-                    className="btn btn-secondary"
-                    style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}
-                    onClick={() => sendCmd(client.socketId, { type: 'ping' })}
-                    title="Ping"
-                  >
-                    Ping
-                  </button>
+
+                  {/* Intervertir toggle (arena/lobby only) */}
+                  {isArenaOrLobby(client) && (
+                    <button
+                      className={`btn ${inSwap ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ padding: '0.2rem 0.45rem', fontSize: '0.75rem', opacity: swapFull ? 0.4 : 1 }}
+                      onClick={() => !swapFull && toggleSwap(client.socketId)}
+                      title={inSwap ? 'Retirer de la sélection' : 'Sélectionner pour intervertir'}
+                      disabled={swapFull}
+                    >
+                      ⇄
+                    </button>
+                  )}
                 </div>
               );
             })
           )}
         </div>
 
+        {/* Bandeau intervertir */}
+        {swapSet.size > 0 && (
+          <div style={{ padding: '0.65rem 1.25rem', background: 'rgba(249,115,22,0.12)', borderTop: '1px solid rgba(249,115,22,0.3)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span style={{ fontSize: '0.88rem', flex: 1, color: '#fdba74' }}>
+              ⇄ Intervertir{' '}
+              {swapCandidates.map(c => <strong key={c.socketId}>{clientLabel(c)}</strong>).reduce((a, b) => <>{a} <span style={{ color: '#94a3b8' }}>↔</span> {b}</> as any)}
+              {swapSet.size === 1 && <span style={{ color: '#94a3b8' }}> — sélectionner un 2ᵉ écran</span>}
+            </span>
+            {canSwap && (
+              <button className="btn btn-primary" style={{ padding: '0.3rem 0.75rem', fontSize: '0.82rem' }} onClick={confirmSwap}>
+                Confirmer
+              </button>
+            )}
+            <button className="btn btn-secondary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.82rem' }} onClick={() => setSwapSet(new Set())}>
+              Annuler
+            </button>
+          </div>
+        )}
+
         {/* Message global */}
         <div style={{ padding: '0.75rem 1.25rem', borderTop: '1px solid var(--border-color, rgba(255,255,255,0.1))' }}>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted, #6b7280)', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Message global</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted, #6b7280)', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Message global</div>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             <input
               type="text"
@@ -218,7 +272,7 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
             <select
               value={msgDuration}
               onChange={e => setMsgDuration(Number(e.target.value))}
-              style={{ padding: '0.4rem 0.4rem', fontSize: '0.82rem', background: 'var(--bg-secondary, rgba(255,255,255,0.06))', border: '1px solid var(--border-color, rgba(255,255,255,0.15))', borderRadius: '6px', color: 'inherit' }}
+              style={{ padding: '0.4rem 0.3rem', fontSize: '0.82rem', background: 'var(--bg-secondary, rgba(255,255,255,0.06))', border: '1px solid var(--border-color, rgba(255,255,255,0.15))', borderRadius: '6px', color: 'inherit' }}
             >
               <option value={3}>3s</option>
               <option value={5}>5s</option>
@@ -226,9 +280,7 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
               <option value={30}>30s</option>
               <option value={60}>60s</option>
             </select>
-            <button className="btn btn-primary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }} onClick={sendMessage}>
-              Envoyer
-            </button>
+            <button className="btn btn-primary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }} onClick={sendMessage}>Envoyer</button>
           </div>
         </div>
       </div>
@@ -236,12 +288,9 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
   );
 };
 
-function buildNavTargets(serverUrl: string, arenaCount: number) {
-  const base = serverUrl.replace(/\/$/, '');
-  const targets: { label: string; url: string }[] = [];
-  for (let i = 1; i <= arenaCount; i++) {
-    targets.push({ label: `Arène ${i}`, url: `${base}/arene${i}` });
-  }
+function buildNavTargets(base: string, arenaCount: number) {
+  const targets: { label: string; url: string }[] = [{ label: 'Salle d\'attente (Lobby)', url: `${base}/lobby` }];
+  for (let i = 1; i <= arenaCount; i++) targets.push({ label: `Arène ${i}`, url: `${base}/arene${i}` });
   targets.push({ label: 'Kiosk public', url: `${base}/kiosk` });
   targets.push({ label: 'Classement', url: `${base}/` });
   return targets;
