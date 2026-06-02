@@ -344,13 +344,25 @@ export interface ConnectedClient {
   connectedAt: string;
   lastSeen: string;
   label?: string;
+  screenId?: string;
+}
+
+export interface KioskScreenConfig {
+  poules: boolean;
+  classement: boolean;
+  direct: boolean;
+  suivants: boolean;
+  tableau: boolean;
+  rotationSec: number;
 }
 
 export interface TVCommand {
-  type: 'refresh' | 'navigate' | 'message' | 'ping';
+  type: 'refresh' | 'navigate' | 'message' | 'ping' | 'identify' | 'kiosk:config';
   url?: string;
   text?: string;
   duration?: number;
+  kioskConfig?: Partial<KioskScreenConfig>;
+  screenLabel?: string;
 }
 
 export interface RemoteServerAPI {
@@ -446,6 +458,9 @@ export interface RemoteServerAPI {
   sendClientCommand: (competitionId: string, socketId: string, command: TVCommand) => Promise<{ success: boolean; error?: string }>;
   broadcastCommand: (competitionId: string, command: TVCommand) => Promise<{ success: boolean; error?: string }>;
   onClientListUpdate: (cb: (clients: ConnectedClient[]) => void) => () => void;
+  renameClient: (competitionId: string, socketId: string, label: string) => Promise<{ success: boolean; error?: string }>;
+  identifyClient: (competitionId: string, socketId: string) => Promise<{ success: boolean; error?: string }>;
+  setClientKioskMode: (competitionId: string, socketId: string, config: KioskScreenConfig) => Promise<{ success: boolean; error?: string }>;
 }
 
 // ============================================================================
