@@ -170,7 +170,7 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
                 borderRadius: '8px',
                 boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
                 minWidth: '200px',
-                zIndex: 200,
+                zIndex: 1100,
                 overflow: 'hidden',
               }}
             >

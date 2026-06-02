@@ -1862,8 +1862,8 @@ export class RemoteScoreServer {
             fencerB: m.fencerB
               ? { lastName: m.fencerB.lastName, firstName: m.fencerB.firstName, club: m.fencerB.club ?? '', id: m.fencerB.id }
               : null,
-            scoreA: live?.scoreA ?? m.scoreA ?? null,
-            scoreB: live?.scoreB ?? m.scoreB ?? null,
+            scoreA: (() => { const s = live?.scoreA ?? m.scoreA; return s != null ? ((s as any).value ?? s) : null; })(),
+            scoreB: (() => { const s = live?.scoreB ?? m.scoreB; return s != null ? ((s as any).value ?? s) : null; })(),
             winnerId: m.winner?.id ?? null,
             status: isFinished ? 'finished' : isLive ? 'live' : 'pending',
             isBye: !!m.isBye,

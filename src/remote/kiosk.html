@@ -1785,18 +1785,52 @@
           return;
         }
 
+        // Build ranked list: top 4 from finale/petite finale, then losers of each earlier round
+        const ranked = [];
+
         const winner1 = finaleMatch.winnerId === finaleMatch.fencerA?.id ? finaleMatch.fencerA : finaleMatch.fencerB;
         const winner2 = finaleMatch.winnerId === finaleMatch.fencerA?.id ? finaleMatch.fencerB : finaleMatch.fencerA;
-        const winner3 = pfMatch?.winnerId
-          ? (pfMatch.winnerId === pfMatch.fencerA?.id ? pfMatch.fencerA : pfMatch.fencerB)
-          : null;
-        const winner4 = pfMatch?.winnerId
-          ? (pfMatch.winnerId === pfMatch.fencerA?.id ? pfMatch.fencerB : pfMatch.fencerA)
-          : null;
+        if (winner1) ranked.push({ rank: 1, fencer: winner1 });
+        if (winner2) ranked.push({ rank: 2, fencer: winner2 });
 
-        const medals = ['🥇', '🥈', '🥉', '4️⃣'];
-        const podium = [winner1, winner2, winner3, winner4].filter(Boolean);
-        document.getElementById('final-badge').textContent = podium.length + ' tireur' + (podium.length > 1 ? 's' : '');
+        if (pfMatch?.winnerId) {
+          const winner3 = pfMatch.winnerId === pfMatch.fencerA?.id ? pfMatch.fencerA : pfMatch.fencerB;
+          const winner4 = pfMatch.winnerId === pfMatch.fencerA?.id ? pfMatch.fencerB : pfMatch.fencerA;
+          if (winner3) ranked.push({ rank: 3, fencer: winner3 });
+          if (winner4) ranked.push({ rank: 4, fencer: winner4 });
+        } else {
+          // Petite finale not yet played: both semi-final losers share 3rd
+          const sfRound = data.rounds.find(r => r.round === 4);
+          if (sfRound) {
+            sfRound.matches.forEach(m => {
+              const loser = m.winnerId === m.fencerA?.id ? m.fencerB : (m.winnerId ? m.fencerA : null);
+              if (loser) ranked.push({ rank: 3, fencer: loser });
+            });
+          }
+        }
+
+        // Add losers from earlier rounds (round 4 and beyond)
+        const mainRounds = data.rounds
+          .filter(r => r.round !== 2 && r.round !== 3)
+          .sort((a, b) => a.round - b.round); // ascending: 4, 8, 16, ...
+
+        let currentRank = ranked.length > 0 ? Math.max(...ranked.map(r => r.rank)) + 1 : 5;
+        for (const round of mainRounds) {
+          const losers = [];
+          for (const m of round.matches) {
+            if (!m.isBye && m.winnerId) {
+              const loser = m.winnerId === m.fencerA?.id ? m.fencerB : m.fencerA;
+              if (loser) losers.push(loser);
+            }
+          }
+          if (losers.length > 0) {
+            losers.forEach(f => ranked.push({ rank: currentRank, fencer: f }));
+            currentRank += losers.length;
+          }
+        }
+
+        const rankLabel = r => r <= 4 ? ['🥇','🥈','🥉','4️⃣'][r-1] : r + 'e';
+        document.getElementById('final-badge').textContent = ranked.length + ' tireur' + (ranked.length > 1 ? 's' : '');
 
         el.innerHTML = `<div class="ranking-scroll-wrapper" style="flex:1">
           <table class="ranking-table">
@@ -1808,10 +1842,10 @@
               </tr>
             </thead>
             <tbody>
-              ${podium.map((f, i) => `<tr class="${i === 0 ? 'top-row' : ''}">
-                <td><span class="rank-medal">${medals[i]}</span></td>
-                <td style="font-weight:600;font-size:1.1rem">${escHtml(f.lastName + ' ' + (f.firstName || ''))}</td>
-                <td style="color:#64748b">${escHtml(f.club || '—')}</td>
+              ${ranked.map(({ rank, fencer }) => `<tr class="${rank === 1 ? 'top-row' : ''}">
+                <td><span class="rank-medal">${rankLabel(rank)}</span></td>
+                <td style="font-weight:600;font-size:1.1rem">${escHtml(fencer.lastName + ' ' + (fencer.firstName || ''))}</td>
+                <td style="color:#64748b">${escHtml(fencer.club || '—')}</td>
               </tr>`).join('')}
             </tbody>
           </table>

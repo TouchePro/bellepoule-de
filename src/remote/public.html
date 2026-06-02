@@ -867,6 +867,7 @@
           this.cardsB = [];
           this.isSuddenDeath = false;
           this.overtimeType = null;
+          this.refereeSelected = false;
           // Clé localStorage indépendante des autres écrans
           this.inversionEnabled = localStorage.getItem('publicInversionEnabled') === 'true';
           this.showPhotos = false;
@@ -1039,7 +1040,17 @@
             this.updateStatusBadge();
           }
 
-          if (data.match && (data.refereeSelected || data.status === 'in_progress' || data.status === 'finished')) {
+          if (data.refereeSelected !== undefined) {
+            this.refereeSelected = data.refereeSelected;
+          }
+          if (data.status === 'in_progress' || data.status === 'finished') {
+            this.refereeSelected = true;
+          }
+          if (data.status === 'idle') {
+            this.refereeSelected = false;
+          }
+
+          if (data.match && (this.refereeSelected || data.status === 'in_progress' || data.status === 'finished')) {
             this.currentMatch = data.match;
             this.updateMatchDisplay();
             if (this.matchStatus === 'ready' && this.showPhotos) {
@@ -1209,7 +1220,8 @@
           const matchDisplay = document.getElementById('match-display');
           const photoIntro = document.getElementById('photo-intro');
 
-          if (this.matchStatus === 'idle' || this.matchStatus === 'not_started') {
+          if (this.matchStatus === 'idle' || this.matchStatus === 'not_started' ||
+              (this.matchStatus === 'ready' && !this.refereeSelected)) {
             waitingScreen.classList.remove('hidden');
             matchDisplay.classList.remove('active');
             photoIntro.classList.add('hidden');
