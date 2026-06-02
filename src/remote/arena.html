@@ -1431,7 +1431,17 @@
           this.socket.on('connect', () => {
             this.updateConnectionStatus(true);
             this.socket.emit('join_arena', { arenaId: this.arenaId, role: 'display' });
+            this.socket.emit('client:register', { clientType: 'arena', arenaId: this.arenaId, userAgent: navigator.userAgent });
           });
+
+          this.socket.on('server:command', cmd => {
+            if (cmd.type === 'refresh') { location.reload(); return; }
+            if (cmd.type === 'navigate' && cmd.url) { location.href = cmd.url; return; }
+            if (cmd.type === 'ping') { this.socket.emit('client:pong'); return; }
+            if (cmd.type === 'message' && cmd.text) { this.showRemoteMessage(cmd.text, cmd.duration ?? 5000); }
+          });
+
+          setInterval(() => { if (this.socket.connected) this.socket.emit('client:pong'); }, 30000);
 
           this.socket.on('disconnect', () => {
             this.updateConnectionStatus(false);
@@ -1461,6 +1471,20 @@
             .then(res => res.json())
             .then(data => { if (data.wallpaper) this.applyWallpaper(data.wallpaper); })
             .catch(() => {});
+        }
+
+        showRemoteMessage(text, duration) {
+          let banner = document.getElementById('remote-msg-banner');
+          if (!banner) {
+            banner = document.createElement('div');
+            banner.id = 'remote-msg-banner';
+            banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.82);color:#fff;font-size:1.3rem;padding:0.7rem 1.2rem;text-align:center;z-index:9999;pointer-events:none;transition:opacity 0.4s;';
+            document.body.appendChild(banner);
+          }
+          banner.textContent = text;
+          banner.style.opacity = '1';
+          clearTimeout(banner._hideTimer);
+          banner._hideTimer = setTimeout(() => { banner.style.opacity = '0'; }, duration);
         }
 
         applyWallpaper(wallpaper) {

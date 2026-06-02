@@ -1087,6 +1087,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         getCheckedInFencers={getCheckedInFencers}
         pools={pools}
         tableauMatches={tableauMatches}
+        remoteServerUrl={remoteServerUrl ?? undefined}
+        remoteArenaCount={remoteArenaCount}
       />
 
       {/* Content — keyed pour animation de transition */}

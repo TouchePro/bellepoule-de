@@ -8,6 +8,7 @@ import { Competition, MatchStatus, QuestPhaseConfig, Fencer } from '../../../sha
 import { Phase } from '../../hooks/useCompetitionSession';
 import CoachMark from '../CoachMark';
 import { WifiQRModal } from '../WifiQRModal';
+import { XiaomiRemotePanel } from '../XiaomiRemotePanel';
 
 interface PhaseItem {
   id: string;
@@ -49,6 +50,8 @@ interface CompetitionNavProps {
   getCheckedInFencers: () => Fencer[];
   pools: PoolItem[];
   tableauMatches: TableauMatchItem[];
+  remoteServerUrl?: string;
+  remoteArenaCount?: number;
 }
 
 const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
@@ -66,9 +69,12 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
   getCheckedInFencers,
   pools,
   tableauMatches,
+  remoteServerUrl,
+  remoteArenaCount = 4,
 }) => {
   const [showToolsMenu, setShowToolsMenu] = useState(false);
   const [showWifiQR, setShowWifiQR] = useState(false);
+  const [showTVRemote, setShowTVRemote] = useState(false);
   const toolsMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -175,6 +181,13 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
               >
                 📶 QR Code WiFi
               </button>
+              <button
+                className="comp-header-dropdown-item"
+                onClick={() => { setShowTVRemote(true); setShowToolsMenu(false); }}
+                style={{ width: '100%', textAlign: 'left' }}
+              >
+                📺 Télécommande TV
+              </button>
             </div>
           )}
         </div>
@@ -221,6 +234,14 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
     )}
 
     {showWifiQR && <WifiQRModal onClose={() => setShowWifiQR(false)} />}
+    {showTVRemote && (
+      <XiaomiRemotePanel
+        competitionId={competition.id}
+        serverUrl={remoteServerUrl ?? ''}
+        arenaCount={remoteArenaCount}
+        onClose={() => setShowTVRemote(false)}
+      />
+    )}
   </>
   );
 };

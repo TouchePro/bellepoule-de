@@ -2565,6 +2565,21 @@
         try {
           const socket = io({ reconnection: true, reconnectionDelay: 200, reconnectionDelayMax: 5000, randomizationFactor: 0.5 });
           socket.on('bracket:update', fetchBracket);
+          socket.on('connect', () => {
+            socket.emit('client:register', { clientType: 'kiosk', userAgent: navigator.userAgent });
+          });
+          socket.on('server:command', cmd => {
+            if (cmd.type === 'refresh') { location.reload(); return; }
+            if (cmd.type === 'navigate' && cmd.url) { location.href = cmd.url; return; }
+            if (cmd.type === 'ping') { socket.emit('client:pong'); return; }
+            if (cmd.type === 'message' && cmd.text) {
+              let b = document.getElementById('remote-msg-banner');
+              if (!b) { b = document.createElement('div'); b.id = 'remote-msg-banner'; b.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.82);color:#fff;font-size:1.3rem;padding:0.7rem 1.2rem;text-align:center;z-index:9999;pointer-events:none;transition:opacity 0.4s;'; document.body.appendChild(b); }
+              b.textContent = cmd.text; b.style.opacity = '1';
+              clearTimeout(b._t); b._t = setTimeout(() => { b.style.opacity = '0'; }, cmd.duration ?? 5000);
+            }
+          });
+          setInterval(() => { if (socket.connected) socket.emit('client:pong'); }, 30000);
         } catch { /* Socket.IO optionnel */ }
 
         // Plein écran automatique au premier clic seulement

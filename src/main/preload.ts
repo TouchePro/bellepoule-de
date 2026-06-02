@@ -518,6 +518,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('remote:resetPoolMatch', competitionId, matchId),
     setRegistrationEnabled: (competitionId: string, enabled: boolean) =>
       ipcRenderer.invoke('remote:setRegistrationEnabled', competitionId, enabled),
+    getConnectedClients: (competitionId: string) =>
+      ipcRenderer.invoke('remote:getConnectedClients', competitionId),
+    sendClientCommand: (competitionId: string, socketId: string, command: any) =>
+      ipcRenderer.invoke('remote:sendClientCommand', competitionId, socketId, command),
+    broadcastCommand: (competitionId: string, command: any) =>
+      ipcRenderer.invoke('remote:broadcastCommand', competitionId, command),
+    onClientListUpdate: (cb: (clients: any[]) => void) => {
+      const handler = (_: any, clients: any[]) => cb(clients);
+      ipcRenderer.on('remote:clientListUpdate', handler);
+      return () => ipcRenderer.removeListener('remote:clientListUpdate', handler);
+    },
   },
 
   // Remote event listeners (for real-time updates)

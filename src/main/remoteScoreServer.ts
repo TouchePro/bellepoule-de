@@ -113,6 +113,18 @@ export class RemoteScoreServer {
   private readonly EVENT_BUFFER_MAX = 50;
   private readonly EVENT_BUFFER_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
+  // Registre des clients TV/affichage connectés (télécommande)
+  private connectedClients: Map<string, {
+    socketId: string;
+    clientType: 'arena' | 'kiosk' | 'public' | 'pool' | 'dashboard';
+    arenaId?: string;
+    ip: string;
+    userAgent: string;
+    connectedAt: string;
+    lastSeen: string;
+    label?: string;
+  }> = new Map();
+
   constructor(db: DatabaseManager, port: number = 8066, host: string = '0.0.0.0') {
     console.log('[RemoteScoreServer] Initialisation du serveur de saisie distante...');
     this.db = db;
@@ -2176,8 +2188,36 @@ export class RemoteScoreServer {
         }
       );
 
+      // Enregistrement client TV/affichage pour la télécommande
+      socket.on('client:register', (data: {
+        clientType: 'arena' | 'kiosk' | 'public' | 'pool' | 'dashboard';
+        arenaId?: string;
+        userAgent?: string;
+      }) => {
+        const now = new Date().toISOString();
+        this.connectedClients.set(socket.id, {
+          socketId: socket.id,
+          clientType: data.clientType ?? 'arena',
+          arenaId: data.arenaId,
+          ip: (socket.handshake.headers['x-forwarded-for'] as string) || socket.handshake.address || '',
+          userAgent: data.userAgent ?? '',
+          connectedAt: now,
+          lastSeen: now,
+        });
+        this.broadcastClientList();
+      });
+
+      socket.on('client:pong', () => {
+        const client = this.connectedClients.get(socket.id);
+        if (client) {
+          client.lastSeen = new Date().toISOString();
+        }
+      });
+
       socket.on('disconnect', () => {
         console.log('Client disconnected:', socket.id);
+        this.connectedClients.delete(socket.id);
+        this.broadcastClientList();
         this.handleDisconnect(socket);
       });
     });
@@ -2185,6 +2225,25 @@ export class RemoteScoreServer {
 
   private handleDisconnect(socket: any): void {
     console.log(`Client ${socket.id} disconnected`);
+  }
+
+  private broadcastClientList(): void {
+    const mainWin = (global as any).mainWindow;
+    if (mainWin) {
+      mainWin.webContents.send('remote:clientListUpdate', this.getConnectedClients());
+    }
+  }
+
+  getConnectedClients() {
+    return Array.from(this.connectedClients.values());
+  }
+
+  sendClientCommand(socketId: string, command: { type: string; url?: string; text?: string; duration?: number }): void {
+    this.io.to(socketId).emit('server:command', command);
+  }
+
+  broadcastCommand(command: { type: string; url?: string; text?: string; duration?: number }): void {
+    this.io.emit('server:command', command);
   }
 
   // Stockage des cartons par arène

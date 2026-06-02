@@ -1865,6 +1865,37 @@ ipcMain.handle('remote:setRegistrationEnabled', async (_, competitionId: string,
   }
 });
 
+ipcMain.handle('remote:getConnectedClients', async (_, competitionId: string) => {
+  try {
+    const entry = remoteServers.get(competitionId);
+    return { success: true, clients: entry?.server.getConnectedClients() ?? [] };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue', clients: [] };
+  }
+});
+
+ipcMain.handle('remote:sendClientCommand', async (_, competitionId: string, socketId: string, command: any) => {
+  try {
+    const entry = remoteServers.get(competitionId);
+    if (!entry) return { success: false, error: 'Serveur non démarré' };
+    entry.server.sendClientCommand(socketId, command);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
+ipcMain.handle('remote:broadcastCommand', async (_, competitionId: string, command: any) => {
+  try {
+    const entry = remoteServers.get(competitionId);
+    if (!entry) return { success: false, error: 'Serveur non démarré' };
+    entry.server.broadcastCommand(command);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
 ipcMain.handle('app:getLogo', async () => {
   const logoPath = path.join(app.getPath('userData'), 'logo.dat');
   try {
