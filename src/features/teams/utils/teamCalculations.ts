@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-import { Team, TeamFencer, TeamBout, TeamMatch } from './types/team.types';
+import { Team, TeamFencer, TeamBout, TeamMatch } from '../types/team.types';
 
 /**
  * Generate relay bouts for a team match
