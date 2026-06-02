@@ -33,7 +33,10 @@ beforeEach(() => {
 
 afterEach(() => { delete (window as any).electronAPI; });
 
-const setup = () => renderHook(() => useFencerManagement({ competition, onUpdate })).result;
+const setup = () =>
+  renderHook(() =>
+    useFencerManagement({ competition, onUpdate: onUpdate as unknown as (c: Competition) => void })
+  ).result;
 
 describe('addFencer', () => {
   it('ajoute le tireur et notifie le parent', async () => {
