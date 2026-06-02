@@ -3,10 +3,11 @@
  * Licensed under GPL-3.0
  */
 
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Competition, MatchStatus, QuestPhaseConfig, Fencer } from '../../../shared/types';
 import { Phase } from '../../hooks/useCompetitionSession';
 import CoachMark from '../CoachMark';
+import { WifiQRModal } from '../WifiQRModal';
 
 interface PhaseItem {
   id: string;
@@ -65,7 +66,23 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
   getCheckedInFencers,
   pools,
   tableauMatches,
-}) => (
+}) => {
+  const [showToolsMenu, setShowToolsMenu] = useState(false);
+  const [showWifiQR, setShowWifiQR] = useState(false);
+  const toolsMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showToolsMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (toolsMenuRef.current && !toolsMenuRef.current.contains(e.target as Node)) {
+        setShowToolsMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showToolsMenu]);
+
+  return (
   <>
     {/* Breadcrumb */}
     <div style={{ padding: '0.25rem 1rem', fontSize: '0.75rem', color: 'var(--text-muted, #6b7280)', borderBottom: '1px solid var(--border-color, rgba(255,255,255,0.1))', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -124,6 +141,43 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
             {poolsNextAction.label}
           </button>
         )}
+
+        {/* Bouton menu outils */}
+        <div ref={toolsMenuRef} style={{ position: 'relative' }}>
+          <button
+            className="btn btn-secondary"
+            onClick={() => setShowToolsMenu(v => !v)}
+            title="Outils"
+            aria-haspopup="true"
+            aria-expanded={showToolsMenu}
+          >
+            🔧 Outils
+          </button>
+          {showToolsMenu && (
+            <div
+              style={{
+                position: 'absolute',
+                right: 0,
+                top: 'calc(100% + 4px)',
+                background: 'var(--bg-card, #1e293b)',
+                border: '1px solid var(--border-color, rgba(255,255,255,0.1))',
+                borderRadius: '8px',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                minWidth: '200px',
+                zIndex: 200,
+                overflow: 'hidden',
+              }}
+            >
+              <button
+                className="comp-header-dropdown-item"
+                onClick={() => { setShowWifiQR(true); setShowToolsMenu(false); }}
+                style={{ width: '100%', textAlign: 'left' }}
+              >
+                📶 QR Code WiFi
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
 
@@ -165,8 +219,11 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
         )}
       </div>
     )}
+
+    {showWifiQR && <WifiQRModal onClose={() => setShowWifiQR(false)} />}
   </>
-);
+  );
+};
 
 const CompetitionNav = React.memo(CompetitionNavComponent);
 export default CompetitionNav;
