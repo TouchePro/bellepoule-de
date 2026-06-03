@@ -22,7 +22,6 @@ import { ConfirmProvider, useConfirm } from './components/ConfirmDialog';
 import { TranslationProvider, useTranslation, Theme } from './contexts/TranslationContext';
 import { ErrorBoundary, CompetitionErrorBoundary } from './components/ErrorBoundary';
 import { useAppState } from './hooks/useAppState';
-import { playStartupSound } from './startupSound';
 
 const PHASE_BADGE: Record<string, { label: string; cls: string }> = {
   [PhaseType.CHECKIN]: { label: 'Appel', cls: 'badge-checkin' },
@@ -69,11 +68,6 @@ const AppContent: React.FC = () => {
     handleSettingsSave,
     handleTabSwitch,
   } = useAppState(showToast);
-
-  // Son de démarrage (chocs d'épées + sabre laser), une seule fois au lancement
-  useEffect(() => {
-    playStartupSound();
-  }, []);
 
   // Load competitions on mount — attendre db:ready si la fenêtre s'ouvre avant la DB
   useEffect(() => {

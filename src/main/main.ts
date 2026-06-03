@@ -54,8 +54,6 @@ function createSplashWindow(): void {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      // Autorise le son de démarrage sans geste utilisateur
-      autoplayPolicy: 'no-user-gesture-required',
     },
   });
 
@@ -2107,9 +2105,6 @@ if (process.platform === 'linux') {
   app.commandLine.appendSwitch('disable-gpu-sandbox');
   app.commandLine.appendSwitch('use-gl', 'swiftshader');
 }
-
-// Autorise le son de démarrage du splash sans geste utilisateur (niveau Chromium)
-app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
 app.whenReady().then(async () => {
   // Afficher le splash immédiatement pendant que tout le reste charge
