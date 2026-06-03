@@ -54,6 +54,8 @@ function createSplashWindow(): void {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      // Autorise le son de démarrage sans geste utilisateur
+      autoplayPolicy: 'no-user-gesture-required',
     },
   });
 
