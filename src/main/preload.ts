@@ -544,7 +544,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('arena:update', handler);
   },
   onRemoteMatchFinished: (callback: (data: any) => void) => {
-    ipcRenderer.on('match:finished', (_, data) => callback(data));
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on('match:finished', handler);
+    return () => ipcRenderer.removeListener('match:finished', handler);
   },
   onRemoteFencerExcluded: (callback: (data: { fencerId: string; matchId: string }) => void) => {
     const handler = (_: any, data: any) => callback(data);
