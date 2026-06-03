@@ -358,6 +358,11 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         setCommittedCount(count);
         onArenaCountChange?.(count);
         showToast('Saisie distante démarrée', 'success');
+        // Synchroniser le webhook URL configuré vers le serveur qui vient de démarrer
+        const savedWebhook = localStorage.getItem('bellepoule-webhook-url');
+        if (savedWebhook) {
+          window.electronAPI.remote.setWebhookUrl?.(savedWebhook).catch(() => {});
+        }
         // Envoyer les matchs DE avec leurs pistes au serveur (la clé ref est déjà stockée
         // avant que session/isRemoteActive soient prêts, donc l'effet ne se déclenche pas).
         if (deMatches.length > 0) {

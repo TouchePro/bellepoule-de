@@ -90,6 +90,9 @@ export class RemoteScoreServer {
     tableau: true,
   };
 
+  // Webhook résultats (URL HTTPS externe configurée via Settings)
+  private webhookUrl: string | null = null;
+
   // Inscription distante : actif pendant la phase CHECKIN, désactivé après génération des poules
   private registrationEnabled: boolean = true;
 
@@ -3297,6 +3300,27 @@ export class RemoteScoreServer {
       nextMatch,
     });
 
+    // Webhook résultats
+    this.fireWebhook({
+      event: 'match_finished',
+      arenaId,
+      matchId: finishedMatch.id,
+      fencerA: finishedMatch.fencerA
+        ? { id: finishedMatch.fencerA.id, name: `${finishedMatch.fencerA.lastName} ${finishedMatch.fencerA.firstName}`, club: finishedMatch.fencerA.club }
+        : null,
+      fencerB: finishedMatch.fencerB
+        ? { id: finishedMatch.fencerB.id, name: `${finishedMatch.fencerB.lastName} ${finishedMatch.fencerB.firstName}`, club: finishedMatch.fencerB.club }
+        : null,
+      scoreA: finishedMatch.scoreA,
+      scoreB: finishedMatch.scoreB,
+      winner: finishedMatch.scoreA > finishedMatch.scoreB ? 'A'
+        : finishedMatch.scoreB > finishedMatch.scoreA ? 'B' : null,
+      duration: finishedMatch.duration ?? null,
+      timestamp: new Date().toISOString(),
+      // Compatibilité Slack/Discord : champ text en clair
+      text: `Match terminé — ${finishedMatch.fencerA ? `${finishedMatch.fencerA.lastName} ${finishedMatch.fencerA.firstName}` : '?'} ${finishedMatch.scoreA} – ${finishedMatch.scoreB} ${finishedMatch.fencerB ? `${finishedMatch.fencerB.lastName} ${finishedMatch.fencerB.firstName}` : '?'}`,
+    });
+
     // Persister le score final dans la DB et dans l'audit log
     try {
       const finalMatchId = finishedMatch.id;
@@ -4489,6 +4513,19 @@ export class RemoteScoreServer {
 
   public acknowledgeDTCall(arenaId: string): void {
     this.io.to(`arena:${arenaId}`).emit(`arena:${arenaId}:dt_call_ack`);
+  }
+
+  public setWebhookUrl(url: string | null): void {
+    this.webhookUrl = url && url.startsWith('https://') ? url : null;
+  }
+
+  private fireWebhook(payload: Record<string, unknown>): void {
+    if (!this.webhookUrl) return;
+    fetch(this.webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }).catch(() => {/* silencieux — ne pas bloquer le flux */});
   }
 
   public setLogo(logo: string | null): void {

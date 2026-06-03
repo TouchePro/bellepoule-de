@@ -1870,6 +1870,17 @@ ipcMain.handle('remote:acknowledgeDTCall', async (_, competitionId: string, aren
   }
 });
 
+ipcMain.handle('remote:setWebhookUrl', async (_, url: string | null) => {
+  try {
+    for (const { server } of remoteServers.values()) {
+      server.setWebhookUrl(url);
+    }
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
 ipcMain.handle('remote:updateLogo', async (_, logo: string | null) => {
   try {
     const logoPath = path.join(app.getPath('userData'), 'logo.dat');
