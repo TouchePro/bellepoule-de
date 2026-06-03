@@ -65,7 +65,8 @@ function createSplashWindow(): void {
 
   const iconPath = path.join(__dirname, '../../resources/icons/256x256.png');
   const versionInfo = getVersionInfo();
-  const channel = process.env.NODE_ENV === 'development' ? 'dev' : 'main';
+  const channel =
+    process.env.NODE_ENV === 'development' || !app.isPackaged ? 'dev' : 'main';
   splashWindow.loadFile(splashPath, {
     query: {
       icon: iconPath,
