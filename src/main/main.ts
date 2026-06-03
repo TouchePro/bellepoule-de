@@ -62,7 +62,16 @@ function createSplashWindow(): void {
   if (!fs.existsSync(splashPath)) return;
 
   const iconPath = path.join(__dirname, '../../resources/icons/256x256.png');
-  splashWindow.loadFile(splashPath, { query: { icon: iconPath } });
+  const versionInfo = getVersionInfo();
+  const channel = process.env.NODE_ENV === 'development' ? 'dev' : 'main';
+  splashWindow.loadFile(splashPath, {
+    query: {
+      icon: iconPath,
+      version: versionInfo.version,
+      build: String(versionInfo.build),
+      channel,
+    },
+  });
   splashWindow.once('ready-to-show', () => splashWindow?.show());
 }
 

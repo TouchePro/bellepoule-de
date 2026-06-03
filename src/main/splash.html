@@ -73,7 +73,43 @@
       color: #3d4f72;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      margin-bottom: 22px;
+      margin-bottom: 10px;
+    }
+
+    /* ---- Infos de version ---- */
+    .version-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .version-text {
+      font-size: 11px;
+      color: #4a5a7a;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 0.05em;
+    }
+
+    .channel-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .channel-badge.main {
+      background: rgba(59, 91, 219, 0.18);
+      color: #6b84e8;
+      border: 1px solid rgba(59, 91, 219, 0.3);
+    }
+
+    .channel-badge.dev {
+      background: rgba(217, 119, 6, 0.18);
+      color: #f59e0b;
+      border: 1px solid rgba(217, 119, 6, 0.3);
     }
 
     /* ---- Épée SVG ---- */
@@ -178,6 +214,10 @@
 
     <div class="title">BellePoule Modern</div>
     <div class="subtitle">Logiciel de gestion d'escrime</div>
+    <div class="version-line">
+      <span id="version-text" class="version-text">v1.0.0 · Build #0</span>
+      <span id="channel-badge" class="channel-badge main">main</span>
+    </div>
 
     <div class="epee-wrap">
       <svg width="380" height="36" viewBox="0 0 380 36" xmlns="http://www.w3.org/2000/svg">
@@ -217,8 +257,10 @@
   </div>
 
   <script>
-    // Inject icon path from main process (passed as query parameter)
+    // All params injected by main process via query string
     const params = new URLSearchParams(location.search);
+
+    // Icon
     const iconEl = document.getElementById('app-icon');
     let iconPath = params.get('icon') || '';
     if (iconPath && !/^file:/.test(iconPath)) {
@@ -226,6 +268,18 @@
       iconPath = 'file://' + (norm.startsWith('/') ? '' : '/') + norm;
     }
     if (iconEl && iconPath) iconEl.src = iconPath;
+
+    // Version + build + channel
+    const version = params.get('version') || '?';
+    const build = params.get('build') || '0';
+    const channel = params.get('channel') || 'main';
+    const versionEl = document.getElementById('version-text');
+    const badgeEl = document.getElementById('channel-badge');
+    if (versionEl) versionEl.textContent = 'v' + version + '  ·  Build #' + build;
+    if (badgeEl) {
+      badgeEl.textContent = channel;
+      badgeEl.className = 'channel-badge ' + channel;
+    }
 
     // LCD-style counter
     const counterEl = document.getElementById('counter');
