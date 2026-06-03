@@ -37,6 +37,8 @@ let mainWindow: BrowserWindow | null = null;
 
 // Splash window shown during startup
 let splashWindow: BrowserWindow | null = null;
+let splashShownAt: number | null = null;
+const MIN_SPLASH_MS = 2500;
 
 function createSplashWindow(): void {
   splashWindow = new BrowserWindow({
@@ -72,20 +74,38 @@ function createSplashWindow(): void {
       channel,
     },
   });
-  splashWindow.once('ready-to-show', () => splashWindow?.show());
+  splashWindow.once('ready-to-show', () => {
+    splashWindow?.show();
+    splashShownAt = Date.now();
+  });
 }
 
-function closeSplash(): void {
-  if (!splashWindow || splashWindow.isDestroyed()) return;
-  splashWindow.webContents
-    .executeJavaScript('document.body.classList.add("fadeout"); true')
-    .catch(() => {});
+// onClosed est appelé après le fade-out, au moment d'afficher la fenêtre principale
+function closeSplash(onClosed?: () => void): void {
+  if (!splashWindow || splashWindow.isDestroyed()) {
+    onClosed?.();
+    return;
+  }
+  // Garantir un affichage minimum pour que l'animation soit visible
+  const elapsed = splashShownAt !== null ? Date.now() - splashShownAt : 0;
+  const remaining = Math.max(0, MIN_SPLASH_MS - elapsed);
+
   setTimeout(() => {
-    if (splashWindow && !splashWindow.isDestroyed()) {
-      splashWindow.close();
-      splashWindow = null;
+    if (!splashWindow || splashWindow.isDestroyed()) {
+      onClosed?.();
+      return;
     }
-  }, 420);
+    splashWindow.webContents
+      .executeJavaScript('document.body.classList.add("fadeout"); true')
+      .catch(() => {});
+    setTimeout(() => {
+      if (splashWindow && !splashWindow.isDestroyed()) {
+        splashWindow.close();
+        splashWindow = null;
+      }
+      onClosed?.();
+    }, 420);
+  }, remaining);
 }
 
 // Current UI language (kept in sync via IPC)
@@ -513,14 +533,12 @@ function createWindow(): void {
 
   const showFallback = setTimeout(() => {
     if (mainWindow && !mainWindow.isVisible()) {
-      closeSplash();
-      mainWindow.show();
+      closeSplash(() => mainWindow?.show());
     }
   }, 10000);
   mainWindow.once('ready-to-show', () => {
     clearTimeout(showFallback);
-    closeSplash();
-    setTimeout(() => mainWindow?.show(), 380);
+    closeSplash(() => mainWindow?.show());
   });
 
   // Allow camera access for webcam photo capture
