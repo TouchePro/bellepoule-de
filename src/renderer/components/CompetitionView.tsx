@@ -360,10 +360,19 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
           };
           return updated;
         });
+
+        // Propager le score live vers la vue poule (scores intermédiaires pendant le match)
+        const matchId = data.update?.match?.id;
+        const scoreA = data.update?.scoreA ?? data.update?.match?.scoreA;
+        const scoreB = data.update?.scoreB ?? data.update?.match?.scoreB;
+        if (matchId !== undefined && scoreA !== undefined && scoreB !== undefined
+            && data.update?.status !== 'finished') {
+          updateMatchFromRemote(matchId, scoreA as number, scoreB as number, MatchStatus.IN_PROGRESS);
+        }
       });
     }
     return () => unlisten?.();
-  }, [isRemoteActive, competition.id]);
+  }, [isRemoteActive, competition.id, updateMatchFromRemote]);
 
   // Écouter les mises à jour des matches distants
   // Note: pas de garde sur currentPhase car la phase 'remote' affiche le panel de saisie distante
@@ -403,7 +412,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       });
     };
 
-    window.electronAPI.onRemoteMatchFinished(handleMatchFinished);
+    const offMatchFinished = window.electronAPI.onRemoteMatchFinished(handleMatchFinished);
 
     // Carton noir distant : exclure le combattant fautif dans le store
     const offExcluded = window.electronAPI.onRemoteFencerExcluded?.(({ fencerId }) => {
@@ -412,7 +421,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     });
 
     return () => {
-      window.electronAPI.removeAllListeners?.('match:finished');
+      offMatchFinished?.();
       offExcluded?.();
     };
   }, [updateMatchFromRemote, updateFencer]);
