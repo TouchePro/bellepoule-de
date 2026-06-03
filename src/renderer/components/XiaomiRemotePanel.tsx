@@ -88,6 +88,15 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
   const [renameValue, setRenameValue] = useState('');
   const [kioskTarget, setKioskTarget] = useState<string | null>(null);
   const [kioskConfig, setKioskConfig] = useState<KioskScreenConfig>(DEFAULT_KIOSK_CONFIG);
+  const [locked, setLocked] = useState<boolean>(() => localStorage.getItem('bp_remote_locked') === '1');
+
+  const toggleLock = () => {
+    setLocked(prev => {
+      const next = !prev;
+      localStorage.setItem('bp_remote_locked', next ? '1' : '0');
+      return next;
+    });
+  };
 
   const base = serverUrl.replace(/\/$/, '');
   const allNavTargets = buildNavTargets(base, arenaCount);
@@ -182,8 +191,16 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
         <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border-color, rgba(255,255,255,0.1))', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
           <span style={{ fontSize: '1.2rem' }}>📺</span>
           <span style={{ fontWeight: 600, fontSize: '1rem', flex: 1 }}>Télécommande TV</span>
+          <button
+            className={`btn ${locked ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={toggleLock}
+            style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem' }}
+            title={locked ? 'Déverrouiller la télécommande' : 'Verrouiller la télécommande pour éviter les changements'}
+          >
+            {locked ? '🔒 Verrouillé' : '🔓 Verrouiller'}
+          </button>
           <button className="btn btn-secondary" onClick={fetchClients} style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem' }} title="Actualiser">↻</button>
-          <button className="btn btn-primary" onClick={() => broadcastCmd({ type: 'refresh' })} style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem' }}>Tout rafraîchir</button>
+          <button className="btn btn-primary" onClick={() => broadcastCmd({ type: 'refresh' })} disabled={locked} style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem', opacity: locked ? 0.4 : 1 }}>Tout rafraîchir</button>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted, #6b7280)', fontSize: '1.2rem', padding: '0 0.2rem' }}>×</button>
         </div>
 
@@ -193,8 +210,16 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
           <span>URL sans arène : <strong>{base}/lobby</strong> — les écrans y attendent leur affectation</span>
         </div>
 
+        {/* Bandeau verrou */}
+        {locked && (
+          <div style={{ padding: '0.55rem 1.25rem', background: 'rgba(34,197,94,0.1)', borderBottom: '1px solid rgba(34,197,94,0.3)', fontSize: '0.78rem', color: '#86efac', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span>🔒</span>
+            <span>Télécommande verrouillée — actions désactivées. Cliquez sur « Verrouillé » pour déverrouiller.</span>
+          </div>
+        )}
+
         {/* Client list */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '0.75rem 1.25rem' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '0.75rem 1.25rem', pointerEvents: locked ? 'none' : 'auto', opacity: locked ? 0.55 : 1 }}>
           {clients.length === 0 ? (
             <div style={{ color: 'var(--text-muted, #6b7280)', textAlign: 'center', padding: '2rem', fontSize: '0.9rem' }}>
               Aucun écran connecté.<br />
@@ -312,7 +337,7 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
         )}
 
         {/* Message global */}
-        <div style={{ padding: '0.75rem 1.25rem', borderTop: '1px solid var(--border-color, rgba(255,255,255,0.1))' }}>
+        <div style={{ padding: '0.75rem 1.25rem', borderTop: '1px solid var(--border-color, rgba(255,255,255,0.1))', pointerEvents: locked ? 'none' : 'auto', opacity: locked ? 0.55 : 1 }}>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted, #6b7280)', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Message global</div>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             <input
