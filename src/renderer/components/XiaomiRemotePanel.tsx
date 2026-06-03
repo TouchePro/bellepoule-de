@@ -50,6 +50,7 @@ function clientDisplayUrl(base: string, client: ConnectedClient): string {
 }
 
 function clientLabel(client: ConnectedClient): string {
+  if (client.label) return client.label;
   const type = CLIENT_TYPE_LABELS[client.clientType] ?? client.clientType;
   if (client.clientType === 'arena' && client.arenaId) {
     const num = client.arenaId.replace('arena', '');
@@ -69,6 +70,8 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
   const [message, setMessage] = useState('');
   const [msgDuration, setMsgDuration] = useState(5);
   const [openNav, setOpenNav] = useState<string | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
   const [swapSet, setSwapSet] = useState<Set<string>>(new Set());
   const navRef = useRef<HTMLDivElement>(null);
 
@@ -128,6 +131,17 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
     setSwapSet(new Set());
   };
 
+  const startEdit = (client: ConnectedClient) => {
+    setEditValue(clientLabel(client));
+    setEditing(client.socketId);
+  };
+
+  const commitEdit = (socketId: string) => {
+    const label = editValue.trim();
+    if (label) window.electronAPI.remote.renameClient(competitionId, socketId, label);
+    setEditing(null);
+  };
+
   const sendMessage = () => {
     if (!message.trim()) return;
     broadcastCmd({ type: 'message', text: message.trim(), duration: msgDuration * 1000 });
@@ -182,7 +196,28 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
 
                   {/* Label + IP */}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 500, fontSize: '0.88rem' }}>{clientLabel(client)}</div>
+                    {editing === client.socketId ? (
+                      <input
+                        autoFocus
+                        value={editValue}
+                        onChange={e => setEditValue(e.target.value)}
+                        onBlur={() => commitEdit(client.socketId)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') commitEdit(client.socketId);
+                          else if (e.key === 'Escape') setEditing(null);
+                        }}
+                        style={{ fontWeight: 500, fontSize: '0.88rem', width: '100%', padding: '0.1rem 0.3rem', background: 'var(--color-surface)', border: '1px solid var(--color-primary)', borderRadius: '4px', color: 'inherit' }}
+                      />
+                    ) : (
+                      <div
+                        style={{ fontWeight: 500, fontSize: '0.88rem', cursor: 'text', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                        title="Cliquer pour renommer"
+                        onClick={() => startEdit(client)}
+                      >
+                        {clientLabel(client)}
+                        <span style={{ fontSize: '0.7rem', opacity: 0.5 }}>✎</span>
+                      </div>
+                    )}
                     <div style={{ fontSize: '0.73rem', color: 'var(--color-text-light)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {client.ip} · {formatLastSeen(client.lastSeen)}
                     </div>
