@@ -8,6 +8,7 @@ import React, { useState, useEffect, useMemo , memo} from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { Competition, Fencer, Pool, Match, MatchStatus } from '../../shared/types';
 import { FencerStatsTable } from '../../features/analytics/components/FencerStatsTable';
+import { exportPostTournamentPDF } from '../../shared/utils/postTournamentReport';
 
 interface AnalyticsData {
   totalFencers: number;
@@ -276,6 +277,21 @@ const AnalyticsDashboard_: React.FC<AnalyticsDashboardProps> = ({
   const [selectedTimeframe, setSelectedTimeframe] = useState<'live' | 'last30min' | 'all'>('live');
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportReport = async () => {
+    setExporting(true);
+    try {
+      const [fencerStats, matchesWithRefs] = await Promise.all([
+        window.electronAPI.db.getCompetitionFencerStats(competition.id),
+        window.electronAPI.db.getMatchesWithReferees(competition.id),
+      ]);
+      const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
+      await exportPostTournamentPDF(competition, fencerStats, matchesWithRefs, logo);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const analyticsData = useMemo(
     () => calculateAnalytics(competition, pools, matches, fencers, selectedTimeframe),
@@ -323,6 +339,14 @@ const AnalyticsDashboard_: React.FC<AnalyticsDashboardProps> = ({
             <option value="last30min">Last 30 min</option>
             <option value="all">All time</option>
           </select>
+          <button
+            onClick={handleExportReport}
+            disabled={exporting}
+            className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50"
+            title="Exporter le rapport post-tournoi en PDF"
+          >
+            {exporting ? '⏳' : '📄'} Rapport PDF
+          </button>
           {onClose && (
             <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-xl font-bold">
               ×

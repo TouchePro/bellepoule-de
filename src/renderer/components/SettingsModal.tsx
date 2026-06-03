@@ -175,6 +175,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
     setWebhookUrl(url);
     setWebhookTestStatus('idle');
     localStorage.setItem(WEBHOOK_STORAGE_KEY, url);
+    // Synchronise l'URL vers tous les serveurs distants actifs
+    (window as any).electronAPI?.remote?.setWebhookUrl?.(url || null).catch(() => {/* serveur inactif */});
   };
 
   const handleTestWebhook = async () => {
