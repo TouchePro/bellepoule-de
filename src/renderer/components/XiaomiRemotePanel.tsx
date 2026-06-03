@@ -60,12 +60,23 @@ function clientLabel(client: ConnectedClient): string {
 }
 
 const DEFAULT_KIOSK_CONFIG: KioskScreenConfig = {
-  poules: true, classement: true, direct: true, suivants: true, tableau: true, rotationSec: 15,
+  poules: true, classement: true, final: false, direct: true, suivants: true, tableau: true, rotationSec: 15,
 };
+
+const KIOSK_CONFIG_STORAGE_KEY = 'bp_kiosk_config';
+
+function loadKioskConfig(): KioskScreenConfig {
+  try {
+    const stored = localStorage.getItem(KIOSK_CONFIG_STORAGE_KEY);
+    if (stored) return { ...DEFAULT_KIOSK_CONFIG, ...JSON.parse(stored) };
+  } catch { /* ignore */ }
+  return DEFAULT_KIOSK_CONFIG;
+}
 
 const KIOSK_VIEWS: { key: keyof KioskScreenConfig; label: string }[] = [
   { key: 'poules', label: 'Poules' },
   { key: 'classement', label: 'Classement' },
+  { key: 'final', label: 'Classement final' },
   { key: 'direct', label: 'Matchs en direct' },
   { key: 'suivants', label: 'Matchs suivants' },
   { key: 'tableau', label: 'Tableau DE' },
@@ -87,7 +98,7 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
   const [renameTarget, setRenameTarget] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [kioskTarget, setKioskTarget] = useState<string | null>(null);
-  const [kioskConfig, setKioskConfig] = useState<KioskScreenConfig>(DEFAULT_KIOSK_CONFIG);
+  const [kioskConfig, setKioskConfig] = useState<KioskScreenConfig>(loadKioskConfig);
   const [locked, setLocked] = useState<boolean>(() => localStorage.getItem('bp_remote_locked') === '1');
 
   const toggleLock = () => {
@@ -165,6 +176,7 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
 
   const sendKiosk = () => {
     if (!kioskTarget) return;
+    try { localStorage.setItem(KIOSK_CONFIG_STORAGE_KEY, JSON.stringify(kioskConfig)); } catch { /* ignore */ }
     window.electronAPI.remote.setClientKioskMode(competitionId, kioskTarget, kioskConfig);
     setKioskTarget(null);
   };
@@ -287,7 +299,7 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
                   <button className="btn btn-secondary" style={{ padding: '0.2rem 0.45rem', fontSize: '0.75rem' }} onClick={() => { setRenameTarget(client.socketId); setRenameValue(client.label ?? ''); }} title="Renommer cet écran">✏️</button>
 
                   {/* Mode kiosk */}
-                  <button className="btn btn-secondary" style={{ padding: '0.2rem 0.45rem', fontSize: '0.75rem' }} onClick={() => { setKioskTarget(client.socketId); setKioskConfig(DEFAULT_KIOSK_CONFIG); }} title="Configurer et envoyer en mode kiosk">🖥️</button>
+                  <button className="btn btn-secondary" style={{ padding: '0.2rem 0.45rem', fontSize: '0.75rem' }} onClick={() => { setKioskTarget(client.socketId); setKioskConfig(loadKioskConfig()); }} title="Configurer et envoyer en mode kiosk">🖥️</button>
 
                   {/* Rafraîchir */}
                   <button className="btn btn-secondary" style={{ padding: '0.2rem 0.45rem', fontSize: '0.75rem' }} onClick={() => sendCmd(client.socketId, { type: 'refresh' })} title="Rafraîchir">↻</button>
