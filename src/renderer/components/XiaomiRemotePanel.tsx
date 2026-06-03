@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
-import type { ConnectedClient, TVCommand } from '@shared/types/preload';
+import type { ConnectedClient, TVCommand, KioskScreenConfig } from '@shared/types/preload';
 
 interface XiaomiRemotePanelProps {
   competitionId: string;
@@ -50,6 +50,7 @@ function clientDisplayUrl(base: string, client: ConnectedClient): string {
 }
 
 function clientLabel(client: ConnectedClient): string {
+  if (client.label) return client.label;
   const type = CLIENT_TYPE_LABELS[client.clientType] ?? client.clientType;
   if (client.clientType === 'arena' && client.arenaId) {
     const num = client.arenaId.replace('arena', '');
@@ -57,6 +58,18 @@ function clientLabel(client: ConnectedClient): string {
   }
   return type;
 }
+
+const DEFAULT_KIOSK_CONFIG: KioskScreenConfig = {
+  poules: true, classement: true, direct: true, suivants: true, tableau: true, rotationSec: 15,
+};
+
+const KIOSK_VIEWS: { key: keyof KioskScreenConfig; label: string }[] = [
+  { key: 'poules', label: 'Poules' },
+  { key: 'classement', label: 'Classement' },
+  { key: 'direct', label: 'Matchs en direct' },
+  { key: 'suivants', label: 'Matchs suivants' },
+  { key: 'tableau', label: 'Tableau DE' },
+];
 
 const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
   competitionId,
@@ -71,6 +84,10 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
   const [openNav, setOpenNav] = useState<string | null>(null);
   const [swapSet, setSwapSet] = useState<Set<string>>(new Set());
   const navRef = useRef<HTMLDivElement>(null);
+  const [renameTarget, setRenameTarget] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [kioskTarget, setKioskTarget] = useState<string | null>(null);
+  const [kioskConfig, setKioskConfig] = useState<KioskScreenConfig>(DEFAULT_KIOSK_CONFIG);
 
   const base = serverUrl.replace(/\/$/, '');
   const allNavTargets = buildNavTargets(base, arenaCount);
@@ -128,6 +145,21 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
     setSwapSet(new Set());
   };
 
+  const commitRename = () => {
+    if (renameTarget) {
+      const lbl = renameValue.trim();
+      window.electronAPI.remote.renameClient(competitionId, renameTarget, lbl);
+    }
+    setRenameTarget(null);
+    setRenameValue('');
+  };
+
+  const sendKiosk = () => {
+    if (!kioskTarget) return;
+    window.electronAPI.remote.setClientKioskMode(competitionId, kioskTarget, kioskConfig);
+    setKioskTarget(null);
+  };
+
   const sendMessage = () => {
     if (!message.trim()) return;
     broadcastCmd({ type: 'message', text: message.trim(), duration: msgDuration * 1000 });
@@ -182,7 +214,20 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
 
                   {/* Label + IP */}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 500, fontSize: '0.88rem' }}>{clientLabel(client)}</div>
+                    {renameTarget === client.socketId ? (
+                      <input
+                        autoFocus
+                        type="text"
+                        value={renameValue}
+                        onChange={e => setRenameValue(e.target.value)}
+                        onBlur={commitRename}
+                        onKeyDown={e => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') { setRenameTarget(null); setRenameValue(''); } }}
+                        placeholder="Nom de l'écran…"
+                        style={{ width: '100%', padding: '0.2rem 0.4rem', fontSize: '0.85rem', background: 'var(--bg-secondary, rgba(255,255,255,0.06))', border: '1px solid var(--border-color, rgba(255,255,255,0.2))', borderRadius: '5px', color: 'inherit' }}
+                      />
+                    ) : (
+                      <div style={{ fontWeight: 500, fontSize: '0.88rem' }}>{clientLabel(client)}</div>
+                    )}
                     <div style={{ fontSize: '0.73rem', color: 'var(--text-muted, #6b7280)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {client.ip} · {formatLastSeen(client.lastSeen)}
                     </div>
@@ -202,6 +247,15 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
                       ))}
                     </select>
                   )}
+
+                  {/* Identifier */}
+                  <button className="btn btn-secondary" style={{ padding: '0.2rem 0.45rem', fontSize: '0.75rem' }} onClick={() => window.electronAPI.remote.identifyClient(competitionId, client.socketId)} title="Faire clignoter cet écran pour l'identifier">🔦</button>
+
+                  {/* Renommer */}
+                  <button className="btn btn-secondary" style={{ padding: '0.2rem 0.45rem', fontSize: '0.75rem' }} onClick={() => { setRenameTarget(client.socketId); setRenameValue(client.label ?? ''); }} title="Renommer cet écran">✏️</button>
+
+                  {/* Mode kiosk */}
+                  <button className="btn btn-secondary" style={{ padding: '0.2rem 0.45rem', fontSize: '0.75rem' }} onClick={() => { setKioskTarget(client.socketId); setKioskConfig(DEFAULT_KIOSK_CONFIG); }} title="Configurer et envoyer en mode kiosk">🖥️</button>
 
                   {/* Rafraîchir */}
                   <button className="btn btn-secondary" style={{ padding: '0.2rem 0.45rem', fontSize: '0.75rem' }} onClick={() => sendCmd(client.socketId, { type: 'refresh' })} title="Rafraîchir">↻</button>
@@ -284,6 +338,44 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Modal config kiosk */}
+      {kioskTarget && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}
+          onClick={e => { if (e.target === e.currentTarget) setKioskTarget(null); }}
+        >
+          <div style={{ background: 'var(--bg-card, #1e293b)', border: '1px solid var(--border-color, rgba(255,255,255,0.1))', borderRadius: '12px', width: '360px', maxWidth: '94vw', padding: '1.25rem' }}>
+            <div style={{ fontWeight: 600, fontSize: '1rem', marginBottom: '0.85rem' }}>🖥️ Configurer le mode kiosk</div>
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted, #94a3b8)', marginBottom: '0.5rem' }}>Vues à afficher :</div>
+            {KIOSK_VIEWS.map(({ key, label }) => (
+              <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.3rem 0', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={kioskConfig[key] as boolean}
+                  onChange={e => setKioskConfig(c => ({ ...c, [key]: e.target.checked }))}
+                />
+                {label}
+              </label>
+            ))}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem' }}>
+              <label style={{ fontSize: '0.82rem', color: 'var(--text-muted, #94a3b8)', whiteSpace: 'nowrap' }}>Rotation (s) :</label>
+              <input
+                type="number"
+                min={3}
+                max={300}
+                value={kioskConfig.rotationSec}
+                onChange={e => setKioskConfig(c => ({ ...c, rotationSec: Math.max(3, parseInt(e.target.value) || 15) }))}
+                style={{ width: '5rem', padding: '0.3rem 0.5rem', borderRadius: '5px', border: '1px solid var(--border-color, rgba(255,255,255,0.15))', background: 'var(--bg-secondary, rgba(255,255,255,0.06))', color: 'inherit' }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+              <button className="btn btn-primary" style={{ flex: 1 }} onClick={sendKiosk}>Envoyer en kiosk</button>
+              <button className="btn btn-secondary" onClick={() => setKioskTarget(null)}>Annuler</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
