@@ -486,6 +486,92 @@ export class RemoteScoreServer {
       res.json(arena);
     });
 
+    // Rapport de rotation des arbitres
+    this.app.get('/api/referees/rotation-report', (req, res) => {
+      if (!this.session) return res.status(404).json({ error: 'Pas de session active' });
+
+      const competitionId = this.session.competitionId;
+      const referees = this.db.getRefereesByCompetition(competitionId);
+      const allMatches = this.db.getMatchesWithReferees(competitionId);
+
+      const MAX_CONSECUTIVE = 3;
+      const MIN_REST_MINUTES = 15;
+
+      const report = referees.map(ref => {
+        const refMatches = allMatches.filter(m => m.refereeId === ref.id && m.status === 'finished');
+        const total = refMatches.length;
+
+        // Approximer matchs consécutifs sur les derniers matchs (ordre du tableau)
+        let consecutive = 0;
+        for (let i = refMatches.length - 1; i >= 0; i--) {
+          consecutive++;
+          if (consecutive >= MAX_CONSECUTIVE) break;
+          // Sans timestamp précis, on compte les derniers matchs du tableau
+        }
+
+        // Vérifier si l'arbitre est actuellement sur une piste
+        const isActive = Array.from(this.arenas.values()).some(a =>
+          a.status === 'in_progress' && a.currentMatch?.referee?.id === ref.id
+        );
+
+        const fatigueScore = Math.min(100, Math.round((consecutive / MAX_CONSECUTIVE) * 100));
+
+        return {
+          refereeId: ref.id,
+          refereeName: `${ref.firstName ?? ''} ${ref.lastName ?? ''}`.trim(),
+          matchesTotal: total,
+          consecutiveEstimate: consecutive,
+          fatigueScore,
+          isActive,
+          needsRest: consecutive >= MAX_CONSECUTIVE || fatigueScore >= 80,
+          category: (ref as any).category ?? null,
+        };
+      });
+
+      // Trier par score de fatigue décroissant
+      report.sort((a, b) => b.fatigueScore - a.fatigueScore);
+      res.json({ config: { maxConsecutive: MAX_CONSECUTIVE, minRestMinutes: MIN_REST_MINUTES }, report });
+    });
+
+    // Endpoint JSON structuré pour OBS Browser Source / intégrations externes
+    this.app.get('/api/arenas/:arenaId/obs-json', (req, res) => {
+      const { arenaId } = req.params;
+      const arena = this.getArena(arenaId);
+      if (!arena) return res.status(404).json({ error: 'Arène non trouvée' });
+
+      const touches = this.arenaTouches.get(arenaId) || { touchesA: [], touchesB: [] };
+      const cards   = this.arenaCards.get(arenaId)   || { cardsA: [], cardsB: [] };
+
+      const countZones = (zones: string[]) => ({
+        A: zones.filter(z => z === 'A').length,
+        B: zones.filter(z => z === 'B').length,
+        C: zones.filter(z => z === 'C').length,
+      });
+
+      res.json({
+        arenaId,
+        status: arena.status,
+        weapon: this.sessionWeapon ?? null,
+        match: arena.currentMatch ? {
+          id:       arena.currentMatch.id,
+          fencerA:  arena.currentMatch.fencerA,
+          fencerB:  arena.currentMatch.fencerB,
+          scoreA:   arena.currentMatch.scoreA,
+          scoreB:   arena.currentMatch.scoreB,
+          referee:  arena.currentMatch.referee,
+        } : null,
+        cards: { A: cards.cardsA, B: cards.cardsB },
+        touches: {
+          A: { raw: touches.touchesA, zones: countZones(touches.touchesA) },
+          B: { raw: touches.touchesB, zones: countZones(touches.touchesB) },
+        },
+        suddenDeath:     this.arenaSuddenDeath.get(arenaId) ?? false,
+        waitingOvertime: this.arenaWaitingOvertime.get(arenaId) ?? false,
+        swapped:         arena.swapped ?? false,
+        timestamp:       new Date().toISOString(),
+      });
+    });
+
     this.app.post('/api/arenas/:arenaId/assign', (req, res) => {
       const { match } = req.body;
       try {
@@ -2421,6 +2507,12 @@ export class RemoteScoreServer {
           if (data.cardsA !== undefined) currentCards.cardsA = data.cardsA;
           if (data.cardsB !== undefined) currentCards.cardsB = data.cardsB;
           this.arenaCards.set(data.arenaId, currentCards);
+          // Mettre à jour les touches par zone si fournies
+          const currentTouches = this.arenaTouches.get(data.arenaId) || { touchesA: [], touchesB: [] };
+          if (data.touchesA !== undefined) currentTouches.touchesA = data.touchesA;
+          if (data.touchesB !== undefined) currentTouches.touchesB = data.touchesB;
+          this.arenaTouches.set(data.arenaId, currentTouches);
+
           this.broadcastArenaUpdate(data.arenaId, {
             arenaId: data.arenaId,
             match: arena.currentMatch,
@@ -2428,18 +2520,13 @@ export class RemoteScoreServer {
             scoreB: data.scoreB ?? arena.currentMatch?.scoreB,
             cardsA: currentCards.cardsA,
             cardsB: currentCards.cardsB,
+            touchesA: currentTouches.touchesA,
+            touchesB: currentTouches.touchesB,
             suddenDeath: this.arenaSuddenDeath.get(data.arenaId) ?? false,
             overtimeType: this.arenaOvertimeType.get(data.arenaId) ?? null,
             waitingOvertime: this.arenaWaitingOvertime.get(data.arenaId) ?? false,
             status: arena.status,
           });
-        }
-        // Mettre à jour les touches par zone si fournies
-        if (data.touchesA !== undefined || data.touchesB !== undefined) {
-          const currentTouches = this.arenaTouches.get(data.arenaId) || { touchesA: [], touchesB: [] };
-          if (data.touchesA !== undefined) currentTouches.touchesA = data.touchesA;
-          if (data.touchesB !== undefined) currentTouches.touchesB = data.touchesB;
-          this.arenaTouches.set(data.arenaId, currentTouches);
         }
         break;
       }

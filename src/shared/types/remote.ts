@@ -167,6 +167,8 @@ export interface ArenaUpdate {
   poolComplete?: boolean; // vrai quand tous les matchs de la poule sont terminés
   completedPoolId?: string; // id de la poule terminée
   refereeSelected?: boolean; // vrai quand l'arbitre a explicitement sélectionné le match
+  touchesA?: string[]; // zones touchées par le tireur A ('A'|'B'|'C') — Laser Sabre
+  touchesB?: string[]; // zones touchées par le tireur B ('A'|'B'|'C') — Laser Sabre
 }
 
 export interface RefereeControl {
