@@ -251,7 +251,14 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
                         style={{ width: '100%', padding: '0.2rem 0.4rem', fontSize: '0.85rem', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '5px', color: 'inherit' }}
                       />
                     ) : (
-                      <div style={{ fontWeight: 500, fontSize: '0.88rem' }}>{clientLabel(client)}</div>
+                      <div
+                        style={{ fontWeight: 500, fontSize: '0.88rem', cursor: 'text', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                        title="Cliquer pour renommer"
+                        onClick={() => { setRenameTarget(client.socketId); setRenameValue(clientLabel(client)); }}
+                      >
+                        {clientLabel(client)}
+                        <span style={{ fontSize: '0.7rem', opacity: 0.5 }}>✎</span>
+                      </div>
                     )}
                     <div style={{ fontSize: '0.73rem', color: 'var(--color-text-light)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {client.ip} · {formatLastSeen(client.lastSeen)}
