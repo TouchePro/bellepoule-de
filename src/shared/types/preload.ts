@@ -350,6 +350,7 @@ export interface ConnectedClient {
 export interface KioskScreenConfig {
   poules: boolean;
   classement: boolean;
+  final: boolean;
   direct: boolean;
   suivants: boolean;
   tableau: boolean;

@@ -1608,19 +1608,21 @@
           renderOrgNote(state.session.orgNote || null);
 
           // Appliquer les vues kiosk : localStorage en priorité, sinon config serveur
+          // 'final' (classement final) désactivé par défaut s'il n'est pas explicitement présent
+          const viewDefault = (src, v) => (v === 'final' ? src[v] === true : src[v] !== false);
           const localViews = loadLocalViews();
           if (localViews) {
             // Restaurer l'état des checkboxes depuis localStorage
             ALL_VIEWS.forEach(v => {
               const cb = document.getElementById('cb-' + v);
-              if (cb) cb.checked = localViews[v] !== false;
+              if (cb) cb.checked = viewDefault(localViews, v);
             });
           } else if (state.session.kioskViews) {
             // Initialiser les checkboxes depuis la config serveur (premier chargement)
             const kv = state.session.kioskViews;
             ALL_VIEWS.forEach(v => {
               const cb = document.getElementById('cb-' + v);
-              if (cb) cb.checked = kv[v] !== false;
+              if (cb) cb.checked = viewDefault(kv, v);
             });
           }
           applyLocalViews();
@@ -2646,7 +2648,7 @@
             if (cmd.type === 'kiosk:config' && cmd.kioskConfig) {
               const cfg = cmd.kioskConfig;
               if (cfg.rotationSec != null) localStorage.setItem('kioskRotationSec', String(Math.max(3, cfg.rotationSec)));
-              const viewKeys = ['poules','classement','direct','suivants','tableau'];
+              const viewKeys = ['poules','classement','final','direct','suivants','tableau'];
               const cur = JSON.parse(localStorage.getItem('kioskViewsLocal') || '{}');
               viewKeys.forEach(k => { if (k in cfg) cur[k] = cfg[k]; });
               localStorage.setItem('kioskViewsLocal', JSON.stringify(cur));
