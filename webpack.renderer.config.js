@@ -107,6 +107,11 @@ module.exports = (env = {}) => ({
           to: '../remote',
           noErrorOnMissing: true,
         },
+        {
+          from: 'src/main/splash.html',
+          to: path.resolve(__dirname, 'dist/main/splash.html'),
+          noErrorOnMissing: true,
+        },
       ],
     }),
     ...(env.analyze ? [new BundleAnalyzerPlugin()] : []),

@@ -3,7 +3,7 @@
  * Licensed under GPL-3.0
  */
 
-import { app, BrowserWindow, ipcMain, dialog, Menu, shell, safeStorage } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, Menu, shell, safeStorage, screen } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -34,6 +34,50 @@ let autoUpdater: AutoUpdater | null = null;
 
 // Main window reference
 let mainWindow: BrowserWindow | null = null;
+
+// Splash window shown during startup
+let splashWindow: BrowserWindow | null = null;
+
+function createSplashWindow(): void {
+  splashWindow = new BrowserWindow({
+    width: 480,
+    height: 320,
+    frame: false,
+    resizable: false,
+    movable: false,
+    skipTaskbar: true,
+    alwaysOnTop: true,
+    show: false,
+    backgroundColor: '#0f1729',
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+  });
+
+  const { width: sw, height: sh } = screen.getPrimaryDisplay().workAreaSize;
+  splashWindow.setPosition(Math.floor((sw - 480) / 2), Math.floor((sh - 320) / 2));
+
+  const splashPath = path.join(__dirname, 'splash.html');
+  if (!fs.existsSync(splashPath)) return;
+
+  const iconPath = path.join(__dirname, '../../resources/icons/256x256.png');
+  splashWindow.loadFile(splashPath, { query: { icon: iconPath } });
+  splashWindow.once('ready-to-show', () => splashWindow?.show());
+}
+
+function closeSplash(): void {
+  if (!splashWindow || splashWindow.isDestroyed()) return;
+  splashWindow.webContents
+    .executeJavaScript('document.body.classList.add("fadeout"); true')
+    .catch(() => {});
+  setTimeout(() => {
+    if (splashWindow && !splashWindow.isDestroyed()) {
+      splashWindow.close();
+      splashWindow = null;
+    }
+  }, 420);
+}
 
 // Current UI language (kept in sync via IPC)
 let currentMenuLanguage = 'fr';
@@ -459,11 +503,15 @@ function createWindow(): void {
   });
 
   const showFallback = setTimeout(() => {
-    if (mainWindow && !mainWindow.isVisible()) mainWindow.show();
+    if (mainWindow && !mainWindow.isVisible()) {
+      closeSplash();
+      mainWindow.show();
+    }
   }, 10000);
   mainWindow.once('ready-to-show', () => {
     clearTimeout(showFallback);
-    mainWindow?.show();
+    closeSplash();
+    setTimeout(() => mainWindow?.show(), 380);
   });
 
   // Allow camera access for webcam photo capture
@@ -511,6 +559,7 @@ function createWindow(): void {
 
   // Reload renderer when it crashes (blank screen symptom)
   mainWindow.webContents.on('render-process-gone', (_event, details) => {
+    closeSplash();
     console.error('[Main] Renderer process gone:', details.reason, details.exitCode);
     if (details.reason !== 'clean-exit') {
       setTimeout(() => {
@@ -2030,6 +2079,9 @@ if (process.platform === 'linux') {
 }
 
 app.whenReady().then(async () => {
+  // Afficher le splash immédiatement pendant que tout le reste charge
+  createSplashWindow();
+
   // Préchauffer sql.js WASM en parallèle avec la création de la fenêtre
   prewarmSqlJs();
 
