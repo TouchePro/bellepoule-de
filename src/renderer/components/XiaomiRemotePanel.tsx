@@ -144,19 +144,19 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
     >
       <div
         ref={modalRef}
-        style={{ background: 'var(--bg-card, #1e293b)', border: '1px solid var(--border-color, rgba(255,255,255,0.1))', borderRadius: '12px', width: '600px', maxWidth: '96vw', maxHeight: '88vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+        style={{ background: 'var(--color-surface)', color: 'var(--color-text)', border: '1px solid var(--color-border)', borderRadius: '12px', width: '600px', maxWidth: '96vw', maxHeight: '88vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
       >
         {/* Header */}
-        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border-color, rgba(255,255,255,0.1))', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
           <span style={{ fontSize: '1.2rem' }}>📺</span>
           <span style={{ fontWeight: 600, fontSize: '1rem', flex: 1 }}>Télécommande TV</span>
           <button className="btn btn-secondary" onClick={fetchClients} style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem' }} title="Actualiser">↻</button>
           <button className="btn btn-primary" onClick={() => broadcastCmd({ type: 'refresh' })} style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem' }}>Tout rafraîchir</button>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted, #6b7280)', fontSize: '1.2rem', padding: '0 0.2rem' }}>×</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-light)', fontSize: '1.2rem', padding: '0 0.2rem' }}>×</button>
         </div>
 
         {/* Lobby URL hint */}
-        <div style={{ padding: '0.55rem 1.25rem', background: 'rgba(56,189,248,0.07)', borderBottom: '1px solid var(--border-color, rgba(255,255,255,0.06))', fontSize: '0.78rem', color: '#7dd3fc', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{ padding: '0.55rem 1.25rem', background: 'rgba(56,189,248,0.1)', borderBottom: '1px solid var(--color-border)', fontSize: '0.78rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <span>💡</span>
           <span>URL sans arène : <strong>{base}/lobby</strong> — les écrans y attendent leur affectation</span>
         </div>
@@ -164,7 +164,7 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
         {/* Client list */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '0.75rem 1.25rem' }}>
           {clients.length === 0 ? (
-            <div style={{ color: 'var(--text-muted, #6b7280)', textAlign: 'center', padding: '2rem', fontSize: '0.9rem' }}>
+            <div style={{ color: 'var(--color-text-light)', textAlign: 'center', padding: '2rem', fontSize: '0.9rem' }}>
               Aucun écran connecté.<br />
               <span style={{ fontSize: '0.8rem' }}>Ouvrez <strong>{base}/lobby</strong> sur une TV pour qu'elle apparaisse ici.</span>
             </div>
@@ -176,14 +176,14 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
               return (
                 <div
                   key={client.socketId}
-                  style={{ background: inSwap ? 'rgba(249,115,22,0.12)' : 'var(--bg-secondary, rgba(255,255,255,0.04))', border: `1px solid ${inSwap ? 'rgba(249,115,22,0.4)' : 'var(--border-color, rgba(255,255,255,0.08))'}`, borderRadius: '8px', padding: '0.6rem 0.85rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}
+                  style={{ background: inSwap ? 'rgba(249,115,22,0.12)' : 'var(--color-bg)', border: `1px solid ${inSwap ? 'rgba(249,115,22,0.4)' : 'var(--color-border)'}`, borderRadius: '8px', padding: '0.6rem 0.85rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}
                 >
                   <span style={{ width: 9, height: 9, borderRadius: '50%', background: STATUS_COLORS[status], flexShrink: 0 }} />
 
                   {/* Label + IP */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 500, fontSize: '0.88rem' }}>{clientLabel(client)}</div>
-                    <div style={{ fontSize: '0.73rem', color: 'var(--text-muted, #6b7280)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontSize: '0.73rem', color: 'var(--color-text-light)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {client.ip} · {formatLastSeen(client.lastSeen)}
                     </div>
                   </div>
@@ -193,7 +193,7 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
                     <select
                       value={clientDisplayUrl(base, client)}
                       onChange={e => sendCmd(client.socketId, { type: 'navigate', url: e.target.value })}
-                      style={{ padding: '0.2rem 0.3rem', fontSize: '0.75rem', background: 'var(--bg-secondary, rgba(255,255,255,0.06))', border: '1px solid var(--border-color, rgba(255,255,255,0.15))', borderRadius: '5px', color: 'inherit', maxWidth: '120px' }}
+                      style={{ padding: '0.2rem 0.3rem', fontSize: '0.75rem', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '5px', color: 'inherit', maxWidth: '120px' }}
                       title="Affecter à…"
                     >
                       <option value={`${base}/lobby`}>Lobby</option>
@@ -210,7 +210,7 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
                   <div ref={openNav === client.socketId ? navRef : null} style={{ position: 'relative' }}>
                     <button className="btn btn-secondary" style={{ padding: '0.2rem 0.45rem', fontSize: '0.75rem' }} onClick={() => setOpenNav(openNav === client.socketId ? null : client.socketId)}>▾</button>
                     {openNav === client.socketId && (
-                      <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 4px)', background: 'var(--bg-card, #1e293b)', border: '1px solid var(--border-color, rgba(255,255,255,0.15))', borderRadius: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.4)', minWidth: '170px', zIndex: 300, overflow: 'hidden' }}>
+                      <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 4px)', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.4)', minWidth: '170px', zIndex: 300, overflow: 'hidden' }}>
                         {allNavTargets.map(t => (
                           <button key={t.url} className="comp-header-dropdown-item" style={{ width: '100%', textAlign: 'left', fontSize: '0.82rem' }} onClick={() => { sendCmd(client.socketId, { type: 'navigate', url: t.url }); setOpenNav(null); }}>
                             {t.label}
@@ -241,7 +241,7 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
         {/* Bandeau intervertir */}
         {swapSet.size > 0 && (
           <div style={{ padding: '0.65rem 1.25rem', background: 'rgba(249,115,22,0.12)', borderTop: '1px solid rgba(249,115,22,0.3)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span style={{ fontSize: '0.88rem', flex: 1, color: '#fdba74' }}>
+            <span style={{ fontSize: '0.88rem', flex: 1, color: '#ea580c' }}>
               ⇄ Intervertir{' '}
               {swapCandidates.map(c => <strong key={c.socketId}>{clientLabel(c)}</strong>).reduce((a, b) => <>{a} <span style={{ color: '#94a3b8' }}>↔</span> {b}</> as any)}
               {swapSet.size === 1 && <span style={{ color: '#94a3b8' }}> — sélectionner un 2ᵉ écran</span>}
@@ -258,8 +258,8 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
         )}
 
         {/* Message global */}
-        <div style={{ padding: '0.75rem 1.25rem', borderTop: '1px solid var(--border-color, rgba(255,255,255,0.1))' }}>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted, #6b7280)', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Message global</div>
+        <div style={{ padding: '0.75rem 1.25rem', borderTop: '1px solid var(--color-border)' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Message global</div>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             <input
               type="text"
@@ -267,12 +267,12 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
               onChange={e => setMessage(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') sendMessage(); }}
               placeholder="Texte affiché en bas de tous les écrans…"
-              style={{ flex: 1, padding: '0.4rem 0.6rem', fontSize: '0.85rem', background: 'var(--bg-secondary, rgba(255,255,255,0.06))', border: '1px solid var(--border-color, rgba(255,255,255,0.15))', borderRadius: '6px', color: 'inherit' }}
+              style={{ flex: 1, padding: '0.4rem 0.6rem', fontSize: '0.85rem', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '6px', color: 'inherit' }}
             />
             <select
               value={msgDuration}
               onChange={e => setMsgDuration(Number(e.target.value))}
-              style={{ padding: '0.4rem 0.3rem', fontSize: '0.82rem', background: 'var(--bg-secondary, rgba(255,255,255,0.06))', border: '1px solid var(--border-color, rgba(255,255,255,0.15))', borderRadius: '6px', color: 'inherit' }}
+              style={{ padding: '0.4rem 0.3rem', fontSize: '0.82rem', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '6px', color: 'inherit' }}
             >
               <option value={3}>3s</option>
               <option value={5}>5s</option>
