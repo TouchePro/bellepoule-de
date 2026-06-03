@@ -2108,6 +2108,9 @@ if (process.platform === 'linux') {
   app.commandLine.appendSwitch('use-gl', 'swiftshader');
 }
 
+// Autorise le son de démarrage du splash sans geste utilisateur (niveau Chromium)
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+
 app.whenReady().then(async () => {
   // Afficher le splash immédiatement pendant que tout le reste charge
   createSplashWindow();
