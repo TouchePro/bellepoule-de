@@ -158,7 +158,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   // kioskModal : socketId de l'écran pour lequel on configure le mode kiosk
   const [kioskModal, setKioskModal] = useState<string | null>(null);
   const [kioskModalConfig, setKioskModalConfig] = useState<KioskScreenConfig>({
-    poules: true, classement: true, direct: true, suivants: true, tableau: true, rotationSec: 15,
+    poules: true, classement: true, final: false, direct: true, suivants: true, tableau: true, rotationSec: 15,
   });
 
   useEffect(() => {
@@ -1227,7 +1227,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                     title="Configurer et envoyer en mode kiosk"
                     onClick={() => {
                       setKioskModal(client.socketId);
-                      setKioskModalConfig({ poules: true, classement: true, direct: true, suivants: true, tableau: true, rotationSec: 15 });
+                      setKioskModalConfig({ poules: true, classement: true, final: false, direct: true, suivants: true, tableau: true, rotationSec: 15 });
                     }}
                   >
                     🖥️ Mode kiosk
@@ -1261,6 +1261,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
               {([
                 { key: 'poules', label: 'Poules' },
                 { key: 'classement', label: 'Classement' },
+                { key: 'final', label: 'Classement final' },
                 { key: 'direct', label: 'Matchs en direct' },
                 { key: 'suivants', label: 'Matchs suivants' },
                 { key: 'tableau', label: 'Tableau DE' },
