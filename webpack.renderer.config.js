@@ -54,6 +54,14 @@ module.exports = (env = {}) => ({
     open: false,
     historyApiFallback: true,
     allowedHosts: 'auto',
+    // En dev, webpack serve garde les assets en mémoire. Le splash (chargé par
+    // Electron via loadFile depuis dist/) doit être écrit sur disque, sinon
+    // Electron lit un fichier obsolète et le badge de canal reste figé sur « main ».
+    devMiddleware: {
+      writeToDisk: (filePath) =>
+        /[\\/]dist[\\/]main[\\/]splash\.html$/.test(filePath) ||
+        /[\\/]dist[\\/]remote[\\/]/.test(filePath),
+    },
     static: {
       directory: path.join(__dirname, 'dist/renderer'),
       publicPath: '/',
