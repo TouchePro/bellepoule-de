@@ -76,9 +76,15 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
   const [showWifiQR, setShowWifiQR] = useState(false);
   const [showTVRemote, setShowTVRemote] = useState(false);
   const toolsMenuRef = useRef<HTMLDivElement>(null);
+  const toolsBtnRef = useRef<HTMLButtonElement>(null);
+  const [toolsMenuPos, setToolsMenuPos] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
 
   useEffect(() => {
     if (!showToolsMenu) return;
+    const rect = toolsBtnRef.current?.getBoundingClientRect();
+    if (rect) {
+      setToolsMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+    }
     const handler = (e: MouseEvent) => {
       if (toolsMenuRef.current && !toolsMenuRef.current.contains(e.target as Node)) {
         setShowToolsMenu(false);
@@ -151,6 +157,7 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
         {/* Bouton menu outils */}
         <div ref={toolsMenuRef} style={{ position: 'relative' }}>
           <button
+            ref={toolsBtnRef}
             className="btn btn-secondary"
             onClick={() => setShowToolsMenu(v => !v)}
             title="Outils"
@@ -162,9 +169,9 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
           {showToolsMenu && (
             <div
               style={{
-                position: 'absolute',
-                right: 0,
-                top: 'calc(100% + 4px)',
+                position: 'fixed',
+                right: toolsMenuPos.right,
+                top: toolsMenuPos.top,
                 background: 'var(--bg-card, #1e293b)',
                 border: '1px solid var(--border-color, rgba(255,255,255,0.1))',
                 borderRadius: '8px',
