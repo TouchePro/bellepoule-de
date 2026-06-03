@@ -112,7 +112,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
   };
 
   const rotationReport = useMemo(() => {
-    return manager.generateRotationReport();
+    return manager.generateRotationReportDetailed();
   }, [manager, assignments]);
 
   const getConflictWarning = (match: Match, referee: Referee): string | null => {
@@ -504,69 +504,38 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: '#dcfce7' }}>
-                <th
-                  style={{
-                    padding: '0.5rem',
-                    textAlign: 'left',
-                    borderBottom: '2px solid #86efac',
-                  }}
-                >
-                  Arbitre
-                </th>
-                <th
-                  style={{
-                    padding: '0.5rem',
-                    textAlign: 'center',
-                    borderBottom: '2px solid #86efac',
-                  }}
-                >
-                  Matchs
-                </th>
-                <th
-                  style={{
-                    padding: '0.5rem',
-                    textAlign: 'center',
-                    borderBottom: '2px solid #86efac',
-                  }}
-                >
-                  Violations Repos
-                </th>
-                <th
-                  style={{
-                    padding: '0.5rem',
-                    textAlign: 'center',
-                    borderBottom: '2px solid #86efac',
-                  }}
-                >
-                  Conflits
-                </th>
+                {['Arbitre', 'Matchs', 'Consécutifs', 'Fatigue', 'Violations', 'Conflits'].map(h => (
+                  <th key={h} style={{ padding: '0.5rem', textAlign: h === 'Arbitre' ? 'left' : 'center', borderBottom: '2px solid #86efac' }}>
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {rotationReport.map((row, idx) => (
-                <tr key={idx} style={{ borderBottom: '1px solid #bbf7d0' }}>
-                  <td style={{ padding: '0.5rem' }}>{row.refereeName}</td>
-                  <td style={{ padding: '0.5rem', textAlign: 'center' }}>{row.matchesAssigned}</td>
-                  <td
-                    style={{
-                      padding: '0.5rem',
-                      textAlign: 'center',
-                      color: row.restViolations > 0 ? '#dc2626' : '#166534',
-                    }}
-                  >
-                    {row.restViolations}
-                  </td>
-                  <td
-                    style={{
-                      padding: '0.5rem',
-                      textAlign: 'center',
-                      color: row.conflicts > 0 ? '#dc2626' : '#166534',
-                    }}
-                  >
-                    {row.conflicts}
-                  </td>
-                </tr>
-              ))}
+              {rotationReport.map((row, idx) => {
+                const fatigueColor = row.fatigueScore >= 80 ? '#dc2626' : row.fatigueScore >= 50 ? '#d97706' : '#166534';
+                return (
+                  <tr key={idx} style={{ borderBottom: '1px solid #bbf7d0', background: row.needsRest ? '#fef9c3' : undefined }}>
+                    <td style={{ padding: '0.5rem' }}>
+                      {row.needsRest && <span title="Repos recommandé">⚠️ </span>}
+                      {row.refereeName}
+                    </td>
+                    <td style={{ padding: '0.5rem', textAlign: 'center' }}>{row.matchesAssigned}</td>
+                    <td style={{ padding: '0.5rem', textAlign: 'center' }}>{row.consecutiveMatches}</td>
+                    <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                      <span style={{ color: fatigueColor, fontWeight: row.fatigueScore >= 80 ? 700 : 400 }}>
+                        {row.fatigueScore}%
+                      </span>
+                    </td>
+                    <td style={{ padding: '0.5rem', textAlign: 'center', color: row.restViolations > 0 ? '#dc2626' : '#166534' }}>
+                      {row.restViolations}
+                    </td>
+                    <td style={{ padding: '0.5rem', textAlign: 'center', color: row.conflicts > 0 ? '#dc2626' : '#166534' }}>
+                      {row.conflicts}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
