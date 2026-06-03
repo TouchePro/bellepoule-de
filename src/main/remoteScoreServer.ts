@@ -386,36 +386,9 @@ export class RemoteScoreServer {
   private setupRoutes(): void {
     console.log('[RemoteScoreServer] Configuration des routes...');
 
-    // Route principale pour les arbitres
-    this.app.get('/', (req, res) => {
-      console.log('[RemoteScoreServer] Accès à la route principale /');
-      const isDev = process.env.NODE_ENV === 'development';
-
-      let remotePath = '';
-      if (isDev) {
-        remotePath = path.join(__dirname, '../../remote/index.html');
-      } else {
-        // Essayer plusieurs chemins possibles
-        const possiblePaths = [
-          path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'remote', 'index.html'),
-          path
-            .join(__dirname, '..', 'remote', 'index.html')
-            .replace('app.asar', 'app.asar.unpacked'),
-          path.join(__dirname, '..', 'remote', 'index.html'),
-        ];
-
-        const fs = require('fs');
-        for (const p of possiblePaths) {
-          if (fs.existsSync(p)) {
-            remotePath = p;
-            break;
-          }
-        }
-        if (!remotePath) remotePath = possiblePaths[possiblePaths.length - 1];
-      }
-
-      console.log('[RemoteScoreServer] Envoi du fichier:', remotePath);
-      this.sendHtmlFromMemory('index.html', res);
+    // Redirect racine vers le lobby
+    this.app.get('/', (_req, res) => {
+      res.redirect('/lobby');
     });
 
     // API endpoints
