@@ -361,5 +361,8 @@
     "scoring_zones": "Custom zones",
     "zone_label": "Zone",
     "zone_points": "Points"
+  },
+  "wiki": {
+    "button_title": "Documentation"
   }
 }

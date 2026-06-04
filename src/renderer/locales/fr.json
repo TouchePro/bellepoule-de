@@ -353,6 +353,9 @@
     "nav_list": "Naviguer dans la liste",
     "validate": "Valider / Ouvrir"
   },
+  "wiki": {
+    "button_title": "Documentation"
+  },
   "formula": {
     "builder_title": "Constructeur de formule",
     "add_pool_round": "Ajouter un tour de poules",
