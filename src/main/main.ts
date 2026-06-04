@@ -38,7 +38,7 @@ let mainWindow: BrowserWindow | null = null;
 // Splash window shown during startup
 let splashWindow: BrowserWindow | null = null;
 let splashShownAt: number | null = null;
-const MIN_SPLASH_MS = 2500;
+const MIN_SPLASH_MS = 800;
 
 function createSplashWindow(): void {
   splashWindow = new BrowserWindow({
@@ -2109,8 +2109,8 @@ ipcMain.handle('crypto:unprotect', async (_, ciphertextB64: string) => {
 // App Lifecycle
 // ============================================================================
 
-// VMware/ARM sans accélération 3D : forcer rendu logiciel
-if (process.platform === 'linux') {
+// Rendu logiciel pour VMware/ARM sans GPU — activer via BELLEPOULE_SW_RENDER=1
+if (process.platform === 'linux' && process.env.BELLEPOULE_SW_RENDER === '1') {
   app.disableHardwareAcceleration();
   app.commandLine.appendSwitch('disable-gpu');
   app.commandLine.appendSwitch('disable-gpu-sandbox');
@@ -2150,37 +2150,37 @@ app.whenReady().then(async () => {
   // Signaler au renderer que la DB est prête
   mainWindow?.webContents.send('db:ready');
 
-  // Initialize auto updater
+  // Initialize auto updater — dialog différé après affichage de la fenêtre
   if (mainWindow) {
     autoUpdater = new AutoUpdater(mainWindow, {
-      autoDownload: false, // Par défaut manuel, peut être activé via silent mode
+      autoDownload: false,
       autoInstall: false,
-      checkInterval: 12, // Vérifier toutes les 12 heures
-      betaChannel: true, // Activer le canal beta pour détecter les dev builds
+      checkInterval: 12,
+      betaChannel: true,
       silent: false,
       installOnQuit: false,
     });
 
-    // Vérifier s'il y a une mise à jour en attente d'installation
-    if (autoUpdater.hasPendingUpdate()) {
-      const pendingInfo = autoUpdater.getPendingUpdateInfo();
-      console.log(`[Main] Mise à jour en attente trouvée: v${pendingInfo?.version}`);
-      // Demander à l'utilisateur s'il veut installer maintenant
-      const result = await dialog.showMessageBox(mainWindow, {
-        type: 'info',
-        title: 'Mise à jour en attente',
-        message: `La version ${pendingInfo?.version} est prête à être installée.`,
-        detail: "Voulez-vous installer cette mise à jour maintenant ? L'application va redémarrer.",
-        buttons: ['Installer maintenant', 'Plus tard'],
-        defaultId: 0,
-        cancelId: 1,
-      });
-
-      if (result.response === 0) {
-        autoUpdater.checkAndInstallPendingUpdate();
-        return; // Arrêter le démarrage normal
+    const win = mainWindow;
+    win.once('show', async () => {
+      if (!autoUpdater) return;
+      if (autoUpdater.hasPendingUpdate()) {
+        const pendingInfo = autoUpdater.getPendingUpdateInfo();
+        console.log(`[Main] Mise à jour en attente trouvée: v${pendingInfo?.version}`);
+        const result = await dialog.showMessageBox(win, {
+          type: 'info',
+          title: 'Mise à jour en attente',
+          message: `La version ${pendingInfo?.version} est prête à être installée.`,
+          detail: "Voulez-vous installer cette mise à jour maintenant ? L'application va redémarrer.",
+          buttons: ['Installer maintenant', 'Plus tard'],
+          defaultId: 0,
+          cancelId: 1,
+        });
+        if (result.response === 0) {
+          autoUpdater.checkAndInstallPendingUpdate();
+        }
       }
-    }
+    });
   }
 
   // Autosave every 2 minutes
