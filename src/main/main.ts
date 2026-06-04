@@ -2109,6 +2109,22 @@ ipcMain.handle('crypto:unprotect', async (_, ciphertextB64: string) => {
 // App Lifecycle
 // ============================================================================
 
+// Lit tous les chunks JS/CSS du renderer en arrière-plan pour les mettre dans
+// le cache OS (page cache). Quand Chromium les charge ensuite via loadFile(),
+// ils sont déjà en RAM → pas d'accès disque sur le chemin critique.
+function prewarmRendererChunks(): void {
+  if (process.env.NODE_ENV === 'development') return;
+  const rendererDist = path.join(__dirname, '..', 'renderer');
+  fs.readdir(rendererDist, (_err, files) => {
+    if (!files) return;
+    for (const f of files) {
+      if (f.endsWith('.js') || f.endsWith('.css')) {
+        fs.readFile(path.join(rendererDist, f), () => {});
+      }
+    }
+  });
+}
+
 // Rendu logiciel pour VMware/ARM sans GPU — activer via BELLEPOULE_SW_RENDER=1
 if (process.platform === 'linux' && process.env.BELLEPOULE_SW_RENDER === '1') {
   app.disableHardwareAcceleration();
@@ -2121,8 +2137,9 @@ app.whenReady().then(async () => {
   // Afficher le splash immédiatement pendant que tout le reste charge
   createSplashWindow();
 
-  // Préchauffer sql.js WASM en parallèle avec la création de la fenêtre
+  // Préchauffer sql.js WASM + chunks renderer en parallèle avec la création de la fenêtre
   prewarmSqlJs();
+  prewarmRendererChunks();
 
   // Initialize database dans un répertoire inscriptible (userData)
   // Sur Windows, process.cwd() peut pointer vers C:\Windows\System32 (non inscriptible)
