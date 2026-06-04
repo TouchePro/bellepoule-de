@@ -3,7 +3,7 @@
  * Licensed under GPL-3.0
  */
 
-import { app, BrowserWindow, ipcMain, dialog, Menu, shell, safeStorage, screen } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, Menu, shell, safeStorage, screen, session } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -528,6 +528,7 @@ function createWindow(): void {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
+      v8CacheOptions: 'code',
     },
     icon: path.join(__dirname, '../../resources/icons/icon.png'),
   });
@@ -2136,6 +2137,10 @@ if (process.platform === 'linux' && process.env.BELLEPOULE_SW_RENDER === '1') {
 app.whenReady().then(async () => {
   // Afficher le splash immédiatement pendant que tout le reste charge
   createSplashWindow();
+
+  // Cache V8 bytecode — skip la compilation JS aux lancements suivants
+  const codeCachePath = path.join(app.getPath('userData'), 'v8-cache');
+  session.defaultSession.setCodeCachePath(codeCachePath);
 
   // Préchauffer sql.js WASM + chunks renderer en parallèle avec la création de la fenêtre
   prewarmSqlJs();
