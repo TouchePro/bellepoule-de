@@ -6,6 +6,9 @@ const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 
 module.exports = (env = {}) => ({
   mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
+  cache: process.env.NODE_ENV === 'production'
+    ? false
+    : { type: 'filesystem', buildDependencies: { config: [__filename] } },
   optimization: {
     minimize: process.env.NODE_ENV === 'production',
     minimizer: [
@@ -18,6 +21,7 @@ module.exports = (env = {}) => ({
         },
       }),
     ],
+    runtimeChunk: 'single',
     splitChunks: {
       chunks: 'all',
       cacheGroups: {
