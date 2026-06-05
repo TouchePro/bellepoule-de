@@ -54,8 +54,12 @@
         width: 10px;
         height: 10px;
         border-radius: 50%;
-        background: #ef4444;
+        background: #f59e0b;
         animation: pulse 2s infinite;
+      }
+
+      .status-dot.disconnected {
+        background: #ef4444;
       }
 
       .status-dot.connected {
@@ -1659,10 +1663,12 @@
           const badge = document.getElementById('offline-badge');
           if (online) {
             if (dot) dot.classList.add('connected');
+            if (dot) dot.classList.remove('disconnected');
             if (text) text.textContent = window.T('remote.connected');
             if (badge) badge.style.display = 'none';
           } else {
             if (dot) dot.classList.remove('connected');
+            if (dot) dot.classList.add('disconnected');
             if (text) text.textContent = window.T('remote.offline');
             if (badge) badge.style.display = 'inline';
             this.updateOfflineBadge();
@@ -1900,6 +1906,11 @@
             this.showNotification('❌ Déconnecté', true);
           });
 
+          this.socket.on('auth_error', () => {
+            this.socket.disconnect();
+            window.location.href = `/login?arena=${this.arenaId}&return=${encodeURIComponent(window.location.pathname)}`;
+          });
+
           this.socket.on(`arena:${this.arenaId}:update`, data => {
             this.handleArenaUpdate(data);
           });
@@ -1981,9 +1992,11 @@
 
           if (connected) {
             dot.classList.add('connected');
+            dot.classList.remove('disconnected');
             text.textContent = window.T('remote.online');
           } else {
             dot.classList.remove('connected');
+            dot.classList.add('disconnected');
             text.textContent = window.T('remote.offline');
           }
         }
