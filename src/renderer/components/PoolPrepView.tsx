@@ -11,6 +11,7 @@ import {
   distributeFencersToPoolsSerpentine,
   generatePoolMatchOrder,
 } from '../../shared/utils/poolCalculations';
+import PoolMatchOrderModal from './pool/PoolMatchOrderModal';
 
 interface PoolPrepViewProps {
   fencers: Fencer[];
@@ -67,6 +68,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
   const [history, setHistory] = useState<PoolStateHistory[]>([]);
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState<number>(-1);
   const [timeSinceLastChange, setTimeSinceLastChange] = useState<number>(0);
+  const [showMatchOrderModal, setShowMatchOrderModal] = useState(false);
   const RESTORE_WINDOW_MINUTES = 5;
 
   // Timer pour mettre à jour le temps écoulé
@@ -395,6 +397,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
   const stats = getFencerCountStats();
 
   return (
+    <>
     <div style={{ padding: '1rem', height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Configuration Panel */}
       <div
@@ -533,6 +536,15 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
             </label>
           ))}
         </div>
+
+        <button
+          className="btn btn-secondary"
+          onClick={() => setShowMatchOrderModal(true)}
+          title="Afficher l'ordre officiel FIE/FFE des matchs par taille de poule"
+          style={{ fontSize: '0.8rem', padding: '0.3rem 0.7rem', whiteSpace: 'nowrap' }}
+        >
+          📋 Ordre des matchs
+        </button>
 
         <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
           <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
@@ -763,6 +775,10 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
         </button>
       </div>
     </div>
+    {showMatchOrderModal && (
+      <PoolMatchOrderModal onClose={() => setShowMatchOrderModal(false)} />
+    )}
+    </>
   );
 };
 
