@@ -30,7 +30,8 @@
     "test:e2e": "playwright test",
     "e2e:debug": "playwright test --debug",
     "analyze": "webpack --config webpack.renderer.config.js --env analyze",
-    "docs:api": "typedoc"
+    "docs:api": "typedoc",
+    "postinstall": "electron-rebuild -f -w better-sqlite3"
   },
   "keywords": [
     "fencing",
@@ -62,7 +63,8 @@
       "version.json"
     ],
     "asarUnpack": [
-      "dist/remote/**/*"
+      "dist/remote/**/*",
+      "**/node_modules/better-sqlite3/**/*"
     ],
     "extraResources": [
       {
@@ -131,6 +133,7 @@
     "@types/react-dom": "^19.1.5",
     "@types/uuid": "^10.0.0",
     "@types/xml2js": "^0.4.14",
+    "better-sqlite3": "^12.10.0",
     "express": "^5.2.1",
     "immer": "^10.1.1",
     "jspdf": "^4.1.0",
@@ -140,19 +143,19 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "socket.io": "^4.8.3",
-    "sql.js": "^1.13.0",
     "typescript": "^6.0.2",
     "uuid": "^11.1.0",
     "xml2js": "^0.6.2",
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@electron/rebuild": "^4.0.4",
     "@eslint/js": "^9.39.1",
     "@playwright/test": "^1.49.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.0.0",
     "@testing-library/user-event": "^14.5.2",
-    "@types/sql.js": "^1.4.11",
+    "@types/better-sqlite3": "^7.6.13",
     "@typescript-eslint/eslint-plugin": "^8.60.0",
     "@typescript-eslint/parser": "^8.60.0",
     "@vitest/coverage-v8": "^4.0.18",

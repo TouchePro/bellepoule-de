@@ -8,7 +8,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 import JSZip from 'jszip';
-import { DatabaseManager, prewarmSqlJs } from '../database';
+import { DatabaseManager } from '../database';
 import { RemoteScoreServer } from './remoteScoreServer';
 import { AutoUpdater } from './autoUpdater';
 import { Competition, Fencer, FencerStatus, Match, MatchStatus, Pool } from '../shared/types';
@@ -860,7 +860,7 @@ async function handleOpenFile(): Promise<void> {
   if (!result.canceled && result.filePaths.length > 0) {
     const filepath = result.filePaths[0];
     try {
-      db.importFromFile(filepath);
+      await db.importFromFile(filepath);
       mainWindow?.webContents.send('file:opened', filepath);
     } catch (error) {
       dialog.showErrorBox(L.errTitle, `${L.openErr} ${error}`);
@@ -878,7 +878,7 @@ async function handleSaveAs(): Promise<void> {
 
   if (!result.canceled && result.filePath) {
     try {
-      db.exportToFile(result.filePath);
+      await db.exportToFile(result.filePath);
       mainWindow?.webContents.send('file:saved', result.filePath);
     } catch (error) {
       dialog.showErrorBox(L.errTitle, `${L.saveErr} ${error}`);
@@ -1207,7 +1207,7 @@ ipcMain.handle('db:getCompetitionTimeline', async (_, competitionId: string) => 
 
 // File handlers
 ipcMain.handle('file:export', async (_, filepath) => {
-  db.exportToFile(filepath);
+  await db.exportToFile(filepath);
 });
 
 ipcMain.handle('file:import', async (_, filepath) => {
@@ -2142,8 +2142,6 @@ app.whenReady().then(async () => {
   const codeCachePath = path.join(app.getPath('userData'), 'v8-cache');
   session.defaultSession.setCodeCachePath(codeCachePath);
 
-  // Préchauffer sql.js WASM + chunks renderer en parallèle avec la création de la fenêtre
-  prewarmSqlJs();
   prewarmRendererChunks();
 
   // Initialize database dans un répertoire inscriptible (userData)
