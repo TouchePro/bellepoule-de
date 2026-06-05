@@ -71,6 +71,9 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       {/* Toast Container */}
       <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="false"
         style={{
           position: 'fixed',
           top: '1rem',

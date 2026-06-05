@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { Pool, Match, MatchStatus } from '../../shared/types';
 
 interface StripState {
@@ -27,6 +28,7 @@ export const MultiStripManager: React.FC<MultiStripManagerProps> = ({
   onMatchAssigned,
   onClose,
 }) => {
+  const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
   const [strips, setStrips] = useState<StripState[]>(() =>
     Array.from({ length: stripCount }, (_, i) => ({
       id: i + 1,
@@ -95,9 +97,12 @@ export const MultiStripManager: React.FC<MultiStripManagerProps> = ({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
+        ref={modalRef}
         className="modal"
         onClick={e => e.stopPropagation()}
         style={{ maxWidth: '800px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}
+        role="dialog"
+        aria-modal="true"
       >
         <div className="modal-header" style={{ flexShrink: 0 }}>
           <h2 style={{ margin: 0 }}>Gestion multi-pistes ({stripCount} pistes)</h2>

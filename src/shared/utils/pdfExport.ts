@@ -540,7 +540,8 @@ export interface TableauMatchForPDF {
   arena?: number | null;
 }
 
-export const MAX_MATCHES_PER_PAGE_TABLEAU = 5;
+export { MAX_MATCHES_PER_PAGE_TABLEAU } from './pdfConstants';
+import { MAX_MATCHES_PER_PAGE_TABLEAU } from './pdfConstants';
 
 function getTableauRoundName(round: number): string {
   const names: Record<number, string> = {
@@ -561,7 +562,8 @@ export function generateTableauHTML(
   matchesPerPage: number,
   title: string,
   logoBase64?: string,
-  template?: PdfTemplate
+  template?: PdfTemplate,
+  showScores = false
 ): string {
   const real = matches.filter(m => !m.isBye && m.fencerA && m.fencerB);
   const now = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -573,6 +575,11 @@ export function generateTableauHTML(
     const clubA = match.fencerA!.club ?? '';
     const clubB = match.fencerB!.club ?? '';
     const pisteLabel = match.arena != null ? `Piste ${match.arena}` : 'Piste ___';
+    const winnerId = match.winner?.id;
+    const isWinnerA = winnerId != null && winnerId === (match.fencerA as any)?.id;
+    const isWinnerB = winnerId != null && winnerId === (match.fencerB as any)?.id;
+    const scoreCellA = showScores && match.scoreA != null ? `${isWinnerA ? 'V' : ''}${match.scoreA}` : '';
+    const scoreCellB = showScores && match.scoreB != null ? `${isWinnerB ? 'V' : ''}${match.scoreB}` : '';
     return `
 <div class="match-card">
   <div class="match-card-header">
@@ -598,13 +605,13 @@ export function generateTableauHTML(
       <tr class="row-a">
         <td class="row-letter">A</td>
         <td class="fencer-name">${nameA}${clubA ? `<br><span class="fencer-club">${clubA}</span>` : ''}</td>
-        <td class="score-box"></td>
+        <td class="score-box">${scoreCellA}</td>
         <td class="sig-box"></td>
       </tr>
       <tr class="row-b">
         <td class="row-letter">B</td>
         <td class="fencer-name">${nameB}${clubB ? `<br><span class="fencer-club">${clubB}</span>` : ''}</td>
-        <td class="score-box"></td>
+        <td class="score-box">${scoreCellB}</td>
         <td class="sig-box"></td>
       </tr>
     </tbody>
@@ -1063,7 +1070,7 @@ export function generateBracketTreeHTML(
         ${club ? `<text x="${x + 4}" y="${clubY}" dominant-baseline="middle"
               font-family="'Segoe UI',Arial,sans-serif" font-size="${clubFs}" fill="#94a3b8">${club}</text>` : ''}
         <text x="${x + nameW + SCORE_W / 2}" y="${rowY + ROW_H / 2}" text-anchor="middle" dominant-baseline="middle"
-              font-family="'Segoe UI',Arial,sans-serif" font-size="${scoreFs}" font-weight="700" fill="${tc}">${score !== null ? score : ''}</text>`;
+              font-family="'Segoe UI',Arial,sans-serif" font-size="${scoreFs}" font-weight="700" fill="${tc}">${score !== null ? `${isWinner ? 'V ' : ''}${score}` : isWinner ? 'V' : ''}</text>`;
     };
 
     return `<g>
@@ -1300,7 +1307,7 @@ export function generateBracketTreeMultiPageHTML(
         ${club ? `<text x="${x + 5}" y="${clubY}" dominant-baseline="middle"
               font-family="'Segoe UI',Arial,sans-serif" font-size="${clubFs}" fill="#94a3b8">${club}</text>` : ''}
         <text x="${x + nameW + SCORE_W / 2}" y="${rowY + ROW_H / 2}" text-anchor="middle" dominant-baseline="middle"
-              font-family="'Segoe UI',Arial,sans-serif" font-size="${scoreFs}" font-weight="700" fill="${tc}">${score !== null ? score : ''}</text>`;
+              font-family="'Segoe UI',Arial,sans-serif" font-size="${scoreFs}" font-weight="700" fill="${tc}">${score !== null ? `${isWinner ? 'V ' : ''}${score}` : isWinner ? 'V' : ''}</text>`;
     };
 
     return `<g>
@@ -1616,7 +1623,7 @@ function generateResultsHTML(
     <div class="doc-header-badge" style="font-size:11pt">RF</div>
   </div>`,
     'gold-bar': `  <div class="gold-bar"></div>`,
-    'ranking-table': `
+    'results-table': `
   <table>
     <thead>
       <tr>
@@ -1860,7 +1867,7 @@ export async function exportFullCompetitionPDF(data: FullCompetitionExportData):
     sections.push(generatePoolHTML(
       pool,
       { title: `Poule ${pool.number} — ${competitionTitle}`, logoBase64: logo, competitionName: competitionTitle },
-      template
+      undefined
     ));
   }
 
@@ -1881,7 +1888,7 @@ export async function exportFullCompetitionPDF(data: FullCompetitionExportData):
     sections.push(generateTableauHTML(
       roundMatches, MAX_MATCHES_PER_PAGE_TABLEAU,
       `${getTableauRoundName(round)} — ${competitionTitle}`,
-      logo, template
+      logo, undefined, true
     ));
   }
 
@@ -1893,13 +1900,13 @@ export async function exportFullCompetitionPDF(data: FullCompetitionExportData):
       sections.push(generateTableauHTML(
         roundMatches, MAX_MATCHES_PER_PAGE_TABLEAU,
         `${bracket.name} — ${getTableauRoundName(round)} — ${competitionTitle}`,
-        logo, template
+        logo, undefined, true
       ));
     }
   }
 
   if (finalResults.length > 0) {
-    sections.push(generateResultsHTML(finalResults, `Classement final — ${competitionTitle}`, logo, template));
+    sections.push(generateResultsHTML(finalResults, `Classement final — ${competitionTitle}`, logo, undefined));
   }
 
   if (sections.length === 0) throw new Error('Aucune donnée à exporter');

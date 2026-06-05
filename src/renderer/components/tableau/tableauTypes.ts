@@ -40,12 +40,23 @@ export interface ConsolationBracket {
 }
 
 export function propagateWinners(matchList: TableauMatch[], size: number): void {
+  // Regroupe les matchs par tour une seule fois (O(n)) au lieu de filtrer à chaque
+  // itération (O(tours·n)). L'ordre d'insertion est préservé, donc l'appariement
+  // par index reste identique au comportement précédent.
+  const byRound = new Map<number, TableauMatch[]>();
+  for (const m of matchList) {
+    const bucket = byRound.get(m.round);
+    if (bucket) bucket.push(m);
+    else byRound.set(m.round, [m]);
+  }
+  const emptyRound: TableauMatch[] = [];
+
   let currentRound = size;
 
   while (currentRound > 2) {
     const nextRound = currentRound / 2;
-    const currentMatches = matchList.filter(m => m.round === currentRound);
-    const nextMatches = matchList.filter(m => m.round === nextRound);
+    const currentMatches = byRound.get(currentRound) ?? emptyRound;
+    const nextMatches = byRound.get(nextRound) ?? emptyRound;
 
     currentMatches.forEach((match, idx) => {
       if (match.winner) {
@@ -95,7 +106,7 @@ export function propagateWinners(matchList: TableauMatch[], size: number): void 
 
   const thirdPlaceMatchEntry = matchList.find(m => m.round === 3);
   if (thirdPlaceMatchEntry && size >= 4) {
-    const semiFinalMatches = matchList.filter(m => m.round === 4);
+    const semiFinalMatches = byRound.get(4) ?? emptyRound;
 
     if (semiFinalMatches.length === 2) {
       const losers: Fencer[] = [];

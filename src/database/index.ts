@@ -25,7 +25,7 @@ import {
   MatchEventEntry,
   MatchEventType,
 } from '../shared/types';
-import { validateId, validateSessionState, sanitizeId } from './validation';
+import { validateId, validateSessionState, sanitizeId, validateCompetitionData } from './validation';
 import { logger, LogCategory } from '../shared/services/logger';
 import { MigrationManager } from './migrations';
 import { ALL_MIGRATIONS } from './migrations/migrations';
@@ -295,6 +295,15 @@ export class DatabaseManager {
     if (!this.db) throw new Error('Database not open');
     const now = new Date().toISOString();
     const id = comp.id || uuidv4();
+    const normalized: Partial<Competition> = {
+      ...comp,
+      title: comp.title || 'Nouvelle compétition',
+      date: comp.date || new Date(now),
+      weapon: comp.weapon || ('E' as any),
+      gender: comp.gender || ('M' as any),
+      category: comp.category || ('SEN' as any),
+    };
+    validateCompetitionData(normalized);
 
     this.run(
       `
@@ -1495,11 +1504,13 @@ export class DatabaseManager {
         [poolId, fencerId, nextPosition]
       );
 
-      const maxNumRow = this.db.exec(
-        `SELECT COALESCE(MAX(number), 0) AS max_num FROM matches WHERE pool_id = '${poolId}'`
+      const maxNumStmt = this.db.prepare(
+        'SELECT COALESCE(MAX(number), 0) AS max_num FROM matches WHERE pool_id = ?'
       );
-      let nextMatchNumber: number =
-        (maxNumRow[0]?.values[0]?.[0] as number | null) ?? 0;
+      maxNumStmt.bind([poolId]);
+      maxNumStmt.step();
+      let nextMatchNumber: number = (maxNumStmt.getAsObject().max_num as number | null) ?? 0;
+      maxNumStmt.free();
 
       const now = new Date().toISOString();
       for (const existing of existingFencers) {
@@ -1517,7 +1528,12 @@ export class DatabaseManager {
     }
 
     this.save();
-    const phaseId = this.db.exec(`SELECT phase_id FROM pools WHERE id = '${poolId}'`)[0]?.values[0]?.[0] as string | undefined;
+    const phaseStmt = this.db.prepare('SELECT phase_id FROM pools WHERE id = ?');
+    phaseStmt.bind([poolId]);
+    const phaseId = (phaseStmt.step() ? phaseStmt.getAsObject().phase_id : undefined) as
+      | string
+      | undefined;
+    phaseStmt.free();
     if (!phaseId) throw new Error(`Pool ${poolId} introuvable après ajout`);
     const updated = this.getPoolsByPhase(phaseId).find(p => p.id === poolId);
     if (!updated) throw new Error(`Poule mise à jour introuvable`);
@@ -2273,13 +2289,19 @@ export class DatabaseManager {
     }
     const row = stmt.getAsObject();
     stmt.free();
+    let matchSnapshots: { matchId: string; status: string; scoreA: unknown; scoreB: unknown }[] = [];
+    try {
+      matchSnapshots = JSON.parse((row.match_snapshots as string) || '[]');
+    } catch (err) {
+      console.error('[Database] match_snapshots JSON invalide, ignoré:', err);
+    }
     return {
       id: row.id as string,
       fencerId: row.fencer_id as string,
       competitionId: row.competition_id as string,
       previousStatus: row.previous_status as string,
       abandonType: row.abandon_type as string,
-      matchSnapshots: JSON.parse(row.match_snapshots as string),
+      matchSnapshots,
       createdAt: row.created_at as string,
     };
   }

@@ -3,7 +3,7 @@
  * Licensed under GPL-3.0
  */
 
-import { app, BrowserWindow, ipcMain, dialog, Menu, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, Menu, shell, safeStorage, screen, session } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -34,6 +34,80 @@ let autoUpdater: AutoUpdater | null = null;
 
 // Main window reference
 let mainWindow: BrowserWindow | null = null;
+
+// Splash window shown during startup
+let splashWindow: BrowserWindow | null = null;
+let splashShownAt: number | null = null;
+const MIN_SPLASH_MS = 800;
+
+function createSplashWindow(): void {
+  splashWindow = new BrowserWindow({
+    width: 480,
+    height: 320,
+    frame: false,
+    resizable: false,
+    movable: false,
+    skipTaskbar: true,
+    alwaysOnTop: true,
+    show: false,
+    backgroundColor: '#0f1729',
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+  });
+
+  const { width: sw, height: sh } = screen.getPrimaryDisplay().workAreaSize;
+  splashWindow.setPosition(Math.floor((sw - 480) / 2), Math.floor((sh - 320) / 2));
+
+  const splashPath = path.join(__dirname, 'splash.html');
+  if (!fs.existsSync(splashPath)) return;
+
+  const iconPath = path.join(__dirname, '../../resources/icons/256x256.png');
+  const versionInfo = getVersionInfo();
+  const channel =
+    process.env.NODE_ENV === 'development' || !app.isPackaged ? 'dev' : 'main';
+  splashWindow.loadFile(splashPath, {
+    query: {
+      icon: iconPath,
+      version: versionInfo.version,
+      build: String(versionInfo.build),
+      channel,
+    },
+  });
+  splashWindow.once('ready-to-show', () => {
+    splashWindow?.show();
+    splashShownAt = Date.now();
+  });
+}
+
+// onClosed est appelé après le fade-out, au moment d'afficher la fenêtre principale
+function closeSplash(onClosed?: () => void): void {
+  if (!splashWindow || splashWindow.isDestroyed()) {
+    onClosed?.();
+    return;
+  }
+  // Garantir un affichage minimum pour que l'animation soit visible
+  const elapsed = splashShownAt !== null ? Date.now() - splashShownAt : 0;
+  const remaining = Math.max(0, MIN_SPLASH_MS - elapsed);
+
+  setTimeout(() => {
+    if (!splashWindow || splashWindow.isDestroyed()) {
+      onClosed?.();
+      return;
+    }
+    splashWindow.webContents
+      .executeJavaScript('document.body.classList.add("fadeout"); true')
+      .catch(() => {});
+    setTimeout(() => {
+      if (splashWindow && !splashWindow.isDestroyed()) {
+        splashWindow.close();
+        splashWindow = null;
+      }
+      onClosed?.();
+    }, 420);
+  }, remaining);
+}
 
 // Current UI language (kept in sync via IPC)
 let currentMenuLanguage = 'fr';
@@ -454,16 +528,19 @@ function createWindow(): void {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
+      v8CacheOptions: 'code',
     },
     icon: path.join(__dirname, '../../resources/icons/icon.png'),
   });
 
   const showFallback = setTimeout(() => {
-    if (mainWindow && !mainWindow.isVisible()) mainWindow.show();
+    if (mainWindow && !mainWindow.isVisible()) {
+      closeSplash(() => mainWindow?.show());
+    }
   }, 10000);
   mainWindow.once('ready-to-show', () => {
     clearTimeout(showFallback);
-    mainWindow?.show();
+    closeSplash(() => mainWindow?.show());
   });
 
   // Allow camera access for webcam photo capture
@@ -481,7 +558,7 @@ function createWindow(): void {
         ...details.responseHeaders,
         'Content-Security-Policy': [
           "default-src 'self'; " +
-            "script-src 'self' https://cdn.socket.io; " +
+            "script-src 'self'; " +
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
             "font-src 'self' https://fonts.gstatic.com; " +
             "img-src 'self' data: blob:; " +
@@ -511,6 +588,7 @@ function createWindow(): void {
 
   // Reload renderer when it crashes (blank screen symptom)
   mainWindow.webContents.on('render-process-gone', (_event, details) => {
+    closeSplash();
     console.error('[Main] Renderer process gone:', details.reason, details.exitCode);
     if (details.reason !== 'clean-exit') {
       setTimeout(() => {
@@ -1138,7 +1216,15 @@ ipcMain.handle('file:import', async (_, filepath) => {
 
 // File content write handler
 ipcMain.handle('file:writeContent', async (_, filepath: string, content: string) => {
-  fs.writeFileSync(filepath, content, 'utf-8');
+  if (!filepath || typeof filepath !== 'string' || !path.isAbsolute(filepath)) {
+    throw new Error('Invalid file path');
+  }
+  const resolved = path.resolve(filepath);
+  const appDir = path.resolve(app.getAppPath());
+  if (resolved.startsWith(appDir)) {
+    throw new Error('Writing inside app directory is not allowed');
+  }
+  fs.writeFileSync(resolved, content, 'utf-8');
 });
 
 // Photo ZIP export handler
@@ -1785,6 +1871,17 @@ ipcMain.handle('remote:acknowledgeDTCall', async (_, competitionId: string, aren
   }
 });
 
+ipcMain.handle('remote:setWebhookUrl', async (_, url: string | null) => {
+  try {
+    for (const { server } of remoteServers.values()) {
+      server.setWebhookUrl(url);
+    }
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
 ipcMain.handle('remote:updateLogo', async (_, logo: string | null) => {
   try {
     const logoPath = path.join(app.getPath('userData'), 'logo.dat');
@@ -1851,6 +1948,70 @@ ipcMain.handle('remote:setRegistrationEnabled', async (_, competitionId: string,
     const entry = remoteServers.get(competitionId);
     if (!entry) return { success: false, error: 'Serveur non démarré' };
     entry.server.setRegistrationEnabled(enabled);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
+ipcMain.handle('remote:getConnectedClients', async (_, competitionId: string) => {
+  try {
+    const entry = remoteServers.get(competitionId);
+    return { success: true, clients: entry?.server.getConnectedClients() ?? [] };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue', clients: [] };
+  }
+});
+
+ipcMain.handle('remote:sendClientCommand', async (_, competitionId: string, socketId: string, command: any) => {
+  try {
+    const entry = remoteServers.get(competitionId);
+    if (!entry) return { success: false, error: 'Serveur non démarré' };
+    entry.server.sendClientCommand(socketId, command);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
+ipcMain.handle('remote:broadcastCommand', async (_, competitionId: string, command: any) => {
+  try {
+    const entry = remoteServers.get(competitionId);
+    if (!entry) return { success: false, error: 'Serveur non démarré' };
+    entry.server.broadcastCommand(command);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
+ipcMain.handle('remote:renameClient', async (_, competitionId: string, socketId: string, label: string) => {
+  try {
+    const entry = remoteServers.get(competitionId);
+    if (!entry) return { success: false, error: 'Serveur non démarré' };
+    entry.server.renameClient(socketId, label);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
+ipcMain.handle('remote:identifyClient', async (_, competitionId: string, socketId: string) => {
+  try {
+    const entry = remoteServers.get(competitionId);
+    if (!entry) return { success: false, error: 'Serveur non démarré' };
+    entry.server.identifyClient(socketId);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
+ipcMain.handle('remote:setClientKioskMode', async (_, competitionId: string, socketId: string, config: any) => {
+  try {
+    const entry = remoteServers.get(competitionId);
+    if (!entry) return { success: false, error: 'Serveur non démarré' };
+    entry.server.setClientKioskMode(socketId, config);
     return { success: true };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
@@ -1926,11 +2087,47 @@ ipcMain.handle('updater:installPendingUpdate', async () => {
 });
 
 // ============================================================================
+// safeStorage : chiffrement OS (Keychain/DPAPI/libsecret) pour secrets locaux
+// (ex. clé de synchronisation cloud). Renvoie une chaîne base64.
+// ============================================================================
+ipcMain.handle('crypto:isAvailable', async () => {
+  return safeStorage.isEncryptionAvailable();
+});
+
+ipcMain.handle('crypto:protect', async (_, plaintext: string) => {
+  if (typeof plaintext !== 'string') throw new Error('plaintext must be a string');
+  if (!safeStorage.isEncryptionAvailable()) return null;
+  return safeStorage.encryptString(plaintext).toString('base64');
+});
+
+ipcMain.handle('crypto:unprotect', async (_, ciphertextB64: string) => {
+  if (typeof ciphertextB64 !== 'string') throw new Error('ciphertext must be a string');
+  if (!safeStorage.isEncryptionAvailable()) return null;
+  return safeStorage.decryptString(Buffer.from(ciphertextB64, 'base64'));
+});
+
+// ============================================================================
 // App Lifecycle
 // ============================================================================
 
-// VMware/ARM sans accélération 3D : forcer rendu logiciel
-if (process.platform === 'linux') {
+// Lit tous les chunks JS/CSS du renderer en arrière-plan pour les mettre dans
+// le cache OS (page cache). Quand Chromium les charge ensuite via loadFile(),
+// ils sont déjà en RAM → pas d'accès disque sur le chemin critique.
+function prewarmRendererChunks(): void {
+  if (process.env.NODE_ENV === 'development') return;
+  const rendererDist = path.join(__dirname, '..', 'renderer');
+  fs.readdir(rendererDist, (_err, files) => {
+    if (!files) return;
+    for (const f of files) {
+      if (f.endsWith('.js') || f.endsWith('.css')) {
+        fs.readFile(path.join(rendererDist, f), () => {});
+      }
+    }
+  });
+}
+
+// Rendu logiciel pour VMware/ARM sans GPU — activer via BELLEPOULE_SW_RENDER=1
+if (process.platform === 'linux' && process.env.BELLEPOULE_SW_RENDER === '1') {
   app.disableHardwareAcceleration();
   app.commandLine.appendSwitch('disable-gpu');
   app.commandLine.appendSwitch('disable-gpu-sandbox');
@@ -1938,8 +2135,16 @@ if (process.platform === 'linux') {
 }
 
 app.whenReady().then(async () => {
-  // Préchauffer sql.js WASM en parallèle avec la création de la fenêtre
+  // Afficher le splash immédiatement pendant que tout le reste charge
+  createSplashWindow();
+
+  // Cache V8 bytecode — skip la compilation JS aux lancements suivants
+  const codeCachePath = path.join(app.getPath('userData'), 'v8-cache');
+  session.defaultSession.setCodeCachePath(codeCachePath);
+
+  // Préchauffer sql.js WASM + chunks renderer en parallèle avec la création de la fenêtre
   prewarmSqlJs();
+  prewarmRendererChunks();
 
   // Initialize database dans un répertoire inscriptible (userData)
   // Sur Windows, process.cwd() peut pointer vers C:\Windows\System32 (non inscriptible)
@@ -1967,37 +2172,37 @@ app.whenReady().then(async () => {
   // Signaler au renderer que la DB est prête
   mainWindow?.webContents.send('db:ready');
 
-  // Initialize auto updater
+  // Initialize auto updater — dialog différé après affichage de la fenêtre
   if (mainWindow) {
     autoUpdater = new AutoUpdater(mainWindow, {
-      autoDownload: false, // Par défaut manuel, peut être activé via silent mode
+      autoDownload: false,
       autoInstall: false,
-      checkInterval: 12, // Vérifier toutes les 12 heures
-      betaChannel: true, // Activer le canal beta pour détecter les dev builds
+      checkInterval: 12,
+      betaChannel: true,
       silent: false,
       installOnQuit: false,
     });
 
-    // Vérifier s'il y a une mise à jour en attente d'installation
-    if (autoUpdater.hasPendingUpdate()) {
-      const pendingInfo = autoUpdater.getPendingUpdateInfo();
-      console.log(`[Main] Mise à jour en attente trouvée: v${pendingInfo?.version}`);
-      // Demander à l'utilisateur s'il veut installer maintenant
-      const result = await dialog.showMessageBox(mainWindow, {
-        type: 'info',
-        title: 'Mise à jour en attente',
-        message: `La version ${pendingInfo?.version} est prête à être installée.`,
-        detail: "Voulez-vous installer cette mise à jour maintenant ? L'application va redémarrer.",
-        buttons: ['Installer maintenant', 'Plus tard'],
-        defaultId: 0,
-        cancelId: 1,
-      });
-
-      if (result.response === 0) {
-        autoUpdater.checkAndInstallPendingUpdate();
-        return; // Arrêter le démarrage normal
+    const win = mainWindow;
+    win.once('show', async () => {
+      if (!autoUpdater) return;
+      if (autoUpdater.hasPendingUpdate()) {
+        const pendingInfo = autoUpdater.getPendingUpdateInfo();
+        console.log(`[Main] Mise à jour en attente trouvée: v${pendingInfo?.version}`);
+        const result = await dialog.showMessageBox(win, {
+          type: 'info',
+          title: 'Mise à jour en attente',
+          message: `La version ${pendingInfo?.version} est prête à être installée.`,
+          detail: "Voulez-vous installer cette mise à jour maintenant ? L'application va redémarrer.",
+          buttons: ['Installer maintenant', 'Plus tard'],
+          defaultId: 0,
+          cancelId: 1,
+        });
+        if (result.response === 0) {
+          autoUpdater.checkAndInstallPendingUpdate();
+        }
       }
-    }
+    });
   }
 
   // Autosave every 2 minutes

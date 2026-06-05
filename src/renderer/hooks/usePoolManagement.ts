@@ -179,7 +179,8 @@ export const usePoolManagement = ({
         match.status = MatchStatus.FINISHED;
         match.updatedAt = new Date();
 
-        // Mettre à jour le pool
+        // Mettre à jour le pool (nouveau tableau pour invalider le useMemo)
+        pool.matches = [...pool.matches];
         pool.matches[matchIndex] = match;
         pool.updatedAt = new Date();
 
@@ -601,7 +602,9 @@ export const usePoolManagement = ({
                 scoreB > scoreA ? 'B' :
                 (winnerOverride ?? null);
 
-              pool.matches[matchIdx] = {
+              const updatedPool = { ...pool };
+              const updatedMatches = [...pool.matches];
+              updatedMatches[matchIdx] = {
                 ...match,
                 scoreA: {
                   value: scoreA,
@@ -620,11 +623,10 @@ export const usePoolManagement = ({
                 status,
                 updatedAt: new Date(),
               };
-
-              // Recalculer le classement de la pool
-              pool.updatedAt = new Date();
-              pool.ranking = computePoolRanking(pool);
-              updatedPools[poolIdx] = pool;
+              updatedPool.matches = updatedMatches;
+              updatedPool.updatedAt = new Date();
+              updatedPool.ranking = computePoolRanking(updatedPool);
+              updatedPools[poolIdx] = updatedPool;
               break;
             }
           }

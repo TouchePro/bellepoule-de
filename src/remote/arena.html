@@ -1303,7 +1303,7 @@
     <script>
       class ArenaDisplay {
         constructor() {
-          this.socket = io();
+          this.socket = io({ reconnection: true, reconnectionDelay: 200, reconnectionDelayMax: 5000, randomizationFactor: 0.5 });
           this.arenaId = this.getArenaId();
           this.arenaNumber = this.arenaNumberFromId();
           this.currentMatch = null;
@@ -1428,10 +1428,33 @@
             })
             .catch(err => console.error('[Arena] Erreur récupération état initial:', err));
 
+          // Identifiant persistant de cet écran (survit aux rechargements/reconnexions)
+          let _screenId = localStorage.getItem('bp_screen_id');
+          if (!_screenId) {
+            _screenId = 'scr_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+            localStorage.setItem('bp_screen_id', _screenId);
+          }
+
           this.socket.on('connect', () => {
             this.updateConnectionStatus(true);
             this.socket.emit('join_arena', { arenaId: this.arenaId, role: 'display' });
+            this.socket.emit('client:register', { clientType: 'arena', arenaId: this.arenaId, userAgent: navigator.userAgent, screenId: _screenId });
           });
+
+          this.socket.on('server:command', cmd => {
+            if (cmd.type === 'refresh') { location.reload(); return; }
+            if (cmd.type === 'navigate' && cmd.url) { location.href = cmd.url; return; }
+            if (cmd.type === 'ping') { this.socket.emit('client:pong'); return; }
+            if (cmd.type === 'identify') {
+              const lbl = cmd.screenLabel || localStorage.getItem('bp_screen_label') || _screenId;
+              if (cmd.screenLabel) localStorage.setItem('bp_screen_label', cmd.screenLabel);
+              this.showIdentifyOverlay(lbl, cmd.duration ?? 5000);
+              return;
+            }
+            if (cmd.type === 'message' && cmd.text) { this.showRemoteMessage(cmd.text, cmd.duration ?? 5000); }
+          });
+
+          setInterval(() => { if (this.socket.connected) this.socket.emit('client:pong'); }, 30000);
 
           this.socket.on('disconnect', () => {
             this.updateConnectionStatus(false);
@@ -1461,6 +1484,40 @@
             .then(res => res.json())
             .then(data => { if (data.wallpaper) this.applyWallpaper(data.wallpaper); })
             .catch(() => {});
+        }
+
+        showIdentifyOverlay(label, durationMs) {
+          let ov = document.getElementById('bp-identify-overlay');
+          if (!ov) {
+            ov = document.createElement('div');
+            ov.id = 'bp-identify-overlay';
+            ov.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;pointer-events:none;animation:bp-identify-blink 0.5s ease-in-out infinite alternate;';
+            const style = document.createElement('style');
+            style.textContent = '@keyframes bp-identify-blink{from{background:rgba(59,130,246,0.55)}to{background:rgba(139,92,246,0.65)}}';
+            document.head.appendChild(style);
+            document.body.appendChild(ov);
+          }
+          ov.innerHTML = '<div style="background:rgba(0,0,0,0.85);border:3px solid #3b82f6;border-radius:1.5rem;padding:2rem 4rem;text-align:center;max-width:80vw;">'
+            + '<div style="font-size:2.5rem;font-weight:900;color:#fff;margin-bottom:0.5rem;">📺 ' + String(label).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c])) + '</div>'
+            + '<div style="font-size:1rem;color:#94a3b8;">Identification écran</div>'
+            + '</div>';
+          ov.style.display = 'flex';
+          clearTimeout(ov._t);
+          ov._t = setTimeout(() => { ov.style.display = 'none'; }, durationMs ?? 5000);
+        }
+
+        showRemoteMessage(text, duration) {
+          let banner = document.getElementById('remote-msg-banner');
+          if (!banner) {
+            banner = document.createElement('div');
+            banner.id = 'remote-msg-banner';
+            banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.82);color:#fff;font-size:1.3rem;padding:0.7rem 1.2rem;text-align:center;z-index:9999;pointer-events:none;transition:opacity 0.4s;';
+            document.body.appendChild(banner);
+          }
+          banner.textContent = text;
+          banner.style.opacity = '1';
+          clearTimeout(banner._hideTimer);
+          banner._hideTimer = setTimeout(() => { banner.style.opacity = '0'; }, duration);
         }
 
         applyWallpaper(wallpaper) {

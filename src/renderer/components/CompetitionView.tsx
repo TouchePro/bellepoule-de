@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
-import { Competition, Fencer, FencerStatus, Match, MatchStatus, Weapon, QuestPhaseConfig, Referee } from '../../shared/types';
+import { Competition, Fencer, FencerStatus, Match, MatchStatus, Weapon, QuestPhaseConfig, Referee, Gender } from '../../shared/types';
 import { Arena } from '../../shared/types/remote';
 import { logger, LogCategory } from '@shared/services/logger';
 import { RankingImportResult } from '../../shared/utils/fileParser';
@@ -29,6 +29,7 @@ import {
   distributeFencersToPoolsSerpentine,
   generatePoolMatchOrder,
   generateInitialRanking,
+  filterPoolWinners,
 } from '../../shared/utils/poolCalculations';
 import { QRCodeShare } from './QRCodeShare';
 import { TouchOptimizedReferee } from './TouchOptimizedReferee';
@@ -37,6 +38,7 @@ import { ScoreAuditLog } from './ScoreAuditLog';
 import { RefereeManagerComponent } from './RefereeManager';
 import CompetitionHeader from './competition/CompetitionHeader';
 import CompetitionNav from './competition/CompetitionNav';
+import GlobalPoolColumnsMenu from './pool/GlobalPoolColumnsMenu';
 
 const PoolView = React.lazy(() => import('./PoolView'));
 const TableauView = React.lazy(() => import('./TableauView'));
@@ -97,6 +99,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const tableMaxScore = competition.settings?.defaultTableMaxScore ?? 0;
   const isLaserSabre = competition.weapon === Weapon.LASER;
   const expertMode = competition.settings?.expertMode ?? false;
+  const poolWinnersOnly = competition.settings?.poolWinnersOnly ?? false;
+  const postPoolSplitCriteria = competition.settings?.postPoolSplitCriteria;
 
   const auditLogEnabled = localStorage.getItem('bellepoule-audit-log-enabled') === 'true';
 
@@ -149,6 +153,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
   // Flag pour indiquer que la phase de poules est sautée (0 poules configurées)
   const [skipPoolPhase, setSkipPoolPhase] = useState(false);
+
+  // Mode compétition couplée : groupe actif ('M' | 'F' | null)
+  const [activeSplitGroup, setActiveSplitGroup] = useState<string | null>(null);
+  // État des tableaux par groupe (pour conserver les matchs quand on bascule)
+  const [splitTableauStates, setSplitTableauStates] = useState<
+    Record<string, { matches: TableauMatch[]; consolation: ConsolationBracket[]; results: FinalResult[] }>
+  >({});
 
   // Hooks personnalisés
   const {
@@ -349,10 +360,19 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
           };
           return updated;
         });
+
+        // Propager le score live vers la vue poule (scores intermédiaires pendant le match)
+        const matchId = data.update?.match?.id;
+        const scoreA = data.update?.scoreA ?? data.update?.match?.scoreA;
+        const scoreB = data.update?.scoreB ?? data.update?.match?.scoreB;
+        if (matchId !== undefined && scoreA !== undefined && scoreB !== undefined
+            && data.update?.status !== 'finished') {
+          updateMatchFromRemote(matchId, scoreA as number, scoreB as number, MatchStatus.IN_PROGRESS);
+        }
       });
     }
     return () => unlisten?.();
-  }, [isRemoteActive, competition.id]);
+  }, [isRemoteActive, competition.id, updateMatchFromRemote]);
 
   // Écouter les mises à jour des matches distants
   // Note: pas de garde sur currentPhase car la phase 'remote' affiche le panel de saisie distante
@@ -392,12 +412,19 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       });
     };
 
-    window.electronAPI.onRemoteMatchFinished(handleMatchFinished);
+    const offMatchFinished = window.electronAPI.onRemoteMatchFinished(handleMatchFinished);
+
+    // Carton noir distant : exclure le combattant fautif dans le store
+    const offExcluded = window.electronAPI.onRemoteFencerExcluded?.(({ fencerId }) => {
+      logger.debug(LogCategory.UI, `[CompetitionView] Combattant exclu (carton noir): ${fencerId}`);
+      updateFencer(fencerId, { status: FencerStatus.EXCLUDED });
+    });
 
     return () => {
-      window.electronAPI.removeAllListeners?.('match:finished');
+      offMatchFinished?.();
+      offExcluded?.();
     };
-  }, [updateMatchFromRemote]);
+  }, [updateMatchFromRemote, updateFencer]);
 
   // Sync scores/statuts des matches de poule vers la DB quand ils changent
   const prevPoolsRef = useRef(pools);
@@ -662,10 +689,25 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     setCurrentPhase('ranking');
   };
 
-  const handleGoToTableau = () => {
+  const handleGoToTableau = (splitGroup?: string) => {
     setRankingValidated(true);
     // Ne pas recalculer : overallRanking est déjà à jour
-    // (calculé à l'entrée dans handleGoToRanking, mis à jour par onRankingChange si édité manuellement)
+
+    if (splitGroup && splitGroup !== activeSplitGroup) {
+      // Sauvegarder l'état du groupe courant avant de basculer
+      if (activeSplitGroup) {
+        setSplitTableauStates(prev => ({
+          ...prev,
+          [activeSplitGroup]: { matches: tableauMatches, consolation: consolationBrackets, results: finalResults },
+        }));
+      }
+      // Charger l'état sauvegardé du nouveau groupe (ou partir de zéro)
+      const saved = splitTableauStates[splitGroup];
+      setTableauMatches(saved?.matches ?? []);
+      setConsolationBrackets(saved?.consolation ?? []);
+      setFinalResults(saved?.results ?? []);
+      setActiveSplitGroup(splitGroup);
+    }
 
     // Si le classement a changé, réinitialiser les matches du tableau
     if (rankingChanged) {
@@ -676,6 +718,27 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     }
 
     setShowThirdPlaceDialog(true);
+  };
+
+  // Basculer vers un autre groupe dans un tableau déjà ouvert
+  const handleSwitchSplitGroup = (newGroup: string) => {
+    if (newGroup === activeSplitGroup) return;
+    // Sauvegarder l'état courant
+    if (activeSplitGroup) {
+      setSplitTableauStates(prev => ({
+        ...prev,
+        [activeSplitGroup]: { matches: tableauMatches, consolation: consolationBrackets, results: finalResults },
+      }));
+    }
+    const saved = splitTableauStates[newGroup];
+    setTableauMatches(saved?.matches ?? []);
+    setConsolationBrackets(saved?.consolation ?? []);
+    setFinalResults(saved?.results ?? []);
+    setActiveSplitGroup(newGroup);
+    // Revenir au classement si le groupe choisi n'a pas de résultats
+    if (!saved?.results?.length) {
+      setCurrentPhase('tableau');
+    }
   };
 
   const handleThirdPlaceDecision = (shouldHaveThirdPlace: boolean) => {
@@ -953,6 +1016,30 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     return () => document.removeEventListener('mousedown', handler);
   }, [showActionsMenu]);
 
+  // Groupes disponibles pour la séparation (pour les onglets du tableau)
+  const splitGroups = useMemo((): string[] => {
+    if (postPoolSplitCriteria !== 'gender') return [];
+    const genders = new Set<string>();
+    for (const r of overallRanking) {
+      if ((r.fencer.gender as string) !== Gender.MIXED) genders.add(r.fencer.gender as string);
+    }
+    return Array.from(genders).sort();
+  }, [postPoolSplitCriteria, overallRanking]);
+
+  // Classement effectif pour le tableau (filtré par vainqueurs de poule et/ou groupe actif)
+  const effectiveTableauRanking = useMemo(() => {
+    let ranking = overallRanking;
+    if (poolWinnersOnly && pools.length > 0) {
+      ranking = filterPoolWinners(pools, ranking);
+    }
+    if (postPoolSplitCriteria === 'gender' && activeSplitGroup) {
+      ranking = ranking
+        .filter(r => (r.fencer.gender as string) === activeSplitGroup)
+        .map((r, i) => ({ ...r, rank: i + 1 }));
+    }
+    return ranking;
+  }, [overallRanking, pools, poolWinnersOnly, postPoolSplitCriteria, activeSplitGroup]);
+
   // Calcul progression matchs
   const matchProgress = useMemo(() => {
     if (pools.length === 0 && tableauMatches.length === 0) return null;
@@ -1009,6 +1096,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         getCheckedInFencers={getCheckedInFencers}
         pools={pools}
         tableauMatches={tableauMatches}
+        remoteServerUrl={remoteServerUrl ?? undefined}
+        remoteArenaCount={remoteArenaCount}
       />
 
       {/* Content — keyed pour animation de transition */}
@@ -1089,13 +1178,22 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               </div>
             ) : (
               <>
-                {pools.length > 1 && (
-                  <div style={CV_STYLES.poolsExportRow}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    marginBottom: '2rem',
+                  }}
+                >
+                  <GlobalPoolColumnsMenu isLaserSabre={isLaserSabre} />
+                  {pools.length > 1 && (
                     <button className="btn btn-success" onClick={handleExportAllPoolsPDF}>
                       📄 Exporter toutes les poules en PDF
                     </button>
-                  </div>
-                )}
+                  )}
+                </div>
                 <div
                   style={{
                     display: 'grid',
@@ -1189,6 +1287,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               }
             }}
             onRankingChange={ranking => setOverallRanking(ranking)}
+            poolWinnersOnly={poolWinnersOnly}
+            splitCriteria={postPoolSplitCriteria}
           />
         )}
 
@@ -1231,6 +1331,29 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
         {currentPhase === 'tableau' && (
           <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Chargement tableau…</div>}>
+          {/* Sélecteur de groupe pour compétition couplée */}
+          {postPoolSplitCriteria && activeSplitGroup && splitGroups.length > 1 && (
+            <div style={{ display: 'flex', gap: '0.5rem', padding: '0.75rem 1rem', borderBottom: '1px solid #e5e7eb', background: '#f9fafb' }}>
+              {splitGroups.map(g => (
+                <button
+                  key={g}
+                  onClick={() => handleSwitchSplitGroup(g)}
+                  style={{
+                    padding: '0.375rem 0.875rem',
+                    borderRadius: '6px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontWeight: g === activeSplitGroup ? '700' : '400',
+                    background: g === activeSplitGroup ? '#2563eb' : '#e5e7eb',
+                    color: g === activeSplitGroup ? 'white' : '#374151',
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  {g === Gender.MALE ? '♂ Hommes' : g === Gender.FEMALE ? '♀ Femmes' : g}
+                </button>
+              ))}
+            </div>
+          )}
           {finalResults.length > 0 && (
             <div style={{
               display: 'flex',
@@ -1268,7 +1391,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             </div>
           )}
           <TableauView
-            ranking={overallRanking}
+            ranking={effectiveTableauRanking}
             matches={tableauMatches}
             onMatchesChange={setTableauMatches}
             consolationBrackets={consolationBrackets}
@@ -1307,7 +1430,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         {currentPhase === 'results' && (
           <ResultsView
             competition={competition}
-            poolRanking={overallRanking}
+            poolRanking={effectiveTableauRanking}
             finalResults={finalResults}
             fencers={fencers}
             pools={[...poolHistory.flat(), ...pools]}

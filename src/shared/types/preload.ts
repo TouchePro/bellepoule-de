@@ -335,6 +335,37 @@ export interface RemoteServerInfo {
   port: number;
 }
 
+export interface ConnectedClient {
+  socketId: string;
+  clientType: 'arena' | 'kiosk' | 'public' | 'pool' | 'dashboard' | 'lobby';
+  arenaId?: string;
+  ip: string;
+  userAgent: string;
+  connectedAt: string;
+  lastSeen: string;
+  label?: string;
+  screenId?: string;
+}
+
+export interface KioskScreenConfig {
+  poules: boolean;
+  classement: boolean;
+  final: boolean;
+  direct: boolean;
+  suivants: boolean;
+  tableau: boolean;
+  rotationSec: number;
+}
+
+export interface TVCommand {
+  type: 'refresh' | 'navigate' | 'message' | 'ping' | 'identify' | 'kiosk:config';
+  url?: string;
+  text?: string;
+  duration?: number;
+  kioskConfig?: Partial<KioskScreenConfig>;
+  screenLabel?: string;
+}
+
 export interface RemoteServerAPI {
   getNetworkInterfaces: () => Promise<{
     success: boolean;
@@ -403,6 +434,7 @@ export interface RemoteServerAPI {
     theme: import('../types/remote').DisplayTheme,
     customTheme?: import('../types/remote').CustomTheme
   ) => Promise<{ success: boolean; error?: string }>;
+  setWebhookUrl: (url: string | null) => Promise<{ success: boolean; error?: string }>;
   updateLogo: (logo: string | null) => Promise<{ success: boolean; error?: string }>;
   setWallpaper: (
     competitionId: string,
@@ -424,6 +456,13 @@ export interface RemoteServerAPI {
     competitionId: string,
     enabled: boolean
   ) => Promise<{ success: boolean; error?: string }>;
+  getConnectedClients: (competitionId: string) => Promise<{ success: boolean; clients: ConnectedClient[]; error?: string }>;
+  sendClientCommand: (competitionId: string, socketId: string, command: TVCommand) => Promise<{ success: boolean; error?: string }>;
+  broadcastCommand: (competitionId: string, command: TVCommand) => Promise<{ success: boolean; error?: string }>;
+  onClientListUpdate: (cb: (clients: ConnectedClient[]) => void) => () => void;
+  renameClient: (competitionId: string, socketId: string, label: string) => Promise<{ success: boolean; error?: string }>;
+  identifyClient: (competitionId: string, socketId: string) => Promise<{ success: boolean; error?: string }>;
+  setClientKioskMode: (competitionId: string, socketId: string, config: KioskScreenConfig) => Promise<{ success: boolean; error?: string }>;
 }
 
 // ============================================================================
@@ -712,14 +751,23 @@ export interface ArenaStateData {
   extraData?: Record<string, unknown>;
 }
 
+/** Chiffrement OS (safeStorage) pour secrets locaux. Renvoie null si indisponible. */
+export interface CryptoAPI {
+  isAvailable: () => Promise<boolean>;
+  protect: (plaintext: string) => Promise<string | null>;
+  unprotect: (ciphertext: string) => Promise<string | null>;
+}
+
 export interface ElectronAPI extends MenuAPI, UtilityAPI {
   db: DatabaseAPI;
   file: FileAPI;
   dialog: DialogAPI;
   updater: UpdaterAPI;
+  crypto: CryptoAPI;
   remote: RemoteServerAPI;
   onRemoteArenaUpdate: (callback: (data: any) => void) => () => void;
-  onRemoteMatchFinished: (callback: (data: any) => void) => void;
+  onRemoteMatchFinished: (callback: (data: any) => void) => () => void;
+  onRemoteFencerExcluded: (callback: (data: { fencerId: string; matchId: string }) => void) => (() => void);
   onKioskNoteUpdate: (
     callback: (note: import('../types/remote').OrgNote | null) => void
   ) => () => void;

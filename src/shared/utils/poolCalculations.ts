@@ -981,3 +981,44 @@ export function generateInitialRanking(fencers: Fencer[]): PoolRanking[] {
     questPoints: 0,
   }));
 }
+
+// ============================================================================
+// Mode vainqueurs de poule
+// ============================================================================
+
+/** Renvoie les IDs des tireurs classés 1er dans leur poule respective */
+export function getPoolWinnerIds(pools: Pool[]): Set<string> {
+  const ids = new Set<string>();
+  for (const pool of pools) {
+    const ranking = pool.ranking?.length ? pool.ranking : calculatePoolRanking(pool);
+    ranking.filter(r => r.rank === 1).forEach(r => ids.add(r.fencer.id));
+  }
+  return ids;
+}
+
+/** Filtre le classement général pour ne garder que les vainqueurs de poule */
+export function filterPoolWinners(pools: Pool[], overallRanking: PoolRanking[]): PoolRanking[] {
+  const winnerIds = getPoolWinnerIds(pools);
+  return overallRanking
+    .filter(r => winnerIds.has(r.fencer.id))
+    .map((r, i) => ({ ...r, rank: i + 1 }));
+}
+
+// ============================================================================
+// Mode compétition couplée (séparation par genre)
+// ============================================================================
+
+/** Répartit le classement général en sous-classements par genre */
+export function splitRankingByGender(overallRanking: PoolRanking[]): Map<string, PoolRanking[]> {
+  const groups = new Map<string, PoolRanking[]>();
+  for (const r of overallRanking) {
+    const key = r.fencer.gender as string;
+    const arr = groups.get(key) ?? [];
+    arr.push(r);
+    groups.set(key, arr);
+  }
+  for (const [key, rankings] of groups) {
+    groups.set(key, rankings.map((r, i) => ({ ...r, rank: i + 1 })));
+  }
+  return groups;
+}

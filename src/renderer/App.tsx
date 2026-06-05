@@ -16,6 +16,8 @@ const AboutModal = React.lazy(() => import('./components/AboutModal'));
 const SettingsModal = React.lazy(() => import('./components/SettingsModal'));
 const DTCallNotification = React.lazy(() => import('./components/DTCallNotification'));
 const UpdateNotification = React.lazy(() => import('./components/UpdateNotification'));
+const KeyboardShortcutsHelp = React.lazy(() => import('./components/KeyboardShortcutsHelp'));
+const WikiModal = React.lazy(() => import('./components/WikiModal'));
 import { ToastProvider, useToast } from './components/Toast';
 import { ConfirmProvider, useConfirm } from './components/ConfirmDialog';
 import { TranslationProvider, useTranslation, Theme } from './contexts/TranslationContext';
@@ -39,6 +41,7 @@ const AppContent: React.FC = () => {
   const { confirm } = useConfirm();
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showAboutModal, setShowAboutModal] = useState(false);
+  const [showWikiModal, setShowWikiModal] = useState(false);
   const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
 
   const {
@@ -369,6 +372,13 @@ const AppContent: React.FC = () => {
             </button>
             <button
               className="btn btn-secondary"
+              onClick={() => setShowWikiModal(true)}
+              title={t('wiki.button_title')}
+            >
+              📖
+            </button>
+            <button
+              className="btn btn-secondary"
               onClick={() => setShowSettingsModal(true)}
               title={t('settings.title')}
             >
@@ -598,6 +608,12 @@ const AppContent: React.FC = () => {
           </Suspense>
         )}
 
+        {showWikiModal && (
+          <Suspense fallback={null}>
+            <WikiModal onClose={() => setShowWikiModal(false)} />
+          </Suspense>
+        )}
+
         {showCommandPalette && (
           <Suspense fallback={null}>
             <CommandPalette
@@ -618,6 +634,11 @@ const AppContent: React.FC = () => {
             />
           </Suspense>
         )}
+
+        {/* Overlay d'aide raccourcis clavier (autonome : touche « ? », Échap pour fermer) */}
+        <Suspense fallback={null}>
+          <KeyboardShortcutsHelp />
+        </Suspense>
       </div>
     </>
   );

@@ -5,9 +5,10 @@
  */
 
 import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
-import { PoolRanking, Pool, Weapon, FencerStatus } from '../../shared/types';
-import { exportRankingToPDF } from '../../shared/utils/pdfExport';
+import { PoolRanking, Pool, Weapon, FencerStatus, PostPoolSplitCriteria, Gender } from '../../shared/types';
+// pdfExport (jsPDF) chargé à la demande pour alléger le bundle initial
 import { usePdfTemplateStore } from '../../features/pdfTemplates/hooks/usePdfTemplateStore';
+import { CENTER, W40, W50, W60, SM, FLEX_GAP } from './poolRankingView.styles';
 import {
   formatRatio,
   formatIndex,
@@ -15,6 +16,8 @@ import {
   calculateOverallRanking,
   calculatePoolRanking,
   calculatePoolRankingQuest,
+  getPoolWinnerIds,
+  splitRankingByGender,
 } from '../../shared/utils/poolCalculations';
 import { useToast } from './Toast';
 import { useColumnVisibility, RANKING_COLUMNS, ColumnId } from '../hooks/useColumnVisibility';
@@ -24,12 +27,14 @@ interface PoolRankingViewProps {
   weapon?: Weapon;
   ranking?: PoolRanking[];
   isInitialRanking?: boolean;
-  onGoToTableau?: () => void;
+  onGoToTableau?: (splitGroup?: string) => void;
   onGoToResults?: () => void;
   hasDirectElimination?: boolean;
   onExport?: (format: 'csv' | 'xml' | 'pdf') => void;
   onPoolsChange?: (pools: Pool[], rankingChanged: boolean) => void;
   onRankingChange?: (ranking: PoolRanking[]) => void;
+  poolWinnersOnly?: boolean;
+  splitCriteria?: PostPoolSplitCriteria;
 }
 
 const PoolRankingView: React.FC<PoolRankingViewProps> = ({
@@ -43,6 +48,8 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
   onExport,
   onPoolsChange,
   onRankingChange,
+  poolWinnersOnly = false,
+  splitCriteria,
 }) => {
   const { showToast } = useToast();
   const { isColumnVisible, toggleColumn, getVisibleColumns } = useColumnVisibility();
@@ -55,6 +62,25 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
   const [showColumnMenu, setShowColumnMenu] = useState(false);
   const columnMenuRef = useRef<HTMLDivElement>(null);
   const justSaved = useRef(false);
+  // Mode compétition couplée : onglet actif ('all' | 'M' | 'F')
+  const [splitTab, setSplitTab] = useState<'all' | string>('all');
+  const isInSplitGroupTab = splitCriteria != null && splitTab !== 'all';
+
+  // IDs des vainqueurs de poule (calculés une seule fois)
+  const poolWinnerIds = useMemo(
+    () => (poolWinnersOnly && pools.length > 0 ? getPoolWinnerIds(pools) : null),
+    [poolWinnersOnly, pools]
+  );
+
+  // Groupes disponibles pour la séparation par genre
+  const splitGroups = useMemo((): string[] => {
+    if (splitCriteria !== 'gender') return [];
+    const genders = new Set<string>();
+    for (const r of editedRanking) {
+      if (r.fencer.gender !== Gender.MIXED) genders.add(r.fencer.gender as string);
+    }
+    return Array.from(genders).sort();
+  }, [splitCriteria, editedRanking]);
 
   // Calculer le classement général selon le type d'arme
   const computedRanking = useMemo(() => {
@@ -65,6 +91,12 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
 
   // Utiliser le classement fourni par le parent s'il existe, sinon le calculé
   const overallRanking = externalRanking?.length ? externalRanking : computedRanking;
+
+  // Classement filtré pour l'onglet courant (split par genre)
+  const splitRankings = useMemo(
+    () => (splitCriteria === 'gender' ? splitRankingByGender(overallRanking) : null),
+    [splitCriteria, overallRanking]
+  );
 
   // Recalculer les classements de toutes les poules
   const handleRecalculate = useCallback(() => {
@@ -173,6 +205,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
     try {
       const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
       const cols = getVisibleColumns('ranking').filter(col => col !== 'quest' || isLaserSabre);
+      const { exportRankingToPDF } = await import('../../shared/utils/pdfExport');
       await exportRankingToPDF(overallRanking, 'Classement Général', weapon, cols, logo, rankingTemplate);
     } catch (e) {
       showToast((e as Error).message, 'error');
@@ -301,7 +334,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
             {isEditing && ' (mode édition)'}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={FLEX_GAP}>
           {!isInitialRanking && (
             <button
               className="btn btn-secondary"
@@ -328,13 +361,15 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
           <button className="btn btn-secondary" onClick={handlePrint} title="Imprimer">
             🖨️ Imprimer
           </button>
-          <button
-            className="btn btn-secondary"
-            onClick={() => (isEditing ? saveChanges() : setIsEditing(true))}
-            title={isEditing ? 'Terminer la modification' : 'Modifier le classement'}
-          >
-            {isEditing ? '✓ Terminer' : '✏️ Modifier'}
-          </button>
+          {!isInSplitGroupTab && (
+            <button
+              className="btn btn-secondary"
+              onClick={() => (isEditing ? saveChanges() : setIsEditing(true))}
+              title={isEditing ? 'Terminer la modification' : 'Modifier le classement'}
+            >
+              {isEditing ? '✓ Terminer' : '✏️ Modifier'}
+            </button>
+          )}
           <div style={{ position: 'relative' }} ref={columnMenuRef}>
             <button
               onClick={() => setShowColumnMenu(!showColumnMenu)}
@@ -408,28 +443,62 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
         </div>
       </div>
 
+      {/* Onglets de séparation (compétition couplée) */}
+      {splitCriteria && splitGroups.length > 0 && (
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
+          <button
+            className={splitTab === 'all' ? 'btn btn-primary' : 'btn btn-secondary'}
+            style={SM}
+            onClick={() => setSplitTab('all')}
+          >
+            🌐 Général
+          </button>
+          {splitGroups.map(g => (
+            <button
+              key={g}
+              className={splitTab === g ? 'btn btn-primary' : 'btn btn-secondary'}
+              style={SM}
+              onClick={() => { if (isEditing) saveChanges(); setSplitTab(g); }}
+            >
+              {g === Gender.MALE ? '♂ Hommes' : g === Gender.FEMALE ? '♀ Femmes' : g}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="card">
         <table className="table">
           <thead>
             <tr>
-              {isVisible('rank') && <th style={{ width: '50px' }}>Rg</th>}
+              {isVisible('rank') && <th style={W50}>Rg</th>}
               {isVisible('lastName') && <th>Nom</th>}
               {isVisible('firstName') && <th>Prénom</th>}
               {isVisible('club') && <th>Club</th>}
-              {isVisible('victories') && <th style={{ width: '40px' }}>V</th>}
-              {isVisible('matches') && <th style={{ width: '40px' }}>M</th>}
-              {isVisible('ratio') && <th style={{ width: '60px' }}>V/M</th>}
-              {isVisible('td') && <th style={{ width: '50px' }}>TD</th>}
-              {isVisible('tr') && <th style={{ width: '50px' }}>TR</th>}
+              {isVisible('victories') && <th style={W40}>V</th>}
+              {isVisible('matches') && <th style={W40}>M</th>}
+              {isVisible('ratio') && <th style={W60}>V/M</th>}
+              {isVisible('td') && <th style={W50}>TD</th>}
+              {isVisible('tr') && <th style={W50}>TR</th>}
               {isVisible('quest') && isLaserSabre && (
                 <th style={{ width: '70px', color: '#7c3aed' }}>Quest</th>
               )}
-              {isVisible('index') && <th style={{ width: '60px' }}>Indice</th>}
+              {isVisible('index') && <th style={W60}>Indice</th>}
+              {poolWinnersOnly && <th style={{ width: '70px' }}>Qualif.</th>}
             </tr>
           </thead>
           <tbody>
-            {editedRanking.map((ranking, index) => (
-              <tr key={ranking.fencer.id}>
+            {(splitCriteria && splitTab !== 'all'
+              ? (splitRankings?.get(splitTab) ?? [])
+              : editedRanking
+            ).map((ranking, index) => (
+              <tr
+                key={ranking.fencer.id}
+                style={
+                  poolWinnersOnly && poolWinnerIds && !poolWinnerIds.has(ranking.fencer.id)
+                    ? { opacity: 0.45 }
+                    : undefined
+                }
+              >
                 {isVisible('rank') && (
                   <td style={{ fontWeight: '600' }}>
                     {isEditing ? (
@@ -519,16 +588,16 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
                   <td style={{ textAlign: 'center', fontWeight: '600' }}>{ranking.victories}</td>
                 )}
                 {isVisible('matches') && (
-                  <td style={{ textAlign: 'center' }}>{ranking.victories + ranking.defeats}</td>
+                  <td style={CENTER}>{ranking.victories + ranking.defeats}</td>
                 )}
                 {isVisible('ratio') && (
-                  <td style={{ textAlign: 'center' }}>{formatRatio(ranking.ratio)}</td>
+                  <td style={CENTER}>{formatRatio(ranking.ratio)}</td>
                 )}
                 {isVisible('td') && (
-                  <td style={{ textAlign: 'center' }}>{ranking.touchesScored}</td>
+                  <td style={CENTER}>{ranking.touchesScored}</td>
                 )}
                 {isVisible('tr') && (
-                  <td style={{ textAlign: 'center' }}>{ranking.touchesReceived}</td>
+                  <td style={CENTER}>{ranking.touchesReceived}</td>
                 )}
                 {isVisible('quest') && isLaserSabre && (
                   <td style={{ textAlign: 'center', fontWeight: '600', color: '#7c3aed' }}>
@@ -561,6 +630,17 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
                     {formatIndex(ranking.index)}
                   </td>
                 )}
+                {poolWinnersOnly && (
+                  <td style={CENTER}>
+                    {poolWinnerIds?.has(ranking.fencer.id) ? (
+                      <span style={{ color: '#059669', fontWeight: '700', fontSize: '0.85rem' }}>
+                        ✓ Q
+                      </span>
+                    ) : (
+                      <span style={{ color: '#9ca3af', fontSize: '0.8rem' }}>—</span>
+                    )}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -583,11 +663,25 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
           {', Indice = TD - TR'}
           {' • (A) = Abandon • (F) = Forfait • (X) = Exclu'}
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={FLEX_GAP}>
           {hasDirectElimination ? (
-            <button className="btn btn-primary" onClick={onGoToTableau}>
-              Passer au tableau →
-            </button>
+            splitCriteria && splitGroups.length > 1 ? (
+              splitGroups.map(g => (
+                <button
+                  key={g}
+                  className="btn btn-primary"
+                  onClick={() => onGoToTableau?.(g)}
+                >
+                  Tableau {g === Gender.MALE ? '♂ Hommes' : '♀ Femmes'} →
+                </button>
+              ))
+            ) : (
+              <button className="btn btn-primary" onClick={() => onGoToTableau?.()}>
+                {poolWinnersOnly
+                  ? `Tableau (${poolWinnerIds?.size ?? '?'} vainqueurs) →`
+                  : 'Passer au tableau →'}
+              </button>
+            )
           ) : (
             <button className="btn btn-primary" onClick={onGoToResults}>
               Voir les résultats →

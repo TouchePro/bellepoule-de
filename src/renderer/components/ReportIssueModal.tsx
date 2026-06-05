@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from './Toast';
 import { useTranslation } from '../hooks/useTranslation';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface ReportIssueModalProps {
   onClose: () => void;
@@ -19,6 +20,7 @@ interface VersionInfo {
 }
 
 const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ onClose }) => {
+  const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
   const { showToast } = useToast();
   const { t } = useTranslation();
   const [issueType, setIssueType] = useState<'bug' | 'feature'>('bug');
@@ -94,7 +96,7 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ onClose }) => {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+      <div ref={modalRef} className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }} role="dialog" aria-modal="true">
         <div className="modal-header">
           <h2>📝 {t('report_issue.title')}</h2>
           <button className="btn-close" onClick={onClose}>

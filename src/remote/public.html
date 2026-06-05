@@ -857,7 +857,7 @@
     <script>
       class PublicDisplay {
         constructor() {
-          this.socket = io();
+          this.socket = io({ reconnection: true, reconnectionDelay: 200, reconnectionDelayMax: 5000, randomizationFactor: 0.5 });
           this.arenaId = this.getArenaId();
           this.arenaNumber = this.arenaNumberFromId();
           this.currentMatch = null;
@@ -867,6 +867,7 @@
           this.cardsB = [];
           this.isSuddenDeath = false;
           this.overtimeType = null;
+          this.refereeSelected = false;
           // Clé localStorage indépendante des autres écrans
           this.inversionEnabled = localStorage.getItem('publicInversionEnabled') === 'true';
           this.showPhotos = false;
@@ -895,15 +896,65 @@
           const checkbox = document.getElementById('inversion-checkbox');
           checkbox.checked = this.inversionEnabled;
           checkbox.addEventListener('change', () => {
-            this.socket.emit('arena_control', { arenaId: this.arenaId, action: 'toggle_swap' });
+            this.inversionEnabled = checkbox.checked;
+            localStorage.setItem('publicInversionEnabled', this.inversionEnabled);
+            this.applyInversionColors();
+            if (this.currentMatch) this.updateMatchDisplay();
+            this.updateCardsDisplay();
           });
         }
 
+        showIdentifyOverlay(label, durationMs) {
+          let ov = document.getElementById('bp-identify-overlay');
+          if (!ov) {
+            ov = document.createElement('div');
+            ov.id = 'bp-identify-overlay';
+            ov.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;pointer-events:none;animation:bp-identify-blink 0.5s ease-in-out infinite alternate;';
+            const style = document.createElement('style');
+            style.textContent = '@keyframes bp-identify-blink{from{background:rgba(59,130,246,0.55)}to{background:rgba(139,92,246,0.65)}}';
+            document.head.appendChild(style);
+            document.body.appendChild(ov);
+          }
+          ov.innerHTML = '<div style="background:rgba(0,0,0,0.85);border:3px solid #3b82f6;border-radius:1.5rem;padding:2rem 4rem;text-align:center;max-width:80vw;">'
+            + '<div style="font-size:2.5rem;font-weight:900;color:#fff;margin-bottom:0.5rem;">📺 ' + String(label).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c])) + '</div>'
+            + '<div style="font-size:1rem;color:#94a3b8;">Identification écran</div>'
+            + '</div>';
+          ov.style.display = 'flex';
+          clearTimeout(ov._t);
+          ov._t = setTimeout(() => { ov.style.display = 'none'; }, durationMs ?? 5000);
+        }
+
         setupSocketListeners() {
+          let _screenId = localStorage.getItem('bp_screen_id');
+          if (!_screenId) {
+            _screenId = 'scr_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+            localStorage.setItem('bp_screen_id', _screenId);
+          }
           this.socket.on('connect', () => {
             this.updateConnectionStatus(true);
             this.socket.emit('join_arena', { arenaId: this.arenaId, role: 'public' });
+            this.socket.emit('client:register', { clientType: 'public', arenaId: this.arenaId, userAgent: navigator.userAgent, screenId: _screenId });
           });
+
+          this.socket.on('server:command', cmd => {
+            if (cmd.type === 'refresh') { location.reload(); return; }
+            if (cmd.type === 'navigate' && cmd.url) { location.href = cmd.url; return; }
+            if (cmd.type === 'ping') { this.socket.emit('client:pong'); return; }
+            if (cmd.type === 'identify') {
+              const lbl = cmd.screenLabel || localStorage.getItem('bp_screen_label') || _screenId;
+              if (cmd.screenLabel) localStorage.setItem('bp_screen_label', cmd.screenLabel);
+              this.showIdentifyOverlay(lbl, cmd.duration ?? 5000);
+              return;
+            }
+            if (cmd.type === 'message' && cmd.text) {
+              let b = document.getElementById('remote-msg-banner');
+              if (!b) { b = document.createElement('div'); b.id = 'remote-msg-banner'; b.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.82);color:#fff;font-size:1.3rem;padding:0.7rem 1.2rem;text-align:center;z-index:9999;pointer-events:none;transition:opacity 0.4s;'; document.body.appendChild(b); }
+              b.textContent = cmd.text; b.style.opacity = '1';
+              clearTimeout(b._t); b._t = setTimeout(() => { b.style.opacity = '0'; }, cmd.duration ?? 5000);
+            }
+          });
+
+          setInterval(() => { if (this.socket.connected) this.socket.emit('client:pong'); }, 30000);
 
           this.socket.on('disconnect', () => {
             this.updateConnectionStatus(false);
@@ -1013,21 +1064,24 @@
             this.showPhotos = data.showPhotos;
           }
 
-          // Mise à jour état d'inversion (synchronisé avec le serveur)
-          if (data.swapped !== undefined) {
-            this.inversionEnabled = data.swapped;
-            const cb = document.getElementById('inversion-checkbox');
-            if (cb) cb.checked = data.swapped;
-            localStorage.setItem('publicInversionEnabled', data.swapped);
-            this.applyInversionColors();
-          }
+          // L'inversion public est locale — on ignore data.swapped
 
           if (data.status) {
             this.matchStatus = data.status;
             this.updateStatusBadge();
           }
 
-          if (data.match) {
+          if (data.refereeSelected !== undefined) {
+            this.refereeSelected = data.refereeSelected;
+          }
+          if (data.status === 'in_progress' || data.status === 'finished') {
+            this.refereeSelected = true;
+          }
+          if (data.status === 'idle') {
+            this.refereeSelected = false;
+          }
+
+          if (data.match && (this.refereeSelected || data.status === 'in_progress' || data.status === 'finished')) {
             this.currentMatch = data.match;
             this.updateMatchDisplay();
             if (this.matchStatus === 'ready' && this.showPhotos) {
@@ -1197,7 +1251,8 @@
           const matchDisplay = document.getElementById('match-display');
           const photoIntro = document.getElementById('photo-intro');
 
-          if (this.matchStatus === 'idle' || this.matchStatus === 'not_started') {
+          if (this.matchStatus === 'idle' || this.matchStatus === 'not_started' ||
+              (this.matchStatus === 'ready' && !this.refereeSelected)) {
             waitingScreen.classList.remove('hidden');
             matchDisplay.classList.remove('active');
             photoIntro.classList.add('hidden');

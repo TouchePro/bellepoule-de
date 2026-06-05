@@ -437,6 +437,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
     installPendingUpdate: () => ipcRenderer.invoke('updater:installPendingUpdate'),
   },
 
+  // Chiffrement OS (safeStorage) pour secrets locaux
+  crypto: {
+    isAvailable: (): Promise<boolean> => ipcRenderer.invoke('crypto:isAvailable'),
+    protect: (plaintext: string): Promise<string | null> => {
+      if (typeof plaintext !== 'string') throw new Error('plaintext must be a string');
+      return ipcRenderer.invoke('crypto:protect', plaintext);
+    },
+    unprotect: (ciphertext: string): Promise<string | null> => {
+      if (typeof ciphertext !== 'string') throw new Error('ciphertext must be a string');
+      return ipcRenderer.invoke('crypto:unprotect', ciphertext);
+    },
+  },
+
   // Remote score server functions
   remote: {
     getNetworkInterfaces: () => ipcRenderer.invoke('remote:getNetworkInterfaces'),
@@ -494,6 +507,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     clearOrgNote: (competitionId: string) => ipcRenderer.invoke('remote:clearOrgNote', competitionId),
     updateArenaTheme: (competitionId: string, arenaId: string, theme: string, customTheme?: any) =>
       ipcRenderer.invoke('remote:updateArenaTheme', competitionId, arenaId, theme, customTheme),
+    setWebhookUrl: (url: string | null) => ipcRenderer.invoke('remote:setWebhookUrl', url),
     updateLogo: (logo: string | null) => ipcRenderer.invoke('remote:updateLogo', logo),
     setWallpaper: (competitionId: string, wallpaper: string | null) =>
       ipcRenderer.invoke('remote:setWallpaper', competitionId, wallpaper),
@@ -505,6 +519,23 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('remote:resetPoolMatch', competitionId, matchId),
     setRegistrationEnabled: (competitionId: string, enabled: boolean) =>
       ipcRenderer.invoke('remote:setRegistrationEnabled', competitionId, enabled),
+    getConnectedClients: (competitionId: string) =>
+      ipcRenderer.invoke('remote:getConnectedClients', competitionId),
+    sendClientCommand: (competitionId: string, socketId: string, command: any) =>
+      ipcRenderer.invoke('remote:sendClientCommand', competitionId, socketId, command),
+    broadcastCommand: (competitionId: string, command: any) =>
+      ipcRenderer.invoke('remote:broadcastCommand', competitionId, command),
+    onClientListUpdate: (cb: (clients: any[]) => void) => {
+      const handler = (_: any, clients: any[]) => cb(clients);
+      ipcRenderer.on('remote:clientListUpdate', handler);
+      return () => ipcRenderer.removeListener('remote:clientListUpdate', handler);
+    },
+    renameClient: (competitionId: string, socketId: string, label: string) =>
+      ipcRenderer.invoke('remote:renameClient', competitionId, socketId, label),
+    identifyClient: (competitionId: string, socketId: string) =>
+      ipcRenderer.invoke('remote:identifyClient', competitionId, socketId),
+    setClientKioskMode: (competitionId: string, socketId: string, config: any) =>
+      ipcRenderer.invoke('remote:setClientKioskMode', competitionId, socketId, config),
   },
 
   // Remote event listeners (for real-time updates)
@@ -514,7 +545,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('arena:update', handler);
   },
   onRemoteMatchFinished: (callback: (data: any) => void) => {
-    ipcRenderer.on('match:finished', (_, data) => callback(data));
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on('match:finished', handler);
+    return () => ipcRenderer.removeListener('match:finished', handler);
+  },
+  onRemoteFencerExcluded: (callback: (data: { fencerId: string; matchId: string }) => void) => {
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on('remote:fencer_excluded', handler);
+    return () => ipcRenderer.removeListener('remote:fencer_excluded', handler);
   },
   onKioskNoteUpdate: (callback: (note: any) => void) => {
     const handler = (_: any, note: any) => callback(note);

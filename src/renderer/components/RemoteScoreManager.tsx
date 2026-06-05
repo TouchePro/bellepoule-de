@@ -5,13 +5,14 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import QRCode from 'qrcode';
+// qrcode chargé à la demande (génération du QR uniquement à l'affichage)
 import { Competition, Pool } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
 import { TableauMatch, ConsolationBracket } from './tableau/tableauTypes';
 import { useToast } from './Toast';
 import ThemeEditor from './ThemeEditor';
 import { CustomTheme, DisplayTheme } from '../../shared/types/remote';
+import { ConnectedClient, KioskScreenConfig } from '../../shared/types/preload';
 
 interface RemoteScoreManagerProps {
   competition: Competition;
@@ -151,6 +152,15 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     return localStorage.getItem(key) === 'true';
   });
 
+  // Écrans connectés
+  const [connectedClients, setConnectedClients] = useState<ConnectedClient[]>([]);
+  const [renameValues, setRenameValues] = useState<Record<string, string>>({});
+  // kioskModal : socketId de l'écran pour lequel on configure le mode kiosk
+  const [kioskModal, setKioskModal] = useState<string | null>(null);
+  const [kioskModalConfig, setKioskModalConfig] = useState<KioskScreenConfig>({
+    poules: true, classement: true, final: false, direct: true, suivants: true, tableau: true, rotationSec: 15,
+  });
+
   useEffect(() => {
     window.electronAPI.remote.getNetworkInterfaces().then((res: any) => {
       if (res?.success && res.interfaces?.length) {
@@ -164,7 +174,8 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       setQrDataUrl(null);
       return;
     }
-    QRCode.toDataURL(activeQR.url, { width: 220, margin: 1 })
+    import('qrcode')
+      .then(m => m.default.toDataURL(activeQR.url, { width: 220, margin: 1 }))
       .then(setQrDataUrl)
       .catch(() => setQrDataUrl(null));
   }, [activeQR]);
@@ -219,7 +230,10 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     }
     if (fingerprint === sessionMatchesFingerprintRef.current) return;
     sessionMatchesFingerprintRef.current = fingerprint;
-    const poolsData = pools.map(pool => ({ poolId: pool.id, matches: pool.matches ?? [] }));
+    const poolsData = pools.map(pool => ({
+      poolId: pool.id,
+      matches: (pool.matches ?? []).map((m: any) => ({ ...m, poolNumber: pool.number })),
+    }));
     window.electronAPI.remote.syncPoolMatches(competition.id, poolsData).catch((err: unknown) => {
       logger.warn(
         LogCategory.NETWORK,
@@ -250,6 +264,17 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       logger.warn(LogCategory.NETWORK, 'Échec refreshDeMatches', err instanceof Error ? err : undefined);
     });
   }, [pendingDeMatches, isRemoteActive, session]);
+
+  // Abonnement aux mises à jour de la liste des clients connectés
+  useEffect(() => {
+    if (!isRemoteActive) return;
+    window.electronAPI.remote.getConnectedClients(competition.id).then((res: any) => {
+      if (res.success) setConnectedClients(res.clients ?? []);
+    });
+    return window.electronAPI.remote.onClientListUpdate((clients: ConnectedClient[]) => {
+      setConnectedClients(clients);
+    });
+  }, [isRemoteActive, competition.id]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -333,6 +358,11 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         setCommittedCount(count);
         onArenaCountChange?.(count);
         showToast('Saisie distante démarrée', 'success');
+        // Synchroniser le webhook URL configuré vers le serveur qui vient de démarrer
+        const savedWebhook = localStorage.getItem('bellepoule-webhook-url');
+        if (savedWebhook) {
+          window.electronAPI.remote.setWebhookUrl?.(savedWebhook).catch(() => {});
+        }
         // Envoyer les matchs DE avec leurs pistes au serveur (la clé ref est déjà stockée
         // avant que session/isRemoteActive soient prêts, donc l'effet ne se déclenche pas).
         if (deMatches.length > 0) {
@@ -1140,6 +1170,80 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         </div>
       </div>
 
+      {/* ── Section : Écrans connectés ── */}
+      {connectedClients.length > 0 && (
+        <div className="arena-url-card" style={{ marginTop: '1rem' }}>
+          <div className="arena-url-header">
+            <strong>📺 Écrans connectés ({connectedClients.length})</strong>
+          </div>
+          {connectedClients.map(client => {
+            const clientLabel = client.label || client.screenId?.slice(0, 8) || client.socketId.slice(0, 8);
+            const typeLabel: Record<string, string> = {
+              kiosk: 'Kiosk', arena: 'Arène', public: 'Public', pool: 'Poule', dashboard: 'Dashboard', lobby: 'Lobby',
+            };
+            return (
+              <div key={client.socketId} style={{
+                display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem',
+                padding: '0.5rem 0', borderBottom: '1px solid #1e293b',
+              }}>
+                <span style={{ fontSize: '0.75rem', padding: '0.15rem 0.4rem', borderRadius: '0.3rem', background: '#1e3a5f', color: '#7dd3fc', whiteSpace: 'nowrap' }}>
+                  {typeLabel[client.clientType] ?? client.clientType}
+                </span>
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#e2e8f0', minWidth: '6rem' }}>
+                  {clientLabel}
+                </span>
+                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{client.ip}</span>
+                <div style={{ display: 'flex', gap: '0.35rem', marginLeft: 'auto', flexWrap: 'wrap' }}>
+                  <button
+                    className="btn-secondary"
+                    style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
+                    title="Faire clignoter cet écran pour l'identifier"
+                    onClick={() => window.electronAPI.remote.identifyClient(competition.id, client.socketId)}
+                  >
+                    🔦 Identifier
+                  </button>
+                  <input
+                    type="text"
+                    placeholder="Renommer…"
+                    value={renameValues[client.socketId] ?? ''}
+                    onChange={e => setRenameValues(v => ({ ...v, [client.socketId]: e.target.value }))}
+                    onKeyDown={async e => {
+                      if (e.key === 'Enter') {
+                        const lbl = renameValues[client.socketId]?.trim();
+                        if (lbl) await window.electronAPI.remote.renameClient(competition.id, client.socketId, lbl);
+                      }
+                    }}
+                    style={{ width: '8rem', fontSize: '0.75rem', padding: '0.2rem 0.4rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#0f172a', color: '#e2e8f0' }}
+                  />
+                  <button
+                    className="btn-secondary"
+                    style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
+                    title="Renommer"
+                    onClick={async () => {
+                      const lbl = renameValues[client.socketId]?.trim();
+                      if (lbl) await window.electronAPI.remote.renameClient(competition.id, client.socketId, lbl);
+                    }}
+                  >
+                    ✓
+                  </button>
+                  <button
+                    className="btn-primary"
+                    style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
+                    title="Configurer et envoyer en mode kiosk"
+                    onClick={() => {
+                      setKioskModal(client.socketId);
+                      setKioskModalConfig({ poules: true, classement: true, final: false, direct: true, suivants: true, tableau: true, rotationSec: 15 });
+                    }}
+                  >
+                    🖥️ Mode kiosk
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       <div className="remote-instructions">
         <h5>Instructions pour les arbitres</h5>
         <ol>
@@ -1151,6 +1255,62 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           <li>Cliquer sur "Match suivant" pour passer au match suivant</li>
         </ol>
       </div>
+
+      {/* ── Modal kiosk config ── */}
+      {kioskModal && (
+        <div className="qr-popup-overlay" onClick={() => setKioskModal(null)}>
+          <div className="qr-popup" onClick={e => e.stopPropagation()} style={{ minWidth: '20rem', maxWidth: '26rem' }}>
+            <strong style={{ fontSize: '1rem' }}>🖥️ Configurer le mode kiosk</strong>
+            <div style={{ margin: '0.75rem 0', textAlign: 'left' }}>
+              <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '0.5rem' }}>Vues à afficher :</div>
+              {([
+                { key: 'poules', label: 'Poules' },
+                { key: 'classement', label: 'Classement' },
+                { key: 'final', label: 'Classement final' },
+                { key: 'direct', label: 'Matchs en direct' },
+                { key: 'suivants', label: 'Matchs suivants' },
+                { key: 'tableau', label: 'Tableau DE' },
+              ] as const).map(({ key, label }) => (
+                <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.3rem 0', cursor: 'pointer', color: '#e2e8f0' }}>
+                  <input
+                    type="checkbox"
+                    checked={kioskModalConfig[key]}
+                    onChange={e => setKioskModalConfig(c => ({ ...c, [key]: e.target.checked }))}
+                  />
+                  {label}
+                </label>
+              ))}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem' }}>
+                <label style={{ fontSize: '0.85rem', color: '#94a3b8', whiteSpace: 'nowrap' }}>Rotation (s) :</label>
+                <input
+                  type="number"
+                  min={3}
+                  max={300}
+                  value={kioskModalConfig.rotationSec}
+                  onChange={e => setKioskModalConfig(c => ({ ...c, rotationSec: Math.max(3, parseInt(e.target.value) || 15) }))}
+                  style={{ width: '5rem', padding: '0.3rem 0.5rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#0f172a', color: '#e2e8f0' }}
+                />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+              <button
+                className="btn btn-primary"
+                style={{ flex: 1 }}
+                onClick={async () => {
+                  await window.electronAPI.remote.setClientKioskMode(competition.id, kioskModal, kioskModalConfig);
+                  setKioskModal(null);
+                  showToast('Écran basculé en mode kiosk', 'success');
+                }}
+              >
+                Envoyer en kiosk
+              </button>
+              <button className="btn btn-secondary" onClick={() => setKioskModal(null)}>
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {themeEditorTarget && (
         <ThemeEditor

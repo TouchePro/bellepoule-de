@@ -25,6 +25,8 @@ function computeAdvancing(fencers: number, rule: AdvancementRule): number {
       const target = rule.count ?? fencers;
       return sizes.filter(s => s <= target).pop() ?? 2;
     }
+    case 'pool_winner':
+      return 1;
   }
 }
 
@@ -33,6 +35,7 @@ const MODE_LABELS: Record<AdvancementMode, string> = {
   percentage: 'Top %',
   fixed_count: 'Nombre fixe',
   fixed_bracket: 'Tableau suivant',
+  pool_winner: 'Vainqueur de poule',
 };
 
 const AdvancementRuleEditor_: React.FC<Props> = ({
@@ -49,6 +52,7 @@ const AdvancementRuleEditor_: React.FC<Props> = ({
       percentage: { percentage: 80 },
       fixed_count: { count: 16 },
       fixed_bracket: { count: 16 },
+      pool_winner: {},
     };
     onChange({ mode, ...defaults[mode] });
   };

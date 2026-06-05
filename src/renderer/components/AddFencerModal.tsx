@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { Fencer, Gender, FencerStatus } from '../../shared/types';
 import { useToast } from './Toast';
 import FencerPhoto from './FencerPhoto';
@@ -15,6 +16,7 @@ interface AddFencerModalProps {
 }
 
 const AddFencerModalComponent: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
+  const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
   const { showToast } = useToast();
   const { t } = useTranslation();
   const [lastName, setLastName] = useState('');
@@ -52,7 +54,7 @@ const AddFencerModalComponent: React.FC<AddFencerModalProps> = ({ onClose, onAdd
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
+      <div ref={modalRef} className="modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
         <div className="modal-header">
           <h2 className="modal-title">{t('fencer.add')}</h2>
           <button

@@ -8,6 +8,7 @@ import { Competition, FencerCompetitionStats } from '../../../shared/types';
 import { FencerMatchRecord } from '../../../shared/types/preload';
 import { useTranslation } from '../../../renderer/contexts/TranslationContext';
 import { exportFencerDetailPDF } from '../../../shared/utils/fencerDetailPdfExport';
+import { TouchZoneHeatmap } from '../../../renderer/components/analytics/TouchZoneHeatmap';
 
 interface Props {
   fencer: FencerCompetitionStats;
@@ -159,14 +160,34 @@ export const FencerDetailModal: React.FC<Props> = ({ fencer, competition, onClos
               <div className="text-xs text-gray-500 mt-0.5">Points touches</div>
               <div className="text-xs text-gray-400">A:{fencer.touchesZoneA} B:{fencer.touchesZoneB} C:{fencer.touchesZoneC}</div>
             </div>
-          ) : (
-            <div className="text-center">
+          ) : null}
+        </div>
+
+        {/* Heatmap Laser Sabre */}
+        {isLaser && (
+          <div className="px-5 py-3 bg-blue-50 border-b border-gray-200 flex-shrink-0">
+            <div className="text-xs font-semibold text-gray-600 mb-2">Répartition des touches</div>
+            <div className="flex justify-center">
+              <TouchZoneHeatmap
+                zoneA={fencer.touchesZoneA}
+                zoneB={fencer.touchesZoneB}
+                zoneC={fencer.touchesZoneC}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Sorties piste (armes classiques) */}
+        {!isLaser && (
+          <div className="grid grid-cols-4 gap-3 px-5 py-0 bg-gray-50 border-b border-gray-200 flex-shrink-0">
+            <div></div><div></div><div></div>
+            <div className="text-center py-2">
               <div className="text-2xl font-bold text-blue-700">{fencer.arenaExits || '0'}</div>
               <div className="text-xs text-gray-500 mt-0.5">{t('stats.arena_exits')}</div>
               <div className="text-xs text-gray-400">&nbsp;</div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Match list */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">

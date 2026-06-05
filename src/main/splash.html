@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src * data:;">
+  <title>BellePoule</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0f1729;
+      color: #e8eaf0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      width: 480px;
+      height: 320px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.4s ease;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body.fadeout { opacity: 0; }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 440px;
+    }
+
+    /* ---- Icône ---- */
+    @keyframes icon-breathe {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.04); }
+    }
+
+    .icon {
+      width: 60px;
+      height: 60px;
+      border-radius: 14px;
+      margin-bottom: 12px;
+      animation: icon-breathe 2.5s ease-in-out infinite;
+      image-rendering: -webkit-optimize-contrast;
+    }
+
+    .icon-placeholder {
+      width: 60px;
+      height: 60px;
+      border-radius: 14px;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #1e3a6e 0%, #3B5BDB 100%);
+      animation: icon-breathe 2.5s ease-in-out infinite;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+    }
+
+    /* ---- Textes ---- */
+    .title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #e8eaf0;
+      letter-spacing: 0.02em;
+      margin-bottom: 3px;
+    }
+
+    .subtitle {
+      font-size: 11px;
+      color: #3d4f72;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    /* ---- Infos de version ---- */
+    .version-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .version-text {
+      font-size: 11px;
+      color: #4a5a7a;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 0.05em;
+    }
+
+    .channel-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .channel-badge.main {
+      background: rgba(59, 91, 219, 0.18);
+      color: #6b84e8;
+      border: 1px solid rgba(59, 91, 219, 0.3);
+    }
+
+    .channel-badge.dev {
+      background: rgba(217, 119, 6, 0.18);
+      color: #f59e0b;
+      border: 1px solid rgba(217, 119, 6, 0.3);
+    }
+
+    /* ---- Épée SVG ---- */
+    .epee-wrap {
+      width: 380px;
+      margin-bottom: 18px;
+    }
+
+    @keyframes draw-blade {
+      from { stroke-dashoffset: 260; }
+      to   { stroke-dashoffset: 0; }
+    }
+
+    @keyframes appear {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    .blade {
+      stroke-dasharray: 260;
+      stroke-dashoffset: 260;
+      animation: draw-blade 1.5s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
+    }
+
+    .grip   { opacity: 0; animation: appear 0.3s ease-out 0.2s forwards; }
+    .guard  { opacity: 0; animation: appear 0.3s ease-out 0.4s forwards; }
+    .tip    { opacity: 0; animation: appear 0.15s ease-out 2.0s forwards; }
+
+    /* ---- Phrases arbitre ---- */
+    .phrases {
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      height: 26px;
+      margin-bottom: 16px;
+    }
+
+    @keyframes phrase-in {
+      from { opacity: 0; transform: translateY(5px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .phrase {
+      font-size: 14px;
+      font-weight: 500;
+      opacity: 0;
+      animation: phrase-in 0.4s ease-out forwards;
+    }
+
+    .p1 { color: #5a6a8a; animation-delay: 0.3s; }
+    .p2 { color: #7888aa; animation-delay: 1.4s; }
+    .p3 {
+      color: #4d77ff;
+      font-weight: 700;
+      font-size: 16px;
+      text-shadow: 0 0 20px rgba(77, 119, 255, 0.5);
+      animation-delay: 2.2s;
+    }
+
+    .sep { color: #2a3550; font-size: 16px; }
+
+    /* ---- Compteur LCD ---- */
+    .counter {
+      font-family: 'Courier New', 'Courier', monospace;
+      font-size: 26px;
+      font-weight: 700;
+      color: #3B5BDB;
+      letter-spacing: 0.15em;
+      opacity: 0.5;
+      margin-bottom: 20px;
+    }
+
+    /* ---- Barre de progression ---- */
+    .progress-track {
+      width: 360px;
+      height: 3px;
+      background: #1a2540;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    @keyframes progress {
+      0%   { width: 0%; }
+      60%  { width: 70%; }
+      100% { width: 85%; }
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #2F4AC4 0%, #3B5BDB 50%, #6B84E8 100%);
+      border-radius: 999px;
+      animation: progress 4s cubic-bezier(0.12, 0, 0.2, 1) 0.3s forwards;
+      box-shadow: 0 0 8px rgba(59, 91, 219, 0.6);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img id="app-icon" class="icon" alt="" onerror="this.style.display='none'; document.getElementById('icon-fb').style.display='flex';">
+    <div id="icon-fb" class="icon-placeholder" style="display:none;">⚔️</div>
+
+    <div class="title">BellePoule Modern</div>
+    <div class="subtitle">Logiciel de gestion d'escrime</div>
+    <div class="version-line">
+      <span id="version-text" class="version-text">v1.0.0 · Build #0</span>
+      <span id="channel-badge" class="channel-badge main">main</span>
+    </div>
+
+    <div class="epee-wrap">
+      <svg width="380" height="36" viewBox="0 0 380 36" xmlns="http://www.w3.org/2000/svg">
+        <!-- Pommel -->
+        <circle class="grip" cx="13" cy="18" r="8" fill="#a07840"/>
+        <!-- Grip -->
+        <rect class="grip" x="21" y="13.5" width="62" height="9" rx="4.5" fill="#c8a264"/>
+        <!-- Grip wrapping (texture lines) -->
+        <line class="grip" x1="34" y1="14" x2="34" y2="23" stroke="#a07840" stroke-width="1.5"/>
+        <line class="grip" x1="46" y1="14" x2="46" y2="23" stroke="#a07840" stroke-width="1.5"/>
+        <line class="grip" x1="58" y1="14" x2="58" y2="23" stroke="#a07840" stroke-width="1.5"/>
+        <line class="grip" x1="70" y1="14" x2="70" y2="23" stroke="#a07840" stroke-width="1.5"/>
+        <!-- Guard (bell guard) -->
+        <ellipse class="guard" cx="96" cy="18" rx="15" ry="12" fill="rgba(59,91,219,0.15)" stroke="#4d77ff" stroke-width="2"/>
+        <circle class="guard" cx="96" cy="18" r="3.5" fill="#4d77ff"/>
+        <!-- Blade (draws itself) -->
+        <line class="blade" x1="111" y1="18" x2="371" y2="18"
+              stroke="#a8c1ff" stroke-width="2" stroke-linecap="round"/>
+        <!-- Tip -->
+        <polygon class="tip" points="371,15.5 379,18 371,20.5" fill="#a8c1ff"/>
+      </svg>
+    </div>
+
+    <div class="phrases">
+      <span class="phrase p1">En garde…</span>
+      <span class="sep">·</span>
+      <span class="phrase p2">Prêts…</span>
+      <span class="sep">·</span>
+      <span class="phrase p3">Allez !</span>
+    </div>
+
+    <div id="counter" class="counter">00</div>
+
+    <div class="progress-track">
+      <div class="progress-fill"></div>
+    </div>
+  </div>
+
+  <script>
+    // All params injected by main process via query string
+    const params = new URLSearchParams(location.search);
+
+    // Icon
+    const iconEl = document.getElementById('app-icon');
+    let iconPath = params.get('icon') || '';
+    if (iconPath && !/^file:/.test(iconPath)) {
+      const norm = iconPath.replace(/\\/g, '/');
+      iconPath = 'file://' + (norm.startsWith('/') ? '' : '/') + norm;
+    }
+    if (iconEl && iconPath) iconEl.src = iconPath;
+
+    // Version + build + channel
+    const version = params.get('version') || '?';
+    const build = params.get('build') || '0';
+    const channel = params.get('channel') || 'main';
+    const versionEl = document.getElementById('version-text');
+    const badgeEl = document.getElementById('channel-badge');
+    if (versionEl) versionEl.textContent = 'v' + version + '  ·  Build #' + build;
+    if (badgeEl) {
+      badgeEl.textContent = channel;
+      badgeEl.className = 'channel-badge ' + channel;
+    }
+
+    // LCD-style counter
+    const counterEl = document.getElementById('counter');
+    let n = 0;
+    const tick = setInterval(function() {
+      counterEl.textContent = String(n).padStart(2, '0');
+      n = (n + 1) % 100;
+    }, 80);
+    setTimeout(function() { clearInterval(tick); }, 15000);
+  </script>
+</body>
+</html>

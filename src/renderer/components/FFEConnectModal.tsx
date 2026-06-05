@@ -5,6 +5,7 @@
  */
 
 import React, { useState } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { Fencer } from '../../shared/types';
 import {
   FFEConnectService,
@@ -17,6 +18,7 @@ interface FFEConnectModalProps {
 }
 
 const FFEConnectModal: React.FC<FFEConnectModalProps> = ({ onImport, onClose }) => {
+  const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
   const [competitionCode, setCompetitionCode] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [loading, setLoading] = useState(false);
@@ -81,9 +83,12 @@ const FFEConnectModal: React.FC<FFEConnectModalProps> = ({ onImport, onClose }) 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
+        ref={modalRef}
         className="modal"
         onClick={e => e.stopPropagation()}
         style={{ maxWidth: '860px', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}
+        role="dialog"
+        aria-modal="true"
       >
         <div className="modal-header">
           <h2 className="modal-title">Importer depuis FFE Connect</h2>

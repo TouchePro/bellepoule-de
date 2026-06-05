@@ -38,7 +38,8 @@
     "epee": "重劍",
     "foil": "花劍",
     "sabre": "軍刀",
-    "laser": "激光軍刀"
+    "laser": "激光軍刀",
+    "custom": "自訂賽制"
   },
   "genders": {
     "male": "男子",
@@ -104,7 +105,8 @@
     "tableau": "淘汰賽",
     "results": "成績",
     "remote": "遠程輸入",
-    "referees": "裁判"
+    "referees": "裁判",
+    "logs": "歷史紀錄"
   },
   "pools": {
     "generate": "生成分組",
@@ -333,5 +335,31 @@
     "timer": "開始/暫停計時器",
     "nav_list": "在列表中導航",
     "validate": "確認 / 開啟"
+  },
+  "formula": {
+    "builder_title": "賽制編輯器",
+    "add_pool_round": "新增小組循環",
+    "add_de": "新增直接淘汰",
+    "add_classification": "新增排名",
+    "save_template": "儲存為範本",
+    "load_template": "載入範本",
+    "advancement_rule": "晉級規則",
+    "advancement_all": "全部晉級",
+    "advancement_percent": "前 %",
+    "advancement_fixed": "固定人數",
+    "advancement_bracket": "下一輪賽表",
+    "ranking_criteria": "排名準則",
+    "criterion_vm": "勝/賽 (勝率)",
+    "criterion_index": "指數 (得分−失分)",
+    "criterion_td": "得分",
+    "criterion_tr": "失分",
+    "criterion_direct": "直接對賽",
+    "criterion_initial": "初始排名",
+    "simulation_title": "模擬",
+    "pool_round_n": "小組循環 {{n}}",
+    "scoring_standard": "標準 (1 劍 = 1 分)",
+    "scoring_zones": "自訂區域",
+    "zone_label": "區域",
+    "zone_points": "分數"
   }
 }

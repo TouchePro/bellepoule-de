@@ -755,7 +755,7 @@
       }
 
       // ── Socket.IO ──
-      const socket = io();
+      const socket = io({ reconnection: true, reconnectionDelay: 200, reconnectionDelayMax: 5000, randomizationFactor: 0.5 });
 
       socket.on('connect', () => {
         document.getElementById('connection-badge').textContent = window.T('pool.connected');
@@ -941,7 +941,7 @@
           lbl.className = 'section-label';
           lbl.textContent = `À jouer (${pending.length})`;
           view.appendChild(lbl);
-          pending.forEach((m, i) => view.appendChild(buildMatchItem(m, fencers, i + 1, false, locked)));
+          pending.forEach(m => view.appendChild(buildMatchItem(m, fencers, m.number, false, locked)));
         }
 
         if (finished.length > 0) {
@@ -949,7 +949,7 @@
           lbl.className = 'section-label';
           lbl.textContent = `Terminés (${finished.length})`;
           view.appendChild(lbl);
-          finished.forEach((m, i) => view.appendChild(buildMatchItem(m, fencers, i + 1, true, locked)));
+          finished.forEach(m => view.appendChild(buildMatchItem(m, fencers, m.number, true, locked)));
         }
 
         if (matches.length === 0) {

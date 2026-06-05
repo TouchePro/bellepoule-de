@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { TableauMatch } from './tableauTypes';
 
 interface TableauScoreModalProps {
@@ -18,9 +18,24 @@ interface TableauScoreModalProps {
   modalRef: React.RefObject<HTMLDivElement | null>;
   onClose: () => void;
   onSubmit: () => void;
-  onSpecialStatus: (status: 'abandon' | 'forfait' | 'exclusion') => void;
+  onSpecialStatus: (
+    status: 'abandon' | 'forfait' | 'exclusion',
+    fencerId: string
+  ) => void;
   getRoundName: (round: number) => string;
 }
+
+const STATUS_LABELS: Record<'abandon' | 'forfait' | 'exclusion', string> = {
+  abandon: 'Abandon',
+  forfait: 'Forfait',
+  exclusion: 'Exclusion',
+};
+
+const STATUS_ACTION: Record<'abandon' | 'forfait' | 'exclusion', string> = {
+  abandon: 'Quel tireur abandonne ?',
+  forfait: 'Quel tireur déclare forfait ?',
+  exclusion: 'Quel tireur est exclu ?',
+};
 
 const TableauScoreModalComponent: React.FC<TableauScoreModalProps> = ({
   match,
@@ -36,6 +51,13 @@ const TableauScoreModalComponent: React.FC<TableauScoreModalProps> = ({
   onSpecialStatus,
   getRoundName,
 }) => {
+  const [pendingStatus, setPendingStatus] = useState<
+    'abandon' | 'forfait' | 'exclusion' | null
+  >(null);
+
+  const fencerName = (f: TableauMatch['fencerA']) =>
+    f ? `${f.lastName} ${f.firstName}`.trim() : '';
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
@@ -47,6 +69,8 @@ const TableauScoreModalComponent: React.FC<TableauScoreModalProps> = ({
           minHeight: '400px',
         }}
         onClick={e => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
       >
         <div className="modal-header" style={{ cursor: 'move' }}>
           <h3 className="modal-title">{getRoundName(match.round)} - Saisie rapide</h3>
@@ -196,38 +220,75 @@ const TableauScoreModalComponent: React.FC<TableauScoreModalProps> = ({
           )}
 
           {/* Boutons spéciaux sur une ligne */}
-          <div
-            style={{
-              display: 'flex',
-              gap: '0.5rem',
-              justifyContent: 'center',
-              borderTop: '1px solid #e5e7eb',
-              paddingTop: '1rem',
-              marginTop: '1rem',
-            }}
-          >
-            <button
-              className="btn btn-warning"
-              onClick={() => onSpecialStatus('abandon')}
-              style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
+          {!pendingStatus ? (
+            <div
+              style={{
+                display: 'flex',
+                gap: '0.5rem',
+                justifyContent: 'center',
+                borderTop: '1px solid #e5e7eb',
+                paddingTop: '1rem',
+                marginTop: '1rem',
+              }}
             >
-              🚴 Abandon
-            </button>
-            <button
-              className="btn btn-warning"
-              onClick={() => onSpecialStatus('forfait')}
-              style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
+              <button
+                className="btn btn-warning"
+                onClick={() => setPendingStatus('abandon')}
+                style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
+              >
+                🚴 Abandon
+              </button>
+              <button
+                className="btn btn-warning"
+                onClick={() => setPendingStatus('forfait')}
+                style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
+              >
+                📋 Forfait
+              </button>
+              <button
+                className="btn btn-danger"
+                onClick={() => setPendingStatus('exclusion')}
+                style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
+              >
+                🚫 Exclusion
+              </button>
+            </div>
+          ) : (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.75rem',
+                alignItems: 'center',
+                borderTop: '1px solid #e5e7eb',
+                paddingTop: '1rem',
+                marginTop: '1rem',
+              }}
             >
-              📋 Forfait
-            </button>
-            <button
-              className="btn btn-danger"
-              onClick={() => onSpecialStatus('exclusion')}
-              style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
-            >
-              🚫 Exclusion
-            </button>
-          </div>
+              <p style={{ fontWeight: 600, margin: 0 }}>
+                {STATUS_LABELS[pendingStatus]} — {STATUS_ACTION[pendingStatus]}
+              </p>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                <button
+                  className="btn btn-danger"
+                  disabled={!match.fencerA}
+                  onClick={() => match.fencerA && onSpecialStatus(pendingStatus, match.fencerA.id)}
+                >
+                  {fencerName(match.fencerA) || '—'}
+                </button>
+                <button
+                  className="btn btn-danger"
+                  disabled={!match.fencerB}
+                  onClick={() => match.fencerB && onSpecialStatus(pendingStatus, match.fencerB.id)}
+                >
+                  {fencerName(match.fencerB) || '—'}
+                </button>
+                <button className="btn btn-secondary" onClick={() => setPendingStatus(null)}>
+                  Annuler
+                </button>
+              </div>
+            </div>
+          )}
         </div>
         <div
           className="modal-footer"

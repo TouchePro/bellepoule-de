@@ -1122,6 +1122,14 @@
     <div class="main-container">
       <!-- Match actif -->
       <div class="active-match" id="active-match">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:0.5rem;">
+          <button
+            id="btn-back-to-list"
+            onclick="if(!refereeApp.timerRunning) window.location.reload();"
+            style="background:rgba(0,0,0,0.12);border:none;border-radius:0.5rem;color:#374151;padding:0.35rem 0.85rem;font-size:0.85rem;cursor:pointer;"
+            title="Retour à la liste des matchs"
+          >← Retour</button>
+        </div>
         <div class="fencers-container">
           <!-- Tireur A (Rouge) -->
           <div class="fencer-box red-side" id="fencer-a-box">
@@ -1242,6 +1250,14 @@
           <div class="timer-hint" data-i18n="referee.timer_hint">
             Tapez pour démarrer/pause - Appui long pour reset
           </div>
+          <div style="display:flex;justify-content:center;margin-top:0.4rem;">
+            <button
+              id="btn-tts-toggle"
+              onclick="refereeApp.toggleTTS()"
+              title="Minuteur vocal"
+              style="background:none;border:1px solid rgba(255,255,255,0.3);border-radius:0.5rem;color:rgba(255,255,255,0.7);font-size:0.8rem;padding:0.2rem 0.6rem;cursor:pointer;"
+            >🔇 Voix</button>
+          </div>
         </div>
 
         <!-- Boutons de contrôle -->
@@ -1346,6 +1362,22 @@
           <button class="modal-btn modal-btn-confirm" onclick="refereeApp.confirmFinish()">
             <span data-i18n="referee.confirm">Confirmer</span>
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overlay confirmation carton noir -->
+    <div class="modal-overlay" id="black-card-modal">
+      <div class="modal-content" style="border:3px solid #111">
+        <div class="modal-title" style="background:#111;color:#fff">⬛ Carton Noir</div>
+        <div class="modal-body">
+          <p id="black-card-fencer-name" style="font-size:1.1rem;font-weight:bold;text-align:center;margin-bottom:0.5rem">—</p>
+          <p style="text-align:center;color:#dc2626">2ème carton rouge = <strong>CARTON NOIR</strong></p>
+          <p style="text-align:center;font-size:0.875rem;color:#6b7280">Le combattant sera éliminé du match.</p>
+        </div>
+        <div class="modal-buttons">
+          <button class="modal-btn modal-btn-cancel" onclick="refereeApp.cancelBlackCard()">Annuler</button>
+          <button class="modal-btn modal-btn-confirm" style="background:#111;color:#fff" onclick="refereeApp.confirmBlackCard()">⬛ Confirmer l'élimination</button>
         </div>
       </div>
     </div>
@@ -1532,7 +1564,7 @@
 
       class RefereeApp {
         constructor() {
-          this.socket = io();
+          this.socket = io({ reconnection: true, reconnectionDelay: 200, reconnectionDelayMax: 5000, randomizationFactor: 0.5 });
           this.arenaId = this.getArenaId();
           this.arenaNumber = this.arenaNumberFromId();
           this.poolId = null;
@@ -1558,6 +1590,7 @@
           this.waitingOvertimeStart = false;
           this.overtimeType = null; // 'supplementary' | 'challenger' | null
           this.coinFlipWinner = null; // 'A' | 'B' | null — vainqueur par tirage au sort
+          this._pendingBlackCardFencer = null; // fenceur en attente de carton noir
           this.actionHistory = []; // Historique pour undo (max 10)
           this.cardAnnounceEnabled = false; // Réglé depuis les paramètres de saisie distante
           this.refereeFeatureEnabled = false; // Fonctionnalité gestion arbitres
@@ -1565,6 +1598,8 @@
           this.swapped = false;
           this.pausedForModal = false;
           this.offlineQueue = new OfflineQueueInline();
+          this.ttsEnabled = false;
+          this._ttsAnnouncedSeconds = new Set();
 
           this.init();
         }
@@ -2074,6 +2109,20 @@
             }
           }
 
+          // 2ème rouge (hors escrime moderne) = carton noir → confirmation
+          if (cardType === 'red' && !this.isModernFencing) {
+            const redCount = cards.filter(c => c === 'red').length;
+            if (redCount >= 1) {
+              this._pendingBlackCardFencer = ef;
+              const displayPos = this._effectiveFencer(ef); // logique → position affichée
+              const nameEl = document.getElementById(`fencer-${displayPos.toLowerCase()}-name`);
+              const fencerName = nameEl ? nameEl.textContent.trim() : `Tireur ${ef}`;
+              document.getElementById('black-card-fencer-name').textContent = fencerName;
+              document.getElementById('black-card-modal').classList.add('active');
+              return; // attendre confirmation
+            }
+          }
+
           cards.push(cardType);
 
           if (this.isModernFencing) {
@@ -2207,6 +2256,73 @@
           }
         }
 
+        cancelBlackCard() {
+          this._pendingBlackCardFencer = null;
+          document.getElementById('black-card-modal').classList.remove('active');
+        }
+
+        async confirmBlackCard() {
+          const ef = this._pendingBlackCardFencer;
+          this._pendingBlackCardFencer = null;
+          document.getElementById('black-card-modal').classList.remove('active');
+          if (!ef || !this.currentMatch) return;
+
+          const cards = ef === 'A' ? this.cardsA : this.cardsB;
+          cards.push('red'); // 2ème rouge = carton noir
+          if (ef === 'A') this.scoreB += 5;
+          else this.scoreA += 5;
+
+          this.updateScores();
+          this.updateCardsDisplay();
+          this.broadcastUpdate();
+
+          this.showNotification('⬛ Carton noir — combattant éliminé !');
+          if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
+
+          // Terminer le match : l'adversaire du fautif est vainqueur
+          this.matchStatus = 'finished';
+          this.stopTimer();
+
+          try {
+            await fetch(`/api/matches/${this.currentMatch.id}/finish`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                scoreA: this.scoreA,
+                scoreB: this.scoreB,
+                cardsA: this.cardsA,
+                cardsB: this.cardsB,
+                winner: ef === 'A' ? 'B' : 'A',
+                blackCardFencer: ef,
+              }),
+            });
+          } catch (e) {
+            console.error('[BlackCard] Erreur finish:', e);
+          }
+
+          this.updateMatchStatus();
+          this.updateControlButtons();
+
+          this.socket.emit('arena_control', {
+            arenaId: this.arenaId,
+            action: 'finish',
+          });
+
+          setTimeout(() => {
+            this.currentMatch = null;
+            this.scoreA = 0;
+            this.scoreB = 0;
+            this.cardsA = [];
+            this.cardsB = [];
+            this.faultHistoryA = { 1: 0, 2: 0, 3: 0 };
+            this.faultHistoryB = { 1: 0, 2: 0, 3: 0 };
+            this.matchStatus = 'not_started';
+            this.updateScores();
+            this.updateCardsDisplay();
+            this.loadNextMatchList();
+          }, 3000);
+        }
+
         // ── Historique / Undo ─────────────────────────────────────────────────
 
         pushHistory(type) {
@@ -2230,6 +2346,7 @@
         callDT() {
           const btn = document.getElementById('btn-dt-icon');
           if (!btn || btn.classList.contains('dt-active') || btn.classList.contains('dt-ack')) return;
+          if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
           btn.classList.add('dt-active');
           this.socket.emit('arena_control', { arenaId: this.arenaId, action: 'dt_call' });
           this.showNotification(window.T('referee.dt_called'));
@@ -2251,6 +2368,7 @@
 
         undoLastAction() {
           if (this.actionHistory.length === 0) return;
+          if (navigator.vibrate) navigator.vibrate([40, 30, 40]);
           const prev = this.actionHistory.pop();
           this.scoreA = prev.scoreA;
           this.scoreB = prev.scoreB;
@@ -2312,6 +2430,7 @@
           if (this.matchStatus === 'finished') return;
 
           this.pushHistory('arena_exit');
+          if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
           const ef = this._effectiveFencer(fencer);
           const points = 3;
           if (ef === 'A') {
@@ -2350,6 +2469,7 @@
           if (this.matchStatus === 'not_started') return;
           if (this.matchStatus === 'finished') return;
 
+          if (navigator.vibrate) navigator.vibrate(30);
           const ef = this._effectiveFencer(fencer);
           const zone = points === 1 ? 'A' : points === 3 ? 'B' : 'C';
           if (ef === 'A') {
@@ -2398,6 +2518,7 @@
             return;
           }
 
+          if (navigator.vibrate) navigator.vibrate(30);
           const lastCard = cards.pop();
 
           // Restituer les points accordés à l'adversaire
@@ -2518,21 +2639,41 @@
           }
         }
 
+        updateBackButton() {
+          const btn = document.getElementById('btn-back-to-list');
+          if (!btn) return;
+          if (this.timerRunning) {
+            btn.disabled = true;
+            btn.style.opacity = '0.4';
+            btn.style.cursor = 'not-allowed';
+            btn.title = 'Retour désactivé pendant le chrono';
+          } else {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+            btn.title = 'Retour à la liste des matchs';
+          }
+        },
+
         startTimer() {
           if (this.timerRunning) return;
 
           this.timerRunning = true;
+          this.updateBackButton();
           this.updateTimerDisplay();
           this.broadcastTimerUpdate();
 
+          this._ttsAnnouncedSeconds = new Set();
           this.timerInterval = setInterval(() => {
             if (this.timerSeconds > 0) {
               this.timerSeconds--;
               this.updateTimerDisplay();
               this.broadcastTimerUpdate();
+              this.ttsCheckAnnounce();
 
               if (this.timerSeconds === 0) {
                 this.stopTimer();
+                if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
                 if (this.scoreA === this.scoreB &&
                     (!this.isSuddenDeath || this.overtimeType === 'challenger')) {
                   // Égalité : attente manuelle de l'arbitre pour lancer les 30s
@@ -2560,6 +2701,7 @@
             this.timerInterval = null;
           }
           this.timerRunning = false;
+          this.updateBackButton();
         }
 
         resetTimer() {
@@ -2568,11 +2710,50 @@
           this.waitingOvertimeStart = false;
           this.overtimeType = null;
           this.timerSeconds = this.defaultTimerSeconds;
+          this._ttsAnnouncedSeconds = new Set();
           this.updateTimerDisplay();
           this.broadcastTimerUpdate();
           this.updateSuddenDeathUI();
           this.updateControlButtons();
           this.showNotification('🔄 Chronomètre réinitialisé');
+        }
+
+        toggleTTS() {
+          this.ttsEnabled = !this.ttsEnabled;
+          const btn = document.getElementById('btn-tts-toggle');
+          if (btn) btn.textContent = this.ttsEnabled ? '🔊 Voix' : '🔇 Voix';
+          if (this.ttsEnabled) this.ttsSpeak('Minuteur vocal activé');
+        }
+
+        ttsSpeak(text) {
+          if (!this.ttsEnabled || !window.speechSynthesis) return;
+          window.speechSynthesis.cancel();
+          const utt = new SpeechSynthesisUtterance(text);
+          const lang = (document.documentElement.lang || 'fr').toLowerCase();
+          utt.lang = lang.startsWith('de') ? 'de-DE' : lang.startsWith('en') ? 'en-GB' : 'fr-FR';
+          utt.rate = 1.1;
+          utt.volume = 1.0;
+          window.speechSynthesis.speak(utt);
+        }
+
+        ttsCheckAnnounce() {
+          if (!this.ttsEnabled) return;
+          const s = this.timerSeconds;
+          if (this._ttsAnnouncedSeconds.has(s)) return;
+          const lang = (document.documentElement.lang || 'fr').toLowerCase();
+          const isFr = !lang.startsWith('de') && !lang.startsWith('en');
+          const isEn = lang.startsWith('en');
+          const THRESHOLDS = {
+            60: isFr ? 'Une minute' : isEn ? 'One minute' : 'Eine Minute',
+            30: isFr ? 'Trente secondes' : isEn ? 'Thirty seconds' : 'Dreißig Sekunden',
+            10: isFr ? 'Dix secondes' : isEn ? 'Ten seconds' : 'Zehn Sekunden',
+            5:  '5', 4: '4', 3: '3', 2: '2', 1: '1',
+            0:  isFr ? 'Halte !' : isEn ? 'Stop!' : 'Halt!',
+          };
+          if (s in THRESHOLDS) {
+            this._ttsAnnouncedSeconds.add(s);
+            this.ttsSpeak(THRESHOLDS[s]);
+          }
         }
 
         prepareSuddenDeath() {
@@ -2799,6 +2980,7 @@
         startMatch() {
           if (!this.currentMatch) return;
 
+          if (navigator.vibrate) navigator.vibrate([30, 20, 30, 20, 80]);
           this.matchStatus = 'in_progress';
           this.startTimer();
           this.updateScores();
@@ -2960,10 +3142,12 @@
 
           if (this.timerRunning) {
             this.pauseTimer();
+            if (navigator.vibrate) navigator.vibrate(30);
             this.updateControlButtons();
             this.showNotification(window.T('referee.match_paused'));
           } else {
             this.startTimer();
+            if (navigator.vibrate) navigator.vibrate(30);
             this.updateControlButtons();
             this.showNotification(window.T('referee.match_resumed'));
           }
@@ -3197,9 +3381,9 @@
           };
           container.innerHTML = matches
             .map(match => {
-              const poolNum = match.poolId ? match.poolId.replace(/\D/g, '') || '?' : '';
-              const poolLabel = match.poolId
-                ? `<span style="opacity:0.5;font-size:0.72rem;">Poule ${escHtml(poolNum)}</span>`
+              const poolNum = match.poolNumber ?? (match.poolId ? match.poolId.replace(/\D/g, '') || '?' : '');
+              const poolLabel = (match.poolNumber !== undefined || match.poolId)
+                ? `<span style="opacity:0.5;font-size:0.72rem;">Poule ${escHtml(String(poolNum))}</span>`
                 : '';
               const safeId = escHtml(match.id);
               const clubLine =

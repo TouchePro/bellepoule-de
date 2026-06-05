@@ -6,6 +6,9 @@ const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 
 module.exports = (env = {}) => ({
   mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
+  cache: process.env.NODE_ENV === 'production'
+    ? false
+    : { type: 'filesystem', buildDependencies: { config: [__filename] } },
   optimization: {
     minimize: process.env.NODE_ENV === 'production',
     minimizer: [
@@ -18,6 +21,7 @@ module.exports = (env = {}) => ({
         },
       }),
     ],
+    runtimeChunk: 'single',
     splitChunks: {
       chunks: 'all',
       cacheGroups: {
@@ -38,7 +42,8 @@ module.exports = (env = {}) => ({
   },
   entry: './src/renderer/index.tsx',
   target: 'electron-renderer',
-  devtool: 'source-map',
+  // Pas de source maps en production : évite d'exposer le code source original
+  devtool: process.env.NODE_ENV === 'production' ? false : 'source-map',
   output: {
     path: path.resolve(__dirname, 'dist/renderer'),
     filename: '[name].js',
@@ -47,11 +52,20 @@ module.exports = (env = {}) => ({
   },
   devServer: {
     port: 8066,
-    host: '0.0.0.0', // Accessible depuis l'extérieur
+    // Restreint le serveur de dev à la machine locale (évite l'exposition réseau du source non minifié)
+    host: '127.0.0.1',
     hot: true,
     open: false,
     historyApiFallback: true,
-    allowedHosts: 'all', // Permet les connexions depuis n'importe quelle source
+    allowedHosts: 'auto',
+    // En dev, webpack serve garde les assets en mémoire. Le splash (chargé par
+    // Electron via loadFile depuis dist/) doit être écrit sur disque, sinon
+    // Electron lit un fichier obsolète et le badge de canal reste figé sur « main ».
+    devMiddleware: {
+      writeToDisk: (filePath) =>
+        /[\\/]dist[\\/]main[\\/]splash\.html$/.test(filePath) ||
+        /[\\/]dist[\\/]remote[\\/]/.test(filePath),
+    },
     static: {
       directory: path.join(__dirname, 'dist/renderer'),
       publicPath: '/',
@@ -103,6 +117,11 @@ module.exports = (env = {}) => ({
         {
           from: 'src/remote',
           to: '../remote',
+          noErrorOnMissing: true,
+        },
+        {
+          from: 'src/main/splash.html',
+          to: path.resolve(__dirname, 'dist/main/splash.html'),
           noErrorOnMissing: true,
         },
       ],

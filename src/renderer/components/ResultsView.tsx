@@ -9,7 +9,7 @@ import { Fencer, PoolRanking, Competition, FencerStatus } from '../../shared/typ
 import type { Pool } from '../../shared/types';
 import { useToast } from './Toast';
 import { exportResultsXMLFFE } from '../../shared/utils/multiFormatExport';
-import { exportResultsToPDF, exportFullCompetitionPDF } from '../../shared/utils/pdfExport';
+// pdfExport (jsPDF) chargé à la demande pour alléger le bundle initial
 import type { TableauMatchForPDF, FinalResultForPDF } from '../../shared/utils/pdfExport';
 import { usePdfTemplateStore } from '../../features/pdfTemplates/hooks/usePdfTemplateStore';
 import type { ConsolationBracket } from './tableau/tableauTypes';
@@ -77,6 +77,10 @@ const RV_STYLES = {
   btnPdf: { padding: '0.75rem 1.5rem', background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' } satisfies React.CSSProperties,
   btnFullPdf: { padding: '0.75rem 1.5rem', background: '#166534', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' } satisfies React.CSSProperties,
   legend: { textAlign: 'center' as const, marginTop: '1.5rem', fontSize: '0.875rem', color: '#6b7280' } satisfies React.CSSProperties,
+  spinner: { display: 'inline-block', width: '14px', height: '14px', border: '2px solid rgba(255,255,255,0.4)', borderTopColor: 'white', borderRadius: '50%', animation: 'rv-spin 0.7s linear infinite' } satisfies React.CSSProperties,
+  overlay: { position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', gap: '1rem', zIndex: 9999 } satisfies React.CSSProperties,
+  overlaySpinner: { width: '48px', height: '48px', border: '5px solid rgba(255,255,255,0.3)', borderTopColor: '#fbbf24', borderRadius: '50%', animation: 'rv-spin 0.8s linear infinite' } satisfies React.CSSProperties,
+  overlayText: { color: 'white', fontSize: '1.1rem', fontWeight: 600 } satisfies React.CSSProperties,
 } satisfies Record<string, React.CSSProperties>;
 
 const ResultsView: React.FC<ResultsViewProps> = ({
@@ -86,6 +90,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
 }) => {
   const { showToast } = useToast();
   const rankingTemplate = usePdfTemplateStore(s => s.templates.ranking);
+  const [isExportingFull, setIsExportingFull] = React.useState(false);
 
   const getMedalEmoji = (rank: number): string => {
     if (rank === 1) return '🥇';
@@ -161,6 +166,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
   const exportPDF = async () => {
     try {
       const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
+      const { exportResultsToPDF } = await import('../../shared/utils/pdfExport');
       await exportResultsToPDF(
         resultsToDisplay,
         `Résultats — ${competition.title}`,
@@ -194,6 +200,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
   };
 
   const exportFullPDF = async () => {
+    setIsExportingFull(true);
     try {
       const api = (window as any).electronAPI;
 
@@ -225,6 +232,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
         }, 'poules', []);
       }
 
+      const { exportFullCompetitionPDF } = await import('../../shared/utils/pdfExport');
       await exportFullCompetitionPDF({
         fencers: effectiveFencers,
         appelVisibleColumns,
@@ -243,6 +251,8 @@ const ResultsView: React.FC<ResultsViewProps> = ({
       });
     } catch (e) {
       showToast((e as Error).message, 'error');
+    } finally {
+      setIsExportingFull(false);
     }
   };
 
@@ -250,6 +260,13 @@ const ResultsView: React.FC<ResultsViewProps> = ({
 
   return (
     <div style={RV_STYLES.wrapper}>
+      <style>{`@keyframes rv-spin { to { transform: rotate(360deg); } }`}</style>
+      {isExportingFull && (
+        <div style={RV_STYLES.overlay}>
+          <div style={RV_STYLES.overlaySpinner} />
+          <div style={RV_STYLES.overlayText}>Génération du PDF complet…</div>
+        </div>
+      )}
       {/* En-tête avec le champion */}
       {champion && (
         <div style={RV_STYLES.champHeader}>
@@ -365,8 +382,18 @@ const ResultsView: React.FC<ResultsViewProps> = ({
         <button onClick={exportPDF} style={RV_STYLES.btnPdf}>
           📄 PDF
         </button>
-        <button onClick={exportFullPDF} style={RV_STYLES.btnFullPdf}>
-          📦 Export complet PDF
+        <button
+          onClick={exportFullPDF}
+          style={{ ...RV_STYLES.btnFullPdf, opacity: isExportingFull ? 0.6 : 1, cursor: isExportingFull ? 'wait' : 'pointer' }}
+          disabled={isExportingFull}
+        >
+          {isExportingFull ? (
+            <>
+              <span style={RV_STYLES.spinner} /> Génération…
+            </>
+          ) : (
+            '📦 Export complet PDF'
+          )}
         </button>
       </div>
 

@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useTranslation } from '../hooks/useTranslation';
+import { SM, SUBHEAD, HIDDEN } from './pdfTemplateEditor.styles';
 import type { PdfTemplate, PdfElementConfig } from '../../shared/types/pdfTemplate.types';
 
 const LOGO_KEY = 'bellepoule-logo';
@@ -127,7 +128,7 @@ const PdfTemplateEditor: React.FC<Props> = ({ template, onChange, onReset }) => 
 
       {/* Logo */}
       <div>
-        <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>Logo</div>
+        <div style={SUBHEAD}>Logo</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           {logo ? (
             <img
@@ -140,7 +141,7 @@ const PdfTemplateEditor: React.FC<Props> = ({ template, onChange, onReset }) => 
               Aucun logo
             </div>
           )}
-          <button className="btn btn-secondary" style={{ fontSize: '0.8rem' }} onClick={() => logoInputRef.current?.click()}>
+          <button className="btn btn-secondary" style={SM} onClick={() => logoInputRef.current?.click()}>
             {logo ? 'Changer' : 'Importer'}
           </button>
           {logo && (
@@ -148,13 +149,13 @@ const PdfTemplateEditor: React.FC<Props> = ({ template, onChange, onReset }) => 
               Supprimer
             </button>
           )}
-          <input ref={logoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleLogoUpload} />
+          <input ref={logoInputRef} type="file" accept="image/*" style={HIDDEN} onChange={handleLogoUpload} />
         </div>
       </div>
 
       {/* Couleurs */}
       <div>
-        <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+        <div style={SUBHEAD}>
           Couleurs
         </div>
         <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
@@ -174,7 +175,7 @@ const PdfTemplateEditor: React.FC<Props> = ({ template, onChange, onReset }) => 
 
       {/* Ordre et visibilité des sections */}
       <div>
-        <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+        <div style={SUBHEAD}>
           Sections
         </div>
         <div style={{ border: '1px solid var(--color-border, #d1d5db)', borderRadius: '6px', overflow: 'hidden' }}>
@@ -221,16 +222,16 @@ const PdfTemplateEditor: React.FC<Props> = ({ template, onChange, onReset }) => 
 
       {/* Actions */}
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', paddingTop: '0.25rem' }}>
-        <button className="btn btn-secondary" style={{ fontSize: '0.8rem' }} onClick={onReset}>
+        <button className="btn btn-secondary" style={SM} onClick={onReset}>
           {t('pdfTemplate.reset')}
         </button>
-        <button className="btn btn-secondary" style={{ fontSize: '0.8rem' }} onClick={handleExport}>
+        <button className="btn btn-secondary" style={SM} onClick={handleExport}>
           {t('pdfTemplate.exportJson')}
         </button>
-        <button className="btn btn-secondary" style={{ fontSize: '0.8rem' }} onClick={handleImportClick}>
+        <button className="btn btn-secondary" style={SM} onClick={handleImportClick}>
           {t('pdfTemplate.importJson')}
         </button>
-        <input ref={fileInputRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleFileChange} />
+        <input ref={fileInputRef} type="file" accept=".json" style={HIDDEN} onChange={handleFileChange} />
       </div>
 
       {importError && (

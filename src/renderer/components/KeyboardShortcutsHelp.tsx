@@ -45,9 +45,17 @@ export const KeyboardShortcutsHelp: React.FC = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+      // Ne pas intercepter « ? » pendant une saisie texte
+      const target = e.target as HTMLElement | null;
+      const isTyping =
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable);
+      if (e.key === '?' && !e.ctrlKey && !e.metaKey && !isTyping) {
         e.preventDefault();
-        setIsOpen(true);
+        setIsOpen(prev => !prev);
       }
       if (e.key === 'Escape') {
         setIsOpen(false);
