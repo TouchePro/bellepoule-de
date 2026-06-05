@@ -330,6 +330,9 @@
     "undo": "Rückgängig",
     "validate": "Bestätigen / Öffnen"
   },
+  "wiki": {
+    "button_title": "Dokumentation"
+  },
   "stats": {
     "arena_exits": "Verlassen der Bahn",
     "avg_duration": "Ø Dauer",
