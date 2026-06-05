@@ -131,15 +131,33 @@ export function generatePoolMatchOrder(fencerCount: number): [number, number][] 
 }
 
 /**
- * Génère un ordre de matchs générique pour des poules de taille non standard
+ * Génère un ordre de matchs selon l'algorithme de Berger (méthode du cercle FIE)
+ * Garantit qu'aucun tireur ne dispute deux matchs consécutifs.
+ * Pour n pair : n-1 rondes de n/2 matchs.
+ * Pour n impair : ajoute un fantôme n+1, applique Berger(n+1), supprime les matchs impliquant le fantôme.
  */
 function generateGenericMatchOrder(fencerCount: number): [number, number][] {
+  const n = fencerCount;
   const matches: [number, number][] = [];
-  for (let i = 1; i <= fencerCount; i++) {
-    for (let j = i + 1; j <= fencerCount; j++) {
-      matches.push([i, j]);
+  const size = n % 2 === 0 ? n : n + 1;
+  const ghost = n % 2 === 0 ? -1 : size; // fantôme = n+1 si impair
+  const fixed = size;
+  const circle = Array.from({ length: size - 1 }, (_, i) => i + 1);
+
+  for (let round = 0; round < size - 1; round++) {
+    if (fixed !== ghost && circle[0] !== ghost) {
+      matches.push([fixed, circle[0]]);
     }
+    for (let i = 1; i < size / 2; i++) {
+      const a = circle[i];
+      const b = circle[size - 1 - i];
+      if (a !== ghost && b !== ghost) {
+        matches.push([a, b]);
+      }
+    }
+    circle.unshift(circle.pop()!);
   }
+
   return matches;
 }
 
