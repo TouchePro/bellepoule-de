@@ -2168,7 +2168,15 @@
           if (this.cardAnnounceEnabled) {
             this.openReasonSelector(ef, cardType);
           } else {
-            this.addCard(ef, cardType);
+            if (cardType === 'yellow') {
+              const history = ef === 'A' ? this.faultHistoryA : this.faultHistoryB;
+              const g2count = history[2] || 0;
+              if (g2count >= 1) cardType = 'red';
+              this.addCard(ef, cardType);
+              history[2] = g2count + 1; // après pushHistory dans addCard
+            } else {
+              this.addCard(ef, cardType);
+            }
           }
         }
 
