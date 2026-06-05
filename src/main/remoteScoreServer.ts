@@ -2198,6 +2198,19 @@ export class RemoteScoreServer {
         socket.join(`arena:${data.arenaId}`);
 
         const arena = this.getArena(data.arenaId);
+        if (!arena && this.session) {
+          // Arène inconnue mais session active → débloquer l'arbitre
+          socket.emit(`arena:${data.arenaId}:update`, {
+            arenaId: data.arenaId,
+            match: null,
+            status: 'idle',
+            showPhotos: this.sessionShowPhotos,
+            cardAnnounce: this.sessionCardAnnounce,
+            theme: this.sessionTheme,
+            refereeFeatureEnabled: this.sessionRefereeFeatureEnabled,
+            referees: this.session?.referees ?? [],
+          });
+        }
         if (arena) {
           const override = this.arenaThemeOverrides.get(data.arenaId);
 

@@ -3204,6 +3204,28 @@
             return;
           }
 
+          // Reconnexion pendant un match en cours — restaurer la liste de sélection
+          if (data.status === 'in_progress' && data.match && data.match.id) {
+            if (this.currentMatch && this.currentMatch.id === data.match.id) return;
+            if (this.matchStatus === 'in_progress') return;
+            const fencerA = data.fencerA || data.match.fencerA;
+            const fencerB = data.fencerB || data.match.fencerB;
+            const scoreAVal = typeof data.scoreA === 'object' ? (data.scoreA?.value ?? 0) : (data.scoreA ?? 0);
+            const scoreBVal = typeof data.scoreB === 'object' ? (data.scoreB?.value ?? 0) : (data.scoreB ?? 0);
+            const restored = {
+              id: data.match.id, poolId: data.match.poolId,
+              fencerA, fencerB,
+              scoreA: { value: scoreAVal }, scoreB: { value: scoreBVal },
+              status: 'in_progress',
+            };
+            const idx = this.matches.findIndex(m => m.id === restored.id);
+            if (idx >= 0) this.matches[idx] = restored; else this.matches.push(restored);
+            this.loadNextMatches();
+            this.showNextMatchesScreen();
+            this.showNotification('↩ Match en cours — appuyez pour reprendre');
+            return;
+          }
+
           // Nouveau match prêt côté serveur (chargement automatique après fin de match)
           if (data.status === 'ready' && data.match && data.match.id) {
             this.hidePoolCompleteOverlay();
