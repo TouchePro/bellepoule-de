@@ -1449,7 +1449,27 @@ export class RemoteScoreServer {
               break;
             }
           }
-          if (arenaToFinish) this.finishArenaMatch(arenaToFinish);
+          if (arenaToFinish) {
+            this.finishArenaMatch(arenaToFinish);
+          } else {
+            // Match non trouvé dans une arène active : notifier quand même le renderer
+            // (cas où l'arbitre soumet depuis referee.html mais l'arène a déjà changé)
+            const mainWin = (global as any).mainWindow;
+            if (mainWin) {
+              const isTableauMatch = !dbMatch.poolId;
+              mainWin.webContents.send('match:finished', {
+                matchId,
+                scoreA,
+                scoreB,
+                winner: winner as 'A' | 'B' | null,
+                poolId: dbMatch.poolId ?? null,
+                isTableau: isTableauMatch,
+              });
+              console.log(
+                `[RemoteScoreServer] Émission match:finished hors-arène pour ${matchId}: ${scoreA}-${scoreB}`
+              );
+            }
+          }
         } else {
           // Match en mémoire uniquement (poule non persistée)
           // Synchroniser les scores dans l'arène et déclencher l'IPC vers le renderer
@@ -1459,12 +1479,32 @@ export class RemoteScoreServer {
             status: MatchStatus.FINISHED,
           });
           // Mettre à jour les scores de l'arène puis terminer le match via l'IPC
+          let arenaFoundForInMemory = false;
           for (const [arenaId, arena] of this.arenas) {
             if (arena.currentMatch && arena.currentMatch.id === matchId) {
               arena.currentMatch.scoreA = scoreA;
               arena.currentMatch.scoreB = scoreB;
               this.finishArenaMatch(arenaId);
+              arenaFoundForInMemory = true;
               break;
+            }
+          }
+          if (!arenaFoundForInMemory) {
+            // Match en mémoire non trouvé dans une arène : notifier quand même le renderer
+            const mainWin = (global as any).mainWindow;
+            if (mainWin) {
+              const sm = this.sessionMatches.find((m: any) => m.id === matchId);
+              mainWin.webContents.send('match:finished', {
+                matchId,
+                scoreA,
+                scoreB,
+                winner: winner as 'A' | 'B' | null,
+                poolId: sm?.poolId ?? null,
+                isTableau: sm?.isTableau ?? false,
+              });
+              console.log(
+                `[RemoteScoreServer] Émission match:finished hors-arène (mémoire) pour ${matchId}: ${scoreA}-${scoreB}`
+              );
             }
           }
         }
@@ -3338,7 +3378,17 @@ export class RemoteScoreServer {
     try {
       const finalMatchId = finishedMatch.id;
       const dbMatch = this.db.getMatch(finalMatchId);
-      if (dbMatch && !finishedMatch.isTableau) {
+      // Pour les matchs TED, l'ID en base est "${competitionId}-${matchId}"
+      const compositeId = this.session?.competitionId
+        ? `${this.session.competitionId}-${finalMatchId}`
+        : null;
+      const dbTableauMatch = (!dbMatch && finishedMatch.isTableau && compositeId)
+        ? this.db.getMatch(compositeId)
+        : null;
+      const effectiveDbMatch = dbMatch ?? dbTableauMatch;
+      const effectiveDbId = dbMatch ? finalMatchId : compositeId;
+
+      if (effectiveDbMatch && effectiveDbId) {
         let winner: 'A' | 'B' | null =
           finishedMatch.scoreA > finishedMatch.scoreB ? 'A' :
           finishedMatch.scoreB > finishedMatch.scoreA ? 'B' : null;
@@ -3361,16 +3411,16 @@ export class RemoteScoreServer {
           isExclusion: false,
           isForfait: false,
         };
-        this.db.updateMatch(finalMatchId, {
+        this.db.updateMatch(effectiveDbId, {
           scoreA: scoreAObj,
           scoreB: scoreBObj,
           status: MatchStatus.FINISHED,
         });
         this.db.logScoreChange({
-          matchId: finalMatchId,
+          matchId: effectiveDbId,
           arenaId,
-          previousScoreA: dbMatch.scoreA ?? null,
-          previousScoreB: dbMatch.scoreB ?? null,
+          previousScoreA: effectiveDbMatch.scoreA ?? null,
+          previousScoreB: effectiveDbMatch.scoreB ?? null,
           newScoreA: scoreAObj,
           newScoreB: scoreBObj,
           changedBy: 'referee',
