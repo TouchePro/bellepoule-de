@@ -256,10 +256,10 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     [tableauMatches, consolationBrackets]
   );
   useEffect(() => {
+    if (!isRemoteActive || !session || pendingDeMatches.length === 0) return;
     const key = pendingDeMatches.map(m => m.id).join(',');
     if (key === prevDeMatchesKeyRef.current) return;
     prevDeMatchesKeyRef.current = key;
-    if (!isRemoteActive || !session || pendingDeMatches.length === 0) return;
     window.electronAPI.remote.refreshDeMatches(competition.id, pendingDeMatches).catch((err: unknown) => {
       logger.warn(LogCategory.NETWORK, 'Échec refreshDeMatches', err instanceof Error ? err : undefined);
     });

@@ -395,21 +395,34 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       updateMatchFromRemote(matchId, scoreA, scoreB, MatchStatus.FINISHED, winnerOverride);
 
       // Mise à jour du tableau d'élimination directe si c'est un match DE
+      const resolveWinner = (match: TableauMatch) =>
+        scoreA > scoreB ? match.fencerA :
+        scoreB > scoreA ? match.fencerB :
+        winnerOverride === 'A' ? match.fencerA :
+        winnerOverride === 'B' ? match.fencerB :
+        null;
+
       setTableauMatches(prev => {
         const idx = prev.findIndex(m => m.id === matchId);
         if (idx === -1) return prev;
-        const match = prev[idx];
-        const winner =
-          scoreA > scoreB ? match.fencerA :
-          scoreB > scoreA ? match.fencerB :
-          winnerOverride === 'A' ? match.fencerA :
-          winnerOverride === 'B' ? match.fencerB :
-          null;
-        const updated = prev.map((m, i) => (i === idx ? { ...m, scoreA, scoreB, winner } : m));
+        const updated = prev.map((m, i) => (i === idx ? { ...m, scoreA, scoreB, winner: resolveWinner(m) } : m));
         const size = prev.length > 0 ? Math.max(...prev.map(m => m.round)) : 0;
         propagateWinners(updated, size);
         return [...updated];
       });
+
+      setConsolationBrackets(prev =>
+        prev.map(bracket => {
+          const idx = bracket.matches.findIndex(m => m.id === matchId);
+          if (idx === -1) return bracket;
+          const updated = bracket.matches.map((m, i) =>
+            i === idx ? { ...m, scoreA, scoreB, winner: resolveWinner(m) } : m
+          );
+          const size = updated.length > 0 ? Math.max(...updated.map(m => m.round)) : 0;
+          propagateWinners(updated, size);
+          return { ...bracket, matches: updated };
+        })
+      );
     };
 
     const offMatchFinished = window.electronAPI.onRemoteMatchFinished(handleMatchFinished);

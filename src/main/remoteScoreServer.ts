@@ -1348,6 +1348,7 @@ export class RemoteScoreServer {
               scoreA: m.scoreA ?? 0,
               scoreB: m.scoreB ?? 0,
               status: m.status,
+              isTableau: m.isTableau ?? false,
             }));
           return res.json({ matches: queueMatches, poolId: null, poolName: null });
         }
@@ -2459,8 +2460,11 @@ export class RemoteScoreServer {
         // Sélection d'un match par l'arbitre (depuis sa tablette)
         if (data.match) {
           const m = data.match;
+          // Restaurer isTableau depuis sessionMatches car la tablette ne le transmet pas
+          const sessionMatch = this.sessionMatches.find(sm => sm.id === m.id);
           this.assignMatchToArena(data.arenaId, {
             ...m,
+            isTableau: m.isTableau ?? sessionMatch?.isTableau ?? false,
             scoreA:
               typeof (m.scoreA as unknown) === 'object'
                 ? ((m.scoreA as unknown as { value?: number })?.value ?? 0)
@@ -3382,7 +3386,7 @@ export class RemoteScoreServer {
       const compositeId = this.session?.competitionId
         ? `${this.session.competitionId}-${finalMatchId}`
         : null;
-      const dbTableauMatch = (!dbMatch && finishedMatch.isTableau && compositeId)
+      const dbTableauMatch = (!dbMatch && !finishedMatch.poolId && compositeId)
         ? this.db.getMatch(compositeId)
         : null;
       const effectiveDbMatch = dbMatch ?? dbTableauMatch;
