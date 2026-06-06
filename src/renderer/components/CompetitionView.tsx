@@ -128,6 +128,12 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [showThirdPlaceDialog, setShowThirdPlaceDialog] = useState(false);
   const [tableauMatches, setTableauMatches] = useState<TableauMatch[]>([]);
   const [consolationBrackets, setConsolationBrackets] = useState<ConsolationBracket[]>([]);
+  // Refs pour connaître la présence d'un match dans le tableau/consolante de façon synchrone
+  // (mises à jour distantes : éviter le warning "Match non trouvé" côté poule pour les matchs DE)
+  const tableauMatchesRef = useRef<TableauMatch[]>([]);
+  const consolationBracketsRef = useRef<ConsolationBracket[]>([]);
+  tableauMatchesRef.current = tableauMatches;
+  consolationBracketsRef.current = consolationBrackets;
   const [finalResults, setFinalResults] = useState<FinalResult[]>([]);
   const [appelFencers, setAppelFencers] = useState<Fencer[]>([]);
   const [appelVisibleColumns, setAppelVisibleColumns] = useState<string[]>([]);
@@ -343,6 +349,64 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     return () => clearTimeout(timer);
   }, [isRemoteActive, competition.id]);
 
+  // Appliquer un score distant au bon conteneur : tableau DE, consolante, ou poule.
+  // Évite le warning "Match non trouvé" côté poule pour les matchs du tableau.
+  const applyRemoteScore = useCallback(
+    (matchId: string, scoreA: number, scoreB: number, finished: boolean, winnerOverride?: 'A' | 'B') => {
+      const status = finished ? MatchStatus.FINISHED : MatchStatus.IN_PROGRESS;
+      const resolveWinner = (match: TableauMatch) =>
+        !finished ? (match.winner ?? null) :
+        scoreA > scoreB ? match.fencerA :
+        scoreB > scoreA ? match.fencerB :
+        winnerOverride === 'A' ? match.fencerA :
+        winnerOverride === 'B' ? match.fencerB :
+        null;
+
+      const inTableau = tableauMatchesRef.current.some(m => m.id === matchId);
+      const inConsolation = consolationBracketsRef.current.some(b =>
+        b.matches.some(m => m.id === matchId)
+      );
+
+      if (inTableau) {
+        setTableauMatches(prev => {
+          const idx = prev.findIndex(m => m.id === matchId);
+          if (idx === -1) return prev;
+          const updated = prev.map((m, i) =>
+            i === idx ? { ...m, scoreA, scoreB, winner: resolveWinner(m) } : m
+          );
+          if (finished) {
+            const size = prev.length > 0 ? Math.max(...prev.map(m => m.round)) : 0;
+            propagateWinners(updated, size);
+          }
+          return [...updated];
+        });
+      }
+
+      if (inConsolation) {
+        setConsolationBrackets(prev =>
+          prev.map(bracket => {
+            const idx = bracket.matches.findIndex(m => m.id === matchId);
+            if (idx === -1) return bracket;
+            const updated = bracket.matches.map((m, i) =>
+              i === idx ? { ...m, scoreA, scoreB, winner: resolveWinner(m) } : m
+            );
+            if (finished) {
+              const size = updated.length > 0 ? Math.max(...updated.map(m => m.round)) : 0;
+              propagateWinners(updated, size);
+            }
+            return { ...bracket, matches: updated };
+          })
+        );
+      }
+
+      // Match de poule uniquement s'il n'est pas dans le tableau/consolante
+      if (!inTableau && !inConsolation) {
+        updateMatchFromRemote(matchId, scoreA, scoreB, status, winnerOverride);
+      }
+    },
+    [updateMatchFromRemote]
+  );
+
   // Charger les arènes quand le serveur distant devient actif et s'abonner aux updates
   useEffect(() => {
     if (!isRemoteActive || !competition?.id || !window.electronAPI?.remote) return;
@@ -370,12 +434,12 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         const scoreB = data.update?.scoreB ?? data.update?.match?.scoreB;
         if (matchId !== undefined && scoreA !== undefined && scoreB !== undefined
             && data.update?.status !== 'finished') {
-          updateMatchFromRemote(matchId, scoreA as number, scoreB as number, MatchStatus.IN_PROGRESS);
+          applyRemoteScore(matchId, scoreA as number, scoreB as number, false);
         }
       });
     }
     return () => unlisten?.();
-  }, [isRemoteActive, competition.id, updateMatchFromRemote]);
+  }, [isRemoteActive, competition.id, applyRemoteScore]);
 
   // Écouter les mises à jour des matches distants
   // Note: pas de garde sur currentPhase car la phase 'remote' affiche le panel de saisie distante
@@ -395,38 +459,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         LogCategory.UI,
         `[CompetitionView] Match terminé reçu: ${matchId} - Score: ${scoreA}-${scoreB}`
       );
-      updateMatchFromRemote(matchId, scoreA, scoreB, MatchStatus.FINISHED, winnerOverride);
-
-      // Mise à jour du tableau d'élimination directe si c'est un match DE
-      const resolveWinner = (match: TableauMatch) =>
-        scoreA > scoreB ? match.fencerA :
-        scoreB > scoreA ? match.fencerB :
-        winnerOverride === 'A' ? match.fencerA :
-        winnerOverride === 'B' ? match.fencerB :
-        null;
-
-      setTableauMatches(prev => {
-        const idx = prev.findIndex(m => m.id === matchId);
-        logger.debug(LogCategory.UI, `[CompetitionView] Recherche match DE ${matchId} dans tableau (${prev.length} matchs): idx=${idx}, ids=[${prev.slice(0, 5).map(m => m.id).join(',')}...]`);
-        if (idx === -1) return prev;
-        const updated = prev.map((m, i) => (i === idx ? { ...m, scoreA, scoreB, winner: resolveWinner(m) } : m));
-        const size = prev.length > 0 ? Math.max(...prev.map(m => m.round)) : 0;
-        propagateWinners(updated, size);
-        return [...updated];
-      });
-
-      setConsolationBrackets(prev =>
-        prev.map(bracket => {
-          const idx = bracket.matches.findIndex(m => m.id === matchId);
-          if (idx === -1) return bracket;
-          const updated = bracket.matches.map((m, i) =>
-            i === idx ? { ...m, scoreA, scoreB, winner: resolveWinner(m) } : m
-          );
-          const size = updated.length > 0 ? Math.max(...updated.map(m => m.round)) : 0;
-          propagateWinners(updated, size);
-          return { ...bracket, matches: updated };
-        })
-      );
+      applyRemoteScore(matchId, scoreA, scoreB, true, winnerOverride);
     };
 
     const offMatchFinished = window.electronAPI.onRemoteMatchFinished(handleMatchFinished);
@@ -441,7 +474,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       offMatchFinished?.();
       offExcluded?.();
     };
-  }, [updateMatchFromRemote, updateFencer]);
+  }, [applyRemoteScore, updateFencer]);
 
   // Sync scores/statuts des matches de poule vers la DB quand ils changent
   const prevPoolsRef = useRef(pools);
