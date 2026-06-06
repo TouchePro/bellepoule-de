@@ -1,5 +1,6 @@
 {
   "permissions": {
+    "defaultMode": "auto",
     "allow": [
       "Bash(git *)",
       "Bash(gh *)",
@@ -7,7 +8,23 @@
       "Bash(npx *)",
       "Skill(commit-commands:commit-push-pr)",
       "Skill(commit-commands:commit)",
-      "Skill(commit-commands:commit:*)"
+      "Skill(commit-commands:commit:*)",
+      "Bash(awk '/updateControlButtons\\\\\\(\\\\\\) \\\\{/,/^        \\\\}$/ {print}')",
+      "Bash(awk '/if \\\\\\(this\\\\.scoreA === this\\\\.scoreB/,+5 {print}')",
+      "Bash(awk '/confirmFinish\\\\\\(\\\\\\)/,/showNextMatchesScreen\\\\\\(\\\\\\)/ {print}')",
+      "Bash(graphify export *)",
+      "Bash(graphify query *)",
+      "Bash(grep -v '^main$')",
+      "Bash(grep -v '^dev$')",
+      "Bash(xargs -I{} gh api --method DELETE repos/klinnex/bellepoule-modern/git/refs/heads/{})",
+      "Bash(grep -v \"^$\")",
+      "Bash(xargs ls -la)",
+      "Bash(node *)",
+      "Bash(grep -n \"^        updateBackButton\\\\|^        },$\\\\|^        startTimer\\\\|^        [a-zA-Z].*{$\" /mnt/c/Users/Yann/Documents/Git/bellepoule-modern/src/remote/referee.html)",
+      "Bash(grep -c \"^        },$\" /mnt/c/Users/Yann/Documents/Git/bellepoule-modern/src/remote/referee.html)",
+      "Bash(grep -c \"^        }$\" /mnt/c/Users/Yann/Documents/Git/bellepoule-modern/src/remote/referee.html)",
+      "Bash(grep *)",
+      "Skill(update-config)"
     ]
   }
 }
