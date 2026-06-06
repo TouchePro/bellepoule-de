@@ -66,6 +66,11 @@ export function propagateWinners(matchList: TableauMatch[], size: number): void 
     if (bucket) bucket.push(m);
     else byRound.set(m.round, [m]);
   }
+  // L'appariement feeder→tour suivant se fait par index. L'ordre du tableau `matchList`
+  // n'est pas garanti (restauration DB, synchro tablette) : on trie chaque tour par
+  // `position` pour que index === position et éviter de router un vainqueur vers le
+  // mauvais match (ex. vainqueur isolé au lieu d'affronter son adversaire réel).
+  for (const bucket of byRound.values()) bucket.sort((a, b) => a.position - b.position);
   const emptyRound: TableauMatch[] = [];
 
   let currentRound = size;
