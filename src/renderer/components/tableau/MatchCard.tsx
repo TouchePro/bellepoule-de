@@ -26,10 +26,19 @@ const MatchCard: React.FC<MatchCardProps> = ({
 }) => {
   const canEdit = !readOnly && !!(match.fencerA && match.fencerB && !match.isBye) && !!onMatchClick;
   const hasScore = match.scoreA !== null && match.scoreB !== null;
-  const isMatchComplete = match.winner !== null;
 
-  const winnerA = match.winner?.id === match.fencerA?.id;
-  const winnerB = match.winner?.id === match.fencerB?.id;
+  // Filet d'affichage : déduit le vainqueur des scores s'il n'a pas été fixé
+  // (match restauré depuis la DB, saisie partielle). Ne mute pas l'objet source.
+  let winner = match.winner;
+  if (!winner && hasScore) {
+    if (match.scoreA! > match.scoreB!) winner = match.fencerA;
+    else if (match.scoreB! > match.scoreA!) winner = match.fencerB;
+  }
+
+  const isMatchComplete = winner !== null;
+
+  const winnerA = !!winner && winner.id === match.fencerA?.id;
+  const winnerB = !!winner && winner.id === match.fencerB?.id;
 
   const handleArenaClick = (e: React.MouseEvent) => {
     e.stopPropagation();
