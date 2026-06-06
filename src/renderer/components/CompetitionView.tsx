@@ -870,7 +870,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const isResultsLocked = hasDirectElimination && finalResults.length === 0;
   // En mode quest-sans-poules, le tableau se débloque par la complétion de la quête (rankingValidated)
   // Le tableau reste accessible en lecture seule si les résultats finaux existent déjà
-  const isTableauUnlocked = finalResults.length > 0 || (questNoPool
+  // ou si des matchs de tableau ont déjà été générés (session restaurée même sans poules chargées)
+  const isTableauUnlocked = finalResults.length > 0 || tableauMatches.length > 0 || (questNoPool
     ? rankingValidated
     : canAdvanceFromPools && rankingValidated);
 
