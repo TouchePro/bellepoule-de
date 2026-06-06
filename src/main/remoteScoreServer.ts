@@ -4209,17 +4209,10 @@ export class RemoteScoreServer {
       const queuesByArena = new Map<string, ArenaMatch[]>();
       for (let i = 1; i <= strips; i++) queuesByArena.set(`arena${i}`, []);
 
-      let ssRrIdx = 0;
       for (const match of deMatches) {
-        let targetArenaId: string;
-        if (match.arena) {
-          targetArenaId = `arena${match.arena}`;
-          if (!queuesByArena.has(targetArenaId)) continue; // hors plage → ignorer
-        } else {
-          // Pas de piste assignée : round-robin automatique.
-          targetArenaId = `arena${(ssRrIdx % strips) + 1}`;
-          ssRrIdx++;
-        }
+        if (!match.arena) continue; // pas de piste assignée → ne pas distribuer
+        const targetArenaId = `arena${match.arena}`;
+        if (!queuesByArena.has(targetArenaId)) continue; // hors plage → ignorer
         queuesByArena.get(targetArenaId)!.push({
           id: match.id,
           fencerA: match.fencerA,
@@ -4567,20 +4560,13 @@ export class RemoteScoreServer {
     const queuesByArena = new Map<string, ArenaMatch[]>();
     for (let i = 1; i <= strips; i++) queuesByArena.set(`arena${i}`, []);
 
-    // Indice round-robin pour les matchs sans piste explicitement assignée
-    // (typiquement les SF/Finale dont les tireurs ne sont connus qu'après les QF).
-    let rrIdx = 0;
+    // N'assigner QUE les matchs ayant une piste explicitement définie (match.arena).
+    // Sans piste assignée → on ne charge rien sur une arène : sinon des matchs
+    // apparaissent sur l'arène 1 alors que l'assignation auto est désactivée.
     for (const match of pending) {
-      let targetArenaId: string;
-      if (match.arena) {
-        targetArenaId = `arena${match.arena}`;
-        if (!this.arenas.has(targetArenaId)) continue; // hors plage → ignorer
-      } else {
-        // Pas de piste assignée : distribution automatique round-robin pour que les
-        // arènes reçoivent les matchs des tours suivants sans intervention manuelle.
-        targetArenaId = `arena${(rrIdx % strips) + 1}`;
-        rrIdx++;
-      }
+      if (!match.arena) continue; // pas de piste assignée → ne pas distribuer
+      const targetArenaId = `arena${match.arena}`;
+      if (!this.arenas.has(targetArenaId)) continue; // hors plage → ignorer
       queuesByArena.get(targetArenaId)!.push({
         id: match.id,
         fencerA: match.fencerA,
