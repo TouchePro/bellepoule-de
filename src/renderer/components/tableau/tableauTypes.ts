@@ -39,7 +39,24 @@ export interface ConsolationBracket {
   parentBracketId: string;
 }
 
+/**
+ * Déduit le vainqueur d'un match à partir des scores quand il n'est pas déjà fixé.
+ * Couvre les chemins qui posent un score sans renseigner `winner`
+ * (restauration DB, statuts spéciaux, synchro partielle). En cas d'égalité,
+ * `winner` reste inchangé : seul un tirage au sort explicite peut le fixer.
+ */
+export function resolveWinnerFromScores(match: TableauMatch): void {
+  if (match.winner) return;
+  if (match.scoreA === null || match.scoreB === null) return;
+  if (match.scoreA > match.scoreB) match.winner = match.fencerA;
+  else if (match.scoreB > match.scoreA) match.winner = match.fencerB;
+}
+
 export function propagateWinners(matchList: TableauMatch[], size: number): void {
+  // Normalise les vainqueurs manquants avant toute propagation : un match dont
+  // les deux scores sont saisis a forcément un vainqueur (hors égalité).
+  for (const m of matchList) resolveWinnerFromScores(m);
+
   // Regroupe les matchs par tour une seule fois (O(n)) au lieu de filtrer à chaque
   // itération (O(tours·n)). L'ordre d'insertion est préservé, donc l'appariement
   // par index reste identique au comportement précédent.
