@@ -186,6 +186,7 @@ export const usePoolManagement = ({
 
         // Recalculer le classement de la poule
         pool.ranking = computePoolRanking(pool);
+        pool.isComplete = pool.matches.every(m => m.status === MatchStatus.FINISHED);
 
         updatedPools[poolIndex] = pool;
 
@@ -216,6 +217,7 @@ export const usePoolManagement = ({
         pool.matches[matchIndex] = match;
         pool.updatedAt = new Date();
         pool.ranking = computePoolRanking(pool);
+        pool.isComplete = false;
 
         updatedPools[poolIndex] = pool;
 
@@ -244,6 +246,7 @@ export const usePoolManagement = ({
         pool.matches[matchIndex] = match;
         pool.updatedAt = new Date();
         pool.ranking = computePoolRanking(pool);
+        pool.isComplete = false;
 
         updatedPools[poolIndex] = pool;
 
