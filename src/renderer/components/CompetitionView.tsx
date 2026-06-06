@@ -252,7 +252,10 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       ] as const;
       const restoredPhase = phaseMap[restoredState.currentPhase || 0];
       if (restoredPhase) setCurrentPhase(restoredPhase);
-      if (['tableau', 'results', 'remote'].includes(restoredPhase)) {
+      if (
+        ['tableau', 'results', 'remote', 'ranking'].includes(restoredPhase) ||
+        (restoredState.tableauMatches && restoredState.tableauMatches.length > 0)
+      ) {
         setRankingValidated(true);
       }
       if (restoredState.currentPoolRound) setCurrentPoolRound(restoredState.currentPoolRound);
@@ -404,6 +407,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
       setTableauMatches(prev => {
         const idx = prev.findIndex(m => m.id === matchId);
+        logger.debug(LogCategory.UI, `[CompetitionView] Recherche match DE ${matchId} dans tableau (${prev.length} matchs): idx=${idx}, ids=[${prev.slice(0, 5).map(m => m.id).join(',')}...]`);
         if (idx === -1) return prev;
         const updated = prev.map((m, i) => (i === idx ? { ...m, scoreA, scoreB, winner: resolveWinner(m) } : m));
         const size = prev.length > 0 ? Math.max(...prev.map(m => m.round)) : 0;
