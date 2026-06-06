@@ -2099,7 +2099,7 @@
           this.saveScore();
         }
 
-        addCard(fencer, cardType) {
+        addCard(fencer, cardType, noBlackEscalation = false) {
           if (!this.currentMatch) return;
           if (this.matchStatus === 'not_started') {
             this.showNotification('⏱ Démarrez le match pour saisir des touches');
@@ -2123,7 +2123,8 @@
           }
 
           // 2ème rouge (hors escrime moderne) = carton noir → confirmation
-          if (cardType === 'red' && !this.isModernFencing) {
+          // noBlackEscalation = true quand le rouge vient d'un jaune escaladé (3ème jaune → rouge, pas noir)
+          if (cardType === 'red' && !this.isModernFencing && !noBlackEscalation) {
             const redCount = cards.filter(c => c === 'red').length;
             if (redCount >= 1) {
               this._pendingBlackCardFencer = ef;
@@ -2171,8 +2172,9 @@
             if (cardType === 'yellow') {
               const history = ef === 'A' ? this.faultHistoryA : this.faultHistoryB;
               const g2count = history[2] || 0;
-              if (g2count >= 1) cardType = 'red';
-              this.addCard(ef, cardType);
+              const escalatedToRed = g2count >= 1;
+              if (escalatedToRed) cardType = 'red';
+              this.addCard(ef, cardType, escalatedToRed);
               history[2] = g2count + 1; // après pushHistory dans addCard
             } else {
               this.addCard(ef, cardType);
