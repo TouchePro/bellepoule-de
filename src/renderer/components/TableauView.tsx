@@ -240,6 +240,17 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
             onMatchArenaChange?.(m.id, orig.arena ?? null, m.arena ?? null);
           }
         });
+      } else if (!enabled) {
+        // Désactivation : vider les assignations des matchs non encore joués
+        const updated = matches.map(m =>
+          !m.winner ? ({ ...m, arena: null as number | null }) : m
+        );
+        onMatchesChange(updated);
+        matches.forEach(m => {
+          if (m.arena != null && !m.winner) {
+            onMatchArenaChange?.(m.id, m.arena, null);
+          }
+        });
       }
     },
     [arenaCount, distributeArenasRoundRobin, matches, onMatchesChange, onMatchArenaChange]
