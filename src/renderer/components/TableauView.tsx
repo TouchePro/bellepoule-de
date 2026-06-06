@@ -170,20 +170,47 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     [arenaCount]
   );
 
+  // Nombre de matchs jouables (les deux tireurs connus) — utilisé comme signal de déclenchement
+  // pour l'auto-assign : augmente à chaque fois qu'un nouveau tour devient jouable après
+  // propagation des vainqueurs (QF → SF → Finale).
+  const playableMatchCount = matches.filter(m => m.fencerA && m.fencerB && !m.isBye).length;
+
   // Auto-assign arenas when matches are (re)generated and autoAssignArenas is on
   useEffect(() => {
     const playable = matches.filter(m => m.fencerA && m.fencerB && !m.isBye);
     const prev = prevMatchesLengthRef.current;
     prevMatchesLengthRef.current = playable.length;
     if (!autoAssignArenas || arenaCount <= 0 || playable.length === 0) return;
-    // Only auto-assign on initial generation (prev was 0) to avoid overriding manual changes.
     // Skip if a champion already exists: returning from results view would otherwise trigger
     // onMatchesChange → matches ref changes → safety-net effect fires → onComplete called
     // → forced redirect back to results.
+    const champion = matches.find(m => m.round === 2)?.winner;
+    if (champion) return;
+
     if (prev === 0 && playable.length > 0) {
-      const champion = matches.find(m => m.round === 2)?.winner;
-      if (!champion) {
-        const updated = distributeArenasRoundRobin(matches);
+      // Génération initiale : distribution complète.
+      const updated = distributeArenasRoundRobin(matches);
+      onMatchesChange(updated);
+      updated.forEach(m => {
+        const orig = matches.find(o => o.id === m.id);
+        if (orig && orig.arena !== m.arena) {
+          onMatchArenaChange?.(m.id, orig.arena ?? null, m.arena ?? null);
+        }
+      });
+    } else if (playable.length > prev) {
+      // Nouveau tour débloqué (ex. SF après QF) : assigner les pistes uniquement aux
+      // matchs qui n'en ont pas encore, sans écraser les affectations manuelles.
+      const unassigned = matches.filter(m => m.fencerA && m.fencerB && !m.isBye && !m.winner && !m.arena);
+      if (unassigned.length > 0) {
+        let arenaIdx = 0;
+        const updated = matches.map(m => {
+          if (m.fencerA && m.fencerB && !m.isBye && !m.winner && !m.arena) {
+            const arena = (arenaIdx % arenaCount) + 1;
+            arenaIdx++;
+            return { ...m, arena };
+          }
+          return m;
+        });
         onMatchesChange(updated);
         updated.forEach(m => {
           const orig = matches.find(o => o.id === m.id);
@@ -193,7 +220,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         });
       }
     }
-  }, [matches.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [playableMatchCount]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAutoAssignToggle = useCallback(
     (enabled: boolean) => {

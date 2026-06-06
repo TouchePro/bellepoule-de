@@ -4144,10 +4144,17 @@ export class RemoteScoreServer {
       const queuesByArena = new Map<string, ArenaMatch[]>();
       for (let i = 1; i <= strips; i++) queuesByArena.set(`arena${i}`, []);
 
+      let ssRrIdx = 0;
       for (const match of deMatches) {
-        if (!match.arena) continue; // pas d'arène assignée → attente d'affectation manuelle
-        const targetArenaId = `arena${match.arena}`;
-        if (!queuesByArena.has(targetArenaId)) continue; // hors plage → ignorer
+        let targetArenaId: string;
+        if (match.arena) {
+          targetArenaId = `arena${match.arena}`;
+          if (!queuesByArena.has(targetArenaId)) continue; // hors plage → ignorer
+        } else {
+          // Pas de piste assignée : round-robin automatique.
+          targetArenaId = `arena${(ssRrIdx % strips) + 1}`;
+          ssRrIdx++;
+        }
         queuesByArena.get(targetArenaId)!.push({
           id: match.id,
           fencerA: match.fencerA,
@@ -4495,11 +4502,21 @@ export class RemoteScoreServer {
     const queuesByArena = new Map<string, ArenaMatch[]>();
     for (let i = 1; i <= strips; i++) queuesByArena.set(`arena${i}`, []);
 
+    // Indice round-robin pour les matchs sans piste explicitement assignée
+    // (typiquement les SF/Finale dont les tireurs ne sont connus qu'après les QF).
+    let rrIdx = 0;
     for (const match of pending) {
-      if (!match.arena) continue; // pas d'arène assignée → attente d'affectation manuelle
-      const preferred = `arena${match.arena}`;
-      if (!this.arenas.has(preferred)) continue; // hors plage → ignorer
-      queuesByArena.get(preferred)!.push({
+      let targetArenaId: string;
+      if (match.arena) {
+        targetArenaId = `arena${match.arena}`;
+        if (!this.arenas.has(targetArenaId)) continue; // hors plage → ignorer
+      } else {
+        // Pas de piste assignée : distribution automatique round-robin pour que les
+        // arènes reçoivent les matchs des tours suivants sans intervention manuelle.
+        targetArenaId = `arena${(rrIdx % strips) + 1}`;
+        rrIdx++;
+      }
+      queuesByArena.get(targetArenaId)!.push({
         id: match.id,
         fencerA: match.fencerA,
         fencerB: match.fencerB,
@@ -4522,12 +4539,20 @@ export class RemoteScoreServer {
       // alors que le match est terminé dans sessionMatches. On vérifie sessionMatches.
       let arenaEffectivelyFree = !arena.currentMatch;
       if (!arenaEffectivelyFree && arena.currentMatch) {
-        // Cas 1 : match tableau scoré manuellement depuis l'appli → il n'est plus dans deMatches
+        // Cas 1 : match tableau terminé (tablette ou appli) → il n'est plus dans deMatches
         if (arena.currentMatch.isTableau && !deMatches.some(m => m.id === arena.currentMatch!.id)) {
           arena.currentMatch = null;
-          arena.status = 'idle';
-          arenaEffectivelyFree = true;
-          this.updateArena(arenaId, { status: 'idle', currentMatch: null });
+          if (arena.status === 'finished') {
+            // Terminé via tablette : le timer loadNextMatch (3 s) est déjà programmé et
+            // lira la nouvelle file d'attente ; ne pas écraser 'finished' → ne pas bloquer
+            // le timer, et ne pas assigner immédiatement (firstPlayable restera undefined).
+            this.updateArena(arenaId, { currentMatch: null });
+          } else {
+            // Scoré manuellement depuis l'appli : libérer l'arène immédiatement.
+            arena.status = 'idle';
+            arenaEffectivelyFree = true;
+            this.updateArena(arenaId, { status: 'idle', currentMatch: null });
+          }
         } else {
           // Cas 2 : score remote ou fast-poule → vérifier le statut effectif
           const scoreUpdate = this.sessionMatchScores.get(arena.currentMatch.id);
