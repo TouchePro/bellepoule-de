@@ -141,6 +141,12 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   const isUnlimitedScore = maxScore === 999;
   const prevMatchesLengthRef = useRef(0);
   const mountMatchesRef = useRef(matches);
+  const matchesRef = useRef(matches);
+  matchesRef.current = matches;
+  const tableauSizeRef = useRef(tableauSize);
+  tableauSizeRef.current = tableauSize;
+  const onMatchesChangeRef = useRef(onMatchesChange);
+  onMatchesChangeRef.current = onMatchesChange;
   const consolationBrackets = consolationBracketsprop;
   const setConsolationBrackets = (updater: ConsolationBracket[] | ((prev: ConsolationBracket[]) => ConsolationBracket[])) => {
     const next = typeof updater === 'function' ? updater(consolationBrackets) : updater;
@@ -299,6 +305,31 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     // calculateFinalResults et onComplete sont stables pendant la phase tableau
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matches, readOnly]);
+
+  // Synchronisation temps réel depuis la tablette d'arbitrage (élimination directe)
+  useEffect(() => {
+    if (readOnly) return;
+    const unsub = window.electronAPI?.onRemoteMatchFinished?.((data: {
+      matchId: string;
+      scoreA: number;
+      scoreB: number;
+      winner: 'A' | 'B' | null;
+      isTableau: boolean;
+    }) => {
+      if (!data.isTableau) return;
+      const currentMatches = matchesRef.current;
+      const match = currentMatches.find(m => m.id === data.matchId);
+      if (!match) return;
+      const winner = data.winner === 'A' ? match.fencerA : data.winner === 'B' ? match.fencerB : null;
+      const updatedMatches = currentMatches.map(m =>
+        m.id === data.matchId ? { ...m, scoreA: data.scoreA, scoreB: data.scoreB, winner } : m
+      );
+      propagateWinners(updatedMatches, tableauSizeRef.current);
+      onMatchesChangeRef.current(updatedMatches.map(m => ({ ...m })));
+    });
+    return () => { unsub?.(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [readOnly]);
 
   // playAllPositions : déclencher onComplete quand le tableau principal ET tous les brackets de consolation sont terminés
   useEffect(() => {
