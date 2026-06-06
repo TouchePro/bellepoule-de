@@ -2944,6 +2944,67 @@ export class RemoteScoreServer {
     }
   }
 
+  // Marque un match de poule comme terminé depuis l'UI principale (ex: auto-fill).
+  // Met à jour sessionMatchScores + sessionMatches, libère l'arène si nécessaire,
+  // puis diffuse la mise à jour à la tablette.
+  public finishPoolMatch(matchId: string, scoreA: number, scoreB: number): void {
+    this.sessionMatchScores.set(matchId, {
+      scoreA: { value: scoreA, isVictory: scoreA > scoreB },
+      scoreB: { value: scoreB, isVictory: scoreB > scoreA },
+      status: MatchStatus.FINISHED,
+    });
+
+    const matchIdx = (this.sessionMatches as any[]).findIndex((m: any) => m.id === matchId);
+    if (matchIdx >= 0) {
+      (this.sessionMatches as any[])[matchIdx].status = MatchStatus.FINISHED;
+    }
+
+    // Si le match est actif sur une arène, la marquer terminée
+    for (const [arenaId, arena] of this.arenas) {
+      if (arena.currentMatch?.id === matchId && arena.status !== 'finished') {
+        arena.status = 'finished';
+        arena.currentMatch.status = 'finished';
+        this.broadcastArenaUpdate(arenaId, {
+          arenaId,
+          status: 'finished',
+          match: arena.currentMatch,
+          scoreA: arena.currentMatch.scoreA,
+          scoreB: arena.currentMatch.scoreB,
+          fencerA: arena.currentMatch.fencerA,
+          fencerB: arena.currentMatch.fencerB,
+        });
+        break;
+      }
+    }
+
+    this.io.emit('match:finished', { matchId });
+
+    const match = matchIdx >= 0 ? (this.sessionMatches as any[])[matchIdx] : null;
+    const poolId = match?.poolId ?? match?.pool?.id;
+    if (!poolId) return;
+
+    const fencers = this.poolFencersCache.get(poolId) ?? this.db.getPoolFencers(poolId);
+    const poolMatches = (this.sessionMatches as any[])
+      .filter((m: any) => !m.isTableau && (m.poolId ?? m.pool?.id) === poolId)
+      .sort((a: any, b: any) => (a.number || 0) - (b.number || 0))
+      .map((m: any) => {
+        const u = this.sessionMatchScores.get(m.id);
+        return u ? { ...m, ...u } : m;
+      });
+    const isComplete =
+      poolMatches.length > 0 &&
+      poolMatches.every(
+        (m: any) => m.status === MatchStatus.FINISHED || m.status === 'finished'
+      );
+    for (const [aId, arena] of this.arenas) {
+      if ((arena.currentMatch?.poolId ?? arena.activePoolId) === poolId) {
+        this.io
+          .to(`pool:${aId}`)
+          .emit(`pool:${aId}:update`, { poolId, fencers, matches: poolMatches, isComplete });
+      }
+    }
+  }
+
   public setLanguage(lang: string): void {
     this.currentLang = lang;
   }

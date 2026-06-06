@@ -517,6 +517,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('remote:acknowledgeDTCall', competitionId, arenaId),
     resetPoolMatch: (competitionId: string, matchId: string) =>
       ipcRenderer.invoke('remote:resetPoolMatch', competitionId, matchId),
+    finishPoolMatch: (competitionId: string, matchId: string, scoreA: number, scoreB: number) =>
+      ipcRenderer.invoke('remote:finishPoolMatch', competitionId, matchId, scoreA, scoreB),
     setRegistrationEnabled: (competitionId: string, enabled: boolean) =>
       ipcRenderer.invoke('remote:setRegistrationEnabled', competitionId, enabled),
     getConnectedClients: (competitionId: string) =>

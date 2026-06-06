@@ -1212,9 +1212,17 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                         competitionName={competition.title}
                         maxScore={poolMaxScore}
                         competitionId={competition.id}
-                        onScoreUpdate={(matchIndex, scoreA, scoreB, winner, specialStatus) =>
-                          updateScore(poolIndex, matchIndex, scoreA, scoreB, winner, specialStatus)
-                        }
+                        onScoreUpdate={(matchIndex, scoreA, scoreB, winner, specialStatus) => {
+                          updateScore(poolIndex, matchIndex, scoreA, scoreB, winner, specialStatus);
+                          if (isRemoteActive && competition?.id) {
+                            const match = pool.matches[matchIndex];
+                            if (match) {
+                              window.electronAPI.remote.finishPoolMatch(
+                                competition.id, match.id, scoreA, scoreB
+                              ).catch(() => {});
+                            }
+                          }
+                        }}
                         onMatchReset={(matchIndex) => {
                           const match = pool.matches[matchIndex];
                           if (!match) return;

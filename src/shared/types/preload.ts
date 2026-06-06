@@ -452,6 +452,12 @@ export interface RemoteServerAPI {
     competitionId: string,
     matchId: string
   ) => Promise<{ success: boolean; error?: string }>;
+  finishPoolMatch: (
+    competitionId: string,
+    matchId: string,
+    scoreA: number,
+    scoreB: number
+  ) => Promise<{ success: boolean; error?: string }>;
   setRegistrationEnabled: (
     competitionId: string,
     enabled: boolean
