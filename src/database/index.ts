@@ -707,22 +707,31 @@ export class DatabaseManager {
         .forEach(rRow => refereesById.set(rRow.id as string, this.rowToReferee(rRow)));
     }
 
-    return matchRows.map(row => ({
+    return matchRows.map(row => {
+      const scoreA = row.score_a ? JSON.parse(row.score_a as string) : null;
+      const scoreB = row.score_b ? JSON.parse(row.score_b as string) : null;
+      // Heal inconsistent DB state: scores present implies the match was played
+      const rawStatus = row.status as MatchStatus;
+      const status = (scoreA !== null && scoreB !== null && rawStatus !== MatchStatus.FINISHED)
+        ? MatchStatus.FINISHED
+        : rawStatus;
+      return {
       id: row.id as string,
       number: row.number as number,
       fencerA: row.fencer_a_id ? (fencersById.get(row.fencer_a_id as string) ?? null) : null,
       fencerB: row.fencer_b_id ? (fencersById.get(row.fencer_b_id as string) ?? null) : null,
-      scoreA: row.score_a ? JSON.parse(row.score_a as string) : null,
-      scoreB: row.score_b ? JSON.parse(row.score_b as string) : null,
+      scoreA,
+      scoreB,
       maxScore: row.max_score as number,
-      status: row.status as MatchStatus,
+      status,
       poolId: row.pool_id as string,
       tableId: row.table_id as string,
       round: row.round as number,
       referee: row.referee_id ? (refereesById.get(row.referee_id as string) ?? undefined) : undefined,
       createdAt: new Date(row.created_at as string),
       updatedAt: new Date(row.updated_at as string),
-    }));
+      };
+    });
   }
 
   public getCompetitionPools(competitionId: string): { id: string; name: string }[] {
@@ -874,14 +883,16 @@ export class DatabaseManager {
   public updateMatch(id: string, updates: Partial<Match> & { refereeId?: string }): void {
     if (!this.db) throw new Error('Database not open');
     const now = new Date().toISOString();
-    if (updates.scoreA !== undefined)
-      this.run('UPDATE matches SET score_a = ?, updated_at = ? WHERE id = ?', [JSON.stringify(updates.scoreA), now, id]);
-    if (updates.scoreB !== undefined)
-      this.run('UPDATE matches SET score_b = ?, updated_at = ? WHERE id = ?', [JSON.stringify(updates.scoreB), now, id]);
-    if (updates.status !== undefined)
-      this.run('UPDATE matches SET status = ?, updated_at = ? WHERE id = ?', [updates.status, now, id]);
-    if (updates.refereeId !== undefined)
-      this.run('UPDATE matches SET referee_id = ?, updated_at = ? WHERE id = ?', [updates.refereeId, now, id]);
+    const setClauses: string[] = [];
+    const params: unknown[] = [];
+    if (updates.scoreA !== undefined) { setClauses.push('score_a = ?'); params.push(JSON.stringify(updates.scoreA)); }
+    if (updates.scoreB !== undefined) { setClauses.push('score_b = ?'); params.push(JSON.stringify(updates.scoreB)); }
+    if (updates.status !== undefined) { setClauses.push('status = ?'); params.push(updates.status); }
+    if (updates.refereeId !== undefined) { setClauses.push('referee_id = ?'); params.push(updates.refereeId); }
+    if (setClauses.length === 0) return;
+    setClauses.push('updated_at = ?');
+    params.push(now, id);
+    this.run(`UPDATE matches SET ${setClauses.join(', ')} WHERE id = ?`, params);
   }
 
   public updatePool(pool: Pool): void {
