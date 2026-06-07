@@ -52,10 +52,35 @@ export function resolveWinnerFromScores(match: TableauMatch): void {
   else if (match.scoreB > match.scoreA) match.winner = match.fencerB;
 }
 
+/**
+ * Déduit le premier tour du tableau principal à partir des matchs existants.
+ * Source de vérité robuste face à un `size` absent (0), périmé (restauration de
+ * session avant que `tableauSize` ne soit recalculé) ou trop grand (round de
+ * barrage = mainSize*2). Le premier tour est le plus grand round (hors petite
+ * finale round=3) dont le nombre de matchs vaut round/2 : un round de barrage,
+ * partiellement rempli, est ainsi écarté.
+ */
+function deriveFirstRound(matchList: TableauMatch[]): number {
+  const counts = new Map<number, number>();
+  for (const m of matchList) {
+    if (m.round === 3) continue; // petite finale
+    counts.set(m.round, (counts.get(m.round) ?? 0) + 1);
+  }
+  let best = 0;
+  for (const [round, count] of counts) {
+    if (count === round / 2 && round > best) best = round;
+  }
+  return best;
+}
+
 export function propagateWinners(matchList: TableauMatch[], size: number): void {
   // Normalise les vainqueurs manquants avant toute propagation : un match dont
   // les deux scores sont saisis a forcément un vainqueur (hors égalité).
   for (const m of matchList) resolveWinnerFromScores(m);
+
+  // Ignore un `size` invalide/périmé : on repart toujours du premier tour réel.
+  const firstRound = deriveFirstRound(matchList);
+  const effectiveSize = firstRound > 0 ? firstRound : size;
 
   // Indexe les matchs par (round, position). L'appariement feeder→tour suivant se fait
   // STRICTEMENT par `position`, jamais par index de tableau : l'ordre de `matchList`
@@ -71,7 +96,7 @@ export function propagateWinners(matchList: TableauMatch[], size: number): void 
   }
   const emptyRound = new Map<number, TableauMatch>();
 
-  let currentRound = size;
+  let currentRound = effectiveSize;
 
   while (currentRound > 2) {
     const nextRound = currentRound / 2;
@@ -124,7 +149,7 @@ export function propagateWinners(matchList: TableauMatch[], size: number): void 
   }
 
   const thirdPlaceMatchEntry = matchList.find(m => m.round === 3);
-  if (thirdPlaceMatchEntry && size >= 4) {
+  if (thirdPlaceMatchEntry && effectiveSize >= 4) {
     const semiFinalMatches = [...(byRoundPos.get(4) ?? emptyRound).values()].sort(
       (a, b) => a.position - b.position
     );

@@ -48,3 +48,38 @@ describe('propagateWinners', () => {
     expect(semi.fencerB?.id).toBe('Bowser');
   });
 });
+
+describe('propagateWinners - taille périmée/invalide', () => {
+  const mk16 = (): TableauMatch[] => {
+    const m: TableauMatch[] = [];
+    for (let p = 0; p < 8; p++) m.push(mk(16, p, F('a' + p), F('b' + p)));
+    for (let p = 0; p < 4; p++) m.push(mk(8, p, null, null, { isBye: false }));
+    for (let p = 0; p < 2; p++) m.push(mk(4, p, null, null, { isBye: false }));
+    m.push(mk(2, 0, null, null, { isBye: false }));
+    return m;
+  };
+
+  // Régression : un score saisi alors que tableauSize n'est pas encore recalculé
+  // (restauration de session) passait size=0 → propagation no-op → vainqueur perdu.
+  it('propage même si size vaut 0', () => {
+    const matches = mk16();
+    const m0 = matches.find(x => x.id === '16-0')!;
+    m0.scoreA = 15; m0.scoreB = 3; m0.winner = m0.fencerA;
+    const m1 = matches.find(x => x.id === '16-1')!;
+    m1.scoreA = 3; m1.scoreB = 15; m1.winner = m1.fencerB;
+
+    propagateWinners(matches, 0);
+
+    const qf0 = matches.find(x => x.id === '8-0')!;
+    expect(qf0.fencerA?.id).toBe('a0');
+    expect(qf0.fencerB?.id).toBe('b1');
+  });
+
+  it('propage le vainqueur des 8es vers les quarts (size correct)', () => {
+    const matches = mk16();
+    const m1 = matches.find(x => x.id === '16-1')!;
+    m1.scoreA = 3; m1.scoreB = 15; m1.winner = m1.fencerB;
+    propagateWinners(matches, 16);
+    expect(matches.find(x => x.id === '8-0')!.fencerB?.id).toBe('b1');
+  });
+});
