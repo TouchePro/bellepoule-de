@@ -57,35 +57,32 @@ export function propagateWinners(matchList: TableauMatch[], size: number): void 
   // les deux scores sont saisis a forcément un vainqueur (hors égalité).
   for (const m of matchList) resolveWinnerFromScores(m);
 
-  // Regroupe les matchs par tour une seule fois (O(n)) au lieu de filtrer à chaque
-  // itération (O(tours·n)). L'ordre d'insertion est préservé, donc l'appariement
-  // par index reste identique au comportement précédent.
-  const byRound = new Map<number, TableauMatch[]>();
+  // Indexe les matchs par (round, position). L'appariement feeder→tour suivant se fait
+  // STRICTEMENT par `position`, jamais par index de tableau : l'ordre de `matchList`
+  // n'est pas garanti (restauration DB, synchro tablette) et des positions peuvent
+  // manquer (byes). Un match en position P d'un tour est alimenté par les positions
+  // 2P et 2P+1 du tour précédent ; router par index isolerait un vainqueur au lieu de
+  // le faire affronter son adversaire réel.
+  const byRoundPos = new Map<number, Map<number, TableauMatch>>();
   for (const m of matchList) {
-    const bucket = byRound.get(m.round);
-    if (bucket) bucket.push(m);
-    else byRound.set(m.round, [m]);
+    let perRound = byRoundPos.get(m.round);
+    if (!perRound) { perRound = new Map(); byRoundPos.set(m.round, perRound); }
+    perRound.set(m.position, m);
   }
-  // L'appariement feeder→tour suivant se fait par index. L'ordre du tableau `matchList`
-  // n'est pas garanti (restauration DB, synchro tablette) : on trie chaque tour par
-  // `position` pour que index === position et éviter de router un vainqueur vers le
-  // mauvais match (ex. vainqueur isolé au lieu d'affronter son adversaire réel).
-  for (const bucket of byRound.values()) bucket.sort((a, b) => a.position - b.position);
-  const emptyRound: TableauMatch[] = [];
+  const emptyRound = new Map<number, TableauMatch>();
 
   let currentRound = size;
 
   while (currentRound > 2) {
     const nextRound = currentRound / 2;
-    const currentMatches = byRound.get(currentRound) ?? emptyRound;
-    const nextMatches = byRound.get(nextRound) ?? emptyRound;
+    const currentMatches = byRoundPos.get(currentRound) ?? emptyRound;
+    const nextMatches = byRoundPos.get(nextRound) ?? emptyRound;
 
-    currentMatches.forEach((match, idx) => {
+    currentMatches.forEach(match => {
       if (match.winner) {
-        const nextMatchIdx = Math.floor(idx / 2);
-        const nextMatch = nextMatches[nextMatchIdx];
+        const nextMatch = nextMatches.get(Math.floor(match.position / 2));
         if (nextMatch) {
-          if (idx % 2 === 0) {
+          if (match.position % 2 === 0) {
             nextMatch.fencerA = match.winner;
           } else {
             nextMatch.fencerB = match.winner;
@@ -94,11 +91,11 @@ export function propagateWinners(matchList: TableauMatch[], size: number): void 
       }
     });
 
-    nextMatches.forEach((nextMatch, nextIdx) => {
+    nextMatches.forEach(nextMatch => {
       if (nextMatch.scoreA !== null && nextMatch.scoreB !== null) return;
 
-      const feederA = currentMatches[nextIdx * 2];
-      const feederB = currentMatches[nextIdx * 2 + 1];
+      const feederA = currentMatches.get(nextMatch.position * 2);
+      const feederB = currentMatches.get(nextMatch.position * 2 + 1);
 
       const feederAResolved =
         !feederA ||
@@ -128,7 +125,9 @@ export function propagateWinners(matchList: TableauMatch[], size: number): void 
 
   const thirdPlaceMatchEntry = matchList.find(m => m.round === 3);
   if (thirdPlaceMatchEntry && size >= 4) {
-    const semiFinalMatches = byRound.get(4) ?? emptyRound;
+    const semiFinalMatches = [...(byRoundPos.get(4) ?? emptyRound).values()].sort(
+      (a, b) => a.position - b.position
+    );
 
     if (semiFinalMatches.length === 2) {
       const losers: Fencer[] = [];
