@@ -366,14 +366,22 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         winnerOverride === 'B' ? match.fencerB :
         null;
 
-      const inTableau = tableauMatchesRef.current.some(m => m.id === matchId);
+      // La tablette/serveur peut renvoyer l'ID brut du match ('16-0') ou l'ID
+      // composite stocké en base ('${competitionId}-16-0'). On apparie les deux
+      // sens pour ne pas rater un match du tableau (sinon : pas de propagation).
+      const idMatches = (m: { id: string }) =>
+        m.id === matchId ||
+        matchId === `${competition.id}-${m.id}` ||
+        `${competition.id}-${matchId}` === m.id;
+
+      const inTableau = tableauMatchesRef.current.some(idMatches);
       const inConsolation = consolationBracketsRef.current.some(b =>
-        b.matches.some(m => m.id === matchId)
+        b.matches.some(idMatches)
       );
 
       if (inTableau) {
         setTableauMatches(prev => {
-          const idx = prev.findIndex(m => m.id === matchId);
+          const idx = prev.findIndex(idMatches);
           if (idx === -1) return prev;
           const updated = prev.map((m, i) =>
             i === idx ? { ...m, scoreA, scoreB, winner: resolveWinner(m) } : m
@@ -389,7 +397,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       if (inConsolation) {
         setConsolationBrackets(prev =>
           prev.map(bracket => {
-            const idx = bracket.matches.findIndex(m => m.id === matchId);
+            const idx = bracket.matches.findIndex(idMatches);
             if (idx === -1) return bracket;
             const updated = bracket.matches.map((m, i) =>
               i === idx ? { ...m, scoreA, scoreB, winner: resolveWinner(m) } : m
@@ -408,7 +416,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         updateMatchFromRemote(matchId, scoreA, scoreB, status, winnerOverride);
       }
     },
-    [updateMatchFromRemote]
+    [updateMatchFromRemote, competition.id]
   );
 
   // Charger les arènes quand le serveur distant devient actif et s'abonner aux updates
@@ -432,18 +440,14 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
           return updated;
         });
 
-        // Propager le score live vers la vue poule (scores intermédiaires pendant le match)
-        const matchId = data.update?.match?.id;
-        const scoreA = data.update?.scoreA ?? data.update?.match?.scoreA;
-        const scoreB = data.update?.scoreB ?? data.update?.match?.scoreB;
-        if (matchId !== undefined && scoreA !== undefined && scoreB !== undefined
-            && data.update?.status !== 'finished') {
-          applyRemoteScore(matchId, scoreA as number, scoreB as number, false);
-        }
+        // NB : on ne propage PAS le score touche-par-touche vers les données du
+        // match (poule/tableau). Le score n'est appliqué que lorsque l'arbitre
+        // valide « match terminé » (event match:finished). Ici on ne met à jour
+        // que l'affichage live de la piste (arenaStates, ci-dessus).
       });
     }
     return () => unlisten?.();
-  }, [isRemoteActive, competition.id, applyRemoteScore]);
+  }, [isRemoteActive, competition.id]);
 
   // Écouter les mises à jour des matches distants
   // Note: pas de garde sur currentPhase car la phase 'remote' affiche le panel de saisie distante
