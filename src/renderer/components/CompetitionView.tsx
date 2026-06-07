@@ -280,9 +280,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     }
   }, [restoredState, isLoaded]);
 
-  // Fallback DB : si session state n'a pas de poules, essayer de les charger depuis la DB
+  // Fallback DB : si session state n'a pas de poules, essayer de les charger depuis la DB.
+  // Guard: ne pas déclencher si restoredState a déjà des poules (elles seront appliquées par
+  // l'effet [restoredState, isLoaded] dans le même cycle de rendu, évitant la race condition
+  // où l'IPC SQLite répond avant le prochain rendu React et écrase la session state).
   useEffect(() => {
     if (!isLoaded || pools.length > 0) return;
+    if (restoredState?.pools && restoredState.pools.length > 0) return;
     let cancelled = false;
     window.electronAPI.db.getPhasesByCompetition(competition.id)
       .then(phases => {
@@ -295,7 +299,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       })
       .catch((e: unknown) => logger.warn(LogCategory.DATABASE, 'DB pool fallback failed', e instanceof Error ? e : undefined));
     return () => { cancelled = true; };
-  }, [isLoaded, pools.length, competition.id]);
+  }, [isLoaded, pools.length, competition.id, restoredState]);
 
   // Rétablir isRemoteActive si une session est déjà en cours (ex: rechargement après phase poules)
   useEffect(() => {
