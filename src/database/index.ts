@@ -649,19 +649,36 @@ export class DatabaseManager {
     });
   }
 
+  // Corrige un statut de match incohérent au chargement.
+  // - 2 scores présents → FINISHED (le match a été joué)
+  // - in_progress sans aucun score → NOT_STARTED (tablette/strip fermé avant toute saisie ;
+  //   évite que les premiers matchs réapparaissent « en cours » au redémarrage)
+  private healMatchStatus(rawStatus: MatchStatus, scoreA: unknown, scoreB: unknown): MatchStatus {
+    if (scoreA !== null && scoreB !== null && rawStatus !== MatchStatus.FINISHED) {
+      return MatchStatus.FINISHED;
+    }
+    if (rawStatus === MatchStatus.IN_PROGRESS && scoreA === null && scoreB === null) {
+      return MatchStatus.NOT_STARTED;
+    }
+    return rawStatus;
+  }
+
   public getMatch(id: string): Match | null {
     if (!this.db) throw new Error('Database not open');
     const row = this.queryOne<any>('SELECT * FROM matches WHERE id = ?', [id]);
     if (!row) return null;
+    const scoreA = row.score_a ? JSON.parse(row.score_a as string) : null;
+    const scoreB = row.score_b ? JSON.parse(row.score_b as string) : null;
+    const status = this.healMatchStatus(row.status as MatchStatus, scoreA, scoreB);
     return {
       id: row.id as string,
       number: row.number as number,
       fencerA: row.fencer_a_id ? this.getFencer(row.fencer_a_id as string) : null,
       fencerB: row.fencer_b_id ? this.getFencer(row.fencer_b_id as string) : null,
-      scoreA: row.score_a ? JSON.parse(row.score_a as string) : null,
-      scoreB: row.score_b ? JSON.parse(row.score_b as string) : null,
+      scoreA,
+      scoreB,
       maxScore: row.max_score as number,
-      status: row.status as MatchStatus,
+      status,
       poolId: row.pool_id as string,
       tableId: row.table_id as string,
       round: row.round as number,
@@ -710,11 +727,7 @@ export class DatabaseManager {
     return matchRows.map(row => {
       const scoreA = row.score_a ? JSON.parse(row.score_a as string) : null;
       const scoreB = row.score_b ? JSON.parse(row.score_b as string) : null;
-      // Heal inconsistent DB state: scores present implies the match was played
-      const rawStatus = row.status as MatchStatus;
-      const status = (scoreA !== null && scoreB !== null && rawStatus !== MatchStatus.FINISHED)
-        ? MatchStatus.FINISHED
-        : rawStatus;
+      const status = this.healMatchStatus(row.status as MatchStatus, scoreA, scoreB);
       return {
       id: row.id as string,
       number: row.number as number,
