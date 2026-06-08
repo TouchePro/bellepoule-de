@@ -12,7 +12,7 @@
     "build:main": "webpack --config webpack.main.config.js",
     "build:renderer": "webpack --config webpack.renderer.config.js",
     "dev": "concurrently \"npm run dev:main\" \"npm run dev:renderer\"",
-    "dev:main": "webpack --watch --config webpack.main.config.js",
+    "dev:main": "webpack --watch --mode development --config webpack.main.config.js",
     "dev:renderer": "webpack serve --config webpack.renderer.config.js",
     "package": "npm run build && electron-builder",
     "package:win": "npm run build && electron-builder --win",
