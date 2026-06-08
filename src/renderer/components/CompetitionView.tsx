@@ -356,14 +356,26 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   // Appliquer un score distant au bon conteneur : tableau DE, consolante, ou poule.
   // Évite le warning "Match non trouvé" côté poule pour les matchs du tableau.
   const applyRemoteScore = useCallback(
-    (matchId: string, scoreA: number, scoreB: number, finished: boolean, winnerOverride?: 'A' | 'B') => {
+    (matchIdRaw: string, scoreARaw: number, scoreBRaw: number, finished: boolean, winnerOverride?: 'A' | 'B') => {
+      const matchId = matchIdRaw;
+      // Le score peut arriver sous forme d'objet Score ({ value }) ou de chaîne
+      // selon le chemin (IPC tablette, sync DB). On normalise en nombre, sinon les
+      // comparaisons scoreA > scoreB échouent (NaN) → aucun vainqueur, aucune
+      // propagation au tour suivant.
+      const toNum = (s: unknown): number =>
+        typeof s === 'object' && s !== null ? Number((s as { value?: number }).value ?? 0) : Number(s ?? 0);
+      const scoreA = toNum(scoreARaw);
+      const scoreB = toNum(scoreBRaw);
       const status = finished ? MatchStatus.FINISHED : MatchStatus.IN_PROGRESS;
+      // Le vainqueur transmis par le serveur (winnerOverride) fait foi : il gère les
+      // cas d'égalité (tirage au sort) et reste correct même si le score transporté
+      // est ambigu. On retombe sur la comparaison des scores en dernier recours.
       const resolveWinner = (match: TableauMatch) =>
         !finished ? (match.winner ?? null) :
-        scoreA > scoreB ? match.fencerA :
-        scoreB > scoreA ? match.fencerB :
         winnerOverride === 'A' ? match.fencerA :
         winnerOverride === 'B' ? match.fencerB :
+        scoreA > scoreB ? match.fencerA :
+        scoreB > scoreA ? match.fencerB :
         null;
 
       // La tablette/serveur peut renvoyer l'ID brut du match ('16-0') ou l'ID
