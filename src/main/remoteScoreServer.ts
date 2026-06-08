@@ -4164,9 +4164,23 @@ export class RemoteScoreServer {
       if (poolIndex >= strips) break;
 
       const arenaId = `arena${poolIndex + 1}`;
-      const firstMatch = poolMatches[0];
 
-      if (!firstMatch) continue;
+      // Premier match non terminé et non en cours (évite le curseur orange au démarrage)
+      const firstMatch = poolMatches.find(
+        m => m.status !== 'finished' && m.status !== 'in_progress'
+      );
+
+      if (!firstMatch) {
+        // Tous les matchs sont terminés ou en cours : lier la pool à l'arène sans assigner de match
+        const anyMatch = poolMatches[0];
+        if (anyMatch) {
+          const arena = this.arenas.get(arenaId);
+          if (arena) arena.activePoolId = poolId;
+        }
+        this.arenaNextMatchIndex.set(arenaId, poolMatches.length);
+        poolIndex++;
+        continue;
+      }
 
       console.log(
         `[RemoteScoreServer] Pool ${poolId} -> Arène ${arenaId}, ${poolMatches.length} matches`
@@ -4179,15 +4193,16 @@ export class RemoteScoreServer {
         fencerB: firstMatch.fencerB!,
         scoreA: firstMatch.scoreA?.value ?? 0,
         scoreB: firstMatch.scoreB?.value ?? 0,
-        status: firstMatch.status === 'in_progress' ? 'in_progress' : 'not_started',
-        startTime: firstMatch.status === 'in_progress' ? new Date() : null,
+        status: 'not_started',
+        startTime: null,
         endTime: null,
       };
 
       this.assignMatchToArena(arenaId, arenaMatch);
 
-      // Stocker l'index du prochain match pour cette arène (commence à 1 car le 0 est déjà assigné)
-      this.arenaNextMatchIndex.set(arenaId, 1);
+      // Index du prochain match = position de firstMatch + 1 dans la liste originale
+      const firstMatchIndex = poolMatches.findIndex(m => m.id === firstMatch.id);
+      this.arenaNextMatchIndex.set(arenaId, firstMatchIndex + 1);
 
       console.log(
         `[RemoteScoreServer] Match ${firstMatch.id} (Pool ${poolId}) assigné à l'arène ${arenaId}`
