@@ -1,10 +1,16 @@
 const path = require('path');
 const TerserPlugin = require('terser-webpack-plugin');
 
-const isProd = process.env.NODE_ENV === 'production';
+// La minification est pilotée par --mode (défaut: production pour les builds).
+// Les scripts dev passent --mode development.
+const argvMode = process.argv.includes('--mode')
+  ? process.argv[process.argv.indexOf('--mode') + 1]
+  : undefined;
+const mode = argvMode || (process.env.NODE_ENV === 'development' ? 'development' : 'production');
+const isProd = mode === 'production';
 
 const common = {
-  mode: isProd ? 'production' : 'development',
+  mode,
   devtool: isProd ? false : 'source-map',
   resolve: {
     extensions: ['.ts', '.tsx', '.js'],
@@ -36,6 +42,10 @@ const common = {
     ],
   },
   optimization: {
+    // Ne PAS inliner process.env.NODE_ENV dans le bundle main :
+    // main.ts choisit loadFile/loadURL via process.env.NODE_ENV AU RUNTIME.
+    // Sans ceci, webpack fige la branche dev (loadURL localhost:8066) dans l'app packagée.
+    nodeEnv: false,
     minimize: isProd,
     minimizer: [
       new TerserPlugin({
