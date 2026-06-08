@@ -44,6 +44,32 @@ const STATUS_COLORS: Record<string, string> = {
   offline: '#6b7280',
 };
 
+type AssignRole = 'affichage' | 'arbitre' | 'kiosk';
+
+const ASSIGN_ROLES: { value: AssignRole; label: string }[] = [
+  { value: 'affichage', label: '📺 Affichage' },
+  { value: 'arbitre', label: '🤺 Arbitre' },
+  { value: 'kiosk', label: '🖥️ Kiosk' },
+];
+
+function arenaNum(client: ConnectedClient): number {
+  if (!client.arenaId) return 1;
+  return parseInt(client.arenaId.replace('arena', ''), 10) || 1;
+}
+
+function defaultAssign(client: ConnectedClient): { role: AssignRole; arena: number } {
+  if (client.clientType === 'referee') return { role: 'arbitre', arena: arenaNum(client) };
+  if (client.clientType === 'kiosk') return { role: 'kiosk', arena: arenaNum(client) };
+  if (client.clientType === 'arena') return { role: 'affichage', arena: arenaNum(client) };
+  return { role: 'affichage', arena: 1 }; // lobby et autres
+}
+
+function assignUrl(base: string, role: AssignRole, arena: number): string {
+  if (role === 'kiosk') return `${base}/kiosk`;
+  if (role === 'arbitre') return `${base}/arene${arena}/arbitre`;
+  return `${base}/arene${arena}`;
+}
+
 function clientDisplayUrl(base: string, client: ConnectedClient): string {
   if (client.clientType === 'referee') {
     const num = client.arenaId ? client.arenaId.replace('arena', '') : '1';
@@ -105,6 +131,7 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
   const [kioskTarget, setKioskTarget] = useState<string | null>(null);
   const [kioskConfig, setKioskConfig] = useState<KioskScreenConfig>(loadKioskConfig);
   const [locked, setLocked] = useState<boolean>(() => localStorage.getItem('bp_remote_locked') === '1');
+  const [assign, setAssign] = useState<Record<string, { role: AssignRole; arena: number }>>({});
 
   const toggleLock = () => {
     setLocked(prev => {
@@ -191,9 +218,18 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
     broadcastCmd({ type: 'message', text: message.trim(), duration: msgDuration * 1000 });
   };
 
+  const getAssign = (client: ConnectedClient) => assign[client.socketId] ?? defaultAssign(client);
+
+  const applyAssign = (client: ConnectedClient, role: AssignRole, arena: number) => {
+    setAssign(prev => ({ ...prev, [client.socketId]: { role, arena } }));
+    sendCmd(client.socketId, { type: 'navigate', url: assignUrl(base, role, arena) });
+  };
+
   const swapCandidates = clients.filter(c => swapSet.has(c.socketId));
   const canSwap = swapSet.size === 2;
   const isArenaOrLobby = (c: ConnectedClient) => c.clientType === 'arena' || c.clientType === 'lobby';
+  const isAssignable = (c: ConnectedClient) =>
+    c.clientType === 'arena' || c.clientType === 'lobby' || c.clientType === 'referee' || c.clientType === 'kiosk';
 
   return (
     <div
@@ -282,34 +318,34 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
                     </div>
                   </div>
 
-                  {/* Affecter à (arena/lobby only) */}
-                  {isArenaOrLobby(client) && (
-                    <select
-                      value={clientDisplayUrl(base, client)}
-                      onChange={e => sendCmd(client.socketId, { type: 'navigate', url: e.target.value })}
-                      style={{ padding: '0.2rem 0.3rem', fontSize: '0.75rem', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '5px', color: 'inherit', maxWidth: '120px' }}
-                      title="Affecter à…"
-                    >
-                      <option value={`${base}/lobby`}>Lobby</option>
-                      {Array.from({ length: arenaCount }, (_, i) => (
-                        <option key={i + 1} value={`${base}/arene${i + 1}`}>Arène {i + 1}</option>
-                      ))}
-                    </select>
-                  )}
-
-                  {/* Affecter à (tablette arbitre) */}
-                  {client.clientType === 'referee' && (
-                    <select
-                      value={clientDisplayUrl(base, client)}
-                      onChange={e => sendCmd(client.socketId, { type: 'navigate', url: e.target.value })}
-                      style={{ padding: '0.2rem 0.3rem', fontSize: '0.75rem', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '5px', color: 'inherit', maxWidth: '120px' }}
-                      title="Affecter l'arbitre à une arène…"
-                    >
-                      {Array.from({ length: arenaCount }, (_, i) => (
-                        <option key={i + 1} value={`${base}/arene${i + 1}/arbitre`}>Arène {i + 1}</option>
-                      ))}
-                    </select>
-                  )}
+                  {/* Affecter : rôle + arène */}
+                  {isAssignable(client) && (() => {
+                    const a = getAssign(client);
+                    return (
+                      <>
+                        <select
+                          value={a.role}
+                          onChange={e => applyAssign(client, e.target.value as AssignRole, a.arena)}
+                          style={{ padding: '0.2rem 0.3rem', fontSize: '0.75rem', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '5px', color: 'inherit' }}
+                          title="Rôle de la tablette"
+                        >
+                          {ASSIGN_ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                        </select>
+                        {a.role !== 'kiosk' && (
+                          <select
+                            value={a.arena}
+                            onChange={e => applyAssign(client, a.role, Number(e.target.value))}
+                            style={{ padding: '0.2rem 0.3rem', fontSize: '0.75rem', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '5px', color: 'inherit' }}
+                            title="Arène"
+                          >
+                            {Array.from({ length: arenaCount }, (_, i) => (
+                              <option key={i + 1} value={i + 1}>Arène {i + 1}</option>
+                            ))}
+                          </select>
+                        )}
+                      </>
+                    );
+                  })()}
 
                   {/* Identifier */}
                   <button className="btn btn-secondary" style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', whiteSpace: 'nowrap' }} onClick={() => window.electronAPI.remote.identifyClient(competitionId, client.socketId)} title="Faire clignoter cet écran pour le repérer">🔦 Identifier</button>
