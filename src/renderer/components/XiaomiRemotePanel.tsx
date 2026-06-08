@@ -21,6 +21,7 @@ const CLIENT_TYPE_LABELS: Record<string, string> = {
   public: 'Public',
   pool: 'Poules',
   dashboard: 'Dashboard',
+  referee: 'Arbitre',
 };
 
 function getOnlineStatus(lastSeen: string): 'online' | 'warn' | 'offline' {
@@ -44,6 +45,10 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 function clientDisplayUrl(base: string, client: ConnectedClient): string {
+  if (client.clientType === 'referee') {
+    const num = client.arenaId ? client.arenaId.replace('arena', '') : '1';
+    return `${base}/arene${num}/arbitre`;
+  }
   if (client.clientType === 'lobby' || !client.arenaId) return `${base}/lobby`;
   const num = client.arenaId.replace('arena', '');
   return `${base}/arene${num}`;
@@ -52,7 +57,7 @@ function clientDisplayUrl(base: string, client: ConnectedClient): string {
 function clientLabel(client: ConnectedClient): string {
   if (client.label) return client.label;
   const type = CLIENT_TYPE_LABELS[client.clientType] ?? client.clientType;
-  if (client.clientType === 'arena' && client.arenaId) {
+  if ((client.clientType === 'arena' || client.clientType === 'referee') && client.arenaId) {
     const num = client.arenaId.replace('arena', '');
     return `${type} ${num}`;
   }
@@ -288,6 +293,20 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
                       <option value={`${base}/lobby`}>Lobby</option>
                       {Array.from({ length: arenaCount }, (_, i) => (
                         <option key={i + 1} value={`${base}/arene${i + 1}`}>Arène {i + 1}</option>
+                      ))}
+                    </select>
+                  )}
+
+                  {/* Affecter à (tablette arbitre) */}
+                  {client.clientType === 'referee' && (
+                    <select
+                      value={clientDisplayUrl(base, client)}
+                      onChange={e => sendCmd(client.socketId, { type: 'navigate', url: e.target.value })}
+                      style={{ padding: '0.2rem 0.3rem', fontSize: '0.75rem', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '5px', color: 'inherit', maxWidth: '120px' }}
+                      title="Affecter l'arbitre à une arène…"
+                    >
+                      {Array.from({ length: arenaCount }, (_, i) => (
+                        <option key={i + 1} value={`${base}/arene${i + 1}/arbitre`}>Arène {i + 1}</option>
                       ))}
                     </select>
                   )}

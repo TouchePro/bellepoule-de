@@ -119,7 +119,7 @@ export class RemoteScoreServer {
   // Registre des clients TV/affichage connectés (télécommande)
   private connectedClients: Map<string, {
     socketId: string;
-    clientType: 'arena' | 'kiosk' | 'public' | 'pool' | 'dashboard';
+    clientType: 'arena' | 'kiosk' | 'public' | 'pool' | 'dashboard' | 'lobby' | 'referee';
     arenaId?: string;
     ip: string;
     userAgent: string;
@@ -2316,7 +2316,7 @@ export class RemoteScoreServer {
 
       // Enregistrement client TV/affichage pour la télécommande
       socket.on('client:register', (data: {
-        clientType: 'arena' | 'kiosk' | 'public' | 'pool' | 'dashboard';
+        clientType: 'arena' | 'kiosk' | 'public' | 'pool' | 'dashboard' | 'lobby' | 'referee';
         arenaId?: string;
         userAgent?: string;
         screenId?: string;
