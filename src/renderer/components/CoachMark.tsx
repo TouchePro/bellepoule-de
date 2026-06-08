@@ -3,30 +3,18 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 
 interface CoachMarkProps {
-  id: string;
+  id?: string;
   message: string;
   position?: 'top' | 'bottom' | 'left' | 'right';
   children: React.ReactNode;
 }
 
-const CoachMark: React.FC<CoachMarkProps> = ({ id, message, position = 'bottom', children }) => {
-  const key = `bellepoule-coach-${id}`;
-  const [visible, setVisible] = useState(() => localStorage.getItem(key) !== 'seen');
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (!visible) return;
-    timerRef.current = setTimeout(() => dismiss(), 6000);
-    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, [visible]);
-
-  const dismiss = () => {
-    localStorage.setItem(key, 'seen');
-    setVisible(false);
-  };
+const CoachMark: React.FC<CoachMarkProps> = ({ message, position = 'bottom', children }) => {
+  // Sous-titre affiché uniquement au survol / focus du bouton
+  const [visible, setVisible] = useState(false);
 
   const tooltipStyle: React.CSSProperties = {
     position: 'absolute',
@@ -54,17 +42,13 @@ const CoachMark: React.FC<CoachMarkProps> = ({ id, message, position = 'bottom',
   };
 
   return (
-    <div style={{ position: 'relative', display: 'inline-flex' }} onClick={visible ? dismiss : undefined}>
-      {visible && (
-        <span style={{
-          position: 'absolute', inset: '-4px',
-          borderRadius: '0.5rem',
-          border: '2px solid #3b82f6',
-          animation: 'coach-pulse 1.5s ease-in-out infinite',
-          pointerEvents: 'none',
-          zIndex: 9998,
-        }} />
-      )}
+    <div
+      style={{ position: 'relative', display: 'inline-flex' }}
+      onMouseEnter={() => setVisible(true)}
+      onMouseLeave={() => setVisible(false)}
+      onFocus={() => setVisible(true)}
+      onBlur={() => setVisible(false)}
+    >
       {children}
       {visible && (
         <div style={tooltipStyle}>
