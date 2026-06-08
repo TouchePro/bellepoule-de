@@ -391,6 +391,14 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         b.matches.some(idMatches)
       );
 
+      // DIAGNOSTIC (visible en prod, niveau WARN) : tracer le routage du score distant.
+      logger.warn(
+        LogCategory.UI,
+        `[applyRemoteScore] match=${matchId} score=${scoreA}-${scoreB} fini=${finished} ` +
+          `→ tableau=${inTableau} consolante=${inConsolation} | ` +
+          `ids tableau=[${tableauMatchesRef.current.map(m => m.id).join(',')}]`
+      );
+
       if (inTableau) {
         setTableauMatches(prev => {
           const idx = prev.findIndex(idMatches);
@@ -425,6 +433,10 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
       // Match de poule uniquement s'il n'est pas dans le tableau/consolante
       if (!inTableau && !inConsolation) {
+        logger.warn(
+          LogCategory.UI,
+          `[applyRemoteScore] match=${matchId} routé vers POULES (non trouvé en tableau/consolante)`
+        );
         updateMatchFromRemote(matchId, scoreA, scoreB, status, winnerOverride);
       }
     },
@@ -474,10 +486,10 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       winner?: 'A' | 'B';
       isTableau?: boolean;
     }) => {
-      const { matchId, scoreA, scoreB, winner: winnerOverride } = data;
-      logger.debug(
+      const { matchId, scoreA, scoreB, winner: winnerOverride, isTableau } = data;
+      logger.warn(
         LogCategory.UI,
-        `[CompetitionView] Match terminé reçu: ${matchId} - Score: ${scoreA}-${scoreB}`
+        `[CompetitionView] match:finished REÇU matchId=${matchId} score=${scoreA}-${scoreB} tableau=${!!isTableau}`
       );
       applyRemoteScore(matchId, scoreA, scoreB, true, winnerOverride);
     };

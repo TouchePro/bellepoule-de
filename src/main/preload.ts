@@ -547,7 +547,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('arena:update', handler);
   },
   onRemoteMatchFinished: (callback: (data: any) => void) => {
-    const handler = (_: any, data: any) => callback(data);
+    const handler = (_: any, data: any) => {
+      // DIAGNOSTIC : confirmer que l'IPC match:finished atteint bien le renderer.
+      console.warn('[preload] IPC match:finished reçu', data?.matchId, data?.scoreA, data?.scoreB, 'tableau=', data?.isTableau);
+      callback(data);
+    };
     ipcRenderer.on('match:finished', handler);
     return () => ipcRenderer.removeListener('match:finished', handler);
   },
