@@ -444,9 +444,9 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}
           onClick={e => { if (e.target === e.currentTarget) setKioskTarget(null); }}
         >
-          <div style={{ background: 'var(--bg-card, #1e293b)', border: '1px solid var(--border-color, rgba(255,255,255,0.1))', borderRadius: '12px', width: '360px', maxWidth: '94vw', padding: '1.25rem' }}>
+          <div style={{ background: 'var(--color-surface, #1e293b)', color: 'var(--color-text, #f1f5f9)', border: '1px solid var(--color-border, rgba(255,255,255,0.1))', borderRadius: '12px', width: '360px', maxWidth: '94vw', padding: '1.25rem' }}>
             <div style={{ fontWeight: 600, fontSize: '1rem', marginBottom: '0.85rem' }}>🖥️ Configurer le mode kiosk</div>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted, #94a3b8)', marginBottom: '0.5rem' }}>Vues à afficher :</div>
+            <div style={{ fontSize: '0.82rem', color: 'var(--color-text-light, #94a3b8)', marginBottom: '0.5rem' }}>Vues à afficher :</div>
             {KIOSK_VIEWS.map(({ key, label }) => (
               <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.3rem 0', cursor: 'pointer' }}>
                 <input
@@ -458,14 +458,14 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
               </label>
             ))}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem' }}>
-              <label style={{ fontSize: '0.82rem', color: 'var(--text-muted, #94a3b8)', whiteSpace: 'nowrap' }}>Rotation (s) :</label>
+              <label style={{ fontSize: '0.82rem', color: 'var(--color-text-light, #94a3b8)', whiteSpace: 'nowrap' }}>Rotation (s) :</label>
               <input
                 type="number"
                 min={3}
                 max={300}
                 value={kioskConfig.rotationSec}
                 onChange={e => setKioskConfig(c => ({ ...c, rotationSec: Math.max(3, parseInt(e.target.value) || 15) }))}
-                style={{ width: '5rem', padding: '0.3rem 0.5rem', borderRadius: '5px', border: '1px solid var(--border-color, rgba(255,255,255,0.15))', background: 'var(--bg-secondary, rgba(255,255,255,0.06))', color: 'inherit' }}
+                style={{ width: '5rem', padding: '0.3rem 0.5rem', borderRadius: '5px', border: '1px solid var(--color-border, rgba(255,255,255,0.15))', background: 'var(--color-bg, rgba(255,255,255,0.06))', color: 'inherit' }}
               />
             </div>
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
