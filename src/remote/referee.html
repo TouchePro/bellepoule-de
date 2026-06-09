@@ -1606,6 +1606,12 @@
           this.offlineQueue = new OfflineQueueInline();
           this.ttsEnabled = false;
           this._ttsAnnouncedSeconds = new Set();
+          // Config TTS poussée depuis les paramètres globaux de l'application
+          this.ttsConfig = {
+            voiceName: null,
+            rate: 1.1,
+            announce: { '60': true, '30': true, '10': true, '5': true, 'countdown': true, '0': true },
+          };
 
           this.init();
         }
@@ -1640,6 +1646,11 @@
               }
             }
             })
+            .catch(() => {});
+          // Config TTS (voix + paliers annoncés) depuis les paramètres globaux
+          fetch('/api/tts-config')
+            .then(r => (r.ok ? r.json() : null))
+            .then(c => { if (c) this.applyTtsConfig(c); })
             .catch(() => {});
           // Service Worker PWA
           if ('serviceWorker' in navigator) {
@@ -1921,6 +1932,9 @@
             _screenId = 'scr_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
             localStorage.setItem('bp_screen_id', _screenId);
           }
+
+          // Mise à jour live de la config TTS depuis les paramètres globaux
+          this.socket.on('tts:update', d => { if (d) this.applyTtsConfig(d); });
 
           this.socket.on('connect', () => {
             this.updateConnectionStatus(true);
@@ -2793,13 +2807,29 @@
           if (this.ttsEnabled) this.ttsSpeak('Minuteur vocal activé');
         }
 
+        // Fusionne une config TTS partielle reçue du serveur dans la config locale
+        applyTtsConfig(c) {
+          if (!c || typeof c !== 'object') return;
+          if (typeof c.voiceName === 'string' || c.voiceName === null) this.ttsConfig.voiceName = c.voiceName;
+          if (typeof c.rate === 'number' && c.rate > 0) this.ttsConfig.rate = c.rate;
+          if (c.announce && typeof c.announce === 'object') {
+            this.ttsConfig.announce = { ...this.ttsConfig.announce, ...c.announce };
+          }
+        }
+
         ttsSpeak(text) {
           if (!this.ttsEnabled || !window.speechSynthesis) return;
           window.speechSynthesis.cancel();
           const utt = new SpeechSynthesisUtterance(text);
           const lang = (document.documentElement.lang || 'fr').toLowerCase();
           utt.lang = lang.startsWith('de') ? 'de-DE' : lang.startsWith('en') ? 'en-GB' : 'fr-FR';
-          utt.rate = 1.1;
+          // Voix choisie dans les paramètres globaux (sinon voix par défaut de la langue)
+          const wanted = this.ttsConfig.voiceName;
+          if (wanted && window.speechSynthesis.getVoices) {
+            const v = window.speechSynthesis.getVoices().find(x => x.name === wanted);
+            if (v) { utt.voice = v; utt.lang = v.lang; }
+          }
+          utt.rate = this.ttsConfig.rate || 1.1;
           utt.volume = 1.0;
           window.speechSynthesis.speak(utt);
         }
@@ -2818,6 +2848,16 @@
             5:  '5', 4: '4', 3: '3', 2: '2', 1: '1',
             0:  isFr ? 'Halte !' : isEn ? 'Stop!' : 'Halt!',
           };
+          // Quel palier (clé de config announce) correspond à cette seconde ?
+          const a = this.ttsConfig.announce || {};
+          let key = null;
+          if (s === 60) key = '60';
+          else if (s === 30) key = '30';
+          else if (s === 10) key = '10';
+          else if (s === 5) key = '5';
+          else if (s >= 1 && s <= 4) key = 'countdown';
+          else if (s === 0) key = '0';
+          if (key && a[key] === false) { this._ttsAnnouncedSeconds.add(s); return; }
           if (s in THRESHOLDS) {
             this._ttsAnnouncedSeconds.add(s);
             this.ttsSpeak(THRESHOLDS[s]);
