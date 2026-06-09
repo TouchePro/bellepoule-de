@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, Wrench, Wifi, Tv2, Swords, Target, Zap, Trophy } from 'lucide-react';
 import { Competition, MatchStatus, QuestPhaseConfig, Fencer } from '../../../shared/types';
 import { Phase } from '../../hooks/useCompetitionSession';
 import CoachMark from '../CoachMark';
@@ -118,33 +119,33 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
             <span>{phase.label}</span>
           </div>
           {index < phases.length - 1 && (
-            <div style={{ display: 'flex', alignItems: 'center', color: '#9CA3AF' }}>→</div>
+            <div className={`phase-step-connector${!phase.disabled && !phases[index + 1]?.disabled ? ' connector-done' : ''}`} />
           )}
         </React.Fragment>
       ))}
       <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
         {currentPhase !== 'checkin' && (
-          <button className="btn btn-secondary" onClick={handleGoBack}>
-            ← Retour
+          <button className="btn btn-secondary btn-icon-label" onClick={handleGoBack}>
+            <ChevronLeft size={15} /> Retour
           </button>
         )}
         {currentPhase === 'checkin' && questEnabled && !questConfig?.hasPreliminaryPools && (
           <button
-            className="btn btn-primary"
+            className="btn btn-primary btn-icon-label"
             onClick={() => setCurrentPhase('quest')}
             disabled={getCheckedInFencers().length < 2}
           >
-            Tour Quest →
+            Tour Quest <ChevronRight size={15} />
           </button>
         )}
         {currentPhase === 'checkin' && (!questEnabled || questConfig?.hasPreliminaryPools) && (
           <CoachMark id="generate-pools" message="Cliquez ici après avoir pointé tous vos tireurs" position="bottom">
             <button
-              className="btn btn-primary"
+              className="btn btn-primary btn-icon-label"
               onClick={handleGeneratePools}
               disabled={getCheckedInFencers().length < 4}
             >
-              Générer les poules →
+              Générer les poules <ChevronRight size={15} />
             </button>
           </CoachMark>
         )}
@@ -158,13 +159,13 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
         <div ref={toolsMenuRef} style={{ position: 'relative' }}>
           <button
             ref={toolsBtnRef}
-            className="btn btn-secondary"
+            className="btn btn-secondary btn-icon-label"
             onClick={() => setShowToolsMenu(v => !v)}
             title="Outils"
             aria-haspopup="true"
             aria-expanded={showToolsMenu}
           >
-            🔧 Outils
+            <Wrench size={15} /> Outils
           </button>
           {showToolsMenu && (
             <div
@@ -185,16 +186,16 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
               <button
                 className="comp-header-dropdown-item"
                 onClick={() => { setShowWifiQR(true); setShowToolsMenu(false); }}
-                style={{ width: '100%', textAlign: 'left' }}
+                style={{ width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
               >
-                📶 QR Code WiFi
+                <Wifi size={15} /> QR Code WiFi
               </button>
               <button
                 className="comp-header-dropdown-item"
                 onClick={() => { setShowTVRemote(true); setShowToolsMenu(false); }}
-                style={{ width: '100%', textAlign: 'left' }}
+                style={{ width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
               >
-                📺 Télécommande TV
+                <Tv2 size={15} /> Télécommande TV
               </button>
             </div>
           )}
@@ -206,19 +207,19 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
     {(pools.length > 0 || tableauMatches.length > 0 || fencers.length > 0) && (
       <div className="comp-stats-bar">
         <div className="comp-stats-bar-item">
-          <span className="comp-stats-bar-icon">🤺</span>
+          <span className="comp-stats-bar-icon"><Swords size={13} /></span>
           <span>{getCheckedInFencers().length}/{fencers.length} tireurs</span>
         </div>
         {pools.length > 0 && (
           <>
             <div className="comp-stats-bar-sep" />
             <div className="comp-stats-bar-item">
-              <span className="comp-stats-bar-icon">🎯</span>
+              <span className="comp-stats-bar-icon"><Target size={13} /></span>
               <span>{pools.filter(p => p.isComplete).length}/{pools.length} poules</span>
             </div>
             <div className="comp-stats-bar-sep" />
             <div className="comp-stats-bar-item">
-              <span className="comp-stats-bar-icon">⚡</span>
+              <span className="comp-stats-bar-icon"><Zap size={13} /></span>
               <span>
                 {pools.reduce((s, p) => s + p.matches.filter(m => m.status === MatchStatus.FINISHED).length, 0)}/
                 {pools.reduce((s, p) => s + p.matches.length, 0)} matchs
@@ -230,7 +231,7 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
           <>
             <div className="comp-stats-bar-sep" />
             <div className="comp-stats-bar-item">
-              <span className="comp-stats-bar-icon">🏆</span>
+              <span className="comp-stats-bar-icon"><Trophy size={13} /></span>
               <span>
                 {tableauMatches.filter(m => m.winner !== null).length}/
                 {tableauMatches.filter(m => m.fencerA && m.fencerB).length} tableau
