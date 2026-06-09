@@ -75,6 +75,16 @@ export class RemoteScoreServer {
   private orgNote: OrgNote | null = null; // Note d'organisation affichée sur le kiosk
   private sessionLogo: string | null = null; // Logo organisateur (base64) pour kiosk et affichages publics
   private sessionWallpaper: string | null = null; // Fond d'écran (base64) affiché sur les arènes en attente
+  // Config TTS (minuteur vocal) poussée aux tablettes d'arbitrage depuis les paramètres globaux
+  private ttsConfig: {
+    voiceName: string | null;
+    rate: number;
+    announce: Record<string, boolean>;
+  } = {
+    voiceName: null,
+    rate: 1.1,
+    announce: { '60': true, '30': true, '10': true, '5': true, countdown: true, '0': true },
+  };
   private currentLang: string = 'fr'; // Langue courante de l'interface (fr, en, zh-HK, ...)
   private sessionKioskViews: {
     poules: boolean;
@@ -474,6 +484,11 @@ export class RemoteScoreServer {
 
     this.app.get('/api/wallpaper', (req, res) => {
       res.json({ wallpaper: this.sessionWallpaper });
+    });
+
+    // Config TTS (minuteur vocal) pour les tablettes d'arbitrage
+    this.app.get('/api/tts-config', (req, res) => {
+      res.json(this.ttsConfig);
     });
 
     // Arena routes
@@ -4709,6 +4724,17 @@ export class RemoteScoreServer {
   public setLogo(logo: string | null): void {
     this.sessionLogo = logo;
     this.io.emit('logo:update', { logo });
+  }
+
+  public setTtsConfig(config: {
+    voiceName?: string | null;
+    rate?: number;
+    announce?: Record<string, boolean>;
+  }): void {
+    if (config.voiceName !== undefined) this.ttsConfig.voiceName = config.voiceName;
+    if (typeof config.rate === 'number' && config.rate > 0) this.ttsConfig.rate = config.rate;
+    if (config.announce) this.ttsConfig.announce = { ...this.ttsConfig.announce, ...config.announce };
+    this.io.emit('tts:update', this.ttsConfig);
   }
 
   public setWallpaper(wallpaper: string | null): void {

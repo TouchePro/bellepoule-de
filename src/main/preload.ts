@@ -514,6 +514,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('remote:updateArenaTheme', competitionId, arenaId, theme, customTheme),
     setWebhookUrl: (url: string | null) => ipcRenderer.invoke('remote:setWebhookUrl', url),
     updateLogo: (logo: string | null) => ipcRenderer.invoke('remote:updateLogo', logo),
+    setTtsConfig: (config: unknown) => ipcRenderer.invoke('remote:setTtsConfig', config),
     setWallpaper: (competitionId: string, wallpaper: string | null) =>
       ipcRenderer.invoke('remote:setWallpaper', competitionId, wallpaper),
     changePort: (competitionId: string, newPort: number) =>
@@ -594,6 +595,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 
   getLogo: () => ipcRenderer.invoke('app:getLogo'),
+  getTtsConfig: () => ipcRenderer.invoke('app:getTtsConfig'),
   onLogoLoaded: (callback: (logo: string | null) => void) => {
     const handler = (_: any, logo: string | null) => callback(logo);
     ipcRenderer.on('app:logoLoaded', handler);

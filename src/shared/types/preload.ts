@@ -21,6 +21,13 @@ import {
 // Re-export Pool for preload
 export type { Pool } from '../types';
 
+// Config TTS (minuteur vocal) des tablettes d'arbitrage, réglée dans les paramètres globaux
+export interface TtsConfig {
+  voiceName: string | null; // Nom de la voix (SpeechSynthesisVoice.name) ; null = voix par défaut de la langue
+  rate: number; // Vitesse d'élocution (0.5 – 2)
+  announce: Record<string, boolean>; // Paliers annoncés : '60','30','10','5','countdown','0'
+}
+
 // ============================================================================
 // Database API Types
 // ============================================================================
@@ -436,6 +443,7 @@ export interface RemoteServerAPI {
   ) => Promise<{ success: boolean; error?: string }>;
   setWebhookUrl: (url: string | null) => Promise<{ success: boolean; error?: string }>;
   updateLogo: (logo: string | null) => Promise<{ success: boolean; error?: string }>;
+  setTtsConfig: (config: TtsConfig) => Promise<{ success: boolean; error?: string }>;
   setWallpaper: (
     competitionId: string,
     wallpaper: string | null
@@ -785,5 +793,6 @@ export interface ElectronAPI extends MenuAPI, UtilityAPI {
   onPoolSignatureUpdated: (callback: (data: { poolId: string; signedFencerIds: string[]; totalFencers: number }) => void) => () => void;
   notifyLanguageChanged: (lang: string) => void;
   getLogo: () => Promise<string | null>;
+  getTtsConfig: () => Promise<TtsConfig | null>;
   onLogoLoaded: (callback: (logo: string | null) => void) => () => void;
 }

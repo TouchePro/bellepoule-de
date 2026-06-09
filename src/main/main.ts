@@ -1520,6 +1520,16 @@ ipcMain.handle('remote:startServer', async (_event, competitionId: string, port?
     remoteServers.set(competitionId, { server, port: effectivePort, host: effectiveHost });
     usedPorts.add(effectivePort);
 
+    // Appliquer la config TTS persistée aux tablettes de ce nouveau serveur
+    try {
+      const ttsPath = path.join(app.getPath('userData'), 'tts-config.json');
+      if (fs.existsSync(ttsPath)) {
+        server.setTtsConfig(JSON.parse(fs.readFileSync(ttsPath, 'utf-8')));
+      }
+    } catch {
+      /* config TTS optionnelle */
+    }
+
     (global as any).mainWindow = mainWindow;
 
     return {
@@ -2026,6 +2036,28 @@ ipcMain.handle('remote:setClientKioskMode', async (_, competitionId: string, soc
     return { success: true };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
+ipcMain.handle('remote:setTtsConfig', async (_, config: unknown) => {
+  try {
+    const ttsPath = path.join(app.getPath('userData'), 'tts-config.json');
+    fs.writeFileSync(ttsPath, JSON.stringify(config), 'utf-8');
+    for (const { server } of remoteServers.values()) {
+      server.setTtsConfig(config as any);
+    }
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
+ipcMain.handle('app:getTtsConfig', async () => {
+  const ttsPath = path.join(app.getPath('userData'), 'tts-config.json');
+  try {
+    return JSON.parse(fs.readFileSync(ttsPath, 'utf-8'));
+  } catch {
+    return null;
   }
 });
 
