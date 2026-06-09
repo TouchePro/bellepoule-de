@@ -199,14 +199,15 @@ const FencerListComponent: React.FC<FencerListProps> = ({
 
   const useVirtual = filteredFencers.length > VIRTUAL_THRESHOLD;
 
-  const checkedInCount = useMemo(
-    () => fencers.filter(f => f.status === FencerStatus.CHECKED_IN).length,
-    [fencers]
-  );
-  const notCheckedInCount = useMemo(
-    () => fencers.filter(f => f.status === FencerStatus.NOT_CHECKED_IN).length,
-    [fencers]
-  );
+  const { checkedInCount, notCheckedInCount } = useMemo(() => {
+    let checkedIn = 0;
+    let notCheckedIn = 0;
+    for (const f of fencers) {
+      if (f.status === FencerStatus.CHECKED_IN) checkedIn++;
+      else if (f.status === FencerStatus.NOT_CHECKED_IN) notCheckedIn++;
+    }
+    return { checkedInCount: checkedIn, notCheckedInCount: notCheckedIn };
+  }, [fencers]);
 
   const handleEditSave = (id: string, updates: Partial<Fencer>) => {
     if (onEditFencer) {

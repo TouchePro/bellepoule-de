@@ -425,6 +425,7 @@ export function distributeFencersToPoolsSerpentine(
     );
   }
   const pools: Fencer[][] = Array.from({ length: poolCount }, () => []);
+  const indexes = createPoolIndexes(pools);
 
   // Trier les tireurs par classement (meilleur classement = premier, non-classés = derniers)
   const pending = [...fencers].sort((a, b) => (a.ranking ?? 99999) - (b.ranking ?? 99999));
@@ -441,14 +442,16 @@ export function distributeFencersToPoolsSerpentine(
     let chosen = 0;
     if (separation.byClub || separation.byRegion || separation.byNation) {
       for (let i = 0; i < pending.length; i++) {
-        if (!hasConflictWith(pending[i], pool, separation)) {
+        if (!hasConflictWith(pending[i], indexes[poolIndex], separation)) {
           chosen = i;
           break;
         }
       }
     }
 
-    pool.push(pending.splice(chosen, 1)[0]);
+    const picked = pending.splice(chosen, 1)[0];
+    pool.push(picked);
+    indexAddFencer(indexes[poolIndex], picked);
 
     poolIndex += direction;
     if (poolIndex >= poolCount) {
@@ -461,7 +464,7 @@ export function distributeFencersToPoolsSerpentine(
   }
 
   // Rééquilibrer les poules pour assurer un nombre égal (ou presque égal) de tireurs
-  rebalancePools(pools, separation);
+  rebalancePools(pools, separation, indexes);
 
   // Tirage au sort des positions dans la poule (FIE §3)
   for (const pool of pools) {
@@ -475,32 +478,60 @@ export function distributeFencersToPoolsSerpentine(
 }
 
 /**
+ * Index multiensemble (valeur → occurrences) des clubs/régions/nations d'une poule,
+ * pour vérifier les conflits en O(1) au lieu de scanner la poule à chaque test.
+ * Les nations conservent les valeurs vides/undefined (égalité brute, cf. rééquilibrage).
+ */
+interface PoolConflictIndex {
+  clubs: Map<string, number>;
+  regions: Map<string, number>;
+  nations: Map<string | undefined, number>;
+}
+
+function indexAdd<K>(map: Map<K, number>, key: K): void {
+  map.set(key, (map.get(key) ?? 0) + 1);
+}
+
+function indexRemove<K>(map: Map<K, number>, key: K): void {
+  const count = map.get(key);
+  if (count === undefined) return;
+  if (count > 1) map.set(key, count - 1);
+  else map.delete(key);
+}
+
+function indexAddFencer(index: PoolConflictIndex, fencer: Fencer): void {
+  if (fencer.club) indexAdd(index.clubs, fencer.club);
+  if (fencer.region) indexAdd(index.regions, fencer.region);
+  indexAdd(index.nations, fencer.nationality);
+}
+
+function indexRemoveFencer(index: PoolConflictIndex, fencer: Fencer): void {
+  if (fencer.club) indexRemove(index.clubs, fencer.club);
+  if (fencer.region) indexRemove(index.regions, fencer.region);
+  indexRemove(index.nations, fencer.nationality);
+}
+
+function createPoolIndexes(pools: Fencer[][]): PoolConflictIndex[] {
+  return pools.map(pool => {
+    const index: PoolConflictIndex = { clubs: new Map(), regions: new Map(), nations: new Map() };
+    for (const fencer of pool) indexAddFencer(index, fencer);
+    return index;
+  });
+}
+
+/**
  * Vérifie si un tireur crée un conflit (club/région/nation) avec une poule existante.
  */
 function hasConflictWith(
   fencer: Fencer,
-  pool: Fencer[],
+  index: PoolConflictIndex,
   separation: { byClub: boolean; byRegion: boolean; byNation: boolean }
 ): boolean {
-  return pool.some(existing => {
-    if (separation.byClub && fencer.club && fencer.club !== '' && fencer.club === existing.club)
-      return true;
-    if (
-      separation.byRegion &&
-      fencer.region &&
-      fencer.region !== '' &&
-      fencer.region === existing.region
-    )
-      return true;
-    if (
-      separation.byNation &&
-      fencer.nationality &&
-      fencer.nationality !== '' &&
-      fencer.nationality === existing.nationality
-    )
-      return true;
-    return false;
-  });
+  if (separation.byClub && fencer.club && index.clubs.has(fencer.club)) return true;
+  if (separation.byRegion && fencer.region && index.regions.has(fencer.region)) return true;
+  if (separation.byNation && fencer.nationality && index.nations.has(fencer.nationality))
+    return true;
+  return false;
 }
 
 /**
@@ -509,7 +540,8 @@ function hasConflictWith(
  */
 function rebalancePools(
   pools: Fencer[][],
-  separation: { byClub: boolean; byRegion: boolean; byNation: boolean }
+  separation: { byClub: boolean; byRegion: boolean; byNation: boolean },
+  indexes: PoolConflictIndex[] = createPoolIndexes(pools)
 ): void {
   const poolCount = pools.length;
   if (poolCount === 0) return;
@@ -517,7 +549,6 @@ function rebalancePools(
   // Calculer la taille idéale
   const totalFencers = pools.reduce((sum, pool) => sum + pool.length, 0);
   const idealSize = Math.floor(totalFencers / poolCount);
-  const maxSize = idealSize + (totalFencers % poolCount > 0 ? 1 : 0);
 
   let rebalanced = true;
   let iterations = 0;
@@ -530,15 +561,15 @@ function rebalancePools(
     // Trouver les poules sources (> idealSize) et sous-chargées (< idealSize)
     // On utilise idealSize comme seuil source (pas maxSize) pour corriger les cas où
     // toutes les poules sont à maxSize mais certaines restent sous idealSize
-    const overloaded = pools
-      .map((pool, idx) => ({ idx, pool, size: pool.length }))
-      .filter(p => p.size > idealSize)
-      .sort((a, b) => b.size - a.size);
-
-    const underloaded = pools
-      .map((pool, idx) => ({ idx, pool, size: pool.length }))
-      .filter(p => p.size < idealSize)
-      .sort((a, b) => a.size - b.size);
+    const overloaded: { idx: number; pool: Fencer[]; size: number }[] = [];
+    const underloaded: { idx: number; pool: Fencer[]; size: number }[] = [];
+    pools.forEach((pool, idx) => {
+      const size = pool.length;
+      if (size > idealSize) overloaded.push({ idx, pool, size });
+      else if (size < idealSize) underloaded.push({ idx, pool, size });
+    });
+    overloaded.sort((a, b) => b.size - a.size);
+    underloaded.sort((a, b) => a.size - b.size);
 
     if (overloaded.length === 0 || underloaded.length === 0) break;
 
@@ -546,27 +577,25 @@ function rebalancePools(
     for (const source of overloaded) {
       for (const target of underloaded) {
         if (source.size <= idealSize || target.size >= idealSize) continue;
+        const targetIndex = indexes[target.idx];
 
         // Chercher un tireur à déplacer qui ne crée pas de conflit
         for (let i = source.pool.length - 1; i >= 0; i--) {
           const fencer = source.pool[i];
 
           // Vérifier que le déplacement ne crée pas de conflit sur les critères actifs
-          const clubVal = fencer.club ?? '';
-          const regionVal = fencer.region ?? '';
+          // (nation : égalité brute, y compris valeurs vides — comportement historique)
           const wouldCreateConflict =
-            (separation.byClub &&
-              clubVal !== '' &&
-              target.pool.some(f => (f.club ?? '') === clubVal)) ||
-            (separation.byRegion &&
-              regionVal !== '' &&
-              target.pool.some(f => (f.region ?? '') === regionVal)) ||
-            (separation.byNation && target.pool.some(f => f.nationality === fencer.nationality));
+            (separation.byClub && !!fencer.club && targetIndex.clubs.has(fencer.club)) ||
+            (separation.byRegion && !!fencer.region && targetIndex.regions.has(fencer.region)) ||
+            (separation.byNation && targetIndex.nations.has(fencer.nationality));
 
           if (!wouldCreateConflict) {
             // Déplacer le tireur
             source.pool.splice(i, 1);
             target.pool.push(fencer);
+            indexRemoveFencer(indexes[source.idx], fencer);
+            indexAddFencer(targetIndex, fencer);
             source.size--;
             target.size++;
             rebalanced = true;

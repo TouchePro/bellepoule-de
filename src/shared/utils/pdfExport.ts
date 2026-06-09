@@ -314,12 +314,13 @@ export function generatePoolHTML(pool: Pool, options: PoolExportOptions, templat
       </tr>`;
   }).join('');
 
+  const matchIndexById = new Map(matches.map((m, i) => [m.id, i + 1]));
   const pending = matches.filter(m => m.status !== MatchStatus.FINISHED);
   const pendingSection = pending.length === 0 ? '' : `
     <div class="section-label">Matchs à jouer (${pending.length})</div>
     <div class="match-grid">
       ${pending.map(m => {
-        const idx = matches.indexOf(m) + 1;
+        const idx = matchIndexById.get(m.id) ?? 0;
         const rA = rankMap.get(m.fencerA?.id ?? '')?.rank ?? '?';
         const rB = rankMap.get(m.fencerB?.id ?? '')?.rank ?? '?';
         return `<div class="match-item match-pending">${idx}. (${rA}) ${m.fencerA?.lastName ?? '?'} — (${rB}) ${m.fencerB?.lastName ?? '?'}</div>`;
@@ -331,7 +332,7 @@ export function generatePoolHTML(pool: Pool, options: PoolExportOptions, templat
     <div class="section-label" style="margin-top:4mm">Résultats (${finished.length})</div>
     <div class="match-grid match-grid-2col">
       ${finished.map(m => {
-        const idx = matches.indexOf(m) + 1;
+        const idx = matchIndexById.get(m.id) ?? 0;
         const sA = m.scoreA?.isVictory ? `V${m.scoreA.value}` : `${m.scoreA?.value ?? 0}`;
         const sB = m.scoreB?.isVictory ? `V${m.scoreB.value}` : `${m.scoreB?.value ?? 0}`;
         return `<div class="match-item match-done">${idx}. ${m.fencerA?.lastName ?? '?'} <b>${sA}–${sB}</b> ${m.fencerB?.lastName ?? '?'}</div>`;
@@ -523,8 +524,6 @@ export async function exportMultiplePoolsToPDF(
   }
 }
 
-export const exportOptimizedPoolToPDF = exportPoolToPDF;
-
 // ─── Export Tableau Élimination Directe ──────────────────────────────────────
 
 export interface TableauMatchForPDF {
@@ -542,6 +541,11 @@ export interface TableauMatchForPDF {
 
 export { MAX_MATCHES_PER_PAGE_TABLEAU } from './pdfConstants';
 import { MAX_MATCHES_PER_PAGE_TABLEAU } from './pdfConstants';
+
+/** Matchs réels (non-exempts, deux tireurs assignés). */
+function realMatches(matches: TableauMatchForPDF[]): TableauMatchForPDF[] {
+  return matches.filter(m => !m.isBye && m.fencerA && m.fencerB);
+}
 
 function getTableauRoundName(round: number): string {
   const names: Record<number, string> = {
@@ -565,7 +569,7 @@ export function generateTableauHTML(
   template?: PdfTemplate,
   showScores = false
 ): string {
-  const real = matches.filter(m => !m.isBye && m.fencerA && m.fencerB);
+  const real = realMatches(matches);
   const now = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
 
   const renderMatchCard = (match: TableauMatchForPDF, num: number): string => {
@@ -870,7 +874,7 @@ export async function exportTableauToPDF(
   logoBase64?: string,
   template?: PdfTemplate
 ): Promise<void> {
-  const real = matches.filter(m => !m.isBye && m.fencerA && m.fencerB);
+  const real = realMatches(matches);
   if (real.length === 0) {
     throw new Error('Aucun match à exporter (tous sont des exempts ou sans tireurs assignés)');
   }
@@ -886,7 +890,7 @@ export async function printTableauHTML(
   logoBase64?: string,
   template?: PdfTemplate
 ): Promise<void> {
-  const real = matches.filter(m => !m.isBye && m.fencerA && m.fencerB);
+  const real = realMatches(matches);
   if (real.length === 0) {
     throw new Error('Aucun match à imprimer (tous sont des exempts ou sans tireurs assignés)');
   }

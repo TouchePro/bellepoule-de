@@ -1040,9 +1040,9 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           </button>
           {showFinishedLog && (
           <div style={LOG_WRAP}>
-            {orderedMatches.finished.map(({ match, index }) => (
+            {orderedMatches.finished.map(({ match }) => (
               <button
-                key={index}
+                key={match.id}
                 onClick={() => setAuditMatchId(match.id)}
                 style={LOG_ITEM}
                 title="Voir le journal du match"
