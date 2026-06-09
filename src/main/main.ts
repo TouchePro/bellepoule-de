@@ -626,15 +626,15 @@ function createWindow(): void {
     createMenu(currentMenuLanguage);
 
     // Restore persisted logo and sync to renderer localStorage if not already set
-    try {
-      const logoPath = path.join(app.getPath('userData'), 'logo.dat');
-      if (fs.existsSync(logoPath)) {
-        const logo = fs.readFileSync(logoPath, 'utf-8');
-        if (logo) mainWindow!.webContents.send('app:logoLoaded', logo);
-      }
-    } catch {
-      /* logo optionnel */
-    }
+    const logoPath = path.join(app.getPath('userData'), 'logo.dat');
+    fs.promises
+      .readFile(logoPath, 'utf-8')
+      .then(logo => {
+        if (logo) mainWindow?.webContents.send('app:logoLoaded', logo);
+      })
+      .catch(() => {
+        /* logo optionnel */
+      });
   });
 }
 
@@ -929,7 +929,7 @@ async function handleImport(format: string): Promise<void> {
         // Fichier binaire : envoyer uniquement le chemin, le renderer appellera importFencersArchive
         mainWindow?.webContents.send('menu:import', format, filepath, '');
       } else {
-        const content = fs.readFileSync(filepath, 'utf-8');
+        const content = await fs.promises.readFile(filepath, 'utf-8');
         mainWindow?.webContents.send('menu:import', format, filepath, content);
       }
     } catch (error) {
@@ -1214,6 +1214,22 @@ ipcMain.handle('file:import', async (_, filepath) => {
   await db.importFromFile(filepath);
 });
 
+// Écriture atomique asynchrone (temp + rename) — ne bloque pas le main thread
+async function writeFileAtomic(filepath: string, content: Buffer | string): Promise<void> {
+  const tmpPath = filepath + '.tmp';
+  try {
+    await fs.promises.writeFile(tmpPath, content);
+    try {
+      await fs.promises.rename(tmpPath, filepath);
+    } catch {
+      await fs.promises.writeFile(filepath, content);
+      await fs.promises.unlink(tmpPath).catch(() => {});
+    }
+  } catch {
+    await fs.promises.writeFile(filepath, content);
+  }
+}
+
 // File content write handler
 ipcMain.handle('file:writeContent', async (_, filepath: string, content: string) => {
   if (!filepath || typeof filepath !== 'string' || !path.isAbsolute(filepath)) {
@@ -1224,7 +1240,7 @@ ipcMain.handle('file:writeContent', async (_, filepath: string, content: string)
   if (resolved.startsWith(appDir)) {
     throw new Error('Writing inside app directory is not allowed');
   }
-  fs.writeFileSync(resolved, content, 'utf-8');
+  await fs.promises.writeFile(resolved, content, 'utf-8');
 });
 
 // Photo ZIP export handler
@@ -1242,29 +1258,14 @@ ipcMain.handle('file:exportPhotos', async (_, competitionId: string, filepath: s
   }
 
   const content = await zip.generateAsync({ type: 'nodebuffer' });
-  const tmpPath = filepath + '.tmp';
-  try {
-    fs.writeFileSync(tmpPath, content);
-    try {
-      fs.renameSync(tmpPath, filepath);
-    } catch {
-      fs.writeFileSync(filepath, content);
-      try {
-        fs.unlinkSync(tmpPath);
-      } catch {
-        /* ignore */
-      }
-    }
-  } catch {
-    fs.writeFileSync(filepath, content);
-  }
+  await writeFileAtomic(filepath, content);
 
   return { count: photos.length };
 });
 
 // Photo ZIP import handler
 ipcMain.handle('file:importPhotos', async (_, competitionId: string, filepath: string) => {
-  const buffer = fs.readFileSync(filepath);
+  const buffer = await fs.promises.readFile(filepath);
   const zip = await JSZip.loadAsync(buffer);
 
   const photos: { license: string; photo: string }[] = [];
@@ -1298,28 +1299,13 @@ ipcMain.handle('file:exportFencersArchive', async (_, competitionId: string, fil
   );
   zip.file('fencers.json', JSON.stringify(fencers));
   const content = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
-  const tmpPath = filepath + '.tmp';
-  try {
-    fs.writeFileSync(tmpPath, content);
-    try {
-      fs.renameSync(tmpPath, filepath);
-    } catch {
-      fs.writeFileSync(filepath, content);
-      try {
-        fs.unlinkSync(tmpPath);
-      } catch {
-        /* ignore */
-      }
-    }
-  } catch {
-    fs.writeFileSync(filepath, content);
-  }
+  await writeFileAtomic(filepath, content);
   return { count: fencers.length };
 });
 
 // Fencer archive (.bpf) import handler
 ipcMain.handle('file:importFencersArchive', async (_, competitionId: string, filepath: string) => {
-  const buffer = fs.readFileSync(filepath);
+  const buffer = await fs.promises.readFile(filepath);
   const zip = await JSZip.loadAsync(buffer);
   const fencersFile = zip.file('fencers.json');
   if (!fencersFile) throw new Error('Format .bpf invalide : fencers.json manquant');
@@ -1334,7 +1320,7 @@ ipcMain.handle('dialog:openFile', async (_, options) => {
   if (!result.canceled && result.filePaths.length > 0) {
     const filePath = result.filePaths[0];
     try {
-      const content = fs.readFileSync(filePath, 'utf-8');
+      const content = await fs.promises.readFile(filePath, 'utf-8');
       return { filePath, content };
     } catch (error) {
       console.error('Error reading file:', error);
@@ -1358,15 +1344,14 @@ ipcMain.handle('window:print', async () => {
 
 // Print via hidden BrowserWindow — opens system print dialog on clean HTML
 ipcMain.handle('file:printHtml', async (_, html: string) => {
-  return new Promise<{ success: boolean; error?: string }>(resolve => {
-    const tmpFile = path.join(os.tmpdir(), `bp-print-${Date.now()}.html`);
-    try {
-      fs.writeFileSync(tmpFile, html, 'utf-8');
-    } catch (e) {
-      resolve({ success: false, error: `Impossible de créer le fichier temporaire: ${e}` });
-      return;
-    }
+  const tmpFile = path.join(os.tmpdir(), `bp-print-${Date.now()}.html`);
+  try {
+    await fs.promises.writeFile(tmpFile, html, 'utf-8');
+  } catch (e) {
+    return { success: false, error: `Impossible de créer le fichier temporaire: ${e}` };
+  }
 
+  return new Promise<{ success: boolean; error?: string }>(resolve => {
     const printWin = new BrowserWindow({
       show: false,
       width: 1200,
@@ -1404,15 +1389,14 @@ ipcMain.handle('file:printHtml', async (_, html: string) => {
 
 // PDF generation via hidden BrowserWindow (propre, sans menus d'application)
 ipcMain.handle('file:printHtmlToPDF', async (_, html: string, outputPath: string) => {
-  return new Promise<{ success: boolean; path?: string; error?: string }>(resolve => {
-    const tmpFile = path.join(os.tmpdir(), `bp-pdf-${Date.now()}.html`);
-    try {
-      fs.writeFileSync(tmpFile, html, 'utf-8');
-    } catch (e) {
-      resolve({ success: false, error: `Impossible de créer le fichier temporaire: ${e}` });
-      return;
-    }
+  const tmpFile = path.join(os.tmpdir(), `bp-pdf-${Date.now()}.html`);
+  try {
+    await fs.promises.writeFile(tmpFile, html, 'utf-8');
+  } catch (e) {
+    return { success: false, error: `Impossible de créer le fichier temporaire: ${e}` };
+  }
 
+  return new Promise<{ success: boolean; path?: string; error?: string }>(resolve => {
     const pdfWin = new BrowserWindow({
       show: false,
       width: 1200,
@@ -1437,18 +1421,14 @@ ipcMain.handle('file:printHtmlToPDF', async (_, html: string, outputPath: string
           preferCSSPageSize: true,
           margins: { marginType: 'none' },
         })
-        .then((data: Buffer) => {
+        .then(async (data: Buffer) => {
           try {
-            fs.writeFileSync(outputPath, data);
+            await fs.promises.writeFile(outputPath, data);
             resolve({ success: true, path: outputPath });
           } catch (writeErr) {
             resolve({ success: false, error: `Impossible d'écrire le PDF: ${writeErr}` });
           } finally {
-            try {
-              fs.unlinkSync(tmpFile);
-            } catch {
-              /* ignore */
-            }
+            fs.promises.unlink(tmpFile).catch(() => {});
             pdfWin.destroy();
           }
         })
@@ -1523,9 +1503,7 @@ ipcMain.handle('remote:startServer', async (_event, competitionId: string, port?
     // Appliquer la config TTS persistée aux tablettes de ce nouveau serveur
     try {
       const ttsPath = path.join(app.getPath('userData'), 'tts-config.json');
-      if (fs.existsSync(ttsPath)) {
-        server.setTtsConfig(JSON.parse(fs.readFileSync(ttsPath, 'utf-8')));
-      }
+      server.setTtsConfig(JSON.parse(await fs.promises.readFile(ttsPath, 'utf-8')));
     } catch {
       /* config TTS optionnelle */
     }
@@ -1907,7 +1885,7 @@ ipcMain.handle('remote:updateLogo', async (_, logo: string | null) => {
   try {
     const logoPath = path.join(app.getPath('userData'), 'logo.dat');
     if (logo) {
-      fs.writeFileSync(logoPath, logo, 'utf-8');
+      await fs.promises.writeFile(logoPath, logo, 'utf-8');
     } else {
       try {
         fs.unlinkSync(logoPath);
@@ -2042,7 +2020,7 @@ ipcMain.handle('remote:setClientKioskMode', async (_, competitionId: string, soc
 ipcMain.handle('remote:setTtsConfig', async (_, config: unknown) => {
   try {
     const ttsPath = path.join(app.getPath('userData'), 'tts-config.json');
-    fs.writeFileSync(ttsPath, JSON.stringify(config), 'utf-8');
+    await fs.promises.writeFile(ttsPath, JSON.stringify(config), 'utf-8');
     for (const { server } of remoteServers.values()) {
       server.setTtsConfig(config as any);
     }
@@ -2055,7 +2033,7 @@ ipcMain.handle('remote:setTtsConfig', async (_, config: unknown) => {
 ipcMain.handle('app:getTtsConfig', async () => {
   const ttsPath = path.join(app.getPath('userData'), 'tts-config.json');
   try {
-    return JSON.parse(fs.readFileSync(ttsPath, 'utf-8'));
+    return JSON.parse(await fs.promises.readFile(ttsPath, 'utf-8'));
   } catch {
     return null;
   }
@@ -2064,7 +2042,7 @@ ipcMain.handle('app:getTtsConfig', async () => {
 ipcMain.handle('app:getLogo', async () => {
   const logoPath = path.join(app.getPath('userData'), 'logo.dat');
   try {
-    return fs.readFileSync(logoPath, 'utf-8');
+    return await fs.promises.readFile(logoPath, 'utf-8');
   } catch {
     return null;
   }
@@ -2249,10 +2227,13 @@ app.whenReady().then(async () => {
   // Autosave every 2 minutes
   let autosaveInterval: NodeJS.Timeout | null = null;
 
+  let autosaveInFlight = false;
   const startAutosave = () => {
     if (autosaveInterval) clearInterval(autosaveInterval);
     autosaveInterval = setInterval(
       async () => {
+        if (autosaveInFlight) return; // éviter l'empilement si la sauvegarde précédente traîne
+        autosaveInFlight = true;
         try {
           await db.saveAsync(); // async I/O — ne bloque pas le main thread
           console.log('Autosave completed at', new Date().toISOString());
@@ -2260,6 +2241,8 @@ app.whenReady().then(async () => {
         } catch (error) {
           console.error('Autosave failed:', error);
           mainWindow?.webContents.send('autosave:failed');
+        } finally {
+          autosaveInFlight = false;
         }
       },
       2 * 60 * 1000

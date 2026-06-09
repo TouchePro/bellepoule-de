@@ -14,6 +14,106 @@ interface PoolScoreMatrixProps {
   isLocked?: boolean;
 }
 
+interface ScoreCellProps {
+  rowFencer: Fencer;
+  colFencer: Fencer;
+  abandoned: boolean;
+  score: Score | null;
+  isFlashing: boolean;
+  isLocked: boolean;
+  onCellClick: (rowFencer: Fencer, colFencer: Fencer) => void;
+  onMatchReset?: (rowFencer: Fencer, colFencer: Fencer) => void;
+}
+
+// Cellule mémoïsée : seules les cellules dont le score/flash change re-rendent
+// (la grille est O(n²), un re-rendu global coûte cher sur les grandes poules).
+const ScoreCell = React.memo<ScoreCellProps>(
+  ({ rowFencer, colFencer, abandoned, score, isFlashing, isLocked, onCellClick, onMatchReset }) => {
+    if (abandoned) {
+      return (
+        <div
+          className="pool-cell pool-cell-forfeit"
+          style={{
+            cursor: 'not-allowed',
+            backgroundColor: '#e5e7eb',
+            color: '#9ca3af',
+          }}
+          title="Match non disputé (abandon/forfait)"
+        >
+          <span>-</span>
+        </div>
+      );
+    }
+
+    const cellClass = score
+      ? score.isVictory
+        ? 'pool-cell-victory'
+        : 'pool-cell-defeat'
+      : 'pool-cell-editable';
+
+    return (
+      <div
+        className={`pool-cell ${cellClass} ${isFlashing ? 'pool-cell-flash' : ''}`}
+        onClick={() => !isLocked && onCellClick(rowFencer, colFencer)}
+        onKeyDown={e => {
+          if (!isLocked && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault();
+            onCellClick(rowFencer, colFencer);
+          }
+        }}
+        role="button"
+        tabIndex={isLocked ? -1 : 0}
+        aria-label={`${rowFencer.lastName} ${rowFencer.firstName} contre ${colFencer.lastName} ${colFencer.firstName}${
+          score ? ` : ${score.isVictory ? 'victoire ' : 'défaite '}${score.value}` : ', saisir le score'
+        }`}
+        style={{ cursor: isLocked ? 'default' : 'pointer', position: 'relative' }}
+      >
+        {score ? (
+          <>
+            <span>
+              {score.isVictory ? 'V' : ''}
+              {score.value}
+            </span>
+            {onMatchReset && (
+              <button
+                onClick={e => {
+                  e.stopPropagation();
+                  onMatchReset(rowFencer, colFencer);
+                }}
+                title="Annuler ce résultat"
+                aria-label="Annuler ce résultat"
+                className="pool-cell-reset-btn"
+                style={{
+                  position: 'absolute',
+                  top: '1px',
+                  right: '1px',
+                  padding: '0 2px',
+                  fontSize: '0.55rem',
+                  lineHeight: 1,
+                  background: 'rgba(239,68,68,0.15)',
+                  border: 'none',
+                  borderRadius: '2px',
+                  cursor: 'pointer',
+                  opacity: 0,
+                  transition: 'opacity 0.15s',
+                  color: '#dc2626',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+                onMouseLeave={e => (e.currentTarget.style.opacity = '0')}
+              >
+                ↺
+              </button>
+            )}
+          </>
+        ) : (
+          <span style={{ color: '#9CA3AF' }}>-</span>
+        )}
+      </div>
+    );
+  }
+);
+ScoreCell.displayName = 'ScoreCell';
+
 const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
   pool,
   isLaserSabre,
@@ -92,6 +192,21 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
 
   const calculateFencerStats = (fencer: Fencer): Stats =>
     statsMap.get(fencer.id) ?? { v: 0, d: 0, td: 0, tr: 0, index: 0, ratio: 0 };
+
+  // Tireurs hors-jeu (abandon/forfait/exclusion) : lookup O(1) dans la grille.
+  const abandonedIds = useMemo(() => {
+    const set = new Set<string>();
+    for (const f of fencers) {
+      if (
+        f.status === FencerStatus.ABANDONED ||
+        f.status === FencerStatus.FORFAIT ||
+        f.status === FencerStatus.EXCLUDED
+      ) {
+        set.add(f.id);
+      }
+    }
+    return set;
+  }, [fencers]);
 
   // Données par ligne précalculées : sparkline + rang. Évite un filtre O(n·m) par rendu.
   const rowDataMap = useMemo(() => {
@@ -284,102 +399,21 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
                 return <div key={colFencer.id} className="pool-cell pool-cell-diagonal"></div>;
               }
 
-              const rowFencerAbandoned =
-                rowFencer.status === FencerStatus.ABANDONED ||
-                rowFencer.status === FencerStatus.FORFAIT ||
-                rowFencer.status === FencerStatus.EXCLUDED;
-              const colFencerAbandoned =
-                colFencer.status === FencerStatus.ABANDONED ||
-                colFencer.status === FencerStatus.FORFAIT ||
-                colFencer.status === FencerStatus.EXCLUDED;
-
-              if (rowFencerAbandoned || colFencerAbandoned) {
-                return (
-                  <div
-                    key={colFencer.id}
-                    className="pool-cell pool-cell-forfeit"
-                    style={{
-                      cursor: 'not-allowed',
-                      backgroundColor: '#e5e7eb',
-                      color: '#9ca3af',
-                    }}
-                    title="Match non disputé (abandon/forfait)"
-                  >
-                    <span>-</span>
-                  </div>
-                );
-              }
-
-              const score = getScore(rowFencer, colFencer);
-              const cellClass = score
-                ? score.isVictory
-                  ? 'pool-cell-victory'
-                  : 'pool-cell-defeat'
-                : 'pool-cell-editable';
-
               const cellKey = `${rowFencer.id}-${colFencer.id}`;
               const mirrorKey = `${colFencer.id}-${rowFencer.id}`;
-              const isFlashing = flashCell === cellKey || flashCell === mirrorKey;
 
               return (
-                <div
+                <ScoreCell
                   key={colFencer.id}
-                  className={`pool-cell ${cellClass} ${isFlashing ? 'pool-cell-flash' : ''}`}
-                  onClick={() => !isLocked && onCellClick(rowFencer, colFencer)}
-                  onKeyDown={e => {
-                    if (!isLocked && (e.key === 'Enter' || e.key === ' ')) {
-                      e.preventDefault();
-                      onCellClick(rowFencer, colFencer);
-                    }
-                  }}
-                  role="button"
-                  tabIndex={isLocked ? -1 : 0}
-                  aria-label={`${rowFencer.lastName} ${rowFencer.firstName} contre ${colFencer.lastName} ${colFencer.firstName}${
-                    score ? ` : ${score.isVictory ? 'victoire ' : 'défaite '}${score.value}` : ', saisir le score'
-                  }`}
-                  style={{ cursor: isLocked ? 'default' : 'pointer', position: 'relative' }}
-                >
-                  {score ? (
-                    <>
-                      <span>
-                        {score.isVictory ? 'V' : ''}
-                        {score.value}
-                      </span>
-                      {onMatchReset && (
-                        <button
-                          onClick={e => {
-                            e.stopPropagation();
-                            onMatchReset(rowFencer, colFencer);
-                          }}
-                          title="Annuler ce résultat"
-                          aria-label="Annuler ce résultat"
-                          className="pool-cell-reset-btn"
-                          style={{
-                            position: 'absolute',
-                            top: '1px',
-                            right: '1px',
-                            padding: '0 2px',
-                            fontSize: '0.55rem',
-                            lineHeight: 1,
-                            background: 'rgba(239,68,68,0.15)',
-                            border: 'none',
-                            borderRadius: '2px',
-                            cursor: 'pointer',
-                            opacity: 0,
-                            transition: 'opacity 0.15s',
-                            color: '#dc2626',
-                          }}
-                          onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
-                          onMouseLeave={e => (e.currentTarget.style.opacity = '0')}
-                        >
-                          ↺
-                        </button>
-                      )}
-                    </>
-                  ) : (
-                    <span style={{ color: '#9CA3AF' }}>-</span>
-                  )}
-                </div>
+                  rowFencer={rowFencer}
+                  colFencer={colFencer}
+                  abandoned={abandonedIds.has(rowFencer.id) || abandonedIds.has(colFencer.id)}
+                  score={getScore(rowFencer, colFencer)}
+                  isFlashing={flashCell === cellKey || flashCell === mirrorKey}
+                  isLocked={isLocked}
+                  onCellClick={onCellClick}
+                  onMatchReset={onMatchReset}
+                />
               );
             })}
 
