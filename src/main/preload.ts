@@ -5,6 +5,11 @@
  */
 
 import { contextBridge, ipcRenderer } from 'electron';
+
+// DIAGNOSTIC inconditionnel : affiche les sondes serveur dans la console renderer.
+ipcRenderer.on('remote:diag', (_: any, msg: string) => {
+  console.warn('[DIAG serveur]', msg);
+});
 import type {
   ElectronAPI,
   CompetitionCreateData,

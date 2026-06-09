@@ -1396,7 +1396,9 @@ export class RemoteScoreServer {
         // Vérifier que le match existe (en DB ou en mémoire)
         const dbMatch = this.db.getMatch(matchId);
         const inMemoryMatch = !dbMatch && this.sessionMatches.find((m: any) => m.id === matchId);
+        this.sendDiag(`[REST /finish] matchId=${matchId} dbMatch=${!!dbMatch} poolId=${(dbMatch as any)?.poolId ?? '-'} inMemory=${!!inMemoryMatch} sessionMatchesIds=[${this.sessionMatches.map((m: any) => m.id).join(',')}]`);
         if (!dbMatch && !inMemoryMatch) {
+          this.sendDiag(`[REST /finish] 404 match introuvable: ${matchId}`);
           return res.status(404).json({ error: 'Match non trouvé' });
         }
 
@@ -2460,6 +2462,7 @@ export class RemoteScoreServer {
         // Sélection d'un match par l'arbitre (depuis sa tablette)
         if (data.match) {
           const m = data.match;
+          this.sendDiag(`[select_match] arena=${data.arenaId} matchId=${m.id} isTableau=${(m as any).isTableau}`);
           // Restaurer isTableau depuis sessionMatches car la tablette ne le transmet pas
           const sessionMatch = this.sessionMatches.find(sm => sm.id === m.id);
           this.assignMatchToArena(data.arenaId, {
@@ -2486,6 +2489,7 @@ export class RemoteScoreServer {
         this.pauseArenaMatch(data.arenaId);
         break;
       case 'finish':
+        this.sendDiag(`[socket finish] arena=${data.arenaId}`);
         this.arenaSuddenDeath.set(data.arenaId, false);
         this.arenaOvertimeType.set(data.arenaId, null);
         this.arenaWaitingOvertime.set(data.arenaId, false);
@@ -3305,8 +3309,18 @@ export class RemoteScoreServer {
     }
   }
 
+  // DIAGNOSTIC : envoie un message visible dans la console DevTools du renderer
+  // (les console.log serveur ne sont pas visibles dans l'app packagée).
+  private sendDiag(msg: string): void {
+    try {
+      const w = (global as any).mainWindow;
+      if (w) w.webContents.send('remote:diag', msg);
+    } catch { /* non bloquant */ }
+  }
+
   public finishArenaMatch(arenaId: string): void {
     const arena = this.arenas.get(arenaId);
+    this.sendDiag(`[finishArenaMatch] arena=${arenaId} hasCurrent=${!!arena?.currentMatch} status=${arena?.status} matchId=${arena?.currentMatch?.id} isTableau=${(arena?.currentMatch as any)?.isTableau}`);
     if (!arena || !arena.currentMatch) return;
     // Éviter le double-déclenchement (REST + Socket.IO)
     if (arena.status === 'finished') return;
