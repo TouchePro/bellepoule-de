@@ -393,12 +393,29 @@ select:focus {
    ============================================================ */
 
 .phase-nav {
-  padding: 0.75rem 1rem;
+  padding: 0.625rem 1rem;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
-  gap: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0;
   overflow-x: auto;
   scrollbar-width: none;
+}
+
+/* Connecteur ligne entre les steps */
+.phase-step-connector {
+  flex-shrink: 0;
+  width: 24px;
+  height: 2px;
+  background: var(--color-border);
+  border-radius: 1px;
+  margin: 0 2px;
+  transition: background var(--duration-base) ease;
+}
+
+.phase-step-connector.connector-done {
+  background: var(--color-success);
 }
 
 .phase-nav::-webkit-scrollbar { display: none; }
@@ -1047,6 +1064,37 @@ select:focus {
   width: 1px;
   height: 2rem;
   background: rgba(255, 255, 255, 0.2);
+}
+
+/* Collapse button */
+.comp-header-collapse-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--duration-fast) ease;
+  margin-right: 0.25rem;
+}
+
+.comp-header-collapse-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* Compact mode — single line */
+.comp-header-compact .comp-header-content {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.comp-header-compact .comp-header-title {
+  font-size: 1rem;
+  margin-bottom: 0;
 }
 
 /* Actions dropdown */
