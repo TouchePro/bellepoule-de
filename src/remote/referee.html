@@ -2804,7 +2804,13 @@
           this.ttsEnabled = !this.ttsEnabled;
           const btn = document.getElementById('btn-tts-toggle');
           if (btn) btn.textContent = this.ttsEnabled ? '🔊 Voix' : '🔇 Voix';
-          if (this.ttsEnabled) this.ttsSpeak('Minuteur vocal activé');
+          if (this.ttsEnabled) {
+            const MSG = {
+              fr: 'Minuteur vocal activé', en: 'Voice timer enabled',
+              de: 'Sprachtimer aktiviert', 'zh-HK': '語音計時器已啟用',
+            };
+            this.ttsSpeak(MSG[this.ttsLangCode()] || MSG.fr);
+          }
         }
 
         // Fusionne une config TTS partielle reçue du serveur dans la config locale
@@ -2817,12 +2823,25 @@
           }
         }
 
+        // Code de langue normalisé pour le TTS (fr / en / de / zh-HK)
+        ttsLangCode() {
+          const lang = (document.documentElement.lang || 'fr').toLowerCase();
+          if (lang.startsWith('de')) return 'de';
+          if (lang.startsWith('en')) return 'en';
+          if (lang.startsWith('zh')) return 'zh-HK';
+          return 'fr';
+        }
+
+        // Balise BCP-47 pour SpeechSynthesisUtterance.lang
+        ttsBcp47(code) {
+          return { fr: 'fr-FR', en: 'en-GB', de: 'de-DE', 'zh-HK': 'zh-HK' }[code] || 'fr-FR';
+        }
+
         ttsSpeak(text) {
           if (!this.ttsEnabled || !window.speechSynthesis) return;
           window.speechSynthesis.cancel();
           const utt = new SpeechSynthesisUtterance(text);
-          const lang = (document.documentElement.lang || 'fr').toLowerCase();
-          utt.lang = lang.startsWith('de') ? 'de-DE' : lang.startsWith('en') ? 'en-GB' : 'fr-FR';
+          utt.lang = this.ttsBcp47(this.ttsLangCode());
           // Voix choisie dans les paramètres globaux (sinon voix par défaut de la langue)
           const wanted = this.ttsConfig.voiceName;
           if (wanted && window.speechSynthesis.getVoices) {
@@ -2838,16 +2857,20 @@
           if (!this.ttsEnabled) return;
           const s = this.timerSeconds;
           if (this._ttsAnnouncedSeconds.has(s)) return;
-          const lang = (document.documentElement.lang || 'fr').toLowerCase();
-          const isFr = !lang.startsWith('de') && !lang.startsWith('en');
-          const isEn = lang.startsWith('en');
-          const THRESHOLDS = {
-            60: isFr ? 'Une minute' : isEn ? 'One minute' : 'Eine Minute',
-            30: isFr ? 'Trente secondes' : isEn ? 'Thirty seconds' : 'Dreißig Sekunden',
-            10: isFr ? 'Dix secondes' : isEn ? 'Ten seconds' : 'Zehn Sekunden',
-            5:  '5', 4: '4', 3: '3', 2: '2', 1: '1',
-            0:  isFr ? 'Halte !' : isEn ? 'Stop!' : 'Halt!',
+          const L = this.ttsLangCode();
+          const PHRASES = {
+            fr: { 60: 'Une minute', 30: 'Trente secondes', 10: 'Dix secondes', 0: 'Halte !' },
+            en: { 60: 'One minute', 30: 'Thirty seconds', 10: 'Ten seconds', 0: 'Stop!' },
+            de: { 60: 'Eine Minute', 30: 'Dreißig Sekunden', 10: 'Zehn Sekunden', 0: 'Halt!' },
+            'zh-HK': { 60: '一分鐘', 30: '三十秒', 10: '十秒', 0: '停' },
           };
+          const NUMS = {
+            fr: { 5: '5', 4: '4', 3: '3', 2: '2', 1: '1' },
+            en: { 5: '5', 4: '4', 3: '3', 2: '2', 1: '1' },
+            de: { 5: '5', 4: '4', 3: '3', 2: '2', 1: '1' },
+            'zh-HK': { 5: '五', 4: '四', 3: '三', 2: '二', 1: '一' },
+          };
+          const THRESHOLDS = { ...PHRASES[L], ...NUMS[L] };
           // Quel palier (clé de config announce) correspond à cette seconde ?
           const a = this.ttsConfig.announce || {};
           let key = null;
