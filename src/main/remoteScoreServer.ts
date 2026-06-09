@@ -114,6 +114,8 @@ export class RemoteScoreServer {
 
   // Rate limiting pour le login : { ip → { count, resetAt } }
   private loginAttempts: Map<string, { count: number; resetAt: number }> = new Map();
+  private readonly LOGIN_ATTEMPTS_MAX_ENTRIES = 1000;
+  private cleanupInterval: NodeJS.Timeout | null = null;
   // Rate limiting pour les soumissions de score : { ip → { count, resetAt } }
   private scoreRateLimiter: Map<string, { count: number; resetAt: number }> = new Map();
   private readonly SCORE_RATE_LIMIT = 30; // soumissions par minute par IP
@@ -161,11 +163,17 @@ export class RemoteScoreServer {
       },
     });
 
-    // Purge des entrées expirées dans loginAttempts toutes les 5 minutes
-    setInterval(() => {
+    // Purge périodique des maps de rate-limiting/debounce (évite la croissance non bornée)
+    this.cleanupInterval = setInterval(() => {
       const now = Date.now();
       for (const [ip, attempt] of this.loginAttempts) {
         if (now >= attempt.resetAt) this.loginAttempts.delete(ip);
+      }
+      for (const [ip, entry] of this.scoreRateLimiter) {
+        if (now >= entry.resetAt) this.scoreRateLimiter.delete(ip);
+      }
+      for (const [key, ts] of this.scoreUpdateDebounce) {
+        if (now - ts > 60_000) this.scoreUpdateDebounce.delete(key);
       }
     }, 5 * 60_000);
 
@@ -473,7 +481,7 @@ export class RemoteScoreServer {
     });
 
     this.app.post('/api/session/stop', (req, res) => {
-      this.session = null;
+      this.stopSession();
       res.json({ success: true });
     });
 
@@ -937,6 +945,11 @@ export class RemoteScoreServer {
           this.loginAttempts.set(ip, { count: 1, resetAt: now + 60_000 });
         }
       } else {
+        // Plafond : éviction de l'entrée la plus ancienne (ordre d'insertion des Map)
+        if (this.loginAttempts.size >= this.LOGIN_ATTEMPTS_MAX_ENTRIES) {
+          const oldest = this.loginAttempts.keys().next().value;
+          if (oldest !== undefined) this.loginAttempts.delete(oldest);
+        }
         this.loginAttempts.set(ip, { count: 1, resetAt: now + 60_000 });
       }
 
@@ -2434,6 +2447,18 @@ export class RemoteScoreServer {
   private scoreUpdateDebounce: Map<string, number> = new Map();
   private readonly SCORE_UPDATE_DEBOUNCE_MS = 200;
 
+  /** Purge l'état de combat par arène (cartons, touches, mort subite…) — fin de session ou réinit des arènes. */
+  private clearArenaCombatState(): void {
+    this.arenaCards.clear();
+    this.arenaTouches.clear();
+    this.arenaExits.clear();
+    this.arenaSuddenDeath.clear();
+    this.arenaOvertimeType.clear();
+    this.arenaWaitingOvertime.clear();
+    this.arenaRefereeSelected.clear();
+    this.scoreUpdateDebounce.clear();
+  }
+
   private handleArenaControl(
     socket: any,
     data: {
@@ -2912,6 +2937,7 @@ export class RemoteScoreServer {
     this.arenaEventBuffer.clear();
     this.arenaMatchQueue.clear();
     this.arenaNextMatchIndex.clear();
+    this.clearArenaCombatState();
 
     for (let i = 1; i <= arenaCount; i++) {
       const arena: Arena = {
@@ -4014,6 +4040,10 @@ export class RemoteScoreServer {
   }
 
   public stop(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
+    }
     if (this.server) {
       this.server.close();
       console.log('Remote score server stopped');
@@ -4359,6 +4389,8 @@ export class RemoteScoreServer {
     this.poolSignaturesCache.clear();
     this.sessionMatchScores.clear();
     this.arenaTokens.clear();
+    this.arenaEventBuffer.clear();
+    this.clearArenaCombatState();
   }
 
   public updateStripCount(newCount: number): RemoteSession | null {
