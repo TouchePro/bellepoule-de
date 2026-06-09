@@ -60,7 +60,7 @@ export function resolveWinnerFromScores(match: TableauMatch): void {
  * finale round=3) dont le nombre de matchs vaut round/2 : un round de barrage,
  * partiellement rempli, est ainsi écarté.
  */
-function deriveFirstRound(matchList: TableauMatch[]): number {
+export function deriveFirstRound(matchList: TableauMatch[]): number {
   const counts = new Map<number, number>();
   for (const m of matchList) {
     if (m.round === 3) continue; // petite finale

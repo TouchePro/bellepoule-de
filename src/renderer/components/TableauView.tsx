@@ -7,7 +7,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Fencer, FencerStatus, PoolRanking } from '../../shared/types';
 export { TableauMatch, FinalResult, ConsolationBracket, propagateWinners } from './tableau/tableauTypes';
-import { TableauMatch, FinalResult, ConsolationBracket, propagateWinners } from './tableau/tableauTypes';
+import { TableauMatch, FinalResult, ConsolationBracket, propagateWinners, deriveFirstRound } from './tableau/tableauTypes';
 import { useToast } from './Toast';
 import { useModalResize } from '../hooks/useModalResize';
 import Bracket from './Bracket';
@@ -265,8 +265,9 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
       // En lecture seule, ne pas régénérer le tableau, mais déduire sa taille
       // des matches existants pour permettre l'affichage des rounds.
       if (matches.length > 0) {
-        const currentSize = Math.max(...matches.filter(m => m.round !== 3).map(m => m.round));
-        setTableauSize(currentSize);
+        // deriveFirstRound écarte le round de barrage (mainSize*2) : sinon la taille
+        // serait surévaluée à mainSize*2 et l'affichage des tours serait faussé.
+        setTableauSize(deriveFirstRound(matches));
       }
       return;
     }
@@ -278,7 +279,10 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     ).length;
     if (eligibleCount > 0) {
       const expectedSize = getMainTableauSize(eligibleCount);
-      const currentSize = matches.length > 0 ? Math.max(...matches.filter(m => m.round !== 3).map(m => m.round)) : 0;
+      // deriveFirstRound écarte le round de barrage (mainSize*2) et la petite finale.
+      // Avec un Math.max naïf, un tableau avec barrages restauré (tab switch) donnait
+      // currentSize = mainSize*2 ≠ expectedSize → regénération qui effaçait les scores saisis.
+      const currentSize = matches.length > 0 ? deriveFirstRound(matches) : 0;
 
       const hasThirdPlace = matches.some(m => m.round === 3);
       const thirdPlaceMismatch = thirdPlaceMatch !== hasThirdPlace;
@@ -320,8 +324,12 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   // playAllPositions : déclencher onComplete quand le tableau principal ET tous les brackets de consolation sont terminés
   useEffect(() => {
     if (readOnly || !playAllPositions || !onComplete || matches.length === 0) return;
-    // Ignorer au montage (données déjà complètes restaurées depuis DB)
-    if (matches === mountMatchesRef.current) return;
+    // NB : pas de garde « matches === mountMatchesRef » ici. La dernière saisie qui
+    // complète le classement est souvent un match de bracket de consolation, qui ne
+    // modifie PAS `matches`. Après un changement d'onglet (remontage), `matches` est
+    // identique au montage : la garde bloquait alors onComplete et l'étape tableau ne
+    // se validait jamais. Le cas « déjà complet restauré depuis DB » est couvert par
+    // le garde readOnly (finalResults.length > 0 ⇒ readOnly) en amont.
     const mainFinalDone = !!matches.find(m => m.round === 2)?.winner;
     const mainThirdEntry = matches.find(m => m.round === 3);
     const mainThirdDone = !mainThirdEntry || !!mainThirdEntry.winner;
