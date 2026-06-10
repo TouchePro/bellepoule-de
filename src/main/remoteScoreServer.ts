@@ -2481,6 +2481,7 @@ export class RemoteScoreServer {
     this.arenaWaitingOvertime.clear();
     this.arenaRefereeSelected.clear();
     this.scoreUpdateDebounce.clear();
+    this.arenaPhotoSentForMatch.clear();
   }
 
   private handleArenaControl(
@@ -3909,6 +3910,28 @@ export class RemoteScoreServer {
     this.io.to('dashboard').emit('matches:update', { matches: snapshot.liveMatches });
   }
 
+  // matchId pour lequel les photos ont déjà été diffusées, par arène : les updates
+  // suivants du même match sont envoyés sans photos (delta ~1 Ko au lieu de ~1 Mo)
+  private arenaPhotoSentForMatch: Map<string, string> = new Map();
+
+  /** Clone l'update sans les photos base64 (sans muter l'état partagé de l'arène). */
+  private stripPhotosFromUpdate(update: ArenaUpdate): ArenaUpdate {
+    const stripFencer = <T extends { photo?: string } | null | undefined>(f: T): T => {
+      if (!f || !(f as any).photo) return f;
+      const { photo: _photo, ...rest } = f as any;
+      return rest as T;
+    };
+    const stripMatch = (m: ArenaUpdate['match']): ArenaUpdate['match'] =>
+      m ? { ...m, fencerA: stripFencer(m.fencerA), fencerB: stripFencer(m.fencerB) } : m;
+    return {
+      ...update,
+      match: stripMatch(update.match),
+      nextMatch: update.nextMatch ? stripMatch(update.nextMatch) : update.nextMatch,
+      fencerA: stripFencer(update.fencerA),
+      fencerB: stripFencer(update.fencerB),
+    };
+  }
+
   private broadcastArenaUpdate(arenaId: string, update: ArenaUpdate): void {
     const arena = this.getArena(arenaId);
     const override = this.arenaThemeOverrides.get(arenaId);
@@ -3926,20 +3949,34 @@ export class RemoteScoreServer {
       refereeSelected: this.arenaRefereeSelected.get(arenaId) ?? false,
     };
 
+    // Photos envoyées une seule fois par match : les updates suivants partent sans
+    // (les clients qui rejoignent en cours de match reçoivent l'état complet au join_arena)
+    const matchId = updateWithPhotos.match?.id;
+    let payload = updateWithPhotos;
+    if (matchId) {
+      if (this.arenaPhotoSentForMatch.get(arenaId) === matchId) {
+        payload = this.stripPhotosFromUpdate(updateWithPhotos);
+      } else {
+        this.arenaPhotoSentForMatch.set(arenaId, matchId);
+      }
+    }
+
     // Stocker dans le buffer de replay (TTL + max size)
     const now = Date.now();
     let buf = this.arenaEventBuffer.get(arenaId) ?? [];
     buf = buf.filter(e => now - e.timestamp < this.EVENT_BUFFER_TTL_MS);
-    buf.push({ event: updateWithPhotos, timestamp: now });
+    buf.push({ event: payload, timestamp: now });
     if (buf.length > this.EVENT_BUFFER_MAX) buf = buf.slice(-this.EVENT_BUFFER_MAX);
     this.arenaEventBuffer.set(arenaId, buf);
 
-    this.io.emit(`arena:${arenaId}:update`, updateWithPhotos);
+    // Émission limitée à la room de l'arène (les clients join_arena à la connexion) :
+    // évite d'envoyer chaque update (photos base64 incluses) à tous les clients de toutes les arènes
+    this.io.to(`arena:${arenaId}`).emit(`arena:${arenaId}:update`, payload);
 
     if ((global as any).mainWindow) {
       (global as any).mainWindow.webContents.send('arena:update', {
         arenaId,
-        update: updateWithPhotos,
+        update: payload,
       });
     }
   }
