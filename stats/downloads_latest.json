@@ -1,11 +1,67 @@
 {
-  "date": "2026-06-09T09:56:08Z",
+  "date": "2026-06-10T10:13:50Z",
   "releases": [
+    {
+      "tag": "dev-build-1165",
+      "name": "🧪 BellePoule Modern Dev v1.0.3 Build #1165",
+      "published_at": "2026-06-09T21:59:12Z",
+      "total_downloads": 0,
+      "assets": [
+        {
+          "name": "BellePoule.Modern-dev-1.0.3-build.1165-arm64.AppImage",
+          "downloads": 0
+        },
+        {
+          "name": "BellePoule.Modern-dev-1.0.3-build.1165-arm64.dmg",
+          "downloads": 0
+        },
+        {
+          "name": "BellePoule.Modern-dev-1.0.3-build.1165-portable.exe",
+          "downloads": 0
+        },
+        {
+          "name": "BellePoule.Modern-dev-1.0.3-build.1165-x64.dmg",
+          "downloads": 0
+        },
+        {
+          "name": "BellePoule.Modern-dev-1.0.3-build.1165-x86_64.AppImage",
+          "downloads": 0
+        }
+      ]
+    },
+    {
+      "tag": "dev-build-1164",
+      "name": "🧪 BellePoule Modern Dev v1.0.3 Build #1164",
+      "published_at": "2026-06-09T16:27:59Z",
+      "total_downloads": 0,
+      "assets": [
+        {
+          "name": "BellePoule.Modern-dev-1.0.3-build.1164-arm64.AppImage",
+          "downloads": 0
+        },
+        {
+          "name": "BellePoule.Modern-dev-1.0.3-build.1164-arm64.dmg",
+          "downloads": 0
+        },
+        {
+          "name": "BellePoule.Modern-dev-1.0.3-build.1164-portable.exe",
+          "downloads": 0
+        },
+        {
+          "name": "BellePoule.Modern-dev-1.0.3-build.1164-x64.dmg",
+          "downloads": 0
+        },
+        {
+          "name": "BellePoule.Modern-dev-1.0.3-build.1164-x86_64.AppImage",
+          "downloads": 0
+        }
+      ]
+    },
     {
       "tag": "dev-build-1163",
       "name": "🧪 BellePoule Modern Dev v1.0.3 Build #1163",
       "published_at": "2026-06-09T09:18:39Z",
-      "total_downloads": 0,
+      "total_downloads": 1,
       "assets": [
         {
           "name": "BellePoule.Modern-dev-1.0.3-build.1163-arm64.AppImage",
@@ -17,7 +73,7 @@
         },
         {
           "name": "BellePoule.Modern-dev-1.0.3-build.1163-portable.exe",
-          "downloads": 0
+          "downloads": 1
         },
         {
           "name": "BellePoule.Modern-dev-1.0.3-build.1163-x64.dmg",
@@ -81,62 +137,6 @@
         },
         {
           "name": "BellePoule.Modern-dev-1.0.3-build.1161-x86_64.AppImage",
-          "downloads": 0
-        }
-      ]
-    },
-    {
-      "tag": "dev-build-1160",
-      "name": "🧪 BellePoule Modern Dev v1.0.3 Build #1160",
-      "published_at": "2026-06-09T08:59:33Z",
-      "total_downloads": 0,
-      "assets": [
-        {
-          "name": "BellePoule.Modern-dev-1.0.3-build.1160-arm64.AppImage",
-          "downloads": 0
-        },
-        {
-          "name": "BellePoule.Modern-dev-1.0.3-build.1160-arm64.dmg",
-          "downloads": 0
-        },
-        {
-          "name": "BellePoule.Modern-dev-1.0.3-build.1160-portable.exe",
-          "downloads": 0
-        },
-        {
-          "name": "BellePoule.Modern-dev-1.0.3-build.1160-x64.dmg",
-          "downloads": 0
-        },
-        {
-          "name": "BellePoule.Modern-dev-1.0.3-build.1160-x86_64.AppImage",
-          "downloads": 0
-        }
-      ]
-    },
-    {
-      "tag": "dev-build-1159",
-      "name": "🧪 BellePoule Modern Dev v1.0.3 Build #1159",
-      "published_at": "2026-06-09T08:38:16Z",
-      "total_downloads": 1,
-      "assets": [
-        {
-          "name": "BellePoule.Modern-dev-1.0.3-build.1159-arm64.AppImage",
-          "downloads": 0
-        },
-        {
-          "name": "BellePoule.Modern-dev-1.0.3-build.1159-arm64.dmg",
-          "downloads": 0
-        },
-        {
-          "name": "BellePoule.Modern-dev-1.0.3-build.1159-portable.exe",
-          "downloads": 1
-        },
-        {
-          "name": "BellePoule.Modern-dev-1.0.3-build.1159-x64.dmg",
-          "downloads": 0
-        },
-        {
-          "name": "BellePoule.Modern-dev-1.0.3-build.1159-x86_64.AppImage",
           "downloads": 0
         }
       ]
