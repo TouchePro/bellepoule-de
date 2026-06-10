@@ -161,7 +161,7 @@ Remote Assets (src/remote/)
 └── offlineQueue.ts          # Offline action queue for tablets
 
 Database (src/database/)
-├── index.ts             # DatabaseManager class (sql.js - pure JS SQLite)
+├── index.ts             # DatabaseManager class (better-sqlite3)
 ├── validation.ts        # Input validation
 └── migrations/          # Schema migrations (index.ts + migrations.ts)
 ```
@@ -170,7 +170,7 @@ Database (src/database/)
 
 1. **IPC via Preload**: All renderer-to-main communication uses `window.electronAPI` exposed by `preload.ts`. Never use `remote` or direct IPC in the renderer.
 
-2. **Database**: sql.js provides SQLite without native dependencies. All operations go through `DatabaseManager`. Atomic writes (temp file + rename). Autosave every 2 minutes; save on quit.
+2. **Database**: better-sqlite3 provides synchronous native SQLite (rebuilt via electron-rebuild postinstall). All operations go through `DatabaseManager`. Atomic writes (temp file + rename). Autosave every 2 minutes; save on quit.
 
 3. **Remote Scoring**: Express server with Socket.IO on port 8066. Arena display at `/arene{N}`, referee interface at `/arene{N}/arbitre`. HTML served in-memory for bundling.
 
@@ -236,7 +236,7 @@ Core interfaces: `Fencer`, `Referee`, `Competition`, `Pool`, `Match`, `PoolRanki
 - Pool calculations include special "Quest Points" system for Laser Sabre weapon
 - `@types/*` packages are in `dependencies` (not `devDependencies`) for Electron bundling
 - Window: 1400×900, min 1024×768; CSP enforced (no inline scripts)
-- Electron version: 40.x; React 19; Socket.IO 4.x; sql.js 1.13
+- Electron version: 40.x; React 19; Socket.IO 4.x; better-sqlite3 12.x
 
 ## Git Conventions
 

@@ -74,6 +74,11 @@ export class DatabaseManager {
     return this.db!.prepare(sql).all(...params) as T[];
   }
 
+  // Toute mutation multi-statements doit passer ici : rollback automatique si une étape échoue.
+  private inTransaction<T>(fn: () => T): T {
+    return this.db!.transaction(fn)();
+  }
+
   // Writes go directly to WAL on every statement — no manual export needed.
   public saveSync(): void {
     if (!this.db) return;
@@ -238,37 +243,41 @@ export class DatabaseManager {
 
   public deleteCompetition(id: string): void {
     if (!this.db) throw new Error('Database not open');
-    this.run(
-      `DELETE FROM pool_signatures WHERE pool_id IN (
-         SELECT p.id FROM pools p JOIN phases ph ON p.phase_id = ph.id WHERE ph.competition_id = ?
-       )`,
-      [id]
-    );
-    this.run('DELETE FROM fencers WHERE competition_id = ?', [id]);
-    this.run('DELETE FROM competitions WHERE id = ?', [id]);
+    this.inTransaction(() => {
+      this.run(
+        `DELETE FROM pool_signatures WHERE pool_id IN (
+           SELECT p.id FROM pools p JOIN phases ph ON p.phase_id = ph.id WHERE ph.competition_id = ?
+         )`,
+        [id]
+      );
+      this.run('DELETE FROM fencers WHERE competition_id = ?', [id]);
+      this.run('DELETE FROM competitions WHERE id = ?', [id]);
+    });
   }
 
   public updateCompetition(id: string, updates: Partial<Competition>): void {
     if (!this.db) throw new Error('Database not open');
     const now = new Date().toISOString();
-    if (updates.title !== undefined)
-      this.run('UPDATE competitions SET title = ?, updated_at = ? WHERE id = ?', [updates.title, now, id]);
-    if (updates.date !== undefined)
-      this.run('UPDATE competitions SET date = ?, updated_at = ? WHERE id = ?', [updates.date.toISOString(), now, id]);
-    if (updates.location !== undefined)
-      this.run('UPDATE competitions SET location = ?, updated_at = ? WHERE id = ?', [updates.location, now, id]);
-    if (updates.organizer !== undefined)
-      this.run('UPDATE competitions SET organizer = ?, updated_at = ? WHERE id = ?', [updates.organizer, now, id]);
-    if (updates.weapon !== undefined)
-      this.run('UPDATE competitions SET weapon = ?, updated_at = ? WHERE id = ?', [updates.weapon, now, id]);
-    if (updates.gender !== undefined)
-      this.run('UPDATE competitions SET gender = ?, updated_at = ? WHERE id = ?', [updates.gender, now, id]);
-    if (updates.category !== undefined)
-      this.run('UPDATE competitions SET category = ?, updated_at = ? WHERE id = ?', [updates.category, now, id]);
-    if (updates.status !== undefined)
-      this.run('UPDATE competitions SET status = ?, updated_at = ? WHERE id = ?', [updates.status, now, id]);
-    if (updates.settings !== undefined)
-      this.run('UPDATE competitions SET settings = ?, updated_at = ? WHERE id = ?', [JSON.stringify(updates.settings), now, id]);
+    this.inTransaction(() => {
+      if (updates.title !== undefined)
+        this.run('UPDATE competitions SET title = ?, updated_at = ? WHERE id = ?', [updates.title, now, id]);
+      if (updates.date !== undefined)
+        this.run('UPDATE competitions SET date = ?, updated_at = ? WHERE id = ?', [updates.date.toISOString(), now, id]);
+      if (updates.location !== undefined)
+        this.run('UPDATE competitions SET location = ?, updated_at = ? WHERE id = ?', [updates.location, now, id]);
+      if (updates.organizer !== undefined)
+        this.run('UPDATE competitions SET organizer = ?, updated_at = ? WHERE id = ?', [updates.organizer, now, id]);
+      if (updates.weapon !== undefined)
+        this.run('UPDATE competitions SET weapon = ?, updated_at = ? WHERE id = ?', [updates.weapon, now, id]);
+      if (updates.gender !== undefined)
+        this.run('UPDATE competitions SET gender = ?, updated_at = ? WHERE id = ?', [updates.gender, now, id]);
+      if (updates.category !== undefined)
+        this.run('UPDATE competitions SET category = ?, updated_at = ? WHERE id = ?', [updates.category, now, id]);
+      if (updates.status !== undefined)
+        this.run('UPDATE competitions SET status = ?, updated_at = ? WHERE id = ?', [updates.status, now, id]);
+      if (updates.settings !== undefined)
+        this.run('UPDATE competitions SET settings = ?, updated_at = ? WHERE id = ?', [JSON.stringify(updates.settings), now, id]);
+    });
   }
 
   // Fencer CRUD
@@ -463,10 +472,12 @@ export class DatabaseManager {
     const exists = this.queryOne<{ id: string }>('SELECT id, last_name FROM fencers WHERE id = ?', [id]);
     if (!exists) throw new Error(`Tireur avec l'ID ${id} non trouvé`);
     try {
-      this.run('DELETE FROM pool_fencers WHERE fencer_id = ?', [id]);
-      this.run('DELETE FROM matches WHERE fencer_a_id = ? OR fencer_b_id = ?', [id, id]);
-      const result = this.run('DELETE FROM fencers WHERE id = ?', [id]);
-      if (result.changes === 0) throw new Error(`Échec de la suppression du tireur ${id}`);
+      this.inTransaction(() => {
+        this.run('DELETE FROM pool_fencers WHERE fencer_id = ?', [id]);
+        this.run('DELETE FROM matches WHERE fencer_a_id = ? OR fencer_b_id = ?', [id, id]);
+        const result = this.run('DELETE FROM fencers WHERE id = ?', [id]);
+        if (result.changes === 0) throw new Error(`Échec de la suppression du tireur ${id}`);
+      });
     } catch (error) {
       console.error('Erreur lors de la suppression du tireur:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -477,21 +488,23 @@ export class DatabaseManager {
   public deleteAllFencers(competitionId?: string): void {
     if (!this.db) throw new Error('Database not open');
     try {
-      if (competitionId) {
-        this.run(
-          `DELETE FROM pool_fencers WHERE fencer_id IN (SELECT id FROM fencers WHERE competition_id = ?)`,
-          [competitionId]
-        );
-        this.run(
-          `DELETE FROM matches WHERE fencer_a_id IN (SELECT id FROM fencers WHERE competition_id = ?) OR fencer_b_id IN (SELECT id FROM fencers WHERE competition_id = ?)`,
-          [competitionId, competitionId]
-        );
-        this.run('DELETE FROM fencers WHERE competition_id = ?', [competitionId]);
-      } else {
-        this.run('DELETE FROM pool_fencers');
-        this.run('DELETE FROM matches');
-        this.run('DELETE FROM fencers');
-      }
+      this.inTransaction(() => {
+        if (competitionId) {
+          this.run(
+            `DELETE FROM pool_fencers WHERE fencer_id IN (SELECT id FROM fencers WHERE competition_id = ?)`,
+            [competitionId]
+          );
+          this.run(
+            `DELETE FROM matches WHERE fencer_a_id IN (SELECT id FROM fencers WHERE competition_id = ?) OR fencer_b_id IN (SELECT id FROM fencers WHERE competition_id = ?)`,
+            [competitionId, competitionId]
+          );
+          this.run('DELETE FROM fencers WHERE competition_id = ?', [competitionId]);
+        } else {
+          this.run('DELETE FROM pool_fencers');
+          this.run('DELETE FROM matches');
+          this.run('DELETE FROM fencers');
+        }
+      });
     } catch (error) {
       console.error('Erreur lors de la suppression des tireurs:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -928,10 +941,12 @@ export class DatabaseManager {
 
   public clearPoolsForPhase(phaseId: string): void {
     if (!this.db) throw new Error('Database not open');
-    this.run('DELETE FROM pool_signatures WHERE pool_id IN (SELECT id FROM pools WHERE phase_id = ?)', [phaseId]);
-    this.run('DELETE FROM matches WHERE pool_id IN (SELECT id FROM pools WHERE phase_id = ?)', [phaseId]);
-    this.run('DELETE FROM pool_fencers WHERE pool_id IN (SELECT id FROM pools WHERE phase_id = ?)', [phaseId]);
-    this.run('DELETE FROM pools WHERE phase_id = ?', [phaseId]);
+    this.inTransaction(() => {
+      this.run('DELETE FROM pool_signatures WHERE pool_id IN (SELECT id FROM pools WHERE phase_id = ?)', [phaseId]);
+      this.run('DELETE FROM matches WHERE pool_id IN (SELECT id FROM pools WHERE phase_id = ?)', [phaseId]);
+      this.run('DELETE FROM pool_fencers WHERE pool_id IN (SELECT id FROM pools WHERE phase_id = ?)', [phaseId]);
+      this.run('DELETE FROM pools WHERE phase_id = ?', [phaseId]);
+    });
   }
 
   public createPool(phaseId: string, number: number, poolId?: string): Pool {
@@ -1071,11 +1086,13 @@ export class DatabaseManager {
 
   public deletePhase(id: string): void {
     if (!this.db) throw new Error('Database not open');
-    this.run('DELETE FROM pool_signatures WHERE pool_id IN (SELECT id FROM pools WHERE phase_id = ?)', [id]);
-    this.run('DELETE FROM matches WHERE pool_id IN (SELECT id FROM pools WHERE phase_id = ?)', [id]);
-    this.run('DELETE FROM pool_fencers WHERE pool_id IN (SELECT id FROM pools WHERE phase_id = ?)', [id]);
-    this.run('DELETE FROM pools WHERE phase_id = ?', [id]);
-    this.run('DELETE FROM phases WHERE id = ?', [id]);
+    this.inTransaction(() => {
+      this.run('DELETE FROM pool_signatures WHERE pool_id IN (SELECT id FROM pools WHERE phase_id = ?)', [id]);
+      this.run('DELETE FROM matches WHERE pool_id IN (SELECT id FROM pools WHERE phase_id = ?)', [id]);
+      this.run('DELETE FROM pool_fencers WHERE pool_id IN (SELECT id FROM pools WHERE phase_id = ?)', [id]);
+      this.run('DELETE FROM pools WHERE phase_id = ?', [id]);
+      this.run('DELETE FROM phases WHERE id = ?', [id]);
+    });
   }
 
   // ─── Referee CRUD ────────────────────────────────────────────────────────────

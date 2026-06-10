@@ -24,7 +24,7 @@ BellePoule Modern is built using modern web technologies wrapped in an Electron 
 | **Framework** | Electron | 40+ | Cross-platform desktop application |
 | **UI Library** | React | 19+ | User interface components |
 | **Language** | TypeScript | 5+ | Type-safe JavaScript |
-| **Database** | sql.js | 1.13+ | SQLite in JavaScript (no native compilation) |
+| **Database** | better-sqlite3 | 12.x | Native SQLite binding (synchronous, WAL) |
 | **Bundler** | Webpack | 5+ | Module bundling and optimization |
 | **Web Server** | Express | 5+ | Remote scoring server |
 | **WebSocket** | Socket.IO | 4+ | Real-time communication |

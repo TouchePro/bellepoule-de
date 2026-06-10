@@ -9,7 +9,7 @@ import { Server as SocketIOServer } from 'socket.io';
 import { createServer } from 'http';
 import path from 'path';
 import os from 'os';
-import { randomBytes, timingSafeEqual } from 'crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'crypto';
 import {
   RemoteSession,
   RemoteScoreUpdate,
@@ -215,7 +215,10 @@ export class RemoteScoreServer {
           path.join(__dirname, '../../src/remote'), // src/remote/ (sans webpack)
         ]
       : [
-          path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'remote'),
+          // process.resourcesPath n'existe que sous Electron (pas en tests Node)
+          ...(process.resourcesPath
+            ? [path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'remote')]
+            : []),
           path.join(__dirname, '..', 'remote').replace('app.asar', 'app.asar.unpacked'),
           path.join(__dirname, '..', 'remote'),
           path.join(__dirname, '../../src/remote'), // fallback source sans webpack
@@ -291,6 +294,17 @@ export class RemoteScoreServer {
     return result;
   }
 
+  /** Le mot de passe n'est jamais stocké ni comparé en clair. */
+  private hashPassword(password: string): string {
+    return createHash('sha256').update(password).digest('hex');
+  }
+
+  /** Version d'une arène sans secret, seule forme autorisée vers les clients HTTP/Socket.IO. */
+  private toPublicArena(arena: Arena): Omit<Arena, 'password'> & { hasPassword: boolean } {
+    const { password, ...rest } = arena;
+    return { ...rest, hasPassword: !!password };
+  }
+
   private checkArenaAuth(arenaId: string, cookieHeader: string | undefined): boolean {
     const fullId = arenaId.startsWith('arena') ? arenaId : `arena${arenaId}`;
     const arena = this.arenas.get(fullId);
@@ -335,8 +349,10 @@ export class RemoteScoreServer {
 
       // Essayer plusieurs chemins possibles
       const possiblePaths = [
-        // Chemin standard avec asarUnpack
-        path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'remote'),
+        // Chemin standard avec asarUnpack (process.resourcesPath n'existe que sous Electron)
+        ...(process.resourcesPath
+          ? [path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'remote')]
+          : []),
         // Chemin relatif depuis __dirname
         path.join(__dirname, '..', 'remote').replace('app.asar', 'app.asar.unpacked'),
         // Dernier recours: chemin relatif standard
@@ -501,7 +517,7 @@ export class RemoteScoreServer {
 
     // Arena routes
     this.app.get('/api/arenas', (req, res) => {
-      res.json(this.getAllArenas());
+      res.json(this.getAllArenas().map(a => this.toPublicArena(a)));
     });
 
     this.app.get('/api/arenas/:arenaId', (req, res) => {
@@ -509,7 +525,7 @@ export class RemoteScoreServer {
       if (!arena) {
         return res.status(404).json({ error: 'Arène non trouvée' });
       }
-      res.json(arena);
+      res.json(this.toPublicArena(arena));
     });
 
     // Rapport de rotation des arbitres
@@ -683,7 +699,9 @@ export class RemoteScoreServer {
             path.join(__dirname, '../../src/remote', filename),
           ]
         : [
-            path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'remote', filename),
+            ...(process.resourcesPath
+              ? [path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'remote', filename)]
+              : []),
             path.join(__dirname, '..', 'remote', filename).replace('app.asar', 'app.asar.unpacked'),
             path.join(__dirname, '..', 'remote', filename),
             path.join(__dirname, '../../src/remote', filename),
@@ -962,11 +980,12 @@ export class RemoteScoreServer {
       const { password } = req.body as { password: string };
       // Comparaison résistante aux timing attacks
       let passwordOk = false;
+      // Comparaison de hashs (longueur constante) résistante aux timing attacks,
+      // sans fuite de la longueur du mot de passe.
       try {
         passwordOk =
           !!password &&
-          password.length === arena.password.length &&
-          timingSafeEqual(Buffer.from(password), Buffer.from(arena.password));
+          timingSafeEqual(Buffer.from(this.hashPassword(password)), Buffer.from(arena.password));
       } catch {
         passwordOk = false;
       }
@@ -978,9 +997,10 @@ export class RemoteScoreServer {
       const token = randomBytes(32).toString('hex');
       if (!this.arenaTokens.has(fullId)) this.arenaTokens.set(fullId, new Set());
       this.arenaTokens.get(fullId)!.add(token);
+      // Secure seulement en HTTPS : le serveur tourne en HTTP sur le LAN du gymnase
       res.setHeader(
         'Set-Cookie',
-        `bp_token_${fullId}=${token}; HttpOnly; SameSite=Strict; Max-Age=${8 * 3600}; Path=/`
+        `bp_token_${fullId}=${token}; HttpOnly; SameSite=Strict; Max-Age=${8 * 3600}; Path=/${req.secure ? '; Secure' : ''}`
       );
       res.json({ success: true });
     });
@@ -990,6 +1010,10 @@ export class RemoteScoreServer {
       const rawId = req.params.arenaId;
       // Accepte "1" ou "arena1" comme arenaId
       const arenaId = rawId.startsWith('arena') ? rawId : `arena${rawId}`;
+      // Même protection que la page /poule qui consomme cette API
+      if (!this.checkArenaAuth(arenaId, req.headers.cookie)) {
+        return res.status(401).json({ error: 'Non authentifié' });
+      }
       try {
         const arena = this.arenas.get(arenaId);
         const poolId = arena?.currentMatch?.poolId ?? arena?.activePoolId;
@@ -3061,7 +3085,7 @@ export class RemoteScoreServer {
   public setArenaCount(count: number): void {
     console.log(`[RemoteScoreServer] Mise à jour du nombre d'arènes: ${count}`);
     this.initializeArenas(count);
-    this.io?.emit('arenas:updated', this.getAllArenas());
+    this.io?.emit('arenas:updated', this.getAllArenas().map(a => this.toPublicArena(a)));
   }
 
   public getArenaCount(): number {
@@ -3574,7 +3598,9 @@ export class RemoteScoreServer {
           const dbM = this.db.getMatch(finishedMatch.id) as any;
           if (dbM?.scoreA?.isVictory) winnerForRenderer = 'A';
           else if (dbM?.scoreB?.isVictory) winnerForRenderer = 'B';
-        } catch { /* non bloquant */ }
+        } catch (err) {
+          console.warn(`[RemoteScoreServer] Lecture DB échouée pour le vainqueur du match ${finishedMatch.id}:`, err);
+        }
       }
       // Fallback pour les matchs en mémoire (non persistés en DB) : tirage au sort
       if (!winnerForRenderer) {
@@ -4442,7 +4468,7 @@ export class RemoteScoreServer {
         this.arenaNextMatchIndex.delete(arenaId);
       }
       this.arenaCount = newCount;
-      this.io?.emit('arenas:updated', this.getAllArenas());
+      this.io?.emit('arenas:updated', this.getAllArenas().map(a => this.toPublicArena(a)));
     }
 
     return this.session;
@@ -4778,7 +4804,8 @@ export class RemoteScoreServer {
     const fullId = arenaId.startsWith('arena') ? arenaId : `arena${arenaId}`;
     const arena = this.arenas.get(fullId);
     if (!arena) throw new Error(`Arène ${arenaId} introuvable`);
-    arena.password = password || undefined;
+    // Stocké hashé : jamais de mot de passe en clair en mémoire
+    arena.password = password ? this.hashPassword(password) : undefined;
     // Invalider tous les tokens existants pour cette arène
     this.arenaTokens.delete(fullId);
     console.log(

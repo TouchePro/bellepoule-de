@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-BellePoule Modern is an Electron desktop application for fencing tournament management. It uses React 19 + TypeScript 5 for the frontend, SQLite via sql.js for data storage, and Webpack 5 for bundling.
+BellePoule Modern is an Electron desktop application for fencing tournament management. It uses React 19 + TypeScript 5 for the frontend, SQLite via better-sqlite3 for data storage, and Webpack 5 for bundling.
 
 **Version:** v1.0.1 Build #245+  
 **Last Updated:** February 2026
