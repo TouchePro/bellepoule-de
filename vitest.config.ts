@@ -5,10 +5,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    environmentMatchGlobs: [
-      ['src/renderer/**/*.test.tsx', 'jsdom'],
-      ['src/renderer/**/*.spec.tsx', 'jsdom'],
-    ],
+    // environmentMatchGlobs a été supprimé dans Vitest 4 : les tests renderer
+    // déclarent leur environnement via le pragma `// @vitest-environment jsdom`.
     include: ['src/**/*.test.ts', 'src/**/*.spec.ts', 'src/**/*.test.tsx', 'src/**/*.spec.tsx'],
     coverage: {
       provider: 'v8',

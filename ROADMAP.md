@@ -14,7 +14,7 @@
 | Scores distants | Serveur Express + Socket.IO, 4 pistes, tablettes arbitres |
 | Attribution arbitres | `RefereeManager` – conflit club/temps/consécutif, score 100 pts |
 | Sabre Laser | Zones A/B/C (1/3/5 pts), Quest Points, mort subite |
-| Base de données | SQLite via sql.js, atomic writes, autosave 2 min |
+| Base de données | SQLite via better-sqlite3 (WAL), autosave 2 min |
 | Mise à jour auto | GitHub Releases, multi-plateforme (Win/Mac/Linux) |
 | Interface | 47+ composants React 19, toast, skeleton, virtual list, PDF preview |
 | Voice scoring | `VoiceScoreController` – saisie vocale des scores |
@@ -575,7 +575,7 @@ Impact ↑
 ┌────────▼──────┐ ┌───────▼──────┐ ┌──────▼───────┐
 │   SQLite/     │ │  Cloud Sync  │ │  Plugin      │
 │   PostgreSQL  │ │  (Dropbox/   │ │  Sandbox     │
-│   (sql.js)    │ │   GDrive/    │ │  (Worker)    │
+│   (better-sqlite3)    │ │   GDrive/    │ │  (Worker)    │
 └───────────────┘ │   OneDrive)  │ └──────────────┘
                   └──────────────┘
 ```

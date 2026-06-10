@@ -44,7 +44,7 @@ src/
 │   ├── utils/           # Utilitaires métier
 │   ├── services/        # Services partagés
 │   └── constants.ts     # Constantes
-├── database/            # SQLite (sql.js)
+├── database/            # SQLite (better-sqlite3)
 └── e2e/                # Tests Playwright
 ```
 
