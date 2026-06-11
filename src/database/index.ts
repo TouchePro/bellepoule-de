@@ -635,8 +635,8 @@ export class DatabaseManager {
 
   public getTableauMatchesForExport(competitionId: string): Array<{
     id: string; round: number; position: number; isBye: boolean;
-    fencerA: { firstName?: string; lastName: string; club?: string } | null;
-    fencerB: { firstName?: string; lastName: string; club?: string } | null;
+    fencerA: { id: string; firstName?: string; lastName: string; club?: string } | null;
+    fencerB: { id: string; firstName?: string; lastName: string; club?: string } | null;
     scoreA: number | null; scoreB: number | null;
     winner: { id: string } | null;
   }> {
@@ -674,8 +674,8 @@ export class DatabaseManager {
         round: row.round as number,
         position: row.position as number,
         isBye: (!!row.fencer_a_id) !== (!!row.fencer_b_id),
-        fencerA: row.fencer_a_id ? { firstName: row.fa_first as string | undefined, lastName: (row.fa_last as string) || '', club: row.fa_club as string | undefined } : null,
-        fencerB: row.fencer_b_id ? { firstName: row.fb_first as string | undefined, lastName: (row.fb_last as string) || '', club: row.fb_club as string | undefined } : null,
+        fencerA: row.fencer_a_id ? { id: row.fencer_a_id as string, firstName: row.fa_first as string | undefined, lastName: (row.fa_last as string) || '', club: row.fa_club as string | undefined } : null,
+        fencerB: row.fencer_b_id ? { id: row.fencer_b_id as string, firstName: row.fb_first as string | undefined, lastName: (row.fb_last as string) || '', club: row.fb_club as string | undefined } : null,
         scoreA: scoreAVal, scoreB: scoreBVal, winner,
       };
     });
