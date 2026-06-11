@@ -1647,7 +1647,7 @@ export class RemoteScoreServer {
         if (isTableauMatch && this.session) {
           try {
             const comp = this.db.getCompetition(this.session.competitionId);
-            requireSignature = comp?.settings?.signTableauMatches !== false;
+            requireSignature = comp?.settings?.signTableauMatches === true;
           } catch { /* défaut: false */ }
         }
 
