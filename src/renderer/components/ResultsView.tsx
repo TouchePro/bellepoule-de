@@ -256,6 +256,51 @@ const ResultsView: React.FC<ResultsViewProps> = ({
     }
   };
 
+  const exportNoSignaturePDF = async () => {
+    setIsExportingFull(true);
+    try {
+      const api = (window as any).electronAPI;
+
+      const safe = async <T,>(fn: () => Promise<T>, label: string, fallback: T): Promise<T> => {
+        try { return await fn(); } catch (e) {
+          logger.warn(LogCategory.DATABASE, `export sans signature — ${label} échoué`, e instanceof Error ? e : undefined);
+          return fallback;
+        }
+      };
+
+      const effectiveTableauMatches = (tableauMatches && tableauMatches.length > 0)
+        ? tableauMatches
+        : await safe(() => api?.db?.getTableauMatchesForExport?.(competition.id) ?? [], 'matchs tableau', []);
+
+      let effectivePools: Pool[] = pools && pools.length > 0 ? pools : [];
+      if (effectivePools.length === 0 && api?.db?.getPhasesByCompetition && api?.db?.getPoolsByPhase) {
+        effectivePools = await safe(async () => {
+          const phases = await api.db.getPhasesByCompetition(competition.id);
+          const poolPhases = phases.filter((p: { type: string }) => p.type === 'pool');
+          const poolArrays = await Promise.all(poolPhases.map((ph: { id: string }) => api.db.getPoolsByPhase(ph.id)));
+          return poolArrays.flat();
+        }, 'poules', []);
+      }
+
+      const { exportPoolsAndTableauxNoSignaturePDF } = await import('../../shared/utils/pdfExport');
+      await exportPoolsAndTableauxNoSignaturePDF({
+        pools: effectivePools,
+        tableauMatches: effectiveTableauMatches as TableauMatchForPDF[],
+        consolationBrackets: (consolationBrackets ?? []).map(b => ({
+          id: b.id,
+          name: b.name,
+          matches: b.matches as TableauMatchForPDF[],
+        })),
+        competitionTitle: competition.title,
+        template: rankingTemplate,
+      });
+    } catch (e) {
+      showToast((e as Error).message, 'error');
+    } finally {
+      setIsExportingFull(false);
+    }
+  };
+
   const champion = resultsToDisplay.find(r => r.rank === 1);
 
   return (
@@ -393,6 +438,20 @@ const ResultsView: React.FC<ResultsViewProps> = ({
             </>
           ) : (
             '📦 Export complet PDF'
+          )}
+        </button>
+        <button
+          onClick={exportNoSignaturePDF}
+          style={{ ...RV_STYLES.btnFullPdf, opacity: isExportingFull ? 0.6 : 1, cursor: isExportingFull ? 'wait' : 'pointer' }}
+          disabled={isExportingFull}
+          title="Poules et tableaux d'élimination directe, sans les signatures des combattants"
+        >
+          {isExportingFull ? (
+            <>
+              <span style={RV_STYLES.spinner} /> Génération…
+            </>
+          ) : (
+            '📄 Export PDF complet sans signature'
           )}
         </button>
       </div>
