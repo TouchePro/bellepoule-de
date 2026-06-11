@@ -5,6 +5,7 @@ import { useShallow } from 'zustand/shallow';
 import { PoolState, PoolActions, PoolGenerationConfig, ScoreUpdateDTO } from '../types/pool.types';
 import { PoolService } from '../services/poolService';
 import { MatchStatus } from '../../../shared/types';
+import { createDebouncedJSONStorage } from '../../../shared/utils/debouncedStorage';
 
 const service = new PoolService();
 
@@ -118,6 +119,8 @@ export const usePoolStore = create<PoolState & PoolActions>()(
         }),
         {
           name: 'pool-store',
+          // Écriture différée : chaque saisie de score déclenchait un stringify de toutes les poules.
+          storage: createDebouncedJSONStorage(500),
           partialize: state => ({
             pools: state.pools,
             overallRanking: state.overallRanking,
