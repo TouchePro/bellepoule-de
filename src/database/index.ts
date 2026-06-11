@@ -33,6 +33,9 @@ import { ALL_MIGRATIONS } from './migrations/migrations';
 export class DatabaseManager {
   private db: Database.Database | null = null;
   private dbPath: string;
+  // Cache des prepared statements : évite de re-parser le SQL à chaque appel.
+  // SQLite re-prépare automatiquement un statement si le schéma change.
+  private stmtCache = new Map<string, Database.Statement>();
 
   constructor(dbPath?: string) {
     this.dbPath = dbPath || path.join(process.cwd(), 'bellepoule.db');
@@ -48,6 +51,7 @@ export class DatabaseManager {
     const dir = path.dirname(this.dbPath);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
+    this.stmtCache.clear();
     this.db = new Database(this.dbPath);
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('foreign_keys = ON');
@@ -59,19 +63,29 @@ export class DatabaseManager {
       this.saveSync();
       this.db.close();
       this.db = null;
+      this.stmtCache.clear();
     }
   }
 
+  private prepare(sql: string): Database.Statement {
+    let stmt = this.stmtCache.get(sql);
+    if (!stmt) {
+      stmt = this.db!.prepare(sql);
+      this.stmtCache.set(sql, stmt);
+    }
+    return stmt;
+  }
+
   private run(sql: string, params: unknown[] = []): Database.RunResult {
-    return this.db!.prepare(sql).run(...params);
+    return this.prepare(sql).run(...params);
   }
 
   private queryOne<T>(sql: string, params: unknown[] = []): T | null {
-    return (this.db!.prepare(sql).get(...params) as T) ?? null;
+    return (this.prepare(sql).get(...params) as T) ?? null;
   }
 
   private queryAll<T>(sql: string, params: unknown[] = []): T[] {
-    return this.db!.prepare(sql).all(...params) as T[];
+    return this.prepare(sql).all(...params) as T[];
   }
 
   // Toute mutation multi-statements doit passer ici : rollback automatique si une étape échoue.
@@ -186,6 +200,10 @@ export class DatabaseManager {
     if (!this.db) throw new Error('Database not open');
     const row = this.queryOne<any>('SELECT * FROM competitions WHERE id = ?', [id]);
     if (!row) return null;
+    return this.parseCompetitionRow(row);
+  }
+
+  private parseCompetitionRow(row: any): Competition {
     try {
       let settings: CompetitionSettings = {
         defaultPoolMaxScore: 5,
@@ -237,8 +255,8 @@ export class DatabaseManager {
 
   public getAllCompetitions(): Competition[] {
     if (!this.db) throw new Error('Database not open');
-    const rows = this.queryAll<{ id: string }>('SELECT id FROM competitions ORDER BY date DESC');
-    return rows.map(r => this.getCompetition(r.id)).filter(Boolean) as Competition[];
+    const rows = this.queryAll<any>('SELECT * FROM competitions ORDER BY date DESC');
+    return rows.map(r => this.parseCompetitionRow(r));
   }
 
   public deleteCompetition(id: string): void {
@@ -712,6 +730,11 @@ export class DatabaseManager {
   public getMatchesByPool(poolId: string): Match[] {
     if (!this.db) throw new Error('Database not open');
     const matchRows = this.queryAll<any>('SELECT * FROM matches WHERE pool_id = ? ORDER BY number', [poolId]);
+    return this.hydrateMatchRows(matchRows);
+  }
+
+  // Hydratation batch : charge tous les tireurs/arbitres en 2 requêtes au lieu d'un getMatch() par ligne.
+  private hydrateMatchRows(matchRows: any[]): Match[] {
     if (matchRows.length === 0) return [];
 
     const fencerIds = new Set<string>();
@@ -805,11 +828,11 @@ export class DatabaseManager {
     }
     if (poolIds.length === 0) return [];
     const placeholders = poolIds.map(() => '?').join(',');
-    const matchIds = this.queryAll<{ id: string }>(
-      `SELECT m.id FROM matches m JOIN pools p ON m.pool_id = p.id WHERE m.pool_id IN (${placeholders}) AND m.status IN ('not_started', 'in_progress') ORDER BY p.number, m.number`,
+    const matchRows = this.queryAll<any>(
+      `SELECT m.* FROM matches m JOIN pools p ON m.pool_id = p.id WHERE m.pool_id IN (${placeholders}) AND m.status IN ('not_started', 'in_progress') ORDER BY p.number, m.number`,
       poolIds
-    ).map(r => r.id);
-    return matchIds.map(id => this.getMatch(id)).filter(Boolean) as Match[];
+    );
+    return this.hydrateMatchRows(matchRows);
   }
 
   public getAllPendingMatchesFromPools(competitionId: string): Match[] {
@@ -826,18 +849,18 @@ export class DatabaseManager {
     }
     if (poolIds.length === 0) return [];
     const placeholders = poolIds.map(() => '?').join(',');
-    const matchIds = this.queryAll<{ id: string }>(
-      `SELECT m.id FROM matches m JOIN pools p ON m.pool_id = p.id WHERE m.pool_id IN (${placeholders}) AND m.status IN ('not_started', 'in_progress') ORDER BY p.number, m.number`,
+    const matchRows = this.queryAll<any>(
+      `SELECT m.* FROM matches m JOIN pools p ON m.pool_id = p.id WHERE m.pool_id IN (${placeholders}) AND m.status IN ('not_started', 'in_progress') ORDER BY p.number, m.number`,
       poolIds
-    ).map(r => r.id);
-    return matchIds.map(id => this.getMatch(id)).filter(Boolean) as Match[];
+    );
+    return this.hydrateMatchRows(matchRows);
   }
 
   public getPendingMatchesDirectly(competitionId: string): Match[] {
     if (!this.db) throw new Error('Database not open');
     try {
-      const matchIds = this.queryAll<{ id: string }>(
-        `SELECT DISTINCT m.id FROM matches m
+      const matchRows = this.queryAll<any>(
+        `SELECT m.* FROM matches m
          LEFT JOIN pools p ON m.pool_id = p.id
          INNER JOIN fencers fA ON m.fencer_a_id = fA.id
          INNER JOIN fencers fB ON m.fencer_b_id = fB.id
@@ -845,42 +868,31 @@ export class DatabaseManager {
          AND m.status IN ('not_started', 'in_progress')
          ORDER BY p.number, m.number`,
         [competitionId, competitionId]
-      ).map(r => r.id);
-      if (matchIds.length > 0) {
-        return matchIds.map(id => this.getMatch(id)).filter(Boolean) as Match[];
+      );
+      if (matchRows.length > 0) {
+        return this.hydrateMatchRows(matchRows);
       }
     } catch (e) {
       console.error('[Database] getPendingMatchesDirectly: Error:', e);
     }
     try {
-      return this.queryAll<{ id: string }>(
-        'SELECT id FROM matches WHERE status IN (?, ?)',
+      const compFencers = new Set(
+        this.queryAll<{ id: string }>('SELECT id FROM fencers WHERE competition_id = ?', [competitionId]).map(
+          r => r.id
+        )
+      );
+      const matchRows = this.queryAll<any>(
+        'SELECT * FROM matches WHERE status IN (?, ?)',
         ['not_started', 'in_progress']
-      )
-        .map(r => this.getMatch(r.id))
-        .filter(m => {
-          if (!m?.fencerA || !m?.fencerB) return false;
-          const a = this.getFencerCompetition(m.fencerA.id);
-          const b = this.getFencerCompetition(m.fencerB.id);
-          return a === competitionId || b === competitionId;
-        }) as Match[];
+      );
+      return this.hydrateMatchRows(matchRows).filter(m => {
+        if (!m.fencerA || !m.fencerB) return false;
+        return compFencers.has(m.fencerA.id) || compFencers.has(m.fencerB.id);
+      });
     } catch (e) {
       console.error('[Database] getPendingMatchesDirectly: Fallback error:', e);
     }
     return [];
-  }
-
-  private getFencerCompetition(fencerId: string): string | null {
-    if (!this.db) return null;
-    try {
-      const row = this.queryOne<{ competition_id: string }>(
-        'SELECT competition_id FROM fencers WHERE id = ?',
-        [fencerId]
-      );
-      return row?.competition_id ?? null;
-    } catch {
-      return null;
-    }
   }
 
   public getPoolCount(competitionId: string): number {
