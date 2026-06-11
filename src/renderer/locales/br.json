@@ -12,7 +12,7 @@
     "new_competition": "Nevezompetañ",
     "import": "Importañ",
     "export": "Ezporñ",
-    "competition_properties": "Perzhioùioù ar c'hoarzh", 
+    "competition_properties": "Perzhioùioù ar c'hoarzh",
     "report_issue": "Danebenn ur pediñ",
     "quit": "Kuitaat"
   },
@@ -32,7 +32,9 @@
     "third_place_match_label": "Bras bihan (match evit an 3de plas)",
     "third_place_match_description": "Aoz ur match ouzhpenn etre an daou c'hoarzer a yaouank en hanter gourfenn evit derminiñ an 3de ha 4de plas",
     "comparisons": "Kenstrivañ",
-    "analytics": "Analiz"
+    "analytics": "Analiz",
+    "sign_tableau_matches_label": "Sinadur an dud-emgann war an tablezenn (taolenn)",
+    "sign_tableau_matches_description": "Diskouez a ra ur skramm sinadur evit an daou dud-emgann war an tablezenn goude pep emgann eus an taolenn dilamañ war-eeun"
   },
   "weapons": {
     "epee": "Spes",
@@ -222,7 +224,7 @@
     "import_failed": "TODO(br): révision par un locuteur natif breton requise — Importañ c'hwitet",
     "no_fencers": "Hini eb henger ebet",
     "no_competitions": "Hini kenstrrenn.",
-	"create_competition": "Krouit ur genstrivadeg en ur glikañ war",
+    "create_competition": "Krouit ur genstrivadeg en ur glikañ war",
     "loading": "O kargañ...",
     "error": "Fazienn",
     "success": "Berzh mat",
@@ -241,17 +243,34 @@
   "pdfTemplate": {
     "modalTitle": "Personelañ ezporzhioù PDF",
     "openButton": "Personelañ PDF",
-    "docType": { "pool": "Poelloù", "tableau": "Taolenn", "ranking": "Renk" },
+    "docType": {
+      "pool": "Poelloù",
+      "tableau": "Taolenn",
+      "ranking": "Renk"
+    },
     "customTitle": "Titl personelaet",
     "customTitlePlaceholder": "Lezel goullo evit titl emgefreek",
-    "colors": { "navy": "Liv pennañ", "gold": "Liv mouezh", "green": "Liv trechañ" },
-    "elements": {
-      "header": "Penn-bann", "gold-bar": "Barenn aour", "competition-name": "Anv ar genstrivadeg", "meta-chips": "Chips titouroù",
-      "score-grid": "Reizh poentoù", "pending-matches": "Emgavioù o vont",
-      "finished-matches": "Disoc'hoù", "match-cards": "Kartennoù emgav",
-      "ranking-table": "Taolenn renk", "footer": "Troad-pajenn"
+    "colors": {
+      "navy": "Liv pennañ",
+      "gold": "Liv mouezh",
+      "green": "Liv trechañ"
     },
-    "reset": "Adderaouiñ", "exportJson": "Ezporzhiañ JSON", "importJson": "Enporzhiañ JSON", "importError": "Restr JSON fall"
+    "elements": {
+      "header": "Penn-bann",
+      "gold-bar": "Barenn aour",
+      "competition-name": "Anv ar genstrivadeg",
+      "meta-chips": "Chips titouroù",
+      "score-grid": "Reizh poentoù",
+      "pending-matches": "Emgavioù o vont",
+      "finished-matches": "Disoc'hoù",
+      "match-cards": "Kartennoù emgav",
+      "ranking-table": "Taolenn renk",
+      "footer": "Troad-pajenn"
+    },
+    "reset": "Adderaouiñ",
+    "exportJson": "Ezporzhiañ JSON",
+    "importJson": "Enporzhiañ JSON",
+    "importError": "Restr JSON fall"
   },
   "cardModal": {
     "title": "Kartennik evit {{name}}",

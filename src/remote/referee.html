@@ -1037,6 +1037,112 @@
         .next-matches-screen { background: rgba(0,0,0,0.5); }
       }
 
+      /* ── Overlay signature des combattants (match tableau) ── */
+      .match-sig-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 950;
+        background: rgba(0, 0, 0, 0.85);
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+      }
+      .match-sig-overlay.visible { display: flex; }
+      .match-sig-box {
+        background: #1e293b;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        width: 760px;
+        max-width: 96vw;
+        max-height: 94vh;
+        overflow: auto;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
+      }
+      .match-sig-box h2 {
+        margin: 0 0 0.25rem;
+        text-align: center;
+        font-size: 1.25rem;
+        color: #e2e8f0;
+      }
+      .match-sig-instructions {
+        margin: 0 0 1rem;
+        text-align: center;
+        font-size: 0.85rem;
+        color: #94a3b8;
+      }
+      .match-sig-grid {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+      .match-sig-pad {
+        flex: 1 1 320px;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .match-sig-fencer {
+        font-size: 0.95rem;
+        color: #e2e8f0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .match-sig-letter {
+        background: #4f46e5;
+        color: #fff;
+        font-weight: 800;
+        border-radius: 0.4rem;
+        padding: 0.1rem 0.55rem;
+      }
+      .match-sig-canvas {
+        background: #fff;
+        border-radius: 0.5rem;
+        touch-action: none;
+        cursor: crosshair;
+        width: 100%;
+        height: 170px;
+        display: block;
+      }
+      .match-sig-clear {
+        align-self: flex-start;
+        background: #334155;
+        color: #cbd5e1;
+        border: none;
+        border-radius: 0.5rem;
+        padding: 0.4rem 0.9rem;
+        font-size: 0.8rem;
+        cursor: pointer;
+      }
+      .match-sig-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        margin-top: 1.25rem;
+      }
+      .match-sig-skip {
+        background: transparent;
+        color: #94a3b8;
+        border: 1px solid #475569;
+        border-radius: 0.6rem;
+        padding: 0.7rem 1.3rem;
+        font-size: 0.95rem;
+        cursor: pointer;
+      }
+      .match-sig-validate {
+        background: #16a34a;
+        color: #fff;
+        border: none;
+        border-radius: 0.6rem;
+        padding: 0.7rem 1.5rem;
+        font-size: 0.95rem;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .match-sig-validate:disabled { opacity: 0.5; cursor: default; }
+
       /* ── Overlay fin de poule / signature ── */
       .pool-complete-overlay {
         display: none;
@@ -3154,12 +3260,15 @@
         async confirmFinish() {
           if (!this.currentMatch) return;
 
+          // Conserver les infos du match avant réinitialisation (pour la signature)
+          const finishedMatch = this.currentMatch;
+
           this.matchStatus = 'finished';
           this.stopTimer();
           this.hideFinishModal();
 
           try {
-            await fetch(`/api/matches/${this.currentMatch.id}/finish`, {
+            const resp = await fetch(`/api/matches/${this.currentMatch.id}/finish`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -3169,6 +3278,7 @@
                 cardsB: this.cardsB,
               }),
             });
+            const result = await resp.json().catch(() => ({}));
 
             this.updateMatchStatus();
             this.updateControlButtons();
@@ -3179,6 +3289,11 @@
             });
 
             this.showNotification('✅ Match terminé et enregistré !');
+
+            // Signature requise sur tablette après un match du tableau
+            if (result.requireSignature && finishedMatch.fencerA?.id && finishedMatch.fencerB?.id) {
+              this.openMatchSignature(finishedMatch);
+            }
 
             // Afficher l'écran des prochains matchs
             setTimeout(() => {
@@ -3203,6 +3318,102 @@
           } catch (error) {
             console.error('Erreur fin de match:', error);
             this.showNotification(window.T('referee.error_save'), true);
+          }
+        }
+
+        // ── Signature des combattants après un match du tableau ──
+        openMatchSignature(match) {
+          this.signMatch = match;
+          const overlay = document.getElementById('match-sig-overlay');
+          const fullName = f => `${(f.lastName || '').toUpperCase()} ${f.firstName || ''}`.trim();
+          document.getElementById('match-sig-name-a').textContent = fullName(match.fencerA);
+          document.getElementById('match-sig-name-b').textContent = fullName(match.fencerB);
+          overlay.classList.add('visible');
+          this._setupSigCanvas('match-sig-canvas-a');
+          this._setupSigCanvas('match-sig-canvas-b');
+        }
+
+        _setupSigCanvas(canvasId) {
+          const canvas = document.getElementById(canvasId);
+          const ctx = canvas.getContext('2d');
+          const rect = canvas.getBoundingClientRect();
+          canvas.width = rect.width * window.devicePixelRatio;
+          canvas.height = rect.height * window.devicePixelRatio;
+          ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+          ctx.strokeStyle = '#1e293b';
+          ctx.lineWidth = 2.5;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.clearRect(0, 0, rect.width, rect.height);
+          canvas._hasInk = false;
+
+          if (canvas._sigBound) return;
+          canvas._sigBound = true;
+          let drawing = false;
+          const pos = e => {
+            const r = canvas.getBoundingClientRect();
+            return { x: e.clientX - r.left, y: e.clientY - r.top };
+          };
+          canvas.addEventListener('pointerdown', e => {
+            drawing = true;
+            const p = pos(e);
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            canvas.setPointerCapture(e.pointerId);
+          });
+          canvas.addEventListener('pointermove', e => {
+            if (!drawing) return;
+            const p = pos(e);
+            ctx.lineTo(p.x, p.y);
+            ctx.stroke();
+            canvas._hasInk = true;
+          });
+          canvas.addEventListener('pointerup', () => { drawing = false; });
+          canvas.addEventListener('pointercancel', () => { drawing = false; });
+        }
+
+        clearMatchSig(slot) {
+          const canvas = document.getElementById(`match-sig-canvas-${slot}`);
+          const ctx = canvas.getContext('2d');
+          const rect = canvas.getBoundingClientRect();
+          ctx.clearRect(0, 0, rect.width, rect.height);
+          canvas._hasInk = false;
+        }
+
+        closeMatchSignature() {
+          document.getElementById('match-sig-overlay').classList.remove('visible');
+          this.signMatch = null;
+        }
+
+        async submitMatchSignatures() {
+          const match = this.signMatch;
+          if (!match) return;
+          const canvasA = document.getElementById('match-sig-canvas-a');
+          const canvasB = document.getElementById('match-sig-canvas-b');
+          if (!canvasA._hasInk || !canvasB._hasInk) {
+            this.showNotification('✍️ Les deux tireurs doivent signer', true);
+            return;
+          }
+          const btn = document.getElementById('match-sig-submit');
+          btn.disabled = true;
+          try {
+            const send = (fencerId, dataURL) =>
+              fetch(`/api/matches/${match.id}/fencers/${fencerId}/signature`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ signatureData: dataURL }),
+              });
+            await Promise.all([
+              send(match.fencerA.id, canvasA.toDataURL('image/png')),
+              send(match.fencerB.id, canvasB.toDataURL('image/png')),
+            ]);
+            this.showNotification('✅ Signatures enregistrées');
+            this.closeMatchSignature();
+          } catch (e) {
+            console.error('Erreur signatures match:', e);
+            this.showNotification(window.T('referee.error_save'), true);
+          } finally {
+            btn.disabled = false;
           }
         }
 
@@ -3635,6 +3846,30 @@
       <button class="pco-btn" onclick="window.open(`/arene${refereeApp.arenaNumber}/journal`, '_blank')" style="margin-top:1rem; background:#4c1d95; animation:none; font-size:1.2rem; padding:0.9rem 2rem;">
         📋 JOURNAL
       </button>
+    </div>
+
+    <!-- Overlay signature des combattants après un match du tableau -->
+    <div id="match-sig-overlay" class="match-sig-overlay">
+      <div class="match-sig-box">
+        <h2>✍️ Signature des combattants</h2>
+        <p class="match-sig-instructions">Chaque tireur signe pour valider le score du match</p>
+        <div class="match-sig-grid">
+          <div class="match-sig-pad">
+            <div class="match-sig-fencer"><span class="match-sig-letter">A</span> <strong id="match-sig-name-a"></strong></div>
+            <canvas id="match-sig-canvas-a" class="match-sig-canvas"></canvas>
+            <button class="match-sig-clear" onclick="refereeApp.clearMatchSig('a')">Effacer</button>
+          </div>
+          <div class="match-sig-pad">
+            <div class="match-sig-fencer"><span class="match-sig-letter">B</span> <strong id="match-sig-name-b"></strong></div>
+            <canvas id="match-sig-canvas-b" class="match-sig-canvas"></canvas>
+            <button class="match-sig-clear" onclick="refereeApp.clearMatchSig('b')">Effacer</button>
+          </div>
+        </div>
+        <div class="match-sig-actions">
+          <button class="match-sig-skip" onclick="refereeApp.closeMatchSignature()">Passer</button>
+          <button id="match-sig-submit" class="match-sig-validate" onclick="refereeApp.submitMatchSignatures()">Valider les signatures</button>
+        </div>
+      </div>
     </div>
   </body>
 </html>

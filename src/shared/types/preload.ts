@@ -549,6 +549,9 @@ export interface DatabaseAPI {
   getPoolsByPhase: (phaseId: string) => Promise<Pool[]>;
   updatePool: (pool: Pool) => Promise<void>;
   getPoolSignatures: (poolId: string) => Promise<{ fencerId: string; signatureData: string }[]>;
+  getDEMatchSignaturesByMatchIds: (
+    matchIds: string[]
+  ) => Promise<{ matchId: string; fencerId: string; signatureData: string }[]>;
   updatePoolReferee: (poolId: string, refereeId: string | null) => Promise<void>;
 
   // Phases

@@ -47,7 +47,8 @@ export function generateTableauHTML(
   title: string,
   logoBase64?: string,
   template?: PdfTemplate,
-  showScores = false
+  showScores = false,
+  signatures?: Record<string, { A?: string; B?: string }>
 ): string {
   const real = realMatches(matches);
   const now = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -64,6 +65,11 @@ export function generateTableauHTML(
     const isWinnerB = winnerId != null && winnerId === (match.fencerB as any)?.id;
     const scoreCellA = showScores && match.scoreA != null ? `${isWinnerA ? 'V' : ''}${match.scoreA}` : '';
     const scoreCellB = showScores && match.scoreB != null ? `${isWinnerB ? 'V' : ''}${match.scoreB}` : '';
+    const sig = signatures?.[match.id];
+    const sigImg = (data?: string) =>
+      data ? `<img src="${data}" style="max-height:14mm;max-width:36mm;display:block;margin:auto;" />` : '';
+    const sigCellA = sigImg(sig?.A);
+    const sigCellB = sigImg(sig?.B);
     return `
 <div class="match-card">
   <div class="match-card-header">
@@ -90,13 +96,13 @@ export function generateTableauHTML(
         <td class="row-letter">A</td>
         <td class="fencer-name">${nameA}${clubA ? `<br><span class="fencer-club">${clubA}</span>` : ''}</td>
         <td class="score-box">${scoreCellA}</td>
-        <td class="sig-box"></td>
+        <td class="sig-box">${sigCellA}</td>
       </tr>
       <tr class="row-b">
         <td class="row-letter">B</td>
         <td class="fencer-name">${nameB}${clubB ? `<br><span class="fencer-club">${clubB}</span>` : ''}</td>
         <td class="score-box">${scoreCellB}</td>
-        <td class="sig-box"></td>
+        <td class="sig-box">${sigCellB}</td>
       </tr>
     </tbody>
   </table>
@@ -352,14 +358,15 @@ export async function exportTableauToPDF(
   matchesPerPage: number,
   title: string = 'Tableau Élimination Directe',
   logoBase64?: string,
-  template?: PdfTemplate
+  template?: PdfTemplate,
+  signatures?: Record<string, { A?: string; B?: string }>
 ): Promise<void> {
   const real = realMatches(matches);
   if (real.length === 0) {
     throw new Error('Aucun match à exporter (tous sont des exempts ou sans tireurs assignés)');
   }
 
-  const html = generateTableauHTML(matches, matchesPerPage, title, logoBase64, template);
+  const html = generateTableauHTML(matches, matchesPerPage, title, logoBase64, template, false, signatures);
   await savePDF(html, `tableau-elimination.pdf`);
 }
 
@@ -368,13 +375,14 @@ export async function printTableauHTML(
   matchesPerPage: number,
   title: string = 'Tableau Élimination Directe',
   logoBase64?: string,
-  template?: PdfTemplate
+  template?: PdfTemplate,
+  signatures?: Record<string, { A?: string; B?: string }>
 ): Promise<void> {
   const real = realMatches(matches);
   if (real.length === 0) {
     throw new Error('Aucun match à imprimer (tous sont des exempts ou sans tireurs assignés)');
   }
-  const html = generateTableauHTML(matches, matchesPerPage, title, logoBase64, template);
+  const html = generateTableauHTML(matches, matchesPerPage, title, logoBase64, template, false, signatures);
   const api = (window as any).electronAPI;
   if (!api?.file?.printHtml) {
     throw new Error('API Electron non disponible');

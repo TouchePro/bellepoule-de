@@ -47,6 +47,9 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
   const [thirdPlaceMatch, setThirdPlaceMatch] = useState(
     competition.settings?.thirdPlaceMatch ?? false
   );
+  const [signTableauMatches, setSignTableauMatches] = useState(
+    competition.settings?.signTableauMatches ?? true
+  );
   const [playAllPositions, setPlayAllPositions] = useState(
     competition.settings?.playAllPositions ?? false
   );
@@ -125,6 +128,7 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
       poolRounds,
       hasDirectElimination,
       thirdPlaceMatch,
+      signTableauMatches,
       playAllPositions,
       defaultPoolMaxScore: poolMaxScore,
       defaultTableMaxScore: tableMaxScore,
@@ -273,6 +277,20 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
                 </label>
                 <small style={HINT_INDENT}>
                   {t('competition.third_place_match_description')}
+                </small>
+              </div>
+              <div className="form-group">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={signTableauMatches}
+                    onChange={e => setSignTableauMatches(e.target.checked)}
+                    style={MR}
+                  />
+                  {t('competition.sign_tableau_matches_label')}
+                </label>
+                <small style={HINT_INDENT}>
+                  {t('competition.sign_tableau_matches_description')}
                 </small>
               </div>
               <div className="form-group">
