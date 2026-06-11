@@ -41,6 +41,10 @@ export interface FullCompetitionExportData {
   competitionTitle: string;
   isLaserSabre?: boolean;
   template?: PdfTemplate;
+  /** Signatures des poules : poolId → (fencerId → data URL PNG) */
+  poolSignatures?: Record<string, Record<string, string>>;
+  /** Signatures des matchs de tableau : matchId → { A, B } data URL PNG */
+  tableauSignatures?: Record<string, { A?: string; B?: string }>;
 }
 
 export async function exportFullCompetitionPDF(data: FullCompetitionExportData): Promise<void> {
@@ -48,6 +52,7 @@ export async function exportFullCompetitionPDF(data: FullCompetitionExportData):
   const {
     fencers, appelVisibleColumns, pools, overallRanking, tableauMatches, consolationBrackets,
     finalResults, competitionTitle, isLaserSabre = false, template,
+    poolSignatures, tableauSignatures,
   } = data;
 
   const sections: string[] = [];
@@ -71,7 +76,12 @@ export async function exportFullCompetitionPDF(data: FullCompetitionExportData):
   for (const pool of pools) {
     sections.push(generatePoolHTML(
       pool,
-      { title: `Poule ${pool.number} — ${competitionTitle}`, logoBase64: logo, competitionName: competitionTitle },
+      {
+        title: `Poule ${pool.number} — ${competitionTitle}`,
+        logoBase64: logo,
+        competitionName: competitionTitle,
+        signatures: poolSignatures?.[pool.id],
+      },
       undefined
     ));
   }
@@ -93,7 +103,7 @@ export async function exportFullCompetitionPDF(data: FullCompetitionExportData):
     sections.push(generateTableauHTML(
       roundMatches, MAX_MATCHES_PER_PAGE_TABLEAU,
       `${getTableauRoundName(round)} — ${competitionTitle}`,
-      logo, undefined, true
+      logo, undefined, true, tableauSignatures
     ));
   }
 
@@ -105,7 +115,7 @@ export async function exportFullCompetitionPDF(data: FullCompetitionExportData):
       sections.push(generateTableauHTML(
         roundMatches, MAX_MATCHES_PER_PAGE_TABLEAU,
         `${bracket.name} — ${getTableauRoundName(round)} — ${competitionTitle}`,
-        logo, undefined, true
+        logo, undefined, true, tableauSignatures
       ));
     }
   }

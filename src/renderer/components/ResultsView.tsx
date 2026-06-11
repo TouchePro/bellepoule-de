@@ -232,6 +232,36 @@ const ResultsView: React.FC<ResultsViewProps> = ({
         }, 'poules', []);
       }
 
+      // Signatures des poules : poolId → (fencerId → data URL)
+      const poolSignatures = await safe(async () => {
+        const entries = await Promise.all(
+          effectivePools.map(async (p) => {
+            const sigs = (await api?.db?.getPoolSignatures?.(p.id)) ?? [];
+            return [p.id, Object.fromEntries(sigs.map((s: { fencerId: string; signatureData: string }) => [s.fencerId, s.signatureData]))] as const;
+          })
+        );
+        return Object.fromEntries(entries) as Record<string, Record<string, string>>;
+      }, 'signatures poules', {} as Record<string, Record<string, string>>);
+
+      // Signatures des matchs de TDE : matchId → { A, B }
+      const allTableauMatches = [
+        ...(effectiveTableauMatches as TableauMatchForPDF[]),
+        ...(consolationBrackets ?? []).flatMap(b => b.matches as TableauMatchForPDF[]),
+      ];
+      const tableauSignatures = await safe(async () => {
+        const ids = allTableauMatches.map(m => m.id).filter(Boolean);
+        const rows = (await api?.db?.getDEMatchSignaturesByMatchIds?.(ids)) ?? [];
+        const out: Record<string, { A?: string; B?: string }> = {};
+        for (const row of rows as { matchId: string; fencerId: string; signatureData: string }[]) {
+          const match = allTableauMatches.find(m => m.id === row.matchId);
+          if (!match) continue;
+          const slot = match.fencerA?.id === row.fencerId ? 'A' : match.fencerB?.id === row.fencerId ? 'B' : null;
+          if (!slot) continue;
+          (out[row.matchId] ??= {})[slot] = row.signatureData;
+        }
+        return out;
+      }, 'signatures tableau', {} as Record<string, { A?: string; B?: string }>);
+
       const { exportFullCompetitionPDF } = await import('../../shared/utils/pdfExport');
       await exportFullCompetitionPDF({
         fencers: effectiveFencers,
@@ -248,6 +278,8 @@ const ResultsView: React.FC<ResultsViewProps> = ({
         competitionTitle: competition.title,
         isLaserSabre,
         template: rankingTemplate,
+        poolSignatures,
+        tableauSignatures,
       });
     } catch (e) {
       showToast((e as Error).message, 'error');
