@@ -1072,6 +1072,25 @@
         font-size: 0.85rem;
         color: #94a3b8;
       }
+      .match-sig-score-recall {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.15rem;
+        margin: 0 0 1rem;
+      }
+      .match-sig-score-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #64748b;
+      }
+      .match-sig-score-value {
+        font-size: 1.9rem;
+        font-weight: 800;
+        color: #e2e8f0;
+        letter-spacing: 0.05em;
+      }
       .match-sig-grid {
         display: flex;
         gap: 1rem;
@@ -1082,6 +1101,22 @@
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
+        border: 2px solid transparent;
+        border-radius: 0.6rem;
+        padding: 0.5rem;
+      }
+      .match-sig-pad.winner {
+        border-color: #16a34a;
+        background: rgba(22, 163, 74, 0.08);
+      }
+      .match-sig-victory {
+        display: inline-block;
+        background: #16a34a;
+        color: #fff;
+        font-weight: 800;
+        border-radius: 0.35rem;
+        padding: 0.05rem 0.45rem;
+        margin-right: 0.25rem;
       }
       .match-sig-fencer {
         font-size: 0.95rem;
@@ -3292,7 +3327,7 @@
 
             // Signature requise sur tablette après un match du tableau
             if (result.requireSignature && finishedMatch.fencerA?.id && finishedMatch.fencerB?.id) {
-              this.openMatchSignature(finishedMatch);
+              this.openMatchSignature(finishedMatch, this.scoreA, this.scoreB);
             }
 
             // Afficher l'écran des prochains matchs
@@ -3322,12 +3357,19 @@
         }
 
         // ── Signature des combattants après un match du tableau ──
-        openMatchSignature(match) {
+        openMatchSignature(match, scoreA, scoreB) {
           this.signMatch = match;
           const overlay = document.getElementById('match-sig-overlay');
           const fullName = f => `${(f.lastName || '').toUpperCase()} ${f.firstName || ''}`.trim();
-          document.getElementById('match-sig-name-a').textContent = fullName(match.fencerA);
-          document.getElementById('match-sig-name-b').textContent = fullName(match.fencerB);
+          const aWins = scoreA > scoreB;
+          const bWins = scoreB > scoreA;
+          // Rappel du score et indication du vainqueur (V)
+          document.getElementById('match-sig-score').textContent = `${scoreA} – ${scoreB}`;
+          const vTag = win => (win ? '<span class="match-sig-victory">V</span> ' : '');
+          document.getElementById('match-sig-name-a').innerHTML = vTag(aWins) + fullName(match.fencerA);
+          document.getElementById('match-sig-name-b').innerHTML = vTag(bWins) + fullName(match.fencerB);
+          document.getElementById('match-sig-pad-a').classList.toggle('winner', aWins);
+          document.getElementById('match-sig-pad-b').classList.toggle('winner', bWins);
           overlay.classList.add('visible');
           this._setupSigCanvas('match-sig-canvas-a');
           this._setupSigCanvas('match-sig-canvas-b');
@@ -3853,13 +3895,17 @@
       <div class="match-sig-box">
         <h2>✍️ Signature des combattants</h2>
         <p class="match-sig-instructions">Chaque tireur signe pour valider le score du match</p>
+        <div class="match-sig-score-recall">
+          <span class="match-sig-score-label">Score final</span>
+          <span id="match-sig-score" class="match-sig-score-value"></span>
+        </div>
         <div class="match-sig-grid">
-          <div class="match-sig-pad">
+          <div id="match-sig-pad-a" class="match-sig-pad">
             <div class="match-sig-fencer"><span class="match-sig-letter">A</span> <strong id="match-sig-name-a"></strong></div>
             <canvas id="match-sig-canvas-a" class="match-sig-canvas"></canvas>
             <button class="match-sig-clear" onclick="refereeApp.clearMatchSig('a')">Effacer</button>
           </div>
-          <div class="match-sig-pad">
+          <div id="match-sig-pad-b" class="match-sig-pad">
             <div class="match-sig-fencer"><span class="match-sig-letter">B</span> <strong id="match-sig-name-b"></strong></div>
             <canvas id="match-sig-canvas-b" class="match-sig-canvas"></canvas>
             <button class="match-sig-clear" onclick="refereeApp.clearMatchSig('b')">Effacer</button>

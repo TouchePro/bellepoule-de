@@ -213,7 +213,7 @@ export class DatabaseManager {
         poolRounds: 1,
         hasDirectElimination: true,
         thirdPlaceMatch: true,
-        signTableauMatches: true,
+        signTableauMatches: false,
         manualRanking: false,
         defaultRanking: 0,
         randomScore: false,

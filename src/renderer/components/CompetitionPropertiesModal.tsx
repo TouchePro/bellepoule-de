@@ -48,7 +48,7 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
     competition.settings?.thirdPlaceMatch ?? false
   );
   const [signTableauMatches, setSignTableauMatches] = useState(
-    competition.settings?.signTableauMatches ?? true
+    competition.settings?.signTableauMatches ?? false
   );
   const [playAllPositions, setPlayAllPositions] = useState(
     competition.settings?.playAllPositions ?? false
