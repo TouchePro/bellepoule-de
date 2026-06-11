@@ -32,7 +32,9 @@
     "third_place_match_label": "Pequeña final (partido por el 3er lugar)",
     "third_place_match_description": "Organiza un partido adicional entre los dos semifinalistas perdedores para determinar el 3er y 4to lugar",
     "comparisons": "Comparaciones",
-    "analytics": "Analytics"
+    "analytics": "Analytics",
+    "sign_tableau_matches_label": "Firma de los tiradores en tableta (cuadro)",
+    "sign_tableau_matches_description": "Muestra una pantalla de firma para ambos tiradores en la tableta después de cada combate del cuadro de eliminación directa"
   },
   "weapons": {
     "epee": "Espada",
@@ -241,17 +243,34 @@
   "pdfTemplate": {
     "modalTitle": "Personalizar exportaciones PDF",
     "openButton": "Personalizar PDFs",
-    "docType": { "pool": "Grupos", "tableau": "Cuadro", "ranking": "Clasificación" },
+    "docType": {
+      "pool": "Grupos",
+      "tableau": "Cuadro",
+      "ranking": "Clasificación"
+    },
     "customTitle": "Título personalizado",
     "customTitlePlaceholder": "Dejar vacío para título automático",
-    "colors": { "navy": "Color principal", "gold": "Color de acento", "green": "Color de victoria" },
-    "elements": {
-      "header": "Encabezado", "gold-bar": "Separador dorado", "competition-name": "Nombre de competición", "meta-chips": "Chips de info",
-      "score-grid": "Cuadrícula de puntuación", "pending-matches": "Combates pendientes",
-      "finished-matches": "Resultados", "match-cards": "Fichas de combate",
-      "ranking-table": "Tabla de clasificación", "footer": "Pie de página"
+    "colors": {
+      "navy": "Color principal",
+      "gold": "Color de acento",
+      "green": "Color de victoria"
     },
-    "reset": "Restablecer", "exportJson": "Exportar JSON", "importJson": "Importar JSON", "importError": "Archivo JSON inválido"
+    "elements": {
+      "header": "Encabezado",
+      "gold-bar": "Separador dorado",
+      "competition-name": "Nombre de competición",
+      "meta-chips": "Chips de info",
+      "score-grid": "Cuadrícula de puntuación",
+      "pending-matches": "Combates pendientes",
+      "finished-matches": "Resultados",
+      "match-cards": "Fichas de combate",
+      "ranking-table": "Tabla de clasificación",
+      "footer": "Pie de página"
+    },
+    "reset": "Restablecer",
+    "exportJson": "Exportar JSON",
+    "importJson": "Importar JSON",
+    "importError": "Archivo JSON inválido"
   },
   "cardModal": {
     "title": "Tarjeta para {{name}}",

@@ -1102,6 +1102,9 @@ ipcMain.handle('db:getPoolsByPhase', async (_, phaseId) => {
 ipcMain.handle('db:getPoolSignatures', async (_, poolId: string) => {
   return db.getPoolSignatures(poolId);
 });
+ipcMain.handle('db:getDEMatchSignaturesByMatchIds', async (_, matchIds: string[]) => {
+  return db.getDEMatchSignaturesByMatchIds(matchIds);
+});
 
 // Phase handlers
 ipcMain.handle('db:createPhase', async (_, competitionId, type, order, name) => {

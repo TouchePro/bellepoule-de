@@ -200,6 +200,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
     getPoolsByPhase: (phaseId: string) => ipcRenderer.invoke('db:getPoolsByPhase', phaseId),
     getPoolSignatures: (poolId: string) => ipcRenderer.invoke('db:getPoolSignatures', poolId),
+    getDEMatchSignaturesByMatchIds: (matchIds: string[]) =>
+      ipcRenderer.invoke('db:getDEMatchSignaturesByMatchIds', matchIds),
     updatePoolReferee: (poolId: string, refereeId: string | null) =>
       ipcRenderer.invoke('db:updatePoolReferee', poolId, refereeId),
 

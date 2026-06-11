@@ -1296,6 +1296,45 @@ export class RemoteScoreServer {
       }
     });
 
+    // API : signature numérique d'un combattant pour un match de tableau (élimination directe)
+    this.app.post('/api/matches/:matchId/fencers/:fencerId/signature', (req, res) => {
+      if (!this.hasAnyValidToken(req.headers.cookie)) {
+        return res.status(401).json({ error: 'Non authentifié' });
+      }
+      const { matchId, fencerId } = req.params;
+      const { signatureData } = req.body as { signatureData: string };
+
+      if (!signatureData || !signatureData.startsWith('data:image/png;base64,')) {
+        return res.status(400).json({ error: 'Données de signature invalides' });
+      }
+      if (signatureData.length > 200_000) {
+        return res.status(400).json({ error: 'Signature trop volumineuse (max 150 Ko)' });
+      }
+
+      const dbMatch = this.db.getMatch(matchId);
+      if (!dbMatch) {
+        return res.status(404).json({ error: 'Match non trouvé' });
+      }
+      // Réservé aux matchs de tableau (pas de poule)
+      if ((dbMatch as any).poolId) {
+        return res.status(400).json({ error: 'Signature de match réservée au tableau' });
+      }
+
+      try {
+        this.db.saveDEMatchSignature(matchId, fencerId, signatureData);
+
+        const mainWin = (global as any).mainWindow;
+        if (mainWin) {
+          mainWin.webContents.send('tableau:signature:updated', { matchId, fencerId });
+        }
+
+        res.json({ success: true });
+      } catch (err) {
+        console.error('[RemoteScoreServer] Erreur signature tableau:', err);
+        res.status(500).json({ error: 'Erreur enregistrement signature' });
+      }
+    });
+
     // API pour récupérer les matchs d'une arène/poule
     this.app.get('/api/arenas/:arenaId/matches', (req, res) => {
       try {
@@ -1601,8 +1640,19 @@ export class RemoteScoreServer {
           sender: 'server',
         });
 
+        // Signature requise après le match si c'est un match de tableau et l'option est activée
+        const matchObjForSig: any = dbMatch || inMemoryMatch;
+        const isTableauMatch = !(matchObjForSig?.poolId);
+        let requireSignature = false;
+        if (isTableauMatch && this.session) {
+          try {
+            const comp = this.db.getCompetition(this.session.competitionId);
+            requireSignature = comp?.settings?.signTableauMatches !== false;
+          } catch { /* défaut: false */ }
+        }
+
         console.log(`[RemoteScoreServer] Match ${matchId} terminé et enregistré`);
-        res.json({ success: true, winner });
+        res.json({ success: true, winner, requireSignature });
       } catch (error) {
         console.error('[RemoteScoreServer] Erreur fin de match:', error);
         res.status(500).json({ error: 'Erreur lors de la fin du match' });

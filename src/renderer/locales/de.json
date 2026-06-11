@@ -103,7 +103,9 @@
     "third_place_match_label": "Kleines Finale (Spiel um den 3. Platz)",
     "third_place_match_ok": "Klicken Sie auf OK, um das kleine Finale hinzuzufügen",
     "title": "Titel",
-    "weapon": "Waffe"
+    "weapon": "Waffe",
+    "sign_tableau_matches_label": "Unterschrift der Fechter auf Tablet (Tableau)",
+    "sign_tableau_matches_description": "Zeigt nach jedem K.-o.-Match auf dem Tablet einen Unterschriftsbildschirm für beide Fechter an"
   },
   "fencer": {
     "abandon": "Aufgeben",

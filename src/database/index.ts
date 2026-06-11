@@ -213,6 +213,7 @@ export class DatabaseManager {
         poolRounds: 1,
         hasDirectElimination: true,
         thirdPlaceMatch: true,
+        signTableauMatches: true,
         manualRanking: false,
         defaultRanking: 0,
         randomScore: false,
@@ -1788,6 +1789,37 @@ export class DatabaseManager {
       `SELECT fencer_id, signature_data FROM pool_signatures WHERE pool_id = ?`,
       [poolId]
     ).map(row => ({ fencerId: row.fencer_id, signatureData: row.signature_data }));
+  }
+
+  // ── Signatures des matchs de tableau (élimination directe) ──
+  public saveDEMatchSignature(matchId: string, fencerId: string, signatureData: string): void {
+    if (!this.db) throw new Error('Database not open');
+    this.run(
+      `INSERT INTO de_match_signatures (id, match_id, fencer_id, signature_data, signed_at) VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT(match_id, fencer_id) DO UPDATE SET signature_data = excluded.signature_data, signed_at = excluded.signed_at`,
+      [uuidv4(), matchId, fencerId, signatureData, new Date().toISOString()]
+    );
+  }
+
+  public getDEMatchSignatures(matchId: string): { fencerId: string; signatureData: string }[] {
+    if (!this.db) throw new Error('Database not open');
+    return this.queryAll<{ fencer_id: string; signature_data: string }>(
+      `SELECT fencer_id, signature_data FROM de_match_signatures WHERE match_id = ?`,
+      [matchId]
+    ).map(row => ({ fencerId: row.fencer_id, signatureData: row.signature_data }));
+  }
+
+  /** Signatures de tableau pour un ensemble de matchs (pour export PDF). */
+  public getDEMatchSignaturesByMatchIds(
+    matchIds: string[]
+  ): { matchId: string; fencerId: string; signatureData: string }[] {
+    if (!this.db) throw new Error('Database not open');
+    if (matchIds.length === 0) return [];
+    const placeholders = matchIds.map(() => '?').join(',');
+    return this.queryAll<{ match_id: string; fencer_id: string; signature_data: string }>(
+      `SELECT match_id, fencer_id, signature_data FROM de_match_signatures WHERE match_id IN (${placeholders})`,
+      matchIds
+    ).map(row => ({ matchId: row.match_id, fencerId: row.fencer_id, signatureData: row.signature_data }));
   }
 }
 

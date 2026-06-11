@@ -569,6 +569,7 @@ export interface CompetitionSettings {
   poolRounds: number; // Nombre de tours de poules (défaut: 1)
   hasDirectElimination: boolean; // Phase d'élimination directe activée (défaut: true)
   thirdPlaceMatch: boolean; // Match pour la 3ème place activé (défaut: false)
+  signTableauMatches?: boolean; // Signature des combattants sur tablette après chaque match du tableau (défaut: true)
   manualRanking: boolean; // Classement manuel
   defaultRanking: number; // Classement par défaut pour non-classés
   randomScore: boolean; // Scores aléatoires (pour tests)

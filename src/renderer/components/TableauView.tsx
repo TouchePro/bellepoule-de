@@ -647,11 +647,29 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     const title = `Tableau de ${tableauSize}${roundLabel ? ` — ${roundLabel}` : ''}`;
     const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
     try {
+      // Récupérer les signatures des combattants (saisies sur tablette)
+      let signatures: Record<string, { A?: string; B?: string }> | undefined;
+      try {
+        const api = (window as any).electronAPI;
+        const ids = filteredMatches.map(m => m.id).filter(Boolean);
+        const rows = (await api?.db?.getDEMatchSignaturesByMatchIds?.(ids)) ?? [];
+        if (rows.length > 0) {
+          signatures = {};
+          for (const row of rows) {
+            const match = filteredMatches.find(m => m.id === row.matchId);
+            if (!match) continue;
+            const slot = match.fencerA?.id === row.fencerId ? 'A' : match.fencerB?.id === row.fencerId ? 'B' : null;
+            if (!slot) continue;
+            (signatures[row.matchId] ??= {})[slot] = row.signatureData;
+          }
+        }
+      } catch { /* signatures optionnelles */ }
+
       const { printTableauHTML, exportTableauToPDF } = await import('../../shared/utils/pdfExport');
       if (pdfMode === 'print') {
-        await printTableauHTML(filteredMatches, perPage, title, logo, tableauTemplate);
+        await printTableauHTML(filteredMatches, perPage, title, logo, tableauTemplate, signatures);
       } else {
-        await exportTableauToPDF(filteredMatches, perPage, title, logo, tableauTemplate);
+        await exportTableauToPDF(filteredMatches, perPage, title, logo, tableauTemplate, signatures);
       }
       setShowPdfModal(false);
     } catch (e) {

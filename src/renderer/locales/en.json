@@ -32,7 +32,9 @@
     "third_place_match_label": "Bronze medal match (3rd place match)",
     "third_place_match_description": "Organizes an additional match between the two losing semi-finalists to determine 3rd and 4th place",
     "comparisons": "Comparisons",
-    "analytics": "Analytics"
+    "analytics": "Analytics",
+    "sign_tableau_matches_label": "Fencer signature on tablet (bracket)",
+    "sign_tableau_matches_description": "Shows a signature screen for both fencers on the tablet after each direct-elimination bracket match"
   },
   "weapons": {
     "epee": "Epee",
@@ -222,7 +224,7 @@
     "import_failed": "Import failed",
     "no_fencers": "No fencers",
     "no_competitions": "No competitions.",
-	"create_competition": "Create one by clicking on",
+    "create_competition": "Create one by clicking on",
     "loading": "Loading...",
     "error": "Error",
     "success": "Success",
@@ -241,17 +243,34 @@
   "pdfTemplate": {
     "modalTitle": "Customize PDF Exports",
     "openButton": "Customize PDFs",
-    "docType": { "pool": "Pools", "tableau": "Tableau", "ranking": "Ranking" },
+    "docType": {
+      "pool": "Pools",
+      "tableau": "Tableau",
+      "ranking": "Ranking"
+    },
     "customTitle": "Custom title",
     "customTitlePlaceholder": "Leave empty for automatic title",
-    "colors": { "navy": "Primary color", "gold": "Accent color", "green": "Victory color" },
-    "elements": {
-      "header": "Header", "gold-bar": "Gold separator", "competition-name": "Competition name", "meta-chips": "Info chips",
-      "score-grid": "Score grid", "pending-matches": "Pending matches",
-      "finished-matches": "Results", "match-cards": "Match cards",
-      "ranking-table": "Ranking table", "footer": "Footer"
+    "colors": {
+      "navy": "Primary color",
+      "gold": "Accent color",
+      "green": "Victory color"
     },
-    "reset": "Reset", "exportJson": "Export JSON", "importJson": "Import JSON", "importError": "Invalid JSON file"
+    "elements": {
+      "header": "Header",
+      "gold-bar": "Gold separator",
+      "competition-name": "Competition name",
+      "meta-chips": "Info chips",
+      "score-grid": "Score grid",
+      "pending-matches": "Pending matches",
+      "finished-matches": "Results",
+      "match-cards": "Match cards",
+      "ranking-table": "Ranking table",
+      "footer": "Footer"
+    },
+    "reset": "Reset",
+    "exportJson": "Export JSON",
+    "importJson": "Import JSON",
+    "importError": "Invalid JSON file"
   },
   "cardModal": {
     "title": "Card for {{name}}",

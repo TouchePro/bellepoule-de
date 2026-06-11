@@ -316,4 +316,21 @@ export const ALL_MIGRATIONS: Migration[] = [
       db.run(`CREATE INDEX IF NOT EXISTS idx_referees_competition ON referees(competition_id)`);
     },
   },
+  {
+    version: 11,
+    description: 'Table de_match_signatures pour signatures des matchs de tableau (élimination directe)',
+    up(db) {
+      db.run(`
+        CREATE TABLE IF NOT EXISTS de_match_signatures (
+          id TEXT PRIMARY KEY,
+          match_id TEXT NOT NULL,
+          fencer_id TEXT NOT NULL,
+          signature_data TEXT NOT NULL,
+          signed_at TEXT NOT NULL,
+          UNIQUE(match_id, fencer_id)
+        )
+      `);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_de_sigs_match ON de_match_signatures(match_id)`);
+    },
+  },
 ];
