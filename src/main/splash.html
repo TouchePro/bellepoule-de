@@ -144,64 +144,52 @@
       margin-bottom: 8px;
     }
 
-    .lang-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 6px;
+    .lang-select-wrap {
+      position: relative;
       width: 100%;
       margin-bottom: 14px;
     }
 
-    .lang-btn {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 3px;
-      padding: 7px 4px;
+    .lang-select-wrap::after {
+      content: '▾';
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #4a5a7a;
+      pointer-events: none;
+      font-size: 12px;
+    }
+
+    .lang-select {
+      width: 100%;
+      padding: 9px 36px 9px 12px;
       border-radius: 8px;
       border: 1px solid #1e2d4a;
       background: #121d33;
+      color: #e8eaf0;
+      font-size: 13px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
       cursor: pointer;
-      transition: border-color 0.15s, background 0.15s;
       outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      transition: border-color 0.15s, background 0.15s;
     }
 
-    .lang-btn:hover {
+    .lang-select:hover {
       border-color: #2a3e66;
       background: #162035;
     }
 
-    .lang-btn.selected {
+    .lang-select:focus {
       border-color: #3B5BDB;
-      background: rgba(59, 91, 219, 0.18);
+      background: rgba(59, 91, 219, 0.12);
     }
 
-    .lang-flag {
-      width: 28px;
-      height: 20px;
-      object-fit: cover;
-      border-radius: 2px;
-      display: block;
-    }
-
-    .lang-flag-svg {
-      width: 28px;
-      height: 20px;
-      display: block;
-      border-radius: 2px;
-      overflow: hidden;
-    }
-
-    .lang-name {
-      font-size: 9px;
-      color: #8899bb;
-      letter-spacing: 0.03em;
-      white-space: nowrap;
-    }
-
-    .lang-btn.selected .lang-name {
-      color: #a8c1ff;
-      font-weight: 600;
+    .lang-select option {
+      background: #121d33;
+      color: #e8eaf0;
     }
 
     /* ---- Bouton confirmer ---- */
@@ -254,54 +242,16 @@
 
     <div class="lang-label" id="lang-label">Language / Langue</div>
 
-    <div class="lang-grid" id="lang-grid">
-      <button class="lang-btn" data-lang="fr" onclick="selectLang('fr')">
-        <img class="lang-flag" src="https://flagcdn.com/28x21/fr.png" alt="FR">
-        <span class="lang-name">Français</span>
-      </button>
-      <button class="lang-btn" data-lang="en" onclick="selectLang('en')">
-        <img class="lang-flag" src="https://flagcdn.com/28x21/us.png" alt="US">
-        <span class="lang-name">English</span>
-      </button>
-      <button class="lang-btn" data-lang="de" onclick="selectLang('de')">
-        <img class="lang-flag" src="https://flagcdn.com/28x21/de.png" alt="DE">
-        <span class="lang-name">Deutsch</span>
-      </button>
-      <button class="lang-btn" data-lang="es" onclick="selectLang('es')">
-        <img class="lang-flag" src="https://flagcdn.com/28x21/es.png" alt="ES">
-        <span class="lang-name">Español</span>
-      </button>
-      <button class="lang-btn" data-lang="zh-HK" onclick="selectLang('zh-HK')">
-        <img class="lang-flag" src="https://flagcdn.com/28x21/hk.png" alt="HK">
-        <span class="lang-name">繁體中文</span>
-      </button>
-      <button class="lang-btn" data-lang="br" onclick="selectLang('br')">
-        <!-- Gwenn-ha-du (drapeau breton) : hermine + bandes noir/blanc -->
-        <svg class="lang-flag-svg" viewBox="0 0 28 20" xmlns="http://www.w3.org/2000/svg">
-          <rect width="28" height="20" fill="white"/>
-          <rect y="4" width="28" height="4" fill="#1a1a1a"/>
-          <rect y="12" width="28" height="4" fill="#1a1a1a"/>
-          <rect width="12" height="20" fill="white"/>
-          <rect width="12" height="20" fill="url(#hermine)" opacity="0.9"/>
-          <defs>
-            <pattern id="hermine" x="0" y="0" width="4" height="5" patternUnits="userSpaceOnUse">
-              <text x="0.5" y="4" font-size="4" fill="#1a1a1a">⚜</text>
-            </pattern>
-          </defs>
-        </svg>
-        <span class="lang-name">Brezhoneg</span>
-      </button>
-      <button class="lang-btn" data-lang="ca" onclick="selectLang('ca')">
-        <!-- Senyera catalana : 4 barres rouges sur fond or -->
-        <svg class="lang-flag-svg" viewBox="0 0 28 20" xmlns="http://www.w3.org/2000/svg">
-          <rect width="28" height="20" fill="#FCDD09"/>
-          <rect y="2.2" width="28" height="2.2" fill="#DA121A"/>
-          <rect y="6.7" width="28" height="2.2" fill="#DA121A"/>
-          <rect y="11.1" width="28" height="2.2" fill="#DA121A"/>
-          <rect y="15.6" width="28" height="2.2" fill="#DA121A"/>
-        </svg>
-        <span class="lang-name">Català</span>
-      </button>
+    <div class="lang-select-wrap">
+      <select class="lang-select" id="lang-select" onchange="selectLang(this.value)">
+        <option value="fr">🇫🇷  Français</option>
+        <option value="en">🇺🇸  English</option>
+        <option value="de">🇩🇪  Deutsch</option>
+        <option value="es">🇪🇸  Español</option>
+        <option value="zh-HK">🇭🇰  繁體中文</option>
+        <option value="br">🏴  Brezhoneg</option>
+        <option value="ca">🟡  Català</option>
+      </select>
     </div>
 
     <button class="confirm-btn" id="confirm-btn" onclick="confirm()">
@@ -338,9 +288,8 @@
 
     function selectLang(lang) {
       selectedLang = lang;
-      document.querySelectorAll('.lang-btn').forEach(function(btn) {
-        btn.classList.toggle('selected', btn.dataset.lang === lang);
-      });
+      var sel = document.getElementById('lang-select');
+      if (sel) sel.value = lang;
       updateConfirmLabel(lang);
     }
 
