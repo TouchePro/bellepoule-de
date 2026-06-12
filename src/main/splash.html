@@ -210,9 +210,47 @@
 
     .confirm-btn:hover { opacity: 0.88; }
     .confirm-btn:active { opacity: 0.75; }
+
+    /* ---- Drag region + close button ---- */
+    .drag-region {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 36px;
+      -webkit-app-region: drag;
+    }
+
+    .close-btn {
+      position: fixed;
+      top: 8px;
+      right: 10px;
+      width: 20px;
+      height: 20px;
+      border: none;
+      background: transparent;
+      color: #4a5a7a;
+      font-size: 16px;
+      line-height: 20px;
+      text-align: center;
+      cursor: pointer;
+      border-radius: 4px;
+      padding: 0;
+      -webkit-app-region: no-drag;
+      transition: color 0.15s, background 0.15s;
+    }
+
+    .close-btn:hover {
+      color: #e8eaf0;
+      background: rgba(255,255,255,0.1);
+    }
+
+    .close-btn:active {
+      background: rgba(255,255,255,0.18);
+    }
   </style>
 </head>
 <body>
+  <div class="drag-region"></div>
+  <button class="close-btn" onclick="closeSplash()" title="Close" aria-label="Close">&#x2715;</button>
   <div class="container">
     <img id="app-icon" class="icon" alt="" onerror="this.style.display='none'; document.getElementById('icon-fb').style.display='flex';">
     <div id="icon-fb" class="icon-placeholder" style="display:none;">⚔️</div>
@@ -311,6 +349,12 @@
     function enterApp() {
       if (window.splashAPI) {
         window.splashAPI.confirm(selectedLang);
+      }
+    }
+
+    function closeSplash() {
+      if (window.splashAPI) {
+        window.splashAPI.close();
       }
     }
 

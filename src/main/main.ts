@@ -128,6 +128,11 @@ ipcMain.once('splash:confirm', (_event, lang: string) => {
   splashConfirmResolve?.(confirmed);
 });
 
+// IPC: user closes splash without confirming → quit
+ipcMain.once('splash:close', () => {
+  app.quit();
+});
+
 // onClosed est appelé après le fade-out, au moment d'afficher la fenêtre principale
 function closeSplash(onClosed?: () => void): void {
   if (!splashWindow || splashWindow.isDestroyed()) {
