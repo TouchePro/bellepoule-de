@@ -85,7 +85,7 @@ module.exports = (env = {}) => ({
     rules: [
       {
         test: /\.tsx?$/,
-        use: { loader: 'ts-loader', options: { ignoreDiagnostics: [5103] } },
+        use: { loader: 'ts-loader', options: { ignoreDiagnostics: [5011, 5103] } },
         exclude: /node_modules/,
       },
       {

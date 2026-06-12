@@ -37,7 +37,7 @@ const common = {
     rules: [
       {
         test: /\.tsx?$/,
-        use: { loader: 'ts-loader', options: { transpileOnly: true, ignoreDiagnostics: [5103] } },
+        use: { loader: 'ts-loader', options: { transpileOnly: true, ignoreDiagnostics: [5011, 5103] } },
         exclude: /node_modules/,
       },
     ],
