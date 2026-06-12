@@ -210,6 +210,28 @@
 
     .confirm-btn:hover { opacity: 0.88; }
     .confirm-btn:active { opacity: 0.75; }
+    .confirm-btn:disabled { opacity: 0.5; cursor: default; }
+
+    .loading-phrase {
+      margin-top: 12px;
+      font-size: 11px;
+      color: #4a5a7a;
+      letter-spacing: 0.06em;
+      min-height: 16px;
+      text-align: center;
+    }
+
+    @keyframes ellipsis {
+      0%   { content: '.'; }
+      33%  { content: '..'; }
+      66%  { content: '...'; }
+      100% { content: ''; }
+    }
+
+    .loading-phrase.active::after {
+      content: '';
+      animation: ellipsis 1.2s steps(1) infinite;
+    }
 
     /* ---- Drag region + close button ---- */
     .drag-region {
@@ -295,6 +317,7 @@
     <button class="confirm-btn" id="confirm-btn" onclick="enterApp()">
       Entrer · Enter
     </button>
+    <div class="loading-phrase" id="loading-phrase"></div>
   </div>
 
   <script>
@@ -341,12 +364,32 @@
       ca: 'Entrar a BellePoule',
     };
 
+    var LOADING_LABELS = {
+      fr: 'Chargement de BellePoule',
+      en: 'Loading BellePoule',
+      de: 'BellePoule wird geladen',
+      es: 'Cargando BellePoule',
+      'zh-HK': '正在載入 BellePoule',
+      br: 'O kargañ BellePoule',
+      ca: 'Carregant BellePoule',
+    };
+
     function updateConfirmLabel(lang) {
       var btn = document.getElementById('confirm-btn');
-      if (btn) btn.textContent = CONFIRM_LABELS[lang] || CONFIRM_LABELS['en'];
+      if (btn && !btn.disabled) btn.textContent = CONFIRM_LABELS[lang] || CONFIRM_LABELS['en'];
     }
 
     function enterApp() {
+      var btn = document.getElementById('confirm-btn');
+      var phrase = document.getElementById('loading-phrase');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = CONFIRM_LABELS[selectedLang] || CONFIRM_LABELS['en'];
+      }
+      if (phrase) {
+        phrase.textContent = LOADING_LABELS[selectedLang] || LOADING_LABELS['en'];
+        phrase.classList.add('active');
+      }
       if (window.splashAPI) {
         window.splashAPI.confirm(selectedLang);
       }

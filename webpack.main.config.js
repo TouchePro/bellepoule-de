@@ -1,5 +1,6 @@
 const path = require('path');
 const TerserPlugin = require('terser-webpack-plugin');
+const CopyPlugin = require('copy-webpack-plugin');
 
 // La minification est pilotée par --mode (défaut: production pour les builds).
 // Les scripts dev passent --mode development.
@@ -36,7 +37,7 @@ const common = {
     rules: [
       {
         test: /\.tsx?$/,
-        use: 'ts-loader',
+        use: { loader: 'ts-loader', options: { transpileOnly: true } },
         exclude: /node_modules/,
       },
     ],
@@ -76,5 +77,19 @@ module.exports = [
       path: path.resolve(__dirname, 'dist/main'),
       filename: '[name].js',
     },
+  },
+  {
+    ...common,
+    target: 'electron-preload',
+    entry: { 'splash-preload': './src/main/splash-preload.ts' },
+    output: {
+      path: path.resolve(__dirname, 'dist/main'),
+      filename: '[name].js',
+    },
+    plugins: [
+      new CopyPlugin({
+        patterns: [{ from: './src/main/splash.html', to: 'splash.html' }],
+      }),
+    ],
   },
 ];
