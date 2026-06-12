@@ -11,8 +11,8 @@
       background: #0f1729;
       color: #e8eaf0;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      width: 480px;
-      height: 320px;
+      width: 520px;
+      height: 460px;
       overflow: hidden;
       display: flex;
       align-items: center;
@@ -28,73 +28,70 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      width: 440px;
+      width: 480px;
     }
 
-    /* ---- Icône ---- */
     @keyframes icon-breathe {
       0%, 100% { transform: scale(1); }
       50% { transform: scale(1.04); }
     }
 
     .icon {
-      width: 60px;
-      height: 60px;
-      border-radius: 14px;
-      margin-bottom: 12px;
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      margin-bottom: 10px;
       animation: icon-breathe 2.5s ease-in-out infinite;
       image-rendering: -webkit-optimize-contrast;
     }
 
     .icon-placeholder {
-      width: 60px;
-      height: 60px;
-      border-radius: 14px;
-      margin-bottom: 12px;
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      margin-bottom: 10px;
       background: linear-gradient(135deg, #1e3a6e 0%, #3B5BDB 100%);
       animation: icon-breathe 2.5s ease-in-out infinite;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 28px;
+      font-size: 24px;
     }
 
-    /* ---- Textes ---- */
     .title {
-      font-size: 18px;
+      font-size: 17px;
       font-weight: 600;
       color: #e8eaf0;
       letter-spacing: 0.02em;
-      margin-bottom: 3px;
+      margin-bottom: 2px;
     }
 
     .subtitle {
-      font-size: 11px;
+      font-size: 10px;
       color: #3d4f72;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
-    /* ---- Infos de version ---- */
     .version-line {
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-bottom: 18px;
+      margin-bottom: 14px;
     }
 
     .version-text {
-      font-size: 11px;
+      font-size: 10px;
       color: #4a5a7a;
       font-family: 'Courier New', monospace;
       letter-spacing: 0.05em;
     }
 
     .channel-badge {
-      font-size: 10px;
+      font-size: 9px;
       font-weight: 700;
-      padding: 2px 7px;
+      padding: 2px 6px;
       border-radius: 999px;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -114,12 +111,12 @@
 
     /* ---- Épée SVG ---- */
     .epee-wrap {
-      width: 380px;
-      margin-bottom: 18px;
+      width: 340px;
+      margin-bottom: 14px;
     }
 
     @keyframes draw-blade {
-      from { stroke-dashoffset: 260; }
+      from { stroke-dashoffset: 240; }
       to   { stroke-dashoffset: 0; }
     }
 
@@ -129,82 +126,91 @@
     }
 
     .blade {
-      stroke-dasharray: 260;
-      stroke-dashoffset: 260;
-      animation: draw-blade 1.5s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
+      stroke-dasharray: 240;
+      stroke-dashoffset: 240;
+      animation: draw-blade 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
     }
 
-    .grip   { opacity: 0; animation: appear 0.3s ease-out 0.2s forwards; }
-    .guard  { opacity: 0; animation: appear 0.3s ease-out 0.4s forwards; }
-    .tip    { opacity: 0; animation: appear 0.15s ease-out 2.0s forwards; }
+    .grip   { opacity: 0; animation: appear 0.3s ease-out 0.1s forwards; }
+    .guard  { opacity: 0; animation: appear 0.3s ease-out 0.25s forwards; }
+    .tip    { opacity: 0; animation: appear 0.15s ease-out 1.5s forwards; }
 
-    /* ---- Phrases arbitre ---- */
-    .phrases {
+    /* ---- Sélecteur de langue ---- */
+    .lang-label {
+      font-size: 10px;
+      color: #4a5a7a;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .lang-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      width: 100%;
+      margin-bottom: 14px;
+    }
+
+    .lang-btn {
       display: flex;
-      gap: 18px;
+      flex-direction: column;
       align-items: center;
-      height: 26px;
-      margin-bottom: 16px;
+      gap: 3px;
+      padding: 7px 4px;
+      border-radius: 8px;
+      border: 1px solid #1e2d4a;
+      background: #121d33;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      outline: none;
     }
 
-    @keyframes phrase-in {
-      from { opacity: 0; transform: translateY(5px); }
-      to   { opacity: 1; transform: translateY(0); }
+    .lang-btn:hover {
+      border-color: #2a3e66;
+      background: #162035;
     }
 
-    .phrase {
-      font-size: 14px;
-      font-weight: 500;
-      opacity: 0;
-      animation: phrase-in 0.4s ease-out forwards;
+    .lang-btn.selected {
+      border-color: #3B5BDB;
+      background: rgba(59, 91, 219, 0.18);
     }
 
-    .p1 { color: #5a6a8a; animation-delay: 0.3s; }
-    .p2 { color: #7888aa; animation-delay: 1.4s; }
-    .p3 {
-      color: #4d77ff;
-      font-weight: 700;
-      font-size: 16px;
-      text-shadow: 0 0 20px rgba(77, 119, 255, 0.5);
-      animation-delay: 2.2s;
+    .lang-flag {
+      font-size: 18px;
+      line-height: 1;
     }
 
-    .sep { color: #2a3550; font-size: 16px; }
-
-    /* ---- Compteur LCD ---- */
-    .counter {
-      font-family: 'Courier New', 'Courier', monospace;
-      font-size: 26px;
-      font-weight: 700;
-      color: #3B5BDB;
-      letter-spacing: 0.15em;
-      opacity: 0.5;
-      margin-bottom: 20px;
+    .lang-name {
+      font-size: 9px;
+      color: #8899bb;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
     }
 
-    /* ---- Barre de progression ---- */
-    .progress-track {
-      width: 360px;
-      height: 3px;
-      background: #1a2540;
-      border-radius: 999px;
-      overflow: hidden;
+    .lang-btn.selected .lang-name {
+      color: #a8c1ff;
+      font-weight: 600;
     }
 
-    @keyframes progress {
-      0%   { width: 0%; }
-      60%  { width: 70%; }
-      100% { width: 85%; }
+    /* ---- Bouton confirmer ---- */
+    .confirm-btn {
+      width: 100%;
+      padding: 9px 0;
+      border-radius: 8px;
+      border: none;
+      background: linear-gradient(135deg, #2F4AC4 0%, #3B5BDB 100%);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      box-shadow: 0 0 16px rgba(59, 91, 219, 0.35);
     }
 
-    .progress-fill {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, #2F4AC4 0%, #3B5BDB 50%, #6B84E8 100%);
-      border-radius: 999px;
-      animation: progress 4s cubic-bezier(0.12, 0, 0.2, 1) 0.3s forwards;
-      box-shadow: 0 0 8px rgba(59, 91, 219, 0.6);
-    }
+    .confirm-btn:hover { opacity: 0.88; }
+    .confirm-btn:active { opacity: 0.75; }
   </style>
 </head>
 <body>
@@ -213,51 +219,67 @@
     <div id="icon-fb" class="icon-placeholder" style="display:none;">⚔️</div>
 
     <div class="title">BellePoule Modern</div>
-    <div class="subtitle">Logiciel de gestion d'escrime</div>
+    <div class="subtitle">Fencing Tournament Management</div>
     <div class="version-line">
       <span id="version-text" class="version-text">v1.0.0 · Build #0</span>
       <span id="channel-badge" class="channel-badge main">main</span>
     </div>
 
     <div class="epee-wrap">
-      <svg width="380" height="36" viewBox="0 0 380 36" xmlns="http://www.w3.org/2000/svg">
-        <!-- Pommel -->
-        <circle class="grip" cx="13" cy="18" r="8" fill="#a07840"/>
-        <!-- Grip -->
-        <rect class="grip" x="21" y="13.5" width="62" height="9" rx="4.5" fill="#c8a264"/>
-        <!-- Grip wrapping (texture lines) -->
-        <line class="grip" x1="34" y1="14" x2="34" y2="23" stroke="#a07840" stroke-width="1.5"/>
-        <line class="grip" x1="46" y1="14" x2="46" y2="23" stroke="#a07840" stroke-width="1.5"/>
-        <line class="grip" x1="58" y1="14" x2="58" y2="23" stroke="#a07840" stroke-width="1.5"/>
-        <line class="grip" x1="70" y1="14" x2="70" y2="23" stroke="#a07840" stroke-width="1.5"/>
-        <!-- Guard (bell guard) -->
-        <ellipse class="guard" cx="96" cy="18" rx="15" ry="12" fill="rgba(59,91,219,0.15)" stroke="#4d77ff" stroke-width="2"/>
-        <circle class="guard" cx="96" cy="18" r="3.5" fill="#4d77ff"/>
-        <!-- Blade (draws itself) -->
-        <line class="blade" x1="111" y1="18" x2="371" y2="18"
+      <svg width="340" height="30" viewBox="0 0 340 30" xmlns="http://www.w3.org/2000/svg">
+        <circle class="grip" cx="12" cy="15" r="7" fill="#a07840"/>
+        <rect class="grip" x="19" y="11" width="55" height="8" rx="4" fill="#c8a264"/>
+        <line class="grip" x1="30" y1="11.5" x2="30" y2="19.5" stroke="#a07840" stroke-width="1.5"/>
+        <line class="grip" x1="41" y1="11.5" x2="41" y2="19.5" stroke="#a07840" stroke-width="1.5"/>
+        <line class="grip" x1="52" y1="11.5" x2="52" y2="19.5" stroke="#a07840" stroke-width="1.5"/>
+        <line class="grip" x1="63" y1="11.5" x2="63" y2="19.5" stroke="#a07840" stroke-width="1.5"/>
+        <ellipse class="guard" cx="84" cy="15" rx="13" ry="10" fill="rgba(59,91,219,0.15)" stroke="#4d77ff" stroke-width="2"/>
+        <circle class="guard" cx="84" cy="15" r="3" fill="#4d77ff"/>
+        <line class="blade" x1="97" y1="15" x2="331" y2="15"
               stroke="#a8c1ff" stroke-width="2" stroke-linecap="round"/>
-        <!-- Tip -->
-        <polygon class="tip" points="371,15.5 379,18 371,20.5" fill="#a8c1ff"/>
+        <polygon class="tip" points="331,12.5 339,15 331,17.5" fill="#a8c1ff"/>
       </svg>
     </div>
 
-    <div class="phrases">
-      <span class="phrase p1">En garde…</span>
-      <span class="sep">·</span>
-      <span class="phrase p2">Prêts…</span>
-      <span class="sep">·</span>
-      <span class="phrase p3">Allez !</span>
+    <div class="lang-label" id="lang-label">Language / Langue</div>
+
+    <div class="lang-grid" id="lang-grid">
+      <button class="lang-btn" data-lang="fr" onclick="selectLang('fr')">
+        <span class="lang-flag">🇫🇷</span>
+        <span class="lang-name">Français</span>
+      </button>
+      <button class="lang-btn" data-lang="en" onclick="selectLang('en')">
+        <span class="lang-flag">🇺🇸</span>
+        <span class="lang-name">English</span>
+      </button>
+      <button class="lang-btn" data-lang="de" onclick="selectLang('de')">
+        <span class="lang-flag">🇩🇪</span>
+        <span class="lang-name">Deutsch</span>
+      </button>
+      <button class="lang-btn" data-lang="es" onclick="selectLang('es')">
+        <span class="lang-flag">🇪🇸</span>
+        <span class="lang-name">Español</span>
+      </button>
+      <button class="lang-btn" data-lang="zh-HK" onclick="selectLang('zh-HK')">
+        <span class="lang-flag">🇭🇰</span>
+        <span class="lang-name">繁體中文</span>
+      </button>
+      <button class="lang-btn" data-lang="br" onclick="selectLang('br')">
+        <span class="lang-flag">🏴</span>
+        <span class="lang-name">Brezhoneg</span>
+      </button>
+      <button class="lang-btn" data-lang="ca" onclick="selectLang('ca')">
+        <span class="lang-flag">🏳️</span>
+        <span class="lang-name">Català</span>
+      </button>
     </div>
 
-    <div id="counter" class="counter">00</div>
-
-    <div class="progress-track">
-      <div class="progress-fill"></div>
-    </div>
+    <button class="confirm-btn" id="confirm-btn" onclick="confirm()">
+      Entrer · Enter
+    </button>
   </div>
 
   <script>
-    // All params injected by main process via query string
     const params = new URLSearchParams(location.search);
 
     // Icon
@@ -281,14 +303,48 @@
       badgeEl.className = 'channel-badge ' + channel;
     }
 
-    // LCD-style counter
-    const counterEl = document.getElementById('counter');
-    let n = 0;
-    const tick = setInterval(function() {
-      counterEl.textContent = String(n).padStart(2, '0');
-      n = (n + 1) % 100;
-    }, 80);
-    setTimeout(function() { clearInterval(tick); }, 15000);
+    // Language selection
+    var selectedLang = 'fr';
+
+    function selectLang(lang) {
+      selectedLang = lang;
+      document.querySelectorAll('.lang-btn').forEach(function(btn) {
+        btn.classList.toggle('selected', btn.dataset.lang === lang);
+      });
+      updateConfirmLabel(lang);
+    }
+
+    var CONFIRM_LABELS = {
+      fr: 'Entrer dans BellePoule',
+      en: 'Enter BellePoule',
+      de: 'BellePoule öffnen',
+      es: 'Entrar en BellePoule',
+      'zh-HK': '進入 BellePoule',
+      br: 'Mont e BellePoule',
+      ca: 'Entrar a BellePoule',
+    };
+
+    function updateConfirmLabel(lang) {
+      var btn = document.getElementById('confirm-btn');
+      if (btn) btn.textContent = CONFIRM_LABELS[lang] || CONFIRM_LABELS['en'];
+    }
+
+    function confirm() {
+      if (window.splashAPI) {
+        window.splashAPI.confirm(selectedLang);
+      }
+    }
+
+    // Receive saved language from main process
+    if (window.splashAPI) {
+      window.splashAPI.onInit(function(savedLang) {
+        selectLang(savedLang || 'fr');
+      });
+    }
+
+    // Fallback: pre-select from query param
+    var initLang = params.get('lang') || 'fr';
+    selectLang(initLang);
   </script>
 </body>
 </html>

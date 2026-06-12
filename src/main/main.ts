@@ -38,31 +38,66 @@ let mainWindow: BrowserWindow | null = null;
 // Splash window shown during startup
 let splashWindow: BrowserWindow | null = null;
 let splashShownAt: number | null = null;
-const MIN_SPLASH_MS = 800;
+const MIN_SPLASH_MS = 0;
+
+// Language persistence file — read before renderer loads so splash can pre-select
+const LANG_FILE = () => path.join(app.getPath('userData'), 'bellepoule-language.json');
+
+function readSavedLanguage(): string {
+  try {
+    const raw = fs.readFileSync(LANG_FILE(), 'utf-8');
+    const parsed = JSON.parse(raw) as { language?: string };
+    return parsed.language || 'fr';
+  } catch {
+    return 'fr';
+  }
+}
+
+function saveLanguageToFile(lang: string): void {
+  try {
+    const userDataPath = app.getPath('userData');
+    if (!fs.existsSync(userDataPath)) fs.mkdirSync(userDataPath, { recursive: true });
+    fs.writeFileSync(LANG_FILE(), JSON.stringify({ language: lang }), 'utf-8');
+  } catch (e) {
+    console.error('Failed to save language preference:', e);
+  }
+}
+
+// Promise that resolves when the user confirms a language in the splash screen
+let splashConfirmResolve: ((lang: string) => void) | null = null;
+const splashConfirmPromise = new Promise<string>(resolve => {
+  splashConfirmResolve = resolve;
+});
 
 function createSplashWindow(): void {
   splashWindow = new BrowserWindow({
-    width: 480,
-    height: 320,
+    width: 520,
+    height: 460,
     frame: false,
     resizable: false,
-    movable: false,
-    skipTaskbar: true,
+    movable: true,
+    skipTaskbar: false,
     alwaysOnTop: true,
     show: false,
     backgroundColor: '#0f1729',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      preload: path.join(__dirname, 'splash-preload.js'),
     },
   });
 
   const { width: sw, height: sh } = screen.getPrimaryDisplay().workAreaSize;
-  splashWindow.setPosition(Math.floor((sw - 480) / 2), Math.floor((sh - 320) / 2));
+  splashWindow.setPosition(Math.floor((sw - 520) / 2), Math.floor((sh - 460) / 2));
 
   const splashPath = path.join(__dirname, 'splash.html');
-  if (!fs.existsSync(splashPath)) return;
+  if (!fs.existsSync(splashPath)) {
+    // No splash available — resolve immediately with saved lang
+    splashConfirmResolve?.(readSavedLanguage());
+    return;
+  }
 
+  const savedLang = readSavedLanguage();
   const iconPath = path.join(__dirname, '../../resources/icons/256x256.png');
   const versionInfo = getVersionInfo();
   const channel =
@@ -73,13 +108,25 @@ function createSplashWindow(): void {
       version: versionInfo.version,
       build: String(versionInfo.build),
       channel,
+      lang: savedLang,
     },
   });
   splashWindow.once('ready-to-show', () => {
     splashWindow?.show();
     splashShownAt = Date.now();
+    // Send saved language so splash can pre-select it
+    splashWindow?.webContents.send('splash:init', savedLang);
   });
 }
+
+// IPC: splash confirms language choice
+ipcMain.once('splash:confirm', (_event, lang: string) => {
+  const validLangs = ['fr', 'en', 'de', 'es', 'zh-HK', 'br', 'ca'];
+  const confirmed = validLangs.includes(lang) ? lang : 'fr';
+  saveLanguageToFile(confirmed);
+  currentMenuLanguage = confirmed;
+  splashConfirmResolve?.(confirmed);
+});
 
 // onClosed est appelé après le fade-out, au moment d'afficher la fenêtre principale
 function closeSplash(onClosed?: () => void): void {
@@ -513,7 +560,7 @@ function getVersionInfo(): { version: string; build: number; date: string } {
 // Window Creation
 // ============================================================================
 
-function createWindow(): void {
+function createWindow(initialLang?: string): void {
   const versionInfo = getVersionInfo();
 
   mainWindow = new BrowserWindow({
@@ -613,15 +660,27 @@ function createWindow(): void {
 
   // Create application menu using saved language preference
   mainWindow.webContents.once('did-finish-load', async () => {
-    try {
-      const savedLang = await mainWindow!.webContents.executeJavaScript(
-        'localStorage.getItem("bellepoule-language")'
-      );
-      if (savedLang && typeof savedLang === 'string') {
-        currentMenuLanguage = savedLang;
+    // Inject language chosen in splash into localStorage before renderer reads it
+    if (initialLang) {
+      try {
+        await mainWindow!.webContents.executeJavaScript(
+          `localStorage.setItem('bellepoule-language', ${JSON.stringify(initialLang)}); true`
+        );
+        currentMenuLanguage = initialLang;
+      } catch {
+        // ignore
       }
-    } catch {
-      // Fallback to default language
+    } else {
+      try {
+        const savedLang = await mainWindow!.webContents.executeJavaScript(
+          'localStorage.getItem("bellepoule-language")'
+        );
+        if (savedLang && typeof savedLang === 'string') {
+          currentMenuLanguage = savedLang;
+        }
+      } catch {
+        // Fallback to default language
+      }
     }
     createMenu(currentMenuLanguage);
 
@@ -2059,6 +2118,7 @@ ipcMain.handle('app:getVersionInfo', async () => {
 // Language change handler — rebuild native menu in the new language
 ipcMain.on('app:language-changed', (_, lang: string) => {
   currentMenuLanguage = lang;
+  saveLanguageToFile(lang);
   createMenu(lang);
   for (const { server } of remoteServers.values()) {
     server.setLanguage(lang);
@@ -2185,8 +2245,11 @@ app.whenReady().then(async () => {
     }
   }
 
-  // Créer la fenêtre immédiatement pendant que la DB se charge
-  createWindow();
+  // Attendre que l'utilisateur confirme la langue dans le splash
+  const confirmedLang = await splashConfirmPromise;
+
+  // Créer la fenêtre principale avec la langue choisie
+  createWindow(confirmedLang);
 
   await db.open(dbPath);
   console.log('Base de données ouverte:', db.getPath());
