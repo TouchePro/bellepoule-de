@@ -254,7 +254,7 @@
       </select>
     </div>
 
-    <button class="confirm-btn" id="confirm-btn" onclick="confirm()">
+    <button class="confirm-btn" id="confirm-btn" onclick="enterApp()">
       Entrer · Enter
     </button>
   </div>
@@ -308,7 +308,7 @@
       if (btn) btn.textContent = CONFIRM_LABELS[lang] || CONFIRM_LABELS['en'];
     }
 
-    function confirm() {
+    function enterApp() {
       if (window.splashAPI) {
         window.splashAPI.confirm(selectedLang);
       }
