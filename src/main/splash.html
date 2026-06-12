@@ -177,8 +177,19 @@
     }
 
     .lang-flag {
-      font-size: 18px;
-      line-height: 1;
+      width: 28px;
+      height: 20px;
+      object-fit: cover;
+      border-radius: 2px;
+      display: block;
+    }
+
+    .lang-flag-svg {
+      width: 28px;
+      height: 20px;
+      display: block;
+      border-radius: 2px;
+      overflow: hidden;
     }
 
     .lang-name {
@@ -245,31 +256,50 @@
 
     <div class="lang-grid" id="lang-grid">
       <button class="lang-btn" data-lang="fr" onclick="selectLang('fr')">
-        <span class="lang-flag">🇫🇷</span>
+        <img class="lang-flag" src="https://flagcdn.com/28x21/fr.png" alt="FR">
         <span class="lang-name">Français</span>
       </button>
       <button class="lang-btn" data-lang="en" onclick="selectLang('en')">
-        <span class="lang-flag">🇺🇸</span>
+        <img class="lang-flag" src="https://flagcdn.com/28x21/us.png" alt="US">
         <span class="lang-name">English</span>
       </button>
       <button class="lang-btn" data-lang="de" onclick="selectLang('de')">
-        <span class="lang-flag">🇩🇪</span>
+        <img class="lang-flag" src="https://flagcdn.com/28x21/de.png" alt="DE">
         <span class="lang-name">Deutsch</span>
       </button>
       <button class="lang-btn" data-lang="es" onclick="selectLang('es')">
-        <span class="lang-flag">🇪🇸</span>
+        <img class="lang-flag" src="https://flagcdn.com/28x21/es.png" alt="ES">
         <span class="lang-name">Español</span>
       </button>
       <button class="lang-btn" data-lang="zh-HK" onclick="selectLang('zh-HK')">
-        <span class="lang-flag">🇭🇰</span>
+        <img class="lang-flag" src="https://flagcdn.com/28x21/hk.png" alt="HK">
         <span class="lang-name">繁體中文</span>
       </button>
       <button class="lang-btn" data-lang="br" onclick="selectLang('br')">
-        <span class="lang-flag">🏴</span>
+        <!-- Gwenn-ha-du (drapeau breton) : hermine + bandes noir/blanc -->
+        <svg class="lang-flag-svg" viewBox="0 0 28 20" xmlns="http://www.w3.org/2000/svg">
+          <rect width="28" height="20" fill="white"/>
+          <rect y="4" width="28" height="4" fill="#1a1a1a"/>
+          <rect y="12" width="28" height="4" fill="#1a1a1a"/>
+          <rect width="12" height="20" fill="white"/>
+          <rect width="12" height="20" fill="url(#hermine)" opacity="0.9"/>
+          <defs>
+            <pattern id="hermine" x="0" y="0" width="4" height="5" patternUnits="userSpaceOnUse">
+              <text x="0.5" y="4" font-size="4" fill="#1a1a1a">⚜</text>
+            </pattern>
+          </defs>
+        </svg>
         <span class="lang-name">Brezhoneg</span>
       </button>
       <button class="lang-btn" data-lang="ca" onclick="selectLang('ca')">
-        <span class="lang-flag">🏳️</span>
+        <!-- Senyera catalana : 4 barres rouges sur fond or -->
+        <svg class="lang-flag-svg" viewBox="0 0 28 20" xmlns="http://www.w3.org/2000/svg">
+          <rect width="28" height="20" fill="#FCDD09"/>
+          <rect y="2.2" width="28" height="2.2" fill="#DA121A"/>
+          <rect y="6.7" width="28" height="2.2" fill="#DA121A"/>
+          <rect y="11.1" width="28" height="2.2" fill="#DA121A"/>
+          <rect y="15.6" width="28" height="2.2" fill="#DA121A"/>
+        </svg>
         <span class="lang-name">Català</span>
       </button>
     </div>
