@@ -795,6 +795,7 @@ export interface ElectronAPI extends MenuAPI, UtilityAPI {
   onScoreIpConflict: (callback: (data: ScoreIpConflict) => void) => () => void;
   onPoolSignatureUpdated: (callback: (data: { poolId: string; signedFencerIds: string[]; totalFencers: number }) => void) => () => void;
   notifyLanguageChanged: (lang: string) => void;
+  initialLanguage: string | null;
   getLogo: () => Promise<string | null>;
   getTtsConfig: () => Promise<TtsConfig | null>;
   onLogoLoaded: (callback: (logo: string | null) => void) => () => void;

@@ -609,6 +609,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Notify main process of language change (to rebuild native menu)
   notifyLanguageChanged: (lang: string) => ipcRenderer.send('app:language-changed', lang),
+
+  // Language injected before renderer loads (avoids race with localStorage read)
+  initialLanguage: (() => {
+    const arg = process.argv.find(a => a.startsWith('--initial-lang='));
+    return arg ? arg.slice('--initial-lang='.length) : null;
+  })(),
 });
 
 // Type declarations for the renderer
