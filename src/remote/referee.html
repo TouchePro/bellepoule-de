@@ -1759,7 +1759,7 @@
 
         getArenaId() {
           const path = window.location.pathname;
-          const match = path.match(/arene(\d+)/i);
+          const match = path.match(/arene(\d+)/i) || path.match(/arena(\d+)/i);
           return match ? `arena${match[1]}` : 'arena1';
         }
 
@@ -1812,18 +1812,11 @@
         }
 
         updateConnectionUI(online) {
-          const dot = document.getElementById('status-dot');
-          const text = document.getElementById('connection-text');
+          // Gère uniquement le badge hors-ligne ; la dot est pilotée par l'état socket
           const badge = document.getElementById('offline-badge');
           if (online) {
-            if (dot) dot.classList.add('connected');
-            if (dot) dot.classList.remove('disconnected');
-            if (text) text.textContent = window.T('remote.connected');
             if (badge) badge.style.display = 'none';
           } else {
-            if (dot) dot.classList.remove('connected');
-            if (dot) dot.classList.add('disconnected');
-            if (text) text.textContent = window.T('remote.offline');
             if (badge) badge.style.display = 'inline';
             this.updateOfflineBadge();
           }
@@ -2104,6 +2097,12 @@
           this.socket.on('disconnect', () => {
             this.updateConnectionStatus(false);
             this.showNotification('❌ Déconnecté', true);
+          });
+
+          this.socket.on('connect_error', (err) => {
+            this.updateConnectionStatus(false);
+            const text = document.getElementById('connection-text');
+            if (text) text.textContent = `❌ ${err?.message || 'Erreur réseau'}`;
           });
 
           this.socket.on('auth_error', () => {
@@ -3857,9 +3856,17 @@
       // Initialisation
       let refereeApp;
       document.addEventListener('DOMContentLoaded', async () => {
-        await window.initRemoteI18n();
-        document.title = window.T('referee.title');
-        refereeApp = new RefereeApp();
+        try {
+          await window.initRemoteI18n();
+          document.title = window.T('referee.title');
+          refereeApp = new RefereeApp();
+        } catch (e) {
+          console.error('[RefereeApp] Erreur init:', e);
+          const dot = document.getElementById('status-dot');
+          const text = document.getElementById('connection-text');
+          if (dot) { dot.classList.add('disconnected'); dot.classList.remove('connected'); }
+          if (text) text.textContent = '❌ Erreur: ' + (e?.message || e);
+        }
       });
     </script>
 

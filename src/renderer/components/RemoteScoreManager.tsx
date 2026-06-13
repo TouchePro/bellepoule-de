@@ -1204,7 +1204,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           {connectedClients.map(client => {
             const clientLabel = client.label || client.screenId?.slice(0, 8) || client.socketId.slice(0, 8);
             const typeLabel: Record<string, string> = {
-              kiosk: 'Kiosk', arena: 'Arène', public: 'Public', pool: 'Poule', dashboard: 'Dashboard', lobby: 'Lobby',
+              kiosk: 'Kiosk', arena: 'Arène', public: 'Public', pool: 'Poule', dashboard: 'Dashboard', lobby: 'Lobby', referee: 'Arbitre',
             };
             return (
               <div key={client.socketId} style={{
