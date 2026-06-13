@@ -581,6 +581,7 @@ function createWindow(initialLang?: string): void {
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
       v8CacheOptions: 'code',
+      additionalArguments: initialLang ? [`--initial-lang=${initialLang}`] : [],
     },
     icon: path.join(__dirname, '../../resources/icons/icon.png'),
   });
@@ -665,16 +666,8 @@ function createWindow(initialLang?: string): void {
 
   // Create application menu using saved language preference
   mainWindow.webContents.once('did-finish-load', async () => {
-    // Inject language chosen in splash into localStorage before renderer reads it
     if (initialLang) {
-      try {
-        await mainWindow!.webContents.executeJavaScript(
-          `localStorage.setItem('bellepoule-language', ${JSON.stringify(initialLang)}); true`
-        );
-        currentMenuLanguage = initialLang;
-      } catch {
-        // ignore
-      }
+      currentMenuLanguage = initialLang;
     } else {
       try {
         const savedLang = await mainWindow!.webContents.executeJavaScript(
@@ -684,7 +677,7 @@ function createWindow(initialLang?: string): void {
           currentMenuLanguage = savedLang;
         }
       } catch {
-        // Fallback to default language
+        // ignore
       }
     }
     createMenu(currentMenuLanguage);
