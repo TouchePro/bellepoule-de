@@ -423,6 +423,21 @@ export class RemoteScoreServer {
   private setupRoutes(): void {
     console.log('[RemoteScoreServer] Configuration des routes...');
 
+    // Socket.IO client JS servi sous /bp-sio.js pour éviter l'interception Engine.IO.
+    // Engine.IO intercepte /socket.io/* avant Express → un require.resolve explicite
+    // sous un chemin neutre garantit que le fichier est toujours disponible.
+    this.app.get('/bp-sio.js', (_req, res) => {
+      try {
+        const clientPath = require.resolve('socket.io/client-dist/socket.io.js');
+        res.setHeader('Content-Type', 'application/javascript');
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+        res.sendFile(clientPath);
+      } catch (e) {
+        console.error('[RemoteScoreServer] socket.io/client-dist introuvable:', e);
+        res.status(500).send('// socket.io client not found');
+      }
+    });
+
     // Redirect racine vers le lobby
     this.app.get('/', (_req, res) => {
       res.redirect('/lobby');
