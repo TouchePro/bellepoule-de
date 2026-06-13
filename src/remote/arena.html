@@ -1460,7 +1460,11 @@
             this.updateConnectionStatus(false);
           });
 
-          this.socket.on(`arena:${this.arenaId}:update`, data => {
+          this.socket.on('connect_error', (err) => {
+            this.updateConnectionStatus(false);
+            const text = document.getElementById('connection-text');
+            if (text) text.textContent = `❌ ${err?.message || 'Erreur réseau'}`;
+          });
             this.handleArenaUpdate(data);
           });
 
@@ -2040,9 +2044,17 @@
 
       // Démarrer l'affichage
       document.addEventListener('DOMContentLoaded', async () => {
-        await window.initRemoteI18n();
-        document.title = window.T('arena.title');
-        new ArenaDisplay();
+        try {
+          await window.initRemoteI18n();
+          document.title = window.T('arena.title');
+          new ArenaDisplay();
+        } catch (e) {
+          console.error('[ArenaDisplay] Erreur init:', e);
+          const dot = document.getElementById('connection-dot');
+          const text = document.getElementById('connection-text');
+          if (dot) { dot.classList.add('disconnected'); dot.classList.remove('connected'); }
+          if (text) text.textContent = '❌ Erreur: ' + (e?.message || e);
+        }
       });
     </script>
   </body>

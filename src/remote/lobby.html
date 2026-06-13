@@ -165,6 +165,10 @@
         }
       });
 
+      socket.on('connect_error', (err) => {
+        console.error('[Lobby] Erreur Socket.IO:', err?.message || err);
+      });
+
       setInterval(() => { if (socket.connected) socket.emit('client:pong'); }, 30000);
 
       document.addEventListener('click', () => {
