@@ -10,6 +10,7 @@ import {
   calculateOptimalPoolCount,
   distributeFencersToPoolsSerpentine,
   generatePoolMatchOrder,
+  SeparationCriterionKey,
 } from '../../shared/utils/poolCalculations';
 import PoolMatchOrderModal from './pool/PoolMatchOrderModal';
 
@@ -52,11 +53,16 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
     null
   );
 
-  const [separationConfig, setSeparationConfig] = useState({
-    byClub: true,
-    byRegion: true,
-    byNation: false,
-  });
+  interface SeparationCriterion { key: SeparationCriterionKey; label: string; enabled: boolean }
+  const [separationCriteria, setSeparationCriteria] = useState<SeparationCriterion[]>([
+    { key: 'byClub', label: 'Club', enabled: true },
+    { key: 'byRegion', label: 'Région', enabled: true },
+    { key: 'byNation', label: 'Nation', enabled: false },
+  ]);
+  const [dragCriterionIdx, setDragCriterionIdx] = useState<number | null>(null);
+
+  const getActiveCriteria = (criteria: SeparationCriterion[]): SeparationCriterionKey[] =>
+    criteria.filter(c => c.enabled).map(c => c.key);
 
   // Empêche la réinitialisation si initialPools arrive en retard (async restore)
   const hasInitialized = useRef(false);
@@ -156,10 +162,10 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
   };
 
   // Génère les poules avec la config passée explicitement (évite les closures périmées)
-  const generatePools = (count: number, config: typeof separationConfig) => {
+  const generatePools = (count: number, criteria: SeparationCriterion[]) => {
     if (fencers.length === 0 || count <= 0) return;
 
-    const distribution = distributeFencersToPoolsSerpentine(fencers, count, config);
+    const distribution = distributeFencersToPoolsSerpentine(fencers, count, getActiveCriteria(criteria));
 
     const generatedPools: Pool[] = distribution.map((poolFencers, index) => {
       const matchOrder = generatePoolMatchOrder(poolFencers.length);
@@ -222,7 +228,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
         maxFencersPerPool
       );
       setPoolCount(optimalCount);
-      generatePools(optimalCount, separationConfig);
+      generatePools(optimalCount, separationCriteria);
     }
   }, [fencers.length, initialPools]);
 
@@ -233,7 +239,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
       if (newCount === 0) {
         setPools([]);
       } else {
-        generatePools(newCount, separationConfig);
+        generatePools(newCount, separationCriteria);
       }
     }
   };
@@ -489,29 +495,42 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
           </div>
         </div>
 
-        {/* Separation pill toggles */}
+        {/* Separation pill toggles with drag-and-drop priority */}
         <div>
           <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 600, marginBottom: '0.4rem', color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Séparation
+            Séparation <span style={{ fontWeight: 400, textTransform: 'none', fontSize: '0.65rem', opacity: 0.7 }}>(glisser pour priorité)</span>
           </label>
           <div style={{ display: 'flex', gap: '0.4rem' }}>
-            {(
-              [
-                { key: 'byClub', label: 'Club' },
-                { key: 'byRegion', label: 'Région' },
-                { key: 'byNation', label: 'Nation' },
-              ] as { key: keyof typeof separationConfig; label: string }[]
-            ).map(({ key, label }) => (
+            {separationCriteria.map((criterion, idx) => (
               <button
-                key={key}
-                onClick={() => {
-                  const newConfig = { ...separationConfig, [key]: !separationConfig[key] };
-                  setSeparationConfig(newConfig);
-                  if (poolCount > 0) generatePools(poolCount, newConfig);
+                key={criterion.key}
+                draggable
+                onDragStart={() => setDragCriterionIdx(idx)}
+                onDragOver={e => { e.preventDefault(); }}
+                onDrop={e => {
+                  e.preventDefault();
+                  if (dragCriterionIdx === null || dragCriterionIdx === idx) return;
+                  const next = [...separationCriteria];
+                  const [moved] = next.splice(dragCriterionIdx, 1);
+                  next.splice(idx, 0, moved);
+                  setSeparationCriteria(next);
+                  setDragCriterionIdx(null);
+                  if (poolCount > 0) generatePools(poolCount, next);
                 }}
-                className={`pool-prep-pill-toggle${separationConfig[key] ? ' active' : ''}`}
+                onDragEnd={() => setDragCriterionIdx(null)}
+                onClick={() => {
+                  const next = separationCriteria.map((c, i) =>
+                    i === idx ? { ...c, enabled: !c.enabled } : c
+                  );
+                  setSeparationCriteria(next);
+                  if (poolCount > 0) generatePools(poolCount, next);
+                }}
+                className={`pool-prep-pill-toggle${criterion.enabled ? ' active' : ''}`}
+                style={{ cursor: 'grab', userSelect: 'none' }}
+                title={`Priorité ${idx + 1} — glisser pour réordonner`}
               >
-                {label}
+                <span style={{ fontSize: '0.6rem', opacity: 0.6, marginRight: '0.2rem' }}>{idx + 1}.</span>
+                {criterion.label}
               </button>
             ))}
           </div>
@@ -560,7 +579,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
         {pools.map((pool, poolIndex) => {
           const accent = POOL_ACCENTS[poolIndex % POOL_ACCENTS.length];
           const accentBg = POOL_ACCENT_BGS[poolIndex % POOL_ACCENT_BGS.length];
-          const clubConflicts = separationConfig.byClub ? getPoolClubConflicts(pool) : new Set<string>();
+          const clubConflicts = separationCriteria.find(c => c.key === 'byClub')?.enabled ? getPoolClubConflicts(pool) : new Set<string>();
           const hasConflicts = clubConflicts.size > 0;
           const isOutOfRange = pools.length > 1 && (
             pool.fencers.length < minFencersPerPool || pool.fencers.length > maxFencersPerPool

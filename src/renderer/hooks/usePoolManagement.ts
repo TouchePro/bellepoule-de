@@ -89,11 +89,7 @@ export const usePoolManagement = ({
       }
 
       const poolCount = calculateOptimalPoolCount(checkedInFencers.length, 5, 7);
-      const distribution = distributeFencersToPoolsSerpentine(checkedInFencers, poolCount, {
-        byClub: true,
-        byRegion: true,
-        byNation: false,
-      });
+      const distribution = distributeFencersToPoolsSerpentine(checkedInFencers, poolCount, ['byClub', 'byRegion']);
 
       const generatedPools: Pool[] = distribution.map((poolFencers, index) => {
         const poolId = crypto.randomUUID();
@@ -269,11 +265,7 @@ export const usePoolManagement = ({
 
       // Générer de nouvelles poules avec le classement actuel
       const newPoolCount = calculateOptimalPoolCount(checkedInFencers.length, 5, 7);
-      const distribution = distributeFencersToPoolsSerpentine(checkedInFencers, newPoolCount, {
-        byClub: true,
-        byRegion: true,
-        byNation: false,
-      });
+      const distribution = distributeFencersToPoolsSerpentine(checkedInFencers, newPoolCount, ['byClub', 'byRegion']);
 
       const newPools: Pool[] = distribution.map((poolFencers, index) => {
         const poolId = crypto.randomUUID();
