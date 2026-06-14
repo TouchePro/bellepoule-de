@@ -200,7 +200,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     for (const match of matches) {
       if (match.round <= 2 || match.round === 3) continue; // pas de parent pour la finale/petite-finale
       const parentRound = match.round / 2;
-      const parentPos = Math.ceil(match.position / 2);
+      const parentPos = Math.floor(match.position / 2);
 
       const childMeasure = colMeasures.get(match.round);
       const parentMeasure = colMeasures.get(parentRound);
