@@ -439,10 +439,18 @@ export function distributeFencersToPoolsSerpentine(
 
     let chosen = 0;
     if (separation.length > 0) {
-      for (let i = 0; i < pending.length; i++) {
-        if (!hasConflictWith(pending[i], indexes[poolIndex], separation)) {
-          chosen = i;
-          break;
+      // Relâchement progressif : d'abord tous les critères, puis en retirant le moins
+      // prioritaire (dernier) jusqu'à ne garder que le plus prioritaire (premier).
+      // Garantit que le critère 1 n'est jamais sacrifié si une solution existe.
+      let found = false;
+      for (let take = separation.length; take >= 1 && !found; take--) {
+        const activeSub = separation.slice(0, take);
+        for (let i = 0; i < pending.length; i++) {
+          if (!hasConflictWith(pending[i], indexes[poolIndex], activeSub)) {
+            chosen = i;
+            found = true;
+            break;
+          }
         }
       }
     }
