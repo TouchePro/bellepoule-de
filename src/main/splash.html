@@ -278,7 +278,7 @@
     <div id="icon-fb" class="icon-placeholder" style="display:none;">⚔️</div>
 
     <div class="title">BellePoule Modern</div>
-    <div class="subtitle">Fencing Tournament Management</div>
+    <div class="subtitle" id="subtitle">Fencing Tournament Management</div>
     <div class="version-line">
       <span id="version-text" class="version-text">v1.0.0 · Build #0</span>
       <span id="channel-badge" class="channel-badge main">main</span>
@@ -354,6 +354,16 @@
       updateConfirmLabel(lang);
     }
 
+    var SUBTITLE_LABELS = {
+      fr: 'Gestion de Tournois d\'Escrime',
+      en: 'Fencing Tournament Management',
+      de: 'Fechtturnier-Verwaltung',
+      es: 'Gestión de Torneos de Esgrima',
+      'zh-HK': '擊劍賽事管理',
+      br: 'Merañ Tournioù Klezeouriezh',
+      ca: 'Gestió de Torneigs d\'Esgrima',
+    };
+
     var CONFIRM_LABELS = {
       fr: 'Entrer dans BellePoule',
       en: 'Enter BellePoule',
@@ -377,6 +387,8 @@
     function updateConfirmLabel(lang) {
       var btn = document.getElementById('confirm-btn');
       if (btn && !btn.disabled) btn.textContent = CONFIRM_LABELS[lang] || CONFIRM_LABELS['en'];
+      var sub = document.getElementById('subtitle');
+      if (sub) sub.textContent = SUBTITLE_LABELS[lang] || SUBTITLE_LABELS['en'];
     }
 
     function enterApp() {
