@@ -45,20 +45,20 @@ const f3 = fencer('3', 'Bernard');
 describe('PoolMatchList', () => {
   it('affiche le prochain match et déclenche openScoreModal', () => {
     const props = renderList({ pending: [pending(f1, f2, 0)], finished: [], cancelled: [] });
-    expect(screen.getByText('⚔️ Prochain match')).toBeInTheDocument();
+    expect(screen.getByText('⚔ Prochain match')).toBeInTheDocument();
     expect(screen.getByText('Dupont')).toBeInTheDocument();
     expect(screen.getByText('Martin')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('🎯 Saisir le score'));
+    fireEvent.click(screen.getByText('Saisir le score'));
     expect(props.openScoreModal).toHaveBeenCalledWith(0);
   });
 
-  it('affiche la section « Matches à venir » quand il en reste plusieurs', () => {
+  it('affiche la section « À venir » quand il en reste plusieurs', () => {
     renderList({
       pending: [pending(f1, f2, 0), pending(f1, f3, 1), pending(f2, f3, 2)],
       finished: [],
       cancelled: [],
     });
-    expect(screen.getByText(/Matches à venir \(2\)/)).toBeInTheDocument();
+    expect(screen.getByText(/À venir/)).toBeInTheDocument();
   });
 
   it('affiche « Poule terminée » sans match en attente', () => {
