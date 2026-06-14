@@ -109,31 +109,90 @@
       border: 1px solid rgba(217, 119, 6, 0.3);
     }
 
-    /* ---- Épée SVG ---- */
-    .epee-wrap {
-      width: 340px;
+    /* ---- Armes ---- */
+    .weapons-wrap {
+      display: flex;
+      gap: 6px;
       margin-bottom: 14px;
+      align-items: center;
+      justify-content: center;
     }
 
-    @keyframes draw-blade {
-      from { stroke-dashoffset: 240; }
-      to   { stroke-dashoffset: 0; }
-    }
+    .weapon-svg { overflow: visible; }
 
     @keyframes appear {
       from { opacity: 0; }
       to   { opacity: 1; }
     }
 
-    .blade {
-      stroke-dasharray: 240;
-      stroke-dashoffset: 240;
-      animation: draw-blade 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+    @keyframes draw-epee  { from { stroke-dashoffset: 50; } to { stroke-dashoffset: 0; } }
+    @keyframes draw-foil  { from { stroke-dashoffset: 72; } to { stroke-dashoffset: 0; } }
+    @keyframes draw-sabre { from { stroke-dashoffset: 68; } to { stroke-dashoffset: 0; } }
+    @keyframes draw-laser { from { stroke-dashoffset: 66; } to { stroke-dashoffset: 0; } }
+
+    @keyframes laser-hue {
+      0%, 100% { stroke: #ff2222; }
+      50%      { stroke: #2244ff; }
+    }
+    @keyframes laser-glow-hue {
+      0%, 100% { stroke: #ff6666; }
+      50%      { stroke: #6688ff; }
     }
 
-    .grip   { opacity: 0; animation: appear 0.3s ease-out 0.1s forwards; }
-    .guard  { opacity: 0; animation: appear 0.3s ease-out 0.25s forwards; }
-    .tip    { opacity: 0; animation: appear 0.15s ease-out 1.5s forwards; }
+    .grip, .guard, .tip { opacity: 0; }
+    .grip  { animation: appear 0.3s ease-out forwards; }
+    .guard { animation: appear 0.3s ease-out forwards; }
+    .tip   { animation: appear 0.2s ease-out forwards; }
+
+    .weapon-svg:nth-child(1) .grip  { animation-delay: 0.1s; }
+    .weapon-svg:nth-child(1) .guard { animation-delay: 0.25s; }
+    .weapon-svg:nth-child(1) .tip   { animation-delay: 1.35s; }
+
+    .weapon-svg:nth-child(2) .grip  { animation-delay: 0.6s; }
+    .weapon-svg:nth-child(2) .guard { animation-delay: 0.75s; }
+    .weapon-svg:nth-child(2) .tip   { animation-delay: 1.85s; }
+
+    .weapon-svg:nth-child(3) .grip  { animation-delay: 1.1s; }
+    .weapon-svg:nth-child(3) .guard { animation-delay: 1.25s; }
+    .weapon-svg:nth-child(3) .tip   { animation-delay: 2.4s; }
+
+    .weapon-svg:nth-child(4) .grip  { animation-delay: 1.6s; }
+    .weapon-svg:nth-child(4) .guard { animation-delay: 1.75s; }
+
+    .epee-blade {
+      stroke-dasharray: 50;
+      stroke-dashoffset: 50;
+      animation: draw-epee 1s cubic-bezier(0.16,1,0.3,1) 0.3s forwards;
+    }
+
+    .foil-blade {
+      stroke-dasharray: 72;
+      stroke-dashoffset: 72;
+      animation: draw-foil 1s cubic-bezier(0.16,1,0.3,1) 0.8s forwards;
+    }
+
+    .sabre-blade {
+      stroke-dasharray: 68;
+      stroke-dashoffset: 68;
+      animation: draw-sabre 1s cubic-bezier(0.16,1,0.3,1) 1.3s forwards;
+    }
+
+    .laser-blade {
+      stroke: #ff2222;
+      stroke-dasharray: 66;
+      stroke-dashoffset: 66;
+      animation: draw-laser 1s cubic-bezier(0.16,1,0.3,1) 1.8s forwards,
+                 laser-hue 3s ease-in-out 2.9s infinite;
+    }
+
+    .laser-glow {
+      stroke: #ff6666;
+      stroke-dasharray: 66;
+      stroke-dashoffset: 66;
+      opacity: 0.35;
+      animation: draw-laser 1s cubic-bezier(0.16,1,0.3,1) 1.8s forwards,
+                 laser-glow-hue 3s ease-in-out 2.9s infinite;
+    }
 
     /* ---- Sélecteur de langue ---- */
     .lang-label {
@@ -317,19 +376,55 @@
       <span id="channel-badge" class="channel-badge main">main</span>
     </div>
 
-    <div class="epee-wrap">
-      <svg width="340" height="30" viewBox="0 0 340 30" xmlns="http://www.w3.org/2000/svg">
-        <circle class="grip" cx="12" cy="15" r="7" fill="#a07840"/>
-        <rect class="grip" x="19" y="11" width="55" height="8" rx="4" fill="#c8a264"/>
-        <line class="grip" x1="30" y1="11.5" x2="30" y2="19.5" stroke="#a07840" stroke-width="1.5"/>
-        <line class="grip" x1="41" y1="11.5" x2="41" y2="19.5" stroke="#a07840" stroke-width="1.5"/>
-        <line class="grip" x1="52" y1="11.5" x2="52" y2="19.5" stroke="#a07840" stroke-width="1.5"/>
-        <line class="grip" x1="63" y1="11.5" x2="63" y2="19.5" stroke="#a07840" stroke-width="1.5"/>
-        <ellipse class="guard" cx="84" cy="15" rx="13" ry="10" fill="rgba(59,91,219,0.15)" stroke="#4d77ff" stroke-width="2"/>
-        <circle class="guard" cx="84" cy="15" r="3" fill="#4d77ff"/>
-        <line class="blade" x1="97" y1="15" x2="331" y2="15"
-              stroke="#a8c1ff" stroke-width="2" stroke-linecap="round"/>
-        <polygon class="tip" points="331,12.5 339,15 331,17.5" fill="#a8c1ff"/>
+    <div class="weapons-wrap">
+      <!-- Épée -->
+      <svg width="110" height="50" viewBox="0 0 110 50" class="weapon-svg" xmlns="http://www.w3.org/2000/svg">
+        <circle class="grip" cx="8" cy="25" r="6" fill="#a07840"/>
+        <rect class="grip" x="14" y="21" width="28" height="8" rx="4" fill="#c8a264"/>
+        <line class="grip" x1="20" y1="21.5" x2="20" y2="29.5" stroke="#a07840" stroke-width="1.5"/>
+        <line class="grip" x1="27" y1="21.5" x2="27" y2="29.5" stroke="#a07840" stroke-width="1.5"/>
+        <line class="grip" x1="34" y1="21.5" x2="34" y2="29.5" stroke="#a07840" stroke-width="1.5"/>
+        <circle class="guard" cx="47" cy="25" r="11" fill="rgba(59,91,219,0.15)" stroke="#4d77ff" stroke-width="1.5"/>
+        <circle class="guard" cx="47" cy="25" r="3" fill="#4d77ff"/>
+        <line class="epee-blade" x1="58" y1="25" x2="104" y2="25" stroke="#a8c1ff" stroke-width="2" stroke-linecap="round"/>
+        <polygon class="tip" points="104,22.5 110,25 104,27.5" fill="#a8c1ff"/>
+      </svg>
+
+      <!-- Fleuret -->
+      <svg width="110" height="50" viewBox="0 0 110 50" class="weapon-svg" xmlns="http://www.w3.org/2000/svg">
+        <circle class="grip" cx="7" cy="25" r="4.5" fill="#7a6030"/>
+        <rect class="grip" x="11" y="22" width="22" height="6" rx="3" fill="#b89050"/>
+        <line class="grip" x1="16" y1="22.5" x2="16" y2="28.5" stroke="#8a7040" stroke-width="1"/>
+        <line class="grip" x1="22" y1="22.5" x2="22" y2="28.5" stroke="#8a7040" stroke-width="1"/>
+        <rect class="guard" x="32" y="17" width="5" height="16" rx="2" fill="#555" stroke="#888" stroke-width="1"/>
+        <line class="foil-blade" x1="37" y1="25" x2="106" y2="25" stroke="#c8d4ff" stroke-width="1" stroke-linecap="round"/>
+        <circle class="tip" cx="108" cy="25" r="2.5" fill="#c8d4ff"/>
+      </svg>
+
+      <!-- Sabre -->
+      <svg width="110" height="50" viewBox="0 0 110 50" class="weapon-svg" xmlns="http://www.w3.org/2000/svg">
+        <circle class="grip" cx="8" cy="25" r="5" fill="#8a7030"/>
+        <rect class="grip" x="13" y="22" width="23" height="6" rx="3" fill="#b89050"/>
+        <line class="grip" x1="18" y1="22.5" x2="18" y2="28.5" stroke="#8a7040" stroke-width="1.2"/>
+        <line class="grip" x1="24" y1="22.5" x2="24" y2="28.5" stroke="#8a7040" stroke-width="1.2"/>
+        <line class="grip" x1="30" y1="22.5" x2="30" y2="28.5" stroke="#8a7040" stroke-width="1.2"/>
+        <path class="guard" d="M 37,13 C 52,13 52,37 37,37 Z" fill="rgba(150,120,50,0.3)" stroke="#a08040" stroke-width="1.5"/>
+        <line class="guard" x1="37" y1="13" x2="37" y2="37" stroke="#a08040" stroke-width="1.5"/>
+        <path class="sabre-blade" d="M 43,25 Q 75,23 106,18" fill="none" stroke="#d0c090" stroke-width="1.5" stroke-linecap="round"/>
+        <polygon class="tip" points="103,16.5 109,18 104,20.5" fill="#d0c090"/>
+      </svg>
+
+      <!-- Sabre Laser -->
+      <svg width="110" height="50" viewBox="0 0 110 50" class="weapon-svg" xmlns="http://www.w3.org/2000/svg">
+        <circle class="grip" cx="8" cy="25" r="5" fill="#3a3a4a"/>
+        <rect class="grip" x="13" y="22" width="23" height="6" rx="3" fill="#4a4a5a"/>
+        <line class="grip" x1="18" y1="22.5" x2="18" y2="28.5" stroke="#2a2a3a" stroke-width="1.2"/>
+        <line class="grip" x1="24" y1="22.5" x2="24" y2="28.5" stroke="#2a2a3a" stroke-width="1.2"/>
+        <line class="grip" x1="30" y1="22.5" x2="30" y2="28.5" stroke="#2a2a3a" stroke-width="1.2"/>
+        <path class="guard" d="M 37,13 C 52,13 52,37 37,37 Z" fill="rgba(60,60,80,0.4)" stroke="#666688" stroke-width="1.5"/>
+        <line class="guard" x1="37" y1="13" x2="37" y2="37" stroke="#666688" stroke-width="1.5"/>
+        <line class="laser-glow" x1="43" y1="25" x2="107" y2="25" stroke-width="6" stroke-linecap="round"/>
+        <line class="laser-blade" x1="43" y1="25" x2="107" y2="25" stroke-width="2.5" stroke-linecap="round"/>
       </svg>
     </div>
 
