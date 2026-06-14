@@ -162,7 +162,7 @@ export function generateBracketTreeHTML(
     ): string => {
       const name = fencer
         ? truncate(`${fencer.lastName.toUpperCase()} ${fencer.firstName?.charAt(0) ?? ''}.`, 22)
-        : 'TBD';
+        : '';
       const club = showClub && fencer?.club ? truncate(fencer.club, 20) : '';
       const bg   = isWinner ? '#dcfce7' : fencer ? (rowY === yTop ? '#f0f7ff' : '#ffffff') : '#f8fafc';
       const tc   = isWinner ? green : '#1e293b';
@@ -172,8 +172,10 @@ export function generateBracketTreeHTML(
 
       return `<rect x="${x}" y="${rowY}" width="${nameW}" height="${ROW_H}" fill="${bg}"/>
         <rect x="${x + nameW}" y="${rowY}" width="${SCORE_W}" height="${ROW_H}" fill="${bg}"/>
-        <text x="${x + 4}" y="${nameY}" dominant-baseline="middle"
-              font-family="'Segoe UI',Arial,sans-serif" font-size="${fs}" font-weight="${fw}" fill="${tc}">${name}</text>
+        ${fencer
+          ? `<text x="${x + 4}" y="${nameY}" dominant-baseline="middle"
+              font-family="'Segoe UI',Arial,sans-serif" font-size="${fs}" font-weight="${fw}" fill="${tc}">${name}</text>`
+          : `<line x1="${x + 4}" y1="${nameY}" x2="${x + nameW - 8}" y2="${nameY}" stroke="#cbd5e1" stroke-width="0.75" stroke-dasharray="3,4"/>`}
         ${club ? `<text x="${x + 4}" y="${clubY}" dominant-baseline="middle"
               font-family="'Segoe UI',Arial,sans-serif" font-size="${clubFs}" fill="#94a3b8">${club}</text>` : ''}
         <text x="${x + nameW + SCORE_W / 2}" y="${rowY + ROW_H / 2}" text-anchor="middle" dominant-baseline="middle"
@@ -400,7 +402,7 @@ export function generateBracketTreeMultiPageHTML(
     ): string => {
       const name = fencer
         ? truncate(`${fencer.lastName.toUpperCase()} ${fencer.firstName?.charAt(0) ?? ''}.`, 24)
-        : 'TBD';
+        : '';
       const club = fencer?.club ? truncate(fencer.club, 22) : '';
       const bg   = isWinner ? '#dcfce7' : fencer ? (rowY === yTop ? '#f0f7ff' : '#ffffff') : '#f8fafc';
       const tc   = isWinner ? green : '#1e293b';
@@ -409,8 +411,10 @@ export function generateBracketTreeMultiPageHTML(
       const clubY = rowY + ROW_H * 0.75;
       return `<rect x="${x}" y="${rowY}" width="${nameW}" height="${ROW_H}" fill="${bg}"/>
         <rect x="${x + nameW}" y="${rowY}" width="${SCORE_W}" height="${ROW_H}" fill="${bg}"/>
-        <text x="${x + 5}" y="${nameY}" dominant-baseline="middle"
-              font-family="'Segoe UI',Arial,sans-serif" font-size="${fs}" font-weight="${fw}" fill="${tc}">${name}</text>
+        ${fencer
+          ? `<text x="${x + 5}" y="${nameY}" dominant-baseline="middle"
+              font-family="'Segoe UI',Arial,sans-serif" font-size="${fs}" font-weight="${fw}" fill="${tc}">${name}</text>`
+          : `<line x1="${x + 5}" y1="${nameY}" x2="${x + nameW - 8}" y2="${nameY}" stroke="#cbd5e1" stroke-width="0.75" stroke-dasharray="3,4"/>`}
         ${club ? `<text x="${x + 5}" y="${clubY}" dominant-baseline="middle"
               font-family="'Segoe UI',Arial,sans-serif" font-size="${clubFs}" fill="#94a3b8">${club}</text>` : ''}
         <text x="${x + nameW + SCORE_W / 2}" y="${rowY + ROW_H / 2}" text-anchor="middle" dominant-baseline="middle"
