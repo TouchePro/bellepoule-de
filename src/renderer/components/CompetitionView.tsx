@@ -55,6 +55,7 @@ interface CompetitionViewProps {
   onUpdate: (competition: Competition) => void;
   requestPhase?: string;
   onPhaseApplied?: () => void;
+  onRemoteServerChange?: (url: string | null, arenaCount: number) => void;
 }
 
 // ─── Static style constants ───────────────────────────────────────────────────
@@ -70,7 +71,7 @@ const CV_STYLES = {
   phaseContent: { flex: 1, overflow: 'auto' as const } satisfies React.CSSProperties,
 } satisfies Record<string, React.CSSProperties>;
 
-const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate, requestPhase, onPhaseApplied }) => {
+const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate, requestPhase, onPhaseApplied, onRemoteServerChange }) => {
   const { showToast } = useToast();
   const { t, language } = useTranslation();
 
@@ -108,6 +109,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [isRemoteActive, setIsRemoteActive] = useState(false);
   const [remoteServerUrl, setRemoteServerUrl] = useState<string | null>(null);
   const [remoteArenaCount, setRemoteArenaCount] = useState<number>(1);
+  useEffect(() => { onRemoteServerChange?.(remoteServerUrl, remoteArenaCount); }, [remoteServerUrl, remoteArenaCount]);
   const [arenaStates, setArenaStates] = useState<Arena[]>([]);
   const [showThirdPlaceDialog, setShowThirdPlaceDialog] = useState(false);
   const [tableauMatches, setTableauMatches] = useState<TableauMatch[]>([]);
@@ -1163,8 +1165,6 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         getCheckedInFencers={getCheckedInFencers}
         pools={pools}
         tableauMatches={tableauMatches}
-        remoteServerUrl={remoteServerUrl ?? undefined}
-        remoteArenaCount={remoteArenaCount}
       />
 
       {/* Content — keyed pour animation de transition */}

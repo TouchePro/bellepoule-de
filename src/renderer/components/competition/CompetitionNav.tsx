@@ -3,13 +3,11 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Wrench, Wifi, Tv2, Swords, Target, Zap, Trophy } from 'lucide-react';
+import React from 'react';
+import { ChevronLeft, ChevronRight, Swords, Target, Zap, Trophy } from 'lucide-react';
 import { Competition, MatchStatus, QuestPhaseConfig, Fencer } from '../../../shared/types';
 import { Phase } from '../../hooks/useCompetitionSession';
 import CoachMark from '../CoachMark';
-import { WifiQRModal } from '../WifiQRModal';
-import { XiaomiRemotePanel } from '../XiaomiRemotePanel';
 
 interface PhaseItem {
   id: string;
@@ -51,8 +49,6 @@ interface CompetitionNavProps {
   getCheckedInFencers: () => Fencer[];
   pools: PoolItem[];
   tableauMatches: TableauMatchItem[];
-  remoteServerUrl?: string;
-  remoteArenaCount?: number;
 }
 
 const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
@@ -70,30 +66,7 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
   getCheckedInFencers,
   pools,
   tableauMatches,
-  remoteServerUrl,
-  remoteArenaCount = 4,
 }) => {
-  const [showToolsMenu, setShowToolsMenu] = useState(false);
-  const [showWifiQR, setShowWifiQR] = useState(false);
-  const [showTVRemote, setShowTVRemote] = useState(false);
-  const toolsMenuRef = useRef<HTMLDivElement>(null);
-  const toolsBtnRef = useRef<HTMLButtonElement>(null);
-  const [toolsMenuPos, setToolsMenuPos] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
-
-  useEffect(() => {
-    if (!showToolsMenu) return;
-    const rect = toolsBtnRef.current?.getBoundingClientRect();
-    if (rect) {
-      setToolsMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
-    }
-    const handler = (e: MouseEvent) => {
-      if (toolsMenuRef.current && !toolsMenuRef.current.contains(e.target as Node)) {
-        setShowToolsMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [showToolsMenu]);
 
   return (
   <>
@@ -167,51 +140,6 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
           </button>
         )}
 
-        {/* Bouton menu outils */}
-        <div ref={toolsMenuRef} style={{ position: 'relative' }}>
-          <button
-            ref={toolsBtnRef}
-            className="btn btn-secondary btn-icon-label"
-            onClick={() => setShowToolsMenu(v => !v)}
-            title="Outils"
-            aria-haspopup="true"
-            aria-expanded={showToolsMenu}
-          >
-            <Wrench size={15} /> Outils
-          </button>
-          {showToolsMenu && (
-            <div
-              style={{
-                position: 'fixed',
-                right: toolsMenuPos.right,
-                top: toolsMenuPos.top,
-                background: 'var(--color-surface)',
-                color: 'var(--color-text)',
-                border: '1px solid var(--color-border)',
-                borderRadius: '8px',
-                boxShadow: 'var(--shadow-xl)',
-                minWidth: '200px',
-                zIndex: 1100,
-                overflow: 'hidden',
-              }}
-            >
-              <button
-                className="comp-header-dropdown-item"
-                onClick={() => { setShowWifiQR(true); setShowToolsMenu(false); }}
-                style={{ width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-              >
-                <Wifi size={15} /> QR Code WiFi
-              </button>
-              <button
-                className="comp-header-dropdown-item"
-                onClick={() => { setShowTVRemote(true); setShowToolsMenu(false); }}
-                style={{ width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-              >
-                <Tv2 size={15} /> Télécommande TV
-              </button>
-            </div>
-          )}
-        </div>
       </div>
     </div>
 
@@ -254,15 +182,6 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
       </div>
     )}
 
-    {showWifiQR && <WifiQRModal onClose={() => setShowWifiQR(false)} />}
-    {showTVRemote && (
-      <XiaomiRemotePanel
-        competitionId={competition.id}
-        serverUrl={remoteServerUrl ?? ''}
-        arenaCount={remoteArenaCount}
-        onClose={() => setShowTVRemote(false)}
-      />
-    )}
   </>
   );
 };
