@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Fencer } from '../../../shared/types';
 
 interface TableauToolbarProps {
@@ -42,84 +42,46 @@ const TableauToolbarComponent: React.FC<TableauToolbarProps> = ({
   onExportTreeClick,
   champion,
 }) => {
+  const [fabOpen, setFabOpen] = useState(false);
+  const fabRef = useRef<HTMLDivElement>(null);
+
+  // Close FAB when clicking outside
+  useEffect(() => {
+    if (!fabOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (fabRef.current && !fabRef.current.contains(e.target as Node)) {
+        setFabOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [fabOpen]);
+
+  const closeAndRun = (fn: () => void) => {
+    setFabOpen(false);
+    fn();
+  };
+
   return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '1rem',
-      }}
-    >
-      <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>
-        Tableau de {tableauSize} - {rankingCount} qualifiés
-      </h2>
-      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-        {arenaCount > 0 && (
-          <>
-            <label
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                fontSize: '0.875rem',
-                color: '#374151',
-                cursor: 'pointer',
-                padding: '0.5rem 0.75rem',
-                background: autoAssignArenas ? '#eff6ff' : '#f3f4f6',
-                border: `1px solid ${autoAssignArenas ? '#3b82f6' : '#d1d5db'}`,
-                borderRadius: '6px',
-                userSelect: 'none',
-              }}
-              title="Assigne automatiquement les matchs aux arènes disponibles en round-robin"
-            >
-              <input
-                type="checkbox"
-                checked={autoAssignArenas}
-                onChange={e => onAutoAssignToggle(e.target.checked)}
-                style={{ cursor: 'pointer' }}
-              />
-              <span>🏟️ Assignation auto</span>
-            </label>
-            <button
-              onClick={onBulkDeassign}
-              style={{
-                background: '#ef4444',
-                color: 'white',
-                border: 'none',
-                padding: '0.5rem 0.75rem',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '0.875rem',
-                fontWeight: '500',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.25rem',
-              }}
-              title="Désaffecter tous les matches de toutes les arènes"
-            >
-              ❌ Désaffecter tout
-            </button>
-          </>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', gap: '0.75rem' }}>
+      {/* Left: title + champion */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0 }}>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: '600', margin: 0, whiteSpace: 'nowrap' }}>
+          Tableau de {tableauSize}
+          <span style={{ fontWeight: 400, color: '#6b7280', fontSize: '1rem', marginLeft: '0.375rem' }}>
+            — {rankingCount} qualifiés
+          </span>
+        </h2>
+        {champion && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', background: '#fef3c7', padding: '0.375rem 0.75rem', borderRadius: '999px', fontSize: '0.875rem', fontWeight: '600', border: '1px solid #fcd34d' }}>
+            🏆 {champion.lastName} {champion.firstName}
+          </div>
         )}
-        <button
-          onClick={onAutoFillScores}
-          style={{
-            background: '#f59e0b',
-            color: 'white',
-            border: 'none',
-            padding: '0.5rem 1rem',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '0.875rem',
-            fontWeight: '500',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.25rem',
-          }}
-        >
-          🎲 Remplir auto
-        </button>
+      </div>
+
+      {/* Right: view toggles + FAB */}
+      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0 }}>
+        {/* View mode toggles — toujours visibles */}
         <button
           onClick={onViewModeToggle}
           style={{
@@ -131,17 +93,10 @@ const TableauToolbarComponent: React.FC<TableauToolbarProps> = ({
             cursor: 'pointer',
             fontSize: '0.875rem',
             fontWeight: '500',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.25rem',
           }}
-          title={
-            viewMode === 'full'
-              ? 'Afficher les matches en attente'
-              : 'Afficher le tableau complet'
-          }
+          title={viewMode === 'full' ? 'Matchs en attente' : 'Tableau complet'}
         >
-          {viewMode === 'full' ? '📋 Matchs en attente' : '📊 Tableau complet'}
+          {viewMode === 'full' ? '📋 En attente' : '📊 Tableau'}
         </button>
         <button
           onClick={onPyramidViewModeToggle}
@@ -154,88 +109,63 @@ const TableauToolbarComponent: React.FC<TableauToolbarProps> = ({
             cursor: 'pointer',
             fontSize: '0.875rem',
             fontWeight: '500',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.25rem',
           }}
           title={pyramidViewMode ? 'Vue tableau' : 'Vue pyramidale'}
         >
           {pyramidViewMode ? '🔲 Tableau' : '🔺 Pyramide'}
         </button>
-        <button
-          onClick={onPrintClick}
-          style={{
-            background: '#6366f1',
-            color: 'white',
-            border: 'none',
-            padding: '0.5rem 0.75rem',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '0.875rem',
-            fontWeight: '500',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.25rem',
-          }}
-          title="Imprimer les feuilles de match"
-        >
-          🖨️ Imprimer
-        </button>
-        <button
-          onClick={onExportPdfClick}
-          style={{
-            background: '#10b981',
-            color: 'white',
-            border: 'none',
-            padding: '0.5rem 0.75rem',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '0.875rem',
-            fontWeight: '500',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.25rem',
-          }}
-          title="Exporter les feuilles de match en PDF"
-        >
-          📄 Export PDF
-        </button>
-        <button
-          onClick={onExportTreeClick}
-          style={{
-            background: '#0d9488',
-            color: 'white',
-            border: 'none',
-            padding: '0.5rem 0.75rem',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '0.875rem',
-            fontWeight: '500',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.25rem',
-          }}
-          title="Exporter l'arbre du tableau en PDF"
-        >
-          🌲 Arbre PDF
-        </button>
-        {champion && (
-          <div
-            style={{
-              background: '#fef3c7',
-              padding: '0.5rem 1rem',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-            }}
+
+        {/* FAB */}
+        <div className="tableau-fab-wrapper" ref={fabRef}>
+          <button
+            className="tableau-fab-trigger"
+            onClick={() => setFabOpen(o => !o)}
+            title="Options du tableau"
           >
-            <span style={{ fontSize: '1.5rem' }}>🏆</span>
-            <span style={{ fontWeight: '600' }}>
-              {champion.lastName} {champion.firstName}
-            </span>
-          </div>
-        )}
+            {fabOpen ? '✕' : '⋮'} Options
+          </button>
+
+          {fabOpen && (
+            <div className="tableau-fab-menu">
+              {arenaCount > 0 && (
+                <>
+                  <span className="tableau-fab-section-label">Pistes</span>
+                  <label
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.875rem', fontWeight: '500', background: autoAssignArenas ? 'rgba(59,130,246,0.08)' : 'transparent', color: autoAssignArenas ? '#2563eb' : 'var(--color-text)' }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={autoAssignArenas}
+                      onChange={e => onAutoAssignToggle(e.target.checked)}
+                    />
+                    🏟️ Assignation auto
+                  </label>
+                  <button className="tableau-fab-item tableau-fab-item--danger" onClick={() => closeAndRun(onBulkDeassign)}>
+                    ❌ Désaffecter tout
+                  </button>
+                  <div className="tableau-fab-divider" />
+                </>
+              )}
+
+              <span className="tableau-fab-section-label">Actions</span>
+              <button className="tableau-fab-item" onClick={() => closeAndRun(onAutoFillScores)}>
+                🎲 Remplir auto (test)
+              </button>
+
+              <div className="tableau-fab-divider" />
+              <span className="tableau-fab-section-label">Export</span>
+              <button className="tableau-fab-item" onClick={() => closeAndRun(onPrintClick)}>
+                🖨️ Imprimer
+              </button>
+              <button className="tableau-fab-item" onClick={() => closeAndRun(onExportPdfClick)}>
+                📄 Export PDF
+              </button>
+              <button className="tableau-fab-item" onClick={() => closeAndRun(onExportTreeClick)}>
+                🌲 Arbre PDF
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

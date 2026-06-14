@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useLayoutEffect, useMemo } from 'react';
 import { Fencer, FencerStatus, PoolRanking } from '../../shared/types';
 export { TableauMatch, FinalResult, ConsolationBracket, propagateWinners } from './tableau/tableauTypes';
 import { TableauMatch, FinalResult, ConsolationBracket, propagateWinners, deriveFirstRound } from './tableau/tableauTypes';
@@ -127,11 +127,111 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   const [competitionReferees, setCompetitionReferees] = useState<Array<{ id: string; firstName: string; lastName: string; club?: string }>>([]);
   const [selectedMatchConsolationBracketId, setSelectedMatchConsolationBracketId] = useState<string | null>(null);
   const [pyramidViewMode, setPyramidViewMode] = useState<boolean>(false);
+  // Zoom / pan state (vue bracket full uniquement)
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const isPanningRef = useRef(false);
+  const panStartRef = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
+  // SVG connector measures
+  const colRefs = useRef<Map<number, HTMLDivElement | null>>(new Map());
+  const bracketWrapRef = useRef<HTMLDivElement | null>(null);
+  const [colMeasures, setColMeasures] = useState<Map<number, { left: number; width: number }>>(new Map());
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [pdfMode, setPdfMode] = useState<'print' | 'pdf'>('pdf');
   const [pdfMatchesPerPage, setPdfMatchesPerPage] = useState<number>(MAX_MATCHES_PER_PAGE_TABLEAU);
   const [selectedRounds, setSelectedRounds] = useState<Set<number>>(new Set());
   const [autoAssignArenas, setAutoAssignArenas] = useState(false);
+  // Mesure les positions des colonnes pour les connecteurs SVG
+  useLayoutEffect(() => {
+    if (viewMode !== 'full' || pyramidViewMode || !bracketWrapRef.current) return;
+    const wrapLeft = bracketWrapRef.current.getBoundingClientRect().left;
+    const measures = new Map<number, { left: number; width: number }>();
+    colRefs.current.forEach((el, round) => {
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        measures.set(round, { left: rect.left - wrapLeft, width: rect.width });
+      }
+    });
+    setColMeasures(measures);
+  });
+
+  // Remet à zéro le zoom/pan si on change de mode
+  useEffect(() => { setZoom(1); setPan({ x: 0, y: 0 }); }, [viewMode, pyramidViewMode]);
+
+  const handleBracketWheel = useCallback((e: React.WheelEvent) => {
+    if (viewMode !== 'full' || pyramidViewMode) return;
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    setZoom(z => Math.max(0.3, Math.min(2.5, parseFloat((z + delta).toFixed(2)))));
+  }, [viewMode, pyramidViewMode]);
+
+  const handleBracketMouseDown = useCallback((e: React.MouseEvent) => {
+    if (e.button !== 0 || viewMode !== 'full' || pyramidViewMode) return;
+    // Only pan on background (not on match cards)
+    if ((e.target as HTMLElement).closest('.match-card')) return;
+    isPanningRef.current = true;
+    panStartRef.current = { x: e.clientX, y: e.clientY, panX: pan.x, panY: pan.y };
+  }, [viewMode, pyramidViewMode, pan]);
+
+  const handleBracketMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isPanningRef.current) return;
+    setPan({
+      x: panStartRef.current.panX + (e.clientX - panStartRef.current.x),
+      y: panStartRef.current.panY + (e.clientY - panStartRef.current.y),
+    });
+  }, []);
+
+  const handleBracketMouseUp = useCallback(() => { isPanningRef.current = false; }, []);
+
+  // Connecteurs SVG entre les MatchCards
+  const svgConnectors = useMemo(() => {
+    if (viewMode !== 'full' || pyramidViewMode || colMeasures.size === 0 || tableauSize === 0) return null;
+    const totalH = (tableauSize / 2) * SLOT_HEIGHT;
+    const paths: React.ReactNode[] = [];
+
+    for (const match of matches) {
+      if (match.round <= 2 || match.round === 3) continue; // pas de parent pour la finale/petite-finale
+      const parentRound = match.round / 2;
+      const parentPos = Math.ceil(match.position / 2);
+
+      const childMeasure = colMeasures.get(match.round);
+      const parentMeasure = colMeasures.get(parentRound);
+      if (!childMeasure || !parentMeasure) continue;
+
+      const childRight = childMeasure.left + childMeasure.width;
+      const parentLeft = parentMeasure.left;
+      const midX = (childRight + parentLeft) / 2;
+
+      const childY = calculateMatchVerticalPosition(match.round, match.position, tableauSize) + BASE_MATCH_HEIGHT / 2;
+      const parentY = calculateMatchVerticalPosition(parentRound, parentPos, tableauSize) + BASE_MATCH_HEIGHT / 2;
+
+      const hasWinner = !!match.winner;
+      paths.push(
+        <path
+          key={`conn-${match.id}`}
+          d={`M ${childRight} ${childY} H ${midX} V ${parentY} H ${parentLeft}`}
+          stroke={hasWinner ? '#10b981' : '#d1d5db'}
+          strokeWidth={hasWinner ? 2 : 1.5}
+          strokeDasharray={hasWinner ? undefined : '5,3'}
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      );
+    }
+
+    return (
+      <svg
+        className="bracket-svg-overlay"
+        width="100%"
+        height={totalH}
+        style={{ width: '100%', height: totalH }}
+      >
+        {paths}
+      </svg>
+    );
+  }, [viewMode, pyramidViewMode, colMeasures, matches, tableauSize]);
+
   const isUnlimitedScore = maxScore === 999;
   const prevMatchesLengthRef = useRef(0);
   const mountMatchesRef = useRef(matches);
@@ -794,7 +894,11 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     const isExpanded = expandedRounds.size === 0 || expandedRounds.has(round);
 
     return (
-      <div key={round} style={TV_STYLES.roundCol}>
+      <div
+        key={round}
+        ref={(el: HTMLDivElement | null) => { colRefs.current.set(round, el); }}
+        style={TV_STYLES.roundCol}
+      >
         <div onClick={() => toggleRoundExpansion(round)} style={TV_STYLES.roundHeader}>
           <span style={TV_STYLES.roundHeaderChevron}>
             {isExpanded ? '▼' : '▶'}
@@ -964,7 +1068,28 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         champion={champion}
       />
 
-      <div style={TV_STYLES.scrollArea}>
+      <div
+        style={{
+          ...TV_STYLES.scrollArea,
+          overflow: viewMode === 'full' && !pyramidViewMode ? 'hidden' : TV_STYLES.scrollArea.overflowY,
+          cursor: isPanningRef.current ? 'grabbing' : (viewMode === 'full' && !pyramidViewMode && zoom !== 1 ? 'grab' : 'default'),
+          position: 'relative',
+          userSelect: 'none',
+        }}
+        onWheel={handleBracketWheel}
+        onMouseDown={handleBracketMouseDown}
+        onMouseMove={handleBracketMouseMove}
+        onMouseUp={handleBracketMouseUp}
+        onMouseLeave={handleBracketMouseUp}
+      >
+        {viewMode === 'full' && !pyramidViewMode && (
+          <div className="bracket-zoom-controls">
+            <button className="bracket-zoom-btn" onClick={() => setZoom(z => Math.min(2.5, parseFloat((z + 0.1).toFixed(2))))} title="Zoom avant">+</button>
+            <span className="bracket-zoom-level">{Math.round(zoom * 100)}%</span>
+            <button className="bracket-zoom-btn" onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }} title="Réinitialiser">⊙</button>
+            <button className="bracket-zoom-btn" onClick={() => setZoom(z => Math.max(0.3, parseFloat((z - 0.1).toFixed(2))))} title="Zoom arrière">−</button>
+          </div>
+        )}
         {viewMode === 'pending' ? (
           pendingViewRounds.length > 0 ? (
             <>
@@ -1031,7 +1156,13 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         ) : pyramidViewMode ? (
           <Bracket matches={convertToBracketMatches()} tableSize={tableauSize} />
         ) : (
-          <>
+          <div
+            style={{
+              transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
+              transformOrigin: 'top left',
+              willChange: 'transform',
+            }}
+          >
             {playAllPositions && matches.some(m => m.round === tableauSize * 2) && (
               <div style={TV_STYLES.barragesBox}>
                 <div style={TV_STYLES.barragesTitle}>Barrages</div>
@@ -1051,12 +1182,15 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                 </div>
               </div>
             )}
-            <div style={TV_STYLES.fullRoundsRow}>
-              {rounds.map(round => renderRound(round))}
+            <div style={{ position: 'relative' }} ref={bracketWrapRef}>
+              {svgConnectors}
+              <div style={TV_STYLES.fullRoundsRow}>
+                {rounds.map(round => renderRound(round))}
+              </div>
             </div>
-          </>
+          </div>
         )}
-      </div>
+      </div>{/* scrollArea */}
 
       <SeedingTable ranking={ranking} tableauSize={tableauSize} />
 
