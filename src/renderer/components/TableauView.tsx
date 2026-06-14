@@ -152,8 +152,16 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         measures.set(round, { left: rect.left - wrapLeft, width: rect.width });
       }
     });
-    setColMeasures(measures);
-  });
+    // Updater fonctionnel : retourne prev si valeurs identiques → évite re-render inutile
+    setColMeasures(prev => {
+      if (prev.size !== measures.size) return measures;
+      for (const [round, { left, width }] of measures) {
+        const p = prev.get(round);
+        if (!p || p.left !== left || p.width !== width) return measures;
+      }
+      return prev;
+    });
+  }, [viewMode, pyramidViewMode, tableauSize]);
 
   // Remet à zéro le zoom/pan si on change de mode
   useEffect(() => { setZoom(1); setPan({ x: 0, y: 0 }); }, [viewMode, pyramidViewMode]);
