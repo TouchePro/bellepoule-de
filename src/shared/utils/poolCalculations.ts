@@ -526,7 +526,7 @@ function hasConflictWith(
   separation: SeparationCriterionKey[]
 ): boolean {
   if (separation.length === 0) return false;
-  return separation.every(key => {
+  return separation.some(key => {
     switch (key) {
       case 'byClub': return !!fencer.club && index.clubs.has(fencer.club);
       case 'byRegion': return !!fencer.region && index.regions.has(fencer.region);
