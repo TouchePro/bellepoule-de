@@ -388,42 +388,54 @@ const FencerListComponent: React.FC<FencerListProps> = ({
     <div className="content">
       <div className="flex justify-between items-center mb-4" style={{ position: 'relative', zIndex: 2 }}>
         <div>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>{t('fencer.add')}</h2>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>
+            {fencers.length > 0
+              ? `${fencers.length} tireur${fencers.length > 1 ? 's' : ''} inscrit${fencers.length > 1 ? 's' : ''}`
+              : 'Appel'}
+          </h2>
           <p className="text-sm text-muted">
-            {checkedInCount} / {fencers.length} {t('fencer.points').toLowerCase()}
+            {fencers.length > 0
+              ? `${checkedInCount} pointé${checkedInCount !== 1 ? 's' : ''} · ${notCheckedInCount} en attente`
+              : 'Aucun tireur inscrit'}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          {notCheckedInCount > 0 && onCheckInAll && (
-            <button
-              className="btn btn-secondary"
-              onClick={onCheckInAll}
-              title={`Pointer les ${notCheckedInCount} tireurs non pointés`}
-            >
-              ✓ {t('actions.check_in_all')}
-            </button>
-          )}
-          {checkedInCount > 0 && onUncheckAll && (
-            <button
-              className="btn btn-secondary"
-              onClick={onUncheckAll}
-              title={t('fencer.uncheck_all')}
-            >
-              ✗ {t('actions.uncheck_all')}
-            </button>
-          )}
-          {fencers.length > 0 && onDeleteAllFencers && (
-            <button
-              className="btn btn-danger"
-              onClick={async () => {
-                if (await confirm(t('messages.confirm_delete_fencer'))) {
-                  onDeleteAllFencers();
-                }
-              }}
-              title={`Supprimer les ${fencers.length} tireurs`}
-            >
-              🗑️ {t('actions.delete')}
-            </button>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          {fencers.length > 0 && (
+            <>
+              {notCheckedInCount > 0 && onCheckInAll && (
+                <button
+                  className="btn btn-secondary"
+                  onClick={onCheckInAll}
+                  title={`Pointer les ${notCheckedInCount} tireurs non pointés`}
+                >
+                  ✓ {t('actions.check_in_all')}
+                </button>
+              )}
+              {checkedInCount > 0 && onUncheckAll && (
+                <button
+                  className="btn btn-secondary"
+                  onClick={onUncheckAll}
+                  title={t('fencer.uncheck_all')}
+                >
+                  ✗ {t('actions.uncheck_all')}
+                </button>
+              )}
+              {onDeleteAllFencers && (
+                <button
+                  className="btn btn-danger"
+                  onClick={async () => {
+                    if (await confirm(t('messages.confirm_delete_fencer'))) {
+                      onDeleteAllFencers();
+                    }
+                  }}
+                  title={`Supprimer les ${fencers.length} tireurs`}
+                  style={{ padding: '0.4rem 0.6rem' }}
+                >
+                  🗑️
+                </button>
+              )}
+              <div style={{ width: '1px', height: '22px', background: 'var(--border-color, rgba(255,255,255,0.15))', margin: '0 0.125rem', flexShrink: 0 }} />
+            </>
           )}
           {onImport && (
             <div ref={importMenuRef} style={DROPDOWN_WRAP}>
@@ -684,39 +696,67 @@ const FencerListComponent: React.FC<FencerListProps> = ({
 
       {fencers.length > 0 && (
         <div style={{ marginBottom: '1rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted, #6b7280)', marginBottom: '4px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: '0.75rem', color: 'var(--text-muted, #6b7280)', marginBottom: '5px' }}>
             <span>Pointage</span>
-            <span>{checkedInCount} / {fencers.length}</span>
+            <span style={{ fontWeight: 600, color: checkedInCount === fencers.length ? '#22c55e' : 'inherit' }}>
+              {checkedInCount} / {fencers.length} · {Math.round((checkedInCount / fencers.length) * 100)} %
+            </span>
           </div>
-          <div style={{ height: '6px', background: 'var(--border-color, #e5e7eb)', borderRadius: '3px', overflow: 'hidden' }}>
+          <div style={{ height: '8px', background: 'var(--border-color, #e5e7eb)', borderRadius: '4px', overflow: 'hidden' }}>
             <div style={{
               height: '100%',
-              width: fencers.length > 0 ? `${(checkedInCount / fencers.length) * 100}%` : '0%',
-              background: checkedInCount === fencers.length && fencers.length > 0 ? '#22c55e' : '#3b82f6',
-              borderRadius: '3px',
+              width: `${(checkedInCount / fencers.length) * 100}%`,
+              background: checkedInCount === fencers.length ? '#22c55e' : '#3b82f6',
+              borderRadius: '4px',
               transition: 'width 0.4s ease',
             }} />
           </div>
         </div>
       )}
 
-      <div className="card mb-4">
-        <div className="card-body flex gap-4">
+      {fencers.length > 0 && (
+        <div style={{ position: 'relative', marginBottom: '1rem' }}>
+          <span style={{
+            position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)',
+            fontSize: '0.875rem', color: 'var(--text-muted, #6b7280)', pointerEvents: 'none',
+            userSelect: 'none',
+          }}>🔍</span>
           <input
             type="text"
             className="form-input"
-            style={{ flex: 1 }}
-            placeholder="Rechercher..."
+            style={{ width: '100%', paddingLeft: '2.25rem', boxSizing: 'border-box' }}
+            placeholder="Rechercher un tireur…"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
           />
         </div>
-      </div>
+      )}
 
       {filteredFencers.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon">🤺</div>
-          <h2 className="empty-state-title">Aucun tireur</h2>
+          {fencers.length === 0 ? (
+            <>
+              <div className="empty-state-icon">🤺</div>
+              <h2 className="empty-state-title">Aucun tireur inscrit</h2>
+              <p className="empty-state-description">Importez une liste ou ajoutez des tireurs manuellement</p>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap', marginTop: '1.25rem' }}>
+                {onImport && (
+                  <button className="btn btn-secondary" onClick={() => handleImportFencers('xml')}>
+                    📥 Importer XML
+                  </button>
+                )}
+                <button className="btn btn-primary" onClick={onAddFencer}>
+                  + {t('fencer.add')}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="empty-state-icon">🔍</div>
+              <h2 className="empty-state-title">Aucun résultat</h2>
+              <p className="empty-state-description">« {searchTerm} » ne correspond à aucun tireur</p>
+            </>
+          )}
         </div>
       ) : (
         <div className="card">
