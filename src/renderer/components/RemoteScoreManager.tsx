@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 // qrcode chargé à la demande (génération du QR uniquement à l'affichage)
 import { Competition, Pool } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
@@ -1282,7 +1283,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       </div>
 
       {/* ── Modal kiosk config ── */}
-      {kioskModal && (
+      {kioskModal && createPortal(
         <div className="qr-popup-overlay" onClick={() => setKioskModal(null)}>
           <div className="qr-popup" onClick={e => e.stopPropagation()} style={{ minWidth: '20rem', maxWidth: '26rem' }}>
             <strong style={{ fontSize: '1rem' }}>🖥️ Configurer le mode kiosk</strong>
@@ -1334,7 +1335,8 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {themeEditorTarget && (
@@ -1350,7 +1352,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         />
       )}
 
-      {activeQR && (
+      {activeQR && createPortal(
         <div className="qr-popup-overlay" onClick={() => setActiveQR(null)}>
           <div className="qr-popup" onClick={e => e.stopPropagation()}>
             <strong>{activeQR.label}</strong>
@@ -1366,7 +1368,8 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
               Fermer
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
