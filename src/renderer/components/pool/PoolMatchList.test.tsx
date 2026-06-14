@@ -63,6 +63,6 @@ describe('PoolMatchList', () => {
 
   it('affiche « Poule terminée » sans match en attente', () => {
     renderList({ pending: [], finished: [], cancelled: [] });
-    expect(screen.getByText('Poule terminée !')).toBeInTheDocument();
+    expect(screen.getByText('Poule terminée')).toBeInTheDocument();
   });
 });
