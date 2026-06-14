@@ -94,9 +94,9 @@ const TableauToolbarComponent: React.FC<TableauToolbarProps> = ({
             fontSize: '0.875rem',
             fontWeight: '500',
           }}
-          title={viewMode === 'full' ? 'Matchs en attente' : 'Tableau complet'}
+          title={viewMode === 'full' ? 'Liste des matchs' : 'Tableau complet'}
         >
-          {viewMode === 'full' ? '📋 En attente' : '📊 Tableau'}
+          {viewMode === 'full' ? '📋 Liste des matchs' : '📊 Tableau'}
         </button>
         <button
           onClick={onPyramidViewModeToggle}
