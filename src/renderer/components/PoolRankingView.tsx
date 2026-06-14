@@ -313,6 +313,18 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
     return [headers, ...rows].map(row => row.join(';')).join('\n');
   };
 
+  const activeRanking =
+    splitCriteria && splitTab !== 'all'
+      ? (splitRankings?.get(splitTab) ?? [])
+      : editedRanking;
+
+  const getRankBadgeClass = (rank: number) => {
+    if (rank === 1) return 'ranking-rank-badge ranking-rank-badge--gold';
+    if (rank === 2) return 'ranking-rank-badge ranking-rank-badge--silver';
+    if (rank === 3) return 'ranking-rank-badge ranking-rank-badge--bronze';
+    return 'ranking-rank-badge';
+  };
+
   return (
     <div className="content" style={{ padding: '1rem' }}>
       <div
@@ -334,100 +346,40 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
             {isEditing && ' (mode édition)'}
           </p>
         </div>
-        <div style={FLEX_GAP}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
           {!isInitialRanking && (
-            <button
-              className="btn btn-secondary"
-              onClick={handleRecalculate}
-              title="Recalculer le classement"
-            >
-              🔄 Recalculer
+            <button className="btn btn-secondary" onClick={handleRecalculate} title="Recalculer le classement" style={{ fontSize: '0.8rem' }}>
+              Recalculer
             </button>
           )}
-          <button
-            className="btn btn-secondary"
-            onClick={() => handleExport('csv')}
-            title="Exporter en CSV"
-          >
-            📄 CSV
-          </button>
-          <button
-            className="btn btn-secondary"
-            onClick={handleExportPDF}
-            title="Exporter le classement en PDF"
-          >
-            📋 Export PDF
-          </button>
-          <button className="btn btn-secondary" onClick={handlePrint} title="Imprimer">
-            🖨️ Imprimer
-          </button>
+          <div style={{ width: '1px', height: '22px', background: 'var(--color-border)', margin: '0 0.15rem' }} />
+          <button className="btn btn-secondary" onClick={() => handleExport('csv')} style={{ fontSize: '0.8rem' }}>CSV</button>
+          <button className="btn btn-secondary" onClick={handleExportPDF} style={{ fontSize: '0.8rem' }}>PDF</button>
+          <button className="btn btn-secondary" onClick={handlePrint} style={{ fontSize: '0.8rem' }}>Imprimer</button>
+          <div style={{ width: '1px', height: '22px', background: 'var(--color-border)', margin: '0 0.15rem' }} />
           {!isInSplitGroupTab && (
             <button
-              className="btn btn-secondary"
+              className={`btn ${isEditing ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => (isEditing ? saveChanges() : setIsEditing(true))}
-              title={isEditing ? 'Terminer la modification' : 'Modifier le classement'}
+              style={{ fontSize: '0.8rem' }}
             >
-              {isEditing ? '✓ Terminer' : '✏️ Modifier'}
+              {isEditing ? 'Terminer' : 'Modifier'}
             </button>
           )}
           <div style={{ position: 'relative' }} ref={columnMenuRef}>
             <button
               onClick={() => setShowColumnMenu(!showColumnMenu)}
-              style={{
-                padding: '0.375rem 0.75rem',
-                fontSize: '0.75rem',
-                background: showColumnMenu ? '#6b7280' : '#e5e7eb',
-                color: showColumnMenu ? 'white' : '#374151',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-              }}
+              className="btn btn-secondary"
+              style={{ fontSize: '0.8rem', padding: '0.375rem 0.65rem' }}
               title="Afficher/masquer les colonnes"
             >
-              ⚙️
+              Colonnes
             </button>
             {showColumnMenu && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '100%',
-                  right: 0,
-                  marginTop: '0.25rem',
-                  background: 'white',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '6px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                  zIndex: 100,
-                  minWidth: '200px',
-                  padding: '0.5rem',
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    padding: '0.25rem 0.5rem',
-                    borderBottom: '1px solid #e5e7eb',
-                    marginBottom: '0.25rem',
-                  }}
-                >
-                  Colonnes à afficher
-                </div>
+              <div className="ranking-col-menu">
+                <div className="ranking-col-menu-title">Colonnes à afficher</div>
                 {RANKING_COLUMNS.filter(col => col.id !== 'quest' || isLaserSabre).map(col => (
-                  <label
-                    key={col.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      padding: '0.375rem 0.5rem',
-                      cursor: 'pointer',
-                      borderRadius: '4px',
-                      fontSize: '0.8rem',
-                    }}
-                    onMouseEnter={e => (e.currentTarget.style.background = '#f3f4f6')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                  >
+                  <label key={col.id} className="ranking-col-menu-item">
                     <input
                       type="checkbox"
                       checked={isVisible(col.id)}
@@ -487,20 +439,20 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
             </tr>
           </thead>
           <tbody>
-            {(splitCriteria && splitTab !== 'all'
-              ? (splitRankings?.get(splitTab) ?? [])
-              : editedRanking
-            ).map((ranking, index) => (
+            {activeRanking.map((ranking, index) => {
+              const prevRank = index > 0 ? activeRanking[index - 1].rank : null;
+              const nextRank = index < activeRanking.length - 1 ? activeRanking[index + 1].rank : null;
+              const isTied = prevRank === ranking.rank || nextRank === ranking.rank;
+              const isQualified = poolWinnerIds?.has(ranking.fencer.id);
+              const dimmed = poolWinnersOnly && poolWinnerIds && !isQualified;
+              return (
               <tr
                 key={ranking.fencer.id}
-                style={
-                  poolWinnersOnly && poolWinnerIds && !poolWinnerIds.has(ranking.fencer.id)
-                    ? { opacity: 0.45 }
-                    : undefined
-                }
+                className={isTied ? 'ranking-row--tie' : undefined}
+                style={dimmed ? { opacity: 0.45 } : undefined}
               >
                 {isVisible('rank') && (
-                  <td style={{ fontWeight: '600' }}>
+                  <td>
                     {isEditing ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
                         <input
@@ -532,57 +484,45 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
                               (e.target as HTMLInputElement).blur();
                             }
                           }}
-                          style={{
-                            width: '44px',
-                            textAlign: 'center',
-                            padding: '1px 4px',
-                            fontWeight: '600',
-                          }}
+                          style={{ width: '44px', textAlign: 'center', padding: '1px 4px', fontWeight: '600' }}
                         />
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
                           <button
                             onClick={() => moveUp(index)}
                             disabled={index === 0}
-                            style={{
-                              padding: '0 2px',
-                              fontSize: '10px',
-                              cursor: index === 0 ? 'not-allowed' : 'pointer',
-                              opacity: index === 0 ? 0.3 : 1,
-                            }}
-                          >
-                            ▲
-                          </button>
+                            className="pool-prep-btn-move"
+                            style={{ opacity: index === 0 ? 0.3 : 1 }}
+                          >▲</button>
                           <button
                             onClick={() => moveDown(index)}
                             disabled={index === editedRanking.length - 1}
-                            style={{
-                              padding: '0 2px',
-                              fontSize: '10px',
-                              cursor:
-                                index === editedRanking.length - 1 ? 'not-allowed' : 'pointer',
-                              opacity: index === editedRanking.length - 1 ? 0.3 : 1,
-                            }}
-                          >
-                            ▼
-                          </button>
+                            className="pool-prep-btn-move"
+                            style={{ opacity: index === editedRanking.length - 1 ? 0.3 : 1 }}
+                          >▼</button>
                         </div>
                       </div>
                     ) : (
-                      ranking.rank
+                      <span className={getRankBadgeClass(ranking.rank)}>{ranking.rank}</span>
                     )}
                   </td>
                 )}
                 {isVisible('lastName') && (
                   <td className="font-medium">
                     {ranking.fencer.lastName}
-                    {ranking.fencer.status === FencerStatus.ABANDONED && ' (A)'}
-                    {ranking.fencer.status === FencerStatus.FORFAIT && ' (F)'}
-                    {ranking.fencer.status === FencerStatus.EXCLUDED && ' (X)'}
+                    {ranking.fencer.status === FencerStatus.ABANDONED && (
+                      <span className="ranking-status-badge ranking-status-badge--abandon">A</span>
+                    )}
+                    {ranking.fencer.status === FencerStatus.FORFAIT && (
+                      <span className="ranking-status-badge ranking-status-badge--forfait">F</span>
+                    )}
+                    {ranking.fencer.status === FencerStatus.EXCLUDED && (
+                      <span className="ranking-status-badge ranking-status-badge--exclu">X</span>
+                    )}
                   </td>
                 )}
                 {isVisible('firstName') && <td>{ranking.fencer.firstName}</td>}
                 {isVisible('club') && (
-                  <td className="text-sm text-muted">{ranking.fencer.club || '-'}</td>
+                  <td className="text-sm text-muted">{ranking.fencer.club || '—'}</td>
                 )}
                 {isVisible('victories') && (
                   <td style={{ textAlign: 'center', fontWeight: '600' }}>{ranking.victories}</td>
@@ -593,12 +533,8 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
                 {isVisible('ratio') && (
                   <td style={CENTER}>{formatRatio(ranking.ratio)}</td>
                 )}
-                {isVisible('td') && (
-                  <td style={CENTER}>{ranking.touchesScored}</td>
-                )}
-                {isVisible('tr') && (
-                  <td style={CENTER}>{ranking.touchesReceived}</td>
-                )}
+                {isVisible('td') && <td style={CENTER}>{ranking.touchesScored}</td>}
+                {isVisible('tr') && <td style={CENTER}>{ranking.touchesReceived}</td>}
                 {isVisible('quest') && isLaserSabre && (
                   <td style={{ textAlign: 'center', fontWeight: '600', color: '#7c3aed' }}>
                     {isEditing ? (
@@ -620,29 +556,22 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
                   </td>
                 )}
                 {isVisible('index') && (
-                  <td
-                    style={{
-                      textAlign: 'center',
-                      color: ranking.index >= 0 ? '#059669' : '#DC2626',
-                      fontWeight: '600',
-                    }}
-                  >
-                    {formatIndex(ranking.index)}
+                  <td style={CENTER} className={ranking.index >= 0 ? 'ranking-index--positive' : 'ranking-index--negative'}>
+                    {ranking.index > 0 ? '+' : ''}{formatIndex(ranking.index)}
                   </td>
                 )}
                 {poolWinnersOnly && (
                   <td style={CENTER}>
-                    {poolWinnerIds?.has(ranking.fencer.id) ? (
-                      <span style={{ color: '#059669', fontWeight: '700', fontSize: '0.85rem' }}>
-                        ✓ Q
-                      </span>
+                    {isQualified ? (
+                      <span className="ranking-qualif-badge">Q</span>
                     ) : (
-                      <span style={{ color: '#9ca3af', fontSize: '0.8rem' }}>—</span>
+                      <span style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>—</span>
                     )}
                   </td>
                 )}
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -656,12 +585,23 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
           marginTop: '2rem',
         }}
       >
-        <div className="text-sm text-muted">
-          <strong>Légende :</strong> V = Victoires, M = Matchs, V/M = Ratio Victoires/Matchs, TD =
-          Touches Données, TR = Touches Reçues
-          {isLaserSabre && ', Quest = Points Quest (Sabre Laser)'}
-          {', Indice = TD - TR'}
-          {' • (A) = Abandon • (F) = Forfait • (X) = Exclu'}
+        <div className="ranking-legend">
+          {[
+            ['V', 'Victoires'],
+            ['M', 'Matchs'],
+            ['V/M', 'Ratio'],
+            ['TD', 'Touches données'],
+            ['TR', 'Touches reçues'],
+            ['Indice', 'TD − TR'],
+            ...(isLaserSabre ? [['Quest', 'Points Sabre Laser']] : []),
+          ].map(([abbr, full]) => (
+            <span key={abbr} className="ranking-legend-pill">
+              <strong>{abbr}</strong> {full}
+            </span>
+          ))}
+          <span className="ranking-legend-pill"><span className="ranking-status-badge ranking-status-badge--abandon" style={{ marginLeft: 0 }}>A</span> Abandon</span>
+          <span className="ranking-legend-pill"><span className="ranking-status-badge ranking-status-badge--forfait" style={{ marginLeft: 0 }}>F</span> Forfait</span>
+          <span className="ranking-legend-pill"><span className="ranking-status-badge ranking-status-badge--exclu" style={{ marginLeft: 0 }}>X</span> Exclu</span>
         </div>
         <div style={FLEX_GAP}>
           {hasDirectElimination ? (
