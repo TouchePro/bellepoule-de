@@ -121,6 +121,10 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [finalResults, setFinalResults] = useState<FinalResult[]>([]);
   const [appelFencers, setAppelFencers] = useState<Fencer[]>([]);
   const [appelVisibleColumns, setAppelVisibleColumns] = useState<string[]>([]);
+  const handleAppelStateChange = useCallback((f: Fencer[], cols: string[]) => {
+    setAppelFencers(f);
+    setAppelVisibleColumns(cols);
+  }, []);
   const [tableauEditUnlocked, setTableauEditUnlocked] = useState(false);
   const [showFencerComparison, setShowFencerComparison] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
@@ -1184,7 +1188,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             onUncheckAll={uncheckAll}
             onImport={(type) => handleOpenImportDialog(type)}
             onFencersImported={loadFencers}
-            onAppelStateChange={(f, cols) => { setAppelFencers(f); setAppelVisibleColumns(cols); }}
+            onAppelStateChange={handleAppelStateChange}
             onSetFencerStatus={(id, status) => {
               // Si forfait, abandon ou exclusion, mettre à jour tous les matchs du tireur
               if (status === FencerStatus.FORFAIT) {
