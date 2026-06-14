@@ -213,9 +213,80 @@ const Bracket: React.FC<BracketProps> = ({
     }
   };
 
+  const renderFencerRow = (
+    fencer: Fencer | null,
+    score: number | null,
+    isWinner: boolean
+  ) => {
+    const bg = isWinner ? '#d4edda' : fencer ? '#f8f9fa' : '#e9ecef';
+    const border = isWinner ? '#28a745' : '#dee2e6';
+    const textColor = fencer ? '#212529' : '#6c757d';
+
+    return (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'stretch',
+          border: `1px solid ${border}`,
+          backgroundColor: bg,
+          borderRadius: '3px',
+          overflow: 'hidden',
+        }}
+      >
+        <div style={{ flex: 1, padding: '4px 8px', minWidth: 0 }}>
+          <div
+            style={{
+              fontWeight: isWinner ? 'bold' : 'normal',
+              color: textColor,
+              fontSize: '13px',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {fencer ? `${fencer.lastName} ${fencer.firstName.charAt(0)}.` : 'TBD'}
+          </div>
+          {fencer?.club && (
+            <div style={{ fontSize: '10px', color: '#6c757d' }}>{fencer.club}</div>
+          )}
+        </div>
+        <div
+          style={{
+            width: '40px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderLeft: `1px solid ${border}`,
+            fontWeight: 'bold',
+            fontSize: '14px',
+            color: textColor,
+            flexShrink: 0,
+          }}
+        >
+          {score !== null ? score : '-'}
+        </div>
+      </div>
+    );
+  };
+
   // Render a bracket in pyramid layout
   const renderPyramidLayout = () => {
     const sortedRounds = Array.from(rounds.keys()).sort((a, b) => b - a);
+
+    const roundName = (round: number) =>
+      round === 1
+        ? 'Finale'
+        : round === 2
+          ? 'Demi-finales'
+          : round === 4
+            ? 'Quarts'
+            : round === 8
+              ? '8èmes'
+              : round === 16
+                ? '16èmes'
+                : round === 32
+                  ? '32èmes'
+                  : `Tour ${round}`;
 
     return (
       <div
@@ -261,21 +332,6 @@ const Bracket: React.FC<BracketProps> = ({
           const roundMatches = rounds.get(round) || [];
           const isExpanded = expandedRounds.size === 0 || expandedRounds.has(round);
 
-          const roundName =
-            round === 1
-              ? 'Finale'
-              : round === 2
-                ? 'Demi-finales'
-                : round === 4
-                  ? 'Quarts'
-                  : round === 8
-                    ? '8èmes'
-                    : round === 16
-                      ? '16èmes'
-                      : round === 32
-                        ? '32èmes'
-                        : `Tour ${round}`;
-
           return (
             <div
               key={round}
@@ -305,7 +361,7 @@ const Bracket: React.FC<BracketProps> = ({
                 }}
               >
                 <span style={{ fontSize: '0.8rem' }}>{isExpanded ? '▼' : '▶'}</span>
-                {roundName}
+                {roundName(round)}
               </div>
               {isExpanded && (
                 <div
@@ -325,39 +381,38 @@ const Bracket: React.FC<BracketProps> = ({
                     const isB = winner === match.fencerB?.id;
 
                     return (
-                      <g
+                      <div
                         key={match.id}
-                        style={{ cursor: match.isBye ? 'default' : 'pointer', width: '100%' }}
+                        style={{
+                          width: '280px',
+                          cursor: match.isBye ? 'default' : 'pointer',
+                          borderRadius: '6px',
+                          outline: isEditing ? '2px solid #2196f3' : undefined,
+                          backgroundColor: isHovered ? '#e3f2fd' : 'white',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                          padding: '4px',
+                        }}
                         onMouseEnter={() => setHoveredMatch(match.id)}
                         onMouseLeave={() => setHoveredMatch(null)}
                         onClick={() => handleMatchClick(match)}
                       >
-                        <rect
-                          x={-5}
-                          y={-5}
-                          width={MATCH_WIDTH + 10}
-                          height={MATCH_HEIGHT + 10}
-                          fill={isHovered ? '#e3f2fd' : 'transparent'}
-                          stroke={isEditing ? '#2196f3' : 'transparent'}
-                          strokeWidth={2}
-                          rx={4}
-                        />
-
                         {match.isBye && (
-                          <text
-                            x={MATCH_WIDTH / 2}
-                            y={-10}
-                            textAnchor="middle"
-                            fill="#6c757d"
-                            fontSize={10}
+                          <div
+                            style={{
+                              textAlign: 'center',
+                              fontSize: '10px',
+                              color: '#6c757d',
+                              marginBottom: '2px',
+                            }}
                           >
                             EXEMPT
-                          </text>
+                          </div>
                         )}
-
-                        {renderFencerBox(match.fencerA, match.scoreA, isA, true)}
-                        {renderFencerBox(match.fencerB, match.scoreB, isB, false)}
-                      </g>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          {renderFencerRow(match.fencerA, match.scoreA, isA)}
+                          {renderFencerRow(match.fencerB, match.scoreB, isB)}
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
