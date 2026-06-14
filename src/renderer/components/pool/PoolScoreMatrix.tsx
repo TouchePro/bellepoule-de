@@ -332,11 +332,11 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
         const rankEntry = rowDataMap.rankById.get(rowFencer.id);
         const rankRatio = (rankEntry?.rank ?? fencers.length) / fencers.length;
         const rowBg =
-          rankRatio <= 0.7
-            ? 'rgba(16,185,129,0.08)'
-            : rankRatio <= 0.9
+          rankRatio <= 0.4
+            ? 'rgba(16,185,129,0.12)'
+            : rankRatio <= 0.75
               ? 'rgba(245,158,11,0.10)'
-              : 'rgba(239,68,68,0.08)';
+              : 'rgba(239,68,68,0.10)';
 
         const sparkBars = rowDataMap.sparkById.get(rowFencer.id) ?? [];
 
@@ -345,24 +345,46 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
             <div
               className="pool-cell pool-cell-header pool-cell-name"
               title={`${rowFencer.firstName} ${rowFencer.lastName}`}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}
             >
-              <span style={{ fontWeight: 500 }}>{rowIndex + 1}.</span>
-              <span className="truncate" style={{ flex: 1 }}>
-                {rowFencer.lastName}
-                <span style={{ fontSize: '0.75rem', color: '#6b7280', marginLeft: '0.25rem' }}>
-                  {rowFencer.firstName}
+              {(() => {
+                const avatarColor =
+                  rankRatio <= 0.4 ? '#059669' : rankRatio <= 0.75 ? '#3b82f6' : '#dc2626';
+                const initials = `${rowFencer.firstName?.charAt(0) ?? ''}${rowFencer.lastName?.charAt(0) ?? ''}`.toUpperCase();
+                return (
+                  <div style={{
+                    width: '26px',
+                    height: '26px',
+                    borderRadius: '50%',
+                    background: avatarColor,
+                    color: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.6rem',
+                    fontWeight: 700,
+                    flexShrink: 0,
+                  }}>
+                    {initials}
+                  </div>
+                );
+              })()}
+              <span className="truncate" style={{ flex: 1, fontSize: '0.8rem' }}>
+                <span style={{ fontWeight: 700 }}>{rowFencer.lastName}</span>
+                <span style={{ fontSize: '0.7rem', color: '#6b7280', marginLeft: '0.25rem' }}>
+                  {rowFencer.firstName?.charAt(0)}.
                 </span>
               </span>
               {sparkBars.length > 0 && (
-                <svg width="16" height="10" style={{ flexShrink: 0 }} aria-hidden="true">
+                <svg width="28" height="14" style={{ flexShrink: 0 }} aria-hidden="true">
                   {sparkBars.map((won, i) => (
                     <rect
                       key={i}
-                      x={i * (16 / sparkBars.length)}
-                      y={won ? 0 : 4}
-                      width={Math.max(1, 16 / sparkBars.length - 1)}
-                      height={won ? 10 : 6}
+                      x={i * (28 / sparkBars.length) + 0.5}
+                      y={won ? 0 : 6}
+                      width={Math.max(1, 28 / sparkBars.length - 1.5)}
+                      height={won ? 14 : 8}
+                      rx="1"
                       fill={won ? '#22c55e' : '#ef4444'}
                     />
                   ))}
