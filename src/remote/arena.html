@@ -1465,6 +1465,8 @@
             const text = document.getElementById('connection-text');
             if (text) text.textContent = `❌ ${err?.message || 'Erreur réseau'}`;
           });
+
+          this.socket.on(`arena:${this.arenaId}:update`, data => {
             this.handleArenaUpdate(data);
           });
 
