@@ -144,6 +144,18 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
               className="btn btn-primary btn-icon-label"
               onClick={handleGeneratePools}
               disabled={getCheckedInFencers().length < 4}
+              title={
+                getCheckedInFencers().length < 4
+                  ? `Minimum 4 tireurs pointés requis (${getCheckedInFencers().length} actuellement)`
+                  : getCheckedInFencers().length === fencers.length && fencers.length > 0
+                    ? 'Tous les tireurs sont pointés — prêt !'
+                    : undefined
+              }
+              style={
+                getCheckedInFencers().length === fencers.length && fencers.length >= 4
+                  ? { background: '#16a34a', borderColor: '#15803d' }
+                  : undefined
+              }
             >
               Générer les poules <ChevronRight size={15} />
             </button>
