@@ -233,6 +233,39 @@
       animation: ellipsis 1.2s steps(1) infinite;
     }
 
+    /* ---- Phrases arbitre ---- */
+    .phrases {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      height: 24px;
+      margin-bottom: 14px;
+    }
+
+    @keyframes phrase-in {
+      from { opacity: 0; transform: translateY(5px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .phrase {
+      font-size: 13px;
+      font-weight: 500;
+      opacity: 0;
+      animation: phrase-in 0.4s ease-out forwards;
+    }
+
+    .p1 { color: #5a6a8a; animation-delay: 0.3s; }
+    .p2 { color: #7888aa; animation-delay: 1.4s; }
+    .p3 {
+      color: #4d77ff;
+      font-weight: 700;
+      font-size: 15px;
+      text-shadow: 0 0 20px rgba(77, 119, 255, 0.5);
+      animation-delay: 2.2s;
+    }
+
+    .sep { color: #2a3550; font-size: 14px; }
+
     /* ---- Drag region + close button ---- */
     .drag-region {
       position: fixed;
@@ -278,7 +311,7 @@
     <div id="icon-fb" class="icon-placeholder" style="display:none;">⚔️</div>
 
     <div class="title">BellePoule Modern</div>
-    <div class="subtitle">Fencing Tournament Management</div>
+    <div class="subtitle" id="subtitle">Fencing Tournament Management</div>
     <div class="version-line">
       <span id="version-text" class="version-text">v1.0.0 · Build #0</span>
       <span id="channel-badge" class="channel-badge main">main</span>
@@ -298,6 +331,14 @@
               stroke="#a8c1ff" stroke-width="2" stroke-linecap="round"/>
         <polygon class="tip" points="331,12.5 339,15 331,17.5" fill="#a8c1ff"/>
       </svg>
+    </div>
+
+    <div class="phrases">
+      <span class="phrase p1" id="phrase1">En garde…</span>
+      <span class="sep">·</span>
+      <span class="phrase p2" id="phrase2">Prêts…</span>
+      <span class="sep">·</span>
+      <span class="phrase p3" id="phrase3">Allez !</span>
     </div>
 
     <div class="lang-label" id="lang-label">Language / Langue</div>
@@ -354,6 +395,26 @@
       updateConfirmLabel(lang);
     }
 
+    var PHRASE_LABELS = {
+      fr: ['En garde…', 'Prêts…', 'Allez !'],
+      en: ['On guard…', 'Ready…', 'Fence!'],
+      de: ['Auf die Plätze…', 'Fertig…', 'Los!'],
+      es: ['En guardia…', 'Listos…', '¡Ya!'],
+      'zh-HK': ['準備…', '就緒…', '開始！'],
+      br: ['War zouarn…', 'Prest…', 'Allez !'],
+      ca: ['En guàrdia…', 'Llestos…', 'Toca!'],
+    };
+
+    var SUBTITLE_LABELS = {
+      fr: 'Gestion de Tournois d\'Escrime',
+      en: 'Fencing Tournament Management',
+      de: 'Fechtturnier-Verwaltung',
+      es: 'Gestión de Torneos de Esgrima',
+      'zh-HK': '擊劍賽事管理',
+      br: 'Merañ Tournioù Klezeouriezh',
+      ca: 'Gestió de Torneigs d\'Esgrima',
+    };
+
     var CONFIRM_LABELS = {
       fr: 'Entrer dans BellePoule',
       en: 'Enter BellePoule',
@@ -377,6 +438,15 @@
     function updateConfirmLabel(lang) {
       var btn = document.getElementById('confirm-btn');
       if (btn && !btn.disabled) btn.textContent = CONFIRM_LABELS[lang] || CONFIRM_LABELS['en'];
+      var sub = document.getElementById('subtitle');
+      if (sub) sub.textContent = SUBTITLE_LABELS[lang] || SUBTITLE_LABELS['en'];
+      var phrases = PHRASE_LABELS[lang] || PHRASE_LABELS['en'];
+      var p1 = document.getElementById('phrase1');
+      var p2 = document.getElementById('phrase2');
+      var p3 = document.getElementById('phrase3');
+      if (p1) p1.textContent = phrases[0];
+      if (p2) p2.textContent = phrases[1];
+      if (p3) p3.textContent = phrases[2];
     }
 
     function enterApp() {
