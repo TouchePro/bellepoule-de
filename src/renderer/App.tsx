@@ -3,8 +3,8 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useEffect, useCallback, useState, Suspense } from 'react';
-import { Home, Plus, Radio, Sun, Moon, Contrast, BookOpen, Settings, X, Swords } from 'lucide-react';
+import React, { useEffect, useCallback, useState, useRef, Suspense } from 'react';
+import { Home, Plus, Radio, Sun, Moon, Contrast, BookOpen, Settings, X, Swords, Wrench, Wifi, Tv2 } from 'lucide-react';
 import { Competition, PhaseType } from '../shared/types';
 import type { CompetitionCreateData } from '../shared/types/preload';
 import { logger, LogCategory } from '@shared/services/logger';
@@ -19,6 +19,8 @@ const DTCallNotification = React.lazy(() => import('./components/DTCallNotificat
 const UpdateNotification = React.lazy(() => import('./components/UpdateNotification'));
 const KeyboardShortcutsHelp = React.lazy(() => import('./components/KeyboardShortcutsHelp'));
 const WikiModal = React.lazy(() => import('./components/WikiModal'));
+const WifiQRModal = React.lazy(() => import('./components/WifiQRModal').then(m => ({ default: m.WifiQRModal })));
+const XiaomiRemotePanel = React.lazy(() => import('./components/XiaomiRemotePanel').then(m => ({ default: m.XiaomiRemotePanel })));
 import { ToastProvider, useToast } from './components/Toast';
 import { ConfirmProvider, useConfirm } from './components/ConfirmDialog';
 import { TranslationProvider, useTranslation, Theme } from './contexts/TranslationContext';
@@ -48,6 +50,14 @@ const AppContent: React.FC = () => {
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [showWikiModal, setShowWikiModal] = useState(false);
   const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
+  const [showToolsMenu, setShowToolsMenu] = useState(false);
+  const [showWifiQR, setShowWifiQR] = useState(false);
+  const [showTVRemote, setShowTVRemote] = useState(false);
+  const [remoteServerUrl, setRemoteServerUrl] = useState<string | null>(null);
+  const [remoteArenaCount, setRemoteArenaCount] = useState<number>(1);
+  const toolsMenuRef = useRef<HTMLDivElement>(null);
+  const toolsBtnRef = useRef<HTMLButtonElement>(null);
+  const [toolsMenuPos, setToolsMenuPos] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
 
   const {
     view,
@@ -164,6 +174,17 @@ const AppContent: React.FC = () => {
     return () => { if (typeof unsub === 'function') unsub(); };
   }, []);
 
+
+  useEffect(() => {
+    if (!showToolsMenu) return;
+    const rect = toolsBtnRef.current?.getBoundingClientRect();
+    if (rect) setToolsMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+    const handler = (e: MouseEvent) => {
+      if (toolsMenuRef.current && !toolsMenuRef.current.contains(e.target as Node)) setShowToolsMenu(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showToolsMenu]);
 
   const handleCreateCompetition = useCallback(async (data: Partial<Competition>) => {
     try {
@@ -373,6 +394,52 @@ const AppContent: React.FC = () => {
             >
               <BookOpen size={16} />
             </button>
+            {view === 'competition' && currentCompetition && (
+              <div ref={toolsMenuRef} style={{ position: 'relative' }}>
+                <button
+                  ref={toolsBtnRef}
+                  className="btn btn-secondary btn-icon-label"
+                  onClick={() => setShowToolsMenu(v => !v)}
+                  title="Outils"
+                  aria-haspopup="true"
+                  aria-expanded={showToolsMenu}
+                >
+                  <Wrench size={15} /> Outils
+                </button>
+                {showToolsMenu && (
+                  <div
+                    style={{
+                      position: 'fixed',
+                      right: toolsMenuPos.right,
+                      top: toolsMenuPos.top,
+                      background: 'var(--color-surface)',
+                      color: 'var(--color-text)',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: '8px',
+                      boxShadow: 'var(--shadow-xl)',
+                      minWidth: '200px',
+                      zIndex: 1100,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <button
+                      className="comp-header-dropdown-item"
+                      onClick={() => { setShowWifiQR(true); setShowToolsMenu(false); }}
+                      style={{ width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                    >
+                      <Wifi size={15} /> QR Code WiFi
+                    </button>
+                    <button
+                      className="comp-header-dropdown-item"
+                      onClick={() => { setShowTVRemote(true); setShowToolsMenu(false); }}
+                      style={{ width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                    >
+                      <Tv2 size={15} /> Télécommande TV
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
             <button
               className="btn btn-secondary btn-icon-label"
               onClick={() => setShowSettingsModal(true)}
@@ -572,6 +639,7 @@ const AppContent: React.FC = () => {
                   onUpdate={handleUpdateCompetition}
                   requestPhase={requestedPhase ?? undefined}
                   onPhaseApplied={() => setRequestedPhase(null)}
+                  onRemoteServerChange={(url, count) => { setRemoteServerUrl(url); setRemoteArenaCount(count); }}
                 />
               </Suspense>
             </CompetitionErrorBoundary>
@@ -608,6 +676,23 @@ const AppContent: React.FC = () => {
         {showWikiModal && (
           <Suspense fallback={null}>
             <WikiModal onClose={() => setShowWikiModal(false)} />
+          </Suspense>
+        )}
+
+        {showWifiQR && (
+          <Suspense fallback={null}>
+            <WifiQRModal onClose={() => setShowWifiQR(false)} />
+          </Suspense>
+        )}
+
+        {showTVRemote && currentCompetition && (
+          <Suspense fallback={null}>
+            <XiaomiRemotePanel
+              competitionId={currentCompetition.id}
+              serverUrl={remoteServerUrl ?? ''}
+              arenaCount={remoteArenaCount}
+              onClose={() => setShowTVRemote(false)}
+            />
           </Suspense>
         )}
 
