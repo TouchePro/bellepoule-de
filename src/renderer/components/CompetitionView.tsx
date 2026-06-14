@@ -837,11 +837,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     const rankedFencers = ranking.map(r => r.fencer);
 
     const poolCount = calculateOptimalPoolCount(rankedFencers.length, 5, 7);
-    const distribution = distributeFencersToPoolsSerpentine(rankedFencers, poolCount, {
-      byClub: true,
-      byRegion: true,
-      byNation: false,
-    });
+    const distribution = distributeFencersToPoolsSerpentine(rankedFencers, poolCount, ['byClub', 'byRegion']);
 
     const now = new Date();
     const newPools = distribution.map((poolFencers, index) => {
