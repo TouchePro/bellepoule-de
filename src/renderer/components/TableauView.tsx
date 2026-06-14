@@ -932,7 +932,13 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   };
 
   const convertToBracketMatches = (): BracketMatch[] => {
-    return matches.map(match => ({
+    // Exclure la petite finale (round=3) et les barrages (round=tableauSize*2) :
+    // ces rounds ne s'insèrent pas dans l'arbre puissance-de-2 de Bracket.tsx et
+    // produiraient des indices flottants (ex. log2(16/3)+1 ≈ 3.415).
+    const mainMatches = matches.filter(
+      m => m.round !== 3 && m.round !== tableauSize * 2
+    );
+    return mainMatches.map(match => ({
       id: match.id,
       round: Math.log2(tableauSize / match.round) + 1,
       position: match.position,
