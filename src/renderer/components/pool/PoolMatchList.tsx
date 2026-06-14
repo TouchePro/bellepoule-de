@@ -149,7 +149,7 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
 
   return (
   <div>
-    {/* Prochain match en gros */}
+    {/* Prochain match — carte sombre impactante */}
     {orderedMatches.pending.length > 0 &&
       (() => {
         const nextMatch = orderedMatches.pending[0];
@@ -167,60 +167,33 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
           return (
             <div
               style={{
-                background: '#6b7280',
-                borderRadius: '8px',
-                padding: '1.5rem',
+                background: '#374151',
+                borderRadius: '10px',
+                padding: '1.25rem 1.5rem',
                 marginBottom: '1rem',
                 color: 'white',
-                opacity: 0.7,
+                opacity: 0.75,
+                borderLeft: '4px solid #9ca3af',
               }}
             >
-              <div
-                style={{
-                  fontSize: '0.75rem',
-                  textTransform: 'uppercase',
-                  opacity: 0.8,
-                  marginBottom: '0.5rem',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
-                <span>✕ Match non disputé</span>
+              <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#9ca3af', marginBottom: '0.75rem' }}>
+                ✕ Match non disputé
               </div>
-              <div
-                style={ROW_BETWEEN}
-              >
-                <div style={CELL_CENTER}>
-                  <div
-                    style={{
-                      fontSize: '1.5rem',
-                      fontWeight: '700',
-                      textDecoration: fencerAAbandoned ? 'line-through' : 'none',
-                    }}
-                  >
-                    {nextMatch.match.fencerA?.lastName}
-                    {fencerAAbandoned && ' ✕'}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+                <div style={{ flex: 1, textAlign: 'right' }}>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 800, textDecoration: fencerAAbandoned ? 'line-through' : 'none', lineHeight: 1.1 }}>
+                    {nextMatch.match.fencerA?.lastName}{fencerAAbandoned && ' ✕'}
                   </div>
-                  <div style={SUB_TEXT}>
+                  <div style={{ fontSize: '0.8rem', color: '#9ca3af', marginTop: '0.2rem' }}>
                     {nextMatch.match.fencerA?.firstName}
                   </div>
                 </div>
-                <div style={VS_SEP}>
-                  vs
-                </div>
-                <div style={CELL_CENTER}>
-                  <div
-                    style={{
-                      fontSize: '1.5rem',
-                      fontWeight: '700',
-                      textDecoration: fencerBAbandoned ? 'line-through' : 'none',
-                    }}
-                  >
-                    {nextMatch.match.fencerB?.lastName}
-                    {fencerBAbandoned && ' ✕'}
+                <div style={{ fontSize: '1.25rem', color: '#6b7280', flexShrink: 0 }}>vs</div>
+                <div style={{ flex: 1, textAlign: 'left' }}>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 800, textDecoration: fencerBAbandoned ? 'line-through' : 'none', lineHeight: 1.1 }}>
+                    {nextMatch.match.fencerB?.lastName}{fencerBAbandoned && ' ✕'}
                   </div>
-                  <div style={SUB_TEXT}>
+                  <div style={{ fontSize: '0.8rem', color: '#9ca3af', marginTop: '0.2rem' }}>
                     {nextMatch.match.fencerB?.firstName}
                   </div>
                 </div>
@@ -232,25 +205,17 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
         return (
           <div
             style={{
-              background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-              borderRadius: '8px',
-              padding: '1.5rem',
+              background: '#0f172a',
+              borderRadius: '10px',
+              padding: '1.25rem 1.5rem',
               marginBottom: '1rem',
-              color: 'white',
+              borderLeft: '4px solid #f97316',
             }}
           >
-            <div
-              style={{
-                fontSize: '0.75rem',
-                textTransform: 'uppercase',
-                opacity: 0.8,
-                marginBottom: '0.5rem',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <span>⚔️ Prochain match</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#64748b', fontWeight: 600 }}>
+                ⚔ Prochain match
+              </span>
               <ArenaBadge
                 match={nextMatch.match}
                 defaultArena={defaultArena}
@@ -261,62 +226,56 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
                 onClick={e => openArenaModal(nextMatch.match, e)}
               />
             </div>
-            <div
-              style={ROW_BETWEEN}
-            >
-              <div style={CELL_CENTER}>
-                <div style={NAME_BIG}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', marginBottom: '1.25rem' }}>
+              <div style={{ flex: 1, textAlign: 'right' }}>
+                <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'white', lineHeight: 1.1 }}>
                   {orderedMatches.pending[0].match.fencerA?.lastName}
                 </div>
-                <div style={SUB_TEXT}>
+                <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.25rem' }}>
                   {orderedMatches.pending[0].match.fencerA?.firstName}
                 </div>
               </div>
-              <div style={VS_SEP}>VS</div>
-              <div style={CELL_CENTER}>
-                <div style={NAME_BIG}>
+              <div style={{ fontSize: '1.75rem', color: '#f97316', flexShrink: 0, fontWeight: 900, lineHeight: 1 }}>
+                ⚔
+              </div>
+              <div style={{ flex: 1, textAlign: 'left' }}>
+                <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'white', lineHeight: 1.1 }}>
                   {orderedMatches.pending[0].match.fencerB?.lastName}
                 </div>
-                <div style={SUB_TEXT}>
+                <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.25rem' }}>
                   {orderedMatches.pending[0].match.fencerB?.firstName}
                 </div>
               </div>
             </div>
             <button
               onClick={() => openScoreModal(orderedMatches.pending[0].index)}
+              className="pool-cta-pulse"
               style={{
-                marginTop: '1rem',
                 width: '100%',
-                padding: '0.75rem',
-                background: 'rgba(255,255,255,0.2)',
-                border: '2px solid rgba(255,255,255,0.3)',
-                borderRadius: '6px',
+                padding: '0.875rem',
+                background: '#f97316',
+                border: 'none',
+                borderRadius: '7px',
                 color: 'white',
-                fontSize: '1rem',
-                fontWeight: '600',
+                fontSize: '0.95rem',
+                fontWeight: 700,
                 cursor: 'pointer',
+                letterSpacing: '0.02em',
               }}
             >
-              🎯 Saisir le score
+              Saisir le score
             </button>
           </div>
         );
       })()}
 
-    {/* Matches restants */}
+    {/* Matches restants — strip horizontal scrollable */}
     {orderedMatches.pending.length > 1 && (
       <div style={{ marginBottom: '1rem' }}>
-        <h4
-          style={{
-            fontSize: '0.875rem',
-            fontWeight: '600',
-            marginBottom: '0.5rem',
-            color: '#6b7280',
-          }}
-        >
-          Matches à venir ({orderedMatches.pending.length - 1})
-        </h4>
-        <div style={COL_GAP}>
+        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>
+          À venir ({orderedMatches.pending.length - 1})
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
           {orderedMatches.pending.slice(1).map(({ match, index }, i) => {
             const fencerAAbandoned =
               match.fencerA?.status === FencerStatus.ABANDONED ||
@@ -332,56 +291,41 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
               <div
                 key={index}
                 onClick={() => !isAbandonMatch && openScoreModal(index)}
+                title={isAbandonMatch ? 'Match non disputé' : undefined}
                 style={{
+                  flexShrink: 0,
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '0.75rem 1rem',
-                  background: isAbandonMatch ? '#e5e7eb' : '#f9fafb',
-                  borderRadius: '6px',
+                  gap: '0.35rem',
+                  padding: '0.375rem 0.75rem',
+                  background: isAbandonMatch ? '#f3f4f6' : '#f1f5f9',
+                  border: `1px solid ${isAbandonMatch ? '#d1d5db' : '#e2e8f0'}`,
+                  borderRadius: '20px',
                   cursor: isAbandonMatch ? 'not-allowed' : 'pointer',
-                  border: isAbandonMatch ? '1px dashed #9ca3af' : '1px solid #e5e7eb',
                   opacity: isAbandonMatch ? 0.5 : 1,
-                  gap: '0.5rem',
+                  transition: 'background 0.1s, border-color 0.1s',
                 }}
+                onMouseEnter={e => { if (!isAbandonMatch) { (e.currentTarget as HTMLElement).style.background = '#e2e8f0'; (e.currentTarget as HTMLElement).style.borderColor = '#cbd5e1'; } }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = isAbandonMatch ? '#f3f4f6' : '#f1f5f9'; (e.currentTarget as HTMLElement).style.borderColor = isAbandonMatch ? '#d1d5db' : '#e2e8f0'; }}
               >
-                <span style={NUM_BADGE}>
-                  #{i + 2}
-                </span>
-                <span
-                  style={{
-                    flex: 1,
-                    fontWeight: '500',
-                    textDecoration: fencerAAbandoned ? 'line-through' : 'none',
-                    color: fencerAAbandoned ? '#9ca3af' : 'inherit',
-                  }}
-                >
+                <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700 }}>#{i + 2}</span>
+                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#334155', textDecoration: fencerAAbandoned ? 'line-through' : 'none' }}>
                   {match.fencerA?.lastName}
-                  {fencerAAbandoned && ' ✕'}
                 </span>
-                <span style={{ color: '#9ca3af', padding: '0 0.5rem' }}>
-                  {isAbandonMatch ? '✕' : 'vs'}
-                </span>
-                <span
-                  style={{
-                    flex: 1,
-                    textAlign: 'right',
-                    fontWeight: '500',
-                    textDecoration: fencerBAbandoned ? 'line-through' : 'none',
-                    color: fencerBAbandoned ? '#9ca3af' : 'inherit',
-                  }}
-                >
+                <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>vs</span>
+                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#334155', textDecoration: fencerBAbandoned ? 'line-through' : 'none' }}>
                   {match.fencerB?.lastName}
-                  {fencerBAbandoned && ' ✕'}
                 </span>
-                <ArenaBadge
-                  match={match}
-                  defaultArena={defaultArena}
-                  matchArenaOverrides={matchArenaOverrides}
-                  isRemoteActive={isRemoteActive}
-                  arenaCount={arenaCount}
-                  onClick={e => openArenaModal(match, e)}
-                />
+                {arenaCount > 0 && (
+                  <ArenaBadge
+                    match={match}
+                    defaultArena={defaultArena}
+                    matchArenaOverrides={matchArenaOverrides}
+                    isRemoteActive={isRemoteActive}
+                    arenaCount={arenaCount}
+                    onClick={e => openArenaModal(match, e)}
+                  />
+                )}
               </div>
             );
           })}
@@ -392,17 +336,10 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
     {/* Matches terminés */}
     {orderedMatches.finished.length > 0 && (
       <div>
-        <h4
-          style={{
-            fontSize: '0.875rem',
-            fontWeight: '600',
-            marginBottom: '0.5rem',
-            color: '#6b7280',
-          }}
-        >
-          Matches terminés ({orderedMatches.finished.length})
-        </h4>
-        <div style={COL_GAP}>
+        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>
+          Terminés ({orderedMatches.finished.length})
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
           {orderedMatches.finished.map(({ match, index }) => {
             const fencerAAbandoned =
               match.fencerA?.status === FencerStatus.ABANDONED ||
@@ -413,6 +350,7 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
               match.fencerB?.status === FencerStatus.FORFAIT ||
               match.fencerB?.status === FencerStatus.EXCLUDED;
             const isAbandonMatch = fencerAAbandoned || fencerBAbandoned;
+            const winnerA = !!match.scoreA?.isVictory;
 
             return (
               <div
@@ -421,71 +359,55 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '0.75rem 1rem',
-                  background: isAbandonMatch
-                    ? '#e5e7eb'
-                    : match.scoreA?.isVictory
-                      ? '#f0fdf4'
-                      : '#fef2f2',
-                  borderRadius: '6px',
-                  cursor: isAbandonMatch || isLocked ? 'not-allowed' : 'pointer',
-                  border: isAbandonMatch ? '1px dashed #9ca3af' : '1px solid #e5e7eb',
-                  opacity: isAbandonMatch ? 0.5 : 1,
+                  padding: '0.5rem 0.75rem 0.5rem 0.875rem',
+                  background: 'white',
+                  borderRadius: '7px',
+                  border: '1px solid #e5e7eb',
+                  borderLeft: isAbandonMatch ? '3px solid #9ca3af' : winnerA ? '3px solid #059669' : '3px solid #dc2626',
+                  cursor: isAbandonMatch || isLocked ? 'default' : 'pointer',
+                  opacity: isAbandonMatch ? 0.55 : 1,
+                  gap: '0.5rem',
                 }}
               >
                 <span
                   style={{
                     flex: 1,
-                    fontWeight: match.scoreA?.isVictory ? '600' : '400',
-                    color: isAbandonMatch
-                      ? '#9ca3af'
-                      : match.scoreA?.isVictory
-                        ? '#16a34a'
-                        : '#6b7280',
+                    fontWeight: winnerA && !isAbandonMatch ? 700 : 400,
+                    color: isAbandonMatch ? '#9ca3af' : winnerA ? '#065f46' : '#6b7280',
                     textDecoration: fencerAAbandoned ? 'line-through' : 'none',
+                    fontSize: '0.875rem',
                   }}
                 >
-                  {match.scoreA?.isVictory ? '✓ ' : ''}
                   {match.fencerA?.lastName}
                   {fencerAAbandoned && ' ✕'}
                 </span>
                 <span
                   style={{
-                    padding: '0.25rem 0.75rem',
-                    background: isAbandonMatch ? '#e5e7eb' : 'white',
-                    borderRadius: '4px',
-                    fontWeight: '600',
-                    fontSize: '0.875rem',
-                    color: isAbandonMatch ? '#9ca3af' : 'inherit',
+                    padding: '0.2rem 0.625rem',
+                    background: isAbandonMatch ? '#f3f4f6' : '#f8fafc',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '5px',
+                    fontWeight: 700,
+                    fontSize: '0.8rem',
+                    color: isAbandonMatch ? '#9ca3af' : '#374151',
+                    flexShrink: 0,
+                    letterSpacing: '0.03em',
                   }}
                 >
-                  {isAbandonMatch ? (
-                    '✕ Non disputé'
-                  ) : (
-                    <>
-                      {match.scoreA?.isVictory ? 'V' : ''}
-                      {match.scoreA?.value} - {match.scoreB?.isVictory ? 'V' : ''}
-                      {match.scoreB?.value}
-                    </>
-                  )}
+                  {isAbandonMatch ? '–' : `${match.scoreA?.isVictory ? 'V' : ''}${match.scoreA?.value ?? 0} : ${match.scoreB?.isVictory ? 'V' : ''}${match.scoreB?.value ?? 0}`}
                 </span>
                 <span
                   style={{
                     flex: 1,
                     textAlign: 'right',
-                    fontWeight: match.scoreB?.isVictory ? '600' : '400',
-                    color: isAbandonMatch
-                      ? '#9ca3af'
-                      : match.scoreB?.isVictory
-                        ? '#16a34a'
-                        : '#6b7280',
+                    fontWeight: !winnerA && !isAbandonMatch ? 700 : 400,
+                    color: isAbandonMatch ? '#9ca3af' : !winnerA ? '#065f46' : '#6b7280',
                     textDecoration: fencerBAbandoned ? 'line-through' : 'none',
+                    fontSize: '0.875rem',
                   }}
                 >
                   {match.fencerB?.lastName}
                   {fencerBAbandoned && ' ✕'}
-                  {match.scoreB?.isVictory && !isAbandonMatch ? ' ✓' : ''}
                 </span>
                 {onShowMatchAudit && (
                   <button
@@ -495,9 +417,8 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
                     }}
                     title="Journal du match"
                     style={{
-                      marginLeft: '0.5rem',
-                      padding: '0.25rem 0.5rem',
-                      fontSize: '0.75rem',
+                      padding: '0.2rem 0.4rem',
+                      fontSize: '0.7rem',
                       background: 'rgba(139,92,246,0.1)',
                       border: '1px solid rgba(139,92,246,0.3)',
                       borderRadius: '4px',
@@ -517,9 +438,8 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
                     }}
                     title="Annuler ce résultat"
                     style={{
-                      marginLeft: '0.5rem',
-                      padding: '0.25rem 0.5rem',
-                      fontSize: '0.75rem',
+                      padding: '0.2rem 0.4rem',
+                      fontSize: '0.7rem',
                       background: 'rgba(239,68,68,0.1)',
                       border: '1px solid rgba(239,68,68,0.3)',
                       borderRadius: '4px',
@@ -540,11 +460,11 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
 
     {/* Matches annulés */}
     {orderedMatches.cancelled.length > 0 && (
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h4 style={SECTION_TITLE}>
-          Matches annulés ({orderedMatches.cancelled.length})
-        </h4>
-        <div style={COL_GAP}>
+      <div style={{ marginBottom: '1.5rem', marginTop: '0.75rem' }}>
+        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>
+          Annulés ({orderedMatches.cancelled.length})
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
           {orderedMatches.cancelled.map(({ match, index }) => (
             <div
               key={index}
@@ -552,15 +472,16 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '0.75rem 1rem',
-                background: '#f3f4f6',
-                borderRadius: '6px',
+                padding: '0.5rem 0.875rem',
+                background: '#f9fafb',
+                borderRadius: '7px',
                 border: '1px dashed #d1d5db',
                 opacity: 0.8,
+                gap: '0.5rem',
               }}
             >
-              <span style={{ color: '#9ca3af', fontSize: '0.875rem', minWidth: '30px' }}>⏸</span>
-              <span style={{ flex: 1, textAlign: 'center', color: '#6b7280', textDecoration: 'line-through' }}>
+              <span style={{ color: '#9ca3af', fontSize: '0.8rem', minWidth: '24px' }}>⏸</span>
+              <span style={{ flex: 1, textAlign: 'center', color: '#6b7280', fontSize: '0.875rem', textDecoration: 'line-through' }}>
                 {match.fencerA?.lastName} vs {match.fencerB?.lastName}
               </span>
               {!isLocked && onMatchReset && (
@@ -568,8 +489,7 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
                   onClick={() => onMatchReset(index)}
                   title="Relancer ce match"
                   style={{
-                    marginLeft: '0.5rem',
-                    padding: '0.25rem 0.5rem',
+                    padding: '0.2rem 0.5rem',
                     fontSize: '0.75rem',
                     background: 'rgba(59,130,246,0.1)',
                     border: '1px solid rgba(59,130,246,0.3)',
@@ -590,10 +510,10 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
 
     {/* Poule terminée */}
     {orderedMatches.pending.length === 0 && orderedMatches.cancelled.length === 0 && (
-      <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
-        <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🏁</div>
-        <div style={{ fontWeight: '600' }}>Poule terminée !</div>
-        <div style={{ fontSize: '0.875rem' }}>Tous les matches ont été joués</div>
+      <div style={{ textAlign: 'center', padding: '2.5rem 2rem', color: '#6b7280' }}>
+        <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🏁</div>
+        <div style={{ fontWeight: 700, fontSize: '1rem', color: '#374151' }}>Poule terminée</div>
+        <div style={{ fontSize: '0.8rem', marginTop: '0.25rem' }}>Tous les matches ont été joués</div>
       </div>
     )}
 

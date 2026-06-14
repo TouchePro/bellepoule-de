@@ -1144,6 +1144,22 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           <span className={`badge ${pool.isComplete ? 'badge-success' : 'badge-warning'}`}>
             {pool.isComplete ? 'Terminée' : `${finishedCount}/${totalMatches}`}
           </span>
+          {!pool.isComplete && totalMatches > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+              <div style={{ width: '72px', height: '5px', background: '#e5e7eb', borderRadius: '3px', overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%',
+                  width: `${(finishedCount / totalMatches) * 100}%`,
+                  background: finishedCount / totalMatches >= 0.7 ? '#10b981' : '#f59e0b',
+                  borderRadius: '3px',
+                  transition: 'width 0.4s ease',
+                }} />
+              </div>
+              <span style={{ fontSize: '0.7rem', color: '#9ca3af', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                {finishedCount}/{totalMatches}
+              </span>
+            </div>
+          )}
           {(() => {
             const total = pool.fencers.length;
             const signed = signedFencerIds.filter(id => pool.fencers.some(f => f.id === id)).length;
