@@ -894,9 +894,9 @@ export function calculatePoolRankingQuest(
 /**
  * Calcule le classement général Quest à partir de toutes les poules
  * Ordre de priorité:
- * 1. Nombre de victoires (décroissant)
+ * 1. Ratio V/M (décroissant)
  * 2. Points Quest (décroissant)
- * 3. Indice (TD-TR) (décroissant)
+ * 3. V4 décroissant, puis V3, V2, V1
  */
 export function calculateOverallRankingQuest(pools: Pool[]): PoolRanking[] {
   const allRankings: PoolRanking[] = [];
@@ -920,10 +920,19 @@ export function calculateOverallRankingQuest(pools: Pool[]): PoolRanking[] {
     if (aQuest !== bQuest) {
       return bQuest - aQuest;
     }
-    // 3. Indice (TD-TR) (décroissant)
-    if (a.index !== b.index) {
-      return b.index - a.index;
-    }
+    // 3. V4 décroissant, puis V3, V2, V1
+    const aV4 = a.questVictories4 ?? 0;
+    const bV4 = b.questVictories4 ?? 0;
+    if (aV4 !== bV4) return bV4 - aV4;
+    const aV3 = a.questVictories3 ?? 0;
+    const bV3 = b.questVictories3 ?? 0;
+    if (aV3 !== bV3) return bV3 - aV3;
+    const aV2 = a.questVictories2 ?? 0;
+    const bV2 = b.questVictories2 ?? 0;
+    if (aV2 !== bV2) return bV2 - aV2;
+    const aV1 = a.questVictories1 ?? 0;
+    const bV1 = b.questVictories1 ?? 0;
+    if (aV1 !== bV1) return bV1 - aV1;
     // 4. Égalité parfaite - garder l'ordre
     return 0;
   });
