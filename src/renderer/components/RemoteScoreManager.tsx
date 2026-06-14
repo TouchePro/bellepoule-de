@@ -535,92 +535,126 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   if (!isVisible) return null;
 
   if (!isRemoteActive) {
+    const portValid = remotePort >= 1 && remotePort <= 65535 && !isNaN(remotePort);
+    const previewHost = selectedInterface === '0.0.0.0'
+      ? (networkInterfaces.find(i => i.address !== '0.0.0.0')?.address ?? 'localhost')
+      : selectedInterface;
+    const networkPreview = `http://${previewHost}:${remotePort}`;
+
+    const kioskPills = (
+      [
+        { key: 'poules', label: 'Poules' },
+        { key: 'classement', label: 'Classement' },
+        { key: 'direct', label: 'En direct' },
+        { key: 'suivants', label: 'Suivants' },
+      ] as const
+    ).map(({ key, label }) => (
+      <button
+        key={key}
+        type="button"
+        className={`rsm-pill${kioskViews[key] ? ' rsm-pill--on' : ''}`}
+        onClick={() => setKioskViews(v => ({ ...v, [key]: !v[key] }))}
+      >
+        {kioskViews[key] ? '✓' : '○'} {label}
+      </button>
+    ));
+
     return (
       <div className="remote-score-manager">
-        <div className="remote-status inactive">
-          <h3>🔴 Saisie distante inactive</h3>
-          <p>
-            La saisie distante permet aux arbitres de saisir les scores depuis une tablette. Les
-            arbitres se connectent via un navigateur web sur le réseau local.
-          </p>
-          <div style={RSM_STYLES.stripCountRow}>
-            <span>Pistes :</span>
-            {stripCountControls}
+        <div className="rsm-inactive">
+          {/* Hero */}
+          <div className="rsm-hero">
+            <span className="rsm-status-dot rsm-status-dot--off" />
+            <div>
+              <h3 className="rsm-hero-title">Saisie distante inactive</h3>
+              <p className="rsm-hero-desc">
+                Les arbitres saisissent les scores depuis une tablette via navigateur web sur le réseau local.
+              </p>
+            </div>
           </div>
-          <label style={RSM_STYLES.checkboxLabel}>
-            <input
-              type="checkbox"
-              checked={showPhotos}
-              onChange={e => setShowPhotos(e.target.checked)}
-            />
-            Afficher les photos des combattants avant le combat
-          </label>
-          <label style={RSM_STYLES.checkboxLabel}>
-            <input
-              type="checkbox"
-              checked={cardAnnounce}
-              onChange={e => setCardAnnounce(e.target.checked)}
-            />
-            📣 Carton avancer (afficher bandeau + raison sur les écrans)
-          </label>
-          <div style={RSM_STYLES.kioskViewsSection}>
-            <div style={RSM_STYLES.kioskViewsTitle}>Vues kiosk :</div>
-            {(
-              [
-                { key: 'poules', label: 'Poules' },
-                { key: 'classement', label: 'Classement' },
-                { key: 'direct', label: 'Matchs en direct' },
-                { key: 'suivants', label: 'Matchs suivants' },
-              ] as const
-            ).map(({ key, label }) => (
-              <label key={key} style={RSM_STYLES.kioskViewLabel}>
+
+          {/* Sections grid */}
+          <div className="rsm-sections">
+            {/* Pistes */}
+            <div className="rsm-section">
+              <div className="rsm-section-label">Pistes</div>
+              <div className="rsm-strip-row">{stripCountControls}</div>
+            </div>
+
+            {/* Options d'affichage */}
+            <div className="rsm-section">
+              <div className="rsm-section-label">Affichage</div>
+              <label className="rsm-toggle-row">
                 <input
                   type="checkbox"
-                  checked={kioskViews[key]}
-                  onChange={e => setKioskViews(v => ({ ...v, [key]: e.target.checked }))}
+                  checked={showPhotos}
+                  onChange={e => setShowPhotos(e.target.checked)}
                 />
-                {label}
+                Photos combattants
               </label>
-            ))}
+              <label className="rsm-toggle-row">
+                <input
+                  type="checkbox"
+                  checked={cardAnnounce}
+                  onChange={e => setCardAnnounce(e.target.checked)}
+                />
+                📣 Bandeau carton
+              </label>
+            </div>
+
+            {/* Vues kiosque — pills */}
+            <div className="rsm-section rsm-section--full">
+              <div className="rsm-section-label">Vues kiosque</div>
+              <div className="rsm-pills">{kioskPills}</div>
+            </div>
+
+            {/* Réseau */}
+            <div className="rsm-section rsm-section--full">
+              <div className="rsm-section-label">Réseau</div>
+              <div className="rsm-network-grid">
+                <select
+                  id="remote-interface"
+                  value={selectedInterface}
+                  onChange={e => {
+                    setSelectedInterface(e.target.value);
+                    localStorage.setItem('bellepoule-remote-interface', e.target.value);
+                  }}
+                  disabled={isLoading}
+                >
+                  {networkInterfaces.map(iface => (
+                    <option key={iface.address} value={iface.address}>
+                      {iface.name}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  id="remote-port"
+                  type="number"
+                  min={1}
+                  max={65535}
+                  value={remotePort}
+                  onChange={e => handlePortChange(parseInt(e.target.value, 10))}
+                  className={portValid ? '' : 'rsm-input-error'}
+                  disabled={isLoading}
+                />
+              </div>
+              {!portValid && (
+                <div className="rsm-port-error">Port invalide (1–65535)</div>
+              )}
+              <span className="rsm-network-preview">{networkPreview}</span>
+            </div>
           </div>
-          <div style={RSM_STYLES.interfaceRow}>
-            <label htmlFor="remote-interface" style={RSM_STYLES.interfaceLabel}>
-              Interface :
-            </label>
-            <select
-              id="remote-interface"
-              value={selectedInterface}
-              onChange={e => {
-                setSelectedInterface(e.target.value);
-                localStorage.setItem('bellepoule-remote-interface', e.target.value);
-              }}
-              disabled={isLoading}
-            >
-              {networkInterfaces.map(iface => (
-                <option key={iface.address} value={iface.address}>
-                  {iface.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div style={RSM_STYLES.portRow}>
-            <label htmlFor="remote-port" style={RSM_STYLES.interfaceLabel}>
-              Port :
-            </label>
-            <input
-              id="remote-port"
-              type="number"
-              min={1}
-              max={65535}
-              value={remotePort}
-              onChange={e => handlePortChange(parseInt(e.target.value, 10))}
-              style={RSM_STYLES.portInput}
-              disabled={isLoading}
-            />
-            <span style={RSM_STYLES.portHint}>1–65535, défaut 8066</span>
-          </div>
-          <button className="btn-primary" onClick={onStartRemote}>
-            ⚡ Démarrer la saisie distante
+
+          {/* CTA */}
+          <button
+            className="rsm-start-btn"
+            onClick={onStartRemote}
+            disabled={!portValid || isLoading}
+          >
+            {isLoading
+              ? <span className="rsm-spinner" />
+              : '⚡'}
+            Démarrer la saisie distante
           </button>
         </div>
       </div>
