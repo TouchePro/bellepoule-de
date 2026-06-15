@@ -37,7 +37,7 @@ const TTS_THRESHOLDS: { key: string; label: string }[] = [
   { key: '10', label: '10 secondes' },
   { key: '5', label: '5 secondes' },
   { key: 'countdown', label: 'Décompte 4 → 1' },
-  { key: '0', label: '« Halte ! » (fin)' },
+  { key: '0', label: '« Temps ! » (fin)' },
 ];
 
 function loadTtsConfig(): TtsConfig {

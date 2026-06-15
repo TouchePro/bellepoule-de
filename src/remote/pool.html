@@ -171,10 +171,17 @@
       table.pool-grid .fencer-header {
         background: rgba(30, 60, 120, 0.3);
         padding: 0.5rem 0.75rem;
-        white-space: nowrap;
         text-align: left;
         min-width: 100px;
         max-width: 180px;
+      }
+
+      .fencer-header-content {
+        display: block;
+        max-width: 160px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .fencer-rank {
@@ -860,6 +867,8 @@
           // En-tête de ligne
           const th = document.createElement('th');
           th.className = 'fencer-header';
+          const nameWrap = document.createElement('span');
+          nameWrap.className = 'fencer-header-content';
           const rank = document.createElement('span');
           rank.className = 'fencer-rank';
           rank.textContent = `${rowIdx + 1}.`;
@@ -869,9 +878,10 @@
           const firstName = document.createElement('span');
           firstName.className = 'fencer-firstname';
           firstName.textContent = rowFencer.firstName || rowFencer.first_name || '';
-          th.appendChild(rank);
-          th.appendChild(lastName);
-          th.appendChild(firstName);
+          nameWrap.appendChild(rank);
+          nameWrap.appendChild(lastName);
+          nameWrap.appendChild(firstName);
+          th.appendChild(nameWrap);
 
           // Colonne signature dédiée (avant le nom)
           const sigCell = document.createElement('td');

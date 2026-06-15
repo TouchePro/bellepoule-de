@@ -937,7 +937,7 @@ export class DatabaseManager {
   public updatePool(pool: Pool): void {
     if (!this.db) throw new Error('Database not open');
     const now = new Date().toISOString();
-    this.run('UPDATE pools SET updated_at = ?, is_complete = ? WHERE id = ?', [now, pool.isComplete ? 1 : 0, pool.id]);
+    this.run('UPDATE pools SET updated_at = ?, is_complete = ?, strip = ? WHERE id = ?', [now, pool.isComplete ? 1 : 0, pool.strip ?? null, pool.id]);
     for (const match of pool.matches || []) {
       if (match.scoreA !== undefined || match.scoreB !== undefined || match.status !== undefined) {
         this.updateMatch(match.id, { scoreA: match.scoreA, scoreB: match.scoreB, status: match.status });
@@ -1670,11 +1670,11 @@ export class DatabaseManager {
       SELECT m.id FROM matches m
         LEFT JOIN pools p ON m.pool_id = p.id
         LEFT JOIN phases ph ON p.phase_id = ph.id
-        WHERE ph.competition_id = ?1
+        WHERE ph.competition_id = ?
       UNION
       SELECT m.id FROM matches m
         JOIN bracket_nodes bn ON m.id = bn.match_id
-        WHERE bn.competition_id = ?1
+        WHERE bn.competition_id = ?
     `;
     const sql = `
       SELECT sal.id, sal.match_id, 'score_change' AS event_type,
@@ -1725,7 +1725,9 @@ export class DatabaseManager {
       WHERE mae.match_id IN (${matchSubquery})
       ORDER BY timestamp ASC
     `;
-    return this.queryAll<any>(sql, [competitionId]).map(r => this.parseTimelineRow(r));
+    // 2 params per matchSubquery × 4 UNION branches = 8 bindings
+    const p = competitionId;
+    return this.queryAll<any>(sql, [p, p, p, p, p, p, p, p]).map(r => this.parseTimelineRow(r));
   }
 
   // ─── Arena state persistence ─────────────────────────────────────────────────
