@@ -937,7 +937,7 @@ export class DatabaseManager {
   public updatePool(pool: Pool): void {
     if (!this.db) throw new Error('Database not open');
     const now = new Date().toISOString();
-    this.run('UPDATE pools SET updated_at = ?, is_complete = ? WHERE id = ?', [now, pool.isComplete ? 1 : 0, pool.id]);
+    this.run('UPDATE pools SET updated_at = ?, is_complete = ?, strip = ? WHERE id = ?', [now, pool.isComplete ? 1 : 0, pool.strip ?? null, pool.id]);
     for (const match of pool.matches || []) {
       if (match.scoreA !== undefined || match.scoreB !== undefined || match.status !== undefined) {
         this.updateMatch(match.id, { scoreA: match.scoreA, scoreB: match.scoreB, status: match.status });
