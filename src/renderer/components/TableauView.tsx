@@ -169,8 +169,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   const handleBracketWheel = useCallback((e: React.WheelEvent) => {
     if (viewMode !== 'full' || pyramidViewMode) return;
     e.preventDefault();
-    const delta = e.deltaY > 0 ? -0.1 : 0.1;
-    setZoom(z => Math.max(0.3, Math.min(2.5, parseFloat((z + delta).toFixed(2)))));
+    setPan(p => ({ ...p, y: p.y - e.deltaY }));
   }, [viewMode, pyramidViewMode]);
 
   const handleBracketMouseDown = useCallback((e: React.MouseEvent) => {
