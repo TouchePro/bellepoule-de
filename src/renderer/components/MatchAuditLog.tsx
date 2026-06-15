@@ -54,6 +54,16 @@ function fencerLabel(entry: MatchEventEntry): { label: string; color: string } {
   };
 }
 
+function buildRefereeLastActions(entries: MatchEventEntry[]): { key: string; label: string; entry: MatchEventEntry }[] {
+  const map = new Map<string, { label: string; entry: MatchEventEntry }>();
+  for (const e of entries) {
+    if (e.eventType !== 'score_change') continue;
+    const key = e.refereeName ?? e.changedBy ?? e.ipAddress ?? 'inconnu';
+    map.set(key, { label: key, entry: e });
+  }
+  return Array.from(map.entries()).map(([key, v]) => ({ key, ...v }));
+}
+
 const MatchAuditLogComponent: React.FC<MatchAuditLogProps> = ({
   matchId,
   competitionId,
@@ -62,6 +72,7 @@ const MatchAuditLogComponent: React.FC<MatchAuditLogProps> = ({
   onClose,
 }) => {
   const { showToast } = useToast();
+  const [refereeView, setRefereeView] = useState(false);
   const { entries, isLoading, error, filterTypes, loadMatchTimeline, loadCompetitionTimeline, setFilterTypes, reset } =
     useMatchAuditStore();
 
@@ -79,6 +90,7 @@ const MatchAuditLogComponent: React.FC<MatchAuditLogProps> = ({
   }, [error]);
 
   const baseTs = entries.length > 0 ? entries[0].timestamp : null;
+  const refereeLastActions = buildRefereeLastActions(entries);
 
   const filtered =
     filterTypes.length === 0 ? entries : entries.filter(e => filterTypes.includes(e.eventType));
@@ -142,6 +154,21 @@ const MatchAuditLogComponent: React.FC<MatchAuditLogProps> = ({
           {filtered.length} événement{filtered.length !== 1 ? 's' : ''}
         </span>
         <button
+          onClick={() => setRefereeView(v => !v)}
+          style={{
+            padding: '0.3rem 0.75rem',
+            fontSize: '0.75rem',
+            fontWeight: '600',
+            borderRadius: '6px',
+            border: '1px solid #8b5cf6',
+            background: refereeView ? '#8b5cf6' : 'transparent',
+            color: refereeView ? 'white' : '#8b5cf6',
+            cursor: 'pointer',
+          }}
+        >
+          Par arbitre
+        </button>
+        <button
           onClick={handleExportJSON}
           disabled={entries.length === 0}
           style={{
@@ -163,6 +190,35 @@ const MatchAuditLogComponent: React.FC<MatchAuditLogProps> = ({
       <div style={{ overflowY: 'auto', flex: 1 }}>
         {isLoading ? (
           <div style={{ textAlign: 'center', padding: '3rem', color: '#6b7280' }}>Chargement…</div>
+        ) : refereeView ? (
+          refereeLastActions.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '3rem', color: '#9ca3af', fontSize: '0.875rem' }}>
+              Aucune saisie de score enregistrée.
+            </div>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+              <thead>
+                <tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
+                  <th style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>Arbitre</th>
+                  <th style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>IP</th>
+                  <th style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>Dernière saisie</th>
+                  <th style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>Score</th>
+                </tr>
+              </thead>
+              <tbody>
+                {refereeLastActions.map(({ key, label, entry }, i) => (
+                  <tr key={key} style={{ borderBottom: '1px solid #f3f4f6', background: i % 2 === 0 ? 'white' : '#fafafa' }}>
+                    <td style={{ padding: '0.5rem 0.75rem', fontWeight: '600', color: '#1f2937' }}>{label}</td>
+                    <td style={{ padding: '0.5rem 0.75rem', color: '#6b7280', fontFamily: 'monospace' }}>{entry.ipAddress ?? '—'}</td>
+                    <td style={{ padding: '0.5rem 0.75rem', color: '#6b7280', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+                      {formatTimestamp(entry.timestamp, baseTs)}
+                    </td>
+                    <td style={{ padding: '0.5rem 0.75rem', color: '#374151' }}>{describeMatchEvent(entry)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '3rem', color: '#9ca3af', fontSize: '0.875rem' }}>
             Aucun événement enregistré pour ce match.
