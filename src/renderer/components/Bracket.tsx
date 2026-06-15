@@ -92,7 +92,8 @@ const Bracket: React.FC<BracketProps> = ({
       const roundSpacing = MATCH_HEIGHT + VERTICAL_GAP;
 
       let yOffset = 0;
-      const totalMatchesForRound = tableSize / Math.pow(2, round - 1);
+      // Avec round=1=Finale, round=N=premier tour → 2^(round-1) matchs par round
+      const totalMatchesForRound = Math.pow(2, round - 1);
       const matchesCount = Math.max(matchesInRound, totalMatchesForRound);
 
       if (matchesCount > 1) {
@@ -175,28 +176,29 @@ const Bracket: React.FC<BracketProps> = ({
   };
 
   const renderConnectionLines = (match: BracketMatch, pos: MatchPosition) => {
-    if (match.round <= 1) return null;
+    // round=1=Finale, round=N=premier tour. Les feeders ont round+1 (plus à gauche).
+    const feederRound = match.round + 1;
+    if (!rounds.has(feederRound)) return null;
 
-    const parentRound = match.round - 1;
     const parentPositionA = match.position * 2 - 1;
     const parentPositionB = match.position * 2;
 
-    const parentPosA = calculateMatchPosition(parentRound, parentPositionA);
-    const parentPosB = calculateMatchPosition(parentRound, parentPositionB);
+    const parentPosA = calculateMatchPosition(feederRound, parentPositionA);
+    const parentPosB = calculateMatchPosition(feederRound, parentPositionB);
 
     return (
       <g>
-        {/* Line from parent A */}
+        {/* Line from feeder A (left) to current match (right) */}
         <path
-          d={`M ${parentPosA.x + MATCH_WIDTH} ${parentPosA.y + MATCH_HEIGHT / 2} 
+          d={`M ${parentPosA.x + MATCH_WIDTH} ${parentPosA.y + MATCH_HEIGHT / 2}
               L ${pos.x} ${pos.y + MATCH_HEIGHT / 2}`}
           stroke="#adb5bd"
           strokeWidth={2}
           fill="none"
         />
-        {/* Line from parent B */}
+        {/* Line from feeder B (left) to current match (right) */}
         <path
-          d={`M ${parentPosB.x + MATCH_WIDTH} ${parentPosB.y + MATCH_HEIGHT / 2} 
+          d={`M ${parentPosB.x + MATCH_WIDTH} ${parentPosB.y + MATCH_HEIGHT / 2}
               L ${pos.x} ${pos.y + MATCH_HEIGHT / 2}`}
           stroke="#adb5bd"
           strokeWidth={2}
@@ -273,20 +275,15 @@ const Bracket: React.FC<BracketProps> = ({
   const renderPyramidLayout = () => {
     const sortedRounds = Array.from(rounds.keys()).sort((a, b) => b - a);
 
+    // round=1=Finale, round=2=Demi, round=3=Quarts, round=4=16èmes, ...
     const roundName = (round: number) =>
-      round === 1
-        ? 'Finale'
-        : round === 2
-          ? 'Demi-finales'
-          : round === 4
-            ? 'Quarts'
-            : round === 8
-              ? '8èmes'
-              : round === 16
-                ? '16èmes'
-                : round === 32
-                  ? '32èmes'
-                  : `Tour ${round}`;
+      round === 1 ? 'Finale'
+      : round === 2 ? 'Demi-finales'
+      : round === 3 ? 'Quarts'
+      : round === 4 ? '16èmes'
+      : round === 5 ? '32èmes'
+      : round === 6 ? '64èmes'
+      : `Tour ${round}`;
 
     return (
       <div
@@ -555,14 +552,15 @@ const Bracket: React.FC<BracketProps> = ({
           {/* Round labels */}
           {Array.from(rounds.keys()).map(round => {
             const pos = calculateMatchPosition(round, 1);
+            // round=1=Finale, round=2=Demi, round=3=Quarts, round=4=16èmes, ...
             const roundNames: Record<number, string> = {
               1: 'Finale',
               2: 'Demi-finales',
-              4: 'Quarts',
-              8: '8èmes',
-              16: '16èmes',
-              32: '32èmes',
-              64: '64èmes',
+              3: 'Quarts',
+              4: '16èmes',
+              5: '32èmes',
+              6: '64èmes',
+              7: '128èmes',
             };
 
             return (

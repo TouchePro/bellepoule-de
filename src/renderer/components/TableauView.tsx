@@ -940,7 +940,8 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     );
     return mainMatches.map(match => ({
       id: match.id,
-      round: Math.log2(tableauSize / match.round) + 1,
+      // round=1 = Finale (match.round=2), round=log2(tableauSize) = premier tour
+      round: Math.log2(match.round),
       position: match.position,
       fencerA: match.fencerA,
       fencerB: match.fencerB,
