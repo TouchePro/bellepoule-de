@@ -202,6 +202,10 @@ export function resolveAdvancement(
       cutoff = sizes.filter(s => s <= target).pop() ?? 2;
       break;
     }
+    case 'pool_winner':
+      // Sans accès aux poules ici, utiliser count comme nombre de poules attendu
+      cutoff = rule.count ?? eligible.length;
+      break;
     default:
       cutoff = eligible.length;
   }
@@ -275,6 +279,8 @@ function calcAdvancingCount(
       if (nextDE?.bracketSize) return nextDE.bracketSize;
       return sizes.filter(s => s <= target).pop() ?? 2;
     }
+    case 'pool_winner':
+      return rule.count ?? eligible;
   }
 }
 

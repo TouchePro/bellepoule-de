@@ -9,7 +9,7 @@ import { Server as SocketIOServer } from 'socket.io';
 import { createServer } from 'http';
 import path from 'path';
 import os from 'os';
-import { randomBytes, timingSafeEqual } from 'crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'crypto';
 import {
   RemoteSession,
   RemoteScoreUpdate,
@@ -75,6 +75,16 @@ export class RemoteScoreServer {
   private orgNote: OrgNote | null = null; // Note d'organisation affichée sur le kiosk
   private sessionLogo: string | null = null; // Logo organisateur (base64) pour kiosk et affichages publics
   private sessionWallpaper: string | null = null; // Fond d'écran (base64) affiché sur les arènes en attente
+  // Config TTS (minuteur vocal) poussée aux tablettes d'arbitrage depuis les paramètres globaux
+  private ttsConfig: {
+    voiceName: string | null;
+    rate: number;
+    announce: Record<string, boolean>;
+  } = {
+    voiceName: null,
+    rate: 1.1,
+    announce: { '60': true, '30': true, '10': true, '5': true, countdown: true, '0': true },
+  };
   private currentLang: string = 'fr'; // Langue courante de l'interface (fr, en, zh-HK, ...)
   private sessionKioskViews: {
     poules: boolean;
@@ -90,17 +100,25 @@ export class RemoteScoreServer {
     tableau: true,
   };
 
+  // Webhook résultats (URL HTTPS externe configurée via Settings)
+  private webhookUrl: string | null = null;
+
   // Inscription distante : actif pendant la phase CHECKIN, désactivé après génération des poules
   private registrationEnabled: boolean = true;
 
   // Stocker le contenu des fichiers HTML en mémoire pour éviter les problèmes de chemin
   private htmlFiles: Map<string, string> = new Map();
 
+  // Client socket.io chargé en mémoire au démarrage (injecté inline dans le HTML)
+  private socketIoClientJs: string | null = null;
+
   // Tokens d'authentification par arène (password protection)
   private arenaTokens: Map<string, Set<string>> = new Map();
 
   // Rate limiting pour le login : { ip → { count, resetAt } }
   private loginAttempts: Map<string, { count: number; resetAt: number }> = new Map();
+  private readonly LOGIN_ATTEMPTS_MAX_ENTRIES = 1000;
+  private cleanupInterval: NodeJS.Timeout | null = null;
   // Rate limiting pour les soumissions de score : { ip → { count, resetAt } }
   private scoreRateLimiter: Map<string, { count: number; resetAt: number }> = new Map();
   private readonly SCORE_RATE_LIMIT = 30; // soumissions par minute par IP
@@ -112,6 +130,22 @@ export class RemoteScoreServer {
     new Map();
   private readonly EVENT_BUFFER_MAX = 50;
   private readonly EVENT_BUFFER_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+  // Registre des clients TV/affichage connectés (télécommande)
+  private connectedClients: Map<string, {
+    socketId: string;
+    clientType: 'arena' | 'kiosk' | 'public' | 'pool' | 'dashboard' | 'lobby' | 'referee';
+    arenaId?: string;
+    ip: string;
+    userAgent: string;
+    connectedAt: string;
+    lastSeen: string;
+    label?: string;
+    screenId?: string;
+  }> = new Map();
+
+  // Labels persistants par screenId (survivent aux reconnexions)
+  private screenLabels: Map<string, string> = new Map();
 
   constructor(db: DatabaseManager, port: number = 8066, host: string = '0.0.0.0') {
     console.log('[RemoteScoreServer] Initialisation du serveur de saisie distante...');
@@ -132,14 +166,22 @@ export class RemoteScoreServer {
       },
     });
 
-    // Purge des entrées expirées dans loginAttempts toutes les 5 minutes
-    setInterval(() => {
+    // Purge périodique des maps de rate-limiting/debounce (évite la croissance non bornée)
+    this.cleanupInterval = setInterval(() => {
       const now = Date.now();
       for (const [ip, attempt] of this.loginAttempts) {
         if (now >= attempt.resetAt) this.loginAttempts.delete(ip);
       }
+      for (const [ip, entry] of this.scoreRateLimiter) {
+        if (now >= entry.resetAt) this.scoreRateLimiter.delete(ip);
+      }
+      for (const [key, ts] of this.scoreUpdateDebounce) {
+        if (now - ts > 60_000) this.scoreUpdateDebounce.delete(key);
+      }
     }, 5 * 60_000);
 
+    // Charger le client socket.io AVANT le HTML (injection inline dans loadHtmlFiles)
+    this.loadSocketIoClient();
     // Charger les fichiers HTML en mémoire au démarrage
     this.loadHtmlFiles();
 
@@ -148,6 +190,51 @@ export class RemoteScoreServer {
     this.setupSocketHandlers();
     this.initializeArenas();
     console.log(`[RemoteScoreServer] Serveur initialisé avec ${this.arenaCount} arènes`);
+  }
+
+  // Localiser et charger le client socket.io en mémoire.
+  // Plusieurs stratégies pour couvrir dev, app.asar et asar.unpacked.
+  private loadSocketIoClient(): void {
+    const fs = require('fs');
+    const candidates: string[] = [];
+
+    // 1) Fichier copié dans dist/remote au build (cas packagé : node_modules absent)
+    candidates.push(
+      path.join(__dirname, '../remote/socket.io.min.js'), // dist/main → dist/remote
+      ...(process.resourcesPath
+        ? [
+            path.join(process.resourcesPath, 'app.asar.unpacked', 'dist/remote/socket.io.min.js'),
+            path.join(process.resourcesPath, 'app.asar', 'dist/remote/socket.io.min.js'),
+          ]
+        : []),
+      path.join(__dirname, '../../src/remote/socket.io.min.js'), // fallback dev sans webpack
+    );
+
+    // 2) Résolution via node_modules (dev / si présent dans le package)
+    for (const sub of ['client-dist/socket.io.min.js', 'client-dist/socket.io.js']) {
+      try {
+        candidates.push(require.resolve(`socket.io/${sub}`));
+      } catch {
+        /* ignore */
+      }
+    }
+
+    for (const candidate of candidates) {
+      try {
+        if (fs.existsSync(candidate)) {
+          this.socketIoClientJs = fs.readFileSync(candidate, 'utf-8');
+          console.log(`[RemoteScoreServer] Client socket.io chargé depuis: ${candidate}`);
+          return;
+        }
+      } catch (err) {
+        console.error(`[RemoteScoreServer] Erreur lecture client socket.io ${candidate}:`, err);
+      }
+    }
+
+    console.error(
+      '[RemoteScoreServer] ERREUR: client socket.io introuvable! Chemins testés:',
+      candidates
+    );
   }
 
   // Charger les fichiers HTML en mémoire pour éviter les problèmes de chemin
@@ -163,6 +250,7 @@ export class RemoteScoreServer {
       'index.html',
       'pool.html',
       'kiosk.html',
+      'lobby.html',
       'login.html',
       'public.html',
       'overlay.html',
@@ -177,7 +265,10 @@ export class RemoteScoreServer {
           path.join(__dirname, '../../src/remote'), // src/remote/ (sans webpack)
         ]
       : [
-          path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'remote'),
+          // process.resourcesPath n'existe que sous Electron (pas en tests Node)
+          ...(process.resourcesPath
+            ? [path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'remote')]
+            : []),
           path.join(__dirname, '..', 'remote').replace('app.asar', 'app.asar.unpacked'),
           path.join(__dirname, '..', 'remote'),
           path.join(__dirname, '../../src/remote'), // fallback source sans webpack
@@ -222,6 +313,25 @@ export class RemoteScoreServer {
         `[RemoteScoreServer] Chargement terminé: ${Array.from(this.htmlFiles.keys()).join(', ')}`
       );
     }
+
+    // Injecter le client socket.io inline dans chaque HTML : élimine la requête
+    // séparée /bp-sio.js (cache service worker, résolution de chemin runtime…).
+    if (this.socketIoClientJs) {
+      const inlineTag = `<script>${this.socketIoClientJs}</script>`;
+      for (const [name, content] of this.htmlFiles) {
+        // Nouvelle instance de regex à chaque itération (évite l'état lastIndex partagé)
+        const updated = content.replace(
+          /<script\s+src=["'](?:\/socket\.io\.min\.js|\/bp-sio\.js|\/socket\.io\/socket\.io\.js)["']><\/script>/g,
+          inlineTag
+        );
+        if (updated !== content) this.htmlFiles.set(name, updated);
+      }
+      console.log('[RemoteScoreServer] Client socket.io injecté inline dans le HTML ✓');
+    } else {
+      console.error(
+        '[RemoteScoreServer] ATTENTION: client socket.io non chargé, fallback sur /bp-sio.js'
+      );
+    }
   }
 
   // Servir un fichier HTML depuis la mémoire
@@ -251,6 +361,17 @@ export class RemoteScoreServer {
       }
     }
     return result;
+  }
+
+  /** Le mot de passe n'est jamais stocké ni comparé en clair. */
+  private hashPassword(password: string): string {
+    return createHash('sha256').update(password).digest('hex');
+  }
+
+  /** Version d'une arène sans secret, seule forme autorisée vers les clients HTTP/Socket.IO. */
+  private toPublicArena(arena: Arena): Omit<Arena, 'password'> & { hasPassword: boolean } {
+    const { password, ...rest } = arena;
+    return { ...rest, hasPassword: !!password };
   }
 
   private checkArenaAuth(arenaId: string, cookieHeader: string | undefined): boolean {
@@ -297,8 +418,10 @@ export class RemoteScoreServer {
 
       // Essayer plusieurs chemins possibles
       const possiblePaths = [
-        // Chemin standard avec asarUnpack
-        path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'remote'),
+        // Chemin standard avec asarUnpack (process.resourcesPath n'existe que sous Electron)
+        ...(process.resourcesPath
+          ? [path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'remote')]
+          : []),
         // Chemin relatif depuis __dirname
         path.join(__dirname, '..', 'remote').replace('app.asar', 'app.asar.unpacked'),
         // Dernier recours: chemin relatif standard
@@ -369,36 +492,23 @@ export class RemoteScoreServer {
   private setupRoutes(): void {
     console.log('[RemoteScoreServer] Configuration des routes...');
 
-    // Route principale pour les arbitres
-    this.app.get('/', (req, res) => {
-      console.log('[RemoteScoreServer] Accès à la route principale /');
-      const isDev = process.env.NODE_ENV === 'development';
-
-      let remotePath = '';
-      if (isDev) {
-        remotePath = path.join(__dirname, '../../remote/index.html');
+    // Fallback /bp-sio.js : sert le client socket.io déjà chargé en mémoire au
+    // démarrage. Normalement inutile (le client est injecté inline dans le HTML),
+    // mais couvre le cas d'un HTML mis en cache par le service worker.
+    this.app.get('/bp-sio.js', (_req, res) => {
+      if (this.socketIoClientJs) {
+        res.setHeader('Content-Type', 'application/javascript');
+        res.setHeader('Cache-Control', 'no-store');
+        res.send(this.socketIoClientJs);
       } else {
-        // Essayer plusieurs chemins possibles
-        const possiblePaths = [
-          path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'remote', 'index.html'),
-          path
-            .join(__dirname, '..', 'remote', 'index.html')
-            .replace('app.asar', 'app.asar.unpacked'),
-          path.join(__dirname, '..', 'remote', 'index.html'),
-        ];
-
-        const fs = require('fs');
-        for (const p of possiblePaths) {
-          if (fs.existsSync(p)) {
-            remotePath = p;
-            break;
-          }
-        }
-        if (!remotePath) remotePath = possiblePaths[possiblePaths.length - 1];
+        console.error('[RemoteScoreServer] /bp-sio.js demandé mais client non chargé');
+        res.status(500).send('// socket.io client not loaded');
       }
+    });
 
-      console.log('[RemoteScoreServer] Envoi du fichier:', remotePath);
-      this.sendHtmlFromMemory('index.html', res);
+    // Redirect racine vers le lobby
+    this.app.get('/', (_req, res) => {
+      res.redirect('/lobby');
     });
 
     // API endpoints
@@ -470,7 +580,7 @@ export class RemoteScoreServer {
     });
 
     this.app.post('/api/session/stop', (req, res) => {
-      this.session = null;
+      this.stopSession();
       res.json({ success: true });
     });
 
@@ -483,9 +593,14 @@ export class RemoteScoreServer {
       res.json({ wallpaper: this.sessionWallpaper });
     });
 
+    // Config TTS (minuteur vocal) pour les tablettes d'arbitrage
+    this.app.get('/api/tts-config', (req, res) => {
+      res.json(this.ttsConfig);
+    });
+
     // Arena routes
     this.app.get('/api/arenas', (req, res) => {
-      res.json(this.getAllArenas());
+      res.json(this.getAllArenas().map(a => this.toPublicArena(a)));
     });
 
     this.app.get('/api/arenas/:arenaId', (req, res) => {
@@ -493,7 +608,93 @@ export class RemoteScoreServer {
       if (!arena) {
         return res.status(404).json({ error: 'Arène non trouvée' });
       }
-      res.json(arena);
+      res.json(this.toPublicArena(arena));
+    });
+
+    // Rapport de rotation des arbitres
+    this.app.get('/api/referees/rotation-report', (req, res) => {
+      if (!this.session) return res.status(404).json({ error: 'Pas de session active' });
+
+      const competitionId = this.session.competitionId;
+      const referees = this.db.getRefereesByCompetition(competitionId);
+      const allMatches = this.db.getMatchesWithReferees(competitionId);
+
+      const MAX_CONSECUTIVE = 3;
+      const MIN_REST_MINUTES = 15;
+
+      const report = referees.map(ref => {
+        const refMatches = allMatches.filter(m => m.refereeId === ref.id && m.status === 'finished');
+        const total = refMatches.length;
+
+        // Approximer matchs consécutifs sur les derniers matchs (ordre du tableau)
+        let consecutive = 0;
+        for (let i = refMatches.length - 1; i >= 0; i--) {
+          consecutive++;
+          if (consecutive >= MAX_CONSECUTIVE) break;
+          // Sans timestamp précis, on compte les derniers matchs du tableau
+        }
+
+        // Vérifier si l'arbitre est actuellement sur une piste
+        const isActive = Array.from(this.arenas.values()).some(a =>
+          a.status === 'in_progress' && a.currentMatch?.referee?.id === ref.id
+        );
+
+        const fatigueScore = Math.min(100, Math.round((consecutive / MAX_CONSECUTIVE) * 100));
+
+        return {
+          refereeId: ref.id,
+          refereeName: `${ref.firstName ?? ''} ${ref.lastName ?? ''}`.trim(),
+          matchesTotal: total,
+          consecutiveEstimate: consecutive,
+          fatigueScore,
+          isActive,
+          needsRest: consecutive >= MAX_CONSECUTIVE || fatigueScore >= 80,
+          category: (ref as any).category ?? null,
+        };
+      });
+
+      // Trier par score de fatigue décroissant
+      report.sort((a, b) => b.fatigueScore - a.fatigueScore);
+      res.json({ config: { maxConsecutive: MAX_CONSECUTIVE, minRestMinutes: MIN_REST_MINUTES }, report });
+    });
+
+    // Endpoint JSON structuré pour OBS Browser Source / intégrations externes
+    this.app.get('/api/arenas/:arenaId/obs-json', (req, res) => {
+      const { arenaId } = req.params;
+      const arena = this.getArena(arenaId);
+      if (!arena) return res.status(404).json({ error: 'Arène non trouvée' });
+
+      const touches = this.arenaTouches.get(arenaId) || { touchesA: [], touchesB: [] };
+      const cards   = this.arenaCards.get(arenaId)   || { cardsA: [], cardsB: [] };
+
+      const countZones = (zones: string[]) => ({
+        A: zones.filter(z => z === 'A').length,
+        B: zones.filter(z => z === 'B').length,
+        C: zones.filter(z => z === 'C').length,
+      });
+
+      res.json({
+        arenaId,
+        status: arena.status,
+        weapon: this.sessionWeapon ?? null,
+        match: arena.currentMatch ? {
+          id:       arena.currentMatch.id,
+          fencerA:  arena.currentMatch.fencerA,
+          fencerB:  arena.currentMatch.fencerB,
+          scoreA:   arena.currentMatch.scoreA,
+          scoreB:   arena.currentMatch.scoreB,
+          referee:  arena.currentMatch.referee,
+        } : null,
+        cards: { A: cards.cardsA, B: cards.cardsB },
+        touches: {
+          A: { raw: touches.touchesA, zones: countZones(touches.touchesA) },
+          B: { raw: touches.touchesB, zones: countZones(touches.touchesB) },
+        },
+        suddenDeath:     this.arenaSuddenDeath.get(arenaId) ?? false,
+        waitingOvertime: this.arenaWaitingOvertime.get(arenaId) ?? false,
+        swapped:         arena.swapped ?? false,
+        timestamp:       new Date().toISOString(),
+      });
     });
 
     this.app.post('/api/arenas/:arenaId/assign', (req, res) => {
@@ -581,7 +782,9 @@ export class RemoteScoreServer {
             path.join(__dirname, '../../src/remote', filename),
           ]
         : [
-            path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'remote', filename),
+            ...(process.resourcesPath
+              ? [path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'remote', filename)]
+              : []),
             path.join(__dirname, '..', 'remote', filename).replace('app.asar', 'app.asar.unpacked'),
             path.join(__dirname, '..', 'remote', filename),
             path.join(__dirname, '../../src/remote', filename),
@@ -729,6 +932,11 @@ export class RemoteScoreServer {
       this.sendHtmlFromMemory('kiosk.html', res);
     });
 
+    // Page d'attente sans arène assignée (lobby)
+    this.app.get('/lobby', (_req, res) => {
+      this.sendHtmlFromMemory('lobby.html', res);
+    });
+
     // Page de connexion pour les pages protégées par mot de passe
     this.app.get('/login', (_req, res) => {
       this.sendHtmlFromMemory('login.html', res);
@@ -838,6 +1046,11 @@ export class RemoteScoreServer {
           this.loginAttempts.set(ip, { count: 1, resetAt: now + 60_000 });
         }
       } else {
+        // Plafond : éviction de l'entrée la plus ancienne (ordre d'insertion des Map)
+        if (this.loginAttempts.size >= this.LOGIN_ATTEMPTS_MAX_ENTRIES) {
+          const oldest = this.loginAttempts.keys().next().value;
+          if (oldest !== undefined) this.loginAttempts.delete(oldest);
+        }
         this.loginAttempts.set(ip, { count: 1, resetAt: now + 60_000 });
       }
 
@@ -850,11 +1063,12 @@ export class RemoteScoreServer {
       const { password } = req.body as { password: string };
       // Comparaison résistante aux timing attacks
       let passwordOk = false;
+      // Comparaison de hashs (longueur constante) résistante aux timing attacks,
+      // sans fuite de la longueur du mot de passe.
       try {
         passwordOk =
           !!password &&
-          password.length === arena.password.length &&
-          timingSafeEqual(Buffer.from(password), Buffer.from(arena.password));
+          timingSafeEqual(Buffer.from(this.hashPassword(password)), Buffer.from(arena.password));
       } catch {
         passwordOk = false;
       }
@@ -866,9 +1080,10 @@ export class RemoteScoreServer {
       const token = randomBytes(32).toString('hex');
       if (!this.arenaTokens.has(fullId)) this.arenaTokens.set(fullId, new Set());
       this.arenaTokens.get(fullId)!.add(token);
+      // Secure seulement en HTTPS : le serveur tourne en HTTP sur le LAN du gymnase
       res.setHeader(
         'Set-Cookie',
-        `bp_token_${fullId}=${token}; HttpOnly; SameSite=Strict; Max-Age=${8 * 3600}; Path=/`
+        `bp_token_${fullId}=${token}; HttpOnly; SameSite=Strict; Max-Age=${8 * 3600}; Path=/${req.secure ? '; Secure' : ''}`
       );
       res.json({ success: true });
     });
@@ -878,6 +1093,10 @@ export class RemoteScoreServer {
       const rawId = req.params.arenaId;
       // Accepte "1" ou "arena1" comme arenaId
       const arenaId = rawId.startsWith('arena') ? rawId : `arena${rawId}`;
+      // Même protection que la page /poule qui consomme cette API
+      if (!this.checkArenaAuth(arenaId, req.headers.cookie)) {
+        return res.status(401).json({ error: 'Non authentifié' });
+      }
       try {
         const arena = this.arenas.get(arenaId);
         const poolId = arena?.currentMatch?.poolId ?? arena?.activePoolId;
@@ -1160,6 +1379,45 @@ export class RemoteScoreServer {
       }
     });
 
+    // API : signature numérique d'un combattant pour un match de tableau (élimination directe)
+    this.app.post('/api/matches/:matchId/fencers/:fencerId/signature', (req, res) => {
+      if (!this.hasAnyValidToken(req.headers.cookie)) {
+        return res.status(401).json({ error: 'Non authentifié' });
+      }
+      const { matchId, fencerId } = req.params;
+      const { signatureData } = req.body as { signatureData: string };
+
+      if (!signatureData || !signatureData.startsWith('data:image/png;base64,')) {
+        return res.status(400).json({ error: 'Données de signature invalides' });
+      }
+      if (signatureData.length > 200_000) {
+        return res.status(400).json({ error: 'Signature trop volumineuse (max 150 Ko)' });
+      }
+
+      const dbMatch = this.db.getMatch(matchId);
+      if (!dbMatch) {
+        return res.status(404).json({ error: 'Match non trouvé' });
+      }
+      // Réservé aux matchs de tableau (pas de poule)
+      if ((dbMatch as any).poolId) {
+        return res.status(400).json({ error: 'Signature de match réservée au tableau' });
+      }
+
+      try {
+        this.db.saveDEMatchSignature(matchId, fencerId, signatureData);
+
+        const mainWin = (global as any).mainWindow;
+        if (mainWin) {
+          mainWin.webContents.send('tableau:signature:updated', { matchId, fencerId });
+        }
+
+        res.json({ success: true });
+      } catch (err) {
+        console.error('[RemoteScoreServer] Erreur signature tableau:', err);
+        res.status(500).json({ error: 'Erreur enregistrement signature' });
+      }
+    });
+
     // API pour récupérer les matchs d'une arène/poule
     this.app.get('/api/arenas/:arenaId/matches', (req, res) => {
       try {
@@ -1264,6 +1522,7 @@ export class RemoteScoreServer {
               scoreA: m.scoreA ?? 0,
               scoreB: m.scoreB ?? 0,
               status: m.status,
+              isTableau: m.isTableau ?? false,
             }));
           return res.json({ matches: queueMatches, poolId: null, poolName: null });
         }
@@ -1311,7 +1570,9 @@ export class RemoteScoreServer {
         // Vérifier que le match existe (en DB ou en mémoire)
         const dbMatch = this.db.getMatch(matchId);
         const inMemoryMatch = !dbMatch && this.sessionMatches.find((m: any) => m.id === matchId);
+        this.sendDiag(`[REST /finish] matchId=${matchId} dbMatch=${!!dbMatch} poolId=${(dbMatch as any)?.poolId ?? '-'} inMemory=${!!inMemoryMatch} sessionMatchesIds=[${this.sessionMatches.map((m: any) => m.id).join(',')}]`);
         if (!dbMatch && !inMemoryMatch) {
+          this.sendDiag(`[REST /finish] 404 match introuvable: ${matchId}`);
           return res.status(404).json({ error: 'Match non trouvé' });
         }
 
@@ -1365,7 +1626,27 @@ export class RemoteScoreServer {
               break;
             }
           }
-          if (arenaToFinish) this.finishArenaMatch(arenaToFinish);
+          if (arenaToFinish) {
+            this.finishArenaMatch(arenaToFinish);
+          } else {
+            // Match non trouvé dans une arène active : notifier quand même le renderer
+            // (cas où l'arbitre soumet depuis referee.html mais l'arène a déjà changé)
+            const mainWin = (global as any).mainWindow;
+            if (mainWin) {
+              const isTableauMatch = !dbMatch.poolId;
+              mainWin.webContents.send('match:finished', {
+                matchId,
+                scoreA,
+                scoreB,
+                winner: winner as 'A' | 'B' | null,
+                poolId: dbMatch.poolId ?? null,
+                isTableau: isTableauMatch,
+              });
+              console.log(
+                `[RemoteScoreServer] Émission match:finished hors-arène pour ${matchId}: ${scoreA}-${scoreB}`
+              );
+            }
+          }
         } else {
           // Match en mémoire uniquement (poule non persistée)
           // Synchroniser les scores dans l'arène et déclencher l'IPC vers le renderer
@@ -1375,12 +1656,32 @@ export class RemoteScoreServer {
             status: MatchStatus.FINISHED,
           });
           // Mettre à jour les scores de l'arène puis terminer le match via l'IPC
+          let arenaFoundForInMemory = false;
           for (const [arenaId, arena] of this.arenas) {
             if (arena.currentMatch && arena.currentMatch.id === matchId) {
               arena.currentMatch.scoreA = scoreA;
               arena.currentMatch.scoreB = scoreB;
               this.finishArenaMatch(arenaId);
+              arenaFoundForInMemory = true;
               break;
+            }
+          }
+          if (!arenaFoundForInMemory) {
+            // Match en mémoire non trouvé dans une arène : notifier quand même le renderer
+            const mainWin = (global as any).mainWindow;
+            if (mainWin) {
+              const sm = this.sessionMatches.find((m: any) => m.id === matchId);
+              mainWin.webContents.send('match:finished', {
+                matchId,
+                scoreA,
+                scoreB,
+                winner: winner as 'A' | 'B' | null,
+                poolId: sm?.poolId ?? null,
+                isTableau: sm?.isTableau ?? false,
+              });
+              console.log(
+                `[RemoteScoreServer] Émission match:finished hors-arène (mémoire) pour ${matchId}: ${scoreA}-${scoreB}`
+              );
             }
           }
         }
@@ -1422,8 +1723,19 @@ export class RemoteScoreServer {
           sender: 'server',
         });
 
+        // Signature requise après le match si c'est un match de tableau et l'option est activée
+        const matchObjForSig: any = dbMatch || inMemoryMatch;
+        const isTableauMatch = !(matchObjForSig?.poolId);
+        let requireSignature = false;
+        if (isTableauMatch && this.session) {
+          try {
+            const comp = this.db.getCompetition(this.session.competitionId);
+            requireSignature = comp?.settings?.signTableauMatches === true;
+          } catch { /* défaut: false */ }
+        }
+
         console.log(`[RemoteScoreServer] Match ${matchId} terminé et enregistré`);
-        res.json({ success: true, winner });
+        res.json({ success: true, winner, requireSignature });
       } catch (error) {
         console.error('[RemoteScoreServer] Erreur fin de match:', error);
         res.status(500).json({ error: 'Erreur lors de la fin du match' });
@@ -1844,8 +2156,8 @@ export class RemoteScoreServer {
             fencerB: m.fencerB
               ? { lastName: m.fencerB.lastName, firstName: m.fencerB.firstName, club: m.fencerB.club ?? '', id: m.fencerB.id }
               : null,
-            scoreA: live?.scoreA ?? m.scoreA ?? null,
-            scoreB: live?.scoreB ?? m.scoreB ?? null,
+            scoreA: (() => { const s = live?.scoreA ?? m.scoreA; return s != null ? ((s as any).value ?? s) : null; })(),
+            scoreB: (() => { const s = live?.scoreB ?? m.scoreB; return s != null ? ((s as any).value ?? s) : null; })(),
             winnerId: m.winner?.id ?? null,
             status: isFinished ? 'finished' : isLive ? 'live' : 'pending',
             isBye: !!m.isBye,
@@ -2114,6 +2426,19 @@ export class RemoteScoreServer {
         socket.join(`arena:${data.arenaId}`);
 
         const arena = this.getArena(data.arenaId);
+        if (!arena && this.session) {
+          // Arène inconnue mais session active → débloquer l'arbitre
+          socket.emit(`arena:${data.arenaId}:update`, {
+            arenaId: data.arenaId,
+            match: null,
+            status: 'idle',
+            showPhotos: this.sessionShowPhotos,
+            cardAnnounce: this.sessionCardAnnounce,
+            theme: this.sessionTheme,
+            refereeFeatureEnabled: this.sessionRefereeFeatureEnabled,
+            referees: this.session?.referees ?? [],
+          });
+        }
         if (arena) {
           const override = this.arenaThemeOverrides.get(data.arenaId);
 
@@ -2176,8 +2501,41 @@ export class RemoteScoreServer {
         }
       );
 
+      // Enregistrement client TV/affichage pour la télécommande
+      socket.on('client:register', (data: {
+        clientType: 'arena' | 'kiosk' | 'public' | 'pool' | 'dashboard' | 'lobby' | 'referee';
+        arenaId?: string;
+        userAgent?: string;
+        screenId?: string;
+      }) => {
+        const now = new Date().toISOString();
+        const screenId = data.screenId;
+        const label = screenId ? this.screenLabels.get(screenId) : undefined;
+        this.connectedClients.set(socket.id, {
+          socketId: socket.id,
+          clientType: data.clientType ?? 'arena',
+          arenaId: data.arenaId,
+          ip: (socket.handshake.headers['x-forwarded-for'] as string) || socket.handshake.address || '',
+          userAgent: data.userAgent ?? '',
+          connectedAt: now,
+          lastSeen: now,
+          label,
+          screenId,
+        });
+        this.broadcastClientList();
+      });
+
+      socket.on('client:pong', () => {
+        const client = this.connectedClients.get(socket.id);
+        if (client) {
+          client.lastSeen = new Date().toISOString();
+        }
+      });
+
       socket.on('disconnect', () => {
         console.log('Client disconnected:', socket.id);
+        this.connectedClients.delete(socket.id);
+        this.broadcastClientList();
         this.handleDisconnect(socket);
       });
     });
@@ -2185,6 +2543,50 @@ export class RemoteScoreServer {
 
   private handleDisconnect(socket: any): void {
     console.log(`Client ${socket.id} disconnected`);
+  }
+
+  private broadcastClientList(): void {
+    const mainWin = (global as any).mainWindow;
+    if (mainWin) {
+      mainWin.webContents.send('remote:clientListUpdate', this.getConnectedClients());
+    }
+  }
+
+  getConnectedClients() {
+    return Array.from(this.connectedClients.values());
+  }
+
+  sendClientCommand(socketId: string, command: { type: string; url?: string; text?: string; duration?: number }): void {
+    this.io.to(socketId).emit('server:command', command);
+  }
+
+  broadcastCommand(command: { type: string; url?: string; text?: string; duration?: number }): void {
+    this.io.emit('server:command', command);
+  }
+
+  renameClient(socketId: string, label: string): void {
+    const client = this.connectedClients.get(socketId);
+    if (client) {
+      client.label = label;
+      if (client.screenId) this.screenLabels.set(client.screenId, label);
+      this.broadcastClientList();
+      // Notifier l'écran de son nouveau nom
+      this.io.to(socketId).emit('server:command', { type: 'identify', screenLabel: label, duration: 3000 });
+    }
+  }
+
+  identifyClient(socketId: string): void {
+    const client = this.connectedClients.get(socketId);
+    const label = client?.label ?? client?.screenId ?? socketId.slice(0, 8);
+    this.io.to(socketId).emit('server:command', { type: 'identify', screenLabel: label, duration: 5000 });
+  }
+
+  setClientKioskMode(socketId: string, config: {
+    poules: boolean; classement: boolean; direct: boolean;
+    suivants: boolean; tableau: boolean; rotationSec: number;
+  }): void {
+    this.io.to(socketId).emit('server:command', { type: 'kiosk:config', kioskConfig: config });
+    this.io.to(socketId).emit('server:command', { type: 'navigate', url: '/kiosk' });
   }
 
   // Stockage des cartons par arène
@@ -2196,9 +2598,24 @@ export class RemoteScoreServer {
   private arenaSuddenDeath: Map<string, boolean> = new Map();
   private arenaOvertimeType: Map<string, string | null> = new Map();
   private arenaWaitingOvertime: Map<string, boolean> = new Map();
+  // Vrai quand l'arbitre a explicitement sélectionné le match depuis sa tablette
+  private arenaRefereeSelected: Map<string, boolean> = new Map();
   // Debounce par socket pour update_score : clé = socketId:arenaId, valeur = timestamp dernier envoi
   private scoreUpdateDebounce: Map<string, number> = new Map();
   private readonly SCORE_UPDATE_DEBOUNCE_MS = 200;
+
+  /** Purge l'état de combat par arène (cartons, touches, mort subite…) — fin de session ou réinit des arènes. */
+  private clearArenaCombatState(): void {
+    this.arenaCards.clear();
+    this.arenaTouches.clear();
+    this.arenaExits.clear();
+    this.arenaSuddenDeath.clear();
+    this.arenaOvertimeType.clear();
+    this.arenaWaitingOvertime.clear();
+    this.arenaRefereeSelected.clear();
+    this.scoreUpdateDebounce.clear();
+    this.arenaPhotoSentForMatch.clear();
+  }
 
   private handleArenaControl(
     socket: any,
@@ -2240,11 +2657,15 @@ export class RemoteScoreServer {
 
     switch (data.action) {
       case 'select_match':
-        // Sélection d'un match par l'arbitre
+        // Sélection d'un match par l'arbitre (depuis sa tablette)
         if (data.match) {
           const m = data.match;
+          this.sendDiag(`[select_match] arena=${data.arenaId} matchId=${m.id} isTableau=${(m as any).isTableau}`);
+          // Restaurer isTableau depuis sessionMatches car la tablette ne le transmet pas
+          const sessionMatch = this.sessionMatches.find(sm => sm.id === m.id);
           this.assignMatchToArena(data.arenaId, {
             ...m,
+            isTableau: m.isTableau ?? sessionMatch?.isTableau ?? false,
             scoreA:
               typeof (m.scoreA as unknown) === 'object'
                 ? ((m.scoreA as unknown as { value?: number })?.value ?? 0)
@@ -2253,7 +2674,7 @@ export class RemoteScoreServer {
               typeof (m.scoreB as unknown) === 'object'
                 ? ((m.scoreB as unknown as { value?: number })?.value ?? 0)
                 : (m.scoreB ?? 0),
-          });
+          }, true);
           this.arenaCards.set(data.arenaId, { cardsA: [], cardsB: [] });
           this.arenaTouches.set(data.arenaId, { touchesA: [], touchesB: [] });
           this.arenaExits.set(data.arenaId, []);
@@ -2266,6 +2687,7 @@ export class RemoteScoreServer {
         this.pauseArenaMatch(data.arenaId);
         break;
       case 'finish':
+        this.sendDiag(`[socket finish] arena=${data.arenaId}`);
         this.arenaSuddenDeath.set(data.arenaId, false);
         this.arenaOvertimeType.set(data.arenaId, null);
         this.arenaWaitingOvertime.set(data.arenaId, false);
@@ -2347,6 +2769,12 @@ export class RemoteScoreServer {
           if (data.cardsA !== undefined) currentCards.cardsA = data.cardsA;
           if (data.cardsB !== undefined) currentCards.cardsB = data.cardsB;
           this.arenaCards.set(data.arenaId, currentCards);
+          // Mettre à jour les touches par zone si fournies
+          const currentTouches = this.arenaTouches.get(data.arenaId) || { touchesA: [], touchesB: [] };
+          if (data.touchesA !== undefined) currentTouches.touchesA = data.touchesA;
+          if (data.touchesB !== undefined) currentTouches.touchesB = data.touchesB;
+          this.arenaTouches.set(data.arenaId, currentTouches);
+
           this.broadcastArenaUpdate(data.arenaId, {
             arenaId: data.arenaId,
             match: arena.currentMatch,
@@ -2354,18 +2782,13 @@ export class RemoteScoreServer {
             scoreB: data.scoreB ?? arena.currentMatch?.scoreB,
             cardsA: currentCards.cardsA,
             cardsB: currentCards.cardsB,
+            touchesA: currentTouches.touchesA,
+            touchesB: currentTouches.touchesB,
             suddenDeath: this.arenaSuddenDeath.get(data.arenaId) ?? false,
             overtimeType: this.arenaOvertimeType.get(data.arenaId) ?? null,
             waitingOvertime: this.arenaWaitingOvertime.get(data.arenaId) ?? false,
             status: arena.status,
           });
-        }
-        // Mettre à jour les touches par zone si fournies
-        if (data.touchesA !== undefined || data.touchesB !== undefined) {
-          const currentTouches = this.arenaTouches.get(data.arenaId) || { touchesA: [], touchesB: [] };
-          if (data.touchesA !== undefined) currentTouches.touchesA = data.touchesA;
-          if (data.touchesB !== undefined) currentTouches.touchesB = data.touchesB;
-          this.arenaTouches.set(data.arenaId, currentTouches);
         }
         break;
       }
@@ -2672,6 +3095,7 @@ export class RemoteScoreServer {
     this.arenaEventBuffer.clear();
     this.arenaMatchQueue.clear();
     this.arenaNextMatchIndex.clear();
+    this.clearArenaCombatState();
 
     for (let i = 1; i <= arenaCount; i++) {
       const arena: Arena = {
@@ -2727,6 +3151,67 @@ export class RemoteScoreServer {
     }
   }
 
+  // Marque un match de poule comme terminé depuis l'UI principale (ex: auto-fill).
+  // Met à jour sessionMatchScores + sessionMatches, libère l'arène si nécessaire,
+  // puis diffuse la mise à jour à la tablette.
+  public finishPoolMatch(matchId: string, scoreA: number, scoreB: number): void {
+    this.sessionMatchScores.set(matchId, {
+      scoreA: { value: scoreA, isVictory: scoreA > scoreB },
+      scoreB: { value: scoreB, isVictory: scoreB > scoreA },
+      status: MatchStatus.FINISHED,
+    });
+
+    const matchIdx = (this.sessionMatches as any[]).findIndex((m: any) => m.id === matchId);
+    if (matchIdx >= 0) {
+      (this.sessionMatches as any[])[matchIdx].status = MatchStatus.FINISHED;
+    }
+
+    // Si le match est actif sur une arène, la marquer terminée
+    for (const [arenaId, arena] of this.arenas) {
+      if (arena.currentMatch?.id === matchId && arena.status !== 'finished') {
+        arena.status = 'finished';
+        arena.currentMatch.status = 'finished';
+        this.broadcastArenaUpdate(arenaId, {
+          arenaId,
+          status: 'finished',
+          match: arena.currentMatch,
+          scoreA: arena.currentMatch.scoreA,
+          scoreB: arena.currentMatch.scoreB,
+          fencerA: arena.currentMatch.fencerA,
+          fencerB: arena.currentMatch.fencerB,
+        });
+        break;
+      }
+    }
+
+    this.io.emit('match:finished', { matchId });
+
+    const match = matchIdx >= 0 ? (this.sessionMatches as any[])[matchIdx] : null;
+    const poolId = match?.poolId ?? match?.pool?.id;
+    if (!poolId) return;
+
+    const fencers = this.poolFencersCache.get(poolId) ?? this.db.getPoolFencers(poolId);
+    const poolMatches = (this.sessionMatches as any[])
+      .filter((m: any) => !m.isTableau && (m.poolId ?? m.pool?.id) === poolId)
+      .sort((a: any, b: any) => (a.number || 0) - (b.number || 0))
+      .map((m: any) => {
+        const u = this.sessionMatchScores.get(m.id);
+        return u ? { ...m, ...u } : m;
+      });
+    const isComplete =
+      poolMatches.length > 0 &&
+      poolMatches.every(
+        (m: any) => m.status === MatchStatus.FINISHED || m.status === 'finished'
+      );
+    for (const [aId, arena] of this.arenas) {
+      if ((arena.currentMatch?.poolId ?? arena.activePoolId) === poolId) {
+        this.io
+          .to(`pool:${aId}`)
+          .emit(`pool:${aId}:update`, { poolId, fencers, matches: poolMatches, isComplete });
+      }
+    }
+  }
+
   public setLanguage(lang: string): void {
     this.currentLang = lang;
   }
@@ -2734,7 +3219,7 @@ export class RemoteScoreServer {
   public setArenaCount(count: number): void {
     console.log(`[RemoteScoreServer] Mise à jour du nombre d'arènes: ${count}`);
     this.initializeArenas(count);
-    this.io?.emit('arenas:updated', this.getAllArenas());
+    this.io?.emit('arenas:updated', this.getAllArenas().map(a => this.toPublicArena(a)));
   }
 
   public getArenaCount(): number {
@@ -2768,15 +3253,18 @@ export class RemoteScoreServer {
     });
   }
 
-  public assignMatchToArena(arenaId: string, match: ArenaMatch): void {
+  public assignMatchToArena(arenaId: string, match: ArenaMatch, fromReferee = false): void {
     console.log(
-      `[RemoteScoreServer] assignMatchToArena called: arenaId=${arenaId}, matchId=${match.id}`
+      `[RemoteScoreServer] assignMatchToArena called: arenaId=${arenaId}, matchId=${match.id}, fromReferee=${fromReferee}`
     );
     const arena = this.arenas.get(arenaId);
     if (!arena) {
       console.error(`[RemoteScoreServer] ERREUR: Arène ${arenaId} n'existe pas!`);
       return;
     }
+
+    // Mettre à jour le flag de sélection arbitre avant le broadcast
+    this.arenaRefereeSelected.set(arenaId, fromReferee);
 
     arena.currentMatch = match;
     arena.status = 'ready';
@@ -3020,11 +3508,24 @@ export class RemoteScoreServer {
     }
   }
 
+  // DIAGNOSTIC : envoie un message visible dans la console DevTools du renderer
+  // (les console.log serveur ne sont pas visibles dans l'app packagée).
+  private sendDiag(msg: string): void {
+    try {
+      const w = (global as any).mainWindow;
+      if (w) w.webContents.send('remote:diag', msg);
+    } catch { /* non bloquant */ }
+  }
+
   public finishArenaMatch(arenaId: string): void {
     const arena = this.arenas.get(arenaId);
+    this.sendDiag(`[finishArenaMatch] arena=${arenaId} hasCurrent=${!!arena?.currentMatch} status=${arena?.status} matchId=${arena?.currentMatch?.id} isTableau=${(arena?.currentMatch as any)?.isTableau}`);
     if (!arena || !arena.currentMatch) return;
     // Éviter le double-déclenchement (REST + Socket.IO)
     if (arena.status === 'finished') return;
+
+    // Réinitialiser le flag de sélection arbitre (match terminé)
+    this.arenaRefereeSelected.set(arenaId, false);
 
     const finishedMatch = { ...arena.currentMatch };
 
@@ -3038,78 +3539,88 @@ export class RemoteScoreServer {
       );
     }
 
-    // Persister le timing en DB
-    if (arena.currentMatch.id && arena.startTime) {
-      const durationSec = arena.currentMatch.duration ?? 0;
-      this.db.updateMatchTiming(
-        arena.currentMatch.id,
-        arena.startTime.toISOString(),
-        arena.currentMatch.endTime!.toISOString(),
-        durationSec
-      );
-    }
-
-    // Persister les cartons accumulés en mémoire
-    const cards = this.arenaCards.get(arenaId) ?? { cardsA: [], cardsB: [] };
-    const now = new Date().toISOString();
-    const matchId = arena.currentMatch.id;
-    if (matchId) {
-      const persistCards = (list: string[], fencerId: string | undefined) => {
-        if (!fencerId) return;
-        for (const cardType of list) {
-          this.db.saveCard({
-            id: `${matchId}-${fencerId}-${cardType}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-            matchId,
-            fencerId,
-            cardType,
-            reason: 'unknown',
-            cardGroup: 1,
-            timestamp: now,
-            pointsAwarded: 0,
-            resultingExclusion: false,
-          });
-        }
-      };
-      persistCards(cards.cardsA, arena.currentMatch.fencerA?.id);
-      persistCards(cards.cardsB, arena.currentMatch.fencerB?.id);
-
-      // Persister les touches par zone
-      const touches = this.arenaTouches.get(arenaId) ?? { touchesA: [], touchesB: [] };
-      const persistTouches = (zoneList: string[], fencerId: string | undefined) => {
-        if (!fencerId) return;
-        const ZONE_POINTS: Record<string, number> = { A: 1, B: 3, C: 5 };
-        for (const zone of zoneList) {
-          this.db.saveTouch({
-            id: `${matchId}-${fencerId}-${zone}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-            matchId,
-            fencerId,
-            zone,
-            points: ZONE_POINTS[zone] ?? 1,
-            timestamp: now,
-            isValidInSuddenDeath: false,
-            isReversed: false,
-          });
-        }
-      };
-      persistTouches(touches.touchesA, arena.currentMatch.fencerA?.id);
-      persistTouches(touches.touchesB, arena.currentMatch.fencerB?.id);
-
-      // Persister les sorties d'arène
-      const exits = this.arenaExits.get(arenaId) ?? [];
-      for (const exit of exits) {
-        const fencerId = exit.fencer === 'A'
-          ? arena.currentMatch.fencerA?.id
-          : arena.currentMatch.fencerB?.id;
-        if (!fencerId) continue;
-        this.db.saveArenaExit({
-          id: `${matchId}-${fencerId}-exit-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-          matchId,
-          fencerId,
-          exitType: exit.isVoluntary ? 'arena_exit_voluntary' : 'arena_exit',
-          timestamp: now,
-          pointsAwarded: 3,
-        });
+    // Persistance secondaire (timing / cartons / touches / sorties) : ces écritures
+    // utilisent arena.currentMatch.id qui, pour un match de tableau, n'est PAS l'id DB
+    // (stocké en composite). Une éventuelle exception (ex: contrainte FK) NE DOIT PAS
+    // empêcher l'émission de match:finished vers le renderer (sinon : vainqueur jamais
+    // remonté, pas de passage au tour suivant). On isole donc tout ce bloc.
+    try {
+      // Persister le timing en DB
+      if (arena.currentMatch.id && arena.startTime) {
+        const durationSec = arena.currentMatch.duration ?? 0;
+        this.db.updateMatchTiming(
+          arena.currentMatch.id,
+          arena.startTime.toISOString(),
+          arena.currentMatch.endTime!.toISOString(),
+          durationSec
+        );
       }
+
+      // Persister les cartons accumulés en mémoire
+      const cards = this.arenaCards.get(arenaId) ?? { cardsA: [], cardsB: [] };
+      const now = new Date().toISOString();
+      const matchId = arena.currentMatch.id;
+      if (matchId) {
+        const persistCards = (list: string[], fencerId: string | undefined) => {
+          if (!fencerId) return;
+          for (const cardType of list) {
+            this.db.saveCard({
+              id: `${matchId}-${fencerId}-${cardType}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+              matchId,
+              fencerId,
+              cardType,
+              reason: 'unknown',
+              cardGroup: 1,
+              timestamp: now,
+              pointsAwarded: 0,
+              resultingExclusion: false,
+            });
+          }
+        };
+        persistCards(cards.cardsA, arena.currentMatch.fencerA?.id);
+        persistCards(cards.cardsB, arena.currentMatch.fencerB?.id);
+
+        // Persister les touches par zone
+        const touches = this.arenaTouches.get(arenaId) ?? { touchesA: [], touchesB: [] };
+        const persistTouches = (zoneList: string[], fencerId: string | undefined) => {
+          if (!fencerId) return;
+          const ZONE_POINTS: Record<string, number> = { A: 1, B: 3, C: 5 };
+          for (const zone of zoneList) {
+            this.db.saveTouch({
+              id: `${matchId}-${fencerId}-${zone}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+              matchId,
+              fencerId,
+              zone,
+              points: ZONE_POINTS[zone] ?? 1,
+              timestamp: now,
+              isValidInSuddenDeath: false,
+              isReversed: false,
+            });
+          }
+        };
+        persistTouches(touches.touchesA, arena.currentMatch.fencerA?.id);
+        persistTouches(touches.touchesB, arena.currentMatch.fencerB?.id);
+
+        // Persister les sorties d'arène
+        const exits = this.arenaExits.get(arenaId) ?? [];
+        for (const exit of exits) {
+          const fencerId = exit.fencer === 'A'
+            ? arena.currentMatch.fencerA?.id
+            : arena.currentMatch.fencerB?.id;
+          if (!fencerId) continue;
+          this.db.saveArenaExit({
+            id: `${matchId}-${fencerId}-exit-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            matchId,
+            fencerId,
+            exitType: exit.isVoluntary ? 'arena_exit_voluntary' : 'arena_exit',
+            timestamp: now,
+            pointsAwarded: 3,
+          });
+        }
+      }
+    } catch (e) {
+      this.sendDiag(`[finishArenaMatch] persistance secondaire échouée (non bloquant): ${(e as Error)?.message}`);
+      console.warn('[RemoteScoreServer] Persistance secondaire (timing/cartons/touches) échouée:', e);
     }
 
     const nextMatch = this.peekNextMatch(arenaId);
@@ -3130,11 +3641,42 @@ export class RemoteScoreServer {
       nextMatch,
     });
 
+    // Webhook résultats
+    this.fireWebhook({
+      event: 'match_finished',
+      arenaId,
+      matchId: finishedMatch.id,
+      fencerA: finishedMatch.fencerA
+        ? { id: finishedMatch.fencerA.id, name: `${finishedMatch.fencerA.lastName} ${finishedMatch.fencerA.firstName}`, club: finishedMatch.fencerA.club }
+        : null,
+      fencerB: finishedMatch.fencerB
+        ? { id: finishedMatch.fencerB.id, name: `${finishedMatch.fencerB.lastName} ${finishedMatch.fencerB.firstName}`, club: finishedMatch.fencerB.club }
+        : null,
+      scoreA: finishedMatch.scoreA,
+      scoreB: finishedMatch.scoreB,
+      winner: finishedMatch.scoreA > finishedMatch.scoreB ? 'A'
+        : finishedMatch.scoreB > finishedMatch.scoreA ? 'B' : null,
+      duration: finishedMatch.duration ?? null,
+      timestamp: new Date().toISOString(),
+      // Compatibilité Slack/Discord : champ text en clair
+      text: `Match terminé — ${finishedMatch.fencerA ? `${finishedMatch.fencerA.lastName} ${finishedMatch.fencerA.firstName}` : '?'} ${finishedMatch.scoreA} – ${finishedMatch.scoreB} ${finishedMatch.fencerB ? `${finishedMatch.fencerB.lastName} ${finishedMatch.fencerB.firstName}` : '?'}`,
+    });
+
     // Persister le score final dans la DB et dans l'audit log
     try {
       const finalMatchId = finishedMatch.id;
       const dbMatch = this.db.getMatch(finalMatchId);
-      if (dbMatch && !finishedMatch.isTableau) {
+      // Pour les matchs TED, l'ID en base est "${competitionId}-${matchId}"
+      const compositeId = this.session?.competitionId
+        ? `${this.session.competitionId}-${finalMatchId}`
+        : null;
+      const dbTableauMatch = (!dbMatch && !finishedMatch.poolId && compositeId)
+        ? this.db.getMatch(compositeId)
+        : null;
+      const effectiveDbMatch = dbMatch ?? dbTableauMatch;
+      const effectiveDbId = dbMatch ? finalMatchId : compositeId;
+
+      if (effectiveDbMatch && effectiveDbId) {
         let winner: 'A' | 'B' | null =
           finishedMatch.scoreA > finishedMatch.scoreB ? 'A' :
           finishedMatch.scoreB > finishedMatch.scoreA ? 'B' : null;
@@ -3157,16 +3699,16 @@ export class RemoteScoreServer {
           isExclusion: false,
           isForfait: false,
         };
-        this.db.updateMatch(finalMatchId, {
+        this.db.updateMatch(effectiveDbId, {
           scoreA: scoreAObj,
           scoreB: scoreBObj,
           status: MatchStatus.FINISHED,
         });
         this.db.logScoreChange({
-          matchId: finalMatchId,
+          matchId: effectiveDbId,
           arenaId,
-          previousScoreA: dbMatch.scoreA ?? null,
-          previousScoreB: dbMatch.scoreB ?? null,
+          previousScoreA: effectiveDbMatch.scoreA ?? null,
+          previousScoreB: effectiveDbMatch.scoreB ?? null,
           newScoreA: scoreAObj,
           newScoreB: scoreBObj,
           changedBy: 'referee',
@@ -3190,7 +3732,9 @@ export class RemoteScoreServer {
           const dbM = this.db.getMatch(finishedMatch.id) as any;
           if (dbM?.scoreA?.isVictory) winnerForRenderer = 'A';
           else if (dbM?.scoreB?.isVictory) winnerForRenderer = 'B';
-        } catch { /* non bloquant */ }
+        } catch (err) {
+          console.warn(`[RemoteScoreServer] Lecture DB échouée pour le vainqueur du match ${finishedMatch.id}:`, err);
+        }
       }
       // Fallback pour les matchs en mémoire (non persistés en DB) : tirage au sort
       if (!winnerForRenderer) {
@@ -3499,6 +4043,28 @@ export class RemoteScoreServer {
     this.io.to('dashboard').emit('matches:update', { matches: snapshot.liveMatches });
   }
 
+  // matchId pour lequel les photos ont déjà été diffusées, par arène : les updates
+  // suivants du même match sont envoyés sans photos (delta ~1 Ko au lieu de ~1 Mo)
+  private arenaPhotoSentForMatch: Map<string, string> = new Map();
+
+  /** Clone l'update sans les photos base64 (sans muter l'état partagé de l'arène). */
+  private stripPhotosFromUpdate(update: ArenaUpdate): ArenaUpdate {
+    const stripFencer = <T extends { photo?: string } | null | undefined>(f: T): T => {
+      if (!f || !(f as any).photo) return f;
+      const { photo: _photo, ...rest } = f as any;
+      return rest as T;
+    };
+    const stripMatch = (m: ArenaUpdate['match']): ArenaUpdate['match'] =>
+      m ? { ...m, fencerA: stripFencer(m.fencerA), fencerB: stripFencer(m.fencerB) } : m;
+    return {
+      ...update,
+      match: stripMatch(update.match),
+      nextMatch: update.nextMatch ? stripMatch(update.nextMatch) : update.nextMatch,
+      fencerA: stripFencer(update.fencerA),
+      fencerB: stripFencer(update.fencerB),
+    };
+  }
+
   private broadcastArenaUpdate(arenaId: string, update: ArenaUpdate): void {
     const arena = this.getArena(arenaId);
     const override = this.arenaThemeOverrides.get(arenaId);
@@ -3513,22 +4079,37 @@ export class RemoteScoreServer {
       refereeFeatureEnabled: this.sessionRefereeFeatureEnabled,
       referees: this.session?.referees ?? [],
       timerDuration: isPoolMatch ? this.sessionPoolTimerSeconds : this.sessionTableTimerSeconds,
+      refereeSelected: this.arenaRefereeSelected.get(arenaId) ?? false,
     };
+
+    // Photos envoyées une seule fois par match : les updates suivants partent sans
+    // (les clients qui rejoignent en cours de match reçoivent l'état complet au join_arena)
+    const matchId = updateWithPhotos.match?.id;
+    let payload = updateWithPhotos;
+    if (matchId) {
+      if (this.arenaPhotoSentForMatch.get(arenaId) === matchId) {
+        payload = this.stripPhotosFromUpdate(updateWithPhotos);
+      } else {
+        this.arenaPhotoSentForMatch.set(arenaId, matchId);
+      }
+    }
 
     // Stocker dans le buffer de replay (TTL + max size)
     const now = Date.now();
     let buf = this.arenaEventBuffer.get(arenaId) ?? [];
     buf = buf.filter(e => now - e.timestamp < this.EVENT_BUFFER_TTL_MS);
-    buf.push({ event: updateWithPhotos, timestamp: now });
+    buf.push({ event: payload, timestamp: now });
     if (buf.length > this.EVENT_BUFFER_MAX) buf = buf.slice(-this.EVENT_BUFFER_MAX);
     this.arenaEventBuffer.set(arenaId, buf);
 
-    this.io.emit(`arena:${arenaId}:update`, updateWithPhotos);
+    // Émission limitée à la room de l'arène (les clients join_arena à la connexion) :
+    // évite d'envoyer chaque update (photos base64 incluses) à tous les clients de toutes les arènes
+    this.io.to(`arena:${arenaId}`).emit(`arena:${arenaId}:update`, payload);
 
     if ((global as any).mainWindow) {
       (global as any).mainWindow.webContents.send('arena:update', {
         arenaId,
-        update: updateWithPhotos,
+        update: payload,
       });
     }
   }
@@ -3655,6 +4236,10 @@ export class RemoteScoreServer {
   }
 
   public stop(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
+    }
     if (this.server) {
       this.server.close();
       console.log('Remote score server stopped');
@@ -3844,9 +4429,23 @@ export class RemoteScoreServer {
       if (poolIndex >= strips) break;
 
       const arenaId = `arena${poolIndex + 1}`;
-      const firstMatch = poolMatches[0];
 
-      if (!firstMatch) continue;
+      // Premier match non terminé et non en cours (évite le curseur orange au démarrage)
+      const firstMatch = poolMatches.find(
+        m => m.status !== 'finished' && m.status !== 'in_progress'
+      );
+
+      if (!firstMatch) {
+        // Tous les matchs sont terminés ou en cours : lier la pool à l'arène sans assigner de match
+        const anyMatch = poolMatches[0];
+        if (anyMatch) {
+          const arena = this.arenas.get(arenaId);
+          if (arena) arena.activePoolId = poolId;
+        }
+        this.arenaNextMatchIndex.set(arenaId, poolMatches.length);
+        poolIndex++;
+        continue;
+      }
 
       console.log(
         `[RemoteScoreServer] Pool ${poolId} -> Arène ${arenaId}, ${poolMatches.length} matches`
@@ -3859,15 +4458,16 @@ export class RemoteScoreServer {
         fencerB: firstMatch.fencerB!,
         scoreA: firstMatch.scoreA?.value ?? 0,
         scoreB: firstMatch.scoreB?.value ?? 0,
-        status: firstMatch.status === 'in_progress' ? 'in_progress' : 'not_started',
-        startTime: firstMatch.status === 'in_progress' ? new Date() : null,
+        status: 'not_started',
+        startTime: null,
         endTime: null,
       };
 
       this.assignMatchToArena(arenaId, arenaMatch);
 
-      // Stocker l'index du prochain match pour cette arène (commence à 1 car le 0 est déjà assigné)
-      this.arenaNextMatchIndex.set(arenaId, 1);
+      // Index du prochain match = position de firstMatch + 1 dans la liste originale
+      const firstMatchIndex = poolMatches.findIndex(m => m.id === firstMatch.id);
+      this.arenaNextMatchIndex.set(arenaId, firstMatchIndex + 1);
 
       console.log(
         `[RemoteScoreServer] Match ${firstMatch.id} (Pool ${poolId}) assigné à l'arène ${arenaId}`
@@ -3890,7 +4490,7 @@ export class RemoteScoreServer {
       for (let i = 1; i <= strips; i++) queuesByArena.set(`arena${i}`, []);
 
       for (const match of deMatches) {
-        if (!match.arena) continue; // pas d'arène assignée → attente d'affectation manuelle
+        if (!match.arena) continue; // pas de piste assignée → ne pas distribuer
         const targetArenaId = `arena${match.arena}`;
         if (!queuesByArena.has(targetArenaId)) continue; // hors plage → ignorer
         queuesByArena.get(targetArenaId)!.push({
@@ -3985,6 +4585,8 @@ export class RemoteScoreServer {
     this.poolSignaturesCache.clear();
     this.sessionMatchScores.clear();
     this.arenaTokens.clear();
+    this.arenaEventBuffer.clear();
+    this.clearArenaCombatState();
   }
 
   public updateStripCount(newCount: number): RemoteSession | null {
@@ -4036,7 +4638,7 @@ export class RemoteScoreServer {
         this.arenaNextMatchIndex.delete(arenaId);
       }
       this.arenaCount = newCount;
-      this.io?.emit('arenas:updated', this.getAllArenas());
+      this.io?.emit('arenas:updated', this.getAllArenas().map(a => this.toPublicArena(a)));
     }
 
     return this.session;
@@ -4240,11 +4842,14 @@ export class RemoteScoreServer {
     const queuesByArena = new Map<string, ArenaMatch[]>();
     for (let i = 1; i <= strips; i++) queuesByArena.set(`arena${i}`, []);
 
+    // N'assigner QUE les matchs ayant une piste explicitement définie (match.arena).
+    // Sans piste assignée → on ne charge rien sur une arène : sinon des matchs
+    // apparaissent sur l'arène 1 alors que l'assignation auto est désactivée.
     for (const match of pending) {
-      if (!match.arena) continue; // pas d'arène assignée → attente d'affectation manuelle
-      const preferred = `arena${match.arena}`;
-      if (!this.arenas.has(preferred)) continue; // hors plage → ignorer
-      queuesByArena.get(preferred)!.push({
+      if (!match.arena) continue; // pas de piste assignée → ne pas distribuer
+      const targetArenaId = `arena${match.arena}`;
+      if (!this.arenas.has(targetArenaId)) continue; // hors plage → ignorer
+      queuesByArena.get(targetArenaId)!.push({
         id: match.id,
         fencerA: match.fencerA,
         fencerB: match.fencerB,
@@ -4267,12 +4872,20 @@ export class RemoteScoreServer {
       // alors que le match est terminé dans sessionMatches. On vérifie sessionMatches.
       let arenaEffectivelyFree = !arena.currentMatch;
       if (!arenaEffectivelyFree && arena.currentMatch) {
-        // Cas 1 : match tableau scoré manuellement depuis l'appli → il n'est plus dans deMatches
+        // Cas 1 : match tableau terminé (tablette ou appli) → il n'est plus dans deMatches
         if (arena.currentMatch.isTableau && !deMatches.some(m => m.id === arena.currentMatch!.id)) {
           arena.currentMatch = null;
-          arena.status = 'idle';
-          arenaEffectivelyFree = true;
-          this.updateArena(arenaId, { status: 'idle', currentMatch: null });
+          if (arena.status === 'finished') {
+            // Terminé via tablette : le timer loadNextMatch (3 s) est déjà programmé et
+            // lira la nouvelle file d'attente ; ne pas écraser 'finished' → ne pas bloquer
+            // le timer, et ne pas assigner immédiatement (firstPlayable restera undefined).
+            this.updateArena(arenaId, { currentMatch: null });
+          } else {
+            // Scoré manuellement depuis l'appli : libérer l'arène immédiatement.
+            arena.status = 'idle';
+            arenaEffectivelyFree = true;
+            this.updateArena(arenaId, { status: 'idle', currentMatch: null });
+          }
         } else {
           // Cas 2 : score remote ou fast-poule → vérifier le statut effectif
           const scoreUpdate = this.sessionMatchScores.get(arena.currentMatch.id);
@@ -4323,9 +4936,33 @@ export class RemoteScoreServer {
     this.io.to(`arena:${arenaId}`).emit(`arena:${arenaId}:dt_call_ack`);
   }
 
+  public setWebhookUrl(url: string | null): void {
+    this.webhookUrl = url && url.startsWith('https://') ? url : null;
+  }
+
+  private fireWebhook(payload: Record<string, unknown>): void {
+    if (!this.webhookUrl) return;
+    fetch(this.webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }).catch(() => {/* silencieux — ne pas bloquer le flux */});
+  }
+
   public setLogo(logo: string | null): void {
     this.sessionLogo = logo;
     this.io.emit('logo:update', { logo });
+  }
+
+  public setTtsConfig(config: {
+    voiceName?: string | null;
+    rate?: number;
+    announce?: Record<string, boolean>;
+  }): void {
+    if (config.voiceName !== undefined) this.ttsConfig.voiceName = config.voiceName;
+    if (typeof config.rate === 'number' && config.rate > 0) this.ttsConfig.rate = config.rate;
+    if (config.announce) this.ttsConfig.announce = { ...this.ttsConfig.announce, ...config.announce };
+    this.io.emit('tts:update', this.ttsConfig);
   }
 
   public setWallpaper(wallpaper: string | null): void {
@@ -4337,7 +4974,8 @@ export class RemoteScoreServer {
     const fullId = arenaId.startsWith('arena') ? arenaId : `arena${arenaId}`;
     const arena = this.arenas.get(fullId);
     if (!arena) throw new Error(`Arène ${arenaId} introuvable`);
-    arena.password = password || undefined;
+    // Stocké hashé : jamais de mot de passe en clair en mémoire
+    arena.password = password ? this.hashPassword(password) : undefined;
     // Invalider tous les tokens existants pour cette arène
     this.arenaTokens.delete(fullId);
     console.log(

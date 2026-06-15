@@ -46,11 +46,11 @@ export class PoolService {
       config.maxPoolSize
     );
 
-    const fencerGroups = distributeFencersToPoolsSerpentine(fencers, poolCount, {
-      byClub: config.strategy === 'club_balanced',
-      byRegion: false,
-      byNation: false,
-    });
+    const fencerGroups = distributeFencersToPoolsSerpentine(
+      fencers,
+      poolCount,
+      config.strategy === 'club_balanced' ? ['byClub'] : []
+    );
 
     // Create or reuse the pool phase
     const existingPhases = await window.electronAPI.db.getPhasesByCompetition(competitionId);

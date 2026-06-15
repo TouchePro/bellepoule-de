@@ -92,7 +92,8 @@ const Bracket: React.FC<BracketProps> = ({
       const roundSpacing = MATCH_HEIGHT + VERTICAL_GAP;
 
       let yOffset = 0;
-      const totalMatchesForRound = tableSize / Math.pow(2, round - 1);
+      // Avec round=1=Finale, round=N=premier tour → 2^(round-1) matchs par round
+      const totalMatchesForRound = Math.pow(2, round - 1);
       const matchesCount = Math.max(matchesInRound, totalMatchesForRound);
 
       if (matchesCount > 1) {
@@ -175,28 +176,29 @@ const Bracket: React.FC<BracketProps> = ({
   };
 
   const renderConnectionLines = (match: BracketMatch, pos: MatchPosition) => {
-    if (match.round <= 1) return null;
+    // round=1=Finale, round=N=premier tour. Les feeders ont round+1 (plus à gauche).
+    const feederRound = match.round + 1;
+    if (!rounds.has(feederRound)) return null;
 
-    const parentRound = match.round - 1;
     const parentPositionA = match.position * 2 - 1;
     const parentPositionB = match.position * 2;
 
-    const parentPosA = calculateMatchPosition(parentRound, parentPositionA);
-    const parentPosB = calculateMatchPosition(parentRound, parentPositionB);
+    const parentPosA = calculateMatchPosition(feederRound, parentPositionA);
+    const parentPosB = calculateMatchPosition(feederRound, parentPositionB);
 
     return (
       <g>
-        {/* Line from parent A */}
+        {/* Line from feeder A (left) to current match (right) */}
         <path
-          d={`M ${parentPosA.x + MATCH_WIDTH} ${parentPosA.y + MATCH_HEIGHT / 2} 
+          d={`M ${parentPosA.x + MATCH_WIDTH} ${parentPosA.y + MATCH_HEIGHT / 2}
               L ${pos.x} ${pos.y + MATCH_HEIGHT / 2}`}
           stroke="#adb5bd"
           strokeWidth={2}
           fill="none"
         />
-        {/* Line from parent B */}
+        {/* Line from feeder B (left) to current match (right) */}
         <path
-          d={`M ${parentPosB.x + MATCH_WIDTH} ${parentPosB.y + MATCH_HEIGHT / 2} 
+          d={`M ${parentPosB.x + MATCH_WIDTH} ${parentPosB.y + MATCH_HEIGHT / 2}
               L ${pos.x} ${pos.y + MATCH_HEIGHT / 2}`}
           stroke="#adb5bd"
           strokeWidth={2}
@@ -213,9 +215,75 @@ const Bracket: React.FC<BracketProps> = ({
     }
   };
 
+  const renderFencerRow = (
+    fencer: Fencer | null,
+    score: number | null,
+    isWinner: boolean
+  ) => {
+    const bg = isWinner ? '#d4edda' : fencer ? '#f8f9fa' : '#e9ecef';
+    const border = isWinner ? '#28a745' : '#dee2e6';
+    const textColor = fencer ? '#212529' : '#6c757d';
+
+    return (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'stretch',
+          border: `1px solid ${border}`,
+          backgroundColor: bg,
+          borderRadius: '3px',
+          overflow: 'hidden',
+        }}
+      >
+        <div style={{ flex: 1, padding: '4px 8px', minWidth: 0 }}>
+          <div
+            style={{
+              fontWeight: isWinner ? 'bold' : 'normal',
+              color: textColor,
+              fontSize: '13px',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {fencer ? `${fencer.lastName} ${fencer.firstName.charAt(0)}.` : 'TBD'}
+          </div>
+          {fencer?.club && (
+            <div style={{ fontSize: '10px', color: '#6c757d' }}>{fencer.club}</div>
+          )}
+        </div>
+        <div
+          style={{
+            width: '40px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderLeft: `1px solid ${border}`,
+            fontWeight: 'bold',
+            fontSize: '14px',
+            color: textColor,
+            flexShrink: 0,
+          }}
+        >
+          {score !== null ? score : '-'}
+        </div>
+      </div>
+    );
+  };
+
   // Render a bracket in pyramid layout
   const renderPyramidLayout = () => {
     const sortedRounds = Array.from(rounds.keys()).sort((a, b) => b - a);
+
+    // round=1=Finale, round=2=Demi, round=3=Quarts, round=4=16èmes, ...
+    const roundName = (round: number) =>
+      round === 1 ? 'Finale'
+      : round === 2 ? 'Demi-finales'
+      : round === 3 ? 'Quarts'
+      : round === 4 ? '16èmes'
+      : round === 5 ? '32èmes'
+      : round === 6 ? '64èmes'
+      : `Tour ${round}`;
 
     return (
       <div
@@ -261,21 +329,6 @@ const Bracket: React.FC<BracketProps> = ({
           const roundMatches = rounds.get(round) || [];
           const isExpanded = expandedRounds.size === 0 || expandedRounds.has(round);
 
-          const roundName =
-            round === 1
-              ? 'Finale'
-              : round === 2
-                ? 'Demi-finales'
-                : round === 4
-                  ? 'Quarts'
-                  : round === 8
-                    ? '8èmes'
-                    : round === 16
-                      ? '16èmes'
-                      : round === 32
-                        ? '32èmes'
-                        : `Tour ${round}`;
-
           return (
             <div
               key={round}
@@ -305,7 +358,7 @@ const Bracket: React.FC<BracketProps> = ({
                 }}
               >
                 <span style={{ fontSize: '0.8rem' }}>{isExpanded ? '▼' : '▶'}</span>
-                {roundName}
+                {roundName(round)}
               </div>
               {isExpanded && (
                 <div
@@ -325,39 +378,38 @@ const Bracket: React.FC<BracketProps> = ({
                     const isB = winner === match.fencerB?.id;
 
                     return (
-                      <g
+                      <div
                         key={match.id}
-                        style={{ cursor: match.isBye ? 'default' : 'pointer', width: '100%' }}
+                        style={{
+                          width: '280px',
+                          cursor: match.isBye ? 'default' : 'pointer',
+                          borderRadius: '6px',
+                          outline: isEditing ? '2px solid #2196f3' : undefined,
+                          backgroundColor: isHovered ? '#e3f2fd' : 'white',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                          padding: '4px',
+                        }}
                         onMouseEnter={() => setHoveredMatch(match.id)}
                         onMouseLeave={() => setHoveredMatch(null)}
                         onClick={() => handleMatchClick(match)}
                       >
-                        <rect
-                          x={-5}
-                          y={-5}
-                          width={MATCH_WIDTH + 10}
-                          height={MATCH_HEIGHT + 10}
-                          fill={isHovered ? '#e3f2fd' : 'transparent'}
-                          stroke={isEditing ? '#2196f3' : 'transparent'}
-                          strokeWidth={2}
-                          rx={4}
-                        />
-
                         {match.isBye && (
-                          <text
-                            x={MATCH_WIDTH / 2}
-                            y={-10}
-                            textAnchor="middle"
-                            fill="#6c757d"
-                            fontSize={10}
+                          <div
+                            style={{
+                              textAlign: 'center',
+                              fontSize: '10px',
+                              color: '#6c757d',
+                              marginBottom: '2px',
+                            }}
                           >
                             EXEMPT
-                          </text>
+                          </div>
                         )}
-
-                        {renderFencerBox(match.fencerA, match.scoreA, isA, true)}
-                        {renderFencerBox(match.fencerB, match.scoreB, isB, false)}
-                      </g>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          {renderFencerRow(match.fencerA, match.scoreA, isA)}
+                          {renderFencerRow(match.fencerB, match.scoreB, isB)}
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
@@ -500,14 +552,15 @@ const Bracket: React.FC<BracketProps> = ({
           {/* Round labels */}
           {Array.from(rounds.keys()).map(round => {
             const pos = calculateMatchPosition(round, 1);
+            // round=1=Finale, round=2=Demi, round=3=Quarts, round=4=16èmes, ...
             const roundNames: Record<number, string> = {
               1: 'Finale',
               2: 'Demi-finales',
-              4: 'Quarts',
-              8: '8èmes',
-              16: '16èmes',
-              32: '32èmes',
-              64: '64èmes',
+              3: 'Quarts',
+              4: '16èmes',
+              5: '32èmes',
+              6: '64èmes',
+              7: '128èmes',
             };
 
             return (

@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { Competition, CustomFormulaConfig, Weapon, Gender, Category } from '../../shared/types';
 import { useTranslation } from '../hooks/useTranslation';
 import {
@@ -17,6 +18,7 @@ interface NewCompetitionModalProps {
 }
 
 const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCreate }) => {
+  const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
   const { t } = useTranslation();
   const [title, setTitle] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -79,9 +81,12 @@ const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCr
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
+        ref={modalRef}
         className="modal"
         style={isCustom ? { maxWidth: '92vw', width: '1100px' } : undefined}
         onClick={e => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
       >
         <div className="modal-header">
           <h2 className="modal-title">{t('competition.new')}</h2>

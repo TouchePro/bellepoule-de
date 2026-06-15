@@ -3,12 +3,12 @@
  * Licensed under GPL-3.0
  */
 
-import { app, BrowserWindow, ipcMain, dialog, Menu, shell, safeStorage } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, Menu, shell, safeStorage, screen, session } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 import JSZip from 'jszip';
-import { DatabaseManager, prewarmSqlJs } from '../database';
+import { DatabaseManager } from '../database';
 import { RemoteScoreServer } from './remoteScoreServer';
 import { AutoUpdater } from './autoUpdater';
 import { Competition, Fencer, FencerStatus, Match, MatchStatus, Pool } from '../shared/types';
@@ -34,6 +34,132 @@ let autoUpdater: AutoUpdater | null = null;
 
 // Main window reference
 let mainWindow: BrowserWindow | null = null;
+
+// Splash window shown during startup
+let splashWindow: BrowserWindow | null = null;
+let splashShownAt: number | null = null;
+const MIN_SPLASH_MS = 0;
+
+// Language persistence file — read before renderer loads so splash can pre-select
+const LANG_FILE = () => path.join(app.getPath('userData'), 'bellepoule-language.json');
+
+function readSavedLanguage(): string {
+  try {
+    const raw = fs.readFileSync(LANG_FILE(), 'utf-8');
+    const parsed = JSON.parse(raw) as { language?: string };
+    return parsed.language || 'fr';
+  } catch {
+    return 'fr';
+  }
+}
+
+function saveLanguageToFile(lang: string): void {
+  try {
+    const userDataPath = app.getPath('userData');
+    if (!fs.existsSync(userDataPath)) fs.mkdirSync(userDataPath, { recursive: true });
+    fs.writeFileSync(LANG_FILE(), JSON.stringify({ language: lang }), 'utf-8');
+  } catch (e) {
+    console.error('Failed to save language preference:', e);
+  }
+}
+
+// Promise that resolves when the user confirms a language in the splash screen
+let splashConfirmResolve: ((lang: string) => void) | null = null;
+const splashConfirmPromise = new Promise<string>(resolve => {
+  splashConfirmResolve = resolve;
+});
+
+function createSplashWindow(): void {
+  splashWindow = new BrowserWindow({
+    width: 520,
+    height: 460,
+    frame: false,
+    resizable: false,
+    movable: true,
+    skipTaskbar: false,
+    alwaysOnTop: true,
+    show: false,
+    backgroundColor: '#0f1729',
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'splash-preload.js'),
+    },
+  });
+
+  const { width: sw, height: sh } = screen.getPrimaryDisplay().workAreaSize;
+  splashWindow.setPosition(Math.floor((sw - 520) / 2), Math.floor((sh - 460) / 2));
+
+  const splashPath = path.join(__dirname, 'splash.html');
+  if (!fs.existsSync(splashPath)) {
+    // No splash available — resolve immediately with saved lang
+    splashConfirmResolve?.(readSavedLanguage());
+    return;
+  }
+
+  const savedLang = readSavedLanguage();
+  const iconPath = path.join(__dirname, '../../resources/icons/256x256.png');
+  const versionInfo = getVersionInfo();
+  const channel =
+    process.env.NODE_ENV === 'development' || !app.isPackaged ? 'dev' : 'main';
+  splashWindow.loadFile(splashPath, {
+    query: {
+      icon: iconPath,
+      version: versionInfo.version,
+      build: String(versionInfo.build),
+      channel,
+      lang: savedLang,
+    },
+  });
+  splashWindow.once('ready-to-show', () => {
+    splashWindow?.show();
+    splashShownAt = Date.now();
+    // Send saved language so splash can pre-select it
+    splashWindow?.webContents.send('splash:init', savedLang);
+  });
+}
+
+// IPC: splash confirms language choice
+ipcMain.once('splash:confirm', (_event, lang: string) => {
+  const validLangs = ['fr', 'en', 'de', 'es', 'zh-HK', 'br', 'ca'];
+  const confirmed = validLangs.includes(lang) ? lang : 'fr';
+  saveLanguageToFile(confirmed);
+  currentMenuLanguage = confirmed;
+  splashConfirmResolve?.(confirmed);
+});
+
+// IPC: user closes splash without confirming → quit
+ipcMain.once('splash:close', () => {
+  app.quit();
+});
+
+// onClosed est appelé après le fade-out, au moment d'afficher la fenêtre principale
+function closeSplash(onClosed?: () => void): void {
+  if (!splashWindow || splashWindow.isDestroyed()) {
+    onClosed?.();
+    return;
+  }
+  // Garantir un affichage minimum pour que l'animation soit visible
+  const elapsed = splashShownAt !== null ? Date.now() - splashShownAt : 0;
+  const remaining = Math.max(0, MIN_SPLASH_MS - elapsed);
+
+  setTimeout(() => {
+    if (!splashWindow || splashWindow.isDestroyed()) {
+      onClosed?.();
+      return;
+    }
+    splashWindow.webContents
+      .executeJavaScript('document.body.classList.add("fadeout"); true')
+      .catch(() => {});
+    setTimeout(() => {
+      if (splashWindow && !splashWindow.isDestroyed()) {
+        splashWindow.close();
+        splashWindow = null;
+      }
+      onClosed?.();
+    }, 420);
+  }, remaining);
+}
 
 // Current UI language (kept in sync via IPC)
 let currentMenuLanguage = 'fr';
@@ -439,7 +565,7 @@ function getVersionInfo(): { version: string; build: number; date: string } {
 // Window Creation
 // ============================================================================
 
-function createWindow(): void {
+function createWindow(initialLang?: string): void {
   const versionInfo = getVersionInfo();
 
   mainWindow = new BrowserWindow({
@@ -454,16 +580,20 @@ function createWindow(): void {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
+      v8CacheOptions: 'code',
+      additionalArguments: initialLang ? [`--initial-lang=${initialLang}`] : [],
     },
     icon: path.join(__dirname, '../../resources/icons/icon.png'),
   });
 
   const showFallback = setTimeout(() => {
-    if (mainWindow && !mainWindow.isVisible()) mainWindow.show();
+    if (mainWindow && !mainWindow.isVisible()) {
+      closeSplash(() => mainWindow?.show());
+    }
   }, 10000);
   mainWindow.once('ready-to-show', () => {
     clearTimeout(showFallback);
-    mainWindow?.show();
+    closeSplash(() => mainWindow?.show());
   });
 
   // Allow camera access for webcam photo capture
@@ -511,6 +641,7 @@ function createWindow(): void {
 
   // Reload renderer when it crashes (blank screen symptom)
   mainWindow.webContents.on('render-process-gone', (_event, details) => {
+    closeSplash();
     console.error('[Main] Renderer process gone:', details.reason, details.exitCode);
     if (details.reason !== 'clean-exit') {
       setTimeout(() => {
@@ -535,28 +666,32 @@ function createWindow(): void {
 
   // Create application menu using saved language preference
   mainWindow.webContents.once('did-finish-load', async () => {
-    try {
-      const savedLang = await mainWindow!.webContents.executeJavaScript(
-        'localStorage.getItem("bellepoule-language")'
-      );
-      if (savedLang && typeof savedLang === 'string') {
-        currentMenuLanguage = savedLang;
+    if (initialLang) {
+      currentMenuLanguage = initialLang;
+    } else {
+      try {
+        const savedLang = await mainWindow!.webContents.executeJavaScript(
+          'localStorage.getItem("bellepoule-language")'
+        );
+        if (savedLang && typeof savedLang === 'string') {
+          currentMenuLanguage = savedLang;
+        }
+      } catch {
+        // ignore
       }
-    } catch {
-      // Fallback to default language
     }
     createMenu(currentMenuLanguage);
 
     // Restore persisted logo and sync to renderer localStorage if not already set
-    try {
-      const logoPath = path.join(app.getPath('userData'), 'logo.dat');
-      if (fs.existsSync(logoPath)) {
-        const logo = fs.readFileSync(logoPath, 'utf-8');
-        if (logo) mainWindow!.webContents.send('app:logoLoaded', logo);
-      }
-    } catch {
-      /* logo optionnel */
-    }
+    const logoPath = path.join(app.getPath('userData'), 'logo.dat');
+    fs.promises
+      .readFile(logoPath, 'utf-8')
+      .then(logo => {
+        if (logo) mainWindow?.webContents.send('app:logoLoaded', logo);
+      })
+      .catch(() => {
+        /* logo optionnel */
+      });
   });
 }
 
@@ -782,7 +917,7 @@ async function handleOpenFile(): Promise<void> {
   if (!result.canceled && result.filePaths.length > 0) {
     const filepath = result.filePaths[0];
     try {
-      db.importFromFile(filepath);
+      await db.importFromFile(filepath);
       mainWindow?.webContents.send('file:opened', filepath);
     } catch (error) {
       dialog.showErrorBox(L.errTitle, `${L.openErr} ${error}`);
@@ -800,7 +935,7 @@ async function handleSaveAs(): Promise<void> {
 
   if (!result.canceled && result.filePath) {
     try {
-      db.exportToFile(result.filePath);
+      await db.exportToFile(result.filePath);
       mainWindow?.webContents.send('file:saved', result.filePath);
     } catch (error) {
       dialog.showErrorBox(L.errTitle, `${L.saveErr} ${error}`);
@@ -851,7 +986,7 @@ async function handleImport(format: string): Promise<void> {
         // Fichier binaire : envoyer uniquement le chemin, le renderer appellera importFencersArchive
         mainWindow?.webContents.send('menu:import', format, filepath, '');
       } else {
-        const content = fs.readFileSync(filepath, 'utf-8');
+        const content = await fs.promises.readFile(filepath, 'utf-8');
         mainWindow?.webContents.send('menu:import', format, filepath, content);
       }
     } catch (error) {
@@ -1024,6 +1159,9 @@ ipcMain.handle('db:getPoolsByPhase', async (_, phaseId) => {
 ipcMain.handle('db:getPoolSignatures', async (_, poolId: string) => {
   return db.getPoolSignatures(poolId);
 });
+ipcMain.handle('db:getDEMatchSignaturesByMatchIds', async (_, matchIds: string[]) => {
+  return db.getDEMatchSignaturesByMatchIds(matchIds);
+});
 
 // Phase handlers
 ipcMain.handle('db:createPhase', async (_, competitionId, type, order, name) => {
@@ -1129,12 +1267,28 @@ ipcMain.handle('db:getCompetitionTimeline', async (_, competitionId: string) => 
 
 // File handlers
 ipcMain.handle('file:export', async (_, filepath) => {
-  db.exportToFile(filepath);
+  await db.exportToFile(filepath);
 });
 
 ipcMain.handle('file:import', async (_, filepath) => {
   await db.importFromFile(filepath);
 });
+
+// Écriture atomique asynchrone (temp + rename) — ne bloque pas le main thread
+async function writeFileAtomic(filepath: string, content: Buffer | string): Promise<void> {
+  const tmpPath = filepath + '.tmp';
+  try {
+    await fs.promises.writeFile(tmpPath, content);
+    try {
+      await fs.promises.rename(tmpPath, filepath);
+    } catch {
+      await fs.promises.writeFile(filepath, content);
+      await fs.promises.unlink(tmpPath).catch(() => {});
+    }
+  } catch {
+    await fs.promises.writeFile(filepath, content);
+  }
+}
 
 // File content write handler
 ipcMain.handle('file:writeContent', async (_, filepath: string, content: string) => {
@@ -1146,7 +1300,7 @@ ipcMain.handle('file:writeContent', async (_, filepath: string, content: string)
   if (resolved.startsWith(appDir)) {
     throw new Error('Writing inside app directory is not allowed');
   }
-  fs.writeFileSync(resolved, content, 'utf-8');
+  await fs.promises.writeFile(resolved, content, 'utf-8');
 });
 
 // Photo ZIP export handler
@@ -1164,29 +1318,14 @@ ipcMain.handle('file:exportPhotos', async (_, competitionId: string, filepath: s
   }
 
   const content = await zip.generateAsync({ type: 'nodebuffer' });
-  const tmpPath = filepath + '.tmp';
-  try {
-    fs.writeFileSync(tmpPath, content);
-    try {
-      fs.renameSync(tmpPath, filepath);
-    } catch {
-      fs.writeFileSync(filepath, content);
-      try {
-        fs.unlinkSync(tmpPath);
-      } catch {
-        /* ignore */
-      }
-    }
-  } catch {
-    fs.writeFileSync(filepath, content);
-  }
+  await writeFileAtomic(filepath, content);
 
   return { count: photos.length };
 });
 
 // Photo ZIP import handler
 ipcMain.handle('file:importPhotos', async (_, competitionId: string, filepath: string) => {
-  const buffer = fs.readFileSync(filepath);
+  const buffer = await fs.promises.readFile(filepath);
   const zip = await JSZip.loadAsync(buffer);
 
   const photos: { license: string; photo: string }[] = [];
@@ -1220,28 +1359,13 @@ ipcMain.handle('file:exportFencersArchive', async (_, competitionId: string, fil
   );
   zip.file('fencers.json', JSON.stringify(fencers));
   const content = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
-  const tmpPath = filepath + '.tmp';
-  try {
-    fs.writeFileSync(tmpPath, content);
-    try {
-      fs.renameSync(tmpPath, filepath);
-    } catch {
-      fs.writeFileSync(filepath, content);
-      try {
-        fs.unlinkSync(tmpPath);
-      } catch {
-        /* ignore */
-      }
-    }
-  } catch {
-    fs.writeFileSync(filepath, content);
-  }
+  await writeFileAtomic(filepath, content);
   return { count: fencers.length };
 });
 
 // Fencer archive (.bpf) import handler
 ipcMain.handle('file:importFencersArchive', async (_, competitionId: string, filepath: string) => {
-  const buffer = fs.readFileSync(filepath);
+  const buffer = await fs.promises.readFile(filepath);
   const zip = await JSZip.loadAsync(buffer);
   const fencersFile = zip.file('fencers.json');
   if (!fencersFile) throw new Error('Format .bpf invalide : fencers.json manquant');
@@ -1256,7 +1380,7 @@ ipcMain.handle('dialog:openFile', async (_, options) => {
   if (!result.canceled && result.filePaths.length > 0) {
     const filePath = result.filePaths[0];
     try {
-      const content = fs.readFileSync(filePath, 'utf-8');
+      const content = await fs.promises.readFile(filePath, 'utf-8');
       return { filePath, content };
     } catch (error) {
       console.error('Error reading file:', error);
@@ -1280,15 +1404,14 @@ ipcMain.handle('window:print', async () => {
 
 // Print via hidden BrowserWindow — opens system print dialog on clean HTML
 ipcMain.handle('file:printHtml', async (_, html: string) => {
-  return new Promise<{ success: boolean; error?: string }>(resolve => {
-    const tmpFile = path.join(os.tmpdir(), `bp-print-${Date.now()}.html`);
-    try {
-      fs.writeFileSync(tmpFile, html, 'utf-8');
-    } catch (e) {
-      resolve({ success: false, error: `Impossible de créer le fichier temporaire: ${e}` });
-      return;
-    }
+  const tmpFile = path.join(os.tmpdir(), `bp-print-${Date.now()}.html`);
+  try {
+    await fs.promises.writeFile(tmpFile, html, 'utf-8');
+  } catch (e) {
+    return { success: false, error: `Impossible de créer le fichier temporaire: ${e}` };
+  }
 
+  return new Promise<{ success: boolean; error?: string }>(resolve => {
     const printWin = new BrowserWindow({
       show: false,
       width: 1200,
@@ -1326,15 +1449,14 @@ ipcMain.handle('file:printHtml', async (_, html: string) => {
 
 // PDF generation via hidden BrowserWindow (propre, sans menus d'application)
 ipcMain.handle('file:printHtmlToPDF', async (_, html: string, outputPath: string) => {
-  return new Promise<{ success: boolean; path?: string; error?: string }>(resolve => {
-    const tmpFile = path.join(os.tmpdir(), `bp-pdf-${Date.now()}.html`);
-    try {
-      fs.writeFileSync(tmpFile, html, 'utf-8');
-    } catch (e) {
-      resolve({ success: false, error: `Impossible de créer le fichier temporaire: ${e}` });
-      return;
-    }
+  const tmpFile = path.join(os.tmpdir(), `bp-pdf-${Date.now()}.html`);
+  try {
+    await fs.promises.writeFile(tmpFile, html, 'utf-8');
+  } catch (e) {
+    return { success: false, error: `Impossible de créer le fichier temporaire: ${e}` };
+  }
 
+  return new Promise<{ success: boolean; path?: string; error?: string }>(resolve => {
     const pdfWin = new BrowserWindow({
       show: false,
       width: 1200,
@@ -1359,18 +1481,14 @@ ipcMain.handle('file:printHtmlToPDF', async (_, html: string, outputPath: string
           preferCSSPageSize: true,
           margins: { marginType: 'none' },
         })
-        .then((data: Buffer) => {
+        .then(async (data: Buffer) => {
           try {
-            fs.writeFileSync(outputPath, data);
+            await fs.promises.writeFile(outputPath, data);
             resolve({ success: true, path: outputPath });
           } catch (writeErr) {
             resolve({ success: false, error: `Impossible d'écrire le PDF: ${writeErr}` });
           } finally {
-            try {
-              fs.unlinkSync(tmpFile);
-            } catch {
-              /* ignore */
-            }
+            fs.promises.unlink(tmpFile).catch(() => {});
             pdfWin.destroy();
           }
         })
@@ -1441,6 +1559,14 @@ ipcMain.handle('remote:startServer', async (_event, competitionId: string, port?
     }
     remoteServers.set(competitionId, { server, port: effectivePort, host: effectiveHost });
     usedPorts.add(effectivePort);
+
+    // Appliquer la config TTS persistée aux tablettes de ce nouveau serveur
+    try {
+      const ttsPath = path.join(app.getPath('userData'), 'tts-config.json');
+      server.setTtsConfig(JSON.parse(await fs.promises.readFile(ttsPath, 'utf-8')));
+    } catch {
+      /* config TTS optionnelle */
+    }
 
     (global as any).mainWindow = mainWindow;
 
@@ -1592,6 +1718,17 @@ ipcMain.handle('remote:resetPoolMatch', async (_, competitionId: string, matchId
     const entry = remoteServers.get(competitionId);
     if (!entry) return { success: true };
     entry.server.resetPoolMatch(matchId);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur' };
+  }
+});
+
+ipcMain.handle('remote:finishPoolMatch', async (_, competitionId: string, matchId: string, scoreA: number, scoreB: number) => {
+  try {
+    const entry = remoteServers.get(competitionId);
+    if (!entry) return { success: true };
+    entry.server.finishPoolMatch(matchId, scoreA, scoreB);
     return { success: true };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : 'Erreur' };
@@ -1793,11 +1930,22 @@ ipcMain.handle('remote:acknowledgeDTCall', async (_, competitionId: string, aren
   }
 });
 
+ipcMain.handle('remote:setWebhookUrl', async (_, url: string | null) => {
+  try {
+    for (const { server } of remoteServers.values()) {
+      server.setWebhookUrl(url);
+    }
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
 ipcMain.handle('remote:updateLogo', async (_, logo: string | null) => {
   try {
     const logoPath = path.join(app.getPath('userData'), 'logo.dat');
     if (logo) {
-      fs.writeFileSync(logoPath, logo, 'utf-8');
+      await fs.promises.writeFile(logoPath, logo, 'utf-8');
     } else {
       try {
         fs.unlinkSync(logoPath);
@@ -1865,10 +2013,96 @@ ipcMain.handle('remote:setRegistrationEnabled', async (_, competitionId: string,
   }
 });
 
+ipcMain.handle('remote:getConnectedClients', async (_, competitionId: string) => {
+  try {
+    const entry = remoteServers.get(competitionId);
+    return { success: true, clients: entry?.server.getConnectedClients() ?? [] };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue', clients: [] };
+  }
+});
+
+ipcMain.handle('remote:sendClientCommand', async (_, competitionId: string, socketId: string, command: any) => {
+  try {
+    const entry = remoteServers.get(competitionId);
+    if (!entry) return { success: false, error: 'Serveur non démarré' };
+    entry.server.sendClientCommand(socketId, command);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
+ipcMain.handle('remote:broadcastCommand', async (_, competitionId: string, command: any) => {
+  try {
+    const entry = remoteServers.get(competitionId);
+    if (!entry) return { success: false, error: 'Serveur non démarré' };
+    entry.server.broadcastCommand(command);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
+ipcMain.handle('remote:renameClient', async (_, competitionId: string, socketId: string, label: string) => {
+  try {
+    const entry = remoteServers.get(competitionId);
+    if (!entry) return { success: false, error: 'Serveur non démarré' };
+    entry.server.renameClient(socketId, label);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
+ipcMain.handle('remote:identifyClient', async (_, competitionId: string, socketId: string) => {
+  try {
+    const entry = remoteServers.get(competitionId);
+    if (!entry) return { success: false, error: 'Serveur non démarré' };
+    entry.server.identifyClient(socketId);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
+ipcMain.handle('remote:setClientKioskMode', async (_, competitionId: string, socketId: string, config: any) => {
+  try {
+    const entry = remoteServers.get(competitionId);
+    if (!entry) return { success: false, error: 'Serveur non démarré' };
+    entry.server.setClientKioskMode(socketId, config);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
+ipcMain.handle('remote:setTtsConfig', async (_, config: unknown) => {
+  try {
+    const ttsPath = path.join(app.getPath('userData'), 'tts-config.json');
+    await fs.promises.writeFile(ttsPath, JSON.stringify(config), 'utf-8');
+    for (const { server } of remoteServers.values()) {
+      server.setTtsConfig(config as any);
+    }
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
+ipcMain.handle('app:getTtsConfig', async () => {
+  const ttsPath = path.join(app.getPath('userData'), 'tts-config.json');
+  try {
+    return JSON.parse(await fs.promises.readFile(ttsPath, 'utf-8'));
+  } catch {
+    return null;
+  }
+});
+
 ipcMain.handle('app:getLogo', async () => {
   const logoPath = path.join(app.getPath('userData'), 'logo.dat');
   try {
-    return fs.readFileSync(logoPath, 'utf-8');
+    return await fs.promises.readFile(logoPath, 'utf-8');
   } catch {
     return null;
   }
@@ -1882,6 +2116,7 @@ ipcMain.handle('app:getVersionInfo', async () => {
 // Language change handler — rebuild native menu in the new language
 ipcMain.on('app:language-changed', (_, lang: string) => {
   currentMenuLanguage = lang;
+  saveLanguageToFile(lang);
   createMenu(lang);
   for (const { server } of remoteServers.values()) {
     server.setLanguage(lang);
@@ -1957,8 +2192,24 @@ ipcMain.handle('crypto:unprotect', async (_, ciphertextB64: string) => {
 // App Lifecycle
 // ============================================================================
 
-// VMware/ARM sans accélération 3D : forcer rendu logiciel
-if (process.platform === 'linux') {
+// Lit tous les chunks JS/CSS du renderer en arrière-plan pour les mettre dans
+// le cache OS (page cache). Quand Chromium les charge ensuite via loadFile(),
+// ils sont déjà en RAM → pas d'accès disque sur le chemin critique.
+function prewarmRendererChunks(): void {
+  if (process.env.NODE_ENV === 'development') return;
+  const rendererDist = path.join(__dirname, '..', 'renderer');
+  fs.readdir(rendererDist, (_err, files) => {
+    if (!files) return;
+    for (const f of files) {
+      if (f.endsWith('.js') || f.endsWith('.css')) {
+        fs.readFile(path.join(rendererDist, f), () => {});
+      }
+    }
+  });
+}
+
+// Rendu logiciel pour VMware/ARM sans GPU — activer via BELLEPOULE_SW_RENDER=1
+if (process.platform === 'linux' && process.env.BELLEPOULE_SW_RENDER === '1') {
   app.disableHardwareAcceleration();
   app.commandLine.appendSwitch('disable-gpu');
   app.commandLine.appendSwitch('disable-gpu-sandbox');
@@ -1966,8 +2217,14 @@ if (process.platform === 'linux') {
 }
 
 app.whenReady().then(async () => {
-  // Préchauffer sql.js WASM en parallèle avec la création de la fenêtre
-  prewarmSqlJs();
+  // Afficher le splash immédiatement pendant que tout le reste charge
+  createSplashWindow();
+
+  // Cache V8 bytecode — skip la compilation JS aux lancements suivants
+  const codeCachePath = path.join(app.getPath('userData'), 'v8-cache');
+  session.defaultSession.setCodeCachePath(codeCachePath);
+
+  prewarmRendererChunks();
 
   // Initialize database dans un répertoire inscriptible (userData)
   // Sur Windows, process.cwd() peut pointer vers C:\Windows\System32 (non inscriptible)
@@ -1986,8 +2243,11 @@ app.whenReady().then(async () => {
     }
   }
 
-  // Créer la fenêtre immédiatement pendant que la DB se charge
-  createWindow();
+  // Attendre que l'utilisateur confirme la langue dans le splash
+  const confirmedLang = await splashConfirmPromise;
+
+  // Créer la fenêtre principale avec la langue choisie
+  createWindow(confirmedLang);
 
   await db.open(dbPath);
   console.log('Base de données ouverte:', db.getPath());
@@ -1995,46 +2255,49 @@ app.whenReady().then(async () => {
   // Signaler au renderer que la DB est prête
   mainWindow?.webContents.send('db:ready');
 
-  // Initialize auto updater
+  // Initialize auto updater — dialog différé après affichage de la fenêtre
   if (mainWindow) {
     autoUpdater = new AutoUpdater(mainWindow, {
-      autoDownload: false, // Par défaut manuel, peut être activé via silent mode
+      autoDownload: false,
       autoInstall: false,
-      checkInterval: 12, // Vérifier toutes les 12 heures
-      betaChannel: true, // Activer le canal beta pour détecter les dev builds
+      checkInterval: 12,
+      betaChannel: true,
       silent: false,
       installOnQuit: false,
     });
 
-    // Vérifier s'il y a une mise à jour en attente d'installation
-    if (autoUpdater.hasPendingUpdate()) {
-      const pendingInfo = autoUpdater.getPendingUpdateInfo();
-      console.log(`[Main] Mise à jour en attente trouvée: v${pendingInfo?.version}`);
-      // Demander à l'utilisateur s'il veut installer maintenant
-      const result = await dialog.showMessageBox(mainWindow, {
-        type: 'info',
-        title: 'Mise à jour en attente',
-        message: `La version ${pendingInfo?.version} est prête à être installée.`,
-        detail: "Voulez-vous installer cette mise à jour maintenant ? L'application va redémarrer.",
-        buttons: ['Installer maintenant', 'Plus tard'],
-        defaultId: 0,
-        cancelId: 1,
-      });
-
-      if (result.response === 0) {
-        autoUpdater.checkAndInstallPendingUpdate();
-        return; // Arrêter le démarrage normal
+    const win = mainWindow;
+    win.once('show', async () => {
+      if (!autoUpdater) return;
+      if (autoUpdater.hasPendingUpdate()) {
+        const pendingInfo = autoUpdater.getPendingUpdateInfo();
+        console.log(`[Main] Mise à jour en attente trouvée: v${pendingInfo?.version}`);
+        const result = await dialog.showMessageBox(win, {
+          type: 'info',
+          title: 'Mise à jour en attente',
+          message: `La version ${pendingInfo?.version} est prête à être installée.`,
+          detail: "Voulez-vous installer cette mise à jour maintenant ? L'application va redémarrer.",
+          buttons: ['Installer maintenant', 'Plus tard'],
+          defaultId: 0,
+          cancelId: 1,
+        });
+        if (result.response === 0) {
+          autoUpdater.checkAndInstallPendingUpdate();
+        }
       }
-    }
+    });
   }
 
   // Autosave every 2 minutes
   let autosaveInterval: NodeJS.Timeout | null = null;
 
+  let autosaveInFlight = false;
   const startAutosave = () => {
     if (autosaveInterval) clearInterval(autosaveInterval);
     autosaveInterval = setInterval(
       async () => {
+        if (autosaveInFlight) return; // éviter l'empilement si la sauvegarde précédente traîne
+        autosaveInFlight = true;
         try {
           await db.saveAsync(); // async I/O — ne bloque pas le main thread
           console.log('Autosave completed at', new Date().toISOString());
@@ -2042,6 +2305,8 @@ app.whenReady().then(async () => {
         } catch (error) {
           console.error('Autosave failed:', error);
           mainWindow?.webContents.send('autosave:failed');
+        } finally {
+          autosaveInFlight = false;
         }
       },
       2 * 60 * 1000

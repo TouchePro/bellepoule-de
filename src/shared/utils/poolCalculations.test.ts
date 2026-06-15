@@ -105,20 +105,24 @@ describe('generatePoolMatchOrder', () => {
     expect(order).toHaveLength(28);
   });
 
-  it('should generate generic order for non-standard pool sizes', () => {
-    const order = generatePoolMatchOrder(9);
-    // Should use generic algorithm for 9 fencers
-    expect(order.length).toBeGreaterThan(0);
+  it('should generate correct count for non-standard pool sizes', () => {
+    [9, 10].forEach(n => {
+      const order = generatePoolMatchOrder(n);
+      expect(order.length).toBe((n * (n - 1)) / 2);
+    });
   });
 
   it('should not have duplicate matches', () => {
-    const order = generatePoolMatchOrder(6);
-    const uniqueMatches = new Set(order.map(([a, b]) => `${a}-${b}`));
-    expect(uniqueMatches.size).toBe(order.length);
+    [4, 6, 9, 10].forEach(n => {
+      const order = generatePoolMatchOrder(n);
+      const uniqueMatches = new Set(order.map(([a, b]) => `${Math.min(a, b)}-${Math.max(a, b)}`));
+      expect(uniqueMatches.size).toBe(order.length);
+    });
   });
 
-  it('should not have consecutive bouts for same fencer (pools 5-8)', () => {
-    [5, 6, 7, 8].forEach(n => {
+  it('should not have consecutive bouts for same fencer (pools 5-10)', () => {
+    // n=3 et n=4 : inévitable sur 1 piste (trop peu de tireurs)
+    [5, 6, 7, 8, 9, 10].forEach(n => {
       const order = generatePoolMatchOrder(n);
       for (let i = 0; i < order.length - 1; i++) {
         const [a1, b1] = order[i];
@@ -127,6 +131,20 @@ describe('generatePoolMatchOrder', () => {
         expect(hasConsecutive).toBe(false);
       }
     });
+  });
+
+  it('should cover all fencer pairs exactly once (pools 2-10)', () => {
+    for (let n = 2; n <= 10; n++) {
+      const order = generatePoolMatchOrder(n);
+      const pairs = new Set(order.map(([a, b]) => `${Math.min(a, b)}-${Math.max(a, b)}`));
+      expect(pairs.size).toBe((n * (n - 1)) / 2);
+      for (const [a, b] of order) {
+        expect(a).toBeGreaterThanOrEqual(1);
+        expect(a).toBeLessThanOrEqual(n);
+        expect(b).toBeGreaterThanOrEqual(1);
+        expect(b).toBeLessThanOrEqual(n);
+      }
+    }
   });
 });
 

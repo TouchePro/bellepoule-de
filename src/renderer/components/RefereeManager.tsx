@@ -8,6 +8,20 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { Referee, Match, Pool, Competition, MatchStatus } from '../../shared/types';
 import { RefereeManager, RefereeRotationConfig } from '../../shared/services/refereeManager';
 import { parseEngardeRefereeFile } from '../../shared/utils/fileParser';
+import {
+  TD,
+  TD_BOLD,
+  INPUT,
+  SMALL_INPUT,
+  TABLE,
+  TH,
+  HEADING,
+  SUB_TEXT,
+  MUTED_ITALIC,
+  FLEX_GAP,
+  ROW_BORDER,
+  ROW_ALT,
+} from './refereeManager.styles';
 
 interface RefereeManagerProps {
   competition: Competition;
@@ -98,7 +112,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
   };
 
   const rotationReport = useMemo(() => {
-    return manager.generateRotationReport();
+    return manager.generateRotationReportDetailed();
   }, [manager, assignments]);
 
   const getConflictWarning = (match: Match, referee: Referee): string | null => {
@@ -207,31 +221,31 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
                 placeholder="Prénom Nom *"
                 value={newReferee.name}
                 onChange={e => setNewReferee({ ...newReferee, name: e.target.value })}
-                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #d1d5db' }}
+                style={INPUT}
               />
               <input
                 placeholder="Club"
                 value={newReferee.club}
                 onChange={e => setNewReferee({ ...newReferee, club: e.target.value })}
-                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #d1d5db' }}
+                style={INPUT}
               />
               <input
                 placeholder="Licence"
                 value={newReferee.license}
                 onChange={e => setNewReferee({ ...newReferee, license: e.target.value })}
-                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #d1d5db' }}
+                style={INPUT}
               />
               <input
                 placeholder="Catégorie (Régional…)"
                 value={newReferee.category}
                 onChange={e => setNewReferee({ ...newReferee, category: e.target.value })}
-                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #d1d5db' }}
+                style={INPUT}
               />
               <input
                 placeholder="Nationalité (FRA)"
                 value={newReferee.nationality}
                 onChange={e => setNewReferee({ ...newReferee, nationality: e.target.value })}
-                style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #d1d5db' }}
+                style={INPUT}
               />
             </div>
             {addError && <p style={{ color: '#dc2626', fontSize: '0.875rem', marginBottom: '0.5rem' }}>{addError}</p>}
@@ -285,31 +299,31 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
 
           {/* Liste arbitres */}
           {referees.length === 0 ? (
-            <p style={{ color: '#6b7280', fontStyle: 'italic' }}>Aucun arbitre enregistré.</p>
+            <p style={MUTED_ITALIC}>Aucun arbitre enregistré.</p>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+            <table style={TABLE}>
               <thead>
-                <tr style={{ background: '#f3f4f6' }}>
+                <tr style={ROW_ALT}>
                   {['#', 'Nom', 'Club', 'Licence', 'Catégorie', 'Nationalité', 'Statut', ''].map(h => (
-                    <th key={h} style={{ padding: '0.5rem 0.75rem', textAlign: 'left', borderBottom: '2px solid #e5e7eb' }}>{h}</th>
+                    <th key={h} style={TH}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {referees.map(ref => (
-                  <tr key={ref.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <tr key={ref.id} style={ROW_BORDER}>
                     <td style={{ padding: '0.45rem 0.75rem', color: '#9ca3af' }}>{ref.ref}</td>
-                    <td style={{ padding: '0.45rem 0.75rem', fontWeight: '500' }}>{ref.firstName} {ref.lastName}</td>
-                    <td style={{ padding: '0.45rem 0.75rem' }}>{ref.club ?? '—'}</td>
-                    <td style={{ padding: '0.45rem 0.75rem' }}>{ref.license ?? '—'}</td>
-                    <td style={{ padding: '0.45rem 0.75rem' }}>{ref.category ?? '—'}</td>
-                    <td style={{ padding: '0.45rem 0.75rem' }}>{ref.nationality}</td>
-                    <td style={{ padding: '0.45rem 0.75rem' }}>
+                    <td style={TD_BOLD}>{ref.firstName} {ref.lastName}</td>
+                    <td style={TD}>{ref.club ?? '—'}</td>
+                    <td style={TD}>{ref.license ?? '—'}</td>
+                    <td style={TD}>{ref.category ?? '—'}</td>
+                    <td style={TD}>{ref.nationality}</td>
+                    <td style={TD}>
                       <span style={{ color: ref.status === 'available' ? '#166534' : '#9ca3af' }}>
                         {ref.status === 'available' ? '✓ Disponible' : ref.status}
                       </span>
                     </td>
-                    <td style={{ padding: '0.45rem 0.75rem' }}>
+                    <td style={TD}>
                       <button
                         onClick={async () => {
                           try {
@@ -342,30 +356,30 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
             </button>
           </div>
           {historyRows.length === 0 ? (
-            <p style={{ color: '#6b7280', fontStyle: 'italic' }}>Aucun match avec arbitre assigné.</p>
+            <p style={MUTED_ITALIC}>Aucun match avec arbitre assigné.</p>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+            <table style={TABLE}>
               <thead>
-                <tr style={{ background: '#f3f4f6' }}>
+                <tr style={ROW_ALT}>
                   {['Poule', 'Match', 'Tireur A', 'Tireur B', 'Score', 'Statut', 'Arbitre'].map(h => (
-                    <th key={h} style={{ padding: '0.5rem 0.75rem', textAlign: 'left', borderBottom: '2px solid #e5e7eb' }}>{h}</th>
+                    <th key={h} style={TH}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {historyRows.map(row => (
-                  <tr key={row.matchId} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                    <td style={{ padding: '0.45rem 0.75rem' }}>{row.poolName ?? '—'}</td>
-                    <td style={{ padding: '0.45rem 0.75rem' }}>#{row.matchNumber}</td>
-                    <td style={{ padding: '0.45rem 0.75rem' }}>{row.fencerAName}</td>
-                    <td style={{ padding: '0.45rem 0.75rem' }}>{row.fencerBName}</td>
+                  <tr key={row.matchId} style={ROW_BORDER}>
+                    <td style={TD}>{row.poolName ?? '—'}</td>
+                    <td style={TD}>#{row.matchNumber}</td>
+                    <td style={TD}>{row.fencerAName}</td>
+                    <td style={TD}>{row.fencerBName}</td>
                     <td style={{ padding: '0.45rem 0.75rem', textAlign: 'center' }}>
                       {row.scoreA !== null && row.scoreB !== null ? `${row.scoreA} – ${row.scoreB}` : '—'}
                     </td>
                     <td style={{ padding: '0.45rem 0.75rem', color: row.status === 'finished' ? '#166534' : '#6b7280' }}>
                       {row.status === 'finished' ? '✓ Terminé' : row.status}
                     </td>
-                    <td style={{ padding: '0.45rem 0.75rem', fontWeight: '500' }}>{row.refereeName ?? '—'}</td>
+                    <td style={TD_BOLD}>{row.refereeName ?? '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -396,7 +410,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
             gap: '1rem',
           }}
         >
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <label style={FLEX_GAP}>
             <input
               type="checkbox"
               checked={config.avoidSameClub}
@@ -404,7 +418,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
             />
             Éviter les arbitres du même club
           </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <label style={FLEX_GAP}>
             <input
               type="checkbox"
               checked={config.balanceAssignment}
@@ -420,7 +434,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
               onChange={e =>
                 setConfig({ ...config, maxConsecutiveMatches: parseInt(e.target.value) || 3 })
               }
-              style={{ width: '60px', marginLeft: '0.5rem', padding: '0.25rem' }}
+              style={SMALL_INPUT}
               min="1"
               max="10"
             />
@@ -433,7 +447,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
               onChange={e =>
                 setConfig({ ...config, minRestTimeMinutes: parseInt(e.target.value) || 15 })
               }
-              style={{ width: '60px', marginLeft: '0.5rem', padding: '0.25rem' }}
+              style={SMALL_INPUT}
               min="0"
               max="60"
             />
@@ -490,69 +504,38 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: '#dcfce7' }}>
-                <th
-                  style={{
-                    padding: '0.5rem',
-                    textAlign: 'left',
-                    borderBottom: '2px solid #86efac',
-                  }}
-                >
-                  Arbitre
-                </th>
-                <th
-                  style={{
-                    padding: '0.5rem',
-                    textAlign: 'center',
-                    borderBottom: '2px solid #86efac',
-                  }}
-                >
-                  Matchs
-                </th>
-                <th
-                  style={{
-                    padding: '0.5rem',
-                    textAlign: 'center',
-                    borderBottom: '2px solid #86efac',
-                  }}
-                >
-                  Violations Repos
-                </th>
-                <th
-                  style={{
-                    padding: '0.5rem',
-                    textAlign: 'center',
-                    borderBottom: '2px solid #86efac',
-                  }}
-                >
-                  Conflits
-                </th>
+                {['Arbitre', 'Matchs', 'Consécutifs', 'Fatigue', 'Violations', 'Conflits'].map(h => (
+                  <th key={h} style={{ padding: '0.5rem', textAlign: h === 'Arbitre' ? 'left' : 'center', borderBottom: '2px solid #86efac' }}>
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {rotationReport.map((row, idx) => (
-                <tr key={idx} style={{ borderBottom: '1px solid #bbf7d0' }}>
-                  <td style={{ padding: '0.5rem' }}>{row.refereeName}</td>
-                  <td style={{ padding: '0.5rem', textAlign: 'center' }}>{row.matchesAssigned}</td>
-                  <td
-                    style={{
-                      padding: '0.5rem',
-                      textAlign: 'center',
-                      color: row.restViolations > 0 ? '#dc2626' : '#166534',
-                    }}
-                  >
-                    {row.restViolations}
-                  </td>
-                  <td
-                    style={{
-                      padding: '0.5rem',
-                      textAlign: 'center',
-                      color: row.conflicts > 0 ? '#dc2626' : '#166534',
-                    }}
-                  >
-                    {row.conflicts}
-                  </td>
-                </tr>
-              ))}
+              {rotationReport.map((row, idx) => {
+                const fatigueColor = row.fatigueScore >= 80 ? '#dc2626' : row.fatigueScore >= 50 ? '#d97706' : '#166534';
+                return (
+                  <tr key={idx} style={{ borderBottom: '1px solid #bbf7d0', background: row.needsRest ? '#fef9c3' : undefined }}>
+                    <td style={{ padding: '0.5rem' }}>
+                      {row.needsRest && <span title="Repos recommandé">⚠️ </span>}
+                      {row.refereeName}
+                    </td>
+                    <td style={{ padding: '0.5rem', textAlign: 'center' }}>{row.matchesAssigned}</td>
+                    <td style={{ padding: '0.5rem', textAlign: 'center' }}>{row.consecutiveMatches}</td>
+                    <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                      <span style={{ color: fatigueColor, fontWeight: row.fatigueScore >= 80 ? 700 : 400 }}>
+                        {row.fatigueScore}%
+                      </span>
+                    </td>
+                    <td style={{ padding: '0.5rem', textAlign: 'center', color: row.restViolations > 0 ? '#dc2626' : '#166534' }}>
+                      {row.restViolations}
+                    </td>
+                    <td style={{ padding: '0.5rem', textAlign: 'center', color: row.conflicts > 0 ? '#dc2626' : '#166534' }}>
+                      {row.conflicts}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -560,7 +543,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
 
       {/* Arbitres List */}
       <div style={{ marginBottom: '1.5rem' }}>
-        <h3 style={{ marginBottom: '1rem', color: '#374151' }}>Arbitres Disponibles</h3>
+        <h3 style={HEADING}>Arbitres Disponibles</h3>
         <div
           style={{
             display: 'grid',
@@ -584,7 +567,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
                 <div style={{ fontWeight: 'bold', color: '#1f2937' }}>
                   {referee.firstName} {referee.lastName}
                 </div>
-                <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                <div style={SUB_TEXT}>
                   {referee.category} • {referee.club || 'Sans club'}
                 </div>
                 <div style={{ marginTop: '0.5rem', fontSize: '0.875rem' }}>
@@ -600,9 +583,9 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
 
       {/* Match Assignments */}
       <div>
-        <h3 style={{ marginBottom: '1rem', color: '#374151' }}>Assignations des Matchs</h3>
+        <h3 style={HEADING}>Assignations des Matchs</h3>
         {pendingMatches.length === 0 && (
-          <p style={{ color: '#6b7280', fontStyle: 'italic' }}>Aucun match en attente d'arbitre.</p>
+          <p style={MUTED_ITALIC}>Aucun match en attente d'arbitre.</p>
         )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {pendingMatches.map(match => {
@@ -631,7 +614,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
                     {match.fencerB?.firstName} {match.fencerB?.lastName}
                   </div>
                   {match.poolId && (
-                    <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                    <div style={SUB_TEXT}>
                       Poule {pools.find(p => p.id === match.poolId)?.number}
                     </div>
                   )}

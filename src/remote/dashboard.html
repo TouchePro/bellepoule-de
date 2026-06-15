@@ -11,7 +11,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
       rel="stylesheet"
     />
-    <script src="/socket.io/socket.io.js"></script>
+    <script src="/socket.io.min.js"></script>
     <style>
       * {
         margin: 0;
@@ -579,7 +579,7 @@
 
       // WebSocket Connection
       function connectWebSocket() {
-        dashboard.socket = io();
+        dashboard.socket = io({ reconnection: true, reconnectionDelay: 200, reconnectionDelayMax: 5000, randomizationFactor: 0.5 });
 
         dashboard.socket.on('connect', () => {
           updateConnectionStatus(true);

@@ -3,14 +3,16 @@
  * Chaque migration est appliquée une seule fois, dans l'ordre croissant.
  */
 
+import Database from 'better-sqlite3';
+
 export interface Migration {
   version: number;
   description: string;
-  up(db: any): void;
+  up(db: { run(sql: string): void }): void;
 }
 
 export class MigrationManager {
-  constructor(private db: any) {}
+  constructor(private db: Database.Database) {}
 
   run(migrations: Migration[]): number {
     this.ensureMigrationsTable();
@@ -19,9 +21,11 @@ export class MigrationManager {
       .filter(m => !applied.has(m.version))
       .sort((a, b) => a.version - b.version);
 
+    const dbWrapper = { run: (sql: string) => this.db.exec(sql) };
+
     for (const migration of pending) {
       console.log(`[DB] Migration v${migration.version}: ${migration.description}`);
-      migration.up(this.db);
+      migration.up(dbWrapper);
       this.recordMigration(migration.version, migration.description);
     }
 
@@ -32,7 +36,7 @@ export class MigrationManager {
   }
 
   private ensureMigrationsTable(): void {
-    this.db.run(`
+    this.db.exec(`
       CREATE TABLE IF NOT EXISTS schema_migrations (
         version INTEGER PRIMARY KEY,
         description TEXT NOT NULL,
@@ -42,19 +46,13 @@ export class MigrationManager {
   }
 
   private getAppliedVersions(): Set<number> {
-    const applied = new Set<number>();
-    const stmt = this.db.prepare('SELECT version FROM schema_migrations');
-    while (stmt.step()) {
-      applied.add(stmt.getAsObject().version as number);
-    }
-    stmt.free();
-    return applied;
+    const rows = this.db.prepare('SELECT version FROM schema_migrations').all() as { version: number }[];
+    return new Set(rows.map(r => r.version));
   }
 
   private recordMigration(version: number, description: string): void {
-    this.db.run(
-      'INSERT OR IGNORE INTO schema_migrations (version, description, applied_at) VALUES (?, ?, ?)',
-      [version, description, new Date().toISOString()]
-    );
+    this.db.prepare(
+      'INSERT OR IGNORE INTO schema_migrations (version, description, applied_at) VALUES (?, ?, ?)'
+    ).run(version, description, new Date().toISOString());
   }
 }

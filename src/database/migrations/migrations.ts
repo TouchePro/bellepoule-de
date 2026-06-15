@@ -304,4 +304,33 @@ export const ALL_MIGRATIONS: Migration[] = [
       try { db.run(`ALTER TABLE pools ADD COLUMN referee_id TEXT`); } catch { /* */ }
     },
   },
+  {
+    version: 10,
+    description: 'Index composites pour les requêtes fréquentes (matchs en attente, stats par tireur, export tableau)',
+    up(db) {
+      db.run(`CREATE INDEX IF NOT EXISTS idx_matches_pool_status ON matches(pool_id, status)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_matches_fencer_a ON matches(fencer_a_id)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_matches_fencer_b ON matches(fencer_b_id)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_matches_table_round ON matches(table_id, round)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_matches_referee ON matches(referee_id)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_referees_competition ON referees(competition_id)`);
+    },
+  },
+  {
+    version: 11,
+    description: 'Table de_match_signatures pour signatures des matchs de tableau (élimination directe)',
+    up(db) {
+      db.run(`
+        CREATE TABLE IF NOT EXISTS de_match_signatures (
+          id TEXT PRIMARY KEY,
+          match_id TEXT NOT NULL,
+          fencer_id TEXT NOT NULL,
+          signature_data TEXT NOT NULL,
+          signed_at TEXT NOT NULL,
+          UNIQUE(match_id, fencer_id)
+        )
+      `);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_de_sigs_match ON de_match_signatures(match_id)`);
+    },
+  },
 ];

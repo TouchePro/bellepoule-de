@@ -3,7 +3,7 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Competition } from '../../shared/types';
 import { useTranslation } from '../contexts/TranslationContext';
 
@@ -37,44 +37,46 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  const staticCommands: Command[] = [
-    {
-      id: 'new-competition',
-      label: t('menu.new_competition'),
-      icon: '➕',
-      action: () => { onClose(); onNewCompetition(); },
-      keywords: ['new', 'nouveau', 'creer', 'create'],
-    },
-    {
-      id: 'settings',
-      label: t('settings.title'),
-      icon: '⚙️',
-      action: () => { onClose(); onOpenSettings(); },
-      keywords: ['settings', 'parametres', 'config', 'theme', 'langue'],
-    },
-  ];
+  // Liste des commandes mémoïsée : ne se reconstruit que si les entrées changent
+  const allCommands = useMemo<Command[]>(() => {
+    const staticCommands: Command[] = [
+      {
+        id: 'new-competition',
+        label: t('menu.new_competition'),
+        icon: '➕',
+        action: () => { onClose(); onNewCompetition(); },
+        keywords: ['new', 'nouveau', 'creer', 'create'],
+      },
+      {
+        id: 'settings',
+        label: t('settings.title'),
+        icon: '⚙️',
+        action: () => { onClose(); onOpenSettings(); },
+        keywords: ['settings', 'parametres', 'config', 'theme', 'langue'],
+      },
+    ];
+    const competitionCommands: Command[] = competitions.map(c => ({
+      id: `comp-${c.id}`,
+      label: c.title,
+      description: `${c.weapon} · ${c.category} · ${c.fencers.length} tireurs`,
+      icon: '🏆',
+      action: () => { onClose(); onSelectCompetition(c.id); },
+      keywords: [c.title.toLowerCase(), c.weapon, c.category],
+    }));
+    return [...staticCommands, ...competitionCommands];
+  }, [competitions, t, onClose, onNewCompetition, onOpenSettings, onSelectCompetition]);
 
-  const competitionCommands: Command[] = competitions.map(c => ({
-    id: `comp-${c.id}`,
-    label: c.title,
-    description: `${c.weapon} · ${c.category} · ${c.fencers.length} tireurs`,
-    icon: '🏆',
-    action: () => { onClose(); onSelectCompetition(c.id); },
-    keywords: [c.title.toLowerCase(), c.weapon, c.category],
-  }));
-
-  const allCommands = [...staticCommands, ...competitionCommands];
-
-  const filtered = query.trim()
-    ? allCommands.filter(cmd => {
-        const q = query.toLowerCase();
-        return (
-          cmd.label.toLowerCase().includes(q) ||
-          cmd.description?.toLowerCase().includes(q) ||
-          cmd.keywords?.some(k => k.includes(q))
-        );
-      })
-    : allCommands;
+  // Mémoïsé pour éviter le recalcul à chaque changement de selectedIndex
+  const filtered = useMemo(() => {
+    if (!query.trim()) return allCommands;
+    const q = query.toLowerCase();
+    return allCommands.filter(
+      cmd =>
+        cmd.label.toLowerCase().includes(q) ||
+        cmd.description?.toLowerCase().includes(q) ||
+        cmd.keywords?.some(k => k.includes(q))
+    );
+  }, [query, allCommands]);
 
   useEffect(() => {
     setSelectedIndex(0);

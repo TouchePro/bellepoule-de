@@ -32,13 +32,16 @@
     "third_place_match_label": "Petita final (combat pel 3r lloc)",
     "third_place_match_description": "Organitza un combat addicional entre els dos semifinalistes perdedors per determinar el 3r i 4t lloc",
     "comparisons": "Comparacions",
-    "analytics": "Analytics"
+    "analytics": "Analytics",
+    "sign_tableau_matches_label": "Signatura dels tiradors a la tauleta (quadre)",
+    "sign_tableau_matches_description": "Mostra una pantalla de signatura per als dos tiradors a la tauleta després de cada combat del quadre d’eliminació directa"
   },
   "weapons": {
     "epee": "Espasa",
     "foil": "Floret",
     "sabre": "Sabre",
-    "laser": "Sabre Làser"
+    "laser": "Sabre Làser",
+    "custom": "Fórmula personalitzada"
   },
   "genders": {
     "male": "Masculí",
@@ -104,7 +107,8 @@
     "tableau": "Quadre",
     "results": "Resultats",
     "remote": "Entrada Remota",
-    "referees": "Àrbitres"
+    "referees": "Àrbitres",
+    "logs": "Historial"
   },
   "pools": {
     "generate": "Generar Poules",
@@ -239,17 +243,34 @@
   "pdfTemplate": {
     "modalTitle": "Personalitzar exportacions PDF",
     "openButton": "Personalitzar PDFs",
-    "docType": { "pool": "Grups", "tableau": "Quadre", "ranking": "Classificació" },
+    "docType": {
+      "pool": "Grups",
+      "tableau": "Quadre",
+      "ranking": "Classificació"
+    },
     "customTitle": "Títol personalitzat",
     "customTitlePlaceholder": "Deixar buit per al títol automàtic",
-    "colors": { "navy": "Color principal", "gold": "Color d'accent", "green": "Color de victòria" },
-    "elements": {
-      "header": "Capçalera", "gold-bar": "Separador daurat", "competition-name": "Nom de la competició", "meta-chips": "Xips d'info",
-      "score-grid": "Quadrícula de puntuació", "pending-matches": "Combats pendents",
-      "finished-matches": "Resultats", "match-cards": "Fitxes de combat",
-      "ranking-table": "Taula de classificació", "footer": "Peu de pàgina"
+    "colors": {
+      "navy": "Color principal",
+      "gold": "Color d'accent",
+      "green": "Color de victòria"
     },
-    "reset": "Restablir", "exportJson": "Exportar JSON", "importJson": "Importar JSON", "importError": "Fitxer JSON no vàlid"
+    "elements": {
+      "header": "Capçalera",
+      "gold-bar": "Separador daurat",
+      "competition-name": "Nom de la competició",
+      "meta-chips": "Xips d'info",
+      "score-grid": "Quadrícula de puntuació",
+      "pending-matches": "Combats pendents",
+      "finished-matches": "Resultats",
+      "match-cards": "Fitxes de combat",
+      "ranking-table": "Taula de classificació",
+      "footer": "Peu de pàgina"
+    },
+    "reset": "Restablir",
+    "exportJson": "Exportar JSON",
+    "importJson": "Importar JSON",
+    "importError": "Fitxer JSON no vàlid"
   },
   "cardModal": {
     "title": "Targeta per a {{name}}",
@@ -333,5 +354,31 @@
     "timer": "Iniciar/Pausar cronòmetre",
     "nav_list": "Navegar a la llista",
     "validate": "Validar / Obrir"
+  },
+  "formula": {
+    "builder_title": "Constructor de fórmules",
+    "add_pool_round": "Afegir ronda de grups",
+    "add_de": "Afegir eliminació directa",
+    "add_classification": "Afegir classificació",
+    "save_template": "Desar com a plantilla",
+    "load_template": "Carregar una plantilla",
+    "advancement_rule": "Regla d’avançament",
+    "advancement_all": "Tots avancen",
+    "advancement_percent": "Top %",
+    "advancement_fixed": "Nombre fix",
+    "advancement_bracket": "Quadre següent",
+    "ranking_criteria": "Criteris de classificació",
+    "criterion_vm": "V/M (ràtio de victòries)",
+    "criterion_index": "Índex (TD−TR)",
+    "criterion_td": "Tocades fetes",
+    "criterion_tr": "Tocades rebudes",
+    "criterion_direct": "Enfrontament directe",
+    "criterion_initial": "Classificació inicial",
+    "simulation_title": "Simulació",
+    "pool_round_n": "Ronda de grups {{n}}",
+    "scoring_standard": "Estàndard (1 tocada = 1 punt)",
+    "scoring_zones": "Zones personalitzades",
+    "zone_label": "Zona",
+    "zone_points": "Punts"
   }
 }

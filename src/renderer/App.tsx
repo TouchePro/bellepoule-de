@@ -3,7 +3,8 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useEffect, useCallback, useState, Suspense } from 'react';
+import React, { useEffect, useCallback, useState, useRef, Suspense } from 'react';
+import { Home, Plus, Radio, Sun, Moon, Contrast, BookOpen, Settings, X, Swords, Wrench, Wifi, Tv2 } from 'lucide-react';
 import { Competition, PhaseType } from '../shared/types';
 import type { CompetitionCreateData } from '../shared/types/preload';
 import { logger, LogCategory } from '@shared/services/logger';
@@ -16,6 +17,10 @@ const AboutModal = React.lazy(() => import('./components/AboutModal'));
 const SettingsModal = React.lazy(() => import('./components/SettingsModal'));
 const DTCallNotification = React.lazy(() => import('./components/DTCallNotification'));
 const UpdateNotification = React.lazy(() => import('./components/UpdateNotification'));
+const KeyboardShortcutsHelp = React.lazy(() => import('./components/KeyboardShortcutsHelp'));
+const WikiModal = React.lazy(() => import('./components/WikiModal'));
+const WifiQRModal = React.lazy(() => import('./components/WifiQRModal').then(m => ({ default: m.WifiQRModal })));
+const XiaomiRemotePanel = React.lazy(() => import('./components/XiaomiRemotePanel').then(m => ({ default: m.XiaomiRemotePanel })));
 import { ToastProvider, useToast } from './components/Toast';
 import { ConfirmProvider, useConfirm } from './components/ConfirmDialog';
 import { TranslationProvider, useTranslation, Theme } from './contexts/TranslationContext';
@@ -30,8 +35,12 @@ const PHASE_BADGE: Record<string, { label: string; cls: string }> = {
   [PhaseType.CLASSIFICATION]: { label: 'Résultats', cls: 'badge-results' },
 };
 
-const THEME_ICONS: Record<string, string> = { default: '🌓', light: '☀️', dark: '🌙' };
 const THEME_CYCLE: Theme[] = ['default', 'light', 'dark'];
+const ThemeIcon: React.FC<{ theme: Theme }> = ({ theme }) => {
+  if (theme === 'light') return <Sun size={16} />;
+  if (theme === 'dark') return <Moon size={16} />;
+  return <Contrast size={16} />;
+};
 
 const AppContent: React.FC = () => {
   const { t, isLoading: translationLoading, theme, changeTheme } = useTranslation();
@@ -39,7 +48,16 @@ const AppContent: React.FC = () => {
   const { confirm } = useConfirm();
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showAboutModal, setShowAboutModal] = useState(false);
+  const [showWikiModal, setShowWikiModal] = useState(false);
   const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
+  const [showToolsMenu, setShowToolsMenu] = useState(false);
+  const [showWifiQR, setShowWifiQR] = useState(false);
+  const [showTVRemote, setShowTVRemote] = useState(false);
+  const [remoteServerUrl, setRemoteServerUrl] = useState<string | null>(null);
+  const [remoteArenaCount, setRemoteArenaCount] = useState<number>(1);
+  const toolsMenuRef = useRef<HTMLDivElement>(null);
+  const toolsBtnRef = useRef<HTMLButtonElement>(null);
+  const [toolsMenuPos, setToolsMenuPos] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
 
   const {
     view,
@@ -156,6 +174,17 @@ const AppContent: React.FC = () => {
     return () => { if (typeof unsub === 'function') unsub(); };
   }, []);
 
+
+  useEffect(() => {
+    if (!showToolsMenu) return;
+    const rect = toolsBtnRef.current?.getBoundingClientRect();
+    if (rect) setToolsMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+    const handler = (e: MouseEvent) => {
+      if (toolsMenuRef.current && !toolsMenuRef.current.contains(e.target as Node)) setShowToolsMenu(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showToolsMenu]);
 
   const handleCreateCompetition = useCallback(async (data: Partial<Competition>) => {
     try {
@@ -306,19 +335,7 @@ const AppContent: React.FC = () => {
       <div className="app">
         <header className="header">
           <div className="header-title">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M14.5 17.5L3 6V3h3l11.5 11.5" />
-              <path d="M13 19l6-6" />
-              <path d="M16 16l4 4" />
-              <path d="M19 21a2 2 0 100-4 2 2 0 000 4z" />
-            </svg>
+            <Swords size={22} strokeWidth={1.75} />
             {t('app.title')}
           </div>
           {/* Ctrl+K hint — clickable */}
@@ -333,28 +350,31 @@ const AppContent: React.FC = () => {
           <div className="header-nav">
             {openCompetitions.length > 0 && view === 'competition' && (
               <button
-                className="btn btn-secondary"
+                className="btn btn-secondary btn-icon-label"
                 onClick={() => {
                   setView('home');
                   setActiveTabId(null);
                 }}
                 title={t('app.back_to_list')}
               >
-                🏠 {t('app.home')}
+                <Home size={15} />
+                {t('app.home')}
               </button>
             )}
-            <button className="btn btn-primary" onClick={() => setShowNewCompetitionModal(true)}>
-              + {t('menu.new_competition')}
+            <button className="btn btn-primary btn-icon-label" onClick={() => setShowNewCompetitionModal(true)}>
+              <Plus size={15} />
+              {t('menu.new_competition')}
             </button>
             {view === 'competition' && currentCompetition && (
               <button
-                className="btn btn-secondary"
+                className="btn btn-secondary btn-icon-label"
                 onClick={() => {
                   setRequestedPhase('remote');
                 }}
                 title={t('phases.remote')}
               >
-                📡 {t('phases.remote')}
+                <Radio size={15} />
+                {t('phases.remote')}
               </button>
             )}
             <button
@@ -365,14 +385,68 @@ const AppContent: React.FC = () => {
               }}
               title={`Thème : ${theme}`}
             >
-              {THEME_ICONS[theme]}
+              <ThemeIcon theme={theme} />
             </button>
             <button
-              className="btn btn-secondary"
+              className="btn btn-icon"
+              onClick={() => setShowWikiModal(true)}
+              title={t('wiki.button_title')}
+            >
+              <BookOpen size={16} />
+            </button>
+            {view === 'competition' && currentCompetition && (
+              <div ref={toolsMenuRef} style={{ position: 'relative' }}>
+                <button
+                  ref={toolsBtnRef}
+                  className="btn btn-secondary btn-icon-label"
+                  onClick={() => setShowToolsMenu(v => !v)}
+                  title="Outils"
+                  aria-haspopup="true"
+                  aria-expanded={showToolsMenu}
+                >
+                  <Wrench size={15} /> Outils
+                </button>
+                {showToolsMenu && (
+                  <div
+                    style={{
+                      position: 'fixed',
+                      right: toolsMenuPos.right,
+                      top: toolsMenuPos.top,
+                      background: 'var(--color-surface)',
+                      color: 'var(--color-text)',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: '8px',
+                      boxShadow: 'var(--shadow-xl)',
+                      minWidth: '200px',
+                      zIndex: 1100,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <button
+                      className="comp-header-dropdown-item"
+                      onClick={() => { setShowWifiQR(true); setShowToolsMenu(false); }}
+                      style={{ width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                    >
+                      <Wifi size={15} /> QR Code WiFi
+                    </button>
+                    <button
+                      className="comp-header-dropdown-item"
+                      onClick={() => { setShowTVRemote(true); setShowToolsMenu(false); }}
+                      style={{ width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                    >
+                      <Tv2 size={15} /> Télécommande TV
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+            <button
+              className="btn btn-secondary btn-icon-label"
               onClick={() => setShowSettingsModal(true)}
               title={t('settings.title')}
             >
-              ⚙️ {t('settings.title')}
+              <Settings size={15} />
+              {t('settings.title')}
             </button>
           </div>
         </header>
@@ -435,7 +509,7 @@ const AppContent: React.FC = () => {
                   gap: '0.5rem',
                 }}
               >
-                🏠 {t('app.home')}
+                <Home size={13} /> {t('app.home')}
               </span>
             </div>
 
@@ -529,7 +603,7 @@ const AppContent: React.FC = () => {
                   onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280'; }}
                   title={t('app.close_tab')}
                 >
-                  ×
+                  <X size={12} />
                 </button>
               </div>
             ))}
@@ -541,7 +615,7 @@ const AppContent: React.FC = () => {
             <ErrorBoundary
               fallback={
                 <div style={{ padding: '20px', textAlign: 'center' }}>
-                  <h3>🏠 {t('app.load_error_title')}</h3>
+                  <h3>{t('app.load_error_title')}</h3>
                   <p>{t('app.load_error_message')}</p>
                   <button onClick={() => window.location.reload()}>{t('app.reload')}</button>
                 </div>
@@ -565,6 +639,7 @@ const AppContent: React.FC = () => {
                   onUpdate={handleUpdateCompetition}
                   requestPhase={requestedPhase ?? undefined}
                   onPhaseApplied={() => setRequestedPhase(null)}
+                  onRemoteServerChange={(url, count) => { setRemoteServerUrl(url); setRemoteArenaCount(count); }}
                 />
               </Suspense>
             </CompetitionErrorBoundary>
@@ -598,6 +673,29 @@ const AppContent: React.FC = () => {
           </Suspense>
         )}
 
+        {showWikiModal && (
+          <Suspense fallback={null}>
+            <WikiModal onClose={() => setShowWikiModal(false)} />
+          </Suspense>
+        )}
+
+        {showWifiQR && (
+          <Suspense fallback={null}>
+            <WifiQRModal onClose={() => setShowWifiQR(false)} />
+          </Suspense>
+        )}
+
+        {showTVRemote && currentCompetition && (
+          <Suspense fallback={null}>
+            <XiaomiRemotePanel
+              competitionId={currentCompetition.id}
+              serverUrl={remoteServerUrl ?? ''}
+              arenaCount={remoteArenaCount}
+              onClose={() => setShowTVRemote(false)}
+            />
+          </Suspense>
+        )}
+
         {showCommandPalette && (
           <Suspense fallback={null}>
             <CommandPalette
@@ -618,6 +716,11 @@ const AppContent: React.FC = () => {
             />
           </Suspense>
         )}
+
+        {/* Overlay d'aide raccourcis clavier (autonome : touche « ? », Échap pour fermer) */}
+        <Suspense fallback={null}>
+          <KeyboardShortcutsHelp />
+        </Suspense>
       </div>
     </>
   );

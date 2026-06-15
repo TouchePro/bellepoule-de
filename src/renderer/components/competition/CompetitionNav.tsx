@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { ChevronLeft, ChevronRight, Swords, Target, Zap, Trophy } from 'lucide-react';
 import { Competition, MatchStatus, QuestPhaseConfig, Fencer } from '../../../shared/types';
 import { Phase } from '../../hooks/useCompetitionSession';
 import CoachMark from '../CoachMark';
@@ -65,7 +66,9 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
   getCheckedInFencers,
   pools,
   tableauMatches,
-}) => (
+}) => {
+
+  return (
   <>
     {/* Breadcrumb */}
     <div style={{ padding: '0.25rem 1rem', fontSize: '0.75rem', color: 'var(--text-muted, #6b7280)', borderBottom: '1px solid var(--border-color, rgba(255,255,255,0.1))', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -89,33 +92,45 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
             <span>{phase.label}</span>
           </div>
           {index < phases.length - 1 && (
-            <div style={{ display: 'flex', alignItems: 'center', color: '#9CA3AF' }}>→</div>
+            <div className={`phase-step-connector${!phase.disabled && !phases[index + 1]?.disabled ? ' connector-done' : ''}`} />
           )}
         </React.Fragment>
       ))}
       <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
         {currentPhase !== 'checkin' && (
-          <button className="btn btn-secondary" onClick={handleGoBack}>
-            ← Retour
+          <button className="btn btn-secondary btn-icon-label" onClick={handleGoBack}>
+            <ChevronLeft size={15} /> Retour
           </button>
         )}
         {currentPhase === 'checkin' && questEnabled && !questConfig?.hasPreliminaryPools && (
           <button
-            className="btn btn-primary"
+            className="btn btn-primary btn-icon-label"
             onClick={() => setCurrentPhase('quest')}
             disabled={getCheckedInFencers().length < 2}
           >
-            Tour Quest →
+            Tour Quest <ChevronRight size={15} />
           </button>
         )}
         {currentPhase === 'checkin' && (!questEnabled || questConfig?.hasPreliminaryPools) && (
           <CoachMark id="generate-pools" message="Cliquez ici après avoir pointé tous vos tireurs" position="bottom">
             <button
-              className="btn btn-primary"
+              className="btn btn-primary btn-icon-label"
               onClick={handleGeneratePools}
               disabled={getCheckedInFencers().length < 4}
+              title={
+                getCheckedInFencers().length < 4
+                  ? `Minimum 4 tireurs pointés requis (${getCheckedInFencers().length} actuellement)`
+                  : getCheckedInFencers().length === fencers.length && fencers.length > 0
+                    ? 'Tous les tireurs sont pointés — prêt !'
+                    : undefined
+              }
+              style={
+                getCheckedInFencers().length === fencers.length && fencers.length >= 4
+                  ? { background: '#16a34a', borderColor: '#15803d' }
+                  : undefined
+              }
             >
-              Générer les poules →
+              Générer les poules <ChevronRight size={15} />
             </button>
           </CoachMark>
         )}
@@ -124,6 +139,7 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
             {poolsNextAction.label}
           </button>
         )}
+
       </div>
     </div>
 
@@ -131,19 +147,19 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
     {(pools.length > 0 || tableauMatches.length > 0 || fencers.length > 0) && (
       <div className="comp-stats-bar">
         <div className="comp-stats-bar-item">
-          <span className="comp-stats-bar-icon">🤺</span>
+          <span className="comp-stats-bar-icon"><Swords size={13} /></span>
           <span>{getCheckedInFencers().length}/{fencers.length} tireurs</span>
         </div>
         {pools.length > 0 && (
           <>
             <div className="comp-stats-bar-sep" />
             <div className="comp-stats-bar-item">
-              <span className="comp-stats-bar-icon">🎯</span>
+              <span className="comp-stats-bar-icon"><Target size={13} /></span>
               <span>{pools.filter(p => p.isComplete).length}/{pools.length} poules</span>
             </div>
             <div className="comp-stats-bar-sep" />
             <div className="comp-stats-bar-item">
-              <span className="comp-stats-bar-icon">⚡</span>
+              <span className="comp-stats-bar-icon"><Zap size={13} /></span>
               <span>
                 {pools.reduce((s, p) => s + p.matches.filter(m => m.status === MatchStatus.FINISHED).length, 0)}/
                 {pools.reduce((s, p) => s + p.matches.length, 0)} matchs
@@ -155,7 +171,7 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
           <>
             <div className="comp-stats-bar-sep" />
             <div className="comp-stats-bar-item">
-              <span className="comp-stats-bar-icon">🏆</span>
+              <span className="comp-stats-bar-icon"><Trophy size={13} /></span>
               <span>
                 {tableauMatches.filter(m => m.winner !== null).length}/
                 {tableauMatches.filter(m => m.fencerA && m.fencerB).length} tableau
@@ -165,8 +181,10 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
         )}
       </div>
     )}
+
   </>
-);
+  );
+};
 
 const CompetitionNav = React.memo(CompetitionNavComponent);
 export default CompetitionNav;

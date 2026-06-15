@@ -399,7 +399,10 @@ export interface RankingCriterion {
   enabled: boolean;
 }
 
-export type AdvancementMode = 'all' | 'percentage' | 'fixed_count' | 'fixed_bracket';
+export type AdvancementMode = 'all' | 'percentage' | 'fixed_count' | 'fixed_bracket' | 'pool_winner';
+
+// Critère de séparation post-poules en deux tableaux distincts (compétition couplée)
+export type PostPoolSplitCriteria = 'gender';
 
 export interface AdvancementRule {
   mode: AdvancementMode;
@@ -566,6 +569,7 @@ export interface CompetitionSettings {
   poolRounds: number; // Nombre de tours de poules (défaut: 1)
   hasDirectElimination: boolean; // Phase d'élimination directe activée (défaut: true)
   thirdPlaceMatch: boolean; // Match pour la 3ème place activé (défaut: false)
+  signTableauMatches?: boolean; // Signature des combattants sur tablette après chaque match du tableau (défaut: true)
   manualRanking: boolean; // Classement manuel
   defaultRanking: number; // Classement par défaut pour non-classés
   randomScore: boolean; // Scores aléatoires (pour tests)
@@ -577,6 +581,9 @@ export interface CompetitionSettings {
   expertMode?: boolean; // Mode expert : édition avancée des pistes et arbitres
   maxRefereesPerPool?: number; // Nombre max d'arbitres par poule (mode expert)
   maxRefereesPerMatch?: number; // Nombre max d'arbitres par match DE (mode expert)
+  // Modes spéciaux post-poules
+  poolWinnersOnly?: boolean; // Seuls les 1ers de chaque poule accèdent au tableau
+  postPoolSplitCriteria?: PostPoolSplitCriteria; // Séparation en deux tableaux après les poules
 }
 
 export interface Phase extends BaseEntity {

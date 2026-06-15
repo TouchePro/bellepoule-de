@@ -32,13 +32,16 @@
     "third_place_match_label": "Pequeña final (partido por el 3er lugar)",
     "third_place_match_description": "Organiza un partido adicional entre los dos semifinalistas perdedores para determinar el 3er y 4to lugar",
     "comparisons": "Comparaciones",
-    "analytics": "Analytics"
+    "analytics": "Analytics",
+    "sign_tableau_matches_label": "Firma de los tiradores en tableta (cuadro)",
+    "sign_tableau_matches_description": "Muestra una pantalla de firma para ambos tiradores en la tableta después de cada combate del cuadro de eliminación directa"
   },
   "weapons": {
     "epee": "Espada",
     "foil": "Florete",
     "sabre": "Sable",
-    "laser": "Sable Láser"
+    "laser": "Sable Láser",
+    "custom": "Fórmula personalizada"
   },
   "genders": {
     "male": "Masculino",
@@ -104,7 +107,8 @@
     "tableau": "Cuadro",
     "results": "Resultados",
     "remote": "Entrada Remota",
-    "referees": "Árbitros"
+    "referees": "Árbitros",
+    "logs": "Historial"
   },
   "pools": {
     "generate": "Generar Poules",
@@ -239,17 +243,34 @@
   "pdfTemplate": {
     "modalTitle": "Personalizar exportaciones PDF",
     "openButton": "Personalizar PDFs",
-    "docType": { "pool": "Grupos", "tableau": "Cuadro", "ranking": "Clasificación" },
+    "docType": {
+      "pool": "Grupos",
+      "tableau": "Cuadro",
+      "ranking": "Clasificación"
+    },
     "customTitle": "Título personalizado",
     "customTitlePlaceholder": "Dejar vacío para título automático",
-    "colors": { "navy": "Color principal", "gold": "Color de acento", "green": "Color de victoria" },
-    "elements": {
-      "header": "Encabezado", "gold-bar": "Separador dorado", "competition-name": "Nombre de competición", "meta-chips": "Chips de info",
-      "score-grid": "Cuadrícula de puntuación", "pending-matches": "Combates pendientes",
-      "finished-matches": "Resultados", "match-cards": "Fichas de combate",
-      "ranking-table": "Tabla de clasificación", "footer": "Pie de página"
+    "colors": {
+      "navy": "Color principal",
+      "gold": "Color de acento",
+      "green": "Color de victoria"
     },
-    "reset": "Restablecer", "exportJson": "Exportar JSON", "importJson": "Importar JSON", "importError": "Archivo JSON inválido"
+    "elements": {
+      "header": "Encabezado",
+      "gold-bar": "Separador dorado",
+      "competition-name": "Nombre de competición",
+      "meta-chips": "Chips de info",
+      "score-grid": "Cuadrícula de puntuación",
+      "pending-matches": "Combates pendientes",
+      "finished-matches": "Resultados",
+      "match-cards": "Fichas de combate",
+      "ranking-table": "Tabla de clasificación",
+      "footer": "Pie de página"
+    },
+    "reset": "Restablecer",
+    "exportJson": "Exportar JSON",
+    "importJson": "Importar JSON",
+    "importError": "Archivo JSON inválido"
   },
   "cardModal": {
     "title": "Tarjeta para {{name}}",
@@ -333,5 +354,31 @@
     "timer": "Iniciar/Pausar cronómetro",
     "nav_list": "Navegar en la lista",
     "validate": "Validar / Abrir"
+  },
+  "formula": {
+    "builder_title": "Constructor de fórmulas",
+    "add_pool_round": "Añadir ronda de grupos",
+    "add_de": "Añadir eliminación directa",
+    "add_classification": "Añadir clasificación",
+    "save_template": "Guardar como plantilla",
+    "load_template": "Cargar una plantilla",
+    "advancement_rule": "Regla de avance",
+    "advancement_all": "Todos avanzan",
+    "advancement_percent": "Top %",
+    "advancement_fixed": "Número fijo",
+    "advancement_bracket": "Cuadro siguiente",
+    "ranking_criteria": "Criterios de clasificación",
+    "criterion_vm": "V/M (ratio de victorias)",
+    "criterion_index": "Índice (TD−TR)",
+    "criterion_td": "Tocados dados",
+    "criterion_tr": "Tocados recibidos",
+    "criterion_direct": "Enfrentamiento directo",
+    "criterion_initial": "Clasificación inicial",
+    "simulation_title": "Simulación",
+    "pool_round_n": "Ronda de grupos {{n}}",
+    "scoring_standard": "Estándar (1 tocado = 1 punto)",
+    "scoring_zones": "Zonas personalizadas",
+    "zone_label": "Zona",
+    "zone_points": "Puntos"
   }
 }

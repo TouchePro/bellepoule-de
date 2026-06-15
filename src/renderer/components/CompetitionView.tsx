@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
-import { Competition, Fencer, FencerStatus, Match, MatchStatus, Weapon, QuestPhaseConfig, Referee } from '../../shared/types';
+import { Competition, Fencer, FencerStatus, Match, MatchStatus, Weapon, QuestPhaseConfig, Referee, Gender } from '../../shared/types';
 import { Arena } from '../../shared/types/remote';
 import { logger, LogCategory } from '@shared/services/logger';
 import { RankingImportResult } from '../../shared/utils/fileParser';
@@ -29,10 +29,11 @@ import {
   distributeFencersToPoolsSerpentine,
   generatePoolMatchOrder,
   generateInitialRanking,
+  filterPoolWinners,
 } from '../../shared/utils/poolCalculations';
 import { QRCodeShare } from './QRCodeShare';
 import { TouchOptimizedReferee } from './TouchOptimizedReferee';
-import { FencerPhoto } from './FencerPhoto';
+import KioskScoreEntry from './competition/KioskScoreEntry';
 import { ScoreAuditLog } from './ScoreAuditLog';
 import { RefereeManagerComponent } from './RefereeManager';
 import CompetitionHeader from './competition/CompetitionHeader';
@@ -54,6 +55,7 @@ interface CompetitionViewProps {
   onUpdate: (competition: Competition) => void;
   requestPhase?: string;
   onPhaseApplied?: () => void;
+  onRemoteServerChange?: (url: string | null, arenaCount: number) => void;
 }
 
 // ─── Static style constants ───────────────────────────────────────────────────
@@ -64,28 +66,12 @@ const CV_STYLES = {
   thirdPlaceModal: { backgroundColor: 'white', padding: '2rem', borderRadius: '8px', boxShadow: '0 10px 25px rgba(0, 0, 0, 0.25)', maxWidth: '500px', width: '90%' } satisfies React.CSSProperties,
   thirdPlaceTitle: { margin: '0 0 1rem 0', color: '#1f2937' } satisfies React.CSSProperties,
   thirdPlaceBtnRow: { display: 'flex', gap: '1rem', justifyContent: 'flex-end' as const, marginTop: '1.5rem' } satisfies React.CSSProperties,
-  kioskOverlay: { position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, background: '#f3f4f6', overflow: 'auto' as const } satisfies React.CSSProperties,
-  kioskCloseWrapper: { position: 'sticky' as const, top: '1rem', right: '1rem', float: 'right' as const, zIndex: 10000, margin: '1rem' } satisfies React.CSSProperties,
-  kioskCloseBtn: { background: '#ef4444', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '8px', cursor: 'pointer', fontSize: '1rem', fontWeight: 'bold' as const } satisfies React.CSSProperties,
-  kioskContent: { padding: '2rem' } satisfies React.CSSProperties,
-  kioskHeading: { marginBottom: '2rem', color: '#1f2937' } satisfies React.CSSProperties,
-  kioskPoolCard: { marginBottom: '3rem', background: 'white', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' } satisfies React.CSSProperties,
-  kioskPoolTitle: { marginBottom: '1rem', color: '#374151', borderBottom: '2px solid #e5e7eb', paddingBottom: '0.5rem' } satisfies React.CSSProperties,
-  kioskMatchGrid: { display: 'grid', gap: '1rem' } satisfies React.CSSProperties,
-  kioskMatchFencerA: { display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 } satisfies React.CSSProperties,
-  kioskMatchScores: { display: 'flex', alignItems: 'center', gap: '1rem' } satisfies React.CSSProperties,
-  kioskMatchScoreInput: { width: '60px', padding: '0.5rem', fontSize: '1.25rem', textAlign: 'center' as const, border: '2px solid #d1d5db', borderRadius: '6px' } satisfies React.CSSProperties,
-  kioskMatchSep: { fontSize: '1.5rem', fontWeight: 'bold' as const, color: '#6b7280' } satisfies React.CSSProperties,
-  kioskMatchFencerB: { display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, justifyContent: 'flex-end' as const } satisfies React.CSSProperties,
-  kioskMatchName: { fontWeight: 'bold' as const } satisfies React.CSSProperties,
-  kioskFinishRow: { textAlign: 'center' as const, marginTop: '2rem' } satisfies React.CSSProperties,
-  kioskFinishBtn: { background: '#10b981', color: 'white', border: 'none', padding: '1rem 2rem', borderRadius: '8px', cursor: 'pointer', fontSize: '1.25rem', fontWeight: 'bold' as const } satisfies React.CSSProperties,
   poolsExportRow: { textAlign: 'center' as const, marginBottom: '2rem' } satisfies React.CSSProperties,
   questWrapper: { display: 'none' } satisfies React.CSSProperties,
   phaseContent: { flex: 1, overflow: 'auto' as const } satisfies React.CSSProperties,
 } satisfies Record<string, React.CSSProperties>;
 
-const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate, requestPhase, onPhaseApplied }) => {
+const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate, requestPhase, onPhaseApplied, onRemoteServerChange }) => {
   const { showToast } = useToast();
   const { t, language } = useTranslation();
 
@@ -98,6 +84,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const tableMaxScore = competition.settings?.defaultTableMaxScore ?? 0;
   const isLaserSabre = competition.weapon === Weapon.LASER;
   const expertMode = competition.settings?.expertMode ?? false;
+  const poolWinnersOnly = competition.settings?.poolWinnersOnly ?? false;
+  const postPoolSplitCriteria = competition.settings?.postPoolSplitCriteria;
 
   const auditLogEnabled = localStorage.getItem('bellepoule-audit-log-enabled') === 'true';
 
@@ -121,13 +109,24 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [isRemoteActive, setIsRemoteActive] = useState(false);
   const [remoteServerUrl, setRemoteServerUrl] = useState<string | null>(null);
   const [remoteArenaCount, setRemoteArenaCount] = useState<number>(1);
+  useEffect(() => { onRemoteServerChange?.(remoteServerUrl, remoteArenaCount); }, [remoteServerUrl, remoteArenaCount]);
   const [arenaStates, setArenaStates] = useState<Arena[]>([]);
   const [showThirdPlaceDialog, setShowThirdPlaceDialog] = useState(false);
   const [tableauMatches, setTableauMatches] = useState<TableauMatch[]>([]);
   const [consolationBrackets, setConsolationBrackets] = useState<ConsolationBracket[]>([]);
+  // Refs pour connaître la présence d'un match dans le tableau/consolante de façon synchrone
+  // (mises à jour distantes : éviter le warning "Match non trouvé" côté poule pour les matchs DE)
+  const tableauMatchesRef = useRef<TableauMatch[]>([]);
+  const consolationBracketsRef = useRef<ConsolationBracket[]>([]);
+  tableauMatchesRef.current = tableauMatches;
+  consolationBracketsRef.current = consolationBrackets;
   const [finalResults, setFinalResults] = useState<FinalResult[]>([]);
   const [appelFencers, setAppelFencers] = useState<Fencer[]>([]);
   const [appelVisibleColumns, setAppelVisibleColumns] = useState<string[]>([]);
+  const handleAppelStateChange = useCallback((f: Fencer[], cols: string[]) => {
+    setAppelFencers(f);
+    setAppelVisibleColumns(cols);
+  }, []);
   const [tableauEditUnlocked, setTableauEditUnlocked] = useState(false);
   const [showFencerComparison, setShowFencerComparison] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
@@ -150,6 +149,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
   // Flag pour indiquer que la phase de poules est sautée (0 poules configurées)
   const [skipPoolPhase, setSkipPoolPhase] = useState(false);
+
+  // Mode compétition couplée : groupe actif ('M' | 'F' | null)
+  const [activeSplitGroup, setActiveSplitGroup] = useState<string | null>(null);
+  // État des tableaux par groupe (pour conserver les matchs quand on bascule)
+  const [splitTableauStates, setSplitTableauStates] = useState<
+    Record<string, { matches: TableauMatch[]; consolation: ConsolationBracket[]; results: FinalResult[] }>
+  >({});
 
   // Hooks personnalisés
   const {
@@ -242,7 +248,10 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       ] as const;
       const restoredPhase = phaseMap[restoredState.currentPhase || 0];
       if (restoredPhase) setCurrentPhase(restoredPhase);
-      if (['tableau', 'results', 'remote'].includes(restoredPhase)) {
+      if (
+        ['tableau', 'results', 'remote', 'ranking'].includes(restoredPhase) ||
+        (restoredState.tableauMatches && restoredState.tableauMatches.length > 0)
+      ) {
         setRankingValidated(true);
       }
       if (restoredState.currentPoolRound) setCurrentPoolRound(restoredState.currentPoolRound);
@@ -261,9 +270,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     }
   }, [restoredState, isLoaded]);
 
-  // Fallback DB : si session state n'a pas de poules, essayer de les charger depuis la DB
+  // Fallback DB : si session state n'a pas de poules, essayer de les charger depuis la DB.
+  // Guard: ne pas déclencher si restoredState a déjà des poules (elles seront appliquées par
+  // l'effet [restoredState, isLoaded] dans le même cycle de rendu, évitant la race condition
+  // où l'IPC SQLite répond avant le prochain rendu React et écrase la session state).
   useEffect(() => {
     if (!isLoaded || pools.length > 0) return;
+    if (restoredState?.pools && restoredState.pools.length > 0) return;
     let cancelled = false;
     window.electronAPI.db.getPhasesByCompetition(competition.id)
       .then(phases => {
@@ -276,7 +289,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       })
       .catch((e: unknown) => logger.warn(LogCategory.DATABASE, 'DB pool fallback failed', e instanceof Error ? e : undefined));
     return () => { cancelled = true; };
-  }, [isLoaded, pools.length, competition.id]);
+  }, [isLoaded, pools.length, competition.id, restoredState]);
 
   // Rétablir isRemoteActive si une session est déjà en cours (ex: rechargement après phase poules)
   useEffect(() => {
@@ -330,6 +343,96 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     return () => clearTimeout(timer);
   }, [isRemoteActive, competition.id]);
 
+  // Appliquer un score distant au bon conteneur : tableau DE, consolante, ou poule.
+  // Évite le warning "Match non trouvé" côté poule pour les matchs du tableau.
+  const applyRemoteScore = useCallback(
+    (matchIdRaw: string, scoreARaw: number, scoreBRaw: number, finished: boolean, winnerOverride?: 'A' | 'B') => {
+      const matchId = matchIdRaw;
+      // Le score peut arriver sous forme d'objet Score ({ value }) ou de chaîne
+      // selon le chemin (IPC tablette, sync DB). On normalise en nombre, sinon les
+      // comparaisons scoreA > scoreB échouent (NaN) → aucun vainqueur, aucune
+      // propagation au tour suivant.
+      const toNum = (s: unknown): number =>
+        typeof s === 'object' && s !== null ? Number((s as { value?: number }).value ?? 0) : Number(s ?? 0);
+      const scoreA = toNum(scoreARaw);
+      const scoreB = toNum(scoreBRaw);
+      const status = finished ? MatchStatus.FINISHED : MatchStatus.IN_PROGRESS;
+      // Le vainqueur transmis par le serveur (winnerOverride) fait foi : il gère les
+      // cas d'égalité (tirage au sort) et reste correct même si le score transporté
+      // est ambigu. On retombe sur la comparaison des scores en dernier recours.
+      const resolveWinner = (match: TableauMatch) =>
+        !finished ? (match.winner ?? null) :
+        winnerOverride === 'A' ? match.fencerA :
+        winnerOverride === 'B' ? match.fencerB :
+        scoreA > scoreB ? match.fencerA :
+        scoreB > scoreA ? match.fencerB :
+        null;
+
+      // La tablette/serveur peut renvoyer l'ID brut du match ('16-0') ou l'ID
+      // composite stocké en base ('${competitionId}-16-0'). On apparie les deux
+      // sens pour ne pas rater un match du tableau (sinon : pas de propagation).
+      const idMatches = (m: { id: string }) =>
+        m.id === matchId ||
+        matchId === `${competition.id}-${m.id}` ||
+        `${competition.id}-${matchId}` === m.id;
+
+      const inTableau = tableauMatchesRef.current.some(idMatches);
+      const inConsolation = consolationBracketsRef.current.some(b =>
+        b.matches.some(idMatches)
+      );
+
+      // DIAGNOSTIC (visible en prod, niveau WARN) : tracer le routage du score distant.
+      logger.warn(
+        LogCategory.UI,
+        `[applyRemoteScore] match=${matchId} score=${scoreA}-${scoreB} fini=${finished} ` +
+          `→ tableau=${inTableau} consolante=${inConsolation} | ` +
+          `ids tableau=[${tableauMatchesRef.current.map(m => m.id).join(',')}]`
+      );
+
+      if (inTableau) {
+        setTableauMatches(prev => {
+          const idx = prev.findIndex(idMatches);
+          if (idx === -1) return prev;
+          const updated = prev.map((m, i) =>
+            i === idx ? { ...m, scoreA, scoreB, winner: resolveWinner(m) } : m
+          );
+          if (finished) {
+            const size = prev.length > 0 ? Math.max(...prev.map(m => m.round)) : 0;
+            propagateWinners(updated, size);
+          }
+          return [...updated];
+        });
+      }
+
+      if (inConsolation) {
+        setConsolationBrackets(prev =>
+          prev.map(bracket => {
+            const idx = bracket.matches.findIndex(idMatches);
+            if (idx === -1) return bracket;
+            const updated = bracket.matches.map((m, i) =>
+              i === idx ? { ...m, scoreA, scoreB, winner: resolveWinner(m) } : m
+            );
+            if (finished) {
+              const size = updated.length > 0 ? Math.max(...updated.map(m => m.round)) : 0;
+              propagateWinners(updated, size);
+            }
+            return { ...bracket, matches: updated };
+          })
+        );
+      }
+
+      // Match de poule uniquement s'il n'est pas dans le tableau/consolante
+      if (!inTableau && !inConsolation) {
+        logger.warn(
+          LogCategory.UI,
+          `[applyRemoteScore] match=${matchId} routé vers POULES (non trouvé en tableau/consolante)`
+        );
+        updateMatchFromRemote(matchId, scoreA, scoreB, status, winnerOverride);
+      }
+    },
+    [updateMatchFromRemote, competition.id]
+  );
+
   // Charger les arènes quand le serveur distant devient actif et s'abonner aux updates
   useEffect(() => {
     if (!isRemoteActive || !competition?.id || !window.electronAPI?.remote) return;
@@ -350,6 +453,11 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
           };
           return updated;
         });
+
+        // NB : on ne propage PAS le score touche-par-touche vers les données du
+        // match (poule/tableau). Le score n'est appliqué que lorsque l'arbitre
+        // valide « match terminé » (event match:finished). Ici on ne met à jour
+        // que l'affichage live de la piste (arenaStates, ci-dessus).
       });
     }
     return () => unlisten?.();
@@ -368,32 +476,15 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       winner?: 'A' | 'B';
       isTableau?: boolean;
     }) => {
-      const { matchId, scoreA, scoreB, winner: winnerOverride } = data;
-      logger.debug(
+      const { matchId, scoreA, scoreB, winner: winnerOverride, isTableau } = data;
+      logger.warn(
         LogCategory.UI,
-        `[CompetitionView] Match terminé reçu: ${matchId} - Score: ${scoreA}-${scoreB}`
+        `[CompetitionView] match:finished REÇU matchId=${matchId} score=${scoreA}-${scoreB} tableau=${!!isTableau}`
       );
-      updateMatchFromRemote(matchId, scoreA, scoreB, MatchStatus.FINISHED, winnerOverride);
-
-      // Mise à jour du tableau d'élimination directe si c'est un match DE
-      setTableauMatches(prev => {
-        const idx = prev.findIndex(m => m.id === matchId);
-        if (idx === -1) return prev;
-        const match = prev[idx];
-        const winner =
-          scoreA > scoreB ? match.fencerA :
-          scoreB > scoreA ? match.fencerB :
-          winnerOverride === 'A' ? match.fencerA :
-          winnerOverride === 'B' ? match.fencerB :
-          null;
-        const updated = prev.map((m, i) => (i === idx ? { ...m, scoreA, scoreB, winner } : m));
-        const size = prev.length > 0 ? Math.max(...prev.map(m => m.round)) : 0;
-        propagateWinners(updated, size);
-        return [...updated];
-      });
+      applyRemoteScore(matchId, scoreA, scoreB, true, winnerOverride);
     };
 
-    window.electronAPI.onRemoteMatchFinished(handleMatchFinished);
+    const offMatchFinished = window.electronAPI.onRemoteMatchFinished(handleMatchFinished);
 
     // Carton noir distant : exclure le combattant fautif dans le store
     const offExcluded = window.electronAPI.onRemoteFencerExcluded?.(({ fencerId }) => {
@@ -402,10 +493,10 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     });
 
     return () => {
-      window.electronAPI.removeAllListeners?.('match:finished');
+      offMatchFinished?.();
       offExcluded?.();
     };
-  }, [updateMatchFromRemote, updateFencer]);
+  }, [applyRemoteScore, updateFencer]);
 
   // Sync scores/statuts des matches de poule vers la DB quand ils changent
   const prevPoolsRef = useRef(pools);
@@ -670,10 +761,25 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     setCurrentPhase('ranking');
   };
 
-  const handleGoToTableau = () => {
+  const handleGoToTableau = (splitGroup?: string) => {
     setRankingValidated(true);
     // Ne pas recalculer : overallRanking est déjà à jour
-    // (calculé à l'entrée dans handleGoToRanking, mis à jour par onRankingChange si édité manuellement)
+
+    if (splitGroup && splitGroup !== activeSplitGroup) {
+      // Sauvegarder l'état du groupe courant avant de basculer
+      if (activeSplitGroup) {
+        setSplitTableauStates(prev => ({
+          ...prev,
+          [activeSplitGroup]: { matches: tableauMatches, consolation: consolationBrackets, results: finalResults },
+        }));
+      }
+      // Charger l'état sauvegardé du nouveau groupe (ou partir de zéro)
+      const saved = splitTableauStates[splitGroup];
+      setTableauMatches(saved?.matches ?? []);
+      setConsolationBrackets(saved?.consolation ?? []);
+      setFinalResults(saved?.results ?? []);
+      setActiveSplitGroup(splitGroup);
+    }
 
     // Si le classement a changé, réinitialiser les matches du tableau
     if (rankingChanged) {
@@ -684,6 +790,27 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     }
 
     setShowThirdPlaceDialog(true);
+  };
+
+  // Basculer vers un autre groupe dans un tableau déjà ouvert
+  const handleSwitchSplitGroup = (newGroup: string) => {
+    if (newGroup === activeSplitGroup) return;
+    // Sauvegarder l'état courant
+    if (activeSplitGroup) {
+      setSplitTableauStates(prev => ({
+        ...prev,
+        [activeSplitGroup]: { matches: tableauMatches, consolation: consolationBrackets, results: finalResults },
+      }));
+    }
+    const saved = splitTableauStates[newGroup];
+    setTableauMatches(saved?.matches ?? []);
+    setConsolationBrackets(saved?.consolation ?? []);
+    setFinalResults(saved?.results ?? []);
+    setActiveSplitGroup(newGroup);
+    // Revenir au classement si le groupe choisi n'a pas de résultats
+    if (!saved?.results?.length) {
+      setCurrentPhase('tableau');
+    }
   };
 
   const handleThirdPlaceDecision = (shouldHaveThirdPlace: boolean) => {
@@ -712,11 +839,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     const rankedFencers = ranking.map(r => r.fencer);
 
     const poolCount = calculateOptimalPoolCount(rankedFencers.length, 5, 7);
-    const distribution = distributeFencersToPoolsSerpentine(rankedFencers, poolCount, {
-      byClub: true,
-      byRegion: true,
-      byNation: false,
-    });
+    const distribution = distributeFencersToPoolsSerpentine(rankedFencers, poolCount, ['byClub', 'byRegion']);
 
     const now = new Date();
     const newPools = distribution.map((poolFencers, index) => {
@@ -798,7 +921,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const isResultsLocked = hasDirectElimination && finalResults.length === 0;
   // En mode quest-sans-poules, le tableau se débloque par la complétion de la quête (rankingValidated)
   // Le tableau reste accessible en lecture seule si les résultats finaux existent déjà
-  const isTableauUnlocked = finalResults.length > 0 || (questNoPool
+  // ou si des matchs de tableau ont déjà été générés (session restaurée même sans poules chargées)
+  const isTableauUnlocked = finalResults.length > 0 || tableauMatches.length > 0 || (questNoPool
     ? rankingValidated
     : canAdvanceFromPools && rankingValidated);
 
@@ -961,6 +1085,30 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     return () => document.removeEventListener('mousedown', handler);
   }, [showActionsMenu]);
 
+  // Groupes disponibles pour la séparation (pour les onglets du tableau)
+  const splitGroups = useMemo((): string[] => {
+    if (postPoolSplitCriteria !== 'gender') return [];
+    const genders = new Set<string>();
+    for (const r of overallRanking) {
+      if ((r.fencer.gender as string) !== Gender.MIXED) genders.add(r.fencer.gender as string);
+    }
+    return Array.from(genders).sort();
+  }, [postPoolSplitCriteria, overallRanking]);
+
+  // Classement effectif pour le tableau (filtré par vainqueurs de poule et/ou groupe actif)
+  const effectiveTableauRanking = useMemo(() => {
+    let ranking = overallRanking;
+    if (poolWinnersOnly && pools.length > 0) {
+      ranking = filterPoolWinners(pools, ranking);
+    }
+    if (postPoolSplitCriteria === 'gender' && activeSplitGroup) {
+      ranking = ranking
+        .filter(r => (r.fencer.gender as string) === activeSplitGroup)
+        .map((r, i) => ({ ...r, rank: i + 1 }));
+    }
+    return ranking;
+  }, [overallRanking, pools, poolWinnersOnly, postPoolSplitCriteria, activeSplitGroup]);
+
   // Calcul progression matchs
   const matchProgress = useMemo(() => {
     if (pools.length === 0 && tableauMatches.length === 0) return null;
@@ -1036,7 +1184,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             onUncheckAll={uncheckAll}
             onImport={(type) => handleOpenImportDialog(type)}
             onFencersImported={loadFencers}
-            onAppelStateChange={(f, cols) => { setAppelFencers(f); setAppelVisibleColumns(cols); }}
+            onAppelStateChange={handleAppelStateChange}
             onSetFencerStatus={(id, status) => {
               // Si forfait, abandon ou exclusion, mettre à jour tous les matchs du tireur
               if (status === FencerStatus.FORFAIT) {
@@ -1131,9 +1279,17 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                         competitionName={competition.title}
                         maxScore={poolMaxScore}
                         competitionId={competition.id}
-                        onScoreUpdate={(matchIndex, scoreA, scoreB, winner, specialStatus) =>
-                          updateScore(poolIndex, matchIndex, scoreA, scoreB, winner, specialStatus)
-                        }
+                        onScoreUpdate={(matchIndex, scoreA, scoreB, winner, specialStatus) => {
+                          updateScore(poolIndex, matchIndex, scoreA, scoreB, winner, specialStatus);
+                          if (isRemoteActive && competition?.id) {
+                            const match = pool.matches[matchIndex];
+                            if (match) {
+                              window.electronAPI.remote.finishPoolMatch(
+                                competition.id, match.id, scoreA, scoreB
+                              ).catch(() => {});
+                            }
+                          }
+                        }}
                         onMatchReset={(matchIndex) => {
                           const match = pool.matches[matchIndex];
                           if (!match) return;
@@ -1206,6 +1362,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               }
             }}
             onRankingChange={ranking => setOverallRanking(ranking)}
+            poolWinnersOnly={poolWinnersOnly}
+            splitCriteria={postPoolSplitCriteria}
           />
         )}
 
@@ -1248,6 +1406,29 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
         {currentPhase === 'tableau' && (
           <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Chargement tableau…</div>}>
+          {/* Sélecteur de groupe pour compétition couplée */}
+          {postPoolSplitCriteria && activeSplitGroup && splitGroups.length > 1 && (
+            <div style={{ display: 'flex', gap: '0.5rem', padding: '0.75rem 1rem', borderBottom: '1px solid #e5e7eb', background: '#f9fafb' }}>
+              {splitGroups.map(g => (
+                <button
+                  key={g}
+                  onClick={() => handleSwitchSplitGroup(g)}
+                  style={{
+                    padding: '0.375rem 0.875rem',
+                    borderRadius: '6px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontWeight: g === activeSplitGroup ? '700' : '400',
+                    background: g === activeSplitGroup ? '#2563eb' : '#e5e7eb',
+                    color: g === activeSplitGroup ? 'white' : '#374151',
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  {g === Gender.MALE ? '♂ Hommes' : g === Gender.FEMALE ? '♀ Femmes' : g}
+                </button>
+              ))}
+            </div>
+          )}
           {finalResults.length > 0 && (
             <div style={{
               display: 'flex',
@@ -1285,7 +1466,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             </div>
           )}
           <TableauView
-            ranking={overallRanking}
+            ranking={effectiveTableauRanking}
             matches={tableauMatches}
             onMatchesChange={setTableauMatches}
             consolationBrackets={consolationBrackets}
@@ -1324,7 +1505,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         {currentPhase === 'results' && (
           <ResultsView
             competition={competition}
-            poolRanking={overallRanking}
+            poolRanking={effectiveTableauRanking}
             finalResults={finalResults}
             fencers={fencers}
             pools={[...poolHistory.flat(), ...pools]}
@@ -1488,112 +1669,17 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
       {/* Mode Kiosk - Interface tablette arbitre */}
       {showKiosk && pools.length > 0 && (
-        <div style={CV_STYLES.kioskOverlay}>
-          <div style={CV_STYLES.kioskCloseWrapper}>
-            <button onClick={() => setShowKiosk(false)} style={CV_STYLES.kioskCloseBtn}>
-              ✕ Quitter Mode Kiosk
-            </button>
-          </div>
-          <div style={CV_STYLES.kioskContent}>
-            <h2 style={CV_STYLES.kioskHeading}>Mode Kiosk - Saisie des scores</h2>
-            {pools.map((pool, poolIndex) => (
-              <div key={pool.id} style={CV_STYLES.kioskPoolCard}>
-                <h3 style={CV_STYLES.kioskPoolTitle}>Poule {pool.number}</h3>
-                <div style={CV_STYLES.kioskMatchGrid}>
-                  {pool.matches.map(
-                    (match, matchIndex) =>
-                      match.status !== 'finished' && (
-                        <div
-                          key={match.id}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: '1rem',
-                            background: match.status === 'in_progress' ? '#fef3c7' : '#f9fafb',
-                            borderRadius: '8px',
-                            border:
-                              match.status === 'in_progress'
-                                ? '2px solid #f59e0b'
-                                : '1px solid #e5e7eb',
-                          }}
-                        >
-                          <div style={CV_STYLES.kioskMatchFencerA}>
-                            <FencerPhoto
-                              photo={match.fencerA?.photo}
-                              firstName={match.fencerA?.firstName || ''}
-                              lastName={match.fencerA?.lastName || ''}
-                              size="medium"
-                              editable={false}
-                            />
-                            <span style={CV_STYLES.kioskMatchName}>
-                              {match.fencerA?.firstName} {match.fencerA?.lastName}
-                            </span>
-                          </div>
-                          <div style={CV_STYLES.kioskMatchScores}>
-                            <input
-                              type="number"
-                              min="0"
-                              max={poolMaxScore}
-                              defaultValue={match.scoreA?.value || 0}
-                              style={CV_STYLES.kioskMatchScoreInput}
-                              onChange={e => {
-                                const scoreA = parseInt(e.target.value) || 0;
-                                const scoreB = match.scoreB?.value || 0;
-                                if (scoreA >= 0 && scoreA <= poolMaxScore) {
-                                  updateScore(poolIndex, matchIndex, scoreA, scoreB);
-                                }
-                              }}
-                            />
-                            <span style={CV_STYLES.kioskMatchSep}>-</span>
-                            <input
-                              type="number"
-                              min="0"
-                              max={poolMaxScore}
-                              defaultValue={match.scoreB?.value || 0}
-                              style={CV_STYLES.kioskMatchScoreInput}
-                              onChange={e => {
-                                const scoreB = parseInt(e.target.value) || 0;
-                                const scoreA = match.scoreA?.value || 0;
-                                if (scoreB >= 0 && scoreB <= poolMaxScore) {
-                                  updateScore(poolIndex, matchIndex, scoreA, scoreB);
-                                }
-                              }}
-                            />
-                          </div>
-                          <div style={CV_STYLES.kioskMatchFencerB}>
-                            <span style={CV_STYLES.kioskMatchName}>
-                              {match.fencerB?.firstName} {match.fencerB?.lastName}
-                            </span>
-                            <FencerPhoto
-                              photo={match.fencerB?.photo}
-                              firstName={match.fencerB?.firstName || ''}
-                              lastName={match.fencerB?.lastName || ''}
-                              size="medium"
-                              editable={false}
-                            />
-                          </div>
-                        </div>
-                      )
-                  )}
-                </div>
-              </div>
-            ))}
-            {areAllPoolsComplete() && (
-              <div style={CV_STYLES.kioskFinishRow}>
-                <button
-                  onClick={() => {
-                    setShowKiosk(false);
-                    handleGoToRanking();
-                  }}
-                  style={CV_STYLES.kioskFinishBtn}
-                >
-                  ✓ Tous les matchs sont terminés - Voir le classement
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+        <KioskScoreEntry
+          pools={pools}
+          poolMaxScore={poolMaxScore}
+          allPoolsComplete={areAllPoolsComplete()}
+          updateScore={updateScore}
+          onClose={() => setShowKiosk(false)}
+          onFinish={() => {
+            setShowKiosk(false);
+            handleGoToRanking();
+          }}
+        />
       )}
     </div>
   );

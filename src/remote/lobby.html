@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>En attente — BellePoule Modern</title>
+    <script src="/socket.io.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        font-family: 'Inter', system-ui, sans-serif;
+        background: #0f172a;
+        min-height: 100vh;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+      .container {
+        text-align: center;
+        padding: 2rem;
+        max-width: 500px;
+      }
+      .logo-wrap {
+        margin-bottom: 2.5rem;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .logo-wrap img {
+        max-height: 80px;
+        max-width: 240px;
+        object-fit: contain;
+        border-radius: 8px;
+      }
+      .icon {
+        font-size: 4rem;
+        margin-bottom: 1.5rem;
+        animation: pulse 2.5s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.45; }
+      }
+      h1 {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #f8fafc;
+        margin-bottom: 0.75rem;
+        letter-spacing: -0.01em;
+      }
+      .subtitle {
+        color: #94a3b8;
+        font-size: 1rem;
+        margin-bottom: 2.5rem;
+        line-height: 1.5;
+      }
+      .url-box {
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 10px;
+        padding: 1rem 1.25rem;
+        font-size: 0.85rem;
+        color: #64748b;
+        word-break: break-all;
+      }
+      .url-box span {
+        color: #38bdf8;
+        font-weight: 500;
+      }
+      #remote-msg-banner {
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        background: rgba(0,0,0,0.82);
+        color: #fff;
+        font-size: 1.3rem;
+        padding: 0.7rem 1.2rem;
+        text-align: center;
+        z-index: 9999;
+        pointer-events: none;
+        transition: opacity 0.4s;
+        opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="logo-wrap" id="logo-wrap" style="display:none">
+        <img id="logo-img" src="" alt="" />
+      </div>
+      <div class="icon">📺</div>
+      <h1>En attente d'affectation</h1>
+      <p class="subtitle">
+        Cet écran est connecté au serveur BellePoule.<br />
+        L'organisateur va l'affecter à une arène depuis le panneau de contrôle.
+      </p>
+      <div class="url-box">
+        Serveur : <span id="server-url"></span>
+      </div>
+    </div>
+    <div id="remote-msg-banner"></div>
+
+    <script>
+      document.getElementById('server-url').textContent = window.location.origin;
+
+      fetch('/api/logo').then(r => r.json()).then(d => {
+        if (d && d.logo) {
+          const img = document.getElementById('logo-img');
+          const wrap = document.getElementById('logo-wrap');
+          img.src = d.logo;
+          wrap.style.display = 'flex';
+        }
+      }).catch(() => {});
+
+      function _showIdentifyOverlay(label, durationMs) {
+        let ov = document.getElementById('bp-identify-overlay');
+        if (!ov) {
+          ov = document.createElement('div');
+          ov.id = 'bp-identify-overlay';
+          ov.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;pointer-events:none;animation:bp-identify-blink 0.5s ease-in-out infinite alternate;';
+          const style = document.createElement('style');
+          style.textContent = '@keyframes bp-identify-blink{from{background:rgba(59,130,246,0.55)}to{background:rgba(139,92,246,0.65)}}';
+          document.head.appendChild(style);
+          document.body.appendChild(ov);
+        }
+        ov.innerHTML = '<div style="background:rgba(0,0,0,0.85);border:3px solid #3b82f6;border-radius:1.5rem;padding:2rem 4rem;text-align:center;max-width:80vw;">'
+          + '<div style="font-size:2.5rem;font-weight:900;color:#fff;margin-bottom:0.5rem;">📺 ' + String(label).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c])) + '</div>'
+          + '<div style="font-size:1rem;color:#94a3b8;">Identification écran</div>'
+          + '</div>';
+        ov.style.display = 'flex';
+        clearTimeout(ov._t);
+        ov._t = setTimeout(() => { ov.style.display = 'none'; }, durationMs ?? 5000);
+      }
+
+      const socket = io({ reconnection: true, reconnectionDelay: 200, reconnectionDelayMax: 5000, randomizationFactor: 0.5 });
+
+      let _screenId = localStorage.getItem('bp_screen_id');
+      if (!_screenId) {
+        _screenId = 'scr_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+        localStorage.setItem('bp_screen_id', _screenId);
+      }
+
+      socket.on('connect', () => {
+        socket.emit('client:register', { clientType: 'lobby', userAgent: navigator.userAgent, screenId: _screenId });
+      });
+
+      socket.on('server:command', cmd => {
+        if (cmd.type === 'refresh') { location.reload(); return; }
+        if (cmd.type === 'navigate' && cmd.url) { location.href = cmd.url; return; }
+        if (cmd.type === 'ping') { socket.emit('client:pong'); return; }
+        if (cmd.type === 'identify') {
+          const lbl = cmd.screenLabel || localStorage.getItem('bp_screen_label') || _screenId;
+          if (cmd.screenLabel) localStorage.setItem('bp_screen_label', cmd.screenLabel);
+          _showIdentifyOverlay(lbl, cmd.duration ?? 5000);
+          return;
+        }
+        if (cmd.type === 'message' && cmd.text) {
+          const b = document.getElementById('remote-msg-banner');
+          b.textContent = cmd.text;
+          b.style.opacity = '1';
+          clearTimeout(b._t);
+          b._t = setTimeout(() => { b.style.opacity = '0'; }, cmd.duration ?? 5000);
+        }
+      });
+
+      socket.on('connect_error', (err) => {
+        console.error('[Lobby] Erreur Socket.IO:', err?.message || err);
+      });
+
+      setInterval(() => { if (socket.connected) socket.emit('client:pong'); }, 30000);
+
+      document.addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        }
+      }, { once: true });
+    </script>
+  </body>
+</html>

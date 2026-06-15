@@ -131,15 +131,33 @@ export function generatePoolMatchOrder(fencerCount: number): [number, number][] 
 }
 
 /**
- * Génère un ordre de matchs générique pour des poules de taille non standard
+ * Génère un ordre de matchs selon l'algorithme de Berger (méthode du cercle FIE)
+ * Garantit qu'aucun tireur ne dispute deux matchs consécutifs.
+ * Pour n pair : n-1 rondes de n/2 matchs.
+ * Pour n impair : ajoute un fantôme n+1, applique Berger(n+1), supprime les matchs impliquant le fantôme.
  */
 function generateGenericMatchOrder(fencerCount: number): [number, number][] {
+  const n = fencerCount;
   const matches: [number, number][] = [];
-  for (let i = 1; i <= fencerCount; i++) {
-    for (let j = i + 1; j <= fencerCount; j++) {
-      matches.push([i, j]);
+  const size = n % 2 === 0 ? n : n + 1;
+  const ghost = n % 2 === 0 ? -1 : size; // fantôme = n+1 si impair
+  const fixed = size;
+  const circle = Array.from({ length: size - 1 }, (_, i) => i + 1);
+
+  for (let round = 0; round < size - 1; round++) {
+    if (fixed !== ghost && circle[0] !== ghost) {
+      matches.push([fixed, circle[0]]);
     }
+    for (let i = 1; i < size / 2; i++) {
+      const a = circle[i];
+      const b = circle[size - 1 - i];
+      if (a !== ghost && b !== ghost) {
+        matches.push([a, b]);
+      }
+    }
+    circle.unshift(circle.pop()!);
   }
+
   return matches;
 }
 
@@ -385,14 +403,12 @@ export function calculatePoolRanking(pool: Pool): PoolRanking[] {
  * 2. Rééquilibrage des tailles de poules
  * 3. Tirage au sort des positions dans la poule (FIE §3)
  */
+export type SeparationCriterionKey = 'byClub' | 'byRegion' | 'byNation';
+
 export function distributeFencersToPoolsSerpentine(
   fencers: Fencer[],
   poolCount: number,
-  separation: {
-    byClub: boolean;
-    byRegion: boolean;
-    byNation: boolean;
-  }
+  separation: SeparationCriterionKey[]
 ): Fencer[][] {
   if (!Array.isArray(fencers))
     throw new TypeError('distributeFencersToPoolsSerpentine: fencers doit être un tableau');
@@ -407,6 +423,7 @@ export function distributeFencersToPoolsSerpentine(
     );
   }
   const pools: Fencer[][] = Array.from({ length: poolCount }, () => []);
+  const indexes = createPoolIndexes(pools);
 
   // Trier les tireurs par classement (meilleur classement = premier, non-classés = derniers)
   const pending = [...fencers].sort((a, b) => (a.ranking ?? 99999) - (b.ranking ?? 99999));
@@ -421,16 +438,26 @@ export function distributeFencersToPoolsSerpentine(
     const pool = pools[poolIndex];
 
     let chosen = 0;
-    if (separation.byClub || separation.byRegion || separation.byNation) {
-      for (let i = 0; i < pending.length; i++) {
-        if (!hasConflictWith(pending[i], pool, separation)) {
-          chosen = i;
-          break;
+    if (separation.length > 0) {
+      // Relâchement progressif : d'abord tous les critères, puis en retirant le moins
+      // prioritaire (dernier) jusqu'à ne garder que le plus prioritaire (premier).
+      // Garantit que le critère 1 n'est jamais sacrifié si une solution existe.
+      let found = false;
+      for (let take = separation.length; take >= 1 && !found; take--) {
+        const activeSub = separation.slice(0, take);
+        for (let i = 0; i < pending.length; i++) {
+          if (!hasConflictWith(pending[i], indexes[poolIndex], activeSub)) {
+            chosen = i;
+            found = true;
+            break;
+          }
         }
       }
     }
 
-    pool.push(pending.splice(chosen, 1)[0]);
+    const picked = pending.splice(chosen, 1)[0];
+    pool.push(picked);
+    indexAddFencer(indexes[poolIndex], picked);
 
     poolIndex += direction;
     if (poolIndex >= poolCount) {
@@ -443,7 +470,7 @@ export function distributeFencersToPoolsSerpentine(
   }
 
   // Rééquilibrer les poules pour assurer un nombre égal (ou presque égal) de tireurs
-  rebalancePools(pools, separation);
+  rebalancePools(pools, separation, indexes);
 
   // Tirage au sort des positions dans la poule (FIE §3)
   for (const pool of pools) {
@@ -457,31 +484,62 @@ export function distributeFencersToPoolsSerpentine(
 }
 
 /**
+ * Index multiensemble (valeur → occurrences) des clubs/régions/nations d'une poule,
+ * pour vérifier les conflits en O(1) au lieu de scanner la poule à chaque test.
+ * Les nations conservent les valeurs vides/undefined (égalité brute, cf. rééquilibrage).
+ */
+interface PoolConflictIndex {
+  clubs: Map<string, number>;
+  regions: Map<string, number>;
+  nations: Map<string | undefined, number>;
+}
+
+function indexAdd<K>(map: Map<K, number>, key: K): void {
+  map.set(key, (map.get(key) ?? 0) + 1);
+}
+
+function indexRemove<K>(map: Map<K, number>, key: K): void {
+  const count = map.get(key);
+  if (count === undefined) return;
+  if (count > 1) map.set(key, count - 1);
+  else map.delete(key);
+}
+
+function indexAddFencer(index: PoolConflictIndex, fencer: Fencer): void {
+  if (fencer.club) indexAdd(index.clubs, fencer.club);
+  if (fencer.region) indexAdd(index.regions, fencer.region);
+  indexAdd(index.nations, fencer.nationality);
+}
+
+function indexRemoveFencer(index: PoolConflictIndex, fencer: Fencer): void {
+  if (fencer.club) indexRemove(index.clubs, fencer.club);
+  if (fencer.region) indexRemove(index.regions, fencer.region);
+  indexRemove(index.nations, fencer.nationality);
+}
+
+function createPoolIndexes(pools: Fencer[][]): PoolConflictIndex[] {
+  return pools.map(pool => {
+    const index: PoolConflictIndex = { clubs: new Map(), regions: new Map(), nations: new Map() };
+    for (const fencer of pool) indexAddFencer(index, fencer);
+    return index;
+  });
+}
+
+/**
  * Vérifie si un tireur crée un conflit (club/région/nation) avec une poule existante.
  */
 function hasConflictWith(
   fencer: Fencer,
-  pool: Fencer[],
-  separation: { byClub: boolean; byRegion: boolean; byNation: boolean }
+  index: PoolConflictIndex,
+  separation: SeparationCriterionKey[]
 ): boolean {
-  return pool.some(existing => {
-    if (separation.byClub && fencer.club && fencer.club !== '' && fencer.club === existing.club)
-      return true;
-    if (
-      separation.byRegion &&
-      fencer.region &&
-      fencer.region !== '' &&
-      fencer.region === existing.region
-    )
-      return true;
-    if (
-      separation.byNation &&
-      fencer.nationality &&
-      fencer.nationality !== '' &&
-      fencer.nationality === existing.nationality
-    )
-      return true;
-    return false;
+  if (separation.length === 0) return false;
+  return separation.some(key => {
+    switch (key) {
+      case 'byClub': return !!fencer.club && index.clubs.has(fencer.club);
+      case 'byRegion': return !!fencer.region && index.regions.has(fencer.region);
+      case 'byNation': return index.nations.has(fencer.nationality);
+    }
   });
 }
 
@@ -491,7 +549,8 @@ function hasConflictWith(
  */
 function rebalancePools(
   pools: Fencer[][],
-  separation: { byClub: boolean; byRegion: boolean; byNation: boolean }
+  separation: SeparationCriterionKey[],
+  indexes: PoolConflictIndex[] = createPoolIndexes(pools)
 ): void {
   const poolCount = pools.length;
   if (poolCount === 0) return;
@@ -499,7 +558,6 @@ function rebalancePools(
   // Calculer la taille idéale
   const totalFencers = pools.reduce((sum, pool) => sum + pool.length, 0);
   const idealSize = Math.floor(totalFencers / poolCount);
-  const maxSize = idealSize + (totalFencers % poolCount > 0 ? 1 : 0);
 
   let rebalanced = true;
   let iterations = 0;
@@ -512,15 +570,15 @@ function rebalancePools(
     // Trouver les poules sources (> idealSize) et sous-chargées (< idealSize)
     // On utilise idealSize comme seuil source (pas maxSize) pour corriger les cas où
     // toutes les poules sont à maxSize mais certaines restent sous idealSize
-    const overloaded = pools
-      .map((pool, idx) => ({ idx, pool, size: pool.length }))
-      .filter(p => p.size > idealSize)
-      .sort((a, b) => b.size - a.size);
-
-    const underloaded = pools
-      .map((pool, idx) => ({ idx, pool, size: pool.length }))
-      .filter(p => p.size < idealSize)
-      .sort((a, b) => a.size - b.size);
+    const overloaded: { idx: number; pool: Fencer[]; size: number }[] = [];
+    const underloaded: { idx: number; pool: Fencer[]; size: number }[] = [];
+    pools.forEach((pool, idx) => {
+      const size = pool.length;
+      if (size > idealSize) overloaded.push({ idx, pool, size });
+      else if (size < idealSize) underloaded.push({ idx, pool, size });
+    });
+    overloaded.sort((a, b) => b.size - a.size);
+    underloaded.sort((a, b) => a.size - b.size);
 
     if (overloaded.length === 0 || underloaded.length === 0) break;
 
@@ -528,27 +586,22 @@ function rebalancePools(
     for (const source of overloaded) {
       for (const target of underloaded) {
         if (source.size <= idealSize || target.size >= idealSize) continue;
+        const targetIndex = indexes[target.idx];
 
         // Chercher un tireur à déplacer qui ne crée pas de conflit
         for (let i = source.pool.length - 1; i >= 0; i--) {
           const fencer = source.pool[i];
 
           // Vérifier que le déplacement ne crée pas de conflit sur les critères actifs
-          const clubVal = fencer.club ?? '';
-          const regionVal = fencer.region ?? '';
-          const wouldCreateConflict =
-            (separation.byClub &&
-              clubVal !== '' &&
-              target.pool.some(f => (f.club ?? '') === clubVal)) ||
-            (separation.byRegion &&
-              regionVal !== '' &&
-              target.pool.some(f => (f.region ?? '') === regionVal)) ||
-            (separation.byNation && target.pool.some(f => f.nationality === fencer.nationality));
+          // (nation : égalité brute, y compris valeurs vides — comportement historique)
+          const wouldCreateConflict = hasConflictWith(fencer, targetIndex, separation);
 
           if (!wouldCreateConflict) {
             // Déplacer le tireur
             source.pool.splice(i, 1);
             target.pool.push(fencer);
+            indexRemoveFencer(indexes[source.idx], fencer);
+            indexAddFencer(targetIndex, fencer);
             source.size--;
             target.size++;
             rebalanced = true;
@@ -847,9 +900,9 @@ export function calculatePoolRankingQuest(
 /**
  * Calcule le classement général Quest à partir de toutes les poules
  * Ordre de priorité:
- * 1. Nombre de victoires (décroissant)
+ * 1. Ratio V/M (décroissant)
  * 2. Points Quest (décroissant)
- * 3. Indice (TD-TR) (décroissant)
+ * 3. V4 décroissant, puis V3, V2, V1
  */
 export function calculateOverallRankingQuest(pools: Pool[]): PoolRanking[] {
   const allRankings: PoolRanking[] = [];
@@ -873,10 +926,19 @@ export function calculateOverallRankingQuest(pools: Pool[]): PoolRanking[] {
     if (aQuest !== bQuest) {
       return bQuest - aQuest;
     }
-    // 3. Indice (TD-TR) (décroissant)
-    if (a.index !== b.index) {
-      return b.index - a.index;
-    }
+    // 3. V4 décroissant, puis V3, V2, V1
+    const aV4 = a.questVictories4 ?? 0;
+    const bV4 = b.questVictories4 ?? 0;
+    if (aV4 !== bV4) return bV4 - aV4;
+    const aV3 = a.questVictories3 ?? 0;
+    const bV3 = b.questVictories3 ?? 0;
+    if (aV3 !== bV3) return bV3 - aV3;
+    const aV2 = a.questVictories2 ?? 0;
+    const bV2 = b.questVictories2 ?? 0;
+    if (aV2 !== bV2) return bV2 - aV2;
+    const aV1 = a.questVictories1 ?? 0;
+    const bV1 = b.questVictories1 ?? 0;
+    if (aV1 !== bV1) return bV1 - aV1;
     // 4. Égalité parfaite - garder l'ordre
     return 0;
   });
@@ -980,4 +1042,45 @@ export function generateInitialRanking(fencers: Fencer[]): PoolRanking[] {
     ratio: 0,
     questPoints: 0,
   }));
+}
+
+// ============================================================================
+// Mode vainqueurs de poule
+// ============================================================================
+
+/** Renvoie les IDs des tireurs classés 1er dans leur poule respective */
+export function getPoolWinnerIds(pools: Pool[]): Set<string> {
+  const ids = new Set<string>();
+  for (const pool of pools) {
+    const ranking = pool.ranking?.length ? pool.ranking : calculatePoolRanking(pool);
+    ranking.filter(r => r.rank === 1).forEach(r => ids.add(r.fencer.id));
+  }
+  return ids;
+}
+
+/** Filtre le classement général pour ne garder que les vainqueurs de poule */
+export function filterPoolWinners(pools: Pool[], overallRanking: PoolRanking[]): PoolRanking[] {
+  const winnerIds = getPoolWinnerIds(pools);
+  return overallRanking
+    .filter(r => winnerIds.has(r.fencer.id))
+    .map((r, i) => ({ ...r, rank: i + 1 }));
+}
+
+// ============================================================================
+// Mode compétition couplée (séparation par genre)
+// ============================================================================
+
+/** Répartit le classement général en sous-classements par genre */
+export function splitRankingByGender(overallRanking: PoolRanking[]): Map<string, PoolRanking[]> {
+  const groups = new Map<string, PoolRanking[]>();
+  for (const r of overallRanking) {
+    const key = r.fencer.gender as string;
+    const arr = groups.get(key) ?? [];
+    arr.push(r);
+    groups.set(key, arr);
+  }
+  for (const [key, rankings] of groups) {
+    groups.set(key, rankings.map((r, i) => ({ ...r, rank: i + 1 })));
+  }
+  return groups;
 }

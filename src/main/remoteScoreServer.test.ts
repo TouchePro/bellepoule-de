@@ -9,11 +9,14 @@ vi.mock('fs', () => ({
 }));
 
 vi.mock('socket.io', () => ({
-  Server: vi.fn().mockImplementation(() => ({
-    on: vi.fn(),
-    emit: vi.fn(),
-    to: vi.fn().mockReturnThis(),
-  })),
+  // Instancié avec `new` : l'implémentation doit être constructible (pas de fonction fléchée)
+  Server: vi.fn().mockImplementation(function () {
+    return {
+      on: vi.fn(),
+      emit: vi.fn(),
+      to: vi.fn().mockReturnThis(),
+    };
+  }),
 }));
 
 vi.mock('http', () => ({
@@ -21,6 +24,7 @@ vi.mock('http', () => ({
     listen: vi.fn(),
     close: vi.fn(),
     on: vi.fn(),
+    once: vi.fn(),
   }),
 }));
 
@@ -39,6 +43,7 @@ const mockDb = {
 };
 
 import express from 'express';
+import { createServer } from 'http';
 import { RemoteScoreServer } from './remoteScoreServer';
 
 // Helpers pour simuler request / response Express
@@ -93,16 +98,14 @@ describe('RemoteScoreServer', () => {
     });
 
     it('start() appelle server.listen', () => {
-      const { createServer } = require('http');
       server.start();
-      const httpServer = createServer.mock.results[0].value;
+      const httpServer = vi.mocked(createServer).mock.results[0].value;
       expect(httpServer.listen).toHaveBeenCalledWith(8066, '0.0.0.0', expect.any(Function));
     });
 
     it('stop() appelle server.close', () => {
-      const { createServer } = require('http');
       server.stop();
-      const httpServer = createServer.mock.results[0].value;
+      const httpServer = vi.mocked(createServer).mock.results[0].value;
       expect(httpServer.close).toHaveBeenCalled();
     });
   });
@@ -145,6 +148,42 @@ describe('RemoteScoreServer', () => {
           password.length === arena.password.length &&
           password === arena.password;
         expect(passwordOk).toBe(false);
+      }
+    });
+
+    it('retourne succès si mot de passe correct (stocké hashé via setArenaPassword)', () => {
+      const arenas: Map<string, any> = (server as any).arenas;
+      arenas.set('arena1', {
+        id: 'arena1',
+        number: 1,
+        name: 'Arène 1',
+        status: 'idle',
+        currentMatch: null,
+        settings: {},
+      });
+      server.setArenaPassword('1', 'secret123');
+      // Le mot de passe ne doit jamais rester en clair en mémoire
+      expect(arenas.get('arena1').password).not.toBe('secret123');
+
+      const req = makeReq({
+        params: { arenaId: '1' },
+        body: { password: 'secret123' },
+        headers: {},
+      });
+      const res = makeRes();
+
+      const loginHandler = (server as any).app._router?.stack
+        ?.find((l: any) => l?.route?.path === '/api/auth/login/:arenaId')
+        ?.route?.stack?.[0]?.handle;
+
+      if (loginHandler) {
+        loginHandler(req, res, vi.fn());
+        expect(res.status).not.toHaveBeenCalledWith(401);
+        expect(res.json).toHaveBeenCalledWith({ success: true });
+        expect(res.setHeader).toHaveBeenCalledWith(
+          'Set-Cookie',
+          expect.stringContaining('bp_token_arena1=')
+        );
       }
     });
 

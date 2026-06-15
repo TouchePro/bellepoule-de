@@ -17,7 +17,8 @@ import {
   CreatePenaltyDTO,
   DEFAULT_PENALTY_CONFIG,
   PenaltyConfig,
-} from './types/penalty.types';
+} from '../types/penalty.types';
+import { createDebouncedJSONStorage } from '../../../shared/utils/debouncedStorage';
 
 interface PenaltyState {
   penalties: Penalty[];
@@ -224,6 +225,8 @@ export const usePenaltyStore = create<PenaltyState & PenaltyActions>()(
         }),
         {
           name: 'penalty-store',
+          // Écriture différée : un carton en plein match ne doit pas resérialiser tout l'historique.
+          storage: createDebouncedJSONStorage(500),
           partialize: state => ({
             penalties: state.penalties,
             config: state.config,

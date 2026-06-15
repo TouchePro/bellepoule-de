@@ -26,10 +26,19 @@ const MatchCard: React.FC<MatchCardProps> = ({
 }) => {
   const canEdit = !readOnly && !!(match.fencerA && match.fencerB && !match.isBye) && !!onMatchClick;
   const hasScore = match.scoreA !== null && match.scoreB !== null;
-  const isMatchComplete = match.winner !== null;
 
-  const winnerA = match.winner?.id === match.fencerA?.id;
-  const winnerB = match.winner?.id === match.fencerB?.id;
+  let winner = match.winner;
+  if (!winner && hasScore) {
+    if (match.scoreA! > match.scoreB!) winner = match.fencerA;
+    else if (match.scoreB! > match.scoreA!) winner = match.fencerB;
+  }
+
+  const isMatchComplete = winner !== null;
+  const hasBothFencers = !!(match.fencerA && match.fencerB && !match.isBye);
+  const isInProgress = hasBothFencers && !isMatchComplete;
+
+  const winnerA = !!winner && winner.id === match.fencerA?.id;
+  const winnerB = !!winner && winner.id === match.fencerB?.id;
 
   const handleArenaClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -43,6 +52,13 @@ const MatchCard: React.FC<MatchCardProps> = ({
 
   const fencerName = (f: typeof match.fencerA) =>
     f ? `${f.lastName} ${f.firstName.charAt(0)}.` : '—';
+
+  // Status dot color
+  const statusColor = isMatchComplete
+    ? '#10b981'
+    : isInProgress
+      ? '#f59e0b'
+      : '#d1d5db';
 
   const posStyle: React.CSSProperties =
     verticalPosition !== undefined
@@ -62,33 +78,43 @@ const MatchCard: React.FC<MatchCardProps> = ({
       style={posStyle}
       onClick={() => canEdit && onMatchClick && onMatchClick(match)}
     >
-      {/* Arena badge */}
-      {canEdit && !isMatchComplete && onArenaClick && (
-        <button
-          className={`match-arena-btn ${match.arena ? 'match-arena-btn-active' : ''}`}
-          onClick={handleArenaClick}
-          title={match.arena ? `Piste ${match.arena}` : 'Assigner une piste'}
-        >
-          {match.arena ? `P${match.arena}` : '+P'}
-        </button>
-      )}
+      {/* Status dot */}
+      <span
+        className="match-status-dot"
+        style={{ background: statusColor }}
+        title={isMatchComplete ? 'Terminé' : isInProgress ? 'À jouer' : 'En attente'}
+      />
 
-      {/* Referee badge */}
-      {canEdit && !isMatchComplete && onRefereeClick && (
-        <button
-          className={`match-arena-btn ${match.referee ? 'match-arena-btn-active' : ''}`}
-          onClick={handleRefereeClick}
-          title={match.referee ? `Arbitre : ${match.referee.lastName} ${match.referee.firstName}` : 'Assigner un arbitre'}
-          style={{ marginLeft: onArenaClick ? '0.25rem' : undefined }}
-        >
-          {match.referee ? `A:${match.referee.lastName.charAt(0)}${match.referee.firstName.charAt(0)}` : '+A'}
-        </button>
+      {/* Arena + Referee badges */}
+      {canEdit && !isMatchComplete && (onArenaClick || onRefereeClick) && (
+        <div className="match-badges">
+          {onArenaClick && (
+            <button
+              className={`match-badge-btn ${match.arena ? 'match-badge-btn--active' : ''}`}
+              onClick={handleArenaClick}
+              title={match.arena ? `Piste ${match.arena}` : 'Assigner une piste'}
+            >
+              {match.arena ? `P${match.arena}` : '+P'}
+            </button>
+          )}
+          {onRefereeClick && (
+            <button
+              className={`match-badge-btn ${match.referee ? 'match-badge-btn--active' : ''}`}
+              onClick={handleRefereeClick}
+              title={match.referee ? `Arbitre : ${match.referee.lastName} ${match.referee.firstName}` : 'Assigner un arbitre'}
+            >
+              {match.referee
+                ? `${match.referee.lastName.charAt(0)}${match.referee.firstName.charAt(0)}`
+                : '+A'}
+            </button>
+          )}
+        </div>
       )}
 
       {/* Fencer A */}
-      <div className={`match-fencer ${winnerA ? 'match-fencer-winner' : ''} ${!match.fencerA ? 'match-fencer-empty' : ''}`}>
+      <div className={`match-fencer ${winnerA ? 'match-fencer-winner' : ''} ${isMatchComplete && !winnerA && match.fencerA ? 'match-fencer-loser' : ''} ${!match.fencerA ? 'match-fencer-empty' : ''}`}>
         <div className="match-fencer-info">
-          {winnerA && <span className="match-winner-crown">🥇</span>}
+          {winnerA && <span className="match-winner-mark">✓</span>}
           <div className="match-fencer-details">
             <span className="match-fencer-name">{fencerName(match.fencerA)}</span>
             {match.fencerA?.club && (
@@ -101,7 +127,6 @@ const MatchCard: React.FC<MatchCardProps> = ({
         </div>
         {hasScore && (
           <span className={`match-score ${winnerA ? 'match-score-winner' : 'match-score-loser'}`}>
-            {winnerA && <span className="match-score-victory">V</span>}
             {match.scoreA}
           </span>
         )}
@@ -111,9 +136,9 @@ const MatchCard: React.FC<MatchCardProps> = ({
       <div className="match-divider" />
 
       {/* Fencer B */}
-      <div className={`match-fencer ${winnerB ? 'match-fencer-winner' : ''} ${!match.fencerB ? 'match-fencer-empty' : ''}`}>
+      <div className={`match-fencer ${winnerB ? 'match-fencer-winner' : ''} ${isMatchComplete && !winnerB && match.fencerB ? 'match-fencer-loser' : ''} ${!match.fencerB ? 'match-fencer-empty' : ''}`}>
         <div className="match-fencer-info">
-          {winnerB && <span className="match-winner-crown">🥇</span>}
+          {winnerB && <span className="match-winner-mark">✓</span>}
           <div className="match-fencer-details">
             <span className="match-fencer-name">{fencerName(match.fencerB)}</span>
             {match.fencerB?.club && (
@@ -126,7 +151,6 @@ const MatchCard: React.FC<MatchCardProps> = ({
         </div>
         {hasScore && (
           <span className={`match-score ${winnerB ? 'match-score-winner' : 'match-score-loser'}`}>
-            {winnerB && <span className="match-score-victory">V</span>}
             {match.scoreB}
           </span>
         )}
@@ -137,7 +161,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
         <div className="match-bye">Exempt</div>
       )}
 
-      {/* CTA bar */}
+      {/* CTA bar — mode liste seulement */}
       {canEdit && viewMode !== 'full' && (
         <div className={`match-cta ${hasScore ? 'match-cta-edit' : 'match-cta-enter'}`}>
           {hasScore ? '✏️ Modifier' : '➕ Saisir score'}

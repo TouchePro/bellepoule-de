@@ -5,6 +5,11 @@
  */
 
 import { contextBridge, ipcRenderer } from 'electron';
+
+// DIAGNOSTIC inconditionnel : affiche les sondes serveur dans la console renderer.
+ipcRenderer.on('remote:diag', (_: any, msg: string) => {
+  console.warn('[DIAG serveur]', msg);
+});
 import type {
   ElectronAPI,
   CompetitionCreateData,
@@ -195,6 +200,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
     getPoolsByPhase: (phaseId: string) => ipcRenderer.invoke('db:getPoolsByPhase', phaseId),
     getPoolSignatures: (poolId: string) => ipcRenderer.invoke('db:getPoolSignatures', poolId),
+    getDEMatchSignaturesByMatchIds: (matchIds: string[]) =>
+      ipcRenderer.invoke('db:getDEMatchSignaturesByMatchIds', matchIds),
     updatePoolReferee: (poolId: string, refereeId: string | null) =>
       ipcRenderer.invoke('db:updatePoolReferee', poolId, refereeId),
 
@@ -507,7 +514,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     clearOrgNote: (competitionId: string) => ipcRenderer.invoke('remote:clearOrgNote', competitionId),
     updateArenaTheme: (competitionId: string, arenaId: string, theme: string, customTheme?: any) =>
       ipcRenderer.invoke('remote:updateArenaTheme', competitionId, arenaId, theme, customTheme),
+    setWebhookUrl: (url: string | null) => ipcRenderer.invoke('remote:setWebhookUrl', url),
     updateLogo: (logo: string | null) => ipcRenderer.invoke('remote:updateLogo', logo),
+    setTtsConfig: (config: unknown) => ipcRenderer.invoke('remote:setTtsConfig', config),
     setWallpaper: (competitionId: string, wallpaper: string | null) =>
       ipcRenderer.invoke('remote:setWallpaper', competitionId, wallpaper),
     changePort: (competitionId: string, newPort: number) =>
@@ -516,8 +525,27 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('remote:acknowledgeDTCall', competitionId, arenaId),
     resetPoolMatch: (competitionId: string, matchId: string) =>
       ipcRenderer.invoke('remote:resetPoolMatch', competitionId, matchId),
+    finishPoolMatch: (competitionId: string, matchId: string, scoreA: number, scoreB: number) =>
+      ipcRenderer.invoke('remote:finishPoolMatch', competitionId, matchId, scoreA, scoreB),
     setRegistrationEnabled: (competitionId: string, enabled: boolean) =>
       ipcRenderer.invoke('remote:setRegistrationEnabled', competitionId, enabled),
+    getConnectedClients: (competitionId: string) =>
+      ipcRenderer.invoke('remote:getConnectedClients', competitionId),
+    sendClientCommand: (competitionId: string, socketId: string, command: any) =>
+      ipcRenderer.invoke('remote:sendClientCommand', competitionId, socketId, command),
+    broadcastCommand: (competitionId: string, command: any) =>
+      ipcRenderer.invoke('remote:broadcastCommand', competitionId, command),
+    onClientListUpdate: (cb: (clients: any[]) => void) => {
+      const handler = (_: any, clients: any[]) => cb(clients);
+      ipcRenderer.on('remote:clientListUpdate', handler);
+      return () => ipcRenderer.removeListener('remote:clientListUpdate', handler);
+    },
+    renameClient: (competitionId: string, socketId: string, label: string) =>
+      ipcRenderer.invoke('remote:renameClient', competitionId, socketId, label),
+    identifyClient: (competitionId: string, socketId: string) =>
+      ipcRenderer.invoke('remote:identifyClient', competitionId, socketId),
+    setClientKioskMode: (competitionId: string, socketId: string, config: any) =>
+      ipcRenderer.invoke('remote:setClientKioskMode', competitionId, socketId, config),
   },
 
   // Remote event listeners (for real-time updates)
@@ -527,7 +555,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('arena:update', handler);
   },
   onRemoteMatchFinished: (callback: (data: any) => void) => {
-    ipcRenderer.on('match:finished', (_, data) => callback(data));
+    const handler = (_: any, data: any) => {
+      // DIAGNOSTIC : confirmer que l'IPC match:finished atteint bien le renderer.
+      console.warn('[preload] IPC match:finished reçu', data?.matchId, data?.scoreA, data?.scoreB, 'tableau=', data?.isTableau);
+      callback(data);
+    };
+    ipcRenderer.on('match:finished', handler);
+    return () => ipcRenderer.removeListener('match:finished', handler);
   },
   onRemoteFencerExcluded: (callback: (data: { fencerId: string; matchId: string }) => void) => {
     const handler = (_: any, data: any) => callback(data);
@@ -563,6 +597,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 
   getLogo: () => ipcRenderer.invoke('app:getLogo'),
+  getTtsConfig: () => ipcRenderer.invoke('app:getTtsConfig'),
   onLogoLoaded: (callback: (logo: string | null) => void) => {
     const handler = (_: any, logo: string | null) => callback(logo);
     ipcRenderer.on('app:logoLoaded', handler);
@@ -574,6 +609,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Notify main process of language change (to rebuild native menu)
   notifyLanguageChanged: (lang: string) => ipcRenderer.send('app:language-changed', lang),
+
+  // Language injected before renderer loads (avoids race with localStorage read)
+  initialLanguage: (() => {
+    const arg = process.argv.find(a => a.startsWith('--initial-lang='));
+    return arg ? arg.slice('--initial-lang='.length) : null;
+  })(),
 });
 
 // Type declarations for the renderer

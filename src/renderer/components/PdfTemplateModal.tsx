@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useTranslation } from '../hooks/useTranslation';
 import { usePdfTemplateStore } from '../../features/pdfTemplates/hooks/usePdfTemplateStore';
 import PdfTemplateEditor from './PdfTemplateEditor';
@@ -12,6 +13,7 @@ interface Props {
 const DOC_TYPES: PdfDocType[] = ['pool', 'tableau', 'ranking'];
 
 const PdfTemplateModal: React.FC<Props> = ({ onClose }) => {
+  const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
   const { t } = useTranslation();
   const [activeType, setActiveType] = useState<PdfDocType>('pool');
   const { templates, setTemplate, resetTemplate } = usePdfTemplateStore();
@@ -24,9 +26,12 @@ const PdfTemplateModal: React.FC<Props> = ({ onClose }) => {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
+        ref={modalRef}
         className="modal"
         onClick={e => e.stopPropagation()}
         style={{ maxWidth: '1350px', width: '98%', maxHeight: '92vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+        role="dialog"
+        aria-modal="true"
       >
         <div className="modal-header" style={{ flexShrink: 0 }}>
           <h2 className="modal-title">{t('pdfTemplate.modalTitle')}</h2>

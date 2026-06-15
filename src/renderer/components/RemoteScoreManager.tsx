@@ -5,13 +5,15 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import QRCode from 'qrcode';
+import { createPortal } from 'react-dom';
+// qrcode chargé à la demande (génération du QR uniquement à l'affichage)
 import { Competition, Pool } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
 import { TableauMatch, ConsolationBracket } from './tableau/tableauTypes';
 import { useToast } from './Toast';
 import ThemeEditor from './ThemeEditor';
 import { CustomTheme, DisplayTheme } from '../../shared/types/remote';
+import { ConnectedClient, KioskScreenConfig } from '../../shared/types/preload';
 
 interface RemoteScoreManagerProps {
   competition: Competition;
@@ -151,6 +153,15 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     return localStorage.getItem(key) === 'true';
   });
 
+  // Écrans connectés
+  const [connectedClients, setConnectedClients] = useState<ConnectedClient[]>([]);
+  const [renameValues, setRenameValues] = useState<Record<string, string>>({});
+  // kioskModal : socketId de l'écran pour lequel on configure le mode kiosk
+  const [kioskModal, setKioskModal] = useState<string | null>(null);
+  const [kioskModalConfig, setKioskModalConfig] = useState<KioskScreenConfig>({
+    poules: true, classement: true, final: false, direct: true, suivants: true, tableau: true, rotationSec: 15,
+  });
+
   useEffect(() => {
     window.electronAPI.remote.getNetworkInterfaces().then((res: any) => {
       if (res?.success && res.interfaces?.length) {
@@ -164,7 +175,8 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       setQrDataUrl(null);
       return;
     }
-    QRCode.toDataURL(activeQR.url, { width: 220, margin: 1 })
+    import('qrcode')
+      .then(m => m.default.toDataURL(activeQR.url, { width: 220, margin: 1 }))
       .then(setQrDataUrl)
       .catch(() => setQrDataUrl(null));
   }, [activeQR]);
@@ -219,7 +231,10 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     }
     if (fingerprint === sessionMatchesFingerprintRef.current) return;
     sessionMatchesFingerprintRef.current = fingerprint;
-    const poolsData = pools.map(pool => ({ poolId: pool.id, matches: pool.matches ?? [] }));
+    const poolsData = pools.map(pool => ({
+      poolId: pool.id,
+      matches: (pool.matches ?? []).map((m: any) => ({ ...m, poolNumber: pool.number })),
+    }));
     window.electronAPI.remote.syncPoolMatches(competition.id, poolsData).catch((err: unknown) => {
       logger.warn(
         LogCategory.NETWORK,
@@ -242,14 +257,25 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     [tableauMatches, consolationBrackets]
   );
   useEffect(() => {
+    if (!isRemoteActive || !session || pendingDeMatches.length === 0) return;
     const key = pendingDeMatches.map(m => m.id).join(',');
     if (key === prevDeMatchesKeyRef.current) return;
     prevDeMatchesKeyRef.current = key;
-    if (!isRemoteActive || !session || pendingDeMatches.length === 0) return;
     window.electronAPI.remote.refreshDeMatches(competition.id, pendingDeMatches).catch((err: unknown) => {
       logger.warn(LogCategory.NETWORK, 'Échec refreshDeMatches', err instanceof Error ? err : undefined);
     });
   }, [pendingDeMatches, isRemoteActive, session]);
+
+  // Abonnement aux mises à jour de la liste des clients connectés
+  useEffect(() => {
+    if (!isRemoteActive) return;
+    window.electronAPI.remote.getConnectedClients(competition.id).then((res: any) => {
+      if (res.success) setConnectedClients(res.clients ?? []);
+    });
+    return window.electronAPI.remote.onClientListUpdate((clients: ConnectedClient[]) => {
+      setConnectedClients(clients);
+    });
+  }, [isRemoteActive, competition.id]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -333,6 +359,11 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         setCommittedCount(count);
         onArenaCountChange?.(count);
         showToast('Saisie distante démarrée', 'success');
+        // Synchroniser le webhook URL configuré vers le serveur qui vient de démarrer
+        const savedWebhook = localStorage.getItem('bellepoule-webhook-url');
+        if (savedWebhook) {
+          window.electronAPI.remote.setWebhookUrl?.(savedWebhook).catch(() => {});
+        }
         // Envoyer les matchs DE avec leurs pistes au serveur (la clé ref est déjà stockée
         // avant que session/isRemoteActive soient prêts, donc l'effet ne se déclenche pas).
         if (deMatches.length > 0) {
@@ -454,6 +485,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   // La grille d'URLs reflète l'état réel du serveur (committedCount) ou la session active
   const arenaCount = session ? session.strips.length : effectiveCommitted;
   const kioskUrl = `${serverUrl}/kiosk`;
+  const lobbyUrl = `${serverUrl}/lobby`;
   const arenaUrls = Array.from({ length: arenaCount }, (_, i) => ({
     number: i + 1,
     refereeUrl: `${serverUrl}/arene${i + 1}/arbitre`,
@@ -503,92 +535,126 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   if (!isVisible) return null;
 
   if (!isRemoteActive) {
+    const portValid = remotePort >= 1 && remotePort <= 65535 && !isNaN(remotePort);
+    const previewHost = selectedInterface === '0.0.0.0'
+      ? (networkInterfaces.find(i => i.address !== '0.0.0.0')?.address ?? 'localhost')
+      : selectedInterface;
+    const networkPreview = `http://${previewHost}:${remotePort}`;
+
+    const kioskPills = (
+      [
+        { key: 'poules', label: 'Poules' },
+        { key: 'classement', label: 'Classement' },
+        { key: 'direct', label: 'En direct' },
+        { key: 'suivants', label: 'Suivants' },
+      ] as const
+    ).map(({ key, label }) => (
+      <button
+        key={key}
+        type="button"
+        className={`rsm-pill${kioskViews[key] ? ' rsm-pill--on' : ''}`}
+        onClick={() => setKioskViews(v => ({ ...v, [key]: !v[key] }))}
+      >
+        {kioskViews[key] ? '✓' : '○'} {label}
+      </button>
+    ));
+
     return (
       <div className="remote-score-manager">
-        <div className="remote-status inactive">
-          <h3>🔴 Saisie distante inactive</h3>
-          <p>
-            La saisie distante permet aux arbitres de saisir les scores depuis une tablette. Les
-            arbitres se connectent via un navigateur web sur le réseau local.
-          </p>
-          <div style={RSM_STYLES.stripCountRow}>
-            <span>Pistes :</span>
-            {stripCountControls}
+        <div className="rsm-inactive">
+          {/* Hero */}
+          <div className="rsm-hero">
+            <span className="rsm-status-dot rsm-status-dot--off" />
+            <div>
+              <h3 className="rsm-hero-title">Saisie distante inactive</h3>
+              <p className="rsm-hero-desc">
+                Les arbitres saisissent les scores depuis une tablette via navigateur web sur le réseau local.
+              </p>
+            </div>
           </div>
-          <label style={RSM_STYLES.checkboxLabel}>
-            <input
-              type="checkbox"
-              checked={showPhotos}
-              onChange={e => setShowPhotos(e.target.checked)}
-            />
-            Afficher les photos des combattants avant le combat
-          </label>
-          <label style={RSM_STYLES.checkboxLabel}>
-            <input
-              type="checkbox"
-              checked={cardAnnounce}
-              onChange={e => setCardAnnounce(e.target.checked)}
-            />
-            📣 Carton avancer (afficher bandeau + raison sur les écrans)
-          </label>
-          <div style={RSM_STYLES.kioskViewsSection}>
-            <div style={RSM_STYLES.kioskViewsTitle}>Vues kiosk :</div>
-            {(
-              [
-                { key: 'poules', label: 'Poules' },
-                { key: 'classement', label: 'Classement' },
-                { key: 'direct', label: 'Matchs en direct' },
-                { key: 'suivants', label: 'Matchs suivants' },
-              ] as const
-            ).map(({ key, label }) => (
-              <label key={key} style={RSM_STYLES.kioskViewLabel}>
+
+          {/* Sections grid */}
+          <div className="rsm-sections">
+            {/* Pistes */}
+            <div className="rsm-section">
+              <div className="rsm-section-label">Pistes</div>
+              <div className="rsm-strip-row">{stripCountControls}</div>
+            </div>
+
+            {/* Options d'affichage */}
+            <div className="rsm-section">
+              <div className="rsm-section-label">Affichage</div>
+              <label className="rsm-toggle-row">
                 <input
                   type="checkbox"
-                  checked={kioskViews[key]}
-                  onChange={e => setKioskViews(v => ({ ...v, [key]: e.target.checked }))}
+                  checked={showPhotos}
+                  onChange={e => setShowPhotos(e.target.checked)}
                 />
-                {label}
+                Photos combattants
               </label>
-            ))}
+              <label className="rsm-toggle-row">
+                <input
+                  type="checkbox"
+                  checked={cardAnnounce}
+                  onChange={e => setCardAnnounce(e.target.checked)}
+                />
+                📣 Bandeau carton
+              </label>
+            </div>
+
+            {/* Vues kiosque — pills */}
+            <div className="rsm-section rsm-section--full">
+              <div className="rsm-section-label">Vues kiosque</div>
+              <div className="rsm-pills">{kioskPills}</div>
+            </div>
+
+            {/* Réseau */}
+            <div className="rsm-section rsm-section--full">
+              <div className="rsm-section-label">Réseau</div>
+              <div className="rsm-network-grid">
+                <select
+                  id="remote-interface"
+                  value={selectedInterface}
+                  onChange={e => {
+                    setSelectedInterface(e.target.value);
+                    localStorage.setItem('bellepoule-remote-interface', e.target.value);
+                  }}
+                  disabled={isLoading}
+                >
+                  {networkInterfaces.map(iface => (
+                    <option key={iface.address} value={iface.address}>
+                      {iface.name}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  id="remote-port"
+                  type="number"
+                  min={1}
+                  max={65535}
+                  value={remotePort}
+                  onChange={e => handlePortChange(parseInt(e.target.value, 10))}
+                  className={portValid ? '' : 'rsm-input-error'}
+                  disabled={isLoading}
+                />
+              </div>
+              {!portValid && (
+                <div className="rsm-port-error">Port invalide (1–65535)</div>
+              )}
+              <span className="rsm-network-preview">{networkPreview}</span>
+            </div>
           </div>
-          <div style={RSM_STYLES.interfaceRow}>
-            <label htmlFor="remote-interface" style={RSM_STYLES.interfaceLabel}>
-              Interface :
-            </label>
-            <select
-              id="remote-interface"
-              value={selectedInterface}
-              onChange={e => {
-                setSelectedInterface(e.target.value);
-                localStorage.setItem('bellepoule-remote-interface', e.target.value);
-              }}
-              disabled={isLoading}
-            >
-              {networkInterfaces.map(iface => (
-                <option key={iface.address} value={iface.address}>
-                  {iface.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div style={RSM_STYLES.portRow}>
-            <label htmlFor="remote-port" style={RSM_STYLES.interfaceLabel}>
-              Port :
-            </label>
-            <input
-              id="remote-port"
-              type="number"
-              min={1}
-              max={65535}
-              value={remotePort}
-              onChange={e => handlePortChange(parseInt(e.target.value, 10))}
-              style={RSM_STYLES.portInput}
-              disabled={isLoading}
-            />
-            <span style={RSM_STYLES.portHint}>1–65535, défaut 8066</span>
-          </div>
-          <button className="btn-primary" onClick={onStartRemote}>
-            ⚡ Démarrer la saisie distante
+
+          {/* CTA */}
+          <button
+            className="rsm-start-btn"
+            onClick={onStartRemote}
+            disabled={!portValid || isLoading}
+          >
+            {isLoading
+              ? <span className="rsm-spinner" />
+              : '⚡'}
+            Démarrer la saisie distante
           </button>
         </div>
       </div>
@@ -1138,7 +1204,105 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             </button>
           </div>
         </div>
+
+        <div className="arena-url-card" style={RSM_STYLES.kioskCard}>
+          <div className="arena-url-header">
+            <strong>🚪 Lobby (salle d'attente arbitres)</strong>
+          </div>
+          <div className="arena-url-row">
+            <span className="arena-url-label">URL</span>
+            <code className="arena-url-value">{lobbyUrl}</code>
+            <button
+              className="btn-copy"
+              onClick={() => copyToClipboard(lobbyUrl, 997)}
+              title="Copier l'URL"
+            >
+              {copiedIndex === 997 ? '✓' : '📋'}
+            </button>
+            <button
+              className="btn-qr"
+              onClick={() => setActiveQR({ url: lobbyUrl, label: 'Lobby – Salle d\'attente' })}
+              title="QR code"
+            >
+              📱
+            </button>
+          </div>
+        </div>
       </div>
+
+      {/* ── Section : Écrans connectés ── */}
+      {connectedClients.length > 0 && (
+        <div className="arena-url-card" style={{ marginTop: '1rem' }}>
+          <div className="arena-url-header">
+            <strong>📺 Écrans connectés ({connectedClients.length})</strong>
+          </div>
+          {connectedClients.map(client => {
+            const clientLabel = client.label || client.screenId?.slice(0, 8) || client.socketId.slice(0, 8);
+            const typeLabel: Record<string, string> = {
+              kiosk: 'Kiosk', arena: 'Arène', public: 'Public', pool: 'Poule', dashboard: 'Dashboard', lobby: 'Lobby', referee: 'Arbitre',
+            };
+            return (
+              <div key={client.socketId} style={{
+                display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem',
+                padding: '0.5rem 0', borderBottom: '1px solid #1e293b',
+              }}>
+                <span style={{ fontSize: '0.75rem', padding: '0.15rem 0.4rem', borderRadius: '0.3rem', background: '#1e3a5f', color: '#7dd3fc', whiteSpace: 'nowrap' }}>
+                  {typeLabel[client.clientType] ?? client.clientType}
+                </span>
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#e2e8f0', minWidth: '6rem' }}>
+                  {clientLabel}
+                </span>
+                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{client.ip}</span>
+                <div style={{ display: 'flex', gap: '0.35rem', marginLeft: 'auto', flexWrap: 'wrap' }}>
+                  <button
+                    className="btn-secondary"
+                    style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
+                    title="Faire clignoter cet écran pour l'identifier"
+                    onClick={() => window.electronAPI.remote.identifyClient(competition.id, client.socketId)}
+                  >
+                    🔦 Identifier
+                  </button>
+                  <input
+                    type="text"
+                    placeholder="Renommer…"
+                    value={renameValues[client.socketId] ?? ''}
+                    onChange={e => setRenameValues(v => ({ ...v, [client.socketId]: e.target.value }))}
+                    onKeyDown={async e => {
+                      if (e.key === 'Enter') {
+                        const lbl = renameValues[client.socketId]?.trim();
+                        if (lbl) await window.electronAPI.remote.renameClient(competition.id, client.socketId, lbl);
+                      }
+                    }}
+                    style={{ width: '8rem', fontSize: '0.75rem', padding: '0.2rem 0.4rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#0f172a', color: '#e2e8f0' }}
+                  />
+                  <button
+                    className="btn-secondary"
+                    style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
+                    title="Renommer"
+                    onClick={async () => {
+                      const lbl = renameValues[client.socketId]?.trim();
+                      if (lbl) await window.electronAPI.remote.renameClient(competition.id, client.socketId, lbl);
+                    }}
+                  >
+                    ✓
+                  </button>
+                  <button
+                    className="btn-primary"
+                    style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
+                    title="Configurer et envoyer en mode kiosk"
+                    onClick={() => {
+                      setKioskModal(client.socketId);
+                      setKioskModalConfig({ poules: true, classement: true, final: false, direct: true, suivants: true, tableau: true, rotationSec: 15 });
+                    }}
+                  >
+                    🖥️ Mode kiosk
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <div className="remote-instructions">
         <h5>Instructions pour les arbitres</h5>
@@ -1151,6 +1315,63 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           <li>Cliquer sur "Match suivant" pour passer au match suivant</li>
         </ol>
       </div>
+
+      {/* ── Modal kiosk config ── */}
+      {kioskModal && createPortal(
+        <div className="qr-popup-overlay" onClick={() => setKioskModal(null)}>
+          <div className="qr-popup" onClick={e => e.stopPropagation()} style={{ minWidth: '20rem', maxWidth: '26rem' }}>
+            <strong style={{ fontSize: '1rem' }}>🖥️ Configurer le mode kiosk</strong>
+            <div style={{ margin: '0.75rem 0', textAlign: 'left' }}>
+              <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '0.5rem' }}>Vues à afficher :</div>
+              {([
+                { key: 'poules', label: 'Poules' },
+                { key: 'classement', label: 'Classement' },
+                { key: 'final', label: 'Classement final' },
+                { key: 'direct', label: 'Matchs en direct' },
+                { key: 'suivants', label: 'Matchs suivants' },
+                { key: 'tableau', label: 'Tableau DE' },
+              ] as const).map(({ key, label }) => (
+                <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.3rem 0', cursor: 'pointer', color: '#e2e8f0' }}>
+                  <input
+                    type="checkbox"
+                    checked={kioskModalConfig[key]}
+                    onChange={e => setKioskModalConfig(c => ({ ...c, [key]: e.target.checked }))}
+                  />
+                  {label}
+                </label>
+              ))}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem' }}>
+                <label style={{ fontSize: '0.85rem', color: '#94a3b8', whiteSpace: 'nowrap' }}>Rotation (s) :</label>
+                <input
+                  type="number"
+                  min={3}
+                  max={300}
+                  value={kioskModalConfig.rotationSec}
+                  onChange={e => setKioskModalConfig(c => ({ ...c, rotationSec: Math.max(3, parseInt(e.target.value) || 15) }))}
+                  style={{ width: '5rem', padding: '0.3rem 0.5rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#0f172a', color: '#e2e8f0' }}
+                />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+              <button
+                className="btn btn-primary"
+                style={{ flex: 1 }}
+                onClick={async () => {
+                  await window.electronAPI.remote.setClientKioskMode(competition.id, kioskModal, kioskModalConfig);
+                  setKioskModal(null);
+                  showToast('Écran basculé en mode kiosk', 'success');
+                }}
+              >
+                Envoyer en kiosk
+              </button>
+              <button className="btn btn-secondary" onClick={() => setKioskModal(null)}>
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {themeEditorTarget && (
         <ThemeEditor
@@ -1165,7 +1386,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         />
       )}
 
-      {activeQR && (
+      {activeQR && createPortal(
         <div className="qr-popup-overlay" onClick={() => setActiveQR(null)}>
           <div className="qr-popup" onClick={e => e.stopPropagation()}>
             <strong>{activeQR.label}</strong>
@@ -1181,7 +1402,8 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
               Fermer
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

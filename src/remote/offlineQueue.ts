@@ -20,6 +20,18 @@ class OfflineQueue {
   private db: IDBDatabase | null = null;
   private syncInProgress = false;
   private onlineListeners: (() => void)[] = [];
+  private discardListeners: ((action: OfflineAction) => void)[] = [];
+
+  /** Vérifie qu'il reste de la place de stockage avant d'empiler (évite QuotaExceededError silencieux). */
+  private async hasStorageRoom(): Promise<boolean> {
+    if (!navigator.storage?.estimate) return true;
+    try {
+      const { usage = 0, quota = 0 } = await navigator.storage.estimate();
+      return quota === 0 || usage < quota * 0.9;
+    } catch {
+      return true;
+    }
+  }
 
   async init(): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -42,6 +54,10 @@ class OfflineQueue {
 
   async addAction(action: Omit<OfflineAction, 'id' | 'timestamp' | 'retries'>): Promise<void> {
     if (!this.db) await this.init();
+
+    if (!(await this.hasStorageRoom())) {
+      throw new Error('offline-queue-full');
+    }
 
     const fullAction: OfflineAction = {
       ...action,
@@ -138,6 +154,8 @@ class OfflineQueue {
           if (action.retries >= 3) {
             await this.removeAction(action.id);
             failed++;
+            // Abandon définitif : prévenir l'UI pour éviter une perte de donnée silencieuse
+            this.discardListeners.forEach(cb => cb(action));
           } else {
             await this.updateAction({ ...action, retries: action.retries + 1 });
           }
@@ -149,6 +167,11 @@ class OfflineQueue {
 
     this.syncInProgress = false;
     return { success, failed };
+  }
+
+  /** Notifié quand une action est abandonnée après 3 échecs de synchronisation. */
+  onActionDiscarded(callback: (action: OfflineAction) => void): void {
+    this.discardListeners.push(callback);
   }
 
   onOnline(callback: () => void): void {

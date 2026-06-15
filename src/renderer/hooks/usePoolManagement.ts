@@ -89,11 +89,7 @@ export const usePoolManagement = ({
       }
 
       const poolCount = calculateOptimalPoolCount(checkedInFencers.length, 5, 7);
-      const distribution = distributeFencersToPoolsSerpentine(checkedInFencers, poolCount, {
-        byClub: true,
-        byRegion: true,
-        byNation: false,
-      });
+      const distribution = distributeFencersToPoolsSerpentine(checkedInFencers, poolCount, ['byClub', 'byRegion']);
 
       const generatedPools: Pool[] = distribution.map((poolFencers, index) => {
         const poolId = crypto.randomUUID();
@@ -179,12 +175,14 @@ export const usePoolManagement = ({
         match.status = MatchStatus.FINISHED;
         match.updatedAt = new Date();
 
-        // Mettre à jour le pool
+        // Mettre à jour le pool (nouveau tableau pour invalider le useMemo)
+        pool.matches = [...pool.matches];
         pool.matches[matchIndex] = match;
         pool.updatedAt = new Date();
 
         // Recalculer le classement de la poule
         pool.ranking = computePoolRanking(pool);
+        pool.isComplete = pool.matches.every(m => m.status === MatchStatus.FINISHED);
 
         updatedPools[poolIndex] = pool;
 
@@ -215,6 +213,7 @@ export const usePoolManagement = ({
         pool.matches[matchIndex] = match;
         pool.updatedAt = new Date();
         pool.ranking = computePoolRanking(pool);
+        pool.isComplete = false;
 
         updatedPools[poolIndex] = pool;
 
@@ -243,6 +242,7 @@ export const usePoolManagement = ({
         pool.matches[matchIndex] = match;
         pool.updatedAt = new Date();
         pool.ranking = computePoolRanking(pool);
+        pool.isComplete = false;
 
         updatedPools[poolIndex] = pool;
 
@@ -265,11 +265,7 @@ export const usePoolManagement = ({
 
       // Générer de nouvelles poules avec le classement actuel
       const newPoolCount = calculateOptimalPoolCount(checkedInFencers.length, 5, 7);
-      const distribution = distributeFencersToPoolsSerpentine(checkedInFencers, newPoolCount, {
-        byClub: true,
-        byRegion: true,
-        byNation: false,
-      });
+      const distribution = distributeFencersToPoolsSerpentine(checkedInFencers, newPoolCount, ['byClub', 'byRegion']);
 
       const newPools: Pool[] = distribution.map((poolFencers, index) => {
         const poolId = crypto.randomUUID();
@@ -601,7 +597,9 @@ export const usePoolManagement = ({
                 scoreB > scoreA ? 'B' :
                 (winnerOverride ?? null);
 
-              pool.matches[matchIdx] = {
+              const updatedPool = { ...pool };
+              const updatedMatches = [...pool.matches];
+              updatedMatches[matchIdx] = {
                 ...match,
                 scoreA: {
                   value: scoreA,
@@ -620,11 +618,10 @@ export const usePoolManagement = ({
                 status,
                 updatedAt: new Date(),
               };
-
-              // Recalculer le classement de la pool
-              pool.updatedAt = new Date();
-              pool.ranking = computePoolRanking(pool);
-              updatedPools[poolIdx] = pool;
+              updatedPool.matches = updatedMatches;
+              updatedPool.updatedAt = new Date();
+              updatedPool.ranking = computePoolRanking(updatedPool);
+              updatedPools[poolIdx] = updatedPool;
               break;
             }
           }

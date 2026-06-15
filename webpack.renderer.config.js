@@ -6,6 +6,9 @@ const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 
 module.exports = (env = {}) => ({
   mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
+  cache: process.env.NODE_ENV === 'production'
+    ? false
+    : { type: 'filesystem', buildDependencies: { config: [__filename] } },
   optimization: {
     minimize: process.env.NODE_ENV === 'production',
     minimizer: [
@@ -18,6 +21,7 @@ module.exports = (env = {}) => ({
         },
       }),
     ],
+    runtimeChunk: 'single',
     splitChunks: {
       chunks: 'all',
       cacheGroups: {
@@ -54,6 +58,14 @@ module.exports = (env = {}) => ({
     open: false,
     historyApiFallback: true,
     allowedHosts: 'auto',
+    // En dev, webpack serve garde les assets en mémoire. Le splash (chargé par
+    // Electron via loadFile depuis dist/) doit être écrit sur disque, sinon
+    // Electron lit un fichier obsolète et le badge de canal reste figé sur « main ».
+    devMiddleware: {
+      writeToDisk: (filePath) =>
+        /[\\/]dist[\\/]main[\\/]splash\.html$/.test(filePath) ||
+        /[\\/]dist[\\/]remote[\\/]/.test(filePath),
+    },
     static: {
       directory: path.join(__dirname, 'dist/renderer'),
       publicPath: '/',
@@ -73,7 +85,7 @@ module.exports = (env = {}) => ({
     rules: [
       {
         test: /\.tsx?$/,
-        use: 'ts-loader',
+        use: { loader: 'ts-loader', options: { ignoreDiagnostics: [5011, 5103] } },
         exclude: /node_modules/,
       },
       {
@@ -105,6 +117,18 @@ module.exports = (env = {}) => ({
         {
           from: 'src/remote',
           to: '../remote',
+          noErrorOnMissing: true,
+        },
+        {
+          // Le client socket.io n'est PAS dans node_modules de l'app packagée
+          // (socket.io est bundlé côté serveur, node_modules non inclus).
+          // On le copie dans dist/remote → servi en statique par le serveur distant.
+          from: 'node_modules/socket.io/client-dist/socket.io.min.js',
+          to: '../remote/socket.io.min.js',
+        },
+        {
+          from: 'src/main/splash.html',
+          to: path.resolve(__dirname, 'dist/main/splash.html'),
           noErrorOnMissing: true,
         },
       ],
