@@ -1221,6 +1221,9 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               setPools(confirmedPools);
               setSkipPoolPhase(false);
               setCurrentPhase('pools');
+              confirmedPools.forEach(pool => {
+                if (pool.strip != null) window.electronAPI?.db?.updatePool(pool);
+              });
             }}
             onSkipPools={handleSkipToRanking}
             onSettingsChange={(min, max) => {
