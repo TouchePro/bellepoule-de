@@ -228,11 +228,11 @@ export function exportRankingCSV(
   return csv;
 }
 
-/** Sous-ensemble de TableauMatchForPDF nécessaire à l'export XML (évite l'import croisé). */
+/** Sous-ensemble de TableauMatch nécessaire à l'export XML (évite l'import croisé). */
 export interface TableauMatchForXML {
   round: number; // Taille du tableau : 32, 16, 8, 4, 2 (3 = petite finale)
-  fencerA: { id?: string } | null;
-  fencerB: { id?: string } | null;
+  fencerA: { ref: number } | null;
+  fencerB: { ref: number } | null;
   scoreA: number | null;
   scoreB: number | null;
   isBye: boolean;
@@ -409,9 +409,6 @@ export function exportResultsXMLFFE(
   }
 
   if (tableauMatches && tableauMatches.length > 0) {
-    const refById = new Map<string, number>();
-    for (const r of poolRanking) refById.set(r.fencer.id, r.fencer.ref);
-
     const tableScoreMax = 15;
     lines.push(`  <PhaseDeTableaux PhaseID="3" ScoreMax="${tableScoreMax}">`);
     for (const r of poolRanking) {
@@ -427,14 +424,12 @@ export function exportResultsXMLFFE(
         `    <Tableau ID="A${round}" Titre="${escapeXml(TABLEAU_TITLES[round] || `Tableau de ${round}`)}" Taille="${round}">`
       );
       matchesOfRound.forEach((m, idx) => {
-        if (!m.fencerA?.id || !m.fencerB?.id) return;
-        const refA = refById.get(m.fencerA.id);
-        const refB = refById.get(m.fencerB.id);
+        if (!m.fencerA || !m.fencerB) return;
         const stA = (m.scoreA ?? 0) > (m.scoreB ?? 0) ? 'V' : 'D';
         const stB = stA === 'V' ? 'D' : 'V';
         lines.push(`     <Match ID="${idx + 1}">`);
-        lines.push(`      <Tireur REF="${refA ?? ''}" Score="${m.scoreA ?? 0}" Statut="${stA}"/>`);
-        lines.push(`      <Tireur REF="${refB ?? ''}" Score="${m.scoreB ?? 0}" Statut="${stB}"/>`);
+        lines.push(`      <Tireur REF="${m.fencerA.ref}" Score="${m.scoreA ?? 0}" Statut="${stA}"/>`);
+        lines.push(`      <Tireur REF="${m.fencerB.ref}" Score="${m.scoreB ?? 0}" Statut="${stB}"/>`);
         lines.push(`     </Match>`);
       });
       lines.push(`    </Tableau>`);

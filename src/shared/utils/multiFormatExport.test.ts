@@ -249,6 +249,20 @@ describe('exportResultsXMLFFE', () => {
     expect(xml).toContain('<Match');
   });
 
+  it('includes elimination bracket when tableauMatches provided', () => {
+    const f1 = makeFencer('f1', 1, { ref: 1 });
+    const f2 = makeFencer('f2', 2, { ref: 2 });
+    const poolRanking = [makeRanking(f1, { rank: 1 }), makeRanking(f2, { rank: 2 })];
+    const tableauMatches = [
+      { round: 2, fencerA: f1, fencerB: f2, scoreA: 15, scoreB: 10, isBye: false },
+    ];
+    const xml = exportResultsXMLFFE(makeCompetition(), poolRanking, [], undefined, tableauMatches);
+    expect(xml).toContain('<PhaseDeTableaux');
+    expect(xml).toContain('<Tableau ID="A2"');
+    expect(xml).toContain('REF="1" Score="15" Statut="V"');
+    expect(xml).toContain('REF="2" Score="10" Statut="D"');
+  });
+
   it('maps ABANDONED to A', () => {
     const f = makeFencer('f1', 1, { status: FencerStatus.ABANDONED });
     const xml = exportResultsXMLFFE(makeCompetition(), [makeRanking(f)], []);

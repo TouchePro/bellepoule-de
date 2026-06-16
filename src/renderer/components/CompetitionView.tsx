@@ -8,7 +8,6 @@ import { Competition, Fencer, FencerStatus, Match, MatchStatus, Weapon, QuestPha
 import { Arena } from '../../shared/types/remote';
 import { logger, LogCategory } from '@shared/services/logger';
 import { RankingImportResult } from '../../shared/utils/fileParser';
-import type { TableauMatchForPDF } from '../../shared/utils/pdfExport';
 import FencerList from './FencerList';
 import { TableauMatch, FinalResult, propagateWinners, ConsolationBracket } from './tableau/tableauTypes';
 import PoolRankingView from './PoolRankingView';
@@ -1512,7 +1511,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             finalResults={finalResults}
             fencers={fencers}
             pools={[...poolHistory.flat(), ...pools]}
-            tableauMatches={tableauMatches as TableauMatchForPDF[]}
+            tableauMatches={tableauMatches}
             consolationBrackets={consolationBrackets}
             isLaserSabre={isLaserSabre}
             appelFencers={appelFencers.length > 0 ? appelFencers : undefined}
