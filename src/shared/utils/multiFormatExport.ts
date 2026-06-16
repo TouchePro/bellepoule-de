@@ -318,7 +318,7 @@ export function exportResultsXMLFFE(
     lines.push(
       `  <Tireur` +
       ` ID="${f.ref}"` +
-      ` Classement="${f.seedNumber ?? f.initialRanking ?? ''}"` +
+      ` Classement="${finalRank}"` +
       ` Nom="${escapeXml(f.lastName)}"` +
       ` Prenom="${escapeXml(f.firstName)}"` +
       ` DateNaissance="${formatDateFR(f.birthDate)}"` +
