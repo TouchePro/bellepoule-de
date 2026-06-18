@@ -295,7 +295,7 @@ async function exportCSV(competition: Competition, stats: FencerCompetitionStats
     defaultPath: `stats-${competition.title.replace(/\s+/g, '-')}.csv`,
   });
   if (result?.filePath) {
-    await window.electronAPI.file.writeFileContent(result.filePath, csv);
+    await window.electronAPI.file.writeContent(result.filePath, csv);
   }
 }
 
