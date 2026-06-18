@@ -118,6 +118,70 @@
       --vs-font-family: system-ui, sans-serif;
     }
 
+    /* ── Thème Unicorn – image de fond + overlay ── */
+    [data-theme="unicorn"] {
+      --bg: url('/unicorn-bg.png') center / cover no-repeat #1a0a2e;
+      --text: #ffffff;
+      --header-bg: rgba(12, 4, 28, 0.62);
+      --match-bg: transparent;
+      --fencer-name-color: #ffffff;
+      --fencer-club-color: rgba(255, 230, 255, 0.85);
+      --green-side-bg: rgba(0, 28, 14, 0.50);
+      --green-side-border: #00e87a;
+      --red-side-bg: rgba(58, 0, 28, 0.50);
+      --red-side-border: #ff3ab0;
+      --score-bg: transparent;
+      --score-green: #00ff88;
+      --score-green-glow: rgba(0, 255, 136, 0.9), rgba(0, 255, 136, 0.5);
+      --score-red: #ff2d9e;
+      --score-red-glow: rgba(255, 45, 158, 0.9), rgba(255, 45, 158, 0.5);
+      --timer-bg: rgba(8, 4, 24, 0.58);
+      --timer-color: #ffd700;
+      --timer-glow: rgba(255, 215, 0, 0.92), rgba(255, 215, 0, 0.45);
+      --timer-border: rgba(255, 215, 0, 0.38);
+      --timer-run-color: #00ff88;
+      --timer-run-glow: rgba(0, 255, 136, 0.95), rgba(0, 255, 136, 0.5);
+      --timer-run-border: rgba(0, 255, 136, 0.45);
+      --waiting-color: #f0e6ff;
+      --idle-number-color: rgba(248, 238, 255, 0.92);
+      --idle-label-color: rgba(248, 238, 255, 0.5);
+      --vs-color: #ff80cc;
+      --vs-font-family: Georgia, 'Times New Roman', serif;
+    }
+
+    [data-theme="unicorn"] .match-display {
+      box-shadow: none;
+    }
+
+    [data-theme="unicorn"] .score-big {
+      box-shadow: none;
+    }
+
+    [data-theme="unicorn"] .fencer-name {
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0, 0, 0, 0.7);
+    }
+
+    [data-theme="unicorn"] .fencer-club {
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+    }
+
+    /* ── Mode Overlay (thème custom avec image de fond) ── */
+    [data-overlay="true"] .match-display {
+      box-shadow: none !important;
+    }
+
+    [data-overlay="true"] .score-big {
+      box-shadow: none !important;
+    }
+
+    [data-overlay="true"] .fencer-name {
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0, 0, 0, 0.7);
+    }
+
+    [data-overlay="true"] .fencer-club {
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+    }
+
     /* ── Thème Custom (variables injectées dynamiquement par JS) ── */
     [data-theme="custom"] {
       /* hérite du thème dark par défaut, les variables seront surchargées */
@@ -1359,9 +1423,10 @@
             document.documentElement.setAttribute('data-theme', 'custom');
             this.applyCustomTheme(customTheme);
           } else {
-            const valid = ['dark', 'light', 'neon'];
+            const valid = ['dark', 'light', 'neon', 'unicorn'];
             this.theme = valid.includes(theme) ? theme : 'dark';
             document.documentElement.setAttribute('data-theme', this.theme);
+            document.documentElement.removeAttribute('data-overlay');
             // Supprimer le style custom si présent
             const existing = document.getElementById('custom-theme-style');
             if (existing) existing.remove();
@@ -1380,6 +1445,11 @@
             .map(([k, v]) => `  ${k}: ${v};`)
             .join('\n');
           styleEl.textContent = `[data-theme="custom"] {\n${vars}\n}`;
+          if (customTheme.overlayMode) {
+            document.documentElement.setAttribute('data-overlay', 'true');
+          } else {
+            document.documentElement.removeAttribute('data-overlay');
+          }
         }
 
         setupHeaderAutoHide() {

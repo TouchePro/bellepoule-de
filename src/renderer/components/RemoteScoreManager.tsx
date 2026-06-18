@@ -133,7 +133,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [showPhotos, setShowPhotos] = useState(false);
   const [cardAnnounce, setCardAnnounce] = useState(false);
-  const [displayTheme, setDisplayTheme] = useState<'dark' | 'light' | 'neon'>('dark');
+  const [displayTheme, setDisplayTheme] = useState<'dark' | 'light' | 'neon' | 'unicorn'>('dark');
   const [arenaWallpaper, setArenaWallpaper] = useState<string | null>(null);
   const [kioskViews, setKioskViews] = useState({
     poules: true,
@@ -789,6 +789,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                 { value: 'dark', label: 'Sombre', icon: '🌙' },
                 { value: 'light', label: 'Clair', icon: '☀️' },
                 { value: 'neon', label: 'Néon', icon: '⚡' },
+                { value: 'unicorn', label: 'Unicorn', icon: '🦄' },
               ] as const
             ).map(({ value, label, icon }) => (
               <button
