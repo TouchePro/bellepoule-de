@@ -1370,6 +1370,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                             fencerB ?? undefined
                           ).catch(() => {});
                         }}
+                        onRefereeAssigned={(poolId, referee) => {
+                          setPools(prev => prev.map(p =>
+                            p.id === poolId
+                              ? { ...p, referees: referee ? [referee] : [] }
+                              : p
+                          ));
+                        }}
                       />
                     </div>
                   ))}

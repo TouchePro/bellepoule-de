@@ -787,19 +787,19 @@ export class DatabaseManager {
   public getCompetitionPools(competitionId: string): { id: string; name: string }[] {
     if (!this.db) throw new Error('Database not open');
     try {
-      const pools = this.queryAll<{ id: string; name: string }>(
-        'SELECT DISTINCT p.id, p.name FROM pools p INNER JOIN pool_fencers pf ON p.id = pf.pool_id INNER JOIN fencers f ON pf.fencer_id = f.id WHERE f.competition_id = ? ORDER BY p.name',
+      const pools = this.queryAll<{ id: string; number: number }>(
+        'SELECT DISTINCT p.id, p.number FROM pools p INNER JOIN pool_fencers pf ON p.id = pf.pool_id INNER JOIN fencers f ON pf.fencer_id = f.id WHERE f.competition_id = ? ORDER BY p.number',
         [competitionId]
       );
-      if (pools.length > 0) return pools;
+      if (pools.length > 0) return pools.map(p => ({ id: p.id, name: 'Poule ' + p.number }));
     } catch (e) {
       console.warn('[Database] Error getting pools:', e);
     }
     try {
-      return this.queryAll<{ id: string; name: string }>(
-        'SELECT p.id, p.name FROM pools p INNER JOIN phases ph ON p.phase_id = ph.id WHERE ph.competition_id = ? ORDER BY p.name',
+      return this.queryAll<{ id: string; number: number }>(
+        'SELECT p.id, p.number FROM pools p INNER JOIN phases ph ON p.phase_id = ph.id WHERE ph.competition_id = ? ORDER BY p.number',
         [competitionId]
-      );
+      ).map(p => ({ id: p.id, name: 'Poule ' + p.number }));
     } catch (e) {
       console.warn('[Database] Error getting pools via phases:', e);
     }
