@@ -7,6 +7,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } fr
 import { Competition, Fencer, FencerStatus, Match, MatchStatus, Weapon, QuestPhaseConfig, Referee, Gender } from '../../shared/types';
 import { Arena } from '../../shared/types/remote';
 import { logger, LogCategory } from '@shared/services/logger';
+import { NotificationService } from '../../shared/services/notificationService';
 import { RankingImportResult } from '../../shared/utils/fileParser';
 import FencerList from './FencerList';
 import { TableauMatch, FinalResult, propagateWinners, ConsolationBracket } from './tableau/tableauTypes';
@@ -468,6 +469,15 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     return () => unlisten?.();
   }, [isRemoteActive, competition.id]);
 
+  const fireWebhookNotif = useCallback((title: string, body: string) => {
+    try {
+      const webhookUrl = localStorage.getItem('bellepoule-webhook-url');
+      if (!webhookUrl) return;
+      const svc = new NotificationService({ browser: false, webhook: { url: webhookUrl }, events: { matchCompleted: true, matchStarting: false, competitionStarted: false, competitionEnded: false, fencerLate: false } });
+      svc.notify({ title, body }).catch(() => {});
+    } catch { /* non bloquant */ }
+  }, []);
+
   // Écouter les mises à jour des matches distants
   // Note: pas de garde sur currentPhase car la phase 'remote' affiche le panel de saisie distante
   // mais les mises à jour doivent quand même être appliquées aux pools
@@ -487,6 +497,10 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         `[CompetitionView] match:finished REÇU matchId=${matchId} score=${scoreA}-${scoreB} tableau=${!!isTableau}`
       );
       applyRemoteScore(matchId, scoreA, scoreB, true, winnerOverride);
+      fireWebhookNotif(
+        `✅ Match terminé — ${competition.title}`,
+        `Score : ${scoreA} – ${scoreB}${isTableau ? ' (tableau)' : ''}`
+      );
     };
 
     const offMatchFinished = window.electronAPI.onRemoteMatchFinished(handleMatchFinished);
@@ -501,7 +515,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       offMatchFinished?.();
       offExcluded?.();
     };
-  }, [applyRemoteScore, updateFencer]);
+  }, [applyRemoteScore, updateFencer, fireWebhookNotif, competition.title]);
 
   // Sync scores/statuts des matches de poule vers la DB quand ils changent
   const prevPoolsRef = useRef(pools);
@@ -1292,6 +1306,15 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                         competitionId={competition.id}
                         onScoreUpdate={(matchIndex, scoreA, scoreB, winner, specialStatus) => {
                           updateScore(poolIndex, matchIndex, scoreA, scoreB, winner, specialStatus);
+                          if (winner) {
+                            const m = pool.matches[matchIndex];
+                            const nameA = m?.fencerA ? `${m.fencerA.lastName}` : 'A';
+                            const nameB = m?.fencerB ? `${m.fencerB.lastName}` : 'B';
+                            fireWebhookNotif(
+                              `✅ Match terminé — ${competition.title}`,
+                              `${nameA} ${scoreA} – ${scoreB} ${nameB} (Poule ${pool.number})`
+                            );
+                          }
                           if (isRemoteActive && competition?.id) {
                             const match = pool.matches[matchIndex];
                             if (match) {
