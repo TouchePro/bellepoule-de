@@ -636,9 +636,78 @@ export interface DatabaseAPI {
   // Score audit log
   getScoreAuditLogByCompetition: (competitionId: string) => Promise<ScoreAuditEntry[]>;
 
+  // Classement saisonnier Quest
+  addCompetitionToSeason: (payload: {
+    competitionId: string;
+    competitionTitle: string;
+    competitionDate: string;
+    entries: Array<{
+      fencerId: string;
+      fencerLastName: string;
+      fencerFirstName: string;
+      fencerClub?: string;
+      victories: number;
+      matchesPlayed: number;
+      questPoints: number;
+      questV4: number;
+      questV3: number;
+      questV2: number;
+      questV1: number;
+      touchesScored: number;
+      touchesReceived: number;
+      redCards: number;
+      compRank: number;
+    }>;
+  }) => Promise<void>;
+  getSeasonRanking: () => Promise<Array<{
+    fencerId: string;
+    fencerLastName: string;
+    fencerFirstName: string;
+    fencerClub: string | null;
+    totalVictories: number;
+    totalMatchesPlayed: number;
+    totalQuestPoints: number;
+    totalQuestV4: number;
+    totalQuestV3: number;
+    totalQuestV2: number;
+    totalQuestV1: number;
+    totalTouchesScored: number;
+    totalTouchesReceived: number;
+    totalRedCards: number;
+    competitionCount: number;
+    ratio: number;
+  }>>;
+  getSeasonCompetitions: () => Promise<Array<{
+    competitionId: string;
+    competitionTitle: string;
+    competitionDate: string;
+    fencerCount: number;
+    addedAt: string;
+  }>>;
+  removeCompetitionFromSeason: (competitionId: string) => Promise<void>;
+  resetSeason: () => Promise<void>;
+
   // Match timeline
   getMatchTimeline: (matchId: string) => Promise<import('./index').MatchEventEntry[]>;
   getCompetitionTimeline: (competitionId: string) => Promise<import('./index').MatchEventEntry[]>;
+
+  // Équipes
+  createTeam: (competitionId: string, name: string, club: string) => Promise<{ id: string }>;
+  getTeamsByCompetition: (competitionId: string) => Promise<Array<{
+    id: string; name: string; club: string;
+    fencers: Array<{ fencerId: string; fencerLastName: string; fencerFirstName: string; teamOrder: number; isReserve: boolean }>;
+  }>>;
+  deleteTeam: (teamId: string) => Promise<void>;
+  upsertTeamFencer: (teamId: string, fencerId: string, teamOrder: number, isReserve: boolean) => Promise<void>;
+  removeTeamFencer: (teamId: string, fencerId: string) => Promise<void>;
+  createTeamMatch: (competitionId: string, poolNumber: number, teamAId: string, teamBId: string) => Promise<{ id: string }>;
+  getTeamMatchesByCompetition: (competitionId: string) => Promise<Array<{
+    id: string; poolNumber: number; teamAId: string; teamBId: string;
+    scoreBoutsA: number; scoreBoutsB: number; status: string; winnerId: string | null; currentBoutIndex: number;
+    bouts: Array<{ id: string; boutOrder: number; fencerAId: string; fencerBId: string; scoreA: number; scoreB: number; maxScore: number; status: string; winnerId: string | null }>;
+  }>>;
+  createTeamBout: (matchId: string, boutOrder: number, fencerAId: string, fencerBId: string, maxScore: number) => Promise<{ id: string }>;
+  updateTeamBout: (boutId: string, scoreA: number, scoreB: number, status: string, winnerId: string | null) => Promise<void>;
 }
 
 export interface FileAPI {
