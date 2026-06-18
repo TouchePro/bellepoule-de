@@ -2210,6 +2210,44 @@ ipcMain.handle('db:resetSeason', async () => {
   return db.resetSeason();
 });
 
+// ── Équipes ───────────────────────────────────────────────────────────────────
+
+ipcMain.handle('db:createTeam', async (_, competitionId: string, name: string, club: string) => {
+  return db.createTeam(competitionId, name, club);
+});
+
+ipcMain.handle('db:getTeamsByCompetition', async (_, competitionId: string) => {
+  return db.getTeamsByCompetition(competitionId);
+});
+
+ipcMain.handle('db:deleteTeam', async (_, teamId: string) => {
+  return db.deleteTeam(teamId);
+});
+
+ipcMain.handle('db:upsertTeamFencer', async (_, teamId: string, fencerId: string, teamOrder: number, isReserve: boolean) => {
+  return db.upsertTeamFencer(teamId, fencerId, teamOrder, isReserve);
+});
+
+ipcMain.handle('db:removeTeamFencer', async (_, teamId: string, fencerId: string) => {
+  return db.removeTeamFencer(teamId, fencerId);
+});
+
+ipcMain.handle('db:createTeamMatch', async (_, competitionId: string, poolNumber: number, teamAId: string, teamBId: string) => {
+  return db.createTeamMatch(competitionId, poolNumber, teamAId, teamBId);
+});
+
+ipcMain.handle('db:getTeamMatchesByCompetition', async (_, competitionId: string) => {
+  return db.getTeamMatchesByCompetition(competitionId);
+});
+
+ipcMain.handle('db:createTeamBout', async (_, matchId: string, boutOrder: number, fencerAId: string, fencerBId: string, maxScore: number) => {
+  return db.createTeamBout(matchId, boutOrder, fencerAId, fencerBId, maxScore);
+});
+
+ipcMain.handle('db:updateTeamBout', async (_, boutId: string, scoreA: number, scoreB: number, status: string, winnerId: string | null) => {
+  return db.updateTeamBout(boutId, scoreA, scoreB, status, winnerId);
+});
+
 // ============================================================================
 // App Lifecycle
 // ============================================================================

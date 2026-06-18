@@ -318,6 +318,26 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('db:removeCompetitionFromSeason', competitionId),
     resetSeason: () =>
       ipcRenderer.invoke('db:resetSeason'),
+
+    // Équipes
+    createTeam: (competitionId: string, name: string, club: string) =>
+      ipcRenderer.invoke('db:createTeam', competitionId, name, club),
+    getTeamsByCompetition: (competitionId: string) =>
+      ipcRenderer.invoke('db:getTeamsByCompetition', competitionId),
+    deleteTeam: (teamId: string) =>
+      ipcRenderer.invoke('db:deleteTeam', teamId),
+    upsertTeamFencer: (teamId: string, fencerId: string, teamOrder: number, isReserve: boolean) =>
+      ipcRenderer.invoke('db:upsertTeamFencer', teamId, fencerId, teamOrder, isReserve),
+    removeTeamFencer: (teamId: string, fencerId: string) =>
+      ipcRenderer.invoke('db:removeTeamFencer', teamId, fencerId),
+    createTeamMatch: (competitionId: string, poolNumber: number, teamAId: string, teamBId: string) =>
+      ipcRenderer.invoke('db:createTeamMatch', competitionId, poolNumber, teamAId, teamBId),
+    getTeamMatchesByCompetition: (competitionId: string) =>
+      ipcRenderer.invoke('db:getTeamMatchesByCompetition', competitionId),
+    createTeamBout: (matchId: string, boutOrder: number, fencerAId: string, fencerBId: string, maxScore: number) =>
+      ipcRenderer.invoke('db:createTeamBout', matchId, boutOrder, fencerAId, fencerBId, maxScore),
+    updateTeamBout: (boutId: string, scoreA: number, scoreB: number, status: string, winnerId: string | null) =>
+      ipcRenderer.invoke('db:updateTeamBout', boutId, scoreA, scoreB, status, winnerId),
   },
 
   // File operations with validation

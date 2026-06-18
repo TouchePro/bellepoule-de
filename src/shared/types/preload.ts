@@ -690,6 +690,24 @@ export interface DatabaseAPI {
   // Match timeline
   getMatchTimeline: (matchId: string) => Promise<import('./index').MatchEventEntry[]>;
   getCompetitionTimeline: (competitionId: string) => Promise<import('./index').MatchEventEntry[]>;
+
+  // Équipes
+  createTeam: (competitionId: string, name: string, club: string) => Promise<{ id: string }>;
+  getTeamsByCompetition: (competitionId: string) => Promise<Array<{
+    id: string; name: string; club: string;
+    fencers: Array<{ fencerId: string; fencerLastName: string; fencerFirstName: string; teamOrder: number; isReserve: boolean }>;
+  }>>;
+  deleteTeam: (teamId: string) => Promise<void>;
+  upsertTeamFencer: (teamId: string, fencerId: string, teamOrder: number, isReserve: boolean) => Promise<void>;
+  removeTeamFencer: (teamId: string, fencerId: string) => Promise<void>;
+  createTeamMatch: (competitionId: string, poolNumber: number, teamAId: string, teamBId: string) => Promise<{ id: string }>;
+  getTeamMatchesByCompetition: (competitionId: string) => Promise<Array<{
+    id: string; poolNumber: number; teamAId: string; teamBId: string;
+    scoreBoutsA: number; scoreBoutsB: number; status: string; winnerId: string | null; currentBoutIndex: number;
+    bouts: Array<{ id: string; boutOrder: number; fencerAId: string; fencerBId: string; scoreA: number; scoreB: number; maxScore: number; status: string; winnerId: string | null }>;
+  }>>;
+  createTeamBout: (matchId: string, boutOrder: number, fencerAId: string, fencerBId: string, maxScore: number) => Promise<{ id: string }>;
+  updateTeamBout: (boutId: string, scoreA: number, scoreB: number, status: string, winnerId: string | null) => Promise<void>;
 }
 
 export interface FileAPI {
