@@ -118,6 +118,37 @@
       --vs-font-family: system-ui, sans-serif;
     }
 
+    /* ── Thème Unicorn ── */
+    [data-theme="unicorn"] {
+      --bg: linear-gradient(135deg, #1a0a2e 0%, #3b1a6b 30%, #5c2d8a 60%, #2a0d46 100%);
+      --text: #f8eeff;
+      --header-bg: rgba(40, 8, 72, 0.72);
+      --match-bg: rgba(245, 230, 255, 0.93);
+      --fencer-name-color: #2d0a4e;
+      --fencer-club-color: #7a4a9a;
+      --green-side-bg: linear-gradient(135deg, #071e12 0%, #0f3d22 50%, #1a5c35 100%);
+      --green-side-border: #00c853;
+      --red-side-bg: linear-gradient(135deg, #3a0020 0%, #65002e 50%, #8c003a 100%);
+      --red-side-border: #ff2d9e;
+      --score-bg: #060310;
+      --score-green: #00ff88;
+      --score-green-glow: rgba(0, 255, 136, 0.85), rgba(0, 255, 136, 0.4);
+      --score-red: #ff2d9e;
+      --score-red-glow: rgba(255, 45, 158, 0.85), rgba(255, 45, 158, 0.4);
+      --timer-bg: #0a0620;
+      --timer-color: #ffd700;
+      --timer-glow: rgba(255, 215, 0, 0.9), rgba(255, 215, 0, 0.45);
+      --timer-border: rgba(255, 215, 0, 0.28);
+      --timer-run-color: #00ff88;
+      --timer-run-glow: rgba(0, 255, 136, 0.95), rgba(0, 255, 136, 0.5);
+      --timer-run-border: rgba(0, 255, 136, 0.5);
+      --waiting-color: #f8eeff;
+      --idle-number-color: rgba(248, 238, 255, 0.92);
+      --idle-label-color: rgba(248, 238, 255, 0.48);
+      --vs-color: #ff80cc;
+      --vs-font-family: Georgia, 'Times New Roman', serif;
+    }
+
     /* ── Thème Custom (variables injectées dynamiquement par JS) ── */
     [data-theme="custom"] {
       /* hérite du thème dark par défaut, les variables seront surchargées */
@@ -1359,7 +1390,7 @@
             document.documentElement.setAttribute('data-theme', 'custom');
             this.applyCustomTheme(customTheme);
           } else {
-            const valid = ['dark', 'light', 'neon'];
+            const valid = ['dark', 'light', 'neon', 'unicorn'];
             this.theme = valid.includes(theme) ? theme : 'dark';
             document.documentElement.setAttribute('data-theme', this.theme);
             // Supprimer le style custom si présent

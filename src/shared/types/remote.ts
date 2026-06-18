@@ -105,7 +105,7 @@ export interface Arena {
   swapped?: boolean;
 }
 
-export type DisplayTheme = 'dark' | 'light' | 'neon' | 'custom';
+export type DisplayTheme = 'dark' | 'light' | 'neon' | 'unicorn' | 'custom';
 
 /** Variables CSS personnalisées pour un thème d'arène */
 export interface CustomTheme {
