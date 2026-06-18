@@ -180,11 +180,41 @@ function saveSavedThemes(themes: CustomTheme[]): void {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
+// Variables et defaults Kiosk
+// ──────────────────────────────────────────────────────────────────────────────
+const KIOSK_DEFAULTS: Record<string, string> = {
+  '--k-bg':       '#0f172a',
+  '--k-accent':   '#fbbf24',
+  '--k-accent2':  '#3b82f6',
+  '--k-card-bg':  'rgba(255, 255, 255, 0.04)',
+  '--k-border':   'rgba(255, 255, 255, 0.08)',
+  '--k-muted':    '#64748b',
+  '--k-progress': 'linear-gradient(90deg, #3b82f6, #8b5cf6)',
+};
+
+const KIOSK_VAR_GROUPS: VarGroup[] = [
+  {
+    label: 'Kiosk',
+    vars: [
+      { key: '--k-bg',       label: 'Fond',              type: 'text'  },
+      { key: '--k-accent',   label: 'Couleur accent',    type: 'color' },
+      { key: '--k-accent2',  label: 'Couleur interactive', type: 'color' },
+      { key: '--k-card-bg',  label: 'Fond cartes',       type: 'text'  },
+      { key: '--k-border',   label: 'Bordures',          type: 'text'  },
+      { key: '--k-muted',    label: 'Texte discret',     type: 'color' },
+      { key: '--k-progress', label: 'Barre progression', type: 'text'  },
+    ],
+  },
+];
+
+// ──────────────────────────────────────────────────────────────────────────────
 // Props
 // ──────────────────────────────────────────────────────────────────────────────
 interface ThemeEditorProps {
   /** Arène cible (ex: 'arena1') ou 'all' pour toutes les arènes */
   targetArenaId: string;
+  /** 'arena' (défaut) ou 'kiosk' */
+  targetType?: 'arena' | 'kiosk';
   /** Thème initial à éditer (undefined = nouveau thème depuis dark) */
   initialTheme?: CustomTheme;
   /** Callback quand l'utilisateur applique le thème */
@@ -197,15 +227,19 @@ interface ThemeEditorProps {
 // ──────────────────────────────────────────────────────────────────────────────
 const ThemeEditor: React.FC<ThemeEditorProps> = ({
   targetArenaId,
+  targetType = 'arena',
   initialTheme,
   onApply,
   onClose,
 }) => {
   const instanceId = useId();
+  const isKiosk = targetType === 'kiosk';
+  const activeDefaults = isKiosk ? KIOSK_DEFAULTS : DARK_DEFAULTS;
+  const activeVarGroups = isKiosk ? KIOSK_VAR_GROUPS : VAR_GROUPS;
 
-  const [themeName, setThemeName] = useState(initialTheme?.name ?? 'Mon thème');
+  const [themeName, setThemeName] = useState(initialTheme?.name ?? (isKiosk ? 'Thème kiosk' : 'Mon thème'));
   const [vars, setVars] = useState<Record<string, string>>(() => ({
-    ...DARK_DEFAULTS,
+    ...activeDefaults,
     ...(initialTheme?.variables ?? {}),
   }));
   const [savedThemes, setSavedThemes] = useState<CustomTheme[]>(loadSavedThemes);
@@ -271,7 +305,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
 
   const handleLoadSaved = (theme: CustomTheme) => {
     setThemeName(theme.name);
-    setVars({ ...DARK_DEFAULTS, ...theme.variables });
+    setVars({ ...activeDefaults, ...theme.variables });
   };
 
   // ── Import / Export (IPC Electron natif) ──
@@ -305,7 +339,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
         return;
       }
       setThemeName(parsed.name ?? 'Thème importé');
-      setVars({ ...DARK_DEFAULTS, ...parsed.variables });
+      setVars({ ...activeDefaults, ...parsed.variables });
       setImportError('');
     } catch {
       setImportError('Fichier JSON invalide');
@@ -322,9 +356,11 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
     onApply(targetArenaId, theme);
   };
 
-  const arenaLabel = targetArenaId === 'all'
-    ? 'Toutes les arènes'
-    : `Piste ${targetArenaId.replace('arena', '')}`;
+  const arenaLabel = isKiosk
+    ? 'Kiosk (affichage public)'
+    : targetArenaId === 'all'
+      ? 'Toutes les arènes'
+      : `Piste ${targetArenaId.replace('arena', '')}`;
 
   return (
     <div className="theme-editor-overlay" onClick={onClose}>
@@ -376,7 +412,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
 
             {/* Onglets de groupes */}
             <div className="theme-editor-tabs">
-              {VAR_GROUPS.map((g, i) => (
+              {activeVarGroups.map((g, i) => (
                 <button
                   key={g.label}
                   className={`theme-editor-tab ${activeGroup === i ? 'active' : ''}`}
@@ -389,13 +425,13 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
 
             {/* Variables du groupe actif */}
             <div className="theme-editor-vars">
-              {VAR_GROUPS[activeGroup].vars.map(({ key, label, type }) => (
+              {activeVarGroups[activeGroup]?.vars.map(({ key, label, type }) => (
                 <VarRow
                   key={key}
                   varKey={key}
                   label={label}
                   type={type}
-                  value={vars[key] ?? DARK_DEFAULTS[key] ?? ''}
+                  value={vars[key] ?? activeDefaults[key] ?? ''}
                   onChange={val => setVar(key, val)}
                 />
               ))}
@@ -454,7 +490,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
                 flexShrink: 0,
               }}
             >
-              {/* Canvas virtuel 1280×720 — toutes les CSS vars sont résolues ici */}
+              {/* Canvas virtuel 1280×720 */}
               <div
                 className={`theme-preview-scope-${previewStyleId}`}
                 style={{
@@ -464,7 +500,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
                   height: `${VIRTUAL_H}px`,
                   transformOrigin: 'top left',
                   transform: `scale(${previewScale})`,
-                  background: 'var(--bg)',
+                  background: isKiosk ? 'var(--k-bg)' : 'var(--bg)',
                   display: 'flex',
                   flexDirection: 'column',
                   padding: '20px',
@@ -472,136 +508,175 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
                   boxSizing: 'border-box',
                 }}
               >
-                {/* En-tête arène */}
-                <div style={{
-                  background: 'var(--header-bg)',
-                  borderRadius: '10px',
-                  padding: '14px 28px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  fontSize: '26px',
-                  color: 'var(--text)',
-                  flexShrink: 0,
-                }}>
-                  <span style={{ fontWeight: 700 }}>⚔ Arène 1</span>
-                  <span style={{ background: '#22c55e', borderRadius: '999px', padding: '4px 18px', fontSize: '20px', fontWeight: 700, color: '#fff' }}>
-                    EN COURS
-                  </span>
-                </div>
-
-                {/* Corps du match */}
-                <div style={{
-                  background: 'var(--match-bg)',
-                  borderRadius: '14px',
-                  flex: 1,
-                  padding: '18px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '14px',
-                  minHeight: 0,
-                }}>
-                  {/* Grille combattants */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 1fr', gap: '14px', flex: 1, minHeight: 0, overflow: 'hidden' }}>
-                    {/* Côté vert */}
-                    <div style={{
-                      background: 'var(--green-side-bg)',
-                      border: '6px solid var(--green-side-border)',
-                      borderRadius: '12px',
-                      padding: '14px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      overflow: 'hidden',
-                    }}>
-                      <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#22c55e,#16a34a)', flexShrink: 0 }} />
-                      <div style={{ fontSize: 'var(--fencer-name-font-size)', fontFamily: 'var(--fencer-name-font-family)', fontWeight: 800, color: 'var(--fencer-name-color)', textAlign: 'center', lineHeight: 1.1 }}>
-                        DUPONT A.
-                      </div>
-                      <div style={{ fontSize: '22px', color: 'var(--fencer-club-color)' }}>
-                        Escrime Paris
-                      </div>
-                      <div style={{
-                        fontFamily: 'var(--score-font-family)',
-                        fontSize: 'var(--score-font-size)',
-                        fontWeight: 'bold',
-                        color: 'var(--score-green)',
-                        background: 'var(--score-bg)',
-                        padding: '0.05em 0.2em',
-                        borderRadius: '8px',
-                        lineHeight: 1,
+                {isKiosk ? (
+                  // ── Aperçu Kiosk ──
+                  <>
+                    {/* Barre de progression */}
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 8, background: 'var(--k-progress)', borderRadius: '4px 4px 0 0' }} />
+                    {/* En-tête kiosk */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 16, flexShrink: 0 }}>
+                      <span style={{ fontSize: 28, fontWeight: 800, color: 'var(--k-accent)' }}>🏆 Classement provisoire</span>
+                      <span style={{ fontSize: 18, padding: '4px 16px', borderRadius: 20, background: 'var(--k-card-bg)', border: '1px solid var(--k-border)', color: 'var(--k-accent2)' }}>
+                        16 tireurs
+                      </span>
+                    </div>
+                    {/* Lignes de classement */}
+                    {[
+                      { rank: '🥇', name: 'DUPONT A.', club: 'Escrime Paris', v: '5', ind: '+12', gold: true },
+                      { rank: '🥈', name: 'MARTIN B.', club: 'CE Orléans', v: '4', ind: '+8', gold: false },
+                      { rank: '🥉', name: 'LEROY C.', club: 'EC Lyon', v: '4', ind: '+5', gold: false },
+                      { rank: '4', name: 'BERNARD D.', club: 'Fleuret Club', v: '3', ind: '+1', gold: false },
+                    ].map((row, i) => (
+                      <div key={i} style={{
+                        display: 'flex', alignItems: 'center', gap: 20,
+                        padding: '12px 18px',
+                        background: i === 0 ? 'rgba(251,191,36,0.06)' : 'var(--k-card-bg)',
+                        border: `1px solid var(--k-border)`,
+                        borderRadius: 10,
                         flexShrink: 0,
                       }}>
-                        5
+                        <span style={{ fontSize: 26, width: 40, textAlign: 'center', color: row.gold ? 'var(--k-accent)' : '#94a3b8', fontWeight: 700 }}>{row.rank}</span>
+                        <span style={{ flex: 1, fontSize: 22, fontWeight: 600 }}>{row.name} <span style={{ fontSize: 16, color: 'var(--k-muted)' }}>· {row.club}</span></span>
+                        <span style={{ fontSize: 20, color: '#10b981', fontWeight: 700 }}>{row.v}V</span>
+                        <span style={{ fontSize: 20, color: 'var(--k-accent2)', width: 60, textAlign: 'right' }}>{row.ind}</span>
                       </div>
-                    </div>
-
-                    {/* VS */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '36px', fontWeight: 900, color: 'var(--vs-color)', fontFamily: 'var(--vs-font-family)' }}>
-                      VS
-                    </div>
-
-                    {/* Côté rouge */}
+                    ))}
+                  </>
+                ) : (
+                  // ── Aperçu Arène ──
+                  <>
+                    {/* En-tête arène */}
                     <div style={{
-                      background: 'var(--red-side-bg)',
-                      border: '6px solid var(--red-side-border)',
-                      borderRadius: '12px',
-                      padding: '14px',
+                      background: 'var(--header-bg)',
+                      borderRadius: '10px',
+                      padding: '14px 28px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      fontSize: '26px',
+                      color: 'var(--text)',
+                      flexShrink: 0,
+                    }}>
+                      <span style={{ fontWeight: 700 }}>⚔ Arène 1</span>
+                      <span style={{ background: '#22c55e', borderRadius: '999px', padding: '4px 18px', fontSize: '20px', fontWeight: 700, color: '#fff' }}>
+                        EN COURS
+                      </span>
+                    </div>
+
+                    {/* Corps du match */}
+                    <div style={{
+                      background: 'var(--match-bg)',
+                      borderRadius: '14px',
+                      flex: 1,
+                      padding: '18px',
                       display: 'flex',
                       flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      overflow: 'hidden',
+                      gap: '14px',
+                      minHeight: 0,
                     }}>
-                      <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#ef4444,#dc2626)', flexShrink: 0 }} />
-                      <div style={{ fontSize: 'var(--fencer-name-font-size)', fontFamily: 'var(--fencer-name-font-family)', fontWeight: 800, color: 'var(--fencer-name-color)', textAlign: 'center', lineHeight: 1.1 }}>
-                        MARTIN B.
+                      {/* Grille combattants */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 1fr', gap: '14px', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+                        {/* Côté vert */}
+                        <div style={{
+                          background: 'var(--green-side-bg)',
+                          border: '6px solid var(--green-side-border)',
+                          borderRadius: '12px',
+                          padding: '14px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          overflow: 'hidden',
+                        }}>
+                          <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#22c55e,#16a34a)', flexShrink: 0 }} />
+                          <div style={{ fontSize: 'var(--fencer-name-font-size)', fontFamily: 'var(--fencer-name-font-family)', fontWeight: 800, color: 'var(--fencer-name-color)', textAlign: 'center', lineHeight: 1.1 }}>
+                            DUPONT A.
+                          </div>
+                          <div style={{ fontSize: '22px', color: 'var(--fencer-club-color)' }}>
+                            Escrime Paris
+                          </div>
+                          <div style={{
+                            fontFamily: 'var(--score-font-family)',
+                            fontSize: 'var(--score-font-size)',
+                            fontWeight: 'bold',
+                            color: 'var(--score-green)',
+                            background: 'var(--score-bg)',
+                            padding: '0.05em 0.2em',
+                            borderRadius: '8px',
+                            lineHeight: 1,
+                            flexShrink: 0,
+                          }}>
+                            5
+                          </div>
+                        </div>
+
+                        {/* VS */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '36px', fontWeight: 900, color: 'var(--vs-color)', fontFamily: 'var(--vs-font-family)' }}>
+                          VS
+                        </div>
+
+                        {/* Côté rouge */}
+                        <div style={{
+                          background: 'var(--red-side-bg)',
+                          border: '6px solid var(--red-side-border)',
+                          borderRadius: '12px',
+                          padding: '14px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          overflow: 'hidden',
+                        }}>
+                          <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#ef4444,#dc2626)', flexShrink: 0 }} />
+                          <div style={{ fontSize: 'var(--fencer-name-font-size)', fontFamily: 'var(--fencer-name-font-family)', fontWeight: 800, color: 'var(--fencer-name-color)', textAlign: 'center', lineHeight: 1.1 }}>
+                            MARTIN B.
+                          </div>
+                          <div style={{ fontSize: '22px', color: 'var(--fencer-club-color)' }}>
+                            CE Orléans
+                          </div>
+                          <div style={{
+                            fontFamily: 'var(--score-font-family)',
+                            fontSize: 'var(--score-font-size)',
+                            fontWeight: 'bold',
+                            color: 'var(--score-red)',
+                            background: 'var(--score-bg)',
+                            padding: '0.05em 0.2em',
+                            borderRadius: '8px',
+                            lineHeight: 1,
+                            flexShrink: 0,
+                          }}>
+                            3
+                          </div>
+                        </div>
                       </div>
-                      <div style={{ fontSize: '22px', color: 'var(--fencer-club-color)' }}>
-                        CE Orléans
-                      </div>
+
+                      {/* Chronomètre */}
                       <div style={{
-                        fontFamily: 'var(--score-font-family)',
-                        fontSize: 'var(--score-font-size)',
+                        background: 'var(--timer-bg)',
+                        border: '4px solid var(--timer-run-border)',
+                        borderRadius: '10px',
+                        padding: '10px',
+                        textAlign: 'center',
+                        fontFamily: 'var(--timer-font-family)',
+                        fontSize: 'var(--timer-font-size)',
                         fontWeight: 'bold',
-                        color: 'var(--score-red)',
-                        background: 'var(--score-bg)',
-                        padding: '0.05em 0.2em',
-                        borderRadius: '8px',
-                        lineHeight: 1,
+                        color: 'var(--timer-run-color)',
                         flexShrink: 0,
+                        lineHeight: 1,
                       }}>
-                        3
+                        02:30
                       </div>
                     </div>
-                  </div>
 
-                  {/* Chronomètre */}
-                  <div style={{
-                    background: 'var(--timer-bg)',
-                    border: '4px solid var(--timer-run-border)',
-                    borderRadius: '10px',
-                    padding: '10px',
-                    textAlign: 'center',
-                    fontFamily: 'var(--timer-font-family)',
-                    fontSize: 'var(--timer-font-size)',
-                    fontWeight: 'bold',
-                    color: 'var(--timer-run-color)',
-                    flexShrink: 0,
-                    lineHeight: 1,
-                  }}>
-                    02:30
-                  </div>
-                </div>
-
-                {/* Écran attente */}
-                <div style={{ textAlign: 'center', fontSize: '22px', color: 'var(--idle-label-color)', flexShrink: 0 }}>
-                  <span style={{ fontSize: '36px', fontWeight: 900, color: 'var(--idle-number-color)' }}>2</span>
-                  {' '}— Arène en attente
-                </div>
+                    {/* Écran attente */}
+                    <div style={{ textAlign: 'center', fontSize: '22px', color: 'var(--idle-label-color)', flexShrink: 0 }}>
+                      <span style={{ fontSize: '36px', fontWeight: 900, color: 'var(--idle-number-color)' }}>2</span>
+                      {' '}— Arène en attente
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>

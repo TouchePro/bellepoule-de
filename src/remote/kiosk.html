@@ -13,6 +13,16 @@
       rel="stylesheet"
     />
     <style>
+      :root {
+        --k-bg: #0f172a;
+        --k-accent: #fbbf24;
+        --k-accent2: #3b82f6;
+        --k-card-bg: rgba(255, 255, 255, 0.04);
+        --k-border: rgba(255, 255, 255, 0.08);
+        --k-muted: #64748b;
+        --k-progress: linear-gradient(90deg, #3b82f6, #8b5cf6);
+      }
+
       * {
         margin: 0;
         padding: 0;
@@ -21,7 +31,7 @@
 
       body {
         font-family: 'Inter', system-ui, sans-serif;
-        background: #0f172a;
+        background: var(--k-bg);
         min-height: 100vh;
         color: white;
         overflow: hidden;
@@ -40,7 +50,7 @@
 
       #progress-bar {
         height: 100%;
-        background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+        background: var(--k-progress);
         width: 0%;
         transition: width 0.1s linear;
       }
@@ -72,7 +82,7 @@
       .menu-title {
         font-size: 1rem;
         font-weight: 700;
-        color: #fbbf24;
+        color: var(--k-accent);
       }
 
       .menu-competition {
@@ -100,8 +110,8 @@
 
       .menu-nav button:hover,
       .menu-nav button.active {
-        background: #3b82f6;
-        border-color: #3b82f6;
+        background: var(--k-accent2);
+        border-color: var(--k-accent2);
       }
 
       .menu-status {
@@ -137,7 +147,7 @@
         overflow: hidden;
         display: none;
         flex-direction: column;
-        background: #0f172a;
+        background: var(--k-bg);
       }
 
       .kiosk-view.active {
@@ -156,7 +166,7 @@
       .view-title {
         font-size: 1.2rem;
         font-weight: 800;
-        background: linear-gradient(90deg, #fbbf24, #f59e0b);
+        background: linear-gradient(90deg, var(--k-accent), var(--k-accent));
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -189,9 +199,9 @@
       }
 
       .pool-card {
-        background: rgba(255, 255, 255, 0.04);
+        background: var(--k-card-bg);
         border-radius: 0.75rem;
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--k-border);
         overflow: hidden;
       }
 
@@ -252,7 +262,7 @@
       }
 
       .rank-col { width: 36px; font-weight: 700; }
-      .rank-1 { color: #fbbf24; }
+      .rank-1 { color: var(--k-accent); }
       .rank-2 { color: #94a3b8; }
       .rank-3 { color: #b45309; }
 
@@ -391,9 +401,9 @@
       }
 
       .arena-card {
-        background: rgba(255, 255, 255, 0.04);
+        background: var(--k-card-bg);
         border-radius: 0.75rem;
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--k-border);
         padding: 1.25rem;
       }
 
@@ -2643,6 +2653,12 @@
               const lbl = cmd.screenLabel || localStorage.getItem('bp_screen_label') || _screenId;
               if (cmd.screenLabel) localStorage.setItem('bp_screen_label', cmd.screenLabel);
               _showIdentifyOverlay(lbl, cmd.duration ?? 5000);
+              return;
+            }
+            if (cmd.type === 'kiosk:theme' && cmd.variables) {
+              Object.entries(cmd.variables).forEach(([k, v]) => {
+                document.documentElement.style.setProperty(k, String(v));
+              });
               return;
             }
             if (cmd.type === 'kiosk:config' && cmd.kioskConfig) {

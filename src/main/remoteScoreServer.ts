@@ -74,6 +74,7 @@ export class RemoteScoreServer {
   private sessionTheme: DisplayTheme = 'dark'; // Thème visuel de l'affichage distant (global)
   private arenaThemeOverrides: Map<string, { theme: DisplayTheme; customTheme?: CustomTheme }> =
     new Map();
+  private kioskThemeVariables: Record<string, string> | null = null; // Thème CSS vars pour le kiosk
   private orgNote: OrgNote | null = null; // Note d'organisation affichée sur le kiosk
   private sessionLogo: string | null = null; // Logo organisateur (base64) pour kiosk et affichages publics
   private sessionWallpaper: string | null = null; // Fond d'écran (base64) affiché sur les arènes en attente
@@ -2532,6 +2533,9 @@ export class RemoteScoreServer {
           label,
           screenId,
         });
+        if (data.clientType === 'kiosk' && this.kioskThemeVariables) {
+          socket.emit('server:command', { type: 'kiosk:theme', variables: this.kioskThemeVariables });
+        }
         this.broadcastClientList();
       });
 
@@ -4729,6 +4733,16 @@ export class RemoteScoreServer {
   }): void {
     if (!this.session) throw new Error('Aucune session active');
     this.sessionKioskViews = { tableau: true, ...views };
+  }
+
+  public updateKioskTheme(variables: Record<string, string>): void {
+    if (!this.session) throw new Error('Aucune session active');
+    this.kioskThemeVariables = variables;
+    for (const [, client] of this.connectedClients) {
+      if (client.clientType === 'kiosk') {
+        this.io.to(client.socketId).emit('server:command', { type: 'kiosk:theme', variables });
+      }
+    }
   }
 
   public updatePoolFencers(updates: Array<{ poolId: string; fencers: any[] }>): void {

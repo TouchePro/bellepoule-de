@@ -547,6 +547,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     clearOrgNote: (competitionId: string) => ipcRenderer.invoke('remote:clearOrgNote', competitionId),
     updateArenaTheme: (competitionId: string, arenaId: string, theme: string, customTheme?: any) =>
       ipcRenderer.invoke('remote:updateArenaTheme', competitionId, arenaId, theme, customTheme),
+    updateKioskTheme: (competitionId: string, variables: Record<string, string>) =>
+      ipcRenderer.invoke('remote:updateKioskTheme', competitionId, variables),
     setWebhookUrl: (url: string | null) => ipcRenderer.invoke('remote:setWebhookUrl', url),
     updateLogo: (logo: string | null) => ipcRenderer.invoke('remote:updateLogo', logo),
     setTtsConfig: (config: unknown) => ipcRenderer.invoke('remote:setTtsConfig', config),
