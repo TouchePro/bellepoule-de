@@ -532,6 +532,40 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
           {/* ── Vue CLASSEMENT ── */}
           {view === 'ranking' && (
             <div>
+              {rankings.length > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
+                  <button
+                    className="btn btn-secondary"
+                    style={{ fontSize: '0.8rem', padding: '0.3rem 0.7rem' }}
+                    onClick={() => {
+                      const header = 'Rang,Équipe,Club,V,D,Assauts+,Assauts-,Ind.,Pts+,Pts-\n';
+                      const rows = rankings.map((r, i) =>
+                        [
+                          i + 1,
+                          `"${r.team.name}"`,
+                          `"${r.team.club ?? ''}"`,
+                          r.victories,
+                          r.defeats,
+                          r.boutsWon,
+                          r.boutsLost,
+                          r.boutsWon - r.boutsLost,
+                          r.pointsFor,
+                          r.pointsAgainst,
+                        ].join(',')
+                      ).join('\n');
+                      const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = 'classement-equipes.csv';
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                  >
+                    ↓ Exporter CSV
+                  </button>
+                </div>
+              )}
               {rankings.length === 0 ? (
                 <div className="text-center text-gray-400 py-10">Aucun match joué.</div>
               ) : (
