@@ -90,6 +90,7 @@ interface PoolViewProps {
     fencerA?: Fencer | null,
     fencerB?: Fencer | null
   ) => void;
+  onRefereeAssigned?: (poolId: string, referee: Referee | null) => void;
 }
 
 type ViewMode = 'grid' | 'matches';
@@ -111,6 +112,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   isRemoteActive,
   remoteServerUrl,
   onMatchArenaChange,
+  onRefereeAssigned,
 }) => {
   const { showToast } = useToast();
   const { confirm } = useConfirm();
@@ -177,7 +179,8 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     window.electronAPI.db.updatePoolReferee(pool.id, referee?.id ?? null);
     setAssignedReferee(referee);
     setShowRefereeModal(false);
-  }, [pool.id]);
+    onRefereeAssigned?.(pool.id, referee);
+  }, [pool.id, onRefereeAssigned]);
 
   const { addAction, undo, redo, canUndo, canRedo } = useHistory();
   const [showPoolConfetti, setShowPoolConfetti] = useState(false);
