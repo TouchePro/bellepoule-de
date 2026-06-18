@@ -109,6 +109,10 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const [session, setSession] = useState<RemoteSession | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [serverUrl, setServerUrl] = useState<string>('');
+  const [useHttps, setUseHttps] = useState<boolean>(() => {
+    return localStorage.getItem('bellepoule-remote-https') === 'true';
+  });
+  const [certFingerprint, setCertFingerprint] = useState<string | null>(null);
   const [remotePort, setRemotePort] = useState<number>(() => {
     const saved = localStorage.getItem(`bellepoule-remote-port-${competition.id}`);
     return saved ? parseInt(saved, 10) : 8066;
@@ -287,7 +291,10 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       if (result.success && result.session) {
         // Récupérer l'IP réseau réelle (éviter localhost)
         const info = await window.electronAPI.remote.getServerInfo(competition.id);
-        if (info.success && info.serverInfo) setServerUrl(info.serverInfo.url);
+        if (info.success && info.serverInfo) {
+          setServerUrl(info.serverInfo.url);
+          setCertFingerprint(info.serverInfo.certFingerprint ?? null);
+        }
         setSession(result.session);
         const existingCount = result.session.strips.length;
         setPendingCount(existingCount);
@@ -301,7 +308,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const startRemoteServer = async () => {
     try {
       setIsLoading(true);
-      const result = await window.electronAPI.remote.startServer(competition.id, remotePort, selectedInterface);
+      const result = await window.electronAPI.remote.startServer(competition.id, remotePort, selectedInterface, useHttps);
 
       if (result.success && result.serverInfo) {
         if (result.serverInfo.port !== remotePort) {
@@ -309,6 +316,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           localStorage.setItem(`bellepoule-remote-port-${competition.id}`, String(result.serverInfo.port));
         }
         setServerUrl(result.serverInfo.url);
+        setCertFingerprint(result.serverInfo.certFingerprint ?? null);
         await startSession(result.serverInfo.url, effectivePending);
       } else {
         showToast(`Erreur: ${result.error || 'Impossible de démarrer le serveur'}`, 'error');
@@ -540,7 +548,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     const previewHost = selectedInterface === '0.0.0.0'
       ? (networkInterfaces.find(i => i.address !== '0.0.0.0')?.address ?? 'localhost')
       : selectedInterface;
-    const networkPreview = `http://${previewHost}:${remotePort}`;
+    const networkPreview = `${useHttps ? 'https' : 'http'}://${previewHost}:${remotePort}`;
 
     const kioskPills = (
       [
@@ -642,6 +650,23 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
               {!portValid && (
                 <div className="rsm-port-error">Port invalide (1–65535)</div>
               )}
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={useHttps}
+                  onChange={e => {
+                    setUseHttps(e.target.checked);
+                    localStorage.setItem('bellepoule-remote-https', String(e.target.checked));
+                  }}
+                  disabled={isLoading}
+                />
+                🔒 Activer HTTPS (connexion chiffrée)
+              </label>
+              {useHttps && (
+                <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '0.25rem', lineHeight: 1.4 }}>
+                  Certificat auto-signé — les tablettes devront accepter l&apos;avertissement de sécurité du navigateur une seule fois.
+                </div>
+              )}
               <span className="rsm-network-preview">{networkPreview}</span>
             </div>
           </div>
@@ -670,6 +695,11 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           <p>
             Serveur: <strong>{serverUrl}</strong>
           </p>
+          {certFingerprint && (
+            <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: '0.25rem 0 0', wordBreak: 'break-all' }}>
+              🔒 Empreinte cert. SHA-256 : <code style={{ fontSize: '0.7rem' }}>{certFingerprint}</code>
+            </p>
+          )}
           <div style={RSM_STYLES.portActiveRow}>
             <label htmlFor={`remote-port-active-${competition.id}`} style={RSM_STYLES.portActiveLabel}>
               Port :

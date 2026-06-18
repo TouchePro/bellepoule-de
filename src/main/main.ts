@@ -10,6 +10,7 @@ import * as os from 'os';
 import JSZip from 'jszip';
 import { DatabaseManager } from '../database';
 import { RemoteScoreServer } from './remoteScoreServer';
+import { ensureCert } from './certManager';
 import { AutoUpdater } from './autoUpdater';
 import { Competition, Fencer, FencerStatus, Match, MatchStatus, Pool } from '../shared/types';
 
@@ -17,7 +18,7 @@ import { Competition, Fencer, FencerStatus, Match, MatchStatus, Pool } from '../
 const db = new DatabaseManager();
 
 // Remote score servers — one per competition (key = competitionId)
-const remoteServers = new Map<string, { server: RemoteScoreServer; port: number; host: string }>();
+const remoteServers = new Map<string, { server: RemoteScoreServer; port: number; host: string; useHttps: boolean; certFingerprint?: string }>();
 const usedPorts = new Set<number>();
 const BASE_REMOTE_PORT = 8066;
 
@@ -1542,7 +1543,7 @@ ipcMain.handle('remote:getNetworkInterfaces', async () => {
   return { success: true, interfaces: result };
 });
 
-ipcMain.handle('remote:startServer', async (_event, competitionId: string, port?: number, host?: string) => {
+ipcMain.handle('remote:startServer', async (_event, competitionId: string, port?: number, host?: string, useHttps?: boolean) => {
   try {
     if (remoteServers.has(competitionId)) {
       return { success: false, error: 'Le serveur est déjà démarré pour cette compétition' };
@@ -1550,14 +1551,28 @@ ipcMain.handle('remote:startServer', async (_event, competitionId: string, port?
 
     const effectivePort = findAvailablePort(port);
     const effectiveHost = host ?? '0.0.0.0';
-    const server = new RemoteScoreServer(db, effectivePort, effectiveHost);
+
+    let tlsOptions: { cert: string; key: string } | undefined;
+    let certFingerprint: string | undefined;
+    if (useHttps) {
+      try {
+        const bundle = await ensureCert(app.getPath('userData'));
+        tlsOptions = { cert: bundle.cert, key: bundle.key };
+        certFingerprint = bundle.fingerprint;
+      } catch (certError) {
+        console.error('Erreur génération certificat TLS:', certError);
+        return { success: false, error: 'Impossible de générer le certificat TLS' };
+      }
+    }
+
+    const server = new RemoteScoreServer(db, effectivePort, effectiveHost, tlsOptions);
     try {
       await server.start();
     } catch (startError: any) {
       console.error('Error binding remote server port:', startError);
       return { success: false, error: startError?.message ?? 'Port indisponible' };
     }
-    remoteServers.set(competitionId, { server, port: effectivePort, host: effectiveHost });
+    remoteServers.set(competitionId, { server, port: effectivePort, host: effectiveHost, useHttps: !!useHttps, certFingerprint });
     usedPorts.add(effectivePort);
 
     // Appliquer la config TTS persistée aux tablettes de ce nouveau serveur
@@ -1576,6 +1591,8 @@ ipcMain.handle('remote:startServer', async (_event, competitionId: string, port?
         url: server.getServerUrl(),
         ip: server.getLocalIPAddress(),
         port: effectivePort,
+        useHttps: !!useHttps,
+        certFingerprint,
       },
     };
   } catch (error) {
@@ -1614,8 +1631,19 @@ ipcMain.handle('remote:getServerInfo', async (_event, competitionId: string) => 
       url: entry.server.getServerUrl(),
       ip: entry.server.getLocalIPAddress(),
       port: entry.port,
+      useHttps: entry.useHttps,
+      certFingerprint: entry.certFingerprint,
     },
   };
+});
+
+ipcMain.handle('remote:getCertFingerprint', async () => {
+  try {
+    const bundle = await ensureCert(app.getPath('userData'));
+    return { success: true, fingerprint: bundle.fingerprint };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
 });
 
 // Remote session handlers
@@ -1982,12 +2010,21 @@ ipcMain.handle('remote:changePort', async (_, competitionId: string, newPort: nu
     if (usedPorts.has(newPort) && newPort !== entry.port) {
       return { success: false, error: `Le port ${newPort} est déjà utilisé` };
     }
-    const host = entry.host;
+    const { host, useHttps, certFingerprint } = entry;
+    let tlsOptions: { cert: string; key: string } | undefined;
+    if (useHttps && certFingerprint) {
+      try {
+        const bundle = await ensureCert(app.getPath('userData'));
+        tlsOptions = { cert: bundle.cert, key: bundle.key };
+      } catch {
+        /* ignore — redémarre en HTTP si cert inaccessible */
+      }
+    }
     entry.server.stop();
     usedPorts.delete(entry.port);
-    const server = new RemoteScoreServer(db, newPort, host);
+    const server = new RemoteScoreServer(db, newPort, host, tlsOptions);
     server.start();
-    remoteServers.set(competitionId, { server, port: newPort, host });
+    remoteServers.set(competitionId, { server, port: newPort, host, useHttps: !!tlsOptions, certFingerprint });
     usedPorts.add(newPort);
     return {
       success: true,
@@ -1995,6 +2032,8 @@ ipcMain.handle('remote:changePort', async (_, competitionId: string, newPort: nu
         url: server.getServerUrl(),
         ip: server.getLocalIPAddress(),
         port: newPort,
+        useHttps: !!tlsOptions,
+        certFingerprint,
       },
     };
   } catch (error) {

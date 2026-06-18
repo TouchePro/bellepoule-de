@@ -340,6 +340,8 @@ export interface RemoteServerInfo {
   url: string;
   ip: string;
   port: number;
+  useHttps?: boolean;
+  certFingerprint?: string;
 }
 
 export interface ConnectedClient {
@@ -381,10 +383,12 @@ export interface RemoteServerAPI {
   startServer: (
     competitionId: string,
     port?: number,
-    host?: string
+    host?: string,
+    useHttps?: boolean
   ) => Promise<{ success: boolean; serverInfo?: RemoteServerInfo; error?: string }>;
   stopServer: (competitionId: string) => Promise<{ success: boolean; error?: string }>;
   getServerInfo: (competitionId: string) => Promise<{ success: boolean; serverInfo?: RemoteServerInfo; error?: string }>;
+  getCertFingerprint: () => Promise<{ success: boolean; fingerprint?: string; error?: string }>;
   startSession: (
     competitionId: string,
     strips: number,
