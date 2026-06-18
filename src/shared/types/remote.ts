@@ -113,6 +113,8 @@ export interface CustomTheme {
   name: string;
   /** Valeurs des variables CSS (ex: { '--bg': '#000', '--score-green': '#0f0' }) */
   variables: Record<string, string>;
+  /** Mode overlay : image en fond, panneaux transparents, suppression des box-shadows */
+  overlayMode?: boolean;
 }
 
 export interface ArenaSettings {

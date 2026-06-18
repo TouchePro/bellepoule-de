@@ -160,6 +160,23 @@ const FONT_OPTIONS: { label: string; value: string }[] = [
   { label: 'Lucida Console',       value: '"Lucida Console", monospace' },
 ];
 
+// Preset de variables pour le mode Overlay — arène
+const OVERLAY_PRESET: Record<string, string> = {
+  '--match-bg':          'transparent',
+  '--score-bg':          'transparent',
+  '--timer-bg':          'rgba(0, 0, 0, 0.55)',
+  '--green-side-bg':     'rgba(0, 28, 14, 0.50)',
+  '--red-side-bg':       'rgba(58, 0, 28, 0.50)',
+  '--fencer-name-color': '#ffffff',
+  '--fencer-club-color': 'rgba(255, 230, 255, 0.85)',
+};
+
+// Preset de variables pour le mode Overlay — kiosque
+const KIOSK_OVERLAY_PRESET: Record<string, string> = {
+  '--k-card-bg': 'rgba(0, 0, 0, 0.52)',
+  '--k-border':  'rgba(255, 255, 255, 0.18)',
+};
+
 // Canvas virtuel pour le preview scalé (résolution de référence 16:9)
 const VIRTUAL_W = 1280;
 const VIRTUAL_H = 720;
@@ -245,6 +262,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
   const [savedThemes, setSavedThemes] = useState<CustomTheme[]>(loadSavedThemes);
   const [activeGroup, setActiveGroup] = useState(0);
   const [importError, setImportError] = useState('');
+  const [overlayMode, setOverlayMode] = useState(initialTheme?.overlayMode ?? false);
   const previewStyleId = `theme-preview-${instanceId.replace(/:/g, '')}`;
 
   // Canvas virtuel scalé pour le preview
@@ -285,10 +303,65 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
     setVars(prev => ({ ...prev, [key]: value }));
   };
 
+  const handleOverlayToggle = (enabled: boolean) => {
+    setOverlayMode(enabled);
+    if (isKiosk) {
+      if (enabled) {
+        setVars(prev => ({ ...prev, ...KIOSK_OVERLAY_PRESET }));
+      } else {
+        setVars(prev => ({
+          ...prev,
+          '--k-card-bg': KIOSK_DEFAULTS['--k-card-bg'],
+          '--k-border':  KIOSK_DEFAULTS['--k-border'],
+        }));
+      }
+    } else {
+      if (enabled) {
+        setVars(prev => ({ ...prev, ...OVERLAY_PRESET }));
+      } else {
+        setVars(prev => ({
+          ...prev,
+          '--match-bg':          DARK_DEFAULTS['--match-bg'],
+          '--score-bg':          DARK_DEFAULTS['--score-bg'],
+          '--timer-bg':          DARK_DEFAULTS['--timer-bg'],
+          '--green-side-bg':     DARK_DEFAULTS['--green-side-bg'],
+          '--red-side-bg':       DARK_DEFAULTS['--red-side-bg'],
+          '--fencer-name-color': DARK_DEFAULTS['--fencer-name-color'],
+          '--fencer-club-color': DARK_DEFAULTS['--fencer-club-color'],
+        }));
+      }
+    }
+  };
+
+  const bgVar = isKiosk ? '--k-bg' : '--bg';
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        const maxW = 1600;
+        const scale = Math.min(1, maxW / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+        setVar(bgVar, `url("${dataUrl}") center / cover no-repeat`);
+      };
+      img.src = ev.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
   // ── Sauvegarde locale ──
   const handleSave = () => {
     const id = initialTheme?.id ?? `custom-${Date.now()}`;
-    const theme: CustomTheme = { id, name: themeName.trim() || 'Sans nom', variables: vars };
+    const theme: CustomTheme = { id, name: themeName.trim() || 'Sans nom', variables: vars, overlayMode };
     const existing = savedThemes.findIndex(t => t.id === id);
     const updated = existing >= 0
       ? savedThemes.map((t, i) => (i === existing ? theme : t))
@@ -306,6 +379,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
   const handleLoadSaved = (theme: CustomTheme) => {
     setThemeName(theme.name);
     setVars({ ...activeDefaults, ...theme.variables });
+    setOverlayMode(theme.overlayMode ?? false);
   };
 
   // ── Import / Export (IPC Electron natif) ──
@@ -340,6 +414,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
       }
       setThemeName(parsed.name ?? 'Thème importé');
       setVars({ ...activeDefaults, ...parsed.variables });
+      setOverlayMode(parsed.overlayMode ?? false);
       setImportError('');
     } catch {
       setImportError('Fichier JSON invalide');
@@ -352,6 +427,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
       id: initialTheme?.id ?? `custom-${Date.now()}`,
       name: themeName.trim() || 'Mon thème',
       variables: vars,
+      overlayMode,
     };
     onApply(targetArenaId, theme);
   };
@@ -425,6 +501,52 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
 
             {/* Variables du groupe actif */}
             <div className="theme-editor-vars">
+              {/* Contrôles image + overlay — Arrière-plans arène et kiosque */}
+              {activeGroup === 0 && (
+                <div style={{ borderBottom: '1px solid #334155', paddingBottom: '0.75rem', marginBottom: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div className="var-row">
+                    <label className="var-label">Image fond</label>
+                    <div className="var-control" style={{ gap: '0.4rem', flexWrap: 'wrap' }}>
+                      <label style={{
+                        cursor: 'pointer', padding: '0.3rem 0.6rem', borderRadius: '0.3rem',
+                        border: '1px solid #475569', background: '#1e293b', color: '#94a3b8',
+                        fontSize: '0.8rem', whiteSpace: 'nowrap',
+                      }}>
+                        📷 Choisir image
+                        <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} />
+                      </label>
+                      {vars[bgVar]?.includes('url(') && (
+                        <button
+                          onClick={() => setVar(bgVar, activeDefaults[bgVar] ?? '')}
+                          style={{
+                            padding: '0.3rem 0.6rem', borderRadius: '0.3rem',
+                            border: '1px solid #475569', background: 'none', color: '#ef4444',
+                            fontSize: '0.8rem', cursor: 'pointer',
+                          }}
+                        >
+                          ✕ Retirer
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="var-row">
+                    <label className="var-label">Mode Overlay</label>
+                    <div className="var-control">
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={overlayMode}
+                          onChange={e => handleOverlayToggle(e.target.checked)}
+                          style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#3b82f6' }}
+                        />
+                        <span style={{ fontSize: '0.8rem', color: overlayMode ? '#60a5fa' : '#94a3b8' }}>
+                          Panneaux transparents sur l'image
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
               {activeVarGroups[activeGroup]?.vars.map(({ key, label, type }) => (
                 <VarRow
                   key={key}
