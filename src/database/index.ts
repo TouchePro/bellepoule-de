@@ -1823,6 +1823,155 @@ export class DatabaseManager {
       matchIds
     ).map(row => ({ matchId: row.match_id, fencerId: row.fencer_id, signatureData: row.signature_data }));
   }
+
+  // ─── Classement saisonnier Quest ────────────────────────────────────────────
+
+  public addCompetitionToSeason(payload: {
+    competitionId: string;
+    competitionTitle: string;
+    competitionDate: string;
+    entries: Array<{
+      fencerId: string;
+      fencerLastName: string;
+      fencerFirstName: string;
+      fencerClub?: string;
+      victories: number;
+      matchesPlayed: number;
+      questPoints: number;
+      questV4: number;
+      questV3: number;
+      questV2: number;
+      questV1: number;
+      touchesScored: number;
+      touchesReceived: number;
+      redCards: number;
+      compRank: number;
+    }>;
+  }): void {
+    if (!this.db) throw new Error('Database not open');
+    const { v4: uuidv4gen } = require('uuid');
+    const now = new Date().toISOString();
+    this.run('DELETE FROM season_results WHERE competition_id = ?', [payload.competitionId]);
+    for (const e of payload.entries) {
+      this.run(
+        `INSERT INTO season_results
+           (id, competition_id, competition_title, competition_date,
+            fencer_id, fencer_last_name, fencer_first_name, fencer_club,
+            victories, matches_played, quest_points,
+            quest_v4, quest_v3, quest_v2, quest_v1,
+            touches_scored, touches_received, red_cards, comp_rank, added_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          uuidv4gen(), payload.competitionId, payload.competitionTitle, payload.competitionDate,
+          e.fencerId, e.fencerLastName, e.fencerFirstName, e.fencerClub ?? null,
+          e.victories, e.matchesPlayed, e.questPoints,
+          e.questV4, e.questV3, e.questV2, e.questV1,
+          e.touchesScored, e.touchesReceived, e.redCards, e.compRank, now,
+        ]
+      );
+    }
+  }
+
+  public getSeasonRanking(): Array<{
+    fencerId: string;
+    fencerLastName: string;
+    fencerFirstName: string;
+    fencerClub: string | null;
+    totalVictories: number;
+    totalMatchesPlayed: number;
+    totalQuestPoints: number;
+    totalQuestV4: number;
+    totalQuestV3: number;
+    totalQuestV2: number;
+    totalQuestV1: number;
+    totalTouchesScored: number;
+    totalTouchesReceived: number;
+    totalRedCards: number;
+    competitionCount: number;
+    ratio: number;
+  }> {
+    if (!this.db) return [];
+    const rows = this.queryAll<any>(
+      `SELECT
+         fencer_id, fencer_last_name, fencer_first_name, fencer_club,
+         SUM(victories)        AS total_victories,
+         SUM(matches_played)   AS total_matches_played,
+         SUM(quest_points)     AS total_quest_points,
+         SUM(quest_v4)         AS total_quest_v4,
+         SUM(quest_v3)         AS total_quest_v3,
+         SUM(quest_v2)         AS total_quest_v2,
+         SUM(quest_v1)         AS total_quest_v1,
+         SUM(touches_scored)   AS total_touches_scored,
+         SUM(touches_received) AS total_touches_received,
+         SUM(red_cards)        AS total_red_cards,
+         COUNT(DISTINCT competition_id) AS competition_count
+       FROM season_results
+       GROUP BY fencer_id
+       ORDER BY
+         CAST(SUM(victories) AS REAL) / MAX(SUM(matches_played), 1) DESC,
+         SUM(quest_points) DESC,
+         SUM(quest_v4) DESC,
+         SUM(quest_v3) DESC,
+         SUM(quest_v2) DESC,
+         SUM(quest_v1) DESC,
+         (SUM(touches_scored) - SUM(touches_received)) DESC`,
+      []
+    );
+    return rows.map(r => ({
+      fencerId: r.fencer_id as string,
+      fencerLastName: r.fencer_last_name as string,
+      fencerFirstName: r.fencer_first_name as string,
+      fencerClub: (r.fencer_club as string) ?? null,
+      totalVictories: Number(r.total_victories),
+      totalMatchesPlayed: Number(r.total_matches_played),
+      totalQuestPoints: Number(r.total_quest_points),
+      totalQuestV4: Number(r.total_quest_v4),
+      totalQuestV3: Number(r.total_quest_v3),
+      totalQuestV2: Number(r.total_quest_v2),
+      totalQuestV1: Number(r.total_quest_v1),
+      totalTouchesScored: Number(r.total_touches_scored),
+      totalTouchesReceived: Number(r.total_touches_received),
+      totalRedCards: Number(r.total_red_cards),
+      competitionCount: Number(r.competition_count),
+      ratio: Number(r.total_matches_played) > 0
+        ? Number(r.total_victories) / Number(r.total_matches_played)
+        : 0,
+    }));
+  }
+
+  public getSeasonCompetitions(): Array<{
+    competitionId: string;
+    competitionTitle: string;
+    competitionDate: string;
+    fencerCount: number;
+    addedAt: string;
+  }> {
+    if (!this.db) return [];
+    return this.queryAll<any>(
+      `SELECT competition_id, competition_title, competition_date,
+              COUNT(fencer_id) AS fencer_count, MAX(added_at) AS added_at
+       FROM season_results
+       GROUP BY competition_id
+       ORDER BY competition_date DESC`,
+      []
+    ).map(r => ({
+      competitionId: r.competition_id as string,
+      competitionTitle: r.competition_title as string,
+      competitionDate: r.competition_date as string,
+      fencerCount: Number(r.fencer_count),
+      addedAt: r.added_at as string,
+    }));
+  }
+
+  public removeCompetitionFromSeason(competitionId: string): void {
+    if (!this.db) return;
+    this.run('DELETE FROM season_results WHERE competition_id = ?', [competitionId]);
+  }
+
+  public resetSeason(): void {
+    if (!this.db) return;
+    this.run('DELETE FROM season_results', []);
+  }
 }
 
 export const db = new DatabaseManager();

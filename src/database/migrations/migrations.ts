@@ -333,4 +333,38 @@ export const ALL_MIGRATIONS: Migration[] = [
       db.run(`CREATE INDEX IF NOT EXISTS idx_de_sigs_match ON de_match_signatures(match_id)`);
     },
   },
+
+  {
+    version: 12,
+    description: 'Table season_results pour classement saisonnier Quest (multi-compétitions)',
+    up(db) {
+      db.run(`
+        CREATE TABLE IF NOT EXISTS season_results (
+          id TEXT PRIMARY KEY,
+          competition_id TEXT NOT NULL,
+          competition_title TEXT NOT NULL,
+          competition_date TEXT NOT NULL,
+          fencer_id TEXT NOT NULL,
+          fencer_last_name TEXT NOT NULL,
+          fencer_first_name TEXT NOT NULL,
+          fencer_club TEXT,
+          victories INTEGER DEFAULT 0,
+          matches_played INTEGER DEFAULT 0,
+          quest_points INTEGER DEFAULT 0,
+          quest_v4 INTEGER DEFAULT 0,
+          quest_v3 INTEGER DEFAULT 0,
+          quest_v2 INTEGER DEFAULT 0,
+          quest_v1 INTEGER DEFAULT 0,
+          touches_scored INTEGER DEFAULT 0,
+          touches_received INTEGER DEFAULT 0,
+          red_cards INTEGER DEFAULT 0,
+          comp_rank INTEGER,
+          added_at TEXT NOT NULL,
+          UNIQUE(competition_id, fencer_id)
+        )
+      `);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_season_results_fencer ON season_results(fencer_id)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_season_results_comp ON season_results(competition_id)`);
+    },
+  },
 ];

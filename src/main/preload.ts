@@ -306,6 +306,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('db:getMatchTimeline', matchId),
     getCompetitionTimeline: (competitionId: string) =>
       ipcRenderer.invoke('db:getCompetitionTimeline', competitionId),
+
+    // Classement saisonnier Quest
+    addCompetitionToSeason: (payload: any) =>
+      ipcRenderer.invoke('db:addCompetitionToSeason', payload),
+    getSeasonRanking: () =>
+      ipcRenderer.invoke('db:getSeasonRanking'),
+    getSeasonCompetitions: () =>
+      ipcRenderer.invoke('db:getSeasonCompetitions'),
+    removeCompetitionFromSeason: (competitionId: string) =>
+      ipcRenderer.invoke('db:removeCompetitionFromSeason', competitionId),
+    resetSeason: () =>
+      ipcRenderer.invoke('db:resetSeason'),
   },
 
   // File operations with validation

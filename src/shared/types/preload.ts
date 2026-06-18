@@ -636,6 +636,57 @@ export interface DatabaseAPI {
   // Score audit log
   getScoreAuditLogByCompetition: (competitionId: string) => Promise<ScoreAuditEntry[]>;
 
+  // Classement saisonnier Quest
+  addCompetitionToSeason: (payload: {
+    competitionId: string;
+    competitionTitle: string;
+    competitionDate: string;
+    entries: Array<{
+      fencerId: string;
+      fencerLastName: string;
+      fencerFirstName: string;
+      fencerClub?: string;
+      victories: number;
+      matchesPlayed: number;
+      questPoints: number;
+      questV4: number;
+      questV3: number;
+      questV2: number;
+      questV1: number;
+      touchesScored: number;
+      touchesReceived: number;
+      redCards: number;
+      compRank: number;
+    }>;
+  }) => Promise<void>;
+  getSeasonRanking: () => Promise<Array<{
+    fencerId: string;
+    fencerLastName: string;
+    fencerFirstName: string;
+    fencerClub: string | null;
+    totalVictories: number;
+    totalMatchesPlayed: number;
+    totalQuestPoints: number;
+    totalQuestV4: number;
+    totalQuestV3: number;
+    totalQuestV2: number;
+    totalQuestV1: number;
+    totalTouchesScored: number;
+    totalTouchesReceived: number;
+    totalRedCards: number;
+    competitionCount: number;
+    ratio: number;
+  }>>;
+  getSeasonCompetitions: () => Promise<Array<{
+    competitionId: string;
+    competitionTitle: string;
+    competitionDate: string;
+    fencerCount: number;
+    addedAt: string;
+  }>>;
+  removeCompetitionFromSeason: (competitionId: string) => Promise<void>;
+  resetSeason: () => Promise<void>;
+
   // Match timeline
   getMatchTimeline: (matchId: string) => Promise<import('./index').MatchEventEntry[]>;
   getCompetitionTimeline: (competitionId: string) => Promise<import('./index').MatchEventEntry[]>;

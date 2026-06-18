@@ -46,6 +46,7 @@ const KioskDisplay = React.lazy(() => import('./KioskDisplay'));
 const FencerComparison = React.lazy(() => import('./FencerComparison').then(m => ({ default: m.FencerComparison })));
 const MatchAuditLog = React.lazy(() => import('./MatchAuditLog').then(m => ({ default: m.MatchAuditLog })));
 const AnalyticsDashboard = React.lazy(() => import('./AnalyticsDashboard').then(m => ({ default: m.AnalyticsDashboard })));
+const SeasonRankingView = React.lazy(() => import('./SeasonRankingView').then(m => ({ default: m.SeasonRankingView })));
 const PresentationMode = React.lazy(() => import('./PresentationMode').then(m => ({ default: m.PresentationMode })));
 const QuestPhaseView = React.lazy(() => import('./QuestPhaseView'));
 
@@ -129,6 +130,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [tableauEditUnlocked, setTableauEditUnlocked] = useState(false);
   const [showFencerComparison, setShowFencerComparison] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showSeasonRanking, setShowSeasonRanking] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
   const [showKiosk, setShowKiosk] = useState(false);
   const [showPresentation, setShowPresentation] = useState(false);
@@ -1142,6 +1144,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         checkedInCount={getCheckedInFencers().length}
         setShowFencerComparison={setShowFencerComparison}
         setShowAnalytics={setShowAnalytics}
+        setShowSeasonRanking={setShowSeasonRanking}
         setShowQRCode={setShowQRCode}
         setShowPresentation={setShowPresentation}
         setShowKiosk={setShowKiosk}
@@ -1644,6 +1647,16 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       )}
 
       {showQRCode && <QRCodeShare competition={competition} onClose={() => setShowQRCode(false)} />}
+
+      {showSeasonRanking && (
+        <Suspense fallback={null}>
+          <SeasonRankingView
+            onClose={() => setShowSeasonRanking(false)}
+            availableCompetitions={[competition]}
+            availablePoolsByComp={{ [competition.id]: pools }}
+          />
+        </Suspense>
+      )}
 
       {/* Mode Présentation */}
       {showPresentation && (

@@ -2188,6 +2188,28 @@ ipcMain.handle('crypto:unprotect', async (_, ciphertextB64: string) => {
   return safeStorage.decryptString(Buffer.from(ciphertextB64, 'base64'));
 });
 
+// ── Classement saisonnier Quest ───────────────────────────────────────────────
+
+ipcMain.handle('db:addCompetitionToSeason', async (_, payload: Parameters<typeof db.addCompetitionToSeason>[0]) => {
+  return db.addCompetitionToSeason(payload);
+});
+
+ipcMain.handle('db:getSeasonRanking', async () => {
+  return db.getSeasonRanking();
+});
+
+ipcMain.handle('db:getSeasonCompetitions', async () => {
+  return db.getSeasonCompetitions();
+});
+
+ipcMain.handle('db:removeCompetitionFromSeason', async (_, competitionId: string) => {
+  return db.removeCompetitionFromSeason(competitionId);
+});
+
+ipcMain.handle('db:resetSeason', async () => {
+  return db.resetSeason();
+});
+
 // ============================================================================
 // App Lifecycle
 // ============================================================================

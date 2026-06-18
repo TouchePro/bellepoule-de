@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { MoreHorizontal, Swords, BarChart2, Share2, Monitor, Smartphone, Settings, ChevronDown, ChevronUp } from 'lucide-react';
+import { MoreHorizontal, Swords, BarChart2, Share2, Monitor, Smartphone, Settings, ChevronDown, ChevronUp, Trophy } from 'lucide-react';
 import { Competition, MatchStatus } from '../../../shared/types';
 import Confetti from '../Confetti';
 import CoachMark from '../CoachMark';
@@ -32,6 +32,7 @@ interface CompetitionHeaderProps {
   checkedInCount: number;
   setShowFencerComparison: React.Dispatch<React.SetStateAction<boolean>>;
   setShowAnalytics: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowSeasonRanking: React.Dispatch<React.SetStateAction<boolean>>;
   setShowQRCode: React.Dispatch<React.SetStateAction<boolean>>;
   setShowPresentation: React.Dispatch<React.SetStateAction<boolean>>;
   setShowKiosk: React.Dispatch<React.SetStateAction<boolean>>;
@@ -55,6 +56,7 @@ const CompetitionHeaderComponent: React.FC<CompetitionHeaderProps> = ({
   checkedInCount,
   setShowFencerComparison,
   setShowAnalytics,
+  setShowSeasonRanking,
   setShowQRCode,
   setShowPresentation,
   setShowKiosk,
@@ -152,6 +154,11 @@ const CompetitionHeaderComponent: React.FC<CompetitionHeaderProps> = ({
                 <button className="comp-header-dropdown-item" onClick={() => { setShowAnalytics(true); setShowActionsMenu(false); }}>
                   <BarChart2 size={14} /> {t('competition.analytics')}
                 </button>
+                {competition.weapon === 'L' && (
+                  <button className="comp-header-dropdown-item" onClick={() => { setShowSeasonRanking(true); setShowActionsMenu(false); }}>
+                    <Trophy size={14} /> Classement saison Quest
+                  </button>
+                )}
                 <button className="comp-header-dropdown-item" onClick={() => { setShowQRCode(true); setShowActionsMenu(false); }}>
                   <Share2 size={14} /> Partager
                 </button>
