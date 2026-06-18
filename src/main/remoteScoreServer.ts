@@ -6,7 +6,8 @@
 
 import express from 'express';
 import { Server as SocketIOServer } from 'socket.io';
-import { createServer } from 'http';
+import { createServer as createHttpServer } from 'http';
+import { createServer as createHttpsServer } from 'https';
 import path from 'path';
 import os from 'os';
 import { createHash, randomBytes, timingSafeEqual } from 'crypto';
@@ -53,6 +54,7 @@ export class RemoteScoreServer {
   private io: SocketIOServer;
   private port: number;
   private host: string;
+  private useHttps: boolean = false;
   private db: DatabaseManager;
   private session: RemoteSession | null = null;
   private arenas: Map<string, Arena> = new Map();
@@ -147,13 +149,21 @@ export class RemoteScoreServer {
   // Labels persistants par screenId (survivent aux reconnexions)
   private screenLabels: Map<string, string> = new Map();
 
-  constructor(db: DatabaseManager, port: number = 8066, host: string = '0.0.0.0') {
+  constructor(
+    db: DatabaseManager,
+    port: number = 8066,
+    host: string = '0.0.0.0',
+    tlsOptions?: { cert: string; key: string }
+  ) {
     console.log('[RemoteScoreServer] Initialisation du serveur de saisie distante...');
     this.db = db;
     this.port = port;
     this.host = host;
+    this.useHttps = !!tlsOptions;
     this.app = express();
-    this.server = createServer(this.app);
+    this.server = tlsOptions
+      ? createHttpsServer({ cert: tlsOptions.cert, key: tlsOptions.key }, this.app)
+      : createHttpServer(this.app);
     // Limiter CORS au réseau local (localhost + LAN) pour la sécurité
     this.io = new SocketIOServer(this.server, {
       cors: {
@@ -4198,14 +4208,15 @@ export class RemoteScoreServer {
 
   public getServerUrl(): string {
     const ip = this.host !== '0.0.0.0' ? this.host : this.getLocalIPAddress();
-    return `http://${ip}:${this.port}`;
+    const protocol = this.useHttps ? 'https' : 'http';
+    return `${protocol}://${ip}:${this.port}`;
   }
 
   public start(): Promise<void> {
     console.log('[RemoteScoreServer] Démarrage du serveur...');
     console.log(`[RemoteScoreServer] Port: ${this.port}`);
     console.log(`[RemoteScoreServer] Interface: ${this.host}`);
-    console.log(`[RemoteScoreServer] URL locale: http://localhost:${this.port}`);
+    console.log(`[RemoteScoreServer] URL locale: ${this.useHttps ? 'https' : 'http'}://localhost:${this.port}`);
     console.log(`[RemoteScoreServer] URL réseau: ${this.getServerUrl()}`);
 
     return new Promise((resolve, reject) => {
