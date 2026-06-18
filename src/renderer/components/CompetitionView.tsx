@@ -48,6 +48,7 @@ const MatchAuditLog = React.lazy(() => import('./MatchAuditLog').then(m => ({ de
 const AnalyticsDashboard = React.lazy(() => import('./AnalyticsDashboard').then(m => ({ default: m.AnalyticsDashboard })));
 const SeasonRankingView = React.lazy(() => import('./SeasonRankingView').then(m => ({ default: m.SeasonRankingView })));
 const TeamManagerView = React.lazy(() => import('./TeamManagerView').then(m => ({ default: m.TeamManagerView })));
+const FFEConnectModal = React.lazy(() => import('./FFEConnectModal'));
 const PresentationMode = React.lazy(() => import('./PresentationMode').then(m => ({ default: m.PresentationMode })));
 const QuestPhaseView = React.lazy(() => import('./QuestPhaseView'));
 
@@ -133,6 +134,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showSeasonRanking, setShowSeasonRanking] = useState(false);
   const [showTeamManager, setShowTeamManager] = useState(false);
+  const [showFFEConnect, setShowFFEConnect] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
   const [showKiosk, setShowKiosk] = useState(false);
   const [showPresentation, setShowPresentation] = useState(false);
@@ -1188,6 +1190,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             onCheckInAll={checkInAll}
             onUncheckAll={uncheckAll}
             onImport={(type) => handleOpenImportDialog(type)}
+            onImportFFEConnect={() => setShowFFEConnect(true)}
             onFencersImported={loadFencers}
             onAppelStateChange={handleAppelStateChange}
             onSetFencerStatus={(id, status) => {
@@ -1667,6 +1670,15 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             competition={competition}
             fencers={fencers}
             onClose={() => setShowTeamManager(false)}
+          />
+        </Suspense>
+      )}
+
+      {showFFEConnect && (
+        <Suspense fallback={null}>
+          <FFEConnectModal
+            onImport={async (imported) => { await handleImportFencers(imported); setShowFFEConnect(false); }}
+            onClose={() => setShowFFEConnect(false)}
           />
         </Suspense>
       )}
