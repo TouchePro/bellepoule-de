@@ -4,10 +4,11 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useEffect, useMemo , memo} from 'react';
+import React, { useState, useEffect, useMemo, useCallback, memo} from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
-import { Competition, Fencer, Pool, Match, MatchStatus } from '../../shared/types';
+import { Competition, Fencer, Pool, Match, MatchStatus, FencerCompetitionStats } from '../../shared/types';
 import { FencerStatsTable } from '../../features/analytics/components/FencerStatsTable';
+import { AnalyticsCharts } from './analytics/AnalyticsCharts';
 import { exportPostTournamentPDF } from '../../shared/utils/postTournamentReport';
 
 interface AnalyticsData {
@@ -273,11 +274,19 @@ const AnalyticsDashboard_: React.FC<AnalyticsDashboardProps> = ({
   onClose,
 }) => {
   const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
-  const [activeTab, setActiveTab] = useState<'performance' | 'stats'>('performance');
+  const [activeTab, setActiveTab] = useState<'performance' | 'stats' | 'charts'>('performance');
+  const [fencerStats, setFencerStats] = useState<FencerCompetitionStats[]>([]);
   const [selectedTimeframe, setSelectedTimeframe] = useState<'live' | 'last30min' | 'all'>('live');
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [exporting, setExporting] = useState(false);
+
+  const loadFencerStats = useCallback(async () => {
+    const data = await window.electronAPI?.db?.getCompetitionFencerStats?.(competition.id);
+    if (data) setFencerStats(data as FencerCompetitionStats[]);
+  }, [competition.id]);
+
+  useEffect(() => { loadFencerStats(); }, [loadFencerStats]);
 
   const handleExportReport = async () => {
     setExporting(true);
@@ -369,9 +378,16 @@ const AnalyticsDashboard_: React.FC<AnalyticsDashboardProps> = ({
         >
           Statistiques
         </button>
+        <button
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'charts' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+          onClick={() => { setActiveTab('charts'); loadFencerStats(); }}
+        >
+          Graphiques
+        </button>
       </div>
 
       {activeTab === 'stats' && <FencerStatsTable competition={competition} />}
+      {activeTab === 'charts' && <AnalyticsCharts competition={competition} stats={fencerStats} />}
 
       {activeTab === 'performance' && <>
       {/* Key Metrics */}
