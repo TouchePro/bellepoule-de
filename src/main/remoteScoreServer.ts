@@ -2156,8 +2156,8 @@ export class RemoteScoreServer {
             fencerB: m.fencerB
               ? { lastName: m.fencerB.lastName, firstName: m.fencerB.firstName, club: m.fencerB.club ?? '', id: m.fencerB.id }
               : null,
-            scoreA: (() => { const s = live?.scoreA ?? m.scoreA; return s != null ? ((s as any).value ?? s) : null; })(),
-            scoreB: (() => { const s = live?.scoreB ?? m.scoreB; return s != null ? ((s as any).value ?? s) : null; })(),
+            scoreA: (() => { const s = live?.scoreA ?? m.scoreA; if (s == null) return null; return typeof s === 'number' ? s : (s as any)?.value ?? null; })(),
+            scoreB: (() => { const s = live?.scoreB ?? m.scoreB; if (s == null) return null; return typeof s === 'number' ? s : (s as any)?.value ?? null; })(),
             winnerId: m.winner?.id ?? null,
             status: isFinished ? 'finished' : isLive ? 'live' : 'pending',
             isBye: !!m.isBye,
@@ -2471,6 +2471,7 @@ export class RemoteScoreServer {
             fencerB: arena.currentMatch?.fencerB,
             refereeFeatureEnabled: this.sessionRefereeFeatureEnabled,
             referees: this.session?.referees ?? [],
+            refereeSelected: this.arenaRefereeSelected.get(data.arenaId) ?? false,
             timerDuration: isPoolMatch ? this.sessionPoolTimerSeconds : this.sessionTableTimerSeconds,
             ...(arena.status === 'finished' && {
               nextMatch: this.peekNextMatch(data.arenaId),
