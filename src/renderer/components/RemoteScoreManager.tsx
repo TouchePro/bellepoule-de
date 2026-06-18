@@ -150,8 +150,11 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const [arenaThemes, setArenaThemes] = useState<
     Record<string, { theme: DisplayTheme; customTheme?: CustomTheme }>
   >({});
-  // Éditeur de thème
+  // Éditeur de thème arène
   const [themeEditorTarget, setThemeEditorTarget] = useState<string | null>(null);
+  // Éditeur de thème kiosk
+  const [kioskThemeEditorOpen, setKioskThemeEditorOpen] = useState(false);
+  const [kioskTheme, setKioskTheme] = useState<CustomTheme | undefined>(undefined);
   // Lancement de la compétition
   const [isLaunched, setIsLaunched] = useState<boolean>(() => {
     const key = `bellepoule-remote-launched-${competition.id}`;
@@ -1195,8 +1198,15 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         </div>
 
         <div className="arena-url-card" style={RSM_STYLES.kioskCard}>
-          <div className="arena-url-header">
+          <div className="arena-url-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <strong>🖥️ Kiosk (affichage public)</strong>
+            <button
+              title="Thème personnalisé kiosk"
+              className={`arena-theme-btn ${kioskTheme ? 'active' : ''}`}
+              onClick={() => setKioskThemeEditorOpen(true)}
+            >
+              ✏️ Thème
+            </button>
           </div>
           <div className="arena-url-row">
             <span className="arena-url-label">URL</span>
@@ -1389,6 +1399,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       {themeEditorTarget && (
         <ThemeEditor
           targetArenaId={themeEditorTarget}
+          targetType="arena"
           initialTheme={arenaThemes[themeEditorTarget]?.customTheme}
           onApply={async (arenaId, theme) => {
             await handleArenaThemeChange(arenaId, 'custom', theme);
@@ -1396,6 +1407,25 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             showToast('Thème personnalisé appliqué', 'success');
           }}
           onClose={() => setThemeEditorTarget(null)}
+        />
+      )}
+
+      {kioskThemeEditorOpen && (
+        <ThemeEditor
+          targetArenaId="kiosk"
+          targetType="kiosk"
+          initialTheme={kioskTheme}
+          onApply={async (_arenaId, theme) => {
+            setKioskTheme(theme);
+            const result = await window.electronAPI.remote.updateKioskTheme(competition.id, theme.variables);
+            setKioskThemeEditorOpen(false);
+            if (result?.success) {
+              showToast('Thème kiosk appliqué', 'success');
+            } else {
+              showToast(result?.error ?? 'Erreur application thème kiosk', 'error');
+            }
+          }}
+          onClose={() => setKioskThemeEditorOpen(false)}
         />
       )}
 

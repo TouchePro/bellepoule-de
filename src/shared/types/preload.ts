@@ -445,6 +445,10 @@ export interface RemoteServerAPI {
     theme: import('../types/remote').DisplayTheme,
     customTheme?: import('../types/remote').CustomTheme
   ) => Promise<{ success: boolean; error?: string }>;
+  updateKioskTheme: (
+    competitionId: string,
+    variables: Record<string, string>
+  ) => Promise<{ success: boolean; error?: string }>;
   setWebhookUrl: (url: string | null) => Promise<{ success: boolean; error?: string }>;
   updateLogo: (logo: string | null) => Promise<{ success: boolean; error?: string }>;
   setTtsConfig: (config: TtsConfig) => Promise<{ success: boolean; error?: string }>;

@@ -1902,6 +1902,23 @@ ipcMain.handle(
   }
 );
 
+ipcMain.handle(
+  'remote:updateKioskTheme',
+  async (_, competitionId: string, variables: Record<string, string>) => {
+    try {
+      const entry = remoteServers.get(competitionId);
+      if (!entry) {
+        return { success: false, error: 'Le serveur distant n est pas démarré pour cette compétition' };
+      }
+      entry.server.updateKioskTheme(variables);
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating kiosk theme:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+    }
+  }
+);
+
 ipcMain.handle('remote:setArenaPassword', async (_, competitionId: string, arenaId: string, password: string) => {
   try {
     const entry = remoteServers.get(competitionId);
