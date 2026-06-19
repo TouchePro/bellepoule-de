@@ -146,19 +146,22 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const [orgNoteTime, setOrgNoteTime] = useState('');
   const [orgNotePrefix, setOrgNotePrefix] = useState('Reprise');
   const [orgNoteActive, setOrgNoteActive] = useState(false);
-  // Thèmes par arène : arenaId → { theme, customTheme? }
+  // Thèmes par arène : arenaId → { theme, customTheme?, screenThemes }
   const [arenaThemes, setArenaThemes] = useState<
-    Record<string, { theme: DisplayTheme; customTheme?: CustomTheme }>
+    Record<string, { theme: DisplayTheme; customTheme?: CustomTheme; screenThemes: Partial<Record<'public' | 'referee' | 'pool', CustomTheme>> }>
   >({});
-  // Éditeur de thème arène
+  // Onglet de type d'écran sélectionné par arène
+  const [arenaScreenTab, setArenaScreenTab] = useState<Record<string, 'arena' | 'public' | 'referee' | 'pool'>>({});
+  // Éditeur de thème (arène + type d'écran)
   const [themeEditorTarget, setThemeEditorTarget] = useState<string | null>(null);
+  const [themeEditorScreenType, setThemeEditorScreenType] = useState<'arena' | 'public' | 'referee' | 'pool'>('arena');
   // Éditeur de thème kiosk
   const [kioskThemeEditorOpen, setKioskThemeEditorOpen] = useState(false);
   const [kioskTheme, setKioskTheme] = useState<CustomTheme | undefined>(undefined);
   // Thèmes sauvegardés (depuis IPC)
   const [savedThemes, setSavedThemes] = useState<CustomTheme[]>([]);
   // Sélecteur de thème global
-  const [globalThemeSection, setGlobalThemeSection] = useState<'arenes' | 'kiosque'>('arenes');
+  const [globalThemeSection, setGlobalThemeSection] = useState<'arena' | 'kiosk' | 'public' | 'referee' | 'pool'>('arena');
   const [globalThemeId, setGlobalThemeId] = useState('');
   // Lancement de la compétition
   const [isLaunched, setIsLaunched] = useState<boolean>(() => {
@@ -488,12 +491,26 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     }
   }, []);
 
-  // Appliquer un thème (prédéfini ou custom) à une arène
+  // Appliquer un thème (prédéfini ou custom) à une arène — affichage principal
   const handleArenaThemeChange = useCallback(
     async (arenaId: string, theme: DisplayTheme, customTheme?: CustomTheme) => {
-      setArenaThemes(prev => ({ ...prev, [arenaId]: { theme, customTheme } }));
+      setArenaThemes(prev => ({ ...prev, [arenaId]: { ...(prev[arenaId] ?? { screenThemes: {} }), theme, customTheme } }));
       if (session) {
         await window.electronAPI.remote.updateArenaTheme(competition.id, arenaId, theme, customTheme);
+      }
+    },
+    [session]
+  );
+
+  // Appliquer un thème custom à un type d'écran spécifique d'une arène
+  const handleArenaScreenThemeChange = useCallback(
+    async (arenaId: string, screenType: 'public' | 'referee' | 'pool', customTheme?: CustomTheme) => {
+      setArenaThemes(prev => {
+        const existing = prev[arenaId] ?? { theme: 'dark' as DisplayTheme, screenThemes: {} };
+        return { ...prev, [arenaId]: { ...existing, screenThemes: { ...existing.screenThemes, [screenType]: customTheme } } };
+      });
+      if (session) {
+        await window.electronAPI.remote.updateArenaScreenTheme(competition.id, arenaId, screenType, customTheme);
       }
     },
     [session]
@@ -525,21 +542,28 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     refreshSavedThemes();
   }, [refreshSavedThemes]);
 
-  // Appliquer un thème sauvegardé à toutes les arènes ou au kiosque
+  // Appliquer un thème sauvegardé globalement (toutes les arènes, un type d'écran)
   const handleGlobalThemeApply = useCallback(async () => {
     const theme = savedThemes.find(t => t.id === globalThemeId);
     if (!theme) return;
-    if (globalThemeSection === 'arenes') {
+    if (globalThemeSection === 'arena') {
       await handleArenaThemeChange('all', 'custom', theme);
-      showToast(`Thème "${theme.name}" appliqué à toutes les arènes`, 'success');
-    } else {
+      showToast(`Thème "${theme.name}" appliqué à toutes les pistes`, 'success');
+    } else if (globalThemeSection === 'kiosk') {
       const result = await window.electronAPI.remote.updateKioskTheme(competition.id, theme.variables);
       setKioskTheme(theme);
       if (result?.success) showToast(`Thème "${theme.name}" appliqué au kiosque`, 'success');
       else showToast(result?.error ?? 'Erreur', 'error');
+    } else {
+      // public / referee / pool → appliquer à toutes les arènes pour ce type d'écran
+      const count = session ? session.strips.length : effectiveCommitted;
+      for (let i = 1; i <= count; i++) {
+        await window.electronAPI.remote.updateArenaScreenTheme(competition.id, `arena${i}`, globalThemeSection, theme);
+      }
+      showToast(`Thème "${theme.name}" appliqué (${globalThemeSection}) à toutes les pistes`, 'success');
     }
     setGlobalThemeId('');
-  }, [savedThemes, globalThemeId, globalThemeSection, handleArenaThemeChange, competition.id]);
+  }, [savedThemes, globalThemeId, globalThemeSection, handleArenaThemeChange, competition.id, session, effectiveCommitted]);
 
   // La grille d'URLs reflète l'état réel du serveur (committedCount) ou la session active
   const arenaCount = session ? session.strips.length : effectiveCommitted;
@@ -1030,55 +1054,98 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           {arenaUrls.map(arena => {
             const arenaId = `arena${arena.number}`;
             const arenaTheme = arenaThemes[arenaId];
+            const screenTab = arenaScreenTab[arenaId] ?? 'arena';
+            const screenThemeTypes = [
+              { value: 'arena' as const,   label: 'Affichage' },
+              { value: 'public' as const,  label: 'Public' },
+              { value: 'referee' as const, label: 'Arbitre' },
+              { value: 'pool' as const,    label: 'Poule' },
+            ] as const;
+            const filteredForScreen = savedThemes.filter(t => (t.targetType ?? 'arena') === screenTab);
             return (
               <div key={arena.number} className="arena-url-card">
                 <div className="arena-url-header">
                   <strong>Piste {arena.number}</strong>
-                  {/* Sélecteur de thème par arène */}
-                  <div className="arena-theme-picker">
-                    {[
-                      { value: 'dark' as const, icon: '🌙', title: 'Sombre' },
-                      { value: 'light' as const, icon: '☀️', title: 'Clair' },
-                      { value: 'neon' as const, icon: '⚡', title: 'Néon' },
-                    ].map(({ value, icon, title }) => (
-                      <button
-                        key={value}
-                        title={title}
-                        className={`arena-theme-btn ${arenaTheme?.theme === value ? 'active' : ''}`}
-                        onClick={() => handleArenaThemeChange(arenaId, value)}
-                      >
-                        {icon}
-                      </button>
-                    ))}
+                </div>
+                {/* Onglets type d'écran */}
+                <div style={{ display: 'flex', gap: '0.25rem', margin: '0.4rem 0 0.25rem' }}>
+                  {screenThemeTypes.map(({ value, label }) => (
                     <button
-                      title="Thème personnalisé"
-                      className={`arena-theme-btn ${arenaTheme?.theme === 'custom' ? 'active' : ''}`}
-                      onClick={() => setThemeEditorTarget(arenaId)}
+                      key={value}
+                      onClick={() => setArenaScreenTab(prev => ({ ...prev, [arenaId]: value }))}
+                      style={{
+                        padding: '0.15rem 0.45rem', fontSize: '0.7rem', borderRadius: '0.25rem',
+                        border: `1px solid ${screenTab === value ? '#3b82f6' : '#475569'}`,
+                        background: screenTab === value ? '#1d4ed8' : 'transparent',
+                        color: screenTab === value ? '#fff' : '#94a3b8',
+                        cursor: 'pointer', fontWeight: screenTab === value ? 700 : 400,
+                      }}
                     >
-                      ✏️
+                      {label}
                     </button>
-                    {savedThemes.filter(t => (t.targetType ?? 'arena') === 'arena').length > 0 && (
-                      <select
-                        title="Appliquer un thème sauvegardé"
-                        value=""
-                        onChange={async e => {
-                          const t = savedThemes.find(x => x.id === e.target.value);
-                          if (t) await handleArenaThemeChange(arenaId, 'custom', t);
-                          e.currentTarget.value = '';
-                        }}
-                        style={{
-                          padding: '0.2rem 0.4rem', borderRadius: '0.3rem',
-                          border: '1px solid #475569', background: '#1e293b', color: '#e2e8f0',
-                          fontSize: '0.75rem', cursor: 'pointer', maxWidth: 110,
-                        }}
+                  ))}
+                </div>
+                {/* Sélecteur de thème selon l'onglet */}
+                <div className="arena-theme-picker">
+                  {screenTab === 'arena' ? (
+                    <>
+                      {[
+                        { value: 'dark' as const, icon: '🌙', title: 'Sombre' },
+                        { value: 'light' as const, icon: '☀️', title: 'Clair' },
+                        { value: 'neon' as const, icon: '⚡', title: 'Néon' },
+                      ].map(({ value, icon, title }) => (
+                        <button
+                          key={value}
+                          title={title}
+                          className={`arena-theme-btn ${arenaTheme?.theme === value ? 'active' : ''}`}
+                          onClick={() => handleArenaThemeChange(arenaId, value)}
+                        >
+                          {icon}
+                        </button>
+                      ))}
+                      <button
+                        title="Thème personnalisé"
+                        className={`arena-theme-btn ${arenaTheme?.theme === 'custom' ? 'active' : ''}`}
+                        onClick={() => { setThemeEditorScreenType('arena'); setThemeEditorTarget(arenaId); }}
                       >
-                        <option value="">📦 Thèmes…</option>
-                        {savedThemes.filter(t => (t.targetType ?? 'arena') === 'arena').map(t => (
-                          <option key={t.id} value={t.id}>{t.name}</option>
-                        ))}
-                      </select>
-                    )}
-                  </div>
+                        ✏️
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      title={`Personnaliser ${screenTab}`}
+                      className={`arena-theme-btn ${arenaTheme?.screenThemes?.[screenTab] ? 'active' : ''}`}
+                      onClick={() => { setThemeEditorScreenType(screenTab); setThemeEditorTarget(arenaId); }}
+                    >
+                      ✏️ {arenaTheme?.screenThemes?.[screenTab] ? '●' : ''}
+                    </button>
+                  )}
+                  {filteredForScreen.length > 0 && (
+                    <select
+                      title="Appliquer un thème sauvegardé"
+                      value=""
+                      onChange={async e => {
+                        const t = savedThemes.find(x => x.id === e.target.value);
+                        if (!t) return;
+                        if (screenTab === 'arena') {
+                          await handleArenaThemeChange(arenaId, 'custom', t);
+                        } else {
+                          await handleArenaScreenThemeChange(arenaId, screenTab, t);
+                        }
+                        e.currentTarget.value = '';
+                      }}
+                      style={{
+                        padding: '0.2rem 0.4rem', borderRadius: '0.3rem',
+                        border: '1px solid #475569', background: '#1e293b', color: '#e2e8f0',
+                        fontSize: '0.75rem', cursor: 'pointer', maxWidth: 110,
+                      }}
+                    >
+                      <option value="">📦 Thèmes…</option>
+                      {filteredForScreen.map(t => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                  )}
                 </div>
                 <div className="arena-url-row">
                   <span className="arena-url-label">Arbitre</span>
@@ -1261,8 +1328,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
 
         {/* ── Thème global ── */}
         {(() => {
-          const sectionType = globalThemeSection === 'arenes' ? 'arena' : 'kiosk';
-          const filteredForSection = savedThemes.filter(t => (t.targetType ?? 'arena') === sectionType);
+          const filteredForSection = savedThemes.filter(t => (t.targetType ?? 'arena') === globalThemeSection);
           if (savedThemes.length === 0) return null;
           return (
             <div className="arena-url-card" style={RSM_STYLES.kioskCard}>
@@ -1272,11 +1338,14 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '0.25rem' }}>
                 <select
                   value={globalThemeSection}
-                  onChange={e => { setGlobalThemeSection(e.target.value as 'arenes' | 'kiosque'); setGlobalThemeId(''); }}
+                  onChange={e => { setGlobalThemeSection(e.target.value as typeof globalThemeSection); setGlobalThemeId(''); }}
                   style={{ padding: '0.35rem 0.5rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#1e293b', color: '#e2e8f0', fontSize: '0.85rem' }}
                 >
-                  <option value="arenes">⚔️ Arènes</option>
-                  <option value="kiosque">🖥️ Kiosque</option>
+                  <option value="arena">⚔️ Affichage piste</option>
+                  <option value="kiosk">🖥️ Kiosque</option>
+                  <option value="public">👥 Public</option>
+                  <option value="referee">🤝 Arbitre</option>
+                  <option value="pool">📋 Poule</option>
                 </select>
                 <select
                   value={globalThemeId}
@@ -1510,10 +1579,18 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       {themeEditorTarget && (
         <ThemeEditor
           targetArenaId={themeEditorTarget}
-          targetType="arena"
-          initialTheme={arenaThemes[themeEditorTarget]?.customTheme}
+          targetType={themeEditorScreenType}
+          initialTheme={
+            themeEditorScreenType === 'arena'
+              ? arenaThemes[themeEditorTarget]?.customTheme
+              : arenaThemes[themeEditorTarget]?.screenThemes?.[themeEditorScreenType as 'public' | 'referee' | 'pool']
+          }
           onApply={async (arenaId, theme) => {
-            await handleArenaThemeChange(arenaId, 'custom', theme);
+            if (themeEditorScreenType === 'arena') {
+              await handleArenaThemeChange(arenaId, 'custom', theme);
+            } else {
+              await handleArenaScreenThemeChange(arenaId, themeEditorScreenType as 'public' | 'referee' | 'pool', theme);
+            }
             setThemeEditorTarget(null);
             showToast('Thème personnalisé appliqué', 'success');
           }}

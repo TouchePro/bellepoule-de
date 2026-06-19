@@ -449,6 +449,12 @@ export interface RemoteServerAPI {
     competitionId: string,
     variables: Record<string, string>
   ) => Promise<{ success: boolean; error?: string }>;
+  updateArenaScreenTheme: (
+    competitionId: string,
+    arenaId: string,
+    targetType: import('../types/remote').ThemeTargetType,
+    customTheme?: import('../types/remote').CustomTheme
+  ) => Promise<{ success: boolean; error?: string }>;
   setWebhookUrl: (url: string | null) => Promise<{ success: boolean; error?: string }>;
   updateLogo: (logo: string | null) => Promise<{ success: boolean; error?: string }>;
   setTtsConfig: (config: TtsConfig) => Promise<{ success: boolean; error?: string }>;

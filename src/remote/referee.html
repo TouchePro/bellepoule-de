@@ -10,6 +10,17 @@
     <script src="/i18n.js"></script>
     <script src="/socket.io.min.js"></script>
     <style>
+      :root {
+        --ref-bg: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        --ref-header-bg: rgba(0, 0, 0, 0.3);
+        --ref-accent: #3b82f6;
+        --ref-accent2: #f59e0b;
+        --ref-text: #ffffff;
+        --ref-muted: rgba(255,255,255,0.6);
+        --ref-card-bg: rgba(255, 255, 255, 0.05);
+        --ref-border: rgba(255, 255, 255, 0.1);
+      }
+
       * {
         margin: 0;
         padding: 0;
@@ -21,14 +32,14 @@
         font-family:
           -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell,
           sans-serif;
-        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        background: var(--ref-bg);
         min-height: 100vh;
-        color: #fff;
+        color: var(--ref-text);
         overflow-x: hidden;
       }
 
       .header {
-        background: rgba(0, 0, 0, 0.3);
+        background: var(--ref-header-bg);
         padding: 1rem;
         display: flex;
         justify-content: space-between;
@@ -1546,6 +1557,19 @@
     <div class="notification" id="notification"></div>
 
     <script>
+      function applyScreenTheme(variables) {
+        if (!variables) {
+          document.documentElement.removeAttribute('data-screen-theme');
+          const old = document.getElementById('screen-theme-style');
+          if (old) old.remove();
+          return;
+        }
+        let styleEl = document.getElementById('screen-theme-style');
+        if (!styleEl) { styleEl = document.createElement('style'); styleEl.id = 'screen-theme-style'; document.head.appendChild(styleEl); }
+        const vars = Object.entries(variables).map(([k, v]) => `  ${k}: ${v};`).join('\n');
+        styleEl.textContent = `:root {\n${vars}\n}`;
+      }
+
       // ─── Utilitaire sécurité : encodage HTML pour éviter les XSS ───────────
       function escHtml(str) {
         if (str === null || str === undefined) return '';
@@ -2093,6 +2117,7 @@
               return;
             }
             if (cmd.type === 'message' && cmd.text) { this.showNotification(cmd.text); }
+            if (cmd.type === 'referee:theme') { applyScreenTheme(cmd.variables); }
           });
 
           setInterval(() => { if (this.socket.connected) this.socket.emit('client:pong'); }, 30000);
@@ -3540,6 +3565,8 @@
         }
 
         handleArenaUpdate(data) {
+          if (data.screenThemes?.referee) { applyScreenTheme(data.screenThemes.referee.variables); }
+
           if (data.timerDuration !== undefined && data.timerDuration > 0) {
             this.defaultTimerSeconds = data.timerDuration;
           }

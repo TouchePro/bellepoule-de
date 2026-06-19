@@ -1919,6 +1919,20 @@ ipcMain.handle(
   }
 );
 
+ipcMain.handle(
+  'remote:updateArenaScreenTheme',
+  async (_, competitionId: string, arenaId: string, targetType: string, customTheme?: any) => {
+    try {
+      const entry = remoteServers.get(competitionId);
+      if (!entry) return { success: false, error: 'Serveur non démarré' };
+      entry.server.updateArenaScreenTheme(arenaId, targetType as any, customTheme);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+    }
+  }
+);
+
 // ── Bibliothèque de thèmes (persistante dans userData) ──────────────────────
 
 function getThemesFilePath(): string {

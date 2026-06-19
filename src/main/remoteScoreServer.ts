@@ -22,6 +22,7 @@ import {
   OrgNote,
   DisplayTheme,
   CustomTheme,
+  ThemeTargetType,
 } from '../shared/types/remote';
 import { Competition, Match, Fencer, MatchStatus, FencerStatus, Score } from '../shared/types';
 import { DatabaseManager } from '../database';
@@ -74,6 +75,7 @@ export class RemoteScoreServer {
   private sessionTheme: DisplayTheme = 'dark'; // Thème visuel de l'affichage distant (global)
   private arenaThemeOverrides: Map<string, { theme: DisplayTheme; customTheme?: CustomTheme }> =
     new Map();
+  private arenaScreenThemes: Map<string, Partial<Record<ThemeTargetType, CustomTheme>>> = new Map();
   private kioskThemeVariables: Record<string, string> | null = null; // Thème CSS vars pour le kiosk
   private orgNote: OrgNote | null = null; // Note d'organisation affichée sur le kiosk
   private sessionLogo: string | null = null; // Logo organisateur (base64) pour kiosk et affichages publics
@@ -2478,6 +2480,7 @@ export class RemoteScoreServer {
             cardAnnounce: this.sessionCardAnnounce,
             theme: override?.theme ?? this.sessionTheme,
             customTheme: override?.customTheme,
+            screenThemes: this.arenaScreenThemes.get(data.arenaId),
             fencerA: arena.currentMatch?.fencerA,
             fencerB: arena.currentMatch?.fencerB,
             refereeFeatureEnabled: this.sessionRefereeFeatureEnabled,
@@ -2493,6 +2496,10 @@ export class RemoteScoreServer {
 
       socket.on('join_pool', (data: { arenaId: string }) => {
         socket.join(`pool:${data.arenaId}`);
+        const poolTheme = this.arenaScreenThemes.get(data.arenaId)?.pool;
+        if (poolTheme) {
+          socket.emit('server:command', { type: 'pool:theme', variables: poolTheme.variables });
+        }
       });
 
       socket.on('dashboard:subscribe', () => {
@@ -2536,6 +2543,12 @@ export class RemoteScoreServer {
         });
         if (data.clientType === 'kiosk' && this.kioskThemeVariables) {
           socket.emit('server:command', { type: 'kiosk:theme', variables: this.kioskThemeVariables });
+        }
+        if (data.arenaId && (data.clientType === 'referee' || data.clientType === 'public')) {
+          const screenTheme = this.arenaScreenThemes.get(data.arenaId)?.[data.clientType];
+          if (screenTheme) {
+            socket.emit('server:command', { type: `${data.clientType}:theme`, variables: screenTheme.variables });
+          }
         }
         this.broadcastClientList();
       });
@@ -4091,6 +4104,7 @@ export class RemoteScoreServer {
       cardAnnounce: this.sessionCardAnnounce,
       theme: override?.theme ?? this.sessionTheme,
       customTheme: override?.customTheme,
+      screenThemes: this.arenaScreenThemes.get(arenaId),
       refereeFeatureEnabled: this.sessionRefereeFeatureEnabled,
       referees: this.session?.referees ?? [],
       timerDuration: isPoolMatch ? this.sessionPoolTimerSeconds : this.sessionTableTimerSeconds,
@@ -4721,6 +4735,39 @@ export class RemoteScoreServer {
         status: arena.status,
         fencerA: arena.currentMatch?.fencerA,
         fencerB: arena.currentMatch?.fencerB,
+      });
+    }
+  }
+
+  public updateArenaScreenTheme(arenaId: string, targetType: ThemeTargetType, customTheme?: CustomTheme): void {
+    if (!this.session) throw new Error('Aucune session active');
+    const fullId = arenaId.startsWith('arena') ? arenaId : `arena${arenaId}`;
+    const existing = this.arenaScreenThemes.get(fullId) ?? {};
+    if (customTheme) existing[targetType] = customTheme;
+    else delete existing[targetType];
+    this.arenaScreenThemes.set(fullId, existing);
+
+    if (targetType === 'arena') {
+      this.updateArenaTheme(arenaId, customTheme ? 'custom' : 'dark', customTheme);
+      return;
+    }
+
+    // Envoyer le thème immédiatement aux clients connectés du bon type
+    for (const [, client] of this.connectedClients) {
+      if (client.arenaId !== fullId) continue;
+      if (client.clientType === targetType) {
+        this.io.to(client.socketId).emit('server:command', {
+          type: `${targetType}:theme`,
+          variables: customTheme?.variables ?? null,
+        });
+      }
+    }
+
+    // Pour pool : diffuser aussi via la room pool
+    if (targetType === 'pool') {
+      this.io.to(`pool:${fullId}`).emit('server:command', {
+        type: 'pool:theme',
+        variables: customTheme?.variables ?? null,
       });
     }
   }
