@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef, useId } from 'react';
-import { CustomTheme } from '../../shared/types/remote';
+import { CustomTheme, ThemeTargetType } from '../../shared/types/remote';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Valeurs par défaut (thème dark)
@@ -257,20 +257,10 @@ const KIOSK_OVERLAY_PRESET: Record<string, string> = {
 const VIRTUAL_W = 1280;
 const VIRTUAL_H = 720;
 
+// Compat shim : utilisé par RemoteScoreManager (migré vers IPC)
 const STORAGE_KEY = 'bellepoule-custom-themes';
-
-function loadSavedThemes(): CustomTheme[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveSavedThemes(themes: CustomTheme[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(themes));
-}
+function loadSavedThemes(): CustomTheme[] { return []; }
+function saveSavedThemes(_themes: CustomTheme[]): void { /* no-op */ }
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Variables et defaults Kiosk
@@ -306,8 +296,8 @@ const KIOSK_VAR_GROUPS: VarGroup[] = [
 interface ThemeEditorProps {
   /** Arène cible (ex: 'arena1') ou 'all' pour toutes les arènes */
   targetArenaId: string;
-  /** 'arena' (défaut) ou 'kiosk' */
-  targetType?: 'arena' | 'kiosk';
+  /** Section cible : 'arena' (défaut), 'kiosk', 'public', 'lobby' */
+  targetType?: 'arena' | 'kiosk' | 'public' | 'lobby';
   /** Thème initial à éditer (undefined = nouveau thème depuis dark) */
   initialTheme?: CustomTheme;
   /** Callback quand l'utilisateur applique le thème */
@@ -329,14 +319,22 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
   const isKiosk = targetType === 'kiosk';
   const activeDefaults = isKiosk ? KIOSK_DEFAULTS : DARK_DEFAULTS;
   const activeVarGroups = isKiosk ? KIOSK_VAR_GROUPS : VAR_GROUPS;
+  const effectiveType = (targetType ?? 'arena') as ThemeTargetType;
 
   const [themeName, setThemeName] = useState(initialTheme?.name ?? (isKiosk ? 'Thème kiosk' : 'Mon thème'));
   const [vars, setVars] = useState<Record<string, string>>(() => ({
     ...activeDefaults,
     ...(initialTheme?.variables ?? {}),
   }));
-  const [savedThemes, setSavedThemes] = useState<CustomTheme[]>(loadSavedThemes);
+  const [savedThemes, setSavedThemes] = useState<CustomTheme[]>([]);
   const [activeGroup, setActiveGroup] = useState(0);
+
+  // Charger les thèmes depuis l'app (filtrés par type)
+  useEffect(() => {
+    window.electronAPI.themes.list().then(all => {
+      setSavedThemes(all.filter(t => (t.targetType ?? 'arena') === effectiveType));
+    }).catch(() => {});
+  }, [effectiveType]);
   const [importError, setImportError] = useState('');
   const [overlayMode, setOverlayMode] = useState(initialTheme?.overlayMode ?? false);
   const previewStyleId = `theme-preview-${instanceId.replace(/:/g, '')}`;
@@ -434,22 +432,22 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
     e.target.value = '';
   };
 
-  // ── Sauvegarde locale ──
+  // ── Sauvegarde dans l'app ──
   const handleSave = () => {
     const id = initialTheme?.id ?? `custom-${Date.now()}`;
-    const theme: CustomTheme = { id, name: themeName.trim() || 'Sans nom', variables: vars, overlayMode };
-    const existing = savedThemes.findIndex(t => t.id === id);
-    const updated = existing >= 0
-      ? savedThemes.map((t, i) => (i === existing ? theme : t))
-      : [...savedThemes, theme];
-    setSavedThemes(updated);
-    saveSavedThemes(updated);
+    const theme: CustomTheme = { id, name: themeName.trim() || 'Sans nom', targetType: effectiveType, variables: vars, overlayMode };
+    window.electronAPI.themes.save(theme).then(() => {
+      setSavedThemes(prev => {
+        const idx = prev.findIndex(t => t.id === id);
+        return idx >= 0 ? prev.map((t, i) => (i === idx ? theme : t)) : [...prev, theme];
+      });
+    }).catch(() => {});
   };
 
   const handleDeleteSaved = (id: string) => {
-    const updated = savedThemes.filter(t => t.id !== id);
-    setSavedThemes(updated);
-    saveSavedThemes(updated);
+    window.electronAPI.themes.delete(id).then(() => {
+      setSavedThemes(prev => prev.filter(t => t.id !== id));
+    }).catch(() => {});
   };
 
   const handleLoadSaved = (theme: CustomTheme) => {
@@ -463,6 +461,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
     const theme: CustomTheme = {
       id: initialTheme?.id ?? `custom-${Date.now()}`,
       name: themeName.trim() || 'Mon thème',
+      targetType: effectiveType,
       variables: vars,
     };
     const json = JSON.stringify(theme, null, 2);
@@ -502,17 +501,18 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
     const theme: CustomTheme = {
       id: initialTheme?.id ?? `custom-${Date.now()}`,
       name: themeName.trim() || 'Mon thème',
+      targetType: effectiveType,
       variables: vars,
       overlayMode,
     };
     onApply(targetArenaId, theme);
   };
 
-  const arenaLabel = isKiosk
-    ? 'Kiosk (affichage public)'
-    : targetArenaId === 'all'
-      ? 'Toutes les arènes'
-      : `Piste ${targetArenaId.replace('arena', '')}`;
+  const arenaLabel = effectiveType === 'kiosk' ? 'Kiosque'
+    : effectiveType === 'public' ? 'Affichage public'
+    : effectiveType === 'lobby' ? 'Lobby'
+    : targetArenaId === 'all' ? 'Toutes les pistes'
+    : `Piste ${targetArenaId.replace('arena', '')}`;
 
   return (
     <div className="theme-editor-overlay" onClick={onClose}>

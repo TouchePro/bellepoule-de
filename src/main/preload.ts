@@ -639,6 +639,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('app:logoLoaded', handler);
   },
 
+  // Bibliothèque de thèmes persistante
+  themes: {
+    list: () => ipcRenderer.invoke('themes:list'),
+    save: (theme: unknown) => ipcRenderer.invoke('themes:save', theme),
+    delete: (id: string) => ipcRenderer.invoke('themes:delete', id),
+  },
+
   // Remove listeners
   removeAllListeners: (channel: string) => ipcRenderer.removeAllListeners(channel),
 
