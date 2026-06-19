@@ -516,6 +516,29 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     [session]
   );
 
+  // Supprimer le verrou de thème d'une arène (retour au thème global)
+  const handleClearArenaThemeOverride = useCallback(
+    async (arenaId: string) => {
+      setArenaThemes(prev => {
+        const next = { ...prev };
+        delete next[arenaId];
+        return next;
+      });
+      if (session) {
+        await window.electronAPI.remote.clearArenaThemeOverride(competition.id, arenaId);
+      }
+    },
+    [session, competition.id]
+  );
+
+  // Supprimer le verrou de thème d'écran d'une arène
+  const handleClearArenaScreenTheme = useCallback(
+    async (arenaId: string, screenType: 'public' | 'referee' | 'pool') => {
+      await handleArenaScreenThemeChange(arenaId, screenType, undefined);
+    },
+    [handleArenaScreenThemeChange]
+  );
+
   // Charger tous les thèmes depuis l'app (+ migration one-shot depuis localStorage)
   const refreshSavedThemes = useCallback(() => {
     window.electronAPI.themes.list().then(setSavedThemes).catch(() => {});
@@ -1110,15 +1133,37 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                       >
                         ✏️
                       </button>
+                      {arenaThemes[arenaId] && (
+                        <button
+                          title="Déverrouiller — suivre le thème global"
+                          className="arena-theme-btn"
+                          style={{ color: '#f59e0b', borderColor: '#f59e0b' }}
+                          onClick={() => void handleClearArenaThemeOverride(arenaId)}
+                        >
+                          🔓
+                        </button>
+                      )}
                     </>
                   ) : (
-                    <button
-                      title={`Personnaliser ${screenTab}`}
-                      className={`arena-theme-btn ${arenaTheme?.screenThemes?.[screenTab] ? 'active' : ''}`}
-                      onClick={() => { setThemeEditorScreenType(screenTab); setThemeEditorTarget(arenaId); }}
-                    >
-                      ✏️ {arenaTheme?.screenThemes?.[screenTab] ? '●' : ''}
-                    </button>
+                    <>
+                      <button
+                        title={`Personnaliser ${screenTab}`}
+                        className={`arena-theme-btn ${arenaTheme?.screenThemes?.[screenTab] ? 'active' : ''}`}
+                        onClick={() => { setThemeEditorScreenType(screenTab); setThemeEditorTarget(arenaId); }}
+                      >
+                        ✏️ {arenaTheme?.screenThemes?.[screenTab] ? '●' : ''}
+                      </button>
+                      {arenaTheme?.screenThemes?.[screenTab] && (
+                        <button
+                          title="Déverrouiller — suivre le thème global"
+                          className="arena-theme-btn"
+                          style={{ color: '#f59e0b', borderColor: '#f59e0b' }}
+                          onClick={() => void handleClearArenaScreenTheme(arenaId, screenTab)}
+                        >
+                          🔓
+                        </button>
+                      )}
+                    </>
                   )}
                   {filteredForScreen.length > 0 && (
                     <select

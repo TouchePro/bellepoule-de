@@ -547,6 +547,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     clearOrgNote: (competitionId: string) => ipcRenderer.invoke('remote:clearOrgNote', competitionId),
     updateArenaTheme: (competitionId: string, arenaId: string, theme: string, customTheme?: any) =>
       ipcRenderer.invoke('remote:updateArenaTheme', competitionId, arenaId, theme, customTheme),
+    clearArenaThemeOverride: (competitionId: string, arenaId: string) =>
+      ipcRenderer.invoke('remote:clearArenaThemeOverride', competitionId, arenaId),
     updateKioskTheme: (competitionId: string, variables: Record<string, string>) =>
       ipcRenderer.invoke('remote:updateKioskTheme', competitionId, variables),
     updateArenaScreenTheme: (competitionId: string, arenaId: string, targetType: string, customTheme?: any) =>

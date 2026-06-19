@@ -1886,6 +1886,20 @@ ipcMain.handle(
 );
 
 ipcMain.handle(
+  'remote:clearArenaThemeOverride',
+  async (_, competitionId: string, arenaId: string) => {
+    try {
+      const entry = remoteServers.get(competitionId);
+      if (!entry) return { success: false, error: 'Le serveur distant n est pas démarré pour cette compétition' };
+      entry.server.clearArenaThemeOverride(arenaId);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+    }
+  }
+);
+
+ipcMain.handle(
   'remote:updateKioskViews',
   async (_, competitionId: string, views: { poules: boolean; classement: boolean; direct: boolean; suivants: boolean }) => {
     try {
