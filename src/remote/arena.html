@@ -54,6 +54,43 @@
       --idle-label-color: rgba(255, 255, 255, 0.5);
       --vs-color: #ef4444;
       --vs-font-family: system-ui, sans-serif;
+      /* Visibilité éléments */
+      --header-display: flex;
+      --vs-divider-display: flex;
+      --timer-label-display: none;
+      /* Positionnement overlay (pour thèmes avec image de fond) */
+      --timer-section-position: relative;
+      --timer-section-top: auto;
+      --timer-section-left: auto;
+      --timer-section-right: auto;
+      --timer-section-bottom: auto;
+      --timer-section-width: auto;
+      --timer-section-transform: none;
+      --timer-section-z-index: 1;
+      --score-a-position: relative;
+      --score-a-top: auto;
+      --score-a-left: auto;
+      --score-a-right: auto;
+      --score-a-bottom: auto;
+      --score-a-transform: none;
+      --score-b-position: relative;
+      --score-b-top: auto;
+      --score-b-left: auto;
+      --score-b-right: auto;
+      --score-b-bottom: auto;
+      --score-b-transform: none;
+      --name-a-position: relative;
+      --name-a-top: auto;
+      --name-a-left: auto;
+      --name-a-right: auto;
+      --name-a-width: auto;
+      --name-a-transform: none;
+      --name-b-position: relative;
+      --name-b-top: auto;
+      --name-b-left: auto;
+      --name-b-right: auto;
+      --name-b-width: auto;
+      --name-b-transform: none;
     }
 
     /* ── Thème Light ── */
@@ -152,6 +189,43 @@
       --score-font-size: clamp(7rem, 23vw, 44vh);
       --timer-font-size: clamp(3.5rem, 11vw, 18vh);
       --fencer-name-font-size: clamp(1rem, 3.5vw, 5vh);
+      /* Visibilité éléments */
+      --header-display: flex;
+      --vs-divider-display: flex;
+      --timer-label-display: none;
+      /* Positionnement overlay (pour thèmes avec image de fond) */
+      --timer-section-position: relative;
+      --timer-section-top: auto;
+      --timer-section-left: auto;
+      --timer-section-right: auto;
+      --timer-section-bottom: auto;
+      --timer-section-width: auto;
+      --timer-section-transform: none;
+      --timer-section-z-index: 1;
+      --score-a-position: relative;
+      --score-a-top: auto;
+      --score-a-left: auto;
+      --score-a-right: auto;
+      --score-a-bottom: auto;
+      --score-a-transform: none;
+      --score-b-position: relative;
+      --score-b-top: auto;
+      --score-b-left: auto;
+      --score-b-right: auto;
+      --score-b-bottom: auto;
+      --score-b-transform: none;
+      --name-a-position: relative;
+      --name-a-top: auto;
+      --name-a-left: auto;
+      --name-a-right: auto;
+      --name-a-width: auto;
+      --name-a-transform: none;
+      --name-b-position: relative;
+      --name-b-top: auto;
+      --name-b-left: auto;
+      --name-b-right: auto;
+      --name-b-width: auto;
+      --name-b-transform: none;
     }
 
     * {
@@ -251,7 +325,7 @@
       .header {
         background: var(--header-bg);
         padding: 0.4rem 1rem;
-        display: flex;
+        display: var(--header-display, flex);
         justify-content: space-between;
         align-items: center;
         backdrop-filter: blur(10px);
@@ -558,7 +632,7 @@
         color: var(--vs-color);
         text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         font-family: var(--vs-font-family);
-        display: flex;
+        display: var(--vs-divider-display, flex);
         align-items: center;
       }
 
@@ -567,6 +641,14 @@
         margin-top: 0.4rem;
         text-align: center;
         flex-shrink: 0;
+        position: var(--timer-section-position, relative);
+        top: var(--timer-section-top, auto);
+        left: var(--timer-section-left, auto);
+        right: var(--timer-section-right, auto);
+        bottom: var(--timer-section-bottom, auto);
+        width: var(--timer-section-width, auto);
+        transform: var(--timer-section-transform, none);
+        z-index: var(--timer-section-z-index, 1);
       }
 
       .timer-display {
@@ -678,7 +760,43 @@
       }
 
       .timer-label {
-        display: none;
+        display: var(--timer-label-display, none);
+      }
+
+      #score-a {
+        position: var(--score-a-position, relative);
+        top: var(--score-a-top, auto);
+        left: var(--score-a-left, auto);
+        right: var(--score-a-right, auto);
+        bottom: var(--score-a-bottom, auto);
+        transform: var(--score-a-transform, none);
+      }
+
+      #score-b {
+        position: var(--score-b-position, relative);
+        top: var(--score-b-top, auto);
+        left: var(--score-b-left, auto);
+        right: var(--score-b-right, auto);
+        bottom: var(--score-b-bottom, auto);
+        transform: var(--score-b-transform, none);
+      }
+
+      #fencer-a-name {
+        position: var(--name-a-position, relative);
+        top: var(--name-a-top, auto);
+        left: var(--name-a-left, auto);
+        right: var(--name-a-right, auto);
+        width: var(--name-a-width, auto);
+        transform: var(--name-a-transform, none);
+      }
+
+      #fencer-b-name {
+        position: var(--name-b-position, relative);
+        top: var(--name-b-top, auto);
+        left: var(--name-b-left, auto);
+        right: var(--name-b-right, auto);
+        width: var(--name-b-width, auto);
+        transform: var(--name-b-transform, none);
       }
 
       /* Écran d'attente */
