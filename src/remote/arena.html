@@ -1528,7 +1528,7 @@
             .then(r => (r.ok ? r.json() : null))
             .then(s => {
               if (s && ['E', 'F', 'S'].includes(s.weapon)) {
-                document.querySelectorAll('.arena-word-label').forEach(el => (el.textContent = 'Piste'));
+                document.querySelectorAll('.arena-word-label').forEach(el => (el.textContent = window.T('remote.piste')));
               }
             })
             .catch(() => {});

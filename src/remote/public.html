@@ -755,7 +755,7 @@
     <div class="header">
       <div class="arena-title">
         <span>⚔️</span>
-        <span>Arène <span id="arena-number">1</span></span>
+        <span><span id="arena-word-label">Arène</span> <span id="arena-number">1</span></span>
       </div>
       <div class="status-section">
         <div class="inversion-toggle">
@@ -890,6 +890,17 @@
           document.getElementById('arena-idle-number').textContent = this.arenaNumber;
           this.setupInversionToggle();
           this.setupSocketListeners();
+          fetch('/api/session')
+            .then(r => (r.ok ? r.json() : null))
+            .then(s => {
+              if (s && ['E', 'F', 'S'].includes(s.weapon)) {
+                const pisteLabel = window.T('remote.piste');
+                document.getElementById('arena-word-label').textContent = pisteLabel;
+                const idleLabel = document.querySelector('.arena-idle-label');
+                if (idleLabel) idleLabel.textContent = pisteLabel;
+              }
+            })
+            .catch(() => {});
         }
 
         setupInversionToggle() {
