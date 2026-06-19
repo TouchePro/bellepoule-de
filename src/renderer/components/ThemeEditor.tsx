@@ -833,5 +833,5 @@ const VarRow: React.FC<VarRowProps> = ({ varKey, label, type, value, onChange })
 };
 
 export default React.memo(ThemeEditor);
-export { DARK_DEFAULTS };
+export { DARK_DEFAULTS, loadSavedThemes, saveSavedThemes, STORAGE_KEY };
 export type { CustomTheme };

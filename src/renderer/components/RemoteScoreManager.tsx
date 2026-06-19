@@ -11,7 +11,7 @@ import { Competition, Pool } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
 import { TableauMatch, ConsolationBracket } from './tableau/tableauTypes';
 import { useToast } from './Toast';
-import ThemeEditor from './ThemeEditor';
+import ThemeEditor, { loadSavedThemes } from './ThemeEditor';
 import { OBSOverlayConfig } from './OBSOverlayConfig';
 import { CustomTheme, DisplayTheme } from '../../shared/types/remote';
 import { ConnectedClient, KioskScreenConfig } from '../../shared/types/preload';
@@ -155,6 +155,11 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   // Éditeur de thème kiosk
   const [kioskThemeEditorOpen, setKioskThemeEditorOpen] = useState(false);
   const [kioskTheme, setKioskTheme] = useState<CustomTheme | undefined>(undefined);
+  // Thèmes sauvegardés (rechargés depuis localStorage)
+  const [savedThemes, setSavedThemes] = useState<CustomTheme[]>(loadSavedThemes);
+  // Sélecteur de thème global
+  const [globalThemeSection, setGlobalThemeSection] = useState<'arenes' | 'kiosque'>('arenes');
+  const [globalThemeId, setGlobalThemeId] = useState('');
   // Lancement de la compétition
   const [isLaunched, setIsLaunched] = useState<boolean>(() => {
     const key = `bellepoule-remote-launched-${competition.id}`;
@@ -493,6 +498,25 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     },
     [session]
   );
+
+  // Recharger les thèmes sauvegardés quand l'éditeur se ferme
+  const refreshSavedThemes = useCallback(() => setSavedThemes(loadSavedThemes()), []);
+
+  // Appliquer un thème sauvegardé à toutes les arènes ou au kiosque
+  const handleGlobalThemeApply = useCallback(async () => {
+    const theme = savedThemes.find(t => t.id === globalThemeId);
+    if (!theme) return;
+    if (globalThemeSection === 'arenes') {
+      await handleArenaThemeChange('all', 'custom', theme);
+      showToast(`Thème "${theme.name}" appliqué à toutes les arènes`, 'success');
+    } else {
+      const result = await window.electronAPI.remote.updateKioskTheme(competition.id, theme.variables);
+      setKioskTheme(theme);
+      if (result?.success) showToast(`Thème "${theme.name}" appliqué au kiosque`, 'success');
+      else showToast(result?.error ?? 'Erreur', 'error');
+    }
+    setGlobalThemeId('');
+  }, [savedThemes, globalThemeId, globalThemeSection, handleArenaThemeChange, competition.id]);
 
   // La grille d'URLs reflète l'état réel du serveur (committedCount) ou la session active
   const arenaCount = session ? session.strips.length : effectiveCommitted;
@@ -1009,6 +1033,27 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                     >
                       ✏️
                     </button>
+                    {savedThemes.length > 0 && (
+                      <select
+                        title="Appliquer un thème sauvegardé"
+                        value=""
+                        onChange={async e => {
+                          const t = savedThemes.find(x => x.id === e.target.value);
+                          if (t) await handleArenaThemeChange(arenaId, 'custom', t);
+                          e.currentTarget.value = '';
+                        }}
+                        style={{
+                          padding: '0.2rem 0.4rem', borderRadius: '0.3rem',
+                          border: '1px solid #475569', background: '#1e293b', color: '#e2e8f0',
+                          fontSize: '0.75rem', cursor: 'pointer', maxWidth: 110,
+                        }}
+                      >
+                        <option value="">📦 Thèmes…</option>
+                        {savedThemes.map(t => (
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                      </select>
+                    )}
                   </div>
                 </div>
                 <div className="arena-url-row">
@@ -1189,6 +1234,43 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             );
           })}
         </div>
+
+        {/* ── Thème global ── */}
+        {savedThemes.length > 0 && (
+          <div className="arena-url-card" style={RSM_STYLES.kioskCard}>
+            <div className="arena-url-header">
+              <strong>🎨 Thème global</strong>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '0.25rem' }}>
+              <select
+                value={globalThemeSection}
+                onChange={e => setGlobalThemeSection(e.target.value as 'arenes' | 'kiosque')}
+                style={{ padding: '0.35rem 0.5rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#1e293b', color: '#e2e8f0', fontSize: '0.85rem' }}
+              >
+                <option value="arenes">⚔️ Arènes</option>
+                <option value="kiosque">🖥️ Kiosque</option>
+              </select>
+              <select
+                value={globalThemeId}
+                onChange={e => setGlobalThemeId(e.target.value)}
+                style={{ flex: 1, minWidth: 120, padding: '0.35rem 0.5rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#1e293b', color: '#e2e8f0', fontSize: '0.85rem' }}
+              >
+                <option value="">— Choisir un thème —</option>
+                {savedThemes.map(t => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+              <button
+                className="btn btn-primary"
+                disabled={!globalThemeId}
+                onClick={() => void handleGlobalThemeApply()}
+                style={{ whiteSpace: 'nowrap' }}
+              >
+                Appliquer à tous
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="arena-url-card" style={RSM_STYLES.kioskCard}>
           <div className="arena-url-header">
@@ -1406,7 +1488,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             setThemeEditorTarget(null);
             showToast('Thème personnalisé appliqué', 'success');
           }}
-          onClose={() => setThemeEditorTarget(null)}
+          onClose={() => { setThemeEditorTarget(null); refreshSavedThemes(); }}
         />
       )}
 
@@ -1425,7 +1507,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
               showToast(result?.error ?? 'Erreur application thème kiosk', 'error');
             }
           }}
-          onClose={() => setKioskThemeEditorOpen(false)}
+          onClose={() => { setKioskThemeEditorOpen(false); refreshSavedThemes(); }}
         />
       )}
 
