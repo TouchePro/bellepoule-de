@@ -263,6 +263,126 @@ function loadSavedThemes(): CustomTheme[] { return []; }
 function saveSavedThemes(_themes: CustomTheme[]): void { /* no-op */ }
 
 // ──────────────────────────────────────────────────────────────────────────────
+// Variables et defaults Arbitre (tablette)
+// ──────────────────────────────────────────────────────────────────────────────
+const REFEREE_DEFAULTS: Record<string, string> = {
+  '--ref-bg':         'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)',
+  '--ref-header-bg':  'rgba(0, 0, 0, 0.3)',
+  '--ref-accent':     '#3b82f6',
+  '--ref-accent2':    '#f59e0b',
+  '--ref-text':       '#ffffff',
+  '--ref-muted':      'rgba(255,255,255,0.6)',
+  '--ref-card-bg':    'rgba(255, 255, 255, 0.05)',
+  '--ref-border':     'rgba(255, 255, 255, 0.1)',
+};
+
+const REFEREE_VAR_GROUPS: VarGroup[] = [
+  {
+    label: 'Arbitre – Arrière-plan',
+    vars: [
+      { key: '--ref-bg',        label: 'Fond page',         type: 'text'  },
+      { key: '--ref-header-bg', label: 'Fond en-tête',      type: 'text'  },
+    ],
+  },
+  {
+    label: 'Arbitre – Couleurs',
+    vars: [
+      { key: '--ref-accent',  label: 'Couleur accent 1',  type: 'color' },
+      { key: '--ref-accent2', label: 'Couleur accent 2',  type: 'color' },
+      { key: '--ref-text',    label: 'Texte principal',   type: 'color' },
+      { key: '--ref-muted',   label: 'Texte discret',     type: 'color' },
+    ],
+  },
+  {
+    label: 'Arbitre – Cartes',
+    vars: [
+      { key: '--ref-card-bg', label: 'Fond cartes',  type: 'text'  },
+      { key: '--ref-border',  label: 'Bordures',     type: 'text'  },
+    ],
+  },
+];
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Variables et defaults Affichage poule
+// ──────────────────────────────────────────────────────────────────────────────
+const POOL_DEFAULTS: Record<string, string> = {
+  '--pool-bg':         '#1a1a2e',
+  '--pool-header-bg':  'rgba(0, 0, 0, 0.5)',
+  '--pool-accent':     '#6366f1',
+  '--pool-accent2':    '#3b82f6',
+  '--pool-text':       '#ffffff',
+  '--pool-muted':      '#64748b',
+  '--pool-card-bg':    'rgba(255, 255, 255, 0.04)',
+  '--pool-border':     'rgba(255, 255, 255, 0.08)',
+};
+
+const POOL_VAR_GROUPS: VarGroup[] = [
+  {
+    label: 'Poule – Arrière-plan',
+    vars: [
+      { key: '--pool-bg',        label: 'Fond page',     type: 'text'  },
+      { key: '--pool-header-bg', label: 'Fond en-tête',  type: 'text'  },
+    ],
+  },
+  {
+    label: 'Poule – Couleurs',
+    vars: [
+      { key: '--pool-accent',  label: 'Couleur accent 1',  type: 'color' },
+      { key: '--pool-accent2', label: 'Couleur accent 2',  type: 'color' },
+      { key: '--pool-text',    label: 'Texte principal',   type: 'color' },
+      { key: '--pool-muted',   label: 'Texte discret',     type: 'color' },
+    ],
+  },
+  {
+    label: 'Poule – Cartes',
+    vars: [
+      { key: '--pool-card-bg', label: 'Fond cartes',  type: 'text'  },
+      { key: '--pool-border',  label: 'Bordures',     type: 'text'  },
+    ],
+  },
+];
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Variables et defaults Public
+// ──────────────────────────────────────────────────────────────────────────────
+const PUBLIC_DEFAULTS: Record<string, string> = {
+  '--pub-bg':         'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)',
+  '--pub-header-bg':  'rgba(0, 0, 0, 0.4)',
+  '--pub-accent':     '#fbbf24',
+  '--pub-accent2':    '#3b82f6',
+  '--pub-text':       '#ffffff',
+  '--pub-muted':      'rgba(255,255,255,0.6)',
+  '--pub-card-bg':    'rgba(255, 255, 255, 0.05)',
+  '--pub-border':     'rgba(255, 255, 255, 0.1)',
+};
+
+const PUBLIC_VAR_GROUPS: VarGroup[] = [
+  {
+    label: 'Public – Arrière-plan',
+    vars: [
+      { key: '--pub-bg',        label: 'Fond page',     type: 'text'  },
+      { key: '--pub-header-bg', label: 'Fond en-tête',  type: 'text'  },
+    ],
+  },
+  {
+    label: 'Public – Couleurs',
+    vars: [
+      { key: '--pub-accent',  label: 'Couleur accent 1',  type: 'color' },
+      { key: '--pub-accent2', label: 'Couleur accent 2',  type: 'color' },
+      { key: '--pub-text',    label: 'Texte principal',   type: 'color' },
+      { key: '--pub-muted',   label: 'Texte discret',     type: 'color' },
+    ],
+  },
+  {
+    label: 'Public – Cartes',
+    vars: [
+      { key: '--pub-card-bg', label: 'Fond cartes',  type: 'text'  },
+      { key: '--pub-border',  label: 'Bordures',     type: 'text'  },
+    ],
+  },
+];
+
+// ──────────────────────────────────────────────────────────────────────────────
 // Variables et defaults Kiosk
 // ──────────────────────────────────────────────────────────────────────────────
 const KIOSK_DEFAULTS: Record<string, string> = {
@@ -296,8 +416,8 @@ const KIOSK_VAR_GROUPS: VarGroup[] = [
 interface ThemeEditorProps {
   /** Arène cible (ex: 'arena1') ou 'all' pour toutes les arènes */
   targetArenaId: string;
-  /** Section cible : 'arena' (défaut), 'kiosk', 'public', 'lobby' */
-  targetType?: 'arena' | 'kiosk' | 'public' | 'lobby';
+  /** Section cible : 'arena' (défaut), 'kiosk', 'public', 'referee', 'pool' */
+  targetType?: ThemeTargetType;
   /** Thème initial à éditer (undefined = nouveau thème depuis dark) */
   initialTheme?: CustomTheme;
   /** Callback quand l'utilisateur applique le thème */
@@ -316,12 +436,28 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
   onClose,
 }) => {
   const instanceId = useId();
-  const isKiosk = targetType === 'kiosk';
-  const activeDefaults = isKiosk ? KIOSK_DEFAULTS : DARK_DEFAULTS;
-  const activeVarGroups = isKiosk ? KIOSK_VAR_GROUPS : VAR_GROUPS;
   const effectiveType = (targetType ?? 'arena') as ThemeTargetType;
+  const isKiosk = effectiveType === 'kiosk';
+  const activeDefaults =
+    effectiveType === 'kiosk'    ? KIOSK_DEFAULTS :
+    effectiveType === 'referee'  ? REFEREE_DEFAULTS :
+    effectiveType === 'pool'     ? POOL_DEFAULTS :
+    effectiveType === 'public'   ? PUBLIC_DEFAULTS :
+    DARK_DEFAULTS;
+  const activeVarGroups =
+    effectiveType === 'kiosk'    ? KIOSK_VAR_GROUPS :
+    effectiveType === 'referee'  ? REFEREE_VAR_GROUPS :
+    effectiveType === 'pool'     ? POOL_VAR_GROUPS :
+    effectiveType === 'public'   ? PUBLIC_VAR_GROUPS :
+    VAR_GROUPS;
+  const defaultName =
+    effectiveType === 'kiosk'   ? 'Thème kiosk' :
+    effectiveType === 'referee' ? 'Thème arbitre' :
+    effectiveType === 'pool'    ? 'Thème poule' :
+    effectiveType === 'public'  ? 'Thème public' :
+    'Mon thème';
 
-  const [themeName, setThemeName] = useState(initialTheme?.name ?? (isKiosk ? 'Thème kiosk' : 'Mon thème'));
+  const [themeName, setThemeName] = useState(initialTheme?.name ?? defaultName);
   const [vars, setVars] = useState<Record<string, string>>(() => ({
     ...activeDefaults,
     ...(initialTheme?.variables ?? {}),
@@ -508,9 +644,10 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
     onApply(targetArenaId, theme);
   };
 
-  const arenaLabel = effectiveType === 'kiosk' ? 'Kiosque'
-    : effectiveType === 'public' ? 'Affichage public'
-    : effectiveType === 'lobby' ? 'Lobby'
+  const arenaLabel = effectiveType === 'kiosk'   ? 'Kiosque'
+    : effectiveType === 'public'   ? 'Affichage public'
+    : effectiveType === 'referee'  ? 'Tablette arbitre'
+    : effectiveType === 'pool'     ? 'Affichage poule'
     : targetArenaId === 'all' ? 'Toutes les pistes'
     : `Piste ${targetArenaId.replace('arena', '')}`;
 
