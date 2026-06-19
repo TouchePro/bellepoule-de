@@ -445,6 +445,10 @@ export interface RemoteServerAPI {
     theme: import('../types/remote').DisplayTheme,
     customTheme?: import('../types/remote').CustomTheme
   ) => Promise<{ success: boolean; error?: string }>;
+  clearArenaThemeOverride: (
+    competitionId: string,
+    arenaId: string
+  ) => Promise<{ success: boolean; error?: string }>;
   updateKioskTheme: (
     competitionId: string,
     variables: Record<string, string>

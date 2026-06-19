@@ -4739,6 +4739,24 @@ export class RemoteScoreServer {
     }
   }
 
+  public clearArenaThemeOverride(arenaId: string): void {
+    if (!this.session) throw new Error('Aucune session active');
+    const fullId = arenaId.startsWith('arena') ? arenaId : `arena${arenaId}`;
+    this.arenaThemeOverrides.delete(fullId);
+    const arena = this.arenas.get(fullId);
+    if (arena) {
+      this.broadcastArenaUpdate(fullId, {
+        arenaId: fullId,
+        match: arena.currentMatch,
+        scoreA: arena.currentMatch?.scoreA,
+        scoreB: arena.currentMatch?.scoreB,
+        status: arena.status,
+        fencerA: arena.currentMatch?.fencerA,
+        fencerB: arena.currentMatch?.fencerB,
+      });
+    }
+  }
+
   public updateArenaScreenTheme(arenaId: string, targetType: ThemeTargetType, customTheme?: CustomTheme): void {
     if (!this.session) throw new Error('Aucune session active');
     const fullId = arenaId.startsWith('arena') ? arenaId : `arena${arenaId}`;
