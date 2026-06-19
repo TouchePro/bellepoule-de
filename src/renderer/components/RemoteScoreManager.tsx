@@ -11,7 +11,7 @@ import { Competition, Pool } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
 import { TableauMatch, ConsolationBracket } from './tableau/tableauTypes';
 import { useToast } from './Toast';
-import ThemeEditor, { loadSavedThemes } from './ThemeEditor';
+import ThemeEditor from './ThemeEditor';
 import { OBSOverlayConfig } from './OBSOverlayConfig';
 import { CustomTheme, DisplayTheme } from '../../shared/types/remote';
 import { ConnectedClient, KioskScreenConfig } from '../../shared/types/preload';
@@ -155,8 +155,8 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   // Éditeur de thème kiosk
   const [kioskThemeEditorOpen, setKioskThemeEditorOpen] = useState(false);
   const [kioskTheme, setKioskTheme] = useState<CustomTheme | undefined>(undefined);
-  // Thèmes sauvegardés (rechargés depuis localStorage)
-  const [savedThemes, setSavedThemes] = useState<CustomTheme[]>(loadSavedThemes);
+  // Thèmes sauvegardés (depuis IPC)
+  const [savedThemes, setSavedThemes] = useState<CustomTheme[]>([]);
   // Sélecteur de thème global
   const [globalThemeSection, setGlobalThemeSection] = useState<'arenes' | 'kiosque'>('arenes');
   const [globalThemeId, setGlobalThemeId] = useState('');
@@ -499,8 +499,31 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     [session]
   );
 
-  // Recharger les thèmes sauvegardés quand l'éditeur se ferme
-  const refreshSavedThemes = useCallback(() => setSavedThemes(loadSavedThemes()), []);
+  // Charger tous les thèmes depuis l'app (+ migration one-shot depuis localStorage)
+  const refreshSavedThemes = useCallback(() => {
+    window.electronAPI.themes.list().then(setSavedThemes).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const MIGRATION_KEY = 'bp-themes-migrated-v1';
+    if (!localStorage.getItem(MIGRATION_KEY)) {
+      try {
+        const raw = localStorage.getItem('bellepoule-custom-themes');
+        if (raw) {
+          const old: CustomTheme[] = JSON.parse(raw);
+          Promise.all(
+            old.map(t => window.electronAPI.themes.save({ ...t, targetType: t.targetType ?? 'arena' }))
+          ).then(() => {
+            localStorage.setItem(MIGRATION_KEY, '1');
+            refreshSavedThemes();
+          }).catch(() => {});
+        } else {
+          localStorage.setItem(MIGRATION_KEY, '1');
+        }
+      } catch { localStorage.setItem(MIGRATION_KEY, '1'); }
+    }
+    refreshSavedThemes();
+  }, [refreshSavedThemes]);
 
   // Appliquer un thème sauvegardé à toutes les arènes ou au kiosque
   const handleGlobalThemeApply = useCallback(async () => {
@@ -1034,7 +1057,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                     >
                       ✏️
                     </button>
-                    {savedThemes.length > 0 && (
+                    {savedThemes.filter(t => (t.targetType ?? 'arena') === 'arena').length > 0 && (
                       <select
                         title="Appliquer un thème sauvegardé"
                         value=""
@@ -1050,7 +1073,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                         }}
                       >
                         <option value="">📦 Thèmes…</option>
-                        {savedThemes.map(t => (
+                        {savedThemes.filter(t => (t.targetType ?? 'arena') === 'arena').map(t => (
                           <option key={t.id} value={t.id}>{t.name}</option>
                         ))}
                       </select>
@@ -1237,41 +1260,46 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         </div>
 
         {/* ── Thème global ── */}
-        {savedThemes.length > 0 && (
-          <div className="arena-url-card" style={RSM_STYLES.kioskCard}>
-            <div className="arena-url-header">
-              <strong>🎨 Thème global</strong>
+        {(() => {
+          const sectionType = globalThemeSection === 'arenes' ? 'arena' : 'kiosk';
+          const filteredForSection = savedThemes.filter(t => (t.targetType ?? 'arena') === sectionType);
+          if (savedThemes.length === 0) return null;
+          return (
+            <div className="arena-url-card" style={RSM_STYLES.kioskCard}>
+              <div className="arena-url-header">
+                <strong>🎨 Thème global</strong>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '0.25rem' }}>
+                <select
+                  value={globalThemeSection}
+                  onChange={e => { setGlobalThemeSection(e.target.value as 'arenes' | 'kiosque'); setGlobalThemeId(''); }}
+                  style={{ padding: '0.35rem 0.5rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#1e293b', color: '#e2e8f0', fontSize: '0.85rem' }}
+                >
+                  <option value="arenes">⚔️ Arènes</option>
+                  <option value="kiosque">🖥️ Kiosque</option>
+                </select>
+                <select
+                  value={globalThemeId}
+                  onChange={e => setGlobalThemeId(e.target.value)}
+                  style={{ flex: 1, minWidth: 120, padding: '0.35rem 0.5rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#1e293b', color: '#e2e8f0', fontSize: '0.85rem' }}
+                >
+                  <option value="">— Choisir un thème —</option>
+                  {filteredForSection.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+                <button
+                  className="btn btn-primary"
+                  disabled={!globalThemeId}
+                  onClick={() => void handleGlobalThemeApply()}
+                  style={{ whiteSpace: 'nowrap' }}
+                >
+                  Appliquer à tous
+                </button>
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '0.25rem' }}>
-              <select
-                value={globalThemeSection}
-                onChange={e => setGlobalThemeSection(e.target.value as 'arenes' | 'kiosque')}
-                style={{ padding: '0.35rem 0.5rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#1e293b', color: '#e2e8f0', fontSize: '0.85rem' }}
-              >
-                <option value="arenes">⚔️ Arènes</option>
-                <option value="kiosque">🖥️ Kiosque</option>
-              </select>
-              <select
-                value={globalThemeId}
-                onChange={e => setGlobalThemeId(e.target.value)}
-                style={{ flex: 1, minWidth: 120, padding: '0.35rem 0.5rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#1e293b', color: '#e2e8f0', fontSize: '0.85rem' }}
-              >
-                <option value="">— Choisir un thème —</option>
-                {savedThemes.map(t => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
-              <button
-                className="btn btn-primary"
-                disabled={!globalThemeId}
-                onClick={() => void handleGlobalThemeApply()}
-                style={{ whiteSpace: 'nowrap' }}
-              >
-                Appliquer à tous
-              </button>
-            </div>
-          </div>
-        )}
+          );
+        })()}
 
         <div className="arena-url-card" style={RSM_STYLES.kioskCard}>
           <div className="arena-url-header">

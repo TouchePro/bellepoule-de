@@ -876,4 +876,9 @@ export interface ElectronAPI extends MenuAPI, UtilityAPI {
   getLogo: () => Promise<string | null>;
   getTtsConfig: () => Promise<TtsConfig | null>;
   onLogoLoaded: (callback: (logo: string | null) => void) => () => void;
+  themes: {
+    list: () => Promise<import('../types/remote').CustomTheme[]>;
+    save: (theme: import('../types/remote').CustomTheme) => Promise<{ success: boolean; error?: string }>;
+    delete: (id: string) => Promise<{ success: boolean; error?: string }>;
+  };
 }

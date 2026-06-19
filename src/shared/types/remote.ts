@@ -107,10 +107,14 @@ export interface Arena {
 
 export type DisplayTheme = 'dark' | 'light' | 'neon' | 'unicorn' | 'custom';
 
+export type ThemeTargetType = 'arena' | 'kiosk' | 'public' | 'lobby';
+
 /** Variables CSS personnalisées pour un thème d'arène */
 export interface CustomTheme {
   id: string;
   name: string;
+  /** Section cible : arena (piste), kiosk, public, lobby */
+  targetType: ThemeTargetType;
   /** Valeurs des variables CSS (ex: { '--bg': '#000', '--score-green': '#0f0' }) */
   variables: Record<string, string>;
   /** Mode overlay : image en fond, panneaux transparents, suppression des box-shadows */
