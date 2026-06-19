@@ -1466,7 +1466,7 @@
 
       <!-- Écran de sélection de match -->
       <div class="next-matches-screen" id="next-matches-screen">
-        <h2>📋 Matchs — Arène <span id="next-arena-number">1</span></h2>
+        <h2>📋 Matchs — <span id="next-arena-label">Arène</span> <span id="next-arena-number">1</span></h2>
         <input
           type="search"
           id="match-search"
@@ -1782,7 +1782,10 @@
               this.isLaserSabre = s.weapon === 'L';
               this.isModernFencing = ['E', 'F', 'S'].includes(s.weapon);
               if (this.isModernFencing) {
-                document.getElementById('arena-label').textContent = 'Piste';
+                const pisteLabel = window.T('remote.piste');
+                document.getElementById('arena-label').textContent = pisteLabel;
+                const nextLabel = document.getElementById('next-arena-label');
+                if (nextLabel) nextLabel.textContent = pisteLabel;
                 document.querySelectorAll('.btn-plus-3, .btn-plus-5').forEach(b => (b.style.display = 'none'));
               }
             }
