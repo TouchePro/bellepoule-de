@@ -21,6 +21,8 @@ const KeyboardShortcutsHelp = React.lazy(() => import('./components/KeyboardShor
 const WikiModal = React.lazy(() => import('./components/WikiModal'));
 const WifiQRModal = React.lazy(() => import('./components/WifiQRModal').then(m => ({ default: m.WifiQRModal })));
 const XiaomiRemotePanel = React.lazy(() => import('./components/XiaomiRemotePanel').then(m => ({ default: m.XiaomiRemotePanel })));
+const TrainingLauncherModal = React.lazy(() => import('./components/training/TrainingLauncherModal'));
+const TrainingPanel = React.lazy(() => import('./components/training/TrainingPanel'));
 import { ToastProvider, useToast } from './components/Toast';
 import { ConfirmProvider, useConfirm } from './components/ConfirmDialog';
 import { TranslationProvider, useTranslation, Theme } from './contexts/TranslationContext';
@@ -55,6 +57,12 @@ const AppContent: React.FC = () => {
   const [showTVRemote, setShowTVRemote] = useState(false);
   const [remoteServerUrl, setRemoteServerUrl] = useState<string | null>(null);
   const [remoteArenaCount, setRemoteArenaCount] = useState<number>(1);
+  const [showTrainingModal, setShowTrainingModal] = useState(false);
+  const [trainingActive, setTrainingActive] = useState(false);
+  const [trainingServerUrl, setTrainingServerUrl] = useState('');
+  const [trainingStrips, setTrainingStrips] = useState(1);
+  const [trainingWeapon, setTrainingWeapon] = useState('');
+  const [trainingLaunching, setTrainingLaunching] = useState(false);
   const toolsMenuRef = useRef<HTMLDivElement>(null);
   const toolsBtnRef = useRef<HTMLButtonElement>(null);
   const [toolsMenuPos, setToolsMenuPos] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
@@ -293,6 +301,45 @@ const AppContent: React.FC = () => {
     }
   }, [openCompetitions, activeTabId, confirm]);
 
+  const handleLaunchTraining = useCallback(async (weapon: string, strips: number) => {
+    if (!window.electronAPI?.training) return;
+    setTrainingLaunching(true);
+    try {
+      const startRes = await window.electronAPI.training.startServer();
+      if (!startRes.success || !startRes.serverInfo) {
+        showToast(startRes.error ?? 'Impossible de démarrer le serveur', 'error');
+        return;
+      }
+      const sessionRes = await window.electronAPI.training.startSession(strips, weapon);
+      if (!sessionRes.success) {
+        await window.electronAPI.training.stopServer();
+        showToast(sessionRes.error ?? 'Impossible de démarrer la session', 'error');
+        return;
+      }
+      setTrainingServerUrl(startRes.serverInfo.url);
+      setTrainingStrips(strips);
+      setTrainingWeapon(weapon);
+      setTrainingActive(true);
+      setShowTrainingModal(false);
+    } catch (err) {
+      showToast('Erreur lors du lancement de l\'entraînement', 'error');
+    } finally {
+      setTrainingLaunching(false);
+    }
+  }, [showToast]);
+
+  const handleStopTraining = useCallback(async () => {
+    if (!window.electronAPI?.training) return;
+    try {
+      await window.electronAPI.training.stopSession();
+      await window.electronAPI.training.stopServer();
+    } catch { /* ignore */ }
+    setTrainingActive(false);
+    setTrainingServerUrl('');
+    setTrainingStrips(1);
+    setTrainingWeapon('');
+  }, []);
+
   const handleDeleteCompetition = useCallback(async (id: string) => {
     try {
       if (window.electronAPI) {
@@ -364,6 +411,14 @@ const AppContent: React.FC = () => {
             <button className="btn btn-primary btn-icon-label" onClick={() => setShowNewCompetitionModal(true)}>
               <Plus size={15} />
               {t('menu.new_competition')}
+            </button>
+            <button
+              className={`btn btn-icon-label ${trainingActive ? 'btn-danger' : 'btn-secondary'}`}
+              onClick={() => trainingActive ? handleStopTraining() : setShowTrainingModal(true)}
+              title={trainingActive ? "Arrêter l'entraînement" : "Mode entraînement"}
+            >
+              <Swords size={15} />
+              {trainingActive ? 'Entraînement' : 'Entraînement'}
             </button>
             {view === 'competition' && currentCompetition && (
               <button
@@ -721,6 +776,27 @@ const AppContent: React.FC = () => {
         <Suspense fallback={null}>
           <KeyboardShortcutsHelp />
         </Suspense>
+
+        {showTrainingModal && (
+          <Suspense fallback={null}>
+            <TrainingLauncherModal
+              onClose={() => setShowTrainingModal(false)}
+              onLaunch={handleLaunchTraining}
+              isLoading={trainingLaunching}
+            />
+          </Suspense>
+        )}
+
+        {trainingActive && (
+          <Suspense fallback={null}>
+            <TrainingPanel
+              serverUrl={trainingServerUrl}
+              strips={trainingStrips}
+              weapon={trainingWeapon}
+              onStop={handleStopTraining}
+            />
+          </Suspense>
+        )}
       </div>
     </>
   );

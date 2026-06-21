@@ -862,6 +862,28 @@ export interface CryptoAPI {
   unprotect: (ciphertext: string) => Promise<string | null>;
 }
 
+export interface TrainingMatchRecord {
+  id: string;
+  arenaId: string;
+  arenaNumber: number;
+  weapon: string;
+  scoreA: number;
+  scoreB: number;
+  durationSec: number;
+  finishedAt: string;
+}
+
+export interface TrainingAPI {
+  startServer: (port?: number, host?: string, useHttps?: boolean) => Promise<{ success: boolean; serverInfo?: { url: string; ip: string; port: number; useHttps: boolean; certFingerprint?: string }; error?: string }>;
+  stopServer: () => Promise<{ success: boolean; error?: string }>;
+  startSession: (strips: number, weapon: string) => Promise<{ success: boolean; session?: any; error?: string }>;
+  stopSession: () => Promise<{ success: boolean; error?: string }>;
+  getHistory: () => Promise<{ success: boolean; history: TrainingMatchRecord[]; error?: string }>;
+  getSession: () => Promise<{ success: boolean; session: any | null; error?: string }>;
+  getArenas: () => Promise<{ success: boolean; arenas: any[]; error?: string }>;
+  getServerInfo: () => Promise<{ success: boolean; serverInfo?: { url: string; ip: string; port: number; useHttps: boolean; certFingerprint?: string }; error?: string }>;
+}
+
 export interface ElectronAPI extends MenuAPI, UtilityAPI {
   db: DatabaseAPI;
   file: FileAPI;
@@ -869,8 +891,10 @@ export interface ElectronAPI extends MenuAPI, UtilityAPI {
   updater: UpdaterAPI;
   crypto: CryptoAPI;
   remote: RemoteServerAPI;
+  training: TrainingAPI;
   onRemoteArenaUpdate: (callback: (data: any) => void) => () => void;
   onRemoteMatchFinished: (callback: (data: any) => void) => () => void;
+  onTrainingMatchFinished: (callback: (data: { record: TrainingMatchRecord | null }) => void) => () => void;
   onRemoteFencerExcluded: (callback: (data: { fencerId: string; matchId: string }) => void) => (() => void);
   onKioskNoteUpdate: (
     callback: (note: import('../types/remote').OrgNote | null) => void

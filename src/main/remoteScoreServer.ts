@@ -78,6 +78,11 @@ export class RemoteScoreServer {
   private arenaScreenThemes: Map<string, Partial<Record<ThemeTargetType, CustomTheme>>> = new Map();
   private kioskThemeVariables: Record<string, string> | null = null; // Thème CSS vars pour le kiosk
   private orgNote: OrgNote | null = null; // Note d'organisation affichée sur le kiosk
+  private isTrainingMode: boolean = false;
+  private trainingHistory: Array<{
+    id: string; arenaId: string; arenaNumber: number; weapon: string;
+    scoreA: number; scoreB: number; durationSec: number; finishedAt: string;
+  }> = [];
   private sessionLogo: string | null = null; // Logo organisateur (base64) pour kiosk et affichages publics
   private sessionWallpaper: string | null = null; // Fond d'écran (base64) affiché sur les arènes en attente
   // Config TTS (minuteur vocal) poussée aux tablettes d'arbitrage depuis les paramètres globaux
@@ -3572,7 +3577,7 @@ export class RemoteScoreServer {
     // (stocké en composite). Une éventuelle exception (ex: contrainte FK) NE DOIT PAS
     // empêcher l'émission de match:finished vers le renderer (sinon : vainqueur jamais
     // remonté, pas de passage au tour suivant). On isole donc tout ce bloc.
-    try {
+    if (!this.isTrainingMode) try {
       // Persister le timing en DB
       if (arena.currentMatch.id && arena.startTime) {
         const durationSec = arena.currentMatch.duration ?? 0;
@@ -3651,6 +3656,23 @@ export class RemoteScoreServer {
       console.warn('[RemoteScoreServer] Persistance secondaire (timing/cartons/touches) échouée:', e);
     }
 
+    // Enregistrement mode entraînement (pas de DB)
+    if (this.isTrainingMode) {
+      this.trainingHistory.push({
+        id: finishedMatch.id,
+        arenaId,
+        arenaNumber: arena.number,
+        weapon: this.sessionWeapon ?? '',
+        scoreA: finishedMatch.scoreA,
+        scoreB: finishedMatch.scoreB,
+        durationSec: finishedMatch.duration ?? 0,
+        finishedAt: new Date().toISOString(),
+      });
+      // Pré-charger le prochain match entraînement dans la file
+      const queue = this.arenaMatchQueue.get(arenaId) ?? [];
+      this.arenaMatchQueue.set(arenaId, [...queue, this.createTrainingMatch()]);
+    }
+
     const nextMatch = this.peekNextMatch(arenaId);
 
     // Mettre à jour l'état en mémoire sans broadcaster (on fait le broadcast manuellement
@@ -3690,8 +3712,8 @@ export class RemoteScoreServer {
       text: `Match terminé — ${finishedMatch.fencerA ? `${finishedMatch.fencerA.lastName} ${finishedMatch.fencerA.firstName}` : '?'} ${finishedMatch.scoreA} – ${finishedMatch.scoreB} ${finishedMatch.fencerB ? `${finishedMatch.fencerB.lastName} ${finishedMatch.fencerB.firstName}` : '?'}`,
     });
 
-    // Persister le score final dans la DB et dans l'audit log
-    try {
+    // Persister le score final dans la DB et dans l'audit log (pas en mode entraînement)
+    if (!this.isTrainingMode) try {
       const finalMatchId = finishedMatch.id;
       const dbMatch = this.db.getMatch(finalMatchId);
       // Pour les matchs TED, l'ID en base est "${competitionId}-${matchId}"
@@ -3750,7 +3772,7 @@ export class RemoteScoreServer {
 
     // Émettre l'event pour le renderer (pour sauvegarder le score dans les pools)
     const mainWindow = (global as any).mainWindow;
-    if (mainWindow) {
+    if (mainWindow && !this.isTrainingMode) {
       // Dériver le vainqueur depuis la DB pour gérer le cas tirage au sort (scores égaux)
       let winnerForRenderer: 'A' | 'B' | null =
         finishedMatch.scoreA > finishedMatch.scoreB ? 'A' :
@@ -3781,6 +3803,11 @@ export class RemoteScoreServer {
       console.log(
         `[RemoteScoreServer] Émission match:finished pour ${finishedMatch.id}: ${finishedMatch.scoreA}-${finishedMatch.scoreB}`
       );
+    }
+    if (mainWindow && this.isTrainingMode) {
+      mainWindow.webContents.send('training:match_finished', {
+        record: this.trainingHistory[this.trainingHistory.length - 1] ?? null,
+      });
     }
 
     this.persistArenaState(arenaId);
@@ -3881,8 +3908,8 @@ export class RemoteScoreServer {
       `[RemoteScoreServer] loadNextMatch: arena=${arenaId}, pool=${currentPoolId}, total=${this.sessionMatches.length}`
     );
 
-    // Si pas de matches en mémoire, essayer la DB
-    if (this.sessionMatches.length === 0) {
+    // Si pas de matches en mémoire, essayer la DB (sauf mode entraînement)
+    if (this.sessionMatches.length === 0 && !this.isTrainingMode) {
       console.log('[RemoteScoreServer] Pas de matches en mémoire, recherche dans la DB...');
       const pendingMatches = this.db.getPendingMatches(this.session.competitionId);
       if (pendingMatches.length === 0) {
@@ -3953,7 +3980,7 @@ export class RemoteScoreServer {
       );
 
       // Vérifier si la poule est entièrement terminée (tous matchs FINISHED en DB)
-      try {
+      if (!this.isTrainingMode) try {
         const allPoolMatches = this.db.getMatchesByPool(currentPoolId);
         if (
           allPoolMatches.length > 0 &&
@@ -3996,6 +4023,7 @@ export class RemoteScoreServer {
 
   private buildDashboardSnapshot(): { rankings: any[]; pools: any[]; liveMatches: any[] } | null {
     if (!this.session) return null;
+    if (this.isTrainingMode) return { rankings: [], pools: [], liveMatches: [] };
     const { competitionId } = this.session;
 
     // Classement global (depuis les poules terminées)
@@ -4606,6 +4634,7 @@ export class RemoteScoreServer {
   }
 
   public stopSession(): void {
+    this.isTrainingMode = false;
     this.session = null;
     this.sessionMatches = [];
     this.arenaMatchQueue.clear();
@@ -4617,6 +4646,60 @@ export class RemoteScoreServer {
     this.arenaTokens.clear();
     this.arenaEventBuffer.clear();
     this.clearArenaCombatState();
+  }
+
+  public async startTrainingSession(strips: number, weapon: string): Promise<RemoteSession> {
+    if (this.session) throw new Error('Session déjà active');
+    const effectiveStrips = Math.max(1, Math.min(strips, 20));
+    this.isTrainingMode = true;
+    this.trainingHistory = [];
+    this.sessionWeapon = weapon;
+    this.sessionPoolTimerSeconds = 180;
+    this.sessionTableTimerSeconds = 180;
+    this.sessionShowPhotos = false;
+    this.sessionCardAnnounce = false;
+    this.sessionRefereeFeatureEnabled = false;
+    this.sessionKioskViews = { poules: false, classement: false, direct: false, suivants: false, tableau: false };
+    this.sessionMatchScores.clear();
+    this.poolFencersCache.clear();
+    this.poolSignaturesCache.clear();
+    this.setArenaCount(effectiveStrips);
+    this.sessionMatches = [];
+    this.session = {
+      competitionId: '__training__',
+      strips: Array.from({ length: effectiveStrips }, (_, i) => ({ number: i + 1, status: 'available' as const })),
+      referees: [],
+      activeMatches: [],
+      isRunning: true,
+      startTime: new Date(),
+    };
+    for (let i = 1; i <= effectiveStrips; i++) {
+      this.assignMatchToArena(`arena${i}`, this.createTrainingMatch());
+    }
+    console.log(`[RemoteScoreServer] Session entraînement démarrée: ${effectiveStrips} pistes, arme=${weapon}`);
+    return this.session;
+  }
+
+  private createTrainingMatch(): ArenaMatch {
+    return {
+      id: `training-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      poolId: '__training__',
+      fencerA: { id: 'training-A', firstName: '', lastName: 'Tireur A', club: '', ref: 0 } as any,
+      fencerB: { id: 'training-B', firstName: '', lastName: 'Tireur B', club: '', ref: 0 } as any,
+      scoreA: 0,
+      scoreB: 0,
+      status: 'not_started',
+      startTime: null,
+      endTime: null,
+    };
+  }
+
+  public getTrainingHistory() {
+    return [...this.trainingHistory];
+  }
+
+  public stopTrainingSession(): void {
+    this.stopSession();
   }
 
   public updateStripCount(newCount: number): RemoteSession | null {
