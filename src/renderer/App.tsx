@@ -801,6 +801,7 @@ const AppContent: React.FC = () => {
               weapon={trainingWeapon}
               onClose={() => setShowTrainingPanel(false)}
               onStop={handleStopTraining}
+              onOpenSettings={() => { setShowTrainingPanel(false); setShowSettingsModal(true); }}
             />
           </Suspense>
         )}

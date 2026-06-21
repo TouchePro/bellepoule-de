@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { X, Swords, Clock, Trophy, Copy, QrCode, ChevronDown, ChevronUp, Check } from 'lucide-react';
+import { X, Swords, Clock, Trophy, Copy, QrCode, ChevronDown, ChevronUp, Check, Settings, Monitor } from 'lucide-react';
 import type { TrainingMatchRecord } from '../../../shared/types/preload';
 
 const WEAPON_LABELS: Record<string, string> = {
@@ -63,6 +63,51 @@ const UrlRow: React.FC<UrlRowProps> = ({ label, url, qrDataUrl }) => {
           </button>
         </div>
       </div>
+    </div>
+  );
+};
+
+// ── Bloc kiosk grand écran ───────────────────────────────────────────────────
+interface KioskBlockProps { kioskUrl: string; }
+const KioskBlock: React.FC<KioskBlockProps> = ({ kioskUrl }) => {
+  const [open, setOpen] = useState(false);
+  const [qr, setQr] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      const QRCode = (await import('qrcode')).default;
+      const r = await QRCode.toDataURL(kioskUrl, { width: 160, margin: 1 });
+      if (!cancelled) setQr(r);
+    })();
+    return () => { cancelled = true; };
+  }, [open, kioskUrl]);
+
+  return (
+    <div style={{ border: '1px solid var(--color-border)', borderRadius: '8px', overflow: 'hidden' }}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '0.5rem 0.75rem',
+          background: open ? 'var(--color-surface-raised, rgba(0,0,0,0.04))' : 'transparent',
+          border: 'none', cursor: 'pointer', color: 'var(--color-text)',
+        }}
+      >
+        <span style={{ fontWeight: 600, fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <Monitor size={13} /> Kiosk grand écran
+        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
+          <QrCode size={13} />
+          {open ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+        </div>
+      </button>
+      {open && (
+        <div style={{ padding: '0.5rem 0.75rem', borderTop: '1px solid var(--color-border)' }}>
+          <UrlRow label="Kiosk" url={kioskUrl} qrDataUrl={qr} />
+        </div>
+      )}
     </div>
   );
 };
@@ -134,9 +179,10 @@ interface Props {
   weapon: string;
   onClose: () => void;
   onStop: () => void;
+  onOpenSettings: () => void;
 }
 
-const TrainingPanel: React.FC<Props> = ({ serverUrl, strips, weapon, onClose, onStop }) => {
+const TrainingPanel: React.FC<Props> = ({ serverUrl, strips, weapon, onClose, onStop, onOpenSettings }) => {
   const [history, setHistory] = useState<TrainingMatchRecord[]>([]);
 
   const refreshHistory = useCallback(async () => {
@@ -199,6 +245,9 @@ const TrainingPanel: React.FC<Props> = ({ serverUrl, strips, weapon, onClose, on
         </div>
 
         <div style={{ overflowY: 'auto', padding: '1.25rem 1.5rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          {/* Kiosk */}
+          <KioskBlock kioskUrl={`${serverUrl}/kiosk`} />
+
           {/* Pistes */}
           <div>
             <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -249,7 +298,10 @@ const TrainingPanel: React.FC<Props> = ({ serverUrl, strips, weapon, onClose, on
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--color-border)', display: 'flex', justifyContent: 'flex-end' }}>
+        <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <button className="btn btn-secondary btn-icon-label" onClick={onOpenSettings} title="Paramètres">
+            <Settings size={14} /> Paramètres
+          </button>
           <button className="btn btn-danger" onClick={onStop}>Arrêter l'entraînement</button>
         </div>
       </div>

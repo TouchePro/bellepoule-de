@@ -577,6 +577,7 @@ export class RemoteScoreServer {
         weapon: this.sessionWeapon,
         kioskViews: this.sessionKioskViews,
         orgNote: this.orgNote,
+        ...(this.isTrainingMode ? { competitionName: 'Entraînement', isTrainingMode: true } : {}),
       });
     });
 
@@ -1967,6 +1968,12 @@ export class RemoteScoreServer {
         console.error('[RemoteScoreServer] Erreur résultats:', error);
         res.status(500).json({ error: 'Erreur lors de la récupération des résultats' });
       }
+    });
+
+    // API : historique combats entraînement
+    this.app.get('/api/training/history', (req, res) => {
+      if (!this.isTrainingMode) return res.status(404).json({ error: 'Mode non entraînement' });
+      res.json({ history: this.trainingHistory });
     });
 
     // API : matchs à venir dans l'ordre de passage (kiosk vue suivants)
@@ -4659,7 +4666,7 @@ export class RemoteScoreServer {
     this.sessionShowPhotos = false;
     this.sessionCardAnnounce = false;
     this.sessionRefereeFeatureEnabled = false;
-    this.sessionKioskViews = { poules: false, classement: false, direct: false, suivants: false, tableau: false };
+    this.sessionKioskViews = { poules: false, classement: true, direct: true, suivants: false, tableau: false };
     this.sessionMatchScores.clear();
     this.poolFencersCache.clear();
     this.poolSignaturesCache.clear();
