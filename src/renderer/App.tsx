@@ -59,6 +59,7 @@ const AppContent: React.FC = () => {
   const [remoteArenaCount, setRemoteArenaCount] = useState<number>(1);
   const [showTrainingModal, setShowTrainingModal] = useState(false);
   const [trainingActive, setTrainingActive] = useState(false);
+  const [showTrainingPanel, setShowTrainingPanel] = useState(false);
   const [trainingServerUrl, setTrainingServerUrl] = useState('');
   const [trainingStrips, setTrainingStrips] = useState(1);
   const [trainingWeapon, setTrainingWeapon] = useState('');
@@ -320,6 +321,7 @@ const AppContent: React.FC = () => {
       setTrainingStrips(strips);
       setTrainingWeapon(weapon);
       setTrainingActive(true);
+      setShowTrainingPanel(true);
       setShowTrainingModal(false);
     } catch (err) {
       showToast('Erreur lors du lancement de l\'entraînement', 'error');
@@ -335,6 +337,7 @@ const AppContent: React.FC = () => {
       await window.electronAPI.training.stopServer();
     } catch { /* ignore */ }
     setTrainingActive(false);
+    setShowTrainingPanel(false);
     setTrainingServerUrl('');
     setTrainingStrips(1);
     setTrainingWeapon('');
@@ -414,11 +417,14 @@ const AppContent: React.FC = () => {
             </button>
             <button
               className={`btn btn-icon-label ${trainingActive ? 'btn-danger' : 'btn-secondary'}`}
-              onClick={() => trainingActive ? handleStopTraining() : setShowTrainingModal(true)}
-              title={trainingActive ? "Arrêter l'entraînement" : "Mode entraînement"}
+              onClick={() => {
+                if (!trainingActive) setShowTrainingModal(true);
+                else setShowTrainingPanel(v => !v);
+              }}
+              title={trainingActive ? (showTrainingPanel ? 'Masquer le panneau entraînement' : 'Afficher le panneau entraînement') : 'Mode entraînement'}
             >
               <Swords size={15} />
-              {trainingActive ? 'Entraînement' : 'Entraînement'}
+              Entraînement
             </button>
             {view === 'competition' && currentCompetition && (
               <button
@@ -787,12 +793,13 @@ const AppContent: React.FC = () => {
           </Suspense>
         )}
 
-        {trainingActive && (
+        {trainingActive && showTrainingPanel && (
           <Suspense fallback={null}>
             <TrainingPanel
               serverUrl={trainingServerUrl}
               strips={trainingStrips}
               weapon={trainingWeapon}
+              onClose={() => setShowTrainingPanel(false)}
               onStop={handleStopTraining}
             />
           </Suspense>
