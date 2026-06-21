@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { X, Swords, Wifi, Clock, Trophy } from 'lucide-react';
+import { X, Swords, Clock, Trophy, Copy, QrCode, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import type { TrainingMatchRecord } from '../../../shared/types/preload';
 
 const WEAPON_LABELS: Record<string, string> = {
@@ -12,6 +12,122 @@ function formatDuration(sec: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
+// ── Mini-composant : ligne URL + bouton Copier + QR inline ──────────────────
+interface UrlRowProps {
+  label: string;
+  url: string;
+  qrDataUrl: string | null;
+}
+const UrlRow: React.FC<UrlRowProps> = ({ label, url, qrDataUrl }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', padding: '0.375rem 0' }}>
+      {qrDataUrl ? (
+        <img src={qrDataUrl} alt={`QR ${label}`} width={80} height={80}
+          style={{ border: '1px solid var(--color-border)', borderRadius: '6px', flexShrink: 0 }} />
+      ) : (
+        <div style={{ width: 80, height: 80, border: '1px solid var(--color-border)', borderRadius: '6px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          color: 'var(--color-text-muted)', fontSize: '0.7rem' }}>…</div>
+      )}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>
+          {label}
+        </div>
+        <div style={{ display: 'flex', gap: '0.375rem', alignItems: 'center' }}>
+          <code style={{
+            fontSize: '0.7rem', background: 'var(--color-surface-raised, rgba(0,0,0,0.05))',
+            padding: '0.125rem 0.375rem', borderRadius: '4px',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
+          }}>
+            {url}
+          </code>
+          <button
+            onClick={handleCopy}
+            title="Copier l'URL"
+            style={{
+              border: 'none', background: 'transparent', cursor: 'pointer', padding: '0.25rem',
+              color: copied ? '#16a34a' : 'var(--color-text-muted)',
+              display: 'flex', alignItems: 'center', flexShrink: 0,
+            }}
+          >
+            {copied ? <Check size={13} /> : <Copy size={13} />}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Bloc par arène : header cliquable + expand QR ───────────────────────────
+interface ArenaBlockProps {
+  number: number;
+  refereeUrl: string;
+  displayUrl: string;
+}
+const ArenaBlock: React.FC<ArenaBlockProps> = ({ number, refereeUrl, displayUrl }) => {
+  const [open, setOpen] = useState(false);
+  const [qrReferee, setQrReferee] = useState<string | null>(null);
+  const [qrDisplay, setQrDisplay] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      const QRCode = (await import('qrcode')).default;
+      const [r, d] = await Promise.all([
+        QRCode.toDataURL(refereeUrl, { width: 160, margin: 1 }),
+        QRCode.toDataURL(displayUrl, { width: 160, margin: 1 }),
+      ]);
+      if (!cancelled) { setQrReferee(r); setQrDisplay(d); }
+    })();
+    return () => { cancelled = true; };
+  }, [open, refereeUrl, displayUrl]);
+
+  return (
+    <div style={{
+      border: '1px solid var(--color-border)',
+      borderRadius: '8px',
+      overflow: 'hidden',
+    }}>
+      {/* Header */}
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '0.5rem 0.75rem',
+          background: open ? 'var(--color-surface-raised, rgba(0,0,0,0.04))' : 'transparent',
+          border: 'none', cursor: 'pointer', color: 'var(--color-text)',
+        }}
+      >
+        <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>Piste {number}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
+          <QrCode size={13} />
+          {open ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+        </div>
+      </button>
+
+      {/* Expanded */}
+      {open && (
+        <div style={{ padding: '0.5rem 0.75rem', borderTop: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <UrlRow label="Arbitre" url={refereeUrl} qrDataUrl={qrReferee} />
+          <div style={{ height: '1px', background: 'var(--color-border)', margin: '0.25rem 0' }} />
+          <UrlRow label="Affichage" url={displayUrl} qrDataUrl={qrDisplay} />
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Panel principal ─────────────────────────────────────────────────────────
 interface Props {
   serverUrl: string;
   strips: number;
@@ -36,33 +152,29 @@ const TrainingPanel: React.FC<Props> = ({ serverUrl, strips, weapon, onStop }) =
     return () => { if (typeof unsub === 'function') unsub(); };
   }, [refreshHistory]);
 
-  const arenaUrls = Array.from({ length: strips }, (_, i) => ({
+  const arenas = Array.from({ length: strips }, (_, i) => ({
     number: i + 1,
     referee: `${serverUrl}/arene${i + 1}/arbitre`,
     display: `${serverUrl}/arene${i + 1}`,
   }));
 
   return (
-    <div
-      style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        zIndex: 2000,
-      }}
-    >
-      <div
-        style={{
-          background: 'var(--color-surface)',
-          border: '1px solid var(--color-border)',
-          borderRadius: '12px',
-          boxShadow: 'var(--shadow-xl)',
-          width: '580px',
-          maxHeight: '80vh',
-          display: 'flex',
-          flexDirection: 'column',
-          color: 'var(--color-text)',
-        }}
-      >
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      zIndex: 2000,
+    }}>
+      <div style={{
+        background: 'var(--color-surface)',
+        border: '1px solid var(--color-border)',
+        borderRadius: '12px',
+        boxShadow: 'var(--shadow-xl)',
+        width: '560px',
+        maxHeight: '85vh',
+        display: 'flex',
+        flexDirection: 'column',
+        color: 'var(--color-text)',
+      }}>
         {/* Header */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -82,38 +194,19 @@ const TrainingPanel: React.FC<Props> = ({ serverUrl, strips, weapon, onStop }) =
               EN COURS
             </span>
           </h2>
-          <button className="btn btn-icon" onClick={onStop} title="Arrêter l'entraînement"><X size={16} /></button>
+          <button className="btn btn-icon" onClick={onStop} title="Arrêter"><X size={16} /></button>
         </div>
 
         <div style={{ overflowY: 'auto', padding: '1.25rem 1.5rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           {/* Pistes */}
           <div>
             <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              <Wifi size={13} style={{ verticalAlign: 'middle', marginRight: '0.25rem' }} />
-              Pistes — {strips} piste{strips > 1 ? 's' : ''}
+              <QrCode size={13} style={{ verticalAlign: 'middle', marginRight: '0.25rem' }} />
+              Pistes — {strips} piste{strips > 1 ? 's' : ''} (clic pour QR + copier)
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-              {arenaUrls.map(({ number, referee, display }) => (
-                <div key={number} style={{
-                  background: 'var(--color-surface-raised, rgba(0,0,0,0.04))',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: '8px',
-                  padding: '0.5rem 0.75rem',
-                  display: 'flex', alignItems: 'center', gap: '0.75rem',
-                }}>
-                  <span style={{ fontWeight: 600, fontSize: '0.875rem', minWidth: '5rem' }}>Piste {number}</span>
-                  <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    Arbitre : <code style={{ fontSize: '0.75rem' }}>{referee}</code>
-                  </span>
-                  <a
-                    href={display}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ fontSize: '0.75rem', color: 'var(--color-primary)', textDecoration: 'none', whiteSpace: 'nowrap' }}
-                  >
-                    Affichage ↗
-                  </a>
-                </div>
+              {arenas.map(({ number, referee, display }) => (
+                <ArenaBlock key={number} number={number} refereeUrl={referee} displayUrl={display} />
               ))}
             </div>
           </div>
@@ -129,21 +222,16 @@ const TrainingPanel: React.FC<Props> = ({ serverUrl, strips, weapon, onStop }) =
                 Aucun combat terminé
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', maxHeight: '220px', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', maxHeight: '200px', overflowY: 'auto' }}>
                 {[...history].reverse().map((rec, idx) => (
                   <div key={rec.id} style={{
                     display: 'flex', alignItems: 'center', gap: '0.75rem',
                     padding: '0.375rem 0.75rem',
                     background: idx % 2 === 0 ? 'var(--color-surface-raised, rgba(0,0,0,0.03))' : 'transparent',
-                    borderRadius: '6px',
-                    fontSize: '0.875rem',
+                    borderRadius: '6px', fontSize: '0.875rem',
                   }}>
-                    <span style={{ minWidth: '4rem', color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
-                      Piste {rec.arenaNumber}
-                    </span>
-                    <span style={{ flex: 1, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
-                      {rec.scoreA} — {rec.scoreB}
-                    </span>
+                    <span style={{ minWidth: '4rem', color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>Piste {rec.arenaNumber}</span>
+                    <span style={{ flex: 1, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{rec.scoreA} — {rec.scoreB}</span>
                     {rec.durationSec > 0 && (
                       <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                         <Clock size={11} /> {formatDuration(rec.durationSec)}
@@ -160,14 +248,8 @@ const TrainingPanel: React.FC<Props> = ({ serverUrl, strips, weapon, onStop }) =
         </div>
 
         {/* Footer */}
-        <div style={{
-          padding: '1rem 1.5rem',
-          borderTop: '1px solid var(--color-border)',
-          display: 'flex', justifyContent: 'flex-end',
-        }}>
-          <button className="btn btn-danger" onClick={onStop}>
-            Arrêter l'entraînement
-          </button>
+        <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--color-border)', display: 'flex', justifyContent: 'flex-end' }}>
+          <button className="btn btn-danger" onClick={onStop}>Arrêter l'entraînement</button>
         </div>
       </div>
     </div>
