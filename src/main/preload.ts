@@ -587,6 +587,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('remote:setClientKioskMode', competitionId, socketId, config),
   },
 
+  training: {
+    startServer: (port?: number, host?: string, useHttps?: boolean) =>
+      ipcRenderer.invoke('training:startServer', port, host, useHttps),
+    stopServer: () => ipcRenderer.invoke('training:stopServer'),
+    startSession: (strips: number, weapon: string) =>
+      ipcRenderer.invoke('training:startSession', strips, weapon),
+    stopSession: () => ipcRenderer.invoke('training:stopSession'),
+    getHistory: () => ipcRenderer.invoke('training:getHistory'),
+    getSession: () => ipcRenderer.invoke('training:getSession'),
+    getArenas: () => ipcRenderer.invoke('training:getArenas'),
+    getServerInfo: () => ipcRenderer.invoke('training:getServerInfo'),
+  },
+
   // Remote event listeners (for real-time updates)
   onRemoteArenaUpdate: (callback: (data: any) => void) => {
     const handler = (_: any, data: any) => callback(data);
@@ -601,6 +614,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     };
     ipcRenderer.on('match:finished', handler);
     return () => ipcRenderer.removeListener('match:finished', handler);
+  },
+  onTrainingMatchFinished: (callback: (data: any) => void) => {
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on('training:match_finished', handler);
+    return () => ipcRenderer.removeListener('training:match_finished', handler);
   },
   onRemoteFencerExcluded: (callback: (data: { fencerId: string; matchId: string }) => void) => {
     const handler = (_: any, data: any) => callback(data);
