@@ -30,7 +30,8 @@ const TrainingPanel: React.FC<Props> = ({ serverUrl, strips, weapon, onStop }) =
   useEffect(() => {
     refreshHistory();
     const unsub = window.electronAPI?.onTrainingMatchFinished?.((data) => {
-      if (data?.record) setHistory(prev => [...prev, data.record]);
+      const record = data?.record;
+      if (record) setHistory(prev => [...prev, record]);
     });
     return () => { if (typeof unsub === 'function') unsub(); };
   }, [refreshHistory]);
