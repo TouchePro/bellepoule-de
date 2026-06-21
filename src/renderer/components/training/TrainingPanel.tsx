@@ -132,10 +132,11 @@ interface Props {
   serverUrl: string;
   strips: number;
   weapon: string;
+  onClose: () => void;
   onStop: () => void;
 }
 
-const TrainingPanel: React.FC<Props> = ({ serverUrl, strips, weapon, onStop }) => {
+const TrainingPanel: React.FC<Props> = ({ serverUrl, strips, weapon, onClose, onStop }) => {
   const [history, setHistory] = useState<TrainingMatchRecord[]>([]);
 
   const refreshHistory = useCallback(async () => {
@@ -194,7 +195,7 @@ const TrainingPanel: React.FC<Props> = ({ serverUrl, strips, weapon, onStop }) =
               EN COURS
             </span>
           </h2>
-          <button className="btn btn-icon" onClick={onStop} title="Arrêter"><X size={16} /></button>
+          <button className="btn btn-icon" onClick={onClose} title="Fermer (l'entraînement continue)"><X size={16} /></button>
         </div>
 
         <div style={{ overflowY: 'auto', padding: '1.25rem 1.5rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
