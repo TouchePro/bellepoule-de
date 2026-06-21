@@ -1321,6 +1321,7 @@
         arenasData: [],
         upcomingData: [],
         overallRanking: [],
+        trainingHistory: [],
         lastUpdate: null,
         prevArenaScores: {},
         bracketData: null,
@@ -1637,18 +1638,27 @@
           }
           applyLocalViews();
 
-          // 2. Données poules + classements
-          const poolsRes = await fetch('/api/competitions/' + competitionId + '/results-data');
-          if (poolsRes.ok) {
-            const data = await poolsRes.json();
-            state.poolsData = data.pools || [];
-            if (data.overallRanking && data.overallRanking.length > 0) {
-              state.overallRanking = data.overallRanking;
-            } else {
-              buildOverallRanking();
+          // 2. Données poules + classements (ou historique entraînement)
+          if (competitionId === '__training__') {
+            const histRes = await fetch('/api/training/history');
+            if (histRes.ok) {
+              const histData = await histRes.json();
+              state.trainingHistory = histData.history || [];
+              renderRanking();
             }
-            renderPools();
-            renderRanking();
+          } else {
+            const poolsRes = await fetch('/api/competitions/' + competitionId + '/results-data');
+            if (poolsRes.ok) {
+              const data = await poolsRes.json();
+              state.poolsData = data.pools || [];
+              if (data.overallRanking && data.overallRanking.length > 0) {
+                state.overallRanking = data.overallRanking;
+              } else {
+                buildOverallRanking();
+              }
+              renderPools();
+              renderRanking();
+            }
           }
 
           // 3. Arènes
@@ -1749,8 +1759,30 @@
       // ─── Rendu Classement ────────────────────────────────────────────────────
       function renderRanking() {
         const tbody = document.getElementById('ranking-body');
-        const ranking = state.overallRanking;
 
+        // Mode entraînement : afficher l'historique des combats
+        if (state.session?.competitionId === '__training__') {
+          const hist = (state.trainingHistory || []).slice().reverse();
+          document.getElementById('classement-badge').textContent = hist.length + ' combat' + (hist.length !== 1 ? 's' : '');
+          if (!hist.length) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#64748b;padding:3rem">Aucun combat terminé</td></tr>';
+            return;
+          }
+          tbody.innerHTML = hist.map(r => {
+            const dur = r.durationSec > 0 ? Math.floor(r.durationSec/60) + ':' + String(r.durationSec % 60).padStart(2,'0') : '—';
+            const t = new Date(r.finishedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+            return `<tr>
+              <td style="color:#64748b;font-weight:700">P${r.arenaNumber}</td>
+              <td><div style="font-weight:600;font-size:1.1rem">${r.scoreA} — ${r.scoreB}</div></td>
+              <td style="color:#64748b;font-size:0.85rem">${dur}</td>
+              <td style="text-align:center;color:#94a3b8">${t}</td>
+              <td></td><td></td>
+            </tr>`;
+          }).join('');
+          return;
+        }
+
+        const ranking = state.overallRanking;
         document.getElementById('classement-badge').textContent = ranking.length + ' tireur' + (ranking.length > 1 ? 's' : '');
 
         if (!ranking || ranking.length === 0) {
