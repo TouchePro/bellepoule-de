@@ -2284,11 +2284,11 @@ ipcMain.handle('training:stopServer', async () => {
   }
 });
 
-ipcMain.handle('training:startSession', async (_event, strips: number, weapon: string) => {
+ipcMain.handle('training:startSession', async (_event, strips: number, weapon: string, customRules?: any) => {
   try {
     const entry = remoteServers.get(TRAINING_ID);
     if (!entry) return { success: false, error: 'Serveur entraînement non démarré' };
-    const session = await entry.server.startTrainingSession(strips, weapon);
+    const session = await entry.server.startTrainingSession(strips, weapon, customRules);
     return { success: true, session };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };

@@ -1768,6 +1768,7 @@
           this.refereesList = []; // Liste des arbitres de la compétition
           this.swapped = false;
           this.pausedForModal = false;
+          this.trainingCustomRules = null; // { matchDurationSeconds, allowedZones, disableSuddenDeath }
           this.offlineQueue = new OfflineQueueInline();
           this.ttsEnabled = false;
           this._ttsAnnouncedSeconds = new Set();
@@ -1805,6 +1806,7 @@
               if (s) {
               this.isLaserSabre = s.weapon === 'L';
               this.isModernFencing = ['E', 'F', 'S'].includes(s.weapon);
+              if (s.trainingCustomRules) this.trainingCustomRules = s.trainingCustomRules;
               if (this.isModernFencing) {
                 const pisteLabel = window.T('remote.piste');
                 document.getElementById('arena-label').textContent = pisteLabel;
@@ -2295,6 +2297,19 @@
             return;
           }
 
+          // Restriction de zones en mode entraînement
+          const _zone = points === 1 ? 'A' : points === 3 ? 'B' : 'C';
+          if (
+            this.trainingCustomRules &&
+            this.trainingCustomRules.allowedZones &&
+            this.trainingCustomRules.allowedZones.length > 0 &&
+            !this.trainingCustomRules.allowedZones.includes(_zone)
+          ) {
+            const allowed = this.trainingCustomRules.allowedZones.join(', ');
+            this.showNotification(`Zone ${_zone} non autorisée (entraînement : ${allowed} uniquement)`);
+            return;
+          }
+
           this.pushHistory('score');
           if (navigator.vibrate) navigator.vibrate(points === 5 ? 120 : points === 3 ? 80 : 40);
 
@@ -2315,6 +2330,7 @@
           // Le déclenchement est autorisé hors mort subite ET pendant le temps supplémentaire
           if (
             this.isLaserSabre &&
+            !(this.trainingCustomRules && this.trainingCustomRules.disableSuddenDeath) &&
             (!this.isSuddenDeath || this.overtimeType === 'supplementary')
           ) {
             if (this.scoreA >= 10 && this.scoreB >= 10) {
@@ -2924,11 +2940,12 @@
               if (this.timerSeconds === 0) {
                 this.stopTimer();
                 if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
-                if (this.scoreA === this.scoreB &&
+                const _sdDisabled = this.trainingCustomRules && this.trainingCustomRules.disableSuddenDeath;
+                if (!_sdDisabled && this.scoreA === this.scoreB &&
                     (!this.isSuddenDeath || this.overtimeType === 'challenger')) {
                   // Égalité : attente manuelle de l'arbitre pour lancer les 30s
                   this.prepareSuddenDeath();
-                } else if (this.isSuddenDeath && this.scoreA === this.scoreB) {
+                } else if (!_sdDisabled && this.isSuddenDeath && this.scoreA === this.scoreB) {
                   // Fin des 30s supplémentaires avec égalité → tirage au sort
                   this.triggerTiebreaker();
                 } else {
@@ -3569,6 +3586,10 @@
 
           if (data.timerDuration !== undefined && data.timerDuration > 0) {
             this.defaultTimerSeconds = data.timerDuration;
+          }
+
+          if (data.trainingCustomRules !== undefined) {
+            this.trainingCustomRules = data.trainingCustomRules;
           }
 
           if (data.cardAnnounce !== undefined) {

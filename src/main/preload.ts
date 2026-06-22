@@ -591,8 +591,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     startServer: (port?: number, host?: string, useHttps?: boolean) =>
       ipcRenderer.invoke('training:startServer', port, host, useHttps),
     stopServer: () => ipcRenderer.invoke('training:stopServer'),
-    startSession: (strips: number, weapon: string) =>
-      ipcRenderer.invoke('training:startSession', strips, weapon),
+    startSession: (strips: number, weapon: string, customRules?: any) =>
+      ipcRenderer.invoke('training:startSession', strips, weapon, customRules),
     stopSession: () => ipcRenderer.invoke('training:stopSession'),
     getHistory: () => ipcRenderer.invoke('training:getHistory'),
     getSession: () => ipcRenderer.invoke('training:getSession'),
