@@ -302,7 +302,7 @@ const AppContent: React.FC = () => {
     }
   }, [openCompetitions, activeTabId, confirm]);
 
-  const handleLaunchTraining = useCallback(async (weapon: string, strips: number) => {
+  const handleLaunchTraining = useCallback(async (weapon: string, strips: number, customRules?: any) => {
     if (!window.electronAPI?.training) return;
     setTrainingLaunching(true);
     try {
@@ -311,7 +311,7 @@ const AppContent: React.FC = () => {
         showToast(startRes.error ?? 'Impossible de démarrer le serveur', 'error');
         return;
       }
-      const sessionRes = await window.electronAPI.training.startSession(strips, weapon);
+      const sessionRes = await window.electronAPI.training.startSession(strips, weapon, customRules);
       if (!sessionRes.success) {
         await window.electronAPI.training.stopServer();
         showToast(sessionRes.error ?? 'Impossible de démarrer la session', 'error');

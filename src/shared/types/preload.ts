@@ -862,6 +862,12 @@ export interface CryptoAPI {
   unprotect: (ciphertext: string) => Promise<string | null>;
 }
 
+export interface TrainingCustomRules {
+  matchDurationSeconds: number;
+  allowedZones: string[];
+  disableSuddenDeath: boolean;
+}
+
 export interface TrainingMatchRecord {
   id: string;
   arenaId: string;
@@ -876,7 +882,7 @@ export interface TrainingMatchRecord {
 export interface TrainingAPI {
   startServer: (port?: number, host?: string, useHttps?: boolean) => Promise<{ success: boolean; serverInfo?: { url: string; ip: string; port: number; useHttps: boolean; certFingerprint?: string }; error?: string }>;
   stopServer: () => Promise<{ success: boolean; error?: string }>;
-  startSession: (strips: number, weapon: string) => Promise<{ success: boolean; session?: any; error?: string }>;
+  startSession: (strips: number, weapon: string, customRules?: TrainingCustomRules) => Promise<{ success: boolean; session?: any; error?: string }>;
   stopSession: () => Promise<{ success: boolean; error?: string }>;
   getHistory: () => Promise<{ success: boolean; history: TrainingMatchRecord[]; error?: string }>;
   getSession: () => Promise<{ success: boolean; session: any | null; error?: string }>;

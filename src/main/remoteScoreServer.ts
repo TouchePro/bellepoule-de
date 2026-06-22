@@ -83,6 +83,7 @@ export class RemoteScoreServer {
     id: string; arenaId: string; arenaNumber: number; weapon: string;
     scoreA: number; scoreB: number; durationSec: number; finishedAt: string;
   }> = [];
+  private trainingCustomRules: { matchDurationSeconds: number; allowedZones: string[]; disableSuddenDeath: boolean } | null = null;
   private sessionLogo: string | null = null; // Logo organisateur (base64) pour kiosk et affichages publics
   private sessionWallpaper: string | null = null; // Fond d'écran (base64) affiché sur les arènes en attente
   // Config TTS (minuteur vocal) poussée aux tablettes d'arbitrage depuis les paramètres globaux
@@ -577,7 +578,7 @@ export class RemoteScoreServer {
         weapon: this.sessionWeapon,
         kioskViews: this.sessionKioskViews,
         orgNote: this.orgNote,
-        ...(this.isTrainingMode ? { competitionName: 'Entraînement', isTrainingMode: true } : {}),
+        ...(this.isTrainingMode ? { competitionName: 'Entraînement', isTrainingMode: true, trainingCustomRules: this.trainingCustomRules } : {}),
       });
     });
 
@@ -2499,6 +2500,7 @@ export class RemoteScoreServer {
             referees: this.session?.referees ?? [],
             refereeSelected: this.arenaRefereeSelected.get(data.arenaId) ?? false,
             timerDuration: isPoolMatch ? this.sessionPoolTimerSeconds : this.sessionTableTimerSeconds,
+            ...(this.isTrainingMode && this.trainingCustomRules ? { trainingCustomRules: this.trainingCustomRules } : {}),
             ...(arena.status === 'finished' && {
               nextMatch: this.peekNextMatch(data.arenaId),
             }),
@@ -2794,8 +2796,12 @@ export class RemoteScoreServer {
         const lastUpdate = this.scoreUpdateDebounce.get(debounceKey) ?? 0;
         if (Date.now() - lastUpdate < this.SCORE_UPDATE_DEBOUNCE_MS) break;
         this.scoreUpdateDebounce.set(debounceKey, Date.now());
-        if (data.suddenDeath !== undefined) {
-          this.arenaSuddenDeath.set(data.arenaId, data.suddenDeath);
+        // Supprimer la mort subite si désactivée en entraînement
+        const effectiveSuddenDeath = (this.isTrainingMode && this.trainingCustomRules?.disableSuddenDeath)
+          ? false
+          : data.suddenDeath;
+        if (effectiveSuddenDeath !== undefined) {
+          this.arenaSuddenDeath.set(data.arenaId, effectiveSuddenDeath);
         }
         if (data.overtimeType !== undefined) {
           this.arenaOvertimeType.set(data.arenaId, data.overtimeType);
@@ -2911,15 +2917,18 @@ export class RemoteScoreServer {
         break;
       case 'update_timer':
       case 'pause_timer':
-      case 'reset_timer':
-        if (data.suddenDeath !== undefined) {
-          this.arenaSuddenDeath.set(data.arenaId, data.suddenDeath);
+      case 'reset_timer': {
+        const timerSuddenDeath = (this.isTrainingMode && this.trainingCustomRules?.disableSuddenDeath)
+          ? false
+          : data.suddenDeath;
+        if (timerSuddenDeath !== undefined) {
+          this.arenaSuddenDeath.set(data.arenaId, timerSuddenDeath);
         }
         if (data.overtimeType !== undefined) {
           this.arenaOvertimeType.set(data.arenaId, data.overtimeType);
         }
         // Clear waiting state when sudden death actually starts
-        if (data.suddenDeath) {
+        if (timerSuddenDeath) {
           this.arenaWaitingOvertime.set(data.arenaId, false);
         }
         this.broadcastArenaUpdate(data.arenaId, {
@@ -2933,6 +2942,7 @@ export class RemoteScoreServer {
           status: arena.status,
         });
         break;
+      }
       case 'change_referee': {
         if (!data.matchId || !data.refereeId || !arena.currentMatch) break;
         if (arena.currentMatch.id !== data.matchId) break;
@@ -4642,6 +4652,7 @@ export class RemoteScoreServer {
 
   public stopSession(): void {
     this.isTrainingMode = false;
+    this.trainingCustomRules = null;
     this.session = null;
     this.sessionMatches = [];
     this.arenaMatchQueue.clear();
@@ -4655,14 +4666,20 @@ export class RemoteScoreServer {
     this.clearArenaCombatState();
   }
 
-  public async startTrainingSession(strips: number, weapon: string): Promise<RemoteSession> {
+  public async startTrainingSession(strips: number, weapon: string, customRules?: { matchDurationSeconds?: number; allowedZones?: string[]; disableSuddenDeath?: boolean }): Promise<RemoteSession> {
     if (this.session) throw new Error('Session déjà active');
     const effectiveStrips = Math.max(1, Math.min(strips, 20));
     this.isTrainingMode = true;
     this.trainingHistory = [];
     this.sessionWeapon = weapon;
-    this.sessionPoolTimerSeconds = 180;
-    this.sessionTableTimerSeconds = 180;
+    const duration = customRules?.matchDurationSeconds ?? 180;
+    this.sessionPoolTimerSeconds = duration;
+    this.sessionTableTimerSeconds = duration;
+    this.trainingCustomRules = {
+      matchDurationSeconds: duration,
+      allowedZones: customRules?.allowedZones ?? [],
+      disableSuddenDeath: customRules?.disableSuddenDeath ?? false,
+    };
     this.sessionShowPhotos = false;
     this.sessionCardAnnounce = false;
     this.sessionRefereeFeatureEnabled = false;
