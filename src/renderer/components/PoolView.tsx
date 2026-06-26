@@ -139,6 +139,8 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   const [competitionReferees, setCompetitionReferees] = useState<Referee[]>([]);
   const [isLoadingReferees, setIsLoadingReferees] = useState(false);
   const [assignedReferee, setAssignedReferee] = useState<Referee | null>(pool.referees?.[0] ?? null);
+  const [hoveredFencerIds, setHoveredFencerIds] = useState<Set<string>>(new Set());
+  const quickMouseScoring = localStorage.getItem('bellepoule-quick-mouse-scoring') === 'true';
 
   const defaultArena = (pool.strip != null && pool.strip > 0 ? pool.strip : pool.number) ?? 1;
 
@@ -425,6 +427,46 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     // Restaurer la victoire existante (ex: match déjà saisi par tirage au sort)
     setVictoryA(!inverted ? !!match.scoreA?.isVictory : !!match.scoreB?.isVictory);
     setVictoryB(!inverted ? !!match.scoreB?.isVictory : !!match.scoreA?.isVictory);
+  };
+
+  const handleHoverCell = (rowFencer: Fencer, colFencer: Fencer) => {
+    setHoveredFencerIds(new Set([rowFencer.id, colFencer.id]));
+  };
+
+  const handleHoverLeave = () => setHoveredFencerIds(new Set());
+
+  const handleWheelScore = (rowFencer: Fencer, colFencer: Fencer, shiftKey: boolean, delta: number) => {
+    if (isLocked) return;
+    const matchIndex = getMatchIndex(rowFencer, colFencer);
+    if (matchIndex === -1) return;
+    const match = pool.matches[matchIndex];
+    if (!match || match.status === MatchStatus.CANCELLED) return;
+    if (match.scoreA?.isAbstention || match.scoreA?.isExclusion || match.scoreA?.isForfait) return;
+
+    const inverted = match.fencerA?.id === colFencer.id;
+    const curA = match.scoreA?.value ?? 0;
+    const curB = match.scoreB?.value ?? 0;
+    let scoreLeft = inverted ? curB : curA;
+    let scoreRight = inverted ? curA : curB;
+
+    const effectiveMax = match.maxScore || maxScore || 5;
+    if (!shiftKey) {
+      scoreLeft = Math.max(0, Math.min(effectiveMax, scoreLeft + delta));
+    } else {
+      scoreRight = Math.max(0, Math.min(effectiveMax, scoreRight + delta));
+    }
+
+    const actualScoreA = inverted ? scoreRight : scoreLeft;
+    const actualScoreB = inverted ? scoreLeft : scoreRight;
+
+    if (actualScoreA === actualScoreB) {
+      if (isLaserSabre) {
+        openScoreModal(matchIndex, inverted);
+      }
+      return;
+    }
+
+    onScoreUpdate(matchIndex, actualScoreA, actualScoreB);
   };
 
   const handleCellClick = (rowFencer: Fencer, colFencer: Fencer) => {
@@ -1028,6 +1070,11 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           const matchIndex = getMatchIndex(rowFencer, colFencer);
           if (matchIndex !== -1) onMatchReset(matchIndex);
         } : undefined}
+        quickMouseScoring={quickMouseScoring}
+        highlightedFencerIds={hoveredFencerIds}
+        onHoverCell={quickMouseScoring ? handleHoverCell : undefined}
+        onHoverLeave={quickMouseScoring ? handleHoverLeave : undefined}
+        onWheelScore={quickMouseScoring ? handleWheelScore : undefined}
       />
       {orderedMatches.finished.length > 0 && (
         <div style={{ marginTop: '1rem' }}>
