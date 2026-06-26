@@ -141,6 +141,10 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   const [assignedReferee, setAssignedReferee] = useState<Referee | null>(pool.referees?.[0] ?? null);
   const [hoveredFencerIds, setHoveredFencerIds] = useState<Set<string>>(new Set());
   const quickMouseScoring = localStorage.getItem('bellepoule-quick-mouse-scoring') === 'true';
+  const simplifiedInputMode = localStorage.getItem('bellepoule-simplified-input-mode') === 'true';
+  const [inlineEditCell, setInlineEditCell] = useState<{ key: string; matchIndex: number; inverted: boolean } | null>(null);
+  const [inlineScoreLeft, setInlineScoreLeft] = useState('');
+  const [inlineScoreRight, setInlineScoreRight] = useState('');
 
   const defaultArena = (pool.strip != null && pool.strip > 0 ? pool.strip : pool.number) ?? 1;
 
@@ -475,9 +479,51 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     const matchIndex = getMatchIndex(rowFencer, colFencer);
     if (matchIndex === -1) return;
     const match = pool.matches[matchIndex];
-    // Inversion si le tireur de la ligne est fencerB (pour l'afficher à gauche)
     const inverted = match.fencerA?.id === colFencer.id;
+    if (simplifiedInputMode) {
+      const key = `${rowFencer.id}-${colFencer.id}`;
+      const curA = match.scoreA?.value ?? 0;
+      const curB = match.scoreB?.value ?? 0;
+      setInlineEditCell({ key, matchIndex, inverted });
+      setInlineScoreLeft(String(inverted ? curB : curA));
+      setInlineScoreRight(String(inverted ? curA : curB));
+      return;
+    }
     openScoreModal(matchIndex, inverted);
+  };
+
+  const handleInlineSubmit = () => {
+    if (!inlineEditCell) return;
+    const { matchIndex, inverted } = inlineEditCell;
+    const scoreLeft = parseInt(inlineScoreLeft, 10);
+    const scoreRight = parseInt(inlineScoreRight, 10);
+    if (isNaN(scoreLeft) || isNaN(scoreRight)) return;
+    const effectiveMax = pool.matches[matchIndex]?.maxScore || maxScore || 0;
+    if (effectiveMax > 0 && (scoreLeft > effectiveMax || scoreRight > effectiveMax)) {
+      showToast(`Score maximum : ${effectiveMax}`, 'error');
+      return;
+    }
+    const actualScoreA = inverted ? scoreRight : scoreLeft;
+    const actualScoreB = inverted ? scoreLeft : scoreRight;
+    if (actualScoreA === actualScoreB) {
+      if (isLaserSabre) {
+        setInlineEditCell(null);
+        openScoreModal(matchIndex, inverted);
+      } else {
+        showToast("Match nul impossible ! En match en direct, la mort subite de 30s s'applique automatiquement", 'error');
+      }
+      return;
+    }
+    onScoreUpdate(matchIndex, actualScoreA, actualScoreB);
+    setInlineEditCell(null);
+    setInlineScoreLeft('');
+    setInlineScoreRight('');
+  };
+
+  const handleInlineCancel = () => {
+    setInlineEditCell(null);
+    setInlineScoreLeft('');
+    setInlineScoreRight('');
   };
 
   const handleScoreSubmit = () => {
@@ -1075,6 +1121,13 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         onHoverCell={quickMouseScoring ? handleHoverCell : undefined}
         onHoverLeave={quickMouseScoring ? handleHoverLeave : undefined}
         onWheelScore={quickMouseScoring ? handleWheelScore : undefined}
+        simplifiedInputMode={simplifiedInputMode}
+        inlineEditKey={inlineEditCell?.key ?? null}
+        inlineScoreLeft={inlineScoreLeft}
+        inlineScoreRight={inlineScoreRight}
+        onInlineScoreChange={(left, right) => { setInlineScoreLeft(left); setInlineScoreRight(right); }}
+        onInlineSubmit={handleInlineSubmit}
+        onInlineCancel={handleInlineCancel}
       />
       {orderedMatches.finished.length > 0 && (
         <div style={{ marginTop: '1rem' }}>
