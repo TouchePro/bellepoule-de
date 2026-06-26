@@ -29,27 +29,49 @@ const AddFencerModalComponent: React.FC<AddFencerModalProps> = ({ onClose, onAdd
   const [nationality, setNationality] = useState('FRA');
   const [photo, setPhoto] = useState<string | undefined>();
 
+  const buildFencer = (): Partial<Fencer> => ({
+    lastName: lastName.trim().toUpperCase(),
+    firstName: firstName.trim(),
+    club: club.trim() || undefined,
+    region: region.trim() || undefined,
+    license: license.trim() || undefined,
+    ranking: ranking ? parseInt(ranking, 10) : undefined,
+    gender,
+    nationality,
+    status: FencerStatus.NOT_CHECKED_IN,
+    photo,
+  });
+
+  const resetForm = () => {
+    setLastName('');
+    setFirstName('');
+    setClub('');
+    setRegion('');
+    setLicense('');
+    setRanking('');
+    setGender(Gender.MALE);
+    setNationality('FRA');
+    setPhoto(undefined);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!lastName.trim() || !firstName.trim()) {
       showToast(t('messages.name_required'), 'warning');
       return;
     }
-
-    onAdd({
-      lastName: lastName.trim().toUpperCase(),
-      firstName: firstName.trim(),
-      club: club.trim() || undefined,
-      region: region.trim() || undefined,
-      license: license.trim() || undefined,
-      ranking: ranking ? parseInt(ranking, 10) : undefined,
-      gender,
-      nationality,
-      status: FencerStatus.NOT_CHECKED_IN,
-      photo,
-    });
+    onAdd(buildFencer());
     onClose();
+  };
+
+  const handleSaveAndAdd = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!lastName.trim() || !firstName.trim()) {
+      showToast(t('messages.name_required'), 'warning');
+      return;
+    }
+    onAdd(buildFencer());
+    resetForm();
   };
 
   return (
@@ -181,8 +203,11 @@ const AddFencerModalComponent: React.FC<AddFencerModalProps> = ({ onClose, onAdd
             <button type="button" className="btn btn-secondary" onClick={onClose}>
               {t('actions.cancel')}
             </button>
+            <button type="button" className="btn btn-secondary" onClick={handleSaveAndAdd}>
+              {t('actions.save_and_add')}
+            </button>
             <button type="submit" className="btn btn-primary">
-              {t('fencer.add')}
+              {t('actions.save')}
             </button>
           </div>
         </form>
