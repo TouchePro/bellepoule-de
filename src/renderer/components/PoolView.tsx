@@ -722,6 +722,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           includePoolStats: true,
           logoBase64: logo,
           competitionName,
+          competitionId,
           visibleColumns: getVisibleColumns('pool', pool.id),
           signatures,
         },
