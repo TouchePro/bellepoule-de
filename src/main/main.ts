@@ -1396,6 +1396,13 @@ ipcMain.handle('dialog:saveFile', async (_, options) => {
   return dialog.showSaveDialog(mainWindow!, options);
 });
 
+// Window resize handler
+ipcMain.handle('window:setSize', (_event, width: number, height: number) => {
+  if (mainWindow) {
+    mainWindow.setSize(Math.max(width, 800), Math.max(height, 600), true);
+  }
+});
+
 // Print handler
 ipcMain.handle('window:print', async () => {
   if (mainWindow) {
