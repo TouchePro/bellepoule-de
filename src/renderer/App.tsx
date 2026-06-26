@@ -132,6 +132,10 @@ const AppContent: React.FC = () => {
         showToast('Sauvegarde effectuée', 'success');
       });
 
+      window.electronAPI.onMenuOpenSettings(() => {
+        setShowSettingsModal(true);
+      });
+
       window.electronAPI.onAutosaveCompleted(() => {
         logger.debug(LogCategory.UI, 'Autosave OK');
       });
@@ -143,6 +147,7 @@ const AppContent: React.FC = () => {
 
     return () => {
       if (window.electronAPI?.removeAllListeners) {
+        window.electronAPI.removeAllListeners('menu:open-settings');
         window.electronAPI.removeAllListeners('menu:new-competition');
         window.electronAPI.removeAllListeners('menu:report-issue');
         window.electronAPI.removeAllListeners('menu:show-about');
