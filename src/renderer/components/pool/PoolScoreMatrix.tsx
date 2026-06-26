@@ -17,6 +17,13 @@ interface PoolScoreMatrixProps {
   onHoverCell?: (rowFencer: Fencer, colFencer: Fencer) => void;
   onHoverLeave?: () => void;
   onWheelScore?: (rowFencer: Fencer, colFencer: Fencer, shiftKey: boolean, delta: number) => void;
+  simplifiedInputMode?: boolean;
+  inlineEditKey?: string | null;
+  inlineScoreLeft?: string;
+  inlineScoreRight?: string;
+  onInlineScoreChange?: (left: string, right: string) => void;
+  onInlineSubmit?: () => void;
+  onInlineCancel?: () => void;
 }
 
 interface ScoreCellProps {
@@ -33,13 +40,26 @@ interface ScoreCellProps {
   onHoverIn?: () => void;
   onHoverOut?: () => void;
   onWheelScore?: (shiftKey: boolean, delta: number) => void;
+  isInlineEditing?: boolean;
+  inlineScoreLeft?: string;
+  inlineScoreRight?: string;
+  onInlineScoreChange?: (left: string, right: string) => void;
+  onInlineSubmit?: () => void;
+  onInlineCancel?: () => void;
 }
 
 // Cellule mémoïsée : seules les cellules dont le score/flash change re-rendent
 // (la grille est O(n²), un re-rendu global coûte cher sur les grandes poules).
 const ScoreCell = React.memo<ScoreCellProps>(
   ({ rowFencer, colFencer, abandoned, score, isFlashing, isLocked, onCellClick, onMatchReset,
-     isHighlighted, quickMouseScoring, onHoverIn, onHoverOut, onWheelScore }) => {
+     isHighlighted, quickMouseScoring, onHoverIn, onHoverOut, onWheelScore,
+     isInlineEditing, inlineScoreLeft, inlineScoreRight, onInlineScoreChange, onInlineSubmit, onInlineCancel }) => {
+    const leftInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+      if (isInlineEditing) leftInputRef.current?.focus();
+    }, [isInlineEditing]);
+
     if (abandoned) {
       return (
         <div
@@ -65,6 +85,57 @@ const ScoreCell = React.memo<ScoreCellProps>(
     const highlightStyle = isHighlighted
       ? { outline: '2px solid rgba(59,130,246,0.55)', outlineOffset: '-2px', background: 'rgba(59,130,246,0.10)' }
       : {};
+
+    const inlineInputStyle: React.CSSProperties = {
+      width: '26px',
+      textAlign: 'center',
+      fontSize: '0.7rem',
+      padding: '1px 2px',
+      border: '1px solid #3b82f6',
+      borderRadius: '2px',
+      outline: 'none',
+      background: 'white',
+      color: '#111',
+      MozAppearance: 'textfield',
+    };
+
+    if (isInlineEditing) {
+      return (
+        <div
+          className={`pool-cell pool-cell-editable pool-cell-inline-editing`}
+          style={{ cursor: 'default', position: 'relative', padding: '2px', background: 'rgba(59,130,246,0.08)', outline: '2px solid #3b82f6', outlineOffset: '-2px' }}
+          onClick={e => e.stopPropagation()}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+            <input
+              ref={leftInputRef}
+              type="number"
+              min={0}
+              value={inlineScoreLeft ?? ''}
+              onChange={e => onInlineScoreChange?.(e.target.value, inlineScoreRight ?? '')}
+              onKeyDown={e => {
+                if (e.key === 'Enter') { e.preventDefault(); onInlineSubmit?.(); }
+                if (e.key === 'Escape') { e.preventDefault(); onInlineCancel?.(); }
+              }}
+              style={inlineInputStyle}
+            />
+            <span style={{ fontSize: '0.6rem', color: '#6b7280' }}>:</span>
+            <input
+              type="number"
+              min={0}
+              value={inlineScoreRight ?? ''}
+              onChange={e => onInlineScoreChange?.(inlineScoreLeft ?? '', e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') { e.preventDefault(); onInlineSubmit?.(); }
+                if (e.key === 'Escape') { e.preventDefault(); onInlineCancel?.(); }
+                if (e.key === 'Tab') { e.preventDefault(); onInlineSubmit?.(); }
+              }}
+              style={inlineInputStyle}
+            />
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div
@@ -151,6 +222,13 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
   onHoverCell,
   onHoverLeave,
   onWheelScore,
+  simplifiedInputMode = false,
+  inlineEditKey,
+  inlineScoreLeft,
+  inlineScoreRight,
+  onInlineScoreChange,
+  onInlineSubmit,
+  onInlineCancel,
 }) => {
   const fencers = pool.fencers;
   const [flashCell, setFlashCell] = useState<string | null>(null);
@@ -484,6 +562,12 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
                   onHoverIn={onHoverCell ? () => onHoverCell(rowFencer, colFencer) : undefined}
                   onHoverOut={onHoverLeave}
                   onWheelScore={onWheelScore ? (shiftKey, delta) => onWheelScore(rowFencer, colFencer, shiftKey, delta) : undefined}
+                  isInlineEditing={simplifiedInputMode && inlineEditKey === cellKey}
+                  inlineScoreLeft={inlineScoreLeft}
+                  inlineScoreRight={inlineScoreRight}
+                  onInlineScoreChange={onInlineScoreChange}
+                  onInlineSubmit={onInlineSubmit}
+                  onInlineCancel={onInlineCancel}
                 />
               );
             })}
