@@ -268,6 +268,7 @@ export class RemoteScoreServer {
       'dashboard.html',
       'index.html',
       'pool.html',
+      'pool-ocr.html',
       'kiosk.html',
       'lobby.html',
       'login.html',
@@ -933,6 +934,14 @@ export class RemoteScoreServer {
       this.sendHtmlFromMemory('public.html', res);
     });
 
+    // Page saisie OCR feuille poule (pas d'authentification par arène nécessaire)
+    this.app.get('/poule-ocr', (req, res) => {
+      if (!this.hasAnyValidToken(req.headers.cookie)) {
+        return res.redirect(302, `/login?return=${encodeURIComponent('/poule-ocr')}`);
+      }
+      this.sendHtmlFromMemory('pool-ocr.html', res);
+    });
+
     // Vue de saisie de poule par arène
     this.app.get('/arene:arenaId/poule', (req, res) => {
       const arenaId = req.params.arenaId;
@@ -1396,6 +1405,83 @@ export class RemoteScoreServer {
       } catch (err) {
         console.error('[RemoteScoreServer] Erreur signature:', err);
         res.status(500).json({ error: 'Erreur enregistrement signature' });
+      }
+    });
+
+    // API : données d'une poule par son ID (pour OCR — sans arène)
+    this.app.get('/api/pools/:poolId/data', (req, res) => {
+      if (!this.hasAnyValidToken(req.headers.cookie)) {
+        return res.status(401).json({ error: 'Non authentifié' });
+      }
+      const { poolId } = req.params;
+      try {
+        const fencers = this.poolFencersCache.get(poolId) ?? this.db.getPoolFencers(poolId);
+        const matches = (() => {
+          const inMemory = this.sessionMatches
+            .filter((m: any) => (m.poolId || m.pool?.id) === poolId)
+            .sort((a: any, b: any) => (a.number || 0) - (b.number || 0));
+          if (inMemory.length > 0) {
+            return inMemory.map((m: any) => {
+              const upd = this.sessionMatchScores.get(m.id);
+              return upd ? { ...m, ...upd } : m;
+            });
+          }
+          return this.db.getMatchesByPool(poolId);
+        })();
+        const poolName = (() => {
+          if (!this.session) return 'Poule';
+          const all = this.db.getCompetitionPools(this.session.competitionId);
+          return all.find((p: any) => p.id === poolId)?.name ?? 'Poule';
+        })();
+        res.json({ poolId, poolName, fencers, matches });
+      } catch (err) {
+        console.error('[RemoteScoreServer] Erreur /api/pools/:poolId/data:', err);
+        res.status(500).json({ error: 'Erreur interne' });
+      }
+    });
+
+    // API : reconnaissance OCR d'une image de feuille de poule
+    this.app.post('/api/ocr/pool-sheet', async (req, res) => {
+      if (!this.hasAnyValidToken(req.headers.cookie)) {
+        return res.status(401).json({ error: 'Non authentifié' });
+      }
+      const { cells, n } = req.body as {
+        cells: Array<{ row: number; col: number; data: string }>;
+        n: number;
+      };
+      if (!Array.isArray(cells) || typeof n !== 'number' || n < 2 || n > 12) {
+        return res.status(400).json({ error: 'Paramètres invalides' });
+      }
+      if (cells.length > 120) {
+        return res.status(400).json({ error: 'Trop de cellules (max 120)' });
+      }
+
+      try {
+        const Tesseract = await import('tesseract.js');
+        const worker = await Tesseract.createWorker('eng', 1, {
+          cachePath: path.join(os.tmpdir(), 'bp-tessdata'),
+          logger: () => {},
+        });
+        await worker.setParameters({
+          tessedit_char_whitelist: 'VD0123456789',
+          tessedit_pageseg_mode: '13' as any, // PSM.RAW_LINE
+        });
+
+        const results: Array<{ row: number; col: number; text: string; confidence: number }> = [];
+        for (const cell of cells) {
+          if (!cell.data || !cell.data.startsWith('data:image/')) continue;
+          const base64 = cell.data.replace(/^data:image\/\w+;base64,/, '');
+          const buf = Buffer.from(base64, 'base64');
+          const { data } = await worker.recognize(buf);
+          const raw = data.text.trim().replace(/\s+/g, '').toUpperCase();
+          results.push({ row: cell.row, col: cell.col, text: raw, confidence: Math.round(data.confidence) });
+        }
+
+        await worker.terminate();
+        res.json({ cells: results });
+      } catch (err: any) {
+        console.error('[RemoteScoreServer] Erreur OCR:', err);
+        res.status(500).json({ error: `Erreur OCR: ${err?.message ?? 'inconnue'}` });
       }
     });
 
