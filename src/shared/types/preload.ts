@@ -774,6 +774,7 @@ export interface MenuAPI {
 
 export interface UtilityAPI {
   print: () => Promise<void>;
+  setWindowSize: (width: number, height: number) => Promise<void>;
   openExternal: (url: string) => Promise<void>;
   getVersionInfo: () => Promise<VersionInfo>;
   removeAllListeners: (channel: string) => void;

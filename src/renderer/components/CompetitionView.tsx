@@ -39,6 +39,7 @@ import { RefereeManagerComponent } from './RefereeManager';
 import CompetitionHeader from './competition/CompetitionHeader';
 import CompetitionNav from './competition/CompetitionNav';
 import GlobalPoolColumnsMenu from './pool/GlobalPoolColumnsMenu';
+import WindowSizePresets from './pool/WindowSizePresets';
 
 const PoolView = React.lazy(() => import('./PoolView'));
 const TableauView = React.lazy(() => import('./TableauView'));
@@ -1280,6 +1281,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                   }}
                 >
                   <GlobalPoolColumnsMenu isLaserSabre={isLaserSabre} />
+                  <WindowSizePresets />
                   {pools.length > 1 && (
                     <button className="btn btn-success" onClick={handleExportAllPoolsPDF}>
                       📄 Exporter toutes les poules en PDF
