@@ -13,7 +13,7 @@ const WEAPON_LABELS: Record<string, string> = {
   [Weapon.EPEE]: 'Épée',
   [Weapon.FOIL]: 'Fleuret',
   [Weapon.SABRE]: 'Sabre',
-  [Weapon.LASER]: 'Laser Sabre',
+  [Weapon.LASER]: 'Sabre Laser',
 };
 
 const ALL_ZONES: TargetZone[] = [TargetZone.ZONE_A, TargetZone.ZONE_B, TargetZone.ZONE_C];
