@@ -494,16 +494,19 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   };
 
   const openNextCell = (currentKey: string, skipKeys: Set<string>, buffer: Record<string, number>) => {
-    const cells = getOrderedCells().filter(c => !skipKeys.has(c.key));
+    const cells = getOrderedCells();
     const currentIndex = cells.findIndex(c => c.key === currentKey);
-    const next = currentIndex === -1 ? cells[0] : cells[currentIndex + 1];
-    if (!next) {
-      setInlineEditCell(null);
-      setInlineSingleScore('');
-      return;
+    const startFrom = currentIndex === -1 ? 0 : currentIndex + 1;
+    for (let i = startFrom; i < cells.length; i++) {
+      if (!skipKeys.has(cells[i].key)) {
+        const next = cells[i];
+        setInlineEditCell({ key: next.key, rowId: next.rowFencer.id, colId: next.colFencer.id, matchIndex: next.matchIndex, inverted: next.inverted });
+        setInlineSingleScore(buffer[next.key] !== undefined ? String(buffer[next.key]) : '');
+        return;
+      }
     }
-    setInlineEditCell({ key: next.key, rowId: next.rowFencer.id, colId: next.colFencer.id, matchIndex: next.matchIndex, inverted: next.inverted });
-    setInlineSingleScore(buffer[next.key] !== undefined ? String(buffer[next.key]) : '');
+    setInlineEditCell(null);
+    setInlineSingleScore('');
   };
 
   const handleCellClick = (rowFencer: Fencer, colFencer: Fencer) => {
