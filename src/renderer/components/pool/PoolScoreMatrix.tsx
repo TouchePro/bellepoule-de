@@ -19,9 +19,9 @@ interface PoolScoreMatrixProps {
   onWheelScore?: (rowFencer: Fencer, colFencer: Fencer, shiftKey: boolean, delta: number) => void;
   simplifiedInputMode?: boolean;
   inlineEditKey?: string | null;
-  inlineScoreLeft?: string;
-  inlineScoreRight?: string;
-  onInlineScoreChange?: (left: string, right: string) => void;
+  inlineSingleScore?: string;
+  cellScoreBuffer?: Record<string, number>;
+  onInlineSingleScoreChange?: (value: string) => void;
   onInlineSubmit?: () => void;
   onInlineCancel?: () => void;
 }
@@ -41,9 +41,9 @@ interface ScoreCellProps {
   onHoverOut?: () => void;
   onWheelScore?: (shiftKey: boolean, delta: number) => void;
   isInlineEditing?: boolean;
-  inlineScoreLeft?: string;
-  inlineScoreRight?: string;
-  onInlineScoreChange?: (left: string, right: string) => void;
+  inlineSingleScore?: string;
+  bufferedScore?: number;
+  onInlineSingleScoreChange?: (value: string) => void;
   onInlineSubmit?: () => void;
   onInlineCancel?: () => void;
 }
@@ -53,11 +53,14 @@ interface ScoreCellProps {
 const ScoreCell = React.memo<ScoreCellProps>(
   ({ rowFencer, colFencer, abandoned, score, isFlashing, isLocked, onCellClick, onMatchReset,
      isHighlighted, quickMouseScoring, onHoverIn, onHoverOut, onWheelScore,
-     isInlineEditing, inlineScoreLeft, inlineScoreRight, onInlineScoreChange, onInlineSubmit, onInlineCancel }) => {
-    const leftInputRef = useRef<HTMLInputElement>(null);
+     isInlineEditing, inlineSingleScore, bufferedScore, onInlineSingleScoreChange, onInlineSubmit, onInlineCancel }) => {
+    const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-      if (isInlineEditing) leftInputRef.current?.focus();
+      if (isInlineEditing) {
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      }
     }, [isInlineEditing]);
 
     if (abandoned) {
@@ -106,33 +109,18 @@ const ScoreCell = React.memo<ScoreCellProps>(
           style={{ cursor: 'default', position: 'relative', padding: '2px', background: 'rgba(59,130,246,0.08)', outline: '2px solid #3b82f6', outlineOffset: '-2px' }}
           onClick={e => e.stopPropagation()}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-            <input
-              ref={leftInputRef}
-              type="number"
-              min={0}
-              value={inlineScoreLeft ?? ''}
-              onChange={e => onInlineScoreChange?.(e.target.value, inlineScoreRight ?? '')}
-              onKeyDown={e => {
-                if (e.key === 'Enter') { e.preventDefault(); onInlineSubmit?.(); }
-                if (e.key === 'Escape') { e.preventDefault(); onInlineCancel?.(); }
-              }}
-              style={inlineInputStyle}
-            />
-            <span style={{ fontSize: '0.6rem', color: '#6b7280' }}>:</span>
-            <input
-              type="number"
-              min={0}
-              value={inlineScoreRight ?? ''}
-              onChange={e => onInlineScoreChange?.(inlineScoreLeft ?? '', e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter') { e.preventDefault(); onInlineSubmit?.(); }
-                if (e.key === 'Escape') { e.preventDefault(); onInlineCancel?.(); }
-                if (e.key === 'Tab') { e.preventDefault(); onInlineSubmit?.(); }
-              }}
-              style={inlineInputStyle}
-            />
-          </div>
+          <input
+            ref={inputRef}
+            type="number"
+            min={0}
+            value={inlineSingleScore ?? ''}
+            onChange={e => onInlineSingleScoreChange?.(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); onInlineSubmit?.(); }
+              if (e.key === 'Escape') { e.preventDefault(); onInlineCancel?.(); }
+            }}
+            style={{ ...inlineInputStyle, width: '36px', fontSize: '0.85rem' }}
+          />
         </div>
       );
     }
@@ -199,6 +187,8 @@ const ScoreCell = React.memo<ScoreCellProps>(
               </button>
             )}
           </>
+        ) : bufferedScore !== undefined ? (
+          <span style={{ color: '#3b82f6', fontStyle: 'italic', fontSize: '0.85rem' }}>{bufferedScore}</span>
         ) : (
           <span style={{ color: '#9CA3AF' }}>-</span>
         )}
@@ -224,9 +214,9 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
   onWheelScore,
   simplifiedInputMode = false,
   inlineEditKey,
-  inlineScoreLeft,
-  inlineScoreRight,
-  onInlineScoreChange,
+  inlineSingleScore,
+  cellScoreBuffer,
+  onInlineSingleScoreChange,
   onInlineSubmit,
   onInlineCancel,
 }) => {
@@ -563,9 +553,9 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
                   onHoverOut={onHoverLeave}
                   onWheelScore={onWheelScore ? (shiftKey, delta) => onWheelScore(rowFencer, colFencer, shiftKey, delta) : undefined}
                   isInlineEditing={simplifiedInputMode && inlineEditKey === cellKey}
-                  inlineScoreLeft={inlineScoreLeft}
-                  inlineScoreRight={inlineScoreRight}
-                  onInlineScoreChange={onInlineScoreChange}
+                  inlineSingleScore={inlineSingleScore}
+                  bufferedScore={cellScoreBuffer?.[cellKey]}
+                  onInlineSingleScoreChange={onInlineSingleScoreChange}
                   onInlineSubmit={onInlineSubmit}
                   onInlineCancel={onInlineCancel}
                 />
