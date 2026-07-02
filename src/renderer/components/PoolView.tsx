@@ -22,8 +22,8 @@ import Confetti from './Confetti';
 import AddFencerToPoolModal from './AddFencerToPoolModal';
 import { MatchAuditLog } from './MatchAuditLog';
 import {
-  TOOLBAR_BTN,
   ICON_BTN,
+  ICON_ONLY_BTN,
   SPECIAL_BTN,
   ROW_BETWEEN,
   MATCH_LABEL,
@@ -1387,24 +1387,27 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           </button>
           <button
             onClick={handleAutoFillScores}
-            style={{ ...TOOLBAR_BTN, background: '#f59e0b', color: 'white' }}
+            style={{ ...ICON_ONLY_BTN, background: '#f59e0b', color: 'white' }}
             title="Remplir automatiquement les scores (test)"
+            aria-label="Remplir automatiquement les scores (test)"
           >
-            🎲 Auto
+            🎲
           </button>
           <button
             onClick={handlePrintPool}
-            style={{ ...TOOLBAR_BTN, background: '#3b82f6', color: 'white' }}
+            style={{ ...ICON_ONLY_BTN, background: '#3b82f6', color: 'white' }}
             title="Imprimer la feuille de poule (Ctrl+P)"
+            aria-label="Imprimer la feuille de poule"
           >
-            🖨️ Imprimer
+            🖨️
           </button>
           <button
             onClick={handleExportPDF}
-            style={{ ...TOOLBAR_BTN, background: '#10b981', color: 'white' }}
-            title="Exporter la pôle en PDF"
+            style={{ ...ICON_ONLY_BTN, background: '#10b981', color: 'white' }}
+            title="Exporter la poule en PDF"
+            aria-label="Exporter la poule en PDF"
           >
-            📄 PDF
+            📄
           </button>
           {pool.isComplete && isRemoteActive && remoteServerUrl && (
             <button
@@ -1416,30 +1419,33 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                   window.open(url, '_blank');
                 }
               }}
-              style={{ ...TOOLBAR_BTN, background: '#6366f1', color: 'white' }}
+              style={{ ...ICON_ONLY_BTN, background: '#6366f1', color: 'white' }}
               title={`Page signatures — arène ${defaultArena}`}
+              aria-label="Page signatures"
             >
-              ✍️ Signature
+              ✍️
             </button>
           )}
           {competitionId && (
             <button
               onClick={() => setShowAddFencerModal(true)}
-              style={{ ...TOOLBAR_BTN, background: '#e5e7eb', color: '#374151' }}
+              style={{ ...ICON_ONLY_BTN, background: '#e5e7eb', color: '#374151' }}
               title="Ajouter un tireur à cette poule"
+              aria-label="Ajouter un tireur à cette poule"
             >
-              ➕ Tireur
+              ➕
             </button>
           )}
           <div style={RELATIVE} ref={columnMenuRef}>
             <button
               onClick={() => setShowColumnMenu(!showColumnMenu)}
               style={{
-                ...TOOLBAR_BTN,
+                ...ICON_ONLY_BTN,
                 background: showColumnMenu ? '#6b7280' : '#e5e7eb',
                 color: showColumnMenu ? 'white' : '#374151',
               }}
               title="Afficher/masquer les colonnes"
+              aria-label="Afficher/masquer les colonnes"
             >
               ⚙️
             </button>
@@ -1471,24 +1477,28 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
             <button
               onClick={() => setViewMode('grid')}
               style={{
-                ...TOOLBAR_BTN,
+                ...ICON_ONLY_BTN,
                 background: viewMode === 'grid' ? '#3b82f6' : '#e5e7eb',
                 color: viewMode === 'grid' ? 'white' : '#374151',
                 borderRadius: '4px 0 0 4px',
               }}
+              title="Vue tableau"
+              aria-label="Vue tableau"
             >
-              📊 Tableau
+              📊
             </button>
             <button
               onClick={() => setViewMode('matches')}
               style={{
-                ...TOOLBAR_BTN,
+                ...ICON_ONLY_BTN,
                 background: viewMode === 'matches' ? '#3b82f6' : '#e5e7eb',
                 color: viewMode === 'matches' ? 'white' : '#374151',
                 borderRadius: '0 4px 4px 0',
               }}
+              title="Vue matches"
+              aria-label="Vue matches"
             >
-              ⚔️ Matches
+              ⚔️
             </button>
           </div>
         </div>
