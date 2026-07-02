@@ -1465,73 +1465,82 @@ ipcMain.handle('file:printHtml', async (_, html: string) => {
   });
 });
 
+// Rendu HTML → buffer PDF via une fenêtre Electron cachée (partagé par export et aperçu)
+function renderHtmlToPdfBuffer(html: string): Promise<Buffer> {
+  const tmpFile = path.join(os.tmpdir(), `bp-pdf-${Date.now()}.html`);
+  return fs.promises.writeFile(tmpFile, html, 'utf-8').then(
+    () =>
+      new Promise<Buffer>((resolve, reject) => {
+        const pdfWin = new BrowserWindow({
+          show: false,
+          width: 1200,
+          height: 1600,
+          webPreferences: { contextIsolation: true, nodeIntegration: false, javascript: false },
+        });
+        pdfWin.setMenu(null);
+        pdfWin.loadFile(tmpFile);
+
+        pdfWin.webContents.once('did-finish-load', () => {
+          setTimeout(() => {
+            pdfWin.webContents
+              .printToPDF({
+                printBackground: true,
+                landscape: false,
+                pageSize: 'A4',
+                preferCSSPageSize: true,
+                margins: { marginType: 'none' },
+              })
+              .then((data: Buffer) => {
+                pdfWin.destroy();
+                fs.promises.unlink(tmpFile).catch(() => {});
+                resolve(data);
+              })
+              .catch((err: Error) => {
+                pdfWin.destroy();
+                fs.promises.unlink(tmpFile).catch(() => {});
+                reject(err);
+              });
+          }, 800);
+        });
+
+        pdfWin.webContents.once('did-fail-load', () => {
+          pdfWin.destroy();
+          fs.promises.unlink(tmpFile).catch(() => {});
+          reject(new Error('Chargement HTML échoué'));
+        });
+      }),
+    e => Promise.reject(new Error(`Impossible de créer le fichier temporaire: ${e}`))
+  );
+}
+
 // PDF generation via hidden BrowserWindow (propre, sans menus d'application)
 ipcMain.handle('file:printHtmlToPDF', async (_, html: string, outputPath: string) => {
-  const tmpFile = path.join(os.tmpdir(), `bp-pdf-${Date.now()}.html`);
   try {
-    await fs.promises.writeFile(tmpFile, html, 'utf-8');
+    const data = await renderHtmlToPdfBuffer(html);
+    await fs.promises.writeFile(outputPath, data);
+    return { success: true, path: outputPath };
   } catch (e) {
-    return { success: false, error: `Impossible de créer le fichier temporaire: ${e}` };
+    return { success: false, error: e instanceof Error ? e.message : String(e) };
   }
+});
 
-  return new Promise<{ success: boolean; path?: string; error?: string }>(resolve => {
-    const pdfWin = new BrowserWindow({
-      show: false,
-      width: 1200,
-      height: 1600,
-      webPreferences: {
-        contextIsolation: true,
-        nodeIntegration: false,
-        javascript: false,
-      },
-    });
-    pdfWin.setMenu(null);
-
-    pdfWin.loadFile(tmpFile);
-
-    pdfWin.webContents.once('did-finish-load', () => {
-      setTimeout(() => {
-      pdfWin.webContents
-        .printToPDF({
-          printBackground: true,
-          landscape: false,
-          pageSize: 'A4',
-          preferCSSPageSize: true,
-          margins: { marginType: 'none' },
-        })
-        .then(async (data: Buffer) => {
-          try {
-            await fs.promises.writeFile(outputPath, data);
-            resolve({ success: true, path: outputPath });
-          } catch (writeErr) {
-            resolve({ success: false, error: `Impossible d'écrire le PDF: ${writeErr}` });
-          } finally {
-            fs.promises.unlink(tmpFile).catch(() => {});
-            pdfWin.destroy();
-          }
-        })
-        .catch((err: Error) => {
-          try {
-            fs.unlinkSync(tmpFile);
-          } catch {
-            /* ignore */
-          }
-          pdfWin.destroy();
-          resolve({ success: false, error: err.message });
-        });
-      }, 800);
-    });
-
-    pdfWin.webContents.once('did-fail-load', () => {
-      try {
-        fs.unlinkSync(tmpFile);
-      } catch {
-        /* ignore */
-      }
-      pdfWin.destroy();
-      resolve({ success: false, error: 'Chargement HTML échoué' });
-    });
-  });
+// Aperçu avant impression : génère le PDF et l'ouvre dans le lecteur PDF par défaut de l'OS.
+// Contourne la limitation de Windows 11 où la boîte de dialogue d'impression native
+// n'affiche pas d'aperçu pour les applications Win32/Electron (Chromium n'expose pas
+// sa propre page d'aperçu via webContents.print()).
+ipcMain.handle('file:previewHtmlAsPDF', async (_, html: string) => {
+  const tmpPdfFile = path.join(os.tmpdir(), `bp-preview-${Date.now()}.pdf`);
+  try {
+    const data = await renderHtmlToPdfBuffer(html);
+    await fs.promises.writeFile(tmpPdfFile, data);
+    const openError = await shell.openPath(tmpPdfFile);
+    if (openError) {
+      return { success: false, error: openError };
+    }
+    return { success: true, path: tmpPdfFile };
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : String(e) };
+  }
 });
 
 // Shell handlers

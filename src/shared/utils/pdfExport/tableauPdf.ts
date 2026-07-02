@@ -392,3 +392,28 @@ export async function printTableauHTML(
     throw new Error(res?.error ?? "Échec de l'impression");
   }
 }
+
+// Aperçu avant impression : génère un PDF et l'ouvre dans le lecteur par défaut de l'OS
+// (contourne l'absence d'aperçu dans la boîte de dialogue d'impression native de Windows 11)
+export async function previewTableauHTML(
+  matches: TableauMatchForPDF[],
+  matchesPerPage: number,
+  title: string = 'Tableau Élimination Directe',
+  logoBase64?: string,
+  template?: PdfTemplate,
+  signatures?: Record<string, { A?: string; B?: string }>
+): Promise<void> {
+  const real = realMatches(matches);
+  if (real.length === 0) {
+    throw new Error('Aucun match à imprimer (tous sont des exempts ou sans tireurs assignés)');
+  }
+  const html = generateTableauHTML(matches, matchesPerPage, title, logoBase64, template, false, signatures);
+  const api = (window as any).electronAPI;
+  if (!api?.file?.previewHtmlAsPDF) {
+    throw new Error('API Electron non disponible');
+  }
+  const res = await api.file.previewHtmlAsPDF(html);
+  if (!res?.success) {
+    throw new Error(res?.error ?? "Échec de la génération de l'aperçu");
+  }
+}

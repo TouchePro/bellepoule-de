@@ -413,3 +413,17 @@ export async function printMultiplePoolsHTML(
     await printPoolHTML(pool, { title: `${title} - Poule ${pool.number}`, logoBase64, competitionName }, template);
   }
 }
+
+// ─── Aperçu avant impression (ouvre le PDF dans le lecteur par défaut de l'OS) ─
+
+export async function previewPoolHTML(pool: Pool, options: PoolExportOptions = {}, template?: PdfTemplate): Promise<void> {
+  const html = await buildPoolExportHTML(pool, options, template);
+  const api = (window as any).electronAPI;
+  if (!api?.file?.previewHtmlAsPDF) {
+    throw new Error('API Electron non disponible');
+  }
+  const res = await api.file.previewHtmlAsPDF(html);
+  if (!res?.success) {
+    throw new Error(res?.error ?? "Échec de la génération de l'aperçu");
+  }
+}

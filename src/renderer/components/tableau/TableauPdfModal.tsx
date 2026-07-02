@@ -10,7 +10,7 @@ import { TableauMatch } from './tableauTypes';
 import { getRoundName } from './tableauCalculations';
 
 interface TableauPdfModalProps {
-  pdfMode: 'print' | 'pdf';
+  pdfMode: 'print' | 'pdf' | 'preview';
   matches: TableauMatch[];
   pdfMatchesPerPage: number;
   setPdfMatchesPerPage: (n: number) => void;
@@ -46,7 +46,9 @@ const TableauPdfModal: React.FC<TableauPdfModalProps> = ({
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
         <div className="modal-header">
-          <h3 className="modal-title">{pdfMode === 'print' ? 'Imprimer' : 'Export PDF'} – Feuilles de match</h3>
+          <h3 className="modal-title">
+            {pdfMode === 'print' ? 'Imprimer' : pdfMode === 'preview' ? 'Aperçu avant impression' : 'Export PDF'} – Feuilles de match
+          </h3>
           <button className="btn-close" onClick={onClose}>
             &times;
           </button>
@@ -122,7 +124,7 @@ const TableauPdfModal: React.FC<TableauPdfModalProps> = ({
             Annuler
           </button>
           <button className="btn btn-primary" onClick={onExport} disabled={selectedRounds.size === 0}>
-            {pdfMode === 'print' ? '🖨️ Imprimer' : '📄 Générer PDF'}
+            {pdfMode === 'print' ? '🖨️ Imprimer' : pdfMode === 'preview' ? '👁️ Aperçu' : '📄 Générer PDF'}
           </button>
         </div>
       </div>
