@@ -200,7 +200,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     syncFencersToPool,
   } = usePoolManagement({ isLaserSabre, poolMaxScore, showToast, competitionId: competition?.id });
 
-  const { exportFencersList, exportRanking, exportResults, exportPoolsPDF } = useExport({
+  const { exportFencersList, exportRanking, exportResults, exportPoolsPDF, printPoolsPDF } = useExport({
     competition,
     showToast,
   });
@@ -670,6 +670,24 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const handleExportAllPoolsPDF = () => {
     exportPoolsPDF(pools, currentPoolRound);
   };
+
+  const handlePrintAllPoolsPDF = () => {
+    printPoolsPDF(pools, currentPoolRound);
+  };
+
+  // Ctrl+P / Cmd+P → imprimer les feuilles de poule (le tableau gère son propre raccourci)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
+        if (currentPhase === 'pools' && pools.length > 0) {
+          e.preventDefault();
+          handlePrintAllPoolsPDF();
+        }
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [currentPhase, pools, currentPoolRound]);
 
   const handleImportFencers = async (importedFencers: Partial<Fencer>[]) => {
     await bulkAddFencers(importedFencers as any);
@@ -1282,6 +1300,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                 >
                   <GlobalPoolColumnsMenu isLaserSabre={isLaserSabre} />
                   <WindowSizePresets />
+                  <button
+                    className="btn btn-primary"
+                    onClick={handlePrintAllPoolsPDF}
+                    title="Imprimer les feuilles de poule (Ctrl+P)"
+                  >
+                    🖨️ Imprimer les feuilles de poule
+                  </button>
                   {pools.length > 1 && (
                     <button className="btn btn-success" onClick={handleExportAllPoolsPDF}>
                       📄 Exporter toutes les poules en PDF

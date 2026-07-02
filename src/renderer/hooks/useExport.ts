@@ -234,6 +234,30 @@ export const useExport = ({ competition, showToast }: UseExportProps) => {
     [competition.title, showToast, poolTemplate]
   );
 
+  // Impression PDF de toutes les poules — dialogue d'impression natif
+  const printPoolsPDF = useCallback(
+    async (pools: Pool[], currentPoolRound: number) => {
+      try {
+        const { printMultiplePoolsHTML } = await import('../../shared/utils/pdfExport');
+        const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
+        await printMultiplePoolsHTML(
+          pools,
+          `Toutes les Poules - ${competition.title} - Tour ${currentPoolRound}`,
+          logo,
+          poolTemplate,
+          competition.title
+        );
+      } catch (error) {
+        logger.error(LogCategory.UI, "Erreur lors de l'impression des poules", error as Error);
+        showToast(
+          `Erreur lors de l'impression: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
+          'error'
+        );
+      }
+    },
+    [competition.title, showToast, poolTemplate]
+  );
+
   // Export HTML des résultats
   const exportResultsHTMLFormat = useCallback(
     (poolRanking: PoolRanking[], finalResults: FinalResult[]) => {
@@ -303,6 +327,7 @@ export const useExport = ({ competition, showToast }: UseExportProps) => {
     exportRanking,
     exportResults,
     exportPoolsPDF,
+    printPoolsPDF,
     downloadFile,
     exportResultsHTML: exportResultsHTMLFormat,
     exportRankingExcelCSV,

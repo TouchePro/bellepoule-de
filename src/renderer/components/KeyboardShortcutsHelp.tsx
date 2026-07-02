@@ -30,6 +30,7 @@ const SHORTCUTS: Shortcut[] = [
   { key: 'Ctrl + Z', descriptionKey: 'shortcuts.undo', category: 'actions' },
   { key: 'Ctrl + Y', descriptionKey: 'shortcuts.redo', category: 'actions' },
   { key: 'Ctrl + N', descriptionKey: 'shortcuts.new_competition', category: 'actions' },
+  { key: 'Ctrl + P', descriptionKey: 'shortcuts.print_sheets', category: 'actions' },
 
   // Competition
   { key: 'F5', descriptionKey: 'shortcuts.refresh_data', category: 'competition' },

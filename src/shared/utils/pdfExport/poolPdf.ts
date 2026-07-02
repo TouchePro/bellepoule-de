@@ -351,7 +351,7 @@ ${body}
 
 // ─── Export Poule ─────────────────────────────────────────────────────────────
 
-export async function exportPoolToPDF(pool: Pool, options: PoolExportOptions = {}, template?: PdfTemplate): Promise<void> {
+async function buildPoolExportHTML(pool: Pool, options: PoolExportOptions, template?: PdfTemplate): Promise<string> {
   if (!pool.fencers || pool.fencers.length === 0) throw new Error('La poule ne contient aucun tireur');
   if (!pool.matches || pool.matches.length === 0) throw new Error('La poule ne contient aucun match');
 
@@ -366,7 +366,11 @@ export async function exportPoolToPDF(pool: Pool, options: PoolExportOptions = {
     // QR silencieusement omis si qrcode indisponible
   }
 
-  const html = generatePoolHTML(pool, { ...options, title, qrDataUrl }, template);
+  return generatePoolHTML(pool, { ...options, title, qrDataUrl }, template);
+}
+
+export async function exportPoolToPDF(pool: Pool, options: PoolExportOptions = {}, template?: PdfTemplate): Promise<void> {
+  const html = await buildPoolExportHTML(pool, options, template);
   await savePDF(html, `poule-${pool.number}.pdf`);
 }
 
@@ -380,5 +384,32 @@ export async function exportMultiplePoolsToPDF(
   if (pools.length === 0) throw new Error('Aucune poule à exporter');
   for (const pool of pools) {
     await exportPoolToPDF(pool, { title: `${title} - Poule ${pool.number}`, logoBase64, competitionName }, template);
+  }
+}
+
+// ─── Impression Poule (dialogue d'impression natif) ───────────────────────────
+
+export async function printPoolHTML(pool: Pool, options: PoolExportOptions = {}, template?: PdfTemplate): Promise<void> {
+  const html = await buildPoolExportHTML(pool, options, template);
+  const api = (window as any).electronAPI;
+  if (!api?.file?.printHtml) {
+    throw new Error('API Electron non disponible');
+  }
+  const res = await api.file.printHtml(html);
+  if (!res?.success) {
+    throw new Error(res?.error ?? "Échec de l'impression");
+  }
+}
+
+export async function printMultiplePoolsHTML(
+  pools: Pool[],
+  title: string = 'Impression des Poules',
+  logoBase64?: string,
+  template?: PdfTemplate,
+  competitionName?: string
+): Promise<void> {
+  if (pools.length === 0) throw new Error('Aucune poule à imprimer');
+  for (const pool of pools) {
+    await printPoolHTML(pool, { title: `${title} - Poule ${pool.number}`, logoBase64, competitionName }, template);
   }
 }
