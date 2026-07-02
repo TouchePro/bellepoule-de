@@ -354,7 +354,8 @@
     "refresh_data": "Actualitzar dades",
     "timer": "Iniciar/Pausar cronòmetre",
     "nav_list": "Navegar a la llista",
-    "validate": "Validar / Obrir"
+    "validate": "Validar / Obrir",
+    "print_sheets": "Imprimir els fulls de poule / de combat"
   },
   "formula": {
     "builder_title": "Constructor de fórmules",

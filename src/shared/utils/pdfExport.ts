@@ -9,7 +9,13 @@
 
 // ─── Poules ───────────────────────────────────────────────────────────────────
 export type { PoolExportOptions } from './pdfExport/poolPdf';
-export { generatePoolHTML, exportPoolToPDF, exportMultiplePoolsToPDF } from './pdfExport/poolPdf';
+export {
+  generatePoolHTML,
+  exportPoolToPDF,
+  exportMultiplePoolsToPDF,
+  printPoolHTML,
+  printMultiplePoolsHTML,
+} from './pdfExport/poolPdf';
 
 // ─── Tableau Élimination Directe ─────────────────────────────────────────────
 export type { TableauMatchForPDF } from './pdfExport/tableauPdf';

@@ -795,6 +795,25 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     }
   };
 
+  const handlePrintClick = useCallback(() => {
+    setPdfMode('print');
+    const rounds = [...new Set(matches.filter(m => m.fencerA && m.fencerB && !m.isBye).map(m => m.round))].sort((a, b) => b - a);
+    setSelectedRounds(new Set(rounds));
+    setShowPdfModal(true);
+  }, [matches]);
+
+  // Ctrl+P / Cmd+P → imprimer les feuilles de match du tableau
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        handlePrintClick();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [handlePrintClick]);
+
   const handleSpecialStatus = (
     status: 'abandon' | 'forfait' | 'exclusion',
     fencerId: string
@@ -1066,12 +1085,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         onViewModeToggle={() => setViewMode(viewMode === 'full' ? 'pending' : 'full')}
         pyramidViewMode={pyramidViewMode}
         onPyramidViewModeToggle={() => setPyramidViewMode(!pyramidViewMode)}
-        onPrintClick={() => {
-          setPdfMode('print');
-          const rounds = [...new Set(matches.filter(m => m.fencerA && m.fencerB && !m.isBye).map(m => m.round))].sort((a, b) => b - a);
-          setSelectedRounds(new Set(rounds));
-          setShowPdfModal(true);
-        }}
+        onPrintClick={handlePrintClick}
         onExportPdfClick={() => {
           setPdfMode('pdf');
           const rounds = [...new Set(matches.filter(m => m.fencerA && m.fencerB && !m.isBye).map(m => m.round))].sort((a, b) => b - a);

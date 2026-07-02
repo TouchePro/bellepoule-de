@@ -748,33 +748,50 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   );
   const totalMatches = pool.matches.length;
 
+  // Options communes à l'export PDF et à l'impression de la feuille de poule
+  const buildPoolPrintOptions = async () => {
+    const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
+    const sigsArray = await window.electronAPI.db.getPoolSignatures(pool.id);
+    const signatures = Object.fromEntries(sigsArray.map(s => [s.fencerId, s.signatureData]));
+    return {
+      title: `Poule ${pool.number} - ${pool.fencers.length} tireurs`,
+      includeFinishedMatches: true,
+      includePendingMatches: true,
+      includePoolStats: true,
+      logoBase64: logo,
+      competitionName,
+      competitionId,
+      visibleColumns: getVisibleColumns('pool', pool.id),
+      signatures,
+    };
+  };
+
   // Export PDF function
   const handleExportPDF = async () => {
     try {
-      const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
-      const sigsArray = await window.electronAPI.db.getPoolSignatures(pool.id);
-      const signatures = Object.fromEntries(sigsArray.map(s => [s.fencerId, s.signatureData]));
+      const options = await buildPoolPrintOptions();
       const { exportPoolToPDF } = await import('../../shared/utils/pdfExport');
-      await exportPoolToPDF(
-        pool,
-        {
-          title: `Poule ${pool.number} - ${pool.fencers.length} tireurs`,
-          includeFinishedMatches: true,
-          includePendingMatches: true,
-          includePoolStats: true,
-          logoBase64: logo,
-          competitionName,
-          competitionId,
-          visibleColumns: getVisibleColumns('pool', pool.id),
-          signatures,
-        },
-        poolTemplate
-      );
+      await exportPoolToPDF(pool, options, poolTemplate);
       showToast(`Export PDF de la poule ${pool.number} généré avec succès`, 'success');
     } catch (error) {
       logger.error(LogCategory.UI, "Erreur lors de l'export PDF", error as Error);
       showToast(
         `Erreur lors de la génération du PDF: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
+        'error'
+      );
+    }
+  };
+
+  // Impression directe de la feuille de poule (Ctrl+P / bouton 🖨️)
+  const handlePrintPool = async () => {
+    try {
+      const options = await buildPoolPrintOptions();
+      const { printPoolHTML } = await import('../../shared/utils/pdfExport');
+      await printPoolHTML(pool, options, poolTemplate);
+    } catch (error) {
+      logger.error(LogCategory.UI, "Erreur lors de l'impression de la poule", error as Error);
+      showToast(
+        `Erreur lors de l'impression: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
         'error'
       );
     }
@@ -1374,6 +1391,13 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
             title="Remplir automatiquement les scores (test)"
           >
             🎲 Auto
+          </button>
+          <button
+            onClick={handlePrintPool}
+            style={{ ...TOOLBAR_BTN, background: '#3b82f6', color: 'white' }}
+            title="Imprimer la feuille de poule (Ctrl+P)"
+          >
+            🖨️ Imprimer
           </button>
           <button
             onClick={handleExportPDF}

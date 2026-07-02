@@ -354,7 +354,8 @@
     "refresh_data": "Actualizar datos",
     "timer": "Iniciar/Pausar cronómetro",
     "nav_list": "Navegar en la lista",
-    "validate": "Validar / Abrir"
+    "validate": "Validar / Abrir",
+    "print_sheets": "Imprimir las hojas de poule / de combate"
   },
   "formula": {
     "builder_title": "Constructor de fórmulas",

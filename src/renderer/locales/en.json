@@ -354,7 +354,8 @@
     "refresh_data": "Refresh data",
     "timer": "Start/Pause timer",
     "nav_list": "Navigate in list",
-    "validate": "Validate / Open"
+    "validate": "Validate / Open",
+    "print_sheets": "Print pool / match sheets"
   },
   "formula": {
     "builder_title": "Formula builder",

@@ -354,7 +354,8 @@
     "refresh_data": "Rafraîchir les données",
     "timer": "Démarrer/Pause le chronomètre",
     "nav_list": "Naviguer dans la liste",
-    "validate": "Valider / Ouvrir"
+    "validate": "Valider / Ouvrir",
+    "print_sheets": "Imprimer les feuilles de poule / de match"
   },
   "wiki": {
     "button_title": "Documentation"

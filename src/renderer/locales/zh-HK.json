@@ -354,7 +354,8 @@
     "refresh_data": "重新整理資料",
     "timer": "開始/暫停計時器",
     "nav_list": "在列表中導航",
-    "validate": "確認 / 開啟"
+    "validate": "確認 / 開啟",
+    "print_sheets": "列印小組賽 / 對戰表"
   },
   "formula": {
     "builder_title": "賽制編輯器",
