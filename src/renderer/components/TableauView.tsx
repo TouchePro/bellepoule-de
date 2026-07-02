@@ -137,7 +137,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   const bracketWrapRef = useRef<HTMLDivElement | null>(null);
   const [colMeasures, setColMeasures] = useState<Map<number, { left: number; width: number }>>(new Map());
   const [showPdfModal, setShowPdfModal] = useState(false);
-  const [pdfMode, setPdfMode] = useState<'print' | 'pdf'>('pdf');
+  const [pdfMode, setPdfMode] = useState<'print' | 'pdf' | 'preview'>('pdf');
   const [pdfMatchesPerPage, setPdfMatchesPerPage] = useState<number>(MAX_MATCHES_PER_PAGE_TABLEAU);
   const [selectedRounds, setSelectedRounds] = useState<Set<number>>(new Set());
   const [autoAssignArenas, setAutoAssignArenas] = useState(false);
@@ -772,9 +772,11 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         }
       } catch { /* signatures optionnelles */ }
 
-      const { printTableauHTML, exportTableauToPDF } = await import('../../shared/utils/pdfExport');
+      const { printTableauHTML, exportTableauToPDF, previewTableauHTML } = await import('../../shared/utils/pdfExport');
       if (pdfMode === 'print') {
         await printTableauHTML(filteredMatches, perPage, title, logo, tableauTemplate, signatures);
+      } else if (pdfMode === 'preview') {
+        await previewTableauHTML(filteredMatches, perPage, title, logo, tableauTemplate, signatures);
       } else {
         await exportTableauToPDF(filteredMatches, perPage, title, logo, tableauTemplate, signatures);
       }
@@ -797,6 +799,13 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
   const handlePrintClick = useCallback(() => {
     setPdfMode('print');
+    const rounds = [...new Set(matches.filter(m => m.fencerA && m.fencerB && !m.isBye).map(m => m.round))].sort((a, b) => b - a);
+    setSelectedRounds(new Set(rounds));
+    setShowPdfModal(true);
+  }, [matches]);
+
+  const handlePreviewClick = useCallback(() => {
+    setPdfMode('preview');
     const rounds = [...new Set(matches.filter(m => m.fencerA && m.fencerB && !m.isBye).map(m => m.round))].sort((a, b) => b - a);
     setSelectedRounds(new Set(rounds));
     setShowPdfModal(true);
@@ -1086,6 +1095,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         pyramidViewMode={pyramidViewMode}
         onPyramidViewModeToggle={() => setPyramidViewMode(!pyramidViewMode)}
         onPrintClick={handlePrintClick}
+        onPreviewClick={handlePreviewClick}
         onExportPdfClick={() => {
           setPdfMode('pdf');
           const rounds = [...new Set(matches.filter(m => m.fencerA && m.fencerB && !m.isBye).map(m => m.round))].sort((a, b) => b - a);
