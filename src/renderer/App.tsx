@@ -172,6 +172,19 @@ const AppContent: React.FC = () => {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
+  // Un scroll (trackpad macOS notamment) sur un input number focus ne doit pas
+  // en changer la valeur (comportement natif Chromium trompeur, ex: score max)
+  useEffect(() => {
+    const handler = (e: WheelEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target instanceof HTMLInputElement && target.type === 'number' && document.activeElement === target) {
+        target.blur();
+      }
+    };
+    document.addEventListener('wheel', handler, { passive: true, capture: true });
+    return () => document.removeEventListener('wheel', handler, { capture: true });
+  }, []);
+
   // Sync logo from disk to localStorage so PDF exports always find it
   useEffect(() => {
     if (!window.electronAPI) return;
