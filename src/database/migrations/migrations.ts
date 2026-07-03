@@ -439,4 +439,16 @@ export const ALL_MIGRATIONS: Migration[] = [
       db.run(`CREATE INDEX IF NOT EXISTS idx_team_bouts_match ON team_bouts(match_id)`);
     },
   },
+  {
+    version: 14,
+    description: 'Tableau équipes (élimination directe) : colonnes table_id/round/position sur team_matches',
+    up(db) {
+      // Un même `team_matches` sert aux poules (pool_number) et au tableau (table_id/round/position),
+      // comme `matches` le fait déjà pour les tireurs individuels (pool_id vs table_id/round/position).
+      try { db.run(`ALTER TABLE team_matches ADD COLUMN table_id TEXT`); } catch { /* colonne déjà présente */ }
+      try { db.run(`ALTER TABLE team_matches ADD COLUMN round INTEGER`); } catch { /* colonne déjà présente */ }
+      try { db.run(`ALTER TABLE team_matches ADD COLUMN position INTEGER`); } catch { /* colonne déjà présente */ }
+      db.run(`CREATE INDEX IF NOT EXISTS idx_team_matches_table ON team_matches(table_id)`);
+    },
+  },
 ];

@@ -726,6 +726,12 @@ export interface DatabaseAPI {
   }>>;
   createTeamBout: (matchId: string, boutOrder: number, fencerAId: string, fencerBId: string, maxScore: number) => Promise<{ id: string }>;
   updateTeamBout: (boutId: string, scoreA: number, scoreB: number, status: string, winnerId: string | null) => Promise<void>;
+  createTeamTableauMatch: (competitionId: string, tableId: string, round: number, position: number, teamAId: string, teamBId: string) => Promise<{ id: string }>;
+  getTeamTableauMatches: (competitionId: string, tableId: string) => Promise<Array<{
+    id: string; round: number; position: number; teamAId: string; teamBId: string;
+    scoreBoutsA: number; scoreBoutsB: number; status: string; winnerId: string | null; currentBoutIndex: number;
+    bouts: Array<{ id: string; boutOrder: number; fencerAId: string; fencerBId: string; scoreA: number; scoreB: number; maxScore: number; status: string; winnerId: string | null }>;
+  }>>;
 }
 
 export interface FileAPI {

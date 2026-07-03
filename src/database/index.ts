@@ -2049,6 +2049,58 @@ export class DatabaseManager {
     return { id: matchId };
   }
 
+  public createTeamTableauMatch(
+    competitionId: string,
+    tableId: string,
+    round: number,
+    position: number,
+    teamAId: string,
+    teamBId: string
+  ): { id: string } {
+    if (!this.db) throw new Error('Database not open');
+    const { v4: gen } = require('uuid');
+    const matchId = gen();
+    const now = new Date().toISOString();
+    this.run(
+      `INSERT INTO team_matches (id, competition_id, pool_number, team_a_id, team_b_id, status, table_id, round, position, created_at, updated_at)
+       VALUES (?, ?, 0, ?, ?, 'not_started', ?, ?, ?, ?, ?)`,
+      [matchId, competitionId, teamAId, teamBId, tableId, round, position, now, now]
+    );
+    return { id: matchId };
+  }
+
+  public getTeamTableauMatches(competitionId: string, tableId: string): Array<{
+    id: string; round: number; position: number; teamAId: string; teamBId: string;
+    scoreBoutsA: number; scoreBoutsB: number; status: string; winnerId: string | null;
+    currentBoutIndex: number;
+    bouts: Array<{ id: string; boutOrder: number; fencerAId: string; fencerBId: string; scoreA: number; scoreB: number; maxScore: number; status: string; winnerId: string | null }>;
+  }> {
+    if (!this.db) return [];
+    const matches = this.queryAll<any>(
+      'SELECT * FROM team_matches WHERE competition_id = ? AND table_id = ? ORDER BY round DESC, position',
+      [competitionId, tableId]
+    );
+    return matches.map(m => {
+      const bouts = this.queryAll<any>(
+        'SELECT * FROM team_bouts WHERE match_id = ? ORDER BY bout_order',
+        [m.id]
+      );
+      return {
+        id: m.id as string, round: Number(m.round), position: Number(m.position),
+        teamAId: m.team_a_id as string, teamBId: m.team_b_id as string,
+        scoreBoutsA: Number(m.score_bouts_a), scoreBoutsB: Number(m.score_bouts_b),
+        status: m.status as string, winnerId: (m.winner_id as string) ?? null,
+        currentBoutIndex: Number(m.current_bout_index),
+        bouts: bouts.map(b => ({
+          id: b.id as string, boutOrder: Number(b.bout_order),
+          fencerAId: b.fencer_a_id as string, fencerBId: b.fencer_b_id as string,
+          scoreA: Number(b.score_a), scoreB: Number(b.score_b), maxScore: Number(b.max_score),
+          status: b.status as string, winnerId: (b.winner_id as string) ?? null,
+        })),
+      };
+    });
+  }
+
   public getTeamMatchesByCompetition(competitionId: string): Array<{
     id: string; poolNumber: number; teamAId: string; teamBId: string;
     scoreBoutsA: number; scoreBoutsB: number; status: string; winnerId: string | null;
@@ -2057,7 +2109,7 @@ export class DatabaseManager {
   }> {
     if (!this.db) return [];
     const matches = this.queryAll<any>(
-      'SELECT * FROM team_matches WHERE competition_id = ? ORDER BY pool_number, created_at',
+      'SELECT * FROM team_matches WHERE competition_id = ? AND table_id IS NULL ORDER BY pool_number, created_at',
       [competitionId]
     );
     return matches.map(m => {
@@ -2109,30 +2161,25 @@ export class DatabaseManager {
   }
 
   private recomputeTeamMatchScore(matchId: string): void {
-    const bouts = this.queryAll<any>(
-      `SELECT winner_id, fencer_a_id, fencer_b_id FROM team_bouts WHERE match_id = ? AND status = 'finished'`,
-      [matchId]
-    );
     const match = this.queryOne<any>('SELECT team_a_id, team_b_id FROM team_matches WHERE id = ?', [matchId]);
     if (!match) return;
 
-    const teamAFencers = new Set(
-      this.queryAll<any>('SELECT fencer_id FROM team_fencers WHERE team_id = ?', [match.team_a_id]).map(r => r.fencer_id as string)
+    const allBouts = this.queryAll<any>(
+      'SELECT status, score_a, score_b FROM team_bouts WHERE match_id = ? ORDER BY bout_order',
+      [matchId]
     );
-    let scoreA = 0, scoreB = 0;
-    for (const b of bouts) {
-      if (!b.winner_id) continue;
-      if (teamAFencers.has(b.winner_id as string)) scoreA++;
-      else scoreB++;
-    }
-    const allBouts = this.queryAll<any>('SELECT status FROM team_bouts WHERE match_id = ?', [matchId]);
-    const allFinished = allBouts.every(b => b.status === 'finished');
-    const newStatus = allFinished ? 'finished' : bouts.length > 0 ? 'in_progress' : 'not_started';
+    // Score équipe = total des touches cumulées sur tous les relais (règle FIE),
+    // pas le nombre d'assauts individuellement gagnés.
+    const scoreA = allBouts.reduce((sum, b) => sum + Number(b.score_a), 0);
+    const scoreB = allBouts.reduce((sum, b) => sum + Number(b.score_b), 0);
+    const finishedCount = allBouts.filter(b => b.status === 'finished').length;
+    const allFinished = allBouts.length > 0 && finishedCount === allBouts.length;
+    const newStatus = allFinished ? 'finished' : finishedCount > 0 ? 'in_progress' : 'not_started';
     const winnerId = allFinished ? (scoreA > scoreB ? match.team_a_id : scoreB > scoreA ? match.team_b_id : null) : null;
     const now = new Date().toISOString();
     this.run(
       `UPDATE team_matches SET score_bouts_a = ?, score_bouts_b = ?, status = ?, winner_id = ?, current_bout_index = ?, updated_at = ? WHERE id = ?`,
-      [scoreA, scoreB, newStatus, winnerId, bouts.length, now, matchId]
+      [scoreA, scoreB, newStatus, winnerId, finishedCount, now, matchId]
     );
   }
 }
