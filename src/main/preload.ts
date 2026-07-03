@@ -338,6 +338,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('db:createTeamBout', matchId, boutOrder, fencerAId, fencerBId, maxScore),
     updateTeamBout: (boutId: string, scoreA: number, scoreB: number, status: string, winnerId: string | null) =>
       ipcRenderer.invoke('db:updateTeamBout', boutId, scoreA, scoreB, status, winnerId),
+    createTeamTableauMatch: (competitionId: string, tableId: string, round: number, position: number, teamAId: string, teamBId: string) =>
+      ipcRenderer.invoke('db:createTeamTableauMatch', competitionId, tableId, round, position, teamAId, teamBId),
+    getTeamTableauMatches: (competitionId: string, tableId: string) =>
+      ipcRenderer.invoke('db:getTeamTableauMatches', competitionId, tableId),
   },
 
   // File operations with validation

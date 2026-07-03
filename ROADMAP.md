@@ -56,26 +56,39 @@
 
 ## P1 — Interface équipes complète
 
-**Objectif :** Rendre les compétitions par équipes utilisables en prod.
+**Objectif :** Rendre les compétitions par équipes utilisables en prod, arme par arme.
+Voir [docs/TEAM_COMPETITIONS.md](docs/TEAM_COMPETITIONS.md) pour le fonctionnement détaillé.
 
-### Étapes
+### Fait
 
-1. **Audit** du store existant (`src/features/teams/`)
-   - Vérifier `useTeamStore.ts`, `teamCalculations.ts`, `team.types.ts`
-   - Identifier ce qui manque dans le renderer
+1. ✅ **Audit** du store existant (`src/features/teams/`) — le vrai composant branché
+   en prod était `TeamManagerView.tsx` (pas le store Zustand `useTeamStore`, resté
+   inutilisé), avec une logique figée à 3 titulaires / 45 points quelle que soit l'arme.
+2. ✅ **Configuration arme-aware** (`teamCalculations.ts`) : taille d'équipe et nombre
+   de réservistes configurables (`settings.minTeamSize`/`teamReserveCount`), cible de
+   relais progressive généralisée (`getTeamTargetRule`, `getRelayCap`), ordre des
+   relais généralisé à N titulaires (`generateRelayOrder`).
+3. ✅ **Score par assaut arme-aware** : touche double simultanée (épée), zones A/B/C
+   Sabre Laser (`laserTeamMode: 'points'`), cartons par tireur (`cardSystem.ts`).
+4. ✅ **Vue poule équipes** (`src/renderer/components/TeamPoolView.tsx`) — composant
+   présentationnel, classement extrait dans `calculateTeamPoolRanking`.
+5. ✅ **Tableau équipes** (`src/renderer/components/TeamTableauView.tsx`) — élimination
+   directe, têtes de série = classement de poule, tours suivants générés
+   automatiquement (`resolveTeamTableauSlot`), migration DB v14
+   (`team_matches.table_id/round/position`).
 
-2. **Vue poule équipes** (`src/renderer/components/TeamPoolView.tsx`)
-   - Affiche les matchs équipe-vs-équipe (agrégat des tireurs)
-   - Score total d'équipe, victoires collectives
+### Reste à faire
 
-3. **Tableau équipes** (`src/renderer/components/TeamTableauView.tsx`)
-   - Bracket direct élimination entre équipes
-
-4. **Intégration dans CompetitionView** (`src/renderer/components/CompetitionView.tsx`)
-   - Détecter `competition.isTeam === true`
-   - Router vers les vues équipes au lieu des vues individuelles
-
-5. **PDF export** équipes (extension de `pdfExport.ts`)
+6. **Intégration dans le flux de phases `CompetitionView`** — par prudence (fichier de
+   1800+ lignes, state machine `currentPhase` fortement couplée aux compétitions
+   individuelles/Quest), les vues équipes restent pour l'instant dans la fenêtre
+   modale « Gestion équipes » plutôt que dans les phases `pools`/`tableau` normales.
+   À terme : soit brancher `phaseOrder` sur `competition.isTeamEvent`, soit accepter
+   ce modal comme l'interface équipes définitive.
+7. **Saisie live arène/tablette** pour les rencontres d'équipe (actuellement saisie
+   uniquement dans la fenêtre Gestion équipes, pas d'écran arbitre dédié).
+8. **Persistance des cartons** d'équipe en base (actuellement en mémoire de session).
+9. **PDF export** équipes (extension de `pdfExport.ts`).
 
 ---
 

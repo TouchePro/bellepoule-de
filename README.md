@@ -58,7 +58,7 @@ D'après l'analyse du code et les demandes utilisateurs, les prochaines mises à
 
 #### 🏆 **En Développement**
 
-- 👥 **Compétitions par Équipes** - Support complet des tournois par équipes (relay)
+- 👥 **Compétitions par Équipes** - Poules et tableau à élimination directe par équipes, relais arme-aware (voir [docs/TEAM_COMPETITIONS.md](docs/TEAM_COMPETITIONS.md) pour le détail et les limites connues)
 - ⚖️ **Système de Pénalités** - Cartons jaunes/rouges/noirs avec impact sur scores
 - ⏰ **Gestion des Retardataires** - Auto-forfait après délai configurable
 - 🏅 **Double Élimination** - Brackets gagnants et perdants

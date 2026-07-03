@@ -183,6 +183,23 @@ export const validateCompetitionSettings = (settings: CompetitionSettings): void
   validateNumber(settings.defaultRanking, 'defaultRanking', 0);
   validateNumber(settings.minTeamSize, 'minTeamSize', 1);
 
+  if (settings.teamReserveCount !== undefined) {
+    validateNumber(settings.teamReserveCount, 'teamReserveCount', 0);
+  }
+  if (settings.teamRelayStepSize !== undefined) {
+    validateNumber(settings.teamRelayStepSize, 'teamRelayStepSize', 1);
+  }
+  if (
+    settings.laserTeamMode !== undefined &&
+    settings.laserTeamMode !== 'touches' &&
+    settings.laserTeamMode !== 'points'
+  ) {
+    throw new ValidationError(
+      "laserTeamMode must be 'touches' or 'points'",
+      'laserTeamMode'
+    );
+  }
+
   if (settings.defaultPoolMaxScore > 15) {
     throw new ValidationError(
       'defaultPoolMaxScore should not exceed 15 for practical fencing',

@@ -579,7 +579,10 @@ export interface CompetitionSettings {
   manualRanking: boolean; // Classement manuel
   defaultRanking: number; // Classement par défaut pour non-classés
   randomScore: boolean; // Scores aléatoires (pour tests)
-  minTeamSize: number; // Taille min équipe (compétitions par équipes)
+  minTeamSize: number; // Taille équipe = nombre de titulaires (compétitions par équipes)
+  teamReserveCount?: number; // Nombre de réservistes par équipe (défaut: 1)
+  laserTeamMode?: 'touches' | 'points'; // Cible équipe Sabre Laser : touches (défaut) ou points de zone cumulés
+  teamRelayStepSize?: number; // Palier de progression par relais (défaut: 5, cf. règle FIE)
   questConfig?: QuestPhaseConfig; // Configuration du Tour Quest (Sabre Laser uniquement)
   refereeFeatureEnabled?: boolean; // Activer la gestion des arbitres sur arènes et saisie distante
   customFormula?: CustomFormulaConfig; // Formule à la carte (arme CUSTOM uniquement)

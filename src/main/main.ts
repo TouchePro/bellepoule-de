@@ -2539,6 +2539,14 @@ ipcMain.handle('db:updateTeamBout', async (_, boutId: string, scoreA: number, sc
   return db.updateTeamBout(boutId, scoreA, scoreB, status, winnerId);
 });
 
+ipcMain.handle('db:createTeamTableauMatch', async (_, competitionId: string, tableId: string, round: number, position: number, teamAId: string, teamBId: string) => {
+  return db.createTeamTableauMatch(competitionId, tableId, round, position, teamAId, teamBId);
+});
+
+ipcMain.handle('db:getTeamTableauMatches', async (_, competitionId: string, tableId: string) => {
+  return db.getTeamTableauMatches(competitionId, tableId);
+});
+
 // ============================================================================
 // App Lifecycle
 // ============================================================================
