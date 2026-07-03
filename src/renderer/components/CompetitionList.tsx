@@ -116,6 +116,11 @@ const CompetitionListComponent: React.FC<CompetitionListProps> = ({
           <button className="btn btn-primary btn-lg" onClick={onNewCompetition} style={{ padding: '0.75rem 2rem' }}>
             + {t('menu.new_competition')}
           </button>
+
+          <p style={{ color: 'var(--color-text-light)', fontSize: '0.75rem' }}>
+            Astuce : appuyez sur <kbd>?</kbd> pour voir les raccourcis clavier, ou{' '}
+            <kbd>Ctrl</kbd>+<kbd>K</kbd> pour ouvrir la palette de commandes.
+          </p>
         </div>
       </div>
     );
