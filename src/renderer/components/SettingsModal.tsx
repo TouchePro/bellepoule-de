@@ -12,6 +12,7 @@ import LanguageSelector from './LanguageSelector';
 // Chargé à la demande : embarque jsPDF, lourd pour le bundle initial
 const PdfTemplateModal = React.lazy(() => import('./PdfTemplateModal'));
 import { logger, LogCategory } from '@shared/services/logger';
+import { isWebhookUrlSafe } from '@shared/services/notificationService';
 
 const LOGO_STORAGE_KEY = 'bellepoule-logo';
 const WEBHOOK_STORAGE_KEY = 'bellepoule-webhook-url';
@@ -59,23 +60,6 @@ function loadTtsConfig(): TtsConfig {
   return { ...DEFAULT_TTS_CONFIG, announce: { ...DEFAULT_TTS_CONFIG.announce } };
 }
 
-function isWebhookUrlSafe(rawUrl: string): boolean {
-  try {
-    const url = new URL(rawUrl);
-    if (url.protocol !== 'https:') return false;
-    const h = url.hostname;
-    if (
-      h === 'localhost' ||
-      h === '127.0.0.1' ||
-      /^10\./.test(h) ||
-      /^172\.(1[6-9]|2\d|3[01])\./.test(h) ||
-      /^192\.168\./.test(h)
-    ) return false;
-    return true;
-  } catch {
-    return false;
-  }
-}
 const LOGO_MAX_W = 600;
 const LOGO_MAX_H = 200;
 
@@ -124,8 +108,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
   const [logoError, setLogoError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Activé par défaut (journal désactivable explicitement, pas activable par défaut négatif)
   const [auditLogEnabled, setAuditLogEnabled] = useState<boolean>(
-    () => localStorage.getItem(AUDIT_LOG_KEY) === 'true'
+    () => localStorage.getItem(AUDIT_LOG_KEY) !== 'false'
   );
 
   const [quickMouseScoring, setQuickMouseScoring] = useState<boolean>(

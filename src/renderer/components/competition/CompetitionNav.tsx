@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { ChevronLeft, ChevronRight, Swords, Target, Zap, Trophy, ScrollText } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Swords, Target, Zap, Trophy, ScrollText, CalendarClock } from 'lucide-react';
 import { Competition, MatchStatus, QuestPhaseConfig, Fencer } from '../../../shared/types';
 import { Phase } from '../../hooks/useCompetitionSession';
 import CoachMark from '../CoachMark';
@@ -49,6 +49,7 @@ interface CompetitionNavProps {
   getCheckedInFencers: () => Fencer[];
   pools: PoolItem[];
   tableauMatches: TableauMatchItem[];
+  onOpenPlanningAssistant?: () => void;
 }
 
 const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
@@ -66,6 +67,7 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
   getCheckedInFencers,
   pools,
   tableauMatches,
+  onOpenPlanningAssistant,
 }) => {
 
   return (
@@ -135,8 +137,20 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
           </CoachMark>
         )}
         {currentPhase === 'pools' && poolsNextAction && (
-          <button className="btn btn-primary" onClick={poolsNextAction.action}>
-            {poolsNextAction.label}
+          <CoachMark id="pools-next-action" message="Étape suivante une fois les poules terminées" position="bottom">
+            <button className="btn btn-primary" onClick={poolsNextAction.action}>
+              {poolsNextAction.label}
+            </button>
+          </CoachMark>
+        )}
+        {currentPhase === 'pools' && onOpenPlanningAssistant && pools.length > 0 && (
+          <button
+            className="btn btn-secondary btn-icon-label"
+            onClick={onOpenPlanningAssistant}
+            title="Estimation de fin de tournoi et recommandations de répartition des pistes"
+            style={{ fontSize: '0.8rem', padding: '0.3rem 0.6rem' }}
+          >
+            <CalendarClock size={14} /> Planning
           </button>
         )}
         <button

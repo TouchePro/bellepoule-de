@@ -12,6 +12,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import { exportFencersToTXT, exportFencersToFFF } from '../../shared/utils/fencerExport';
 // pdfExport (jsPDF) chargé à la demande pour alléger le bundle initial
 import { useConfirm } from './ConfirmDialog';
+import CoachMark from './CoachMark';
 import { useDebounce } from '../hooks/useDebounce';
 import { MENU_ITEM, SMALL_BTN, W250, DROPDOWN_WRAP } from './fencerList.styles';
 
@@ -752,9 +753,11 @@ const FencerListComponent: React.FC<FencerListProps> = ({
               <p className="empty-state-description">Importez une liste ou ajoutez des tireurs manuellement</p>
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap', marginTop: '1.25rem' }}>
                 {onImport && (
-                  <button className="btn btn-secondary" onClick={() => handleImportFencers('xml')}>
-                    📥 Importer XML
-                  </button>
+                  <CoachMark id="import-fencers" message="Formats acceptés : XML BellePoule, liste FFE (.fff/.csv/.txt)" position="bottom">
+                    <button className="btn btn-secondary" onClick={() => handleImportFencers('xml')}>
+                      📥 Importer XML
+                    </button>
+                  </CoachMark>
                 )}
                 <button className="btn btn-primary" onClick={onAddFencer}>
                   + {t('fencer.add')}

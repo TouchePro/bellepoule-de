@@ -18,6 +18,7 @@ import {
 import { createCard } from '../../shared/utils/cardSystem';
 import TeamPoolView, { CardTarget } from './TeamPoolView';
 import TeamTableauView from './TeamTableauView';
+import { useConfirm } from './ConfirmDialog';
 
 // ── Composant ─────────────────────────────────────────────────────────────────
 
@@ -41,7 +42,7 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
   const isEpee = competition.weapon === Weapon.EPEE;
   const isLaserPoints = competition.weapon === Weapon.LASER && targetRule.mode === 'points';
   const tableId = competition.id; // Un seul tableau équipes par compétition
-
+  const { confirm } = useConfirm();
   const [view, setView] = useState<ViewMode>('teams');
   const [teams, setTeams] = useState<TeamRow[]>([]);
   const [matches, setMatches] = useState<TeamMatchRow[]>([]);
@@ -219,7 +220,7 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
   // ── Générer poule (round-robin) ───────────────────────────────────────────────
   const handleGeneratePool = async () => {
     if (teams.length < 2) return;
-    if (matches.length > 0 && !confirm('Des matchs existent déjà. Supprimer et régénérer ?'))
+    if (matches.length > 0 && !(await confirm('Des matchs existent déjà. Supprimer et régénérer ?')))
       return;
 
     for (let i = 0; i < teams.length; i++) {

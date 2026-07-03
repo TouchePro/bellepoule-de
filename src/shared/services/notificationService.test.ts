@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import NotificationService from './notificationService';
+import NotificationService, { isWebhookUrlSafe } from './notificationService';
 import { Fencer, Match, Competition, Gender, FencerStatus, MatchStatus, Weapon, Category } from '../types';
 
 const fencer = (id: string, firstName: string, lastName: string): Fencer => ({
@@ -88,8 +88,7 @@ describe('NotificationService - payloads', () => {
 });
 
 describe('NotificationService - isWebhookUrlSafe', () => {
-  const svc = new NotificationService();
-  const safe = (u: string) => (svc as any).isWebhookUrlSafe(u) as boolean;
+  const safe = (u: string) => isWebhookUrlSafe(u);
 
   it('accepte une URL https publique', () => {
     expect(safe('https://hooks.example.com/abc')).toBe(true);
