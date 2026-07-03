@@ -6,6 +6,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { Competition, Fencer } from '../../shared/types';
+import { useConfirm } from './ConfirmDialog';
 
 // ── Types locaux ───────────────────────────────────────────────────────────────
 
@@ -101,6 +102,7 @@ interface Props {
 type ViewMode = 'teams' | 'pool' | 'ranking';
 
 export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose }) => {
+  const { confirm } = useConfirm();
   const [view, setView] = useState<ViewMode>('teams');
   const [teams, setTeams] = useState<TeamRow[]>([]);
   const [matches, setMatches] = useState<MatchRow[]>([]);
@@ -169,7 +171,7 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
   // ── Générer poule (round-robin) ───────────────────────────────────────────────
   const handleGeneratePool = async () => {
     if (teams.length < 2) return;
-    if (matches.length > 0 && !confirm('Des matchs existent déjà. Supprimer et régénérer ?')) return;
+    if (matches.length > 0 && !(await confirm('Des matchs existent déjà. Supprimer et régénérer ?'))) return;
 
     for (const m of matches) {
       // No direct delete match API — we'll just regenerate on top via DB (match IDs change)

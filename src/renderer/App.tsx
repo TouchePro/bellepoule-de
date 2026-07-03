@@ -23,6 +23,7 @@ const WifiQRModal = React.lazy(() => import('./components/WifiQRModal').then(m =
 const XiaomiRemotePanel = React.lazy(() => import('./components/XiaomiRemotePanel').then(m => ({ default: m.XiaomiRemotePanel })));
 const TrainingLauncherModal = React.lazy(() => import('./components/training/TrainingLauncherModal'));
 const TrainingPanel = React.lazy(() => import('./components/training/TrainingPanel'));
+import { CompetitionViewSkeleton } from './components/Skeleton';
 import { ToastProvider, useToast } from './components/Toast';
 import { ConfirmProvider, useConfirm } from './components/ConfirmDialog';
 import { TranslationProvider, useTranslation, Theme } from './contexts/TranslationContext';
@@ -712,7 +713,7 @@ const AppContent: React.FC = () => {
 
           {view === 'competition' && currentCompetition && activeTabId && (
             <CompetitionErrorBoundary key={currentCompetition.id}>
-              <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Chargement…</div>}>
+              <Suspense fallback={<CompetitionViewSkeleton />}>
                 <CompetitionView
                   competition={currentCompetition}
                   onUpdate={handleUpdateCompetition}

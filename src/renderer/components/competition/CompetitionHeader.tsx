@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { MoreHorizontal, Swords, BarChart2, Share2, Monitor, Smartphone, Settings, ChevronDown, ChevronUp, Trophy, Users } from 'lucide-react';
+import { MoreHorizontal, Swords, BarChart2, Share2, Monitor, Smartphone, Settings, ChevronDown, ChevronUp, Trophy, Users, Download } from 'lucide-react';
 import { Competition, MatchStatus } from '../../../shared/types';
 import Confetti from '../Confetti';
 import CoachMark from '../CoachMark';
@@ -39,6 +39,7 @@ interface CompetitionHeaderProps {
   setShowKiosk: React.Dispatch<React.SetStateAction<boolean>>;
   setShowKioskDisplay: React.Dispatch<React.SetStateAction<boolean>>;
   setShowPropertiesModal: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowExportCenter: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const CompetitionHeaderComponent: React.FC<CompetitionHeaderProps> = ({
@@ -64,6 +65,7 @@ const CompetitionHeaderComponent: React.FC<CompetitionHeaderProps> = ({
   setShowKiosk,
   setShowKioskDisplay,
   setShowPropertiesModal,
+  setShowExportCenter,
 }) => {
   const storageKey = `bellepoule-header-expanded-${competition.id}`;
   const [expanded, setExpanded] = useState(() => {
@@ -184,6 +186,9 @@ const CompetitionHeaderComponent: React.FC<CompetitionHeaderProps> = ({
                     <Monitor size={14} /> Kiosk Public
                   </button>
                 )}
+                <button className="comp-header-dropdown-item" onClick={() => { setShowExportCenter(true); setShowActionsMenu(false); }}>
+                  <Download size={14} /> Exporter
+                </button>
                 <div className="comp-header-dropdown-sep" />
                 <button className="comp-header-dropdown-item" onClick={() => { setShowPropertiesModal(true); setShowActionsMenu(false); }}>
                   <Settings size={14} /> Propriétés

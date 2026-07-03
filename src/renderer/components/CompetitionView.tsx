@@ -18,6 +18,7 @@ import CompetitionPropertiesModal from './CompetitionPropertiesModal';
 import ImportModal from './ImportModal';
 import PoolPrepView from './PoolPrepView';
 import { useToast } from './Toast';
+import { useConfirm } from './ConfirmDialog';
 import { useTranslation } from '../hooks/useTranslation';
 import { useCompetitionSession, Phase } from '../hooks/useCompetitionSession';
 import { useFencerManagement } from '../hooks/useFencerManagement';
@@ -38,6 +39,8 @@ import { ScoreAuditLog } from './ScoreAuditLog';
 import { RefereeManagerComponent } from './RefereeManager';
 import CompetitionHeader from './competition/CompetitionHeader';
 import CompetitionNav from './competition/CompetitionNav';
+const PlanningAssistant = React.lazy(() => import('./competition/PlanningAssistant'));
+const ExportCenterModal = React.lazy(() => import('./competition/ExportCenterModal'));
 import GlobalPoolColumnsMenu from './pool/GlobalPoolColumnsMenu';
 import WindowSizePresets from './pool/WindowSizePresets';
 
@@ -77,6 +80,7 @@ const CV_STYLES = {
 
 const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate, requestPhase, onPhaseApplied, onRemoteServerChange }) => {
   const { showToast } = useToast();
+  const { confirm } = useConfirm();
   const { t, language } = useTranslation();
 
   // Settings avec valeurs par défaut
@@ -91,7 +95,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const poolWinnersOnly = competition.settings?.poolWinnersOnly ?? false;
   const postPoolSplitCriteria = competition.settings?.postPoolSplitCriteria;
 
-  const auditLogEnabled = localStorage.getItem('bellepoule-audit-log-enabled') === 'true';
+  const auditLogEnabled = localStorage.getItem('bellepoule-audit-log-enabled') !== 'false';
 
   // États locaux
   const [currentPhase, setCurrentPhase] = useState<Phase>('checkin');
@@ -104,6 +108,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   }, [requestPhase]);
 
   const [showAddFencerModal, setShowAddFencerModal] = useState(false);
+  const [showPlanningAssistant, setShowPlanningAssistant] = useState(false);
+  const [showExportCenter, setShowExportCenter] = useState(false);
   const [showPropertiesModal, setShowPropertiesModal] = useState(false);
   const [importData, setImportData] = useState<{
     format: string;
@@ -200,7 +206,17 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     syncFencersToPool,
   } = usePoolManagement({ isLaserSabre, poolMaxScore, showToast, competitionId: competition?.id });
 
-  const { exportFencersList, exportRanking, exportResults, exportPoolsPDF, printPoolsPDF } = useExport({
+  const {
+    exportFencersList,
+    exportRanking,
+    exportResults,
+    exportPoolsPDF,
+    printPoolsPDF,
+    exportResultsHTML,
+    exportRankingExcelCSV,
+    exportResultsXML,
+    exportDetailedStats,
+  } = useExport({
     competition,
     showToast,
   });
@@ -1188,6 +1204,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         setShowKiosk={setShowKiosk}
         setShowKioskDisplay={setShowKioskDisplay}
         setShowPropertiesModal={setShowPropertiesModal}
+        setShowExportCenter={setShowExportCenter}
       />
       <CompetitionNav
         competition={competition}
@@ -1205,6 +1222,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         getCheckedInFencers={getCheckedInFencers}
         pools={pools}
         tableauMatches={tableauMatches}
+        onOpenPlanningAssistant={() => setShowPlanningAssistant(true)}
       />
 
       {/* Content — keyed pour animation de transition */}
@@ -1512,8 +1530,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             }}>
               <span>🔒 Tableau en lecture seule — résultats finaux générés.</span>
               <button
-                onClick={() => {
-                  if (window.confirm('Modifier le tableau effacera les résultats finaux. Continuer ?')) {
+                onClick={async () => {
+                  if (await confirm('Modifier le tableau effacera les résultats finaux. Continuer ?')) {
                     setFinalResults([]);
                   }
                 }}
@@ -1633,6 +1651,43 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       </div>
 
       {/* Modals */}
+      {showPlanningAssistant && (
+        <Suspense fallback={null}>
+          <PlanningAssistant
+            competition={competition}
+            pools={pools}
+            suggestedArenaCount={arenaStates.length || Math.min(pools.length, 4) || 1}
+            onClose={() => setShowPlanningAssistant(false)}
+          />
+        </Suspense>
+      )}
+
+      {showExportCenter && (
+        <Suspense fallback={null}>
+          <ExportCenterModal
+            fencers={fencers}
+            pools={pools}
+            currentPoolRound={currentPoolRound}
+            overallRanking={overallRanking}
+            finalResults={finalResults}
+            tableauMatchesCount={tableauMatches.length}
+            isLaserSabre={isLaserSabre}
+            onClose={() => setShowExportCenter(false)}
+            exportFencersList={exportFencersList}
+            exportPoolsPDF={exportPoolsPDF}
+            printPoolsPDF={printPoolsPDF}
+            exportRanking={exportRanking}
+            exportRankingExcelCSV={exportRankingExcelCSV}
+            exportResults={exportResults}
+            exportResultsHTML={exportResultsHTML}
+            exportResultsXML={exportResultsXML}
+            exportDetailedStats={exportDetailedStats}
+            onGoToTableau={() => { setCurrentPhase('tableau'); setShowExportCenter(false); }}
+            onGoToResults={() => { setCurrentPhase('results'); setShowExportCenter(false); }}
+          />
+        </Suspense>
+      )}
+
       {showAddFencerModal && (
         <AddFencerModal
           onClose={() => setShowAddFencerModal(false)}
