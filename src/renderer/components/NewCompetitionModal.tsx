@@ -29,6 +29,10 @@ const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCr
   const [customFormula, setCustomFormula] = useState<CustomFormulaConfig>(
     createDefaultCustomFormula()
   );
+  const [isTeamEvent, setIsTeamEvent] = useState(false);
+  const [teamSize, setTeamSize] = useState(3);
+  const [teamReserveCount, setTeamReserveCount] = useState(1);
+  const [laserTeamMode, setLaserTeamMode] = useState<'touches' | 'points'>('touches');
 
   const handleWeaponChange = (w: Weapon) => {
     setWeapon(w);
@@ -37,6 +41,12 @@ const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCr
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const teamSettings = {
+      minTeamSize: teamSize,
+      teamReserveCount,
+      ...(weapon === Weapon.LASER ? { laserTeamMode } : {}),
+    };
 
     const settings =
       weapon === Weapon.CUSTOM
@@ -51,10 +61,24 @@ const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCr
             manualRanking: false,
             defaultRanking: 9999,
             randomScore: false,
-            minTeamSize: 3,
             customFormula,
+            ...teamSettings,
           }
-        : undefined;
+        : isTeamEvent
+          ? {
+              defaultPoolMaxScore: 5,
+              defaultTableMaxScore: 15,
+              defaultPoolTimerSeconds: 180,
+              defaultTableTimerSeconds: 180,
+              poolRounds: 1,
+              hasDirectElimination: true,
+              thirdPlaceMatch: false,
+              manualRanking: false,
+              defaultRanking: 9999,
+              randomScore: false,
+              ...teamSettings,
+            }
+          : undefined;
 
     onCreate({
       title: title || `Compétition du ${new Date(date).toLocaleDateString('fr-FR')}`,
@@ -64,6 +88,7 @@ const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCr
       category,
       location,
       color: getRandomColor(),
+      isTeamEvent,
       ...(settings ? { settings } : {}),
     });
   };
@@ -173,6 +198,67 @@ const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCr
                 </select>
               </div>
             </div>
+
+            <div className="form-group">
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={isTeamEvent}
+                  onChange={e => setIsTeamEvent(e.target.checked)}
+                />
+                <span className="form-label" style={{ margin: 0 }}>Compétition par équipes</span>
+              </label>
+            </div>
+
+            {isTeamEvent && (
+              <div
+                className="form-group"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: weapon === Weapon.LASER ? '1fr 1fr 1fr' : '1fr 1fr',
+                  gap: '1rem',
+                  background: '#f9fafb',
+                  padding: '0.75rem',
+                  borderRadius: '0.5rem',
+                }}
+              >
+                <div className="form-group">
+                  <label className="form-label">Titulaires par équipe</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    min={1}
+                    max={10}
+                    value={teamSize}
+                    onChange={e => setTeamSize(Math.max(1, Number(e.target.value) || 1))}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Réservistes par équipe</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    min={0}
+                    max={5}
+                    value={teamReserveCount}
+                    onChange={e => setTeamReserveCount(Math.max(0, Number(e.target.value) || 0))}
+                  />
+                </div>
+                {weapon === Weapon.LASER && (
+                  <div className="form-group">
+                    <label className="form-label">Cible Sabre Laser</label>
+                    <select
+                      className="form-input form-select"
+                      value={laserTeamMode}
+                      onChange={e => setLaserTeamMode(e.target.value as 'touches' | 'points')}
+                    >
+                      <option value="touches">Touches (comme les autres armes)</option>
+                      <option value="points">Points de zone cumulés (A/B/C)</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="form-group">
               <label className="form-label">
