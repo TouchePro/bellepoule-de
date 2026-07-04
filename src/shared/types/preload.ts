@@ -354,6 +354,7 @@ export interface ConnectedClient {
   lastSeen: string;
   label?: string;
   screenId?: string;
+  battery?: { level: number; charging: boolean; updatedAt: string };
 }
 
 export interface KioskScreenConfig {
@@ -600,6 +601,10 @@ export interface DatabaseAPI {
     fencerAName: string; fencerBName: string;
     scoreA: number | null; scoreB: number | null; status: string;
     refereeId: string | null; refereeName: string | null;
+  }>>;
+  getRefereeStats: (competitionId: string) => Promise<Array<{
+    refereeId: string; refereeName: string; matchesCount: number;
+    averageDuration: number; cardsYellow: number; cardsRed: number; cardsBlack: number;
   }>>;
 
   // Touch / Card read

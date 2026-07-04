@@ -1261,6 +1261,20 @@
         >
           ⟳ Sync...
         </span>
+        <span
+          id="battery-badge"
+          style="
+            display: none;
+            background: #ef4444;
+            padding: 0.15rem 0.45rem;
+            border-radius: 1rem;
+            font-size: 0.7rem;
+            margin-left: 0.4rem;
+          "
+          title="Batterie faible"
+        >
+          🔋 <span id="battery-level">--</span>%
+        </span>
         <button
           id="btn-dt-icon"
           class="dt-icon-btn"
@@ -1798,6 +1812,7 @@
           this.setupSocketListeners();
           this.setupTimerInteractions();
           this.setupLongPressInteractions();
+          this.setupBatteryMonitor();
           this.showNextMatchesScreen();
           // Détecter l'arme de la compétition pour la mort subite Laser Sabre
           fetch('/api/session')
@@ -2228,6 +2243,38 @@
             dot.classList.add('disconnected');
             text.textContent = window.T('remote.offline');
           }
+        }
+
+        setupBatteryMonitor() {
+          if (!navigator.getBattery) return;
+          const badge = document.getElementById('battery-badge');
+          const levelSpan = document.getElementById('battery-level');
+          const LOW_THRESHOLD = 0.2;
+          let lastSent = 0;
+
+          const report = (battery, force) => {
+            const level = battery.level;
+            const pct = Math.round(level * 100);
+            const low = level <= LOW_THRESHOLD && !battery.charging;
+            badge.style.display = low ? 'inline-block' : 'none';
+            levelSpan.textContent = pct;
+            const now = Date.now();
+            if (force || now - lastSent > 60000) {
+              lastSent = now;
+              if (this.socket && this.socket.connected) {
+                this.socket.emit('client:battery', { level, charging: battery.charging });
+              }
+            }
+            if (low && force) {
+              this.showNotification(`🔋 Batterie faible (${pct}%)`, true);
+            }
+          };
+
+          navigator.getBattery().then(battery => {
+            report(battery, true);
+            battery.addEventListener('levelchange', () => report(battery, true));
+            battery.addEventListener('chargingchange', () => report(battery, true));
+          }).catch(() => {});
         }
 
         selectMatch(matchId) {

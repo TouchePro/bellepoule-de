@@ -54,6 +54,7 @@ const AnalyticsDashboard = React.lazy(() => import('./AnalyticsDashboard').then(
 const SeasonRankingView = React.lazy(() => import('./SeasonRankingView').then(m => ({ default: m.SeasonRankingView })));
 const TeamManagerView = React.lazy(() => import('./TeamManagerView').then(m => ({ default: m.TeamManagerView })));
 const FFEConnectModal = React.lazy(() => import('./FFEConnectModal'));
+const FFEExportModal = React.lazy(() => import('./FFEExportModal'));
 const PresentationMode = React.lazy(() => import('./PresentationMode').then(m => ({ default: m.PresentationMode })));
 const QuestPhaseView = React.lazy(() => import('./QuestPhaseView'));
 
@@ -143,6 +144,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [showSeasonRanking, setShowSeasonRanking] = useState(false);
   const [showTeamManager, setShowTeamManager] = useState(false);
   const [showFFEConnect, setShowFFEConnect] = useState(false);
+  const [showFFEExport, setShowFFEExport] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
   const [showKiosk, setShowKiosk] = useState(false);
   const [showPresentation, setShowPresentation] = useState(false);
@@ -1684,6 +1686,16 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             exportDetailedStats={exportDetailedStats}
             onGoToTableau={() => { setCurrentPhase('tableau'); setShowExportCenter(false); }}
             onGoToResults={() => { setCurrentPhase('results'); setShowExportCenter(false); }}
+            onExportFFE={() => { setShowFFEExport(true); setShowExportCenter(false); }}
+          />
+        </Suspense>
+      )}
+
+      {showFFEExport && (
+        <Suspense fallback={null}>
+          <FFEExportModal
+            ranking={overallRanking}
+            onClose={() => setShowFFEExport(false)}
           />
         </Suspense>
       )}
