@@ -1230,6 +1230,46 @@ export class DatabaseManager {
     });
   }
 
+  public getRefereeStats(competitionId: string): Array<{
+    refereeId: string;
+    refereeName: string;
+    matchesCount: number;
+    averageDuration: number;
+    cardsYellow: number;
+    cardsRed: number;
+    cardsBlack: number;
+  }> {
+    if (!this.db) return [];
+    const rows = this.queryAll<any>(
+      `SELECT r.id AS referee_id, r.name AS referee_name,
+              COUNT(*) AS matches_count,
+              AVG(CASE WHEN m.status = 'finished' AND m.duration IS NOT NULL THEN m.duration END) AS avg_duration,
+              (SELECT COUNT(*) FROM match_cards mc JOIN matches mm ON mc.match_id = mm.id
+                WHERE mm.referee_id = r.id AND mc.card_type = 'yellow') AS cards_yellow,
+              (SELECT COUNT(*) FROM match_cards mc JOIN matches mm ON mc.match_id = mm.id
+                WHERE mm.referee_id = r.id AND mc.card_type = 'red') AS cards_red,
+              (SELECT COUNT(*) FROM match_cards mc JOIN matches mm ON mc.match_id = mm.id
+                WHERE mm.referee_id = r.id AND mc.card_type = 'black') AS cards_black
+       FROM referees r
+       JOIN matches m ON m.referee_id = r.id
+       JOIN pools p ON m.pool_id = p.id
+       JOIN phases ph ON p.phase_id = ph.id
+       WHERE ph.competition_id = ? AND r.competition_id = ?
+       GROUP BY r.id, r.name
+       ORDER BY matches_count DESC`,
+      [competitionId, competitionId]
+    );
+    return rows.map(row => ({
+      refereeId: row.referee_id as string,
+      refereeName: row.referee_name as string,
+      matchesCount: row.matches_count as number,
+      averageDuration: (row.avg_duration as number) ?? 0,
+      cardsYellow: (row.cards_yellow as number) ?? 0,
+      cardsRed: (row.cards_red as number) ?? 0,
+      cardsBlack: (row.cards_black as number) ?? 0,
+    }));
+  }
+
   // ─── Touch / Card read methods ───────────────────────────────────────────────
 
   public getTouches(matchId: string): Array<{

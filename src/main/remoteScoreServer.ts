@@ -153,6 +153,7 @@ export class RemoteScoreServer {
     lastSeen: string;
     label?: string;
     screenId?: string;
+    battery?: { level: number; charging: boolean; updatedAt: string };
   }> = new Map();
 
   // Labels persistants par screenId (survivent aux reconnexions)
@@ -2658,6 +2659,18 @@ export class RemoteScoreServer {
         if (client) {
           client.lastSeen = new Date().toISOString();
         }
+      });
+
+      // Niveau de batterie remonté par les tablettes arbitre
+      socket.on('client:battery', (data: { level: number; charging: boolean }) => {
+        const client = this.connectedClients.get(socket.id);
+        if (!client) return;
+        client.battery = {
+          level: Math.max(0, Math.min(1, data.level)),
+          charging: !!data.charging,
+          updatedAt: new Date().toISOString(),
+        };
+        this.broadcastClientList();
       });
 
       socket.on('disconnect', () => {

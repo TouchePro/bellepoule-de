@@ -621,7 +621,7 @@ function createWindow(initialLang?: string): void {
             "font-src 'self' https://fonts.gstatic.com; " +
             "img-src 'self' data: blob:; " +
             "media-src 'self' blob:; " +
-            "connect-src 'self' http://localhost:* https://api.github.com; " +
+            "connect-src 'self' http://localhost:* https://api.github.com https://api.ffe.fr; " +
             "frame-ancestors 'none';",
         ],
         'X-Content-Type-Options': ['nosniff'],
@@ -1209,6 +1209,9 @@ ipcMain.handle('db:deleteReferee', async (_, id) => {
 });
 ipcMain.handle('db:getMatchesWithReferees', async (_, competitionId) => {
   return db.getMatchesWithReferees(competitionId);
+});
+ipcMain.handle('db:getRefereeStats', async (_, competitionId) => {
+  return db.getRefereeStats(competitionId);
 });
 
 // Touch / Card read handlers

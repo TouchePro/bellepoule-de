@@ -235,6 +235,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     deleteReferee: (id: string) => ipcRenderer.invoke('db:deleteReferee', id),
     getMatchesWithReferees: (competitionId: string) =>
       ipcRenderer.invoke('db:getMatchesWithReferees', competitionId),
+    getRefereeStats: (competitionId: string) =>
+      ipcRenderer.invoke('db:getRefereeStats', competitionId),
 
     // Touch / Card read
     getTouches: (matchId: string) => ipcRenderer.invoke('db:getTouches', matchId),

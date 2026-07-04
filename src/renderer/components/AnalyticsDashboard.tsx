@@ -275,8 +275,11 @@ const AnalyticsDashboard_: React.FC<AnalyticsDashboardProps> = ({
   onClose,
 }) => {
   const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
-  const [activeTab, setActiveTab] = useState<'performance' | 'stats' | 'charts' | 'journal'>('performance');
+  const [activeTab, setActiveTab] = useState<'performance' | 'stats' | 'charts' | 'journal' | 'referees'>('performance');
   const [fencerStats, setFencerStats] = useState<FencerCompetitionStats[]>([]);
+  const [refereeStats, setRefereeStats] = useState<
+    Array<{ refereeId: string; refereeName: string; matchesCount: number; averageDuration: number; cardsYellow: number; cardsRed: number; cardsBlack: number }>
+  >([]);
   const [selectedTimeframe, setSelectedTimeframe] = useState<'live' | 'last30min' | 'all'>('live');
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastUpdate, setLastUpdate] = useState(new Date());
@@ -285,6 +288,11 @@ const AnalyticsDashboard_: React.FC<AnalyticsDashboardProps> = ({
   const loadFencerStats = useCallback(async () => {
     const data = await window.electronAPI?.db?.getCompetitionFencerStats?.(competition.id);
     if (data) setFencerStats(data as FencerCompetitionStats[]);
+  }, [competition.id]);
+
+  const loadRefereeStats = useCallback(async () => {
+    const data = await window.electronAPI?.db?.getRefereeStats?.(competition.id);
+    if (data) setRefereeStats(data);
   }, [competition.id]);
 
   useEffect(() => { loadFencerStats(); }, [loadFencerStats]);
@@ -391,6 +399,12 @@ const AnalyticsDashboard_: React.FC<AnalyticsDashboardProps> = ({
         >
           Journal
         </button>
+        <button
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'referees' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+          onClick={() => { setActiveTab('referees'); loadRefereeStats(); }}
+        >
+          Arbitres
+        </button>
       </div>
 
       {activeTab === 'stats' && <FencerStatsTable competition={competition} />}
@@ -399,6 +413,38 @@ const AnalyticsDashboard_: React.FC<AnalyticsDashboardProps> = ({
         <Suspense fallback={null}>
           <MatchAuditLog competitionId={competition.id} competitionName={competition.title} />
         </Suspense>
+      )}
+      {activeTab === 'referees' && (
+        refereeStats.length === 0 ? (
+          <div className="text-center py-12 text-gray-500 text-sm">
+            Aucun match arbitré enregistré pour cette compétition.
+          </div>
+        ) : (
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="bg-gray-50 border-b-2 border-gray-200">
+                <th className="text-left px-3 py-2 font-semibold text-gray-500">Arbitre</th>
+                <th className="text-right px-3 py-2 font-semibold text-gray-500">Matchs</th>
+                <th className="text-right px-3 py-2 font-semibold text-gray-500">Durée moy.</th>
+                <th className="text-right px-3 py-2 font-semibold text-yellow-600">🟨</th>
+                <th className="text-right px-3 py-2 font-semibold text-red-600">🟥</th>
+                <th className="text-right px-3 py-2 font-semibold text-gray-800">⬛</th>
+              </tr>
+            </thead>
+            <tbody>
+              {refereeStats.map((r, i) => (
+                <tr key={r.refereeId} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  <td className="px-3 py-2 font-medium text-gray-800">{r.refereeName}</td>
+                  <td className="px-3 py-2 text-right">{r.matchesCount}</td>
+                  <td className="px-3 py-2 text-right font-mono">{formatTime(r.averageDuration * 1000)}</td>
+                  <td className="px-3 py-2 text-right">{r.cardsYellow}</td>
+                  <td className="px-3 py-2 text-right">{r.cardsRed}</td>
+                  <td className="px-3 py-2 text-right">{r.cardsBlack}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )
       )}
 
       {activeTab === 'performance' && <>

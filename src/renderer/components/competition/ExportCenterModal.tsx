@@ -29,6 +29,7 @@ interface ExportCenterModalProps {
   exportDetailedStats: (pools: Pool[], ranking: PoolRanking[]) => void;
   onGoToTableau: () => void;
   onGoToResults: () => void;
+  onExportFFE: () => void;
 }
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
@@ -60,6 +61,7 @@ const ExportCenterModal: React.FC<ExportCenterModalProps> = ({
   exportDetailedStats,
   onGoToTableau,
   onGoToResults,
+  onExportFFE,
 }) => {
   return (
     <div className="modal-overlay" onClick={onClose} style={{ zIndex: 11000 }}>
@@ -102,6 +104,7 @@ const ExportCenterModal: React.FC<ExportCenterModalProps> = ({
               <button className="btn btn-secondary" onClick={() => exportRanking(overallRanking, 'csv', isLaserSabre)}>CSV</button>
               <button className="btn btn-secondary" onClick={() => exportRankingExcelCSV(overallRanking)}>CSV Excel</button>
               <button className="btn btn-secondary" onClick={() => exportRanking(overallRanking, 'json', isLaserSabre)}>JSON</button>
+              <button className="btn btn-secondary" onClick={onExportFFE}>📡 Envoyer à la FFE</button>
             </Section>
           )}
 

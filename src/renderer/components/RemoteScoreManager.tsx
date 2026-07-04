@@ -1501,6 +1501,21 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                   {clientLabel}
                 </span>
                 <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{client.ip}</span>
+                {client.battery && (
+                  <span
+                    title={client.battery.charging ? 'En charge' : 'Sur batterie'}
+                    style={{
+                      fontSize: '0.75rem',
+                      padding: '0.15rem 0.4rem',
+                      borderRadius: '0.3rem',
+                      background: client.battery.level <= 0.2 && !client.battery.charging ? '#7f1d1d' : '#1e293b',
+                      color: client.battery.level <= 0.2 && !client.battery.charging ? '#fca5a5' : '#94a3b8',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {client.battery.charging ? '🔌' : '🔋'} {Math.round(client.battery.level * 100)}%
+                  </span>
+                )}
                 <div style={{ display: 'flex', gap: '0.35rem', marginLeft: 'auto', flexWrap: 'wrap' }}>
                   <button
                     className="btn-secondary"
