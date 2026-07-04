@@ -110,6 +110,8 @@ body {
    ============================================================ */
 
 .btn {
+  position: relative;
+  overflow: hidden;
   font-family: var(--font-sans);
   font-size: 0.8125rem;
   font-weight: 600;
@@ -133,19 +135,41 @@ body {
   transform: translateY(0);
 }
 
+/* Glossy sweep — a light streak crosses filled buttons on hover */
+.btn-primary::before,
+.btn-danger::before,
+.btn-success::before,
+.btn-warning::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.35) 48%, transparent 66%);
+  transform: translateX(-100%);
+  pointer-events: none;
+}
+
+.btn-primary:hover:not(:disabled)::before,
+.btn-danger:hover:not(:disabled)::before,
+.btn-success:hover:not(:disabled)::before,
+.btn-warning:hover:not(:disabled)::before {
+  transform: translateX(100%);
+  transition: transform var(--duration-slow) var(--ease-out);
+}
+
 .btn-primary {
-  background: var(--color-primary);
+  background: linear-gradient(180deg, var(--color-primary-light) 0%, var(--color-primary) 60%, var(--color-primary-dark) 100%);
   color: #fff;
-  box-shadow: 0 1px 3px rgba(59, 91, 219, 0.4), inset 0 1px 0 rgba(255,255,255,0.15);
+  box-shadow: 0 1px 3px rgba(59, 91, 219, 0.4), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.08);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: var(--color-primary-dark);
-  box-shadow: 0 4px 12px rgba(59, 91, 219, 0.45), inset 0 1px 0 rgba(255,255,255,0.15);
+  background: linear-gradient(180deg, var(--color-primary-light) 0%, var(--color-primary-dark) 70%, var(--color-primary-dark) 100%);
+  box-shadow: 0 4px 12px rgba(59, 91, 219, 0.45), inset 0 1px 0 rgba(255,255,255,0.35);
 }
 
 .btn-primary:active:not(:disabled) {
-  box-shadow: 0 1px 2px rgba(59, 91, 219, 0.3);
+  background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  box-shadow: 0 1px 2px rgba(59, 91, 219, 0.3), inset 0 1px 3px rgba(0,0,0,0.15);
 }
 
 .btn-secondary {
@@ -162,14 +186,61 @@ body {
 }
 
 .btn-danger {
-  background: var(--color-danger);
+  background: linear-gradient(180deg, #F87171 0%, var(--color-danger) 60%, #B91C1C 100%);
   color: #fff;
-  box-shadow: 0 1px 3px rgba(220, 38, 38, 0.4);
+  box-shadow: 0 1px 3px rgba(220, 38, 38, 0.4), inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.08);
 }
 
 .btn-danger:hover:not(:disabled) {
-  background: #B91C1C;
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+  background: linear-gradient(180deg, #F87171 0%, #B91C1C 70%, #B91C1C 100%);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4), inset 0 1px 0 rgba(255,255,255,0.3);
+}
+
+.btn-danger:active:not(:disabled) {
+  box-shadow: 0 1px 2px rgba(220, 38, 38, 0.3), inset 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.btn-success {
+  background: linear-gradient(180deg, #2DD4BF 0%, var(--color-success) 60%, #0B675F 100%);
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(13, 148, 136, 0.4), inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.08);
+}
+
+.btn-success:hover:not(:disabled) {
+  background: linear-gradient(180deg, #2DD4BF 0%, #0B675F 70%, #0B675F 100%);
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.45), inset 0 1px 0 rgba(255,255,255,0.3);
+}
+
+.btn-success:active:not(:disabled) {
+  box-shadow: 0 1px 2px rgba(13, 148, 136, 0.3), inset 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.btn-warning {
+  background: linear-gradient(180deg, #FCD34D 0%, var(--color-warning) 60%, #B45309 100%);
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(217, 119, 6, 0.4), inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.08);
+}
+
+.btn-warning:hover:not(:disabled) {
+  background: linear-gradient(180deg, #FCD34D 0%, #B45309 70%, #B45309 100%);
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.45), inset 0 1px 0 rgba(255,255,255,0.3);
+}
+
+.btn-warning:active:not(:disabled) {
+  box-shadow: 0 1px 2px rgba(217, 119, 6, 0.3), inset 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-text-light);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  box-shadow: none;
 }
 
 .btn-lg {
