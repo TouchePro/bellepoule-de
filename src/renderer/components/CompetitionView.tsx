@@ -43,6 +43,7 @@ const PlanningAssistant = React.lazy(() => import('./competition/PlanningAssista
 const ExportCenterModal = React.lazy(() => import('./competition/ExportCenterModal'));
 import GlobalPoolColumnsMenu from './pool/GlobalPoolColumnsMenu';
 import WindowSizePresets from './pool/WindowSizePresets';
+import { useColumnVisibility } from '../hooks/useColumnVisibility';
 
 const PoolView = React.lazy(() => import('./PoolView'));
 const TableauView = React.lazy(() => import('./TableauView'));
@@ -97,6 +98,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const postPoolSplitCriteria = competition.settings?.postPoolSplitCriteria;
 
   const auditLogEnabled = localStorage.getItem('bellepoule-audit-log-enabled') !== 'false';
+  const { getVisibleColumns } = useColumnVisibility();
 
   // États locaux
   const [currentPhase, setCurrentPhase] = useState<Phase>('checkin');
@@ -156,6 +158,12 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [minFencersPerPool, setMinFencersPerPool] = useState<number>(5);
   const [maxFencersPerPool, setMaxFencersPerPool] = useState<number>(7);
 
+  // Affichage des poules : grille (toutes les poules) ou poule unique avec navigation
+  const [poolsViewMode, setPoolsViewMode] = useState<'grid' | 'single'>(
+    () => (localStorage.getItem('bellepoule-pools-view-mode') as 'grid' | 'single') || 'grid'
+  );
+  const [singlePoolIndex, setSinglePoolIndex] = useState(0);
+
   // Flag pour indiquer si le classement a changé (nécessite régénération du tableau)
   const [rankingChanged, setRankingChanged] = useState(false);
 
@@ -207,6 +215,46 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     handleUndoAbandon,
     syncFencersToPool,
   } = usePoolManagement({ isLaserSabre, poolMaxScore, showToast, competitionId: competition?.id });
+
+  useEffect(() => {
+    localStorage.setItem('bellepoule-pools-view-mode', poolsViewMode);
+  }, [poolsViewMode]);
+
+  // Recale l'index sélectionné si le nombre de poules change (ex: fusion/suppression)
+  useEffect(() => {
+    if (singlePoolIndex >= pools.length) {
+      setSinglePoolIndex(Math.max(0, pools.length - 1));
+    }
+  }, [pools.length, singlePoolIndex]);
+
+  // Ajuste la taille de la fenêtre à la poule affichée (colonnes choisies + nb de tireurs)
+  // pour éviter les ascenseurs en vue "poule unique".
+  useEffect(() => {
+    if (poolsViewMode !== 'single' || currentPhase !== 'pools') return;
+    const pool = pools[singlePoolIndex];
+    if (!pool) return;
+
+    const POOL_CELL = 52; // px — doit rester synchro avec .pool-cell (main.css)
+    const POOL_NAME_COL = 210; // px — .pool-cell-name (main.css)
+    const CHROME_WIDTH = 140; // marges, bordures de carte, cadre de fenêtre
+    const CHROME_HEIGHT = 380; // en-tête compétition, navigation, barre d'outils, prochain match
+
+    const visibleColumnsCount = getVisibleColumns('pool', pool.id).filter(
+      c => c !== 'quest' || isLaserSabre
+    ).length;
+    const fencerCount = pool.fencers.length;
+
+    const width = Math.min(
+      window.screen.availWidth,
+      POOL_NAME_COL + fencerCount * POOL_CELL + visibleColumnsCount * POOL_CELL + CHROME_WIDTH
+    );
+    const height = Math.min(
+      window.screen.availHeight,
+      (fencerCount + 1) * POOL_CELL + CHROME_HEIGHT
+    );
+
+    window.electronAPI?.setWindowSize(Math.round(width), Math.round(height));
+  }, [poolsViewMode, singlePoolIndex, pools, currentPhase, getVisibleColumns, isLaserSabre]);
 
   const {
     exportFencersList,
@@ -1181,6 +1229,92 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     return null;
   }, [pools, tableauMatches]);
 
+  // Rendu d'une carte de poule (réutilisé par la vue grille et la vue poule unique)
+  const renderPoolCard = (pool: typeof pools[number], poolIndex: number) => (
+    <div key={pool.id} style={{ minWidth: 0, overflow: 'auto' }}>
+      <PoolView
+        pool={pool}
+        weapon={competition.weapon}
+        competitionName={competition.title}
+        maxScore={poolMaxScore}
+        competitionId={competition.id}
+        onScoreUpdate={(matchIndex, scoreA, scoreB, winner, specialStatus) => {
+          updateScore(poolIndex, matchIndex, scoreA, scoreB, winner, specialStatus);
+          if (winner) {
+            const m = pool.matches[matchIndex];
+            const nameA = m?.fencerA ? `${m.fencerA.lastName}` : 'A';
+            const nameB = m?.fencerB ? `${m.fencerB.lastName}` : 'B';
+            fireWebhookNotif(
+              `✅ Match terminé — ${competition.title}`,
+              `${nameA} ${scoreA} – ${scoreB} ${nameB} (Poule ${pool.number})`
+            );
+          }
+          if (isRemoteActive && competition?.id) {
+            const match = pool.matches[matchIndex];
+            if (match) {
+              window.electronAPI.remote.finishPoolMatch(
+                competition.id, match.id, scoreA, scoreB
+              ).catch(() => {});
+            }
+          }
+        }}
+        onMatchReset={(matchIndex) => {
+          const match = pool.matches[matchIndex];
+          if (!match) return;
+          resetMatch(poolIndex, matchIndex);
+          if (competition?.id) {
+            window.electronAPI.remote.resetPoolMatch(competition.id, match.id).catch(() => {});
+          }
+        }}
+        onMatchCancel={(matchIndex) => {
+          const match = pool.matches[matchIndex];
+          if (!match) return;
+          cancelMatch(poolIndex, matchIndex);
+          if (competition?.id) {
+            window.electronAPI.remote.resetPoolMatch(competition.id, match.id).catch(() => {});
+          }
+        }}
+        onFencerStatusChange={(fencerId, status) => {
+          if (
+            status === 'abandon' ||
+            status === 'forfait' ||
+            status === 'exclusion'
+          ) {
+            handleFencerForfeit(fencerId, status);
+          }
+        }}
+        onFencerAdded={updatedPool => {
+          updatedPool.ranking = computePoolRanking(updatedPool);
+          setPools(prev =>
+            prev.map(p => (p.id === updatedPool.id ? updatedPool : p))
+          );
+        }}
+        arenaCount={remoteArenaCount}
+        arenas={arenaStates}
+        isRemoteActive={isRemoteActive}
+        remoteServerUrl={remoteServerUrl ?? undefined}
+        onMatchArenaChange={(matchId, oldArena, newArena, fencerA, fencerB) => {
+          if (!isRemoteActive || !competition?.id) return;
+          window.electronAPI.remote.updateMatchArena(
+            competition.id,
+            matchId,
+            oldArena,
+            newArena,
+            fencerA ?? undefined,
+            fencerB ?? undefined
+          ).catch(() => {});
+        }}
+        onRefereeAssigned={(poolId, referee) => {
+          setPools(prev => prev.map(p =>
+            p.id === poolId
+              ? { ...p, referees: referee ? [referee] : [] }
+              : p
+          ));
+        }}
+      />
+    </div>
+  );
+
   return (
     <div style={CV_STYLES.root}>
       <CompetitionHeader
@@ -1314,12 +1448,31 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                     display: 'flex',
                     justifyContent: 'center',
                     alignItems: 'center',
+                    flexWrap: 'wrap',
                     gap: '0.75rem',
                     marginBottom: '2rem',
                   }}
                 >
                   <GlobalPoolColumnsMenu isLaserSabre={isLaserSabre} />
                   <WindowSizePresets />
+                  <div className="btn-group" style={{ display: 'inline-flex' }}>
+                    <button
+                      className={`btn btn-sm ${poolsViewMode === 'grid' ? 'btn-primary' : 'btn-secondary'}`}
+                      onClick={() => setPoolsViewMode('grid')}
+                      title="Afficher toutes les poules dans une grille"
+                      style={{ borderRadius: '4px 0 0 4px' }}
+                    >
+                      🗂️ Vue globale
+                    </button>
+                    <button
+                      className={`btn btn-sm ${poolsViewMode === 'single' ? 'btn-primary' : 'btn-secondary'}`}
+                      onClick={() => setPoolsViewMode('single')}
+                      title="Afficher une seule poule à la fois"
+                      style={{ borderRadius: '0 4px 4px 0' }}
+                    >
+                      🎯 Vue poule unique
+                    </button>
+                  </div>
                   <button
                     className="btn btn-primary"
                     onClick={handlePrintAllPoolsPDF}
@@ -1333,102 +1486,70 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                     </button>
                   )}
                 </div>
-                <div
-                  style={{
-                    display: 'grid',
-                    gap: '2rem',
-                    width: '100%',
-                    boxSizing: 'border-box',
-                    gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${Math.max(480, 280 + (pools[0]?.fencers?.length ?? 6) * 38)}px), 1fr))`,
-                  }}
-                >
-                  <Suspense fallback={null}>
-                  {pools.map((pool, poolIndex) => (
-                    <div key={pool.id} style={{ minWidth: 0, overflow: 'auto' }}>
-                      <PoolView
-                        pool={pool}
-                        weapon={competition.weapon}
-                        competitionName={competition.title}
-                        maxScore={poolMaxScore}
-                        competitionId={competition.id}
-                        onScoreUpdate={(matchIndex, scoreA, scoreB, winner, specialStatus) => {
-                          updateScore(poolIndex, matchIndex, scoreA, scoreB, winner, specialStatus);
-                          if (winner) {
-                            const m = pool.matches[matchIndex];
-                            const nameA = m?.fencerA ? `${m.fencerA.lastName}` : 'A';
-                            const nameB = m?.fencerB ? `${m.fencerB.lastName}` : 'B';
-                            fireWebhookNotif(
-                              `✅ Match terminé — ${competition.title}`,
-                              `${nameA} ${scoreA} – ${scoreB} ${nameB} (Poule ${pool.number})`
-                            );
-                          }
-                          if (isRemoteActive && competition?.id) {
-                            const match = pool.matches[matchIndex];
-                            if (match) {
-                              window.electronAPI.remote.finishPoolMatch(
-                                competition.id, match.id, scoreA, scoreB
-                              ).catch(() => {});
-                            }
-                          }
-                        }}
-                        onMatchReset={(matchIndex) => {
-                          const match = pool.matches[matchIndex];
-                          if (!match) return;
-                          resetMatch(poolIndex, matchIndex);
-                          if (competition?.id) {
-                            window.electronAPI.remote.resetPoolMatch(competition.id, match.id).catch(() => {});
-                          }
-                        }}
-                        onMatchCancel={(matchIndex) => {
-                          const match = pool.matches[matchIndex];
-                          if (!match) return;
-                          cancelMatch(poolIndex, matchIndex);
-                          if (competition?.id) {
-                            window.electronAPI.remote.resetPoolMatch(competition.id, match.id).catch(() => {});
-                          }
-                        }}
-                        onFencerStatusChange={(fencerId, status) => {
-                          if (
-                            status === 'abandon' ||
-                            status === 'forfait' ||
-                            status === 'exclusion'
-                          ) {
-                            handleFencerForfeit(fencerId, status);
-                          }
-                        }}
-                        onFencerAdded={updatedPool => {
-                          updatedPool.ranking = computePoolRanking(updatedPool);
-                          setPools(prev =>
-                            prev.map(p => (p.id === updatedPool.id ? updatedPool : p))
-                          );
-                        }}
-                        arenaCount={remoteArenaCount}
-                        arenas={arenaStates}
-                        isRemoteActive={isRemoteActive}
-                        remoteServerUrl={remoteServerUrl ?? undefined}
-                        onMatchArenaChange={(matchId, oldArena, newArena, fencerA, fencerB) => {
-                          if (!isRemoteActive || !competition?.id) return;
-                          window.electronAPI.remote.updateMatchArena(
-                            competition.id,
-                            matchId,
-                            oldArena,
-                            newArena,
-                            fencerA ?? undefined,
-                            fencerB ?? undefined
-                          ).catch(() => {});
-                        }}
-                        onRefereeAssigned={(poolId, referee) => {
-                          setPools(prev => prev.map(p =>
-                            p.id === poolId
-                              ? { ...p, referees: referee ? [referee] : [] }
-                              : p
-                          ));
-                        }}
-                      />
+                {poolsViewMode === 'single' ? (
+                  <>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        marginBottom: '1.5rem',
+                      }}
+                    >
+                      <button
+                        className="btn btn-secondary"
+                        onClick={() => setSinglePoolIndex(i => (i - 1 + pools.length) % pools.length)}
+                        disabled={pools.length <= 1}
+                        title="Poule précédente"
+                        aria-label="Poule précédente"
+                      >
+                        ◀
+                      </button>
+                      <select
+                        className="form-input"
+                        style={{ width: 'auto', fontWeight: 600, textAlign: 'center' }}
+                        value={singlePoolIndex}
+                        onChange={e => setSinglePoolIndex(Number(e.target.value))}
+                        aria-label="Sélectionner une poule"
+                      >
+                        {pools.map((pool, i) => (
+                          <option key={pool.id} value={i}>
+                            Poule {pool.number}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        className="btn btn-secondary"
+                        onClick={() => setSinglePoolIndex(i => (i + 1) % pools.length)}
+                        disabled={pools.length <= 1}
+                        title="Poule suivante"
+                        aria-label="Poule suivante"
+                      >
+                        ▶
+                      </button>
                     </div>
-                  ))}
-                  </Suspense>
-                </div>
+                    <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+                      <Suspense fallback={null}>
+                        {pools[singlePoolIndex] && renderPoolCard(pools[singlePoolIndex], singlePoolIndex)}
+                      </Suspense>
+                    </div>
+                  </>
+                ) : (
+                  <div
+                    style={{
+                      display: 'grid',
+                      gap: '2rem',
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${Math.max(480, 280 + (pools[0]?.fencers?.length ?? 6) * 38)}px), 1fr))`,
+                    }}
+                  >
+                    <Suspense fallback={null}>
+                      {pools.map((pool, poolIndex) => renderPoolCard(pool, poolIndex))}
+                    </Suspense>
+                  </div>
+                )}
               </>
             )}
           </div>
