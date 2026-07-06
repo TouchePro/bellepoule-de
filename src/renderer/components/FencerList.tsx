@@ -854,7 +854,12 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                 <tr style={{ height: virtual.state.offsetY }}><td colSpan={colSpanTotal} /></tr>
               )}
               {(useVirtual ? virtual.visibleItems : filteredFencers).map(fencer => (
-                <tr key={fencer.id}>
+                <tr
+                  key={fencer.id}
+                  onDoubleClick={() => setEditingFencer(fencer)}
+                  style={{ cursor: 'pointer' }}
+                  title="Double-cliquer pour modifier"
+                >
                   {visibleCols.map(col => {
                     switch (col.id) {
                       case 'ref':       return <td key="ref" className="text-muted">{fencer.ref}</td>;
@@ -867,7 +872,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                       default:          return null;
                     }
                   })}
-                  <td>
+                  <td onDoubleClick={e => e.stopPropagation()}>
                     <div
                       style={{
                         display: 'flex',
