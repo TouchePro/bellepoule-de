@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Pool, Fencer, Score, MatchStatus, FencerStatus } from '../../../shared/types';
 import { formatRatio, formatIndex } from '../../../shared/utils/poolCalculations';
 import { ColumnId } from '../../hooks/useColumnVisibility';
@@ -62,6 +62,24 @@ const ScoreCell = React.memo<ScoreCellProps>(
         inputRef.current?.select();
       }
     }, [isInlineEditing]);
+
+    // React attache onWheel en mode passif : preventDefault() y est ignoré silencieusement,
+    // donc la poule défile quand même sous la molette. On passe par un listener natif non-passif.
+    const wheelStateRef = useRef({ quickMouseScoring, onWheelScore, isLocked });
+    wheelStateRef.current = { quickMouseScoring, onWheelScore, isLocked };
+
+    const cellRef = useCallback((el: HTMLDivElement | null) => {
+      if (!el) return;
+      const listener = (e: WheelEvent) => {
+        const { quickMouseScoring, onWheelScore, isLocked } = wheelStateRef.current;
+        if (!quickMouseScoring || !onWheelScore || isLocked) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const delta = e.deltaY > 0 ? -1 : 1;
+        onWheelScore(e.shiftKey, delta);
+      };
+      el.addEventListener('wheel', listener, { passive: false });
+    }, []);
 
     if (abandoned) {
       return (
@@ -127,6 +145,7 @@ const ScoreCell = React.memo<ScoreCellProps>(
 
     return (
       <div
+        ref={cellRef}
         className={`pool-cell ${cellClass} ${isFlashing ? 'pool-cell-flash' : ''}`}
         onClick={() => !isLocked && onCellClick(rowFencer, colFencer)}
         onKeyDown={e => {
@@ -137,12 +156,6 @@ const ScoreCell = React.memo<ScoreCellProps>(
         }}
         onMouseEnter={quickMouseScoring ? onHoverIn : undefined}
         onMouseLeave={quickMouseScoring ? onHoverOut : undefined}
-        onWheel={quickMouseScoring && onWheelScore && !isLocked ? e => {
-          e.preventDefault();
-          e.stopPropagation();
-          const delta = e.deltaY > 0 ? -1 : 1;
-          onWheelScore(e.shiftKey, delta);
-        } : undefined}
         role="button"
         tabIndex={isLocked ? -1 : 0}
         aria-label={`${rowFencer.lastName} ${rowFencer.firstName} contre ${colFencer.lastName} ${colFencer.firstName}${
