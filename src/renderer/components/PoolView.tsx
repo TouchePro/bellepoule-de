@@ -189,6 +189,52 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   }, [pool.id, onRefereeAssigned]);
 
   const { addAction, undo, redo, canUndo, canRedo } = useHistory();
+
+  // Supprime (réinitialise) un match terminé et rend l'opération annulable via Ctrl+Z
+  const handleMatchDelete = useCallback(
+    (matchIndex: number) => {
+      if (!onMatchReset) return;
+      const match = pool.matches[matchIndex];
+
+      if (!match || match.status !== MatchStatus.FINISHED) {
+        onMatchReset(matchIndex);
+        return;
+      }
+
+      const prevScoreA = match.scoreA;
+      const prevScoreB = match.scoreB;
+      const winner: 'A' | 'B' | undefined = prevScoreA?.isVictory
+        ? 'A'
+        : prevScoreB?.isVictory
+          ? 'B'
+          : undefined;
+      const specialStatus: 'abandon' | 'forfait' | 'exclusion' | undefined =
+        prevScoreA?.isAbstention || prevScoreB?.isAbstention
+          ? 'abandon'
+          : prevScoreA?.isForfait || prevScoreB?.isForfait
+            ? 'forfait'
+            : prevScoreA?.isExclusion || prevScoreB?.isExclusion
+              ? 'exclusion'
+              : undefined;
+
+      addAction({
+        type: 'DELETE_MATCH',
+        description: `Suppression score poule ${pool.number} match ${matchIndex + 1}`,
+        undo: () => {
+          if (prevScoreA?.value != null && prevScoreB?.value != null) {
+            onScoreUpdate(matchIndex, prevScoreA.value, prevScoreB.value, winner, specialStatus);
+          }
+        },
+        redo: () => {
+          onMatchReset(matchIndex);
+        },
+      });
+
+      onMatchReset(matchIndex);
+    },
+    [pool, onMatchReset, onScoreUpdate, addAction]
+  );
+
   const [showPoolConfetti, setShowPoolConfetti] = useState(false);
   const [showAddFencerModal, setShowAddFencerModal] = useState(false);
   const [auditMatchId, setAuditMatchId] = useState<string | null>(null);
@@ -1190,7 +1236,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         isLocked={isLocked}
         onMatchReset={!isLocked && onMatchReset ? (rowFencer, colFencer) => {
           const matchIndex = getMatchIndex(rowFencer, colFencer);
-          if (matchIndex !== -1) onMatchReset(matchIndex);
+          if (matchIndex !== -1) handleMatchDelete(matchIndex);
         } : undefined}
         quickMouseScoring={quickMouseScoring}
         highlightedFencerIds={hoveredFencerIds}
@@ -1539,7 +1585,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
             isLaserSabre={isLaserSabre}
             isLocked={isLocked}
             openScoreModal={openScoreModal}
-            onMatchReset={onMatchReset}
+            onMatchReset={onMatchReset ? handleMatchDelete : undefined}
             onShowMatchAudit={setAuditMatchId}
             defaultArena={defaultArena}
             arenaCount={arenaCount}

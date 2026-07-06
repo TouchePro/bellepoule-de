@@ -127,6 +127,7 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
 }) => {
   const [showArenaModal, setShowArenaModal] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
+  const [highlightedMatchId, setHighlightedMatchId] = useState<string | null>(null);
 
   const openArenaModal = (match: Match, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -351,22 +352,26 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
               match.fencerB?.status === FencerStatus.EXCLUDED;
             const isAbandonMatch = fencerAAbandoned || fencerBAbandoned;
             const winnerA = !!match.scoreA?.isVictory;
+            const isHighlighted = highlightedMatchId === match.id;
 
             return (
               <div
                 key={index}
                 onClick={() => !isAbandonMatch && !isLocked && openScoreModal(index)}
+                onMouseEnter={() => setHighlightedMatchId(match.id)}
+                onMouseLeave={() => setHighlightedMatchId(prev => (prev === match.id ? null : prev))}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   padding: '0.5rem 0.75rem 0.5rem 0.875rem',
-                  background: 'white',
+                  background: isHighlighted ? '#f8fafc' : 'white',
                   borderRadius: '7px',
-                  border: '1px solid #e5e7eb',
+                  border: isHighlighted ? '1px solid #94a3b8' : '1px solid #e5e7eb',
                   borderLeft: isAbandonMatch ? '3px solid #9ca3af' : winnerA ? '3px solid #059669' : '3px solid #dc2626',
                   cursor: isAbandonMatch || isLocked ? 'default' : 'pointer',
                   opacity: isAbandonMatch ? 0.55 : 1,
                   gap: '0.5rem',
+                  transition: 'background 0.1s, border-color 0.1s',
                 }}
               >
                 <span
@@ -436,7 +441,7 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
                       e.stopPropagation();
                       onMatchReset(index);
                     }}
-                    title="Annuler ce résultat"
+                    title="Supprimer ce résultat (Ctrl+Z pour annuler la suppression)"
                     style={{
                       padding: '0.2rem 0.4rem',
                       fontSize: '0.7rem',
@@ -446,9 +451,11 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
                       cursor: 'pointer',
                       color: '#dc2626',
                       flexShrink: 0,
+                      opacity: isHighlighted ? 1 : 0,
+                      transition: 'opacity 0.1s',
                     }}
                   >
-                    ↺
+                    🗑
                   </button>
                 )}
               </div>
