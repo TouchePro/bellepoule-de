@@ -411,7 +411,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     );
   };
 
-  const { modalRef, dimensions } = useModalResize({
+  const { modalRef } = useModalResize({
     defaultWidth: 1440, // Doublé de 720 à 1440 (+100%)
     defaultHeight: 400,
     minWidth: 960, // Doublé de 480 à 960 (+100%)
@@ -887,7 +887,6 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           ref={modalRef}
           className="modal resizable"
           onClick={e => e.stopPropagation()}
-          style={{ maxWidth: '900px', width: '95%', minHeight: '400px' }}
         >
           <div className="modal-header" style={{ cursor: 'move' }}>
             <h3 className="modal-title">Saisie rapide du score</h3>
