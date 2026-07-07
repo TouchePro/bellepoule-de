@@ -37,6 +37,7 @@ interface ScoreCellProps {
   onMatchReset?: (rowFencer: Fencer, colFencer: Fencer) => void;
   isHighlighted?: boolean;
   quickMouseScoring?: boolean;
+  simplifiedInputMode?: boolean;
   onHoverIn?: () => void;
   onHoverOut?: () => void;
   onWheelScore?: (shiftKey: boolean, delta: number) => void;
@@ -52,7 +53,7 @@ interface ScoreCellProps {
 // (la grille est O(n²), un re-rendu global coûte cher sur les grandes poules).
 const ScoreCell = React.memo<ScoreCellProps>(
   ({ rowFencer, colFencer, abandoned, score, isFlashing, isLocked, onCellClick, onMatchReset,
-     isHighlighted, quickMouseScoring, onHoverIn, onHoverOut, onWheelScore,
+     isHighlighted, quickMouseScoring, simplifiedInputMode, onHoverIn, onHoverOut, onWheelScore,
      isInlineEditing, inlineSingleScore, bufferedScore, onInlineSingleScoreChange, onInlineSubmit, onInlineCancel }) => {
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -154,8 +155,8 @@ const ScoreCell = React.memo<ScoreCellProps>(
             onCellClick(rowFencer, colFencer);
           }
         }}
-        onMouseEnter={quickMouseScoring ? onHoverIn : undefined}
-        onMouseLeave={quickMouseScoring ? onHoverOut : undefined}
+        onMouseEnter={quickMouseScoring || simplifiedInputMode ? onHoverIn : undefined}
+        onMouseLeave={quickMouseScoring || simplifiedInputMode ? onHoverOut : undefined}
         role="button"
         tabIndex={isLocked ? -1 : 0}
         aria-label={`${rowFencer.lastName} ${rowFencer.firstName} contre ${colFencer.lastName} ${colFencer.firstName}${
@@ -562,6 +563,7 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
                   onMatchReset={onMatchReset}
                   isHighlighted={isHighlighted}
                   quickMouseScoring={quickMouseScoring}
+                  simplifiedInputMode={simplifiedInputMode}
                   onHoverIn={onHoverCell ? () => onHoverCell(rowFencer, colFencer) : undefined}
                   onHoverOut={onHoverLeave}
                   onWheelScore={onWheelScore ? (shiftKey, delta) => onWheelScore(rowFencer, colFencer, shiftKey, delta) : undefined}

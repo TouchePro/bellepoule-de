@@ -440,12 +440,47 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           if (!isLocked) redo();
           return;
         }
+        // Saisie simplifiée : survoler une case puis Suppr efface le score de ce match.
+        if (
+          e.key === 'Delete' &&
+          simplifiedInputMode &&
+          !isLocked &&
+          !inModalInput &&
+          target.tagName !== 'INPUT' &&
+          target.tagName !== 'TEXTAREA' &&
+          hoveredFencerIds.size === 2
+        ) {
+          e.preventDefault();
+          const [idA, idB] = Array.from(hoveredFencerIds);
+          const fencerA = fencers.find(f => f.id === idA);
+          const fencerB = fencers.find(f => f.id === idB);
+          if (fencerA && fencerB) {
+            const matchIndex = getMatchIndex(fencerA, fencerB);
+            if (matchIndex !== -1 && pool.matches[matchIndex]?.status === MatchStatus.FINISHED) {
+              handleMatchDelete(matchIndex);
+            }
+          }
+          return;
+        }
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [editingMatch, keyboardFocusField, isLaserSabre, orderedMatches.pending, undo, redo]);
+  }, [
+    editingMatch,
+    keyboardFocusField,
+    isLaserSabre,
+    orderedMatches.pending,
+    undo,
+    redo,
+    simplifiedInputMode,
+    isLocked,
+    hoveredFencerIds,
+    fencers,
+    pool.matches,
+    handleMatchDelete,
+  ]);
 
   // Calculer l'ordre optimal des matches restants
 
@@ -1239,8 +1274,8 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         } : undefined}
         quickMouseScoring={quickMouseScoring}
         highlightedFencerIds={hoveredFencerIds}
-        onHoverCell={quickMouseScoring ? handleHoverCell : undefined}
-        onHoverLeave={quickMouseScoring ? handleHoverLeave : undefined}
+        onHoverCell={quickMouseScoring || simplifiedInputMode ? handleHoverCell : undefined}
+        onHoverLeave={quickMouseScoring || simplifiedInputMode ? handleHoverLeave : undefined}
         onWheelScore={quickMouseScoring ? handleWheelScore : undefined}
         simplifiedInputMode={simplifiedInputMode}
         inlineEditKey={inlineEditCell?.key ?? null}
