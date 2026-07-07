@@ -227,11 +227,18 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     }
   }, [pools.length, singlePoolIndex]);
 
-  // Ajuste la taille de la fenêtre à la poule affichée (colonnes choisies + nb de tireurs)
-  // pour éviter les ascenseurs en vue "poule unique".
+  // Ajuste la taille de la fenêtre à l'entrée en vue "poule unique" (colonnes choisies
+  // + nb de tireurs de la poule affichée) pour éviter les ascenseurs. Ne se redéclenche
+  // pas à chaque changement de poule : naviguer d'une poule à l'autre ne doit pas
+  // réinitialiser la taille de fenêtre choisie par l'utilisateur (cf. bug dimension reset).
+  const poolsRef = useRef(pools);
+  poolsRef.current = pools;
+  const singlePoolIndexRef = useRef(singlePoolIndex);
+  singlePoolIndexRef.current = singlePoolIndex;
+
   useEffect(() => {
     if (poolsViewMode !== 'single' || currentPhase !== 'pools') return;
-    const pool = pools[singlePoolIndex];
+    const pool = poolsRef.current[singlePoolIndexRef.current];
     if (!pool) return;
 
     const POOL_CELL = 52; // px — doit rester synchro avec .pool-cell (main.css)
@@ -254,7 +261,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     );
 
     window.electronAPI?.setWindowSize(Math.round(width), Math.round(height));
-  }, [poolsViewMode, singlePoolIndex, pools, currentPhase, getVisibleColumns, isLaserSabre]);
+  }, [poolsViewMode, currentPhase, getVisibleColumns, isLaserSabre]);
 
   const {
     exportFencersList,
