@@ -1411,7 +1411,8 @@ ipcMain.handle('dialog:saveFile', async (_, options) => {
 
 // Window resize handler
 ipcMain.handle('window:setSize', (_event, width: number, height: number) => {
-  if (mainWindow) {
+  // Ne pas écraser une fenêtre maximisée par l'utilisateur (ex: auto-fit poule unique)
+  if (mainWindow && !mainWindow.isMaximized()) {
     mainWindow.setSize(Math.max(width, 800), Math.max(height, 600), true);
   }
 });
