@@ -96,18 +96,28 @@ export const nameCol = (align: 'flex-start' | 'flex-end'): CSSProperties => ({
   alignItems: align,
   flex: 1,
   minWidth: '200px',
+  maxWidth: '100%',
+  overflow: 'hidden',
 });
 
 export const nameLast = (align: 'left' | 'right'): CSSProperties => ({
   fontSize: '1.5rem',
   fontWeight: 600,
   textAlign: align,
+  maxWidth: '100%',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
 });
 
 export const nameFirst = (align: 'left' | 'right'): CSSProperties => ({
   fontSize: '1rem',
   color: '#6b7280',
   textAlign: align,
+  maxWidth: '100%',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
 });
 
 export const victoryBtn = (active: boolean): CSSProperties => ({
