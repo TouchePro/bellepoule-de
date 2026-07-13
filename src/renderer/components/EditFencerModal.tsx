@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { Fencer, Gender, FencerStatus } from '../../shared/types';
 import FencerPhoto from './FencerPhoto';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface EditFencerModalProps {
   fencer: Fencer;
@@ -16,6 +17,7 @@ interface EditFencerModalProps {
 
 const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClose }) => {
   const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
+  const { t } = useTranslation();
   const [lastName, setLastName] = useState(fencer.lastName);
   const [firstName, setFirstName] = useState(fencer.firstName);
   const [gender, setGender] = useState<Gender>(fencer.gender);
@@ -50,7 +52,7 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
     <div className="modal-overlay" onClick={onClose}>
       <div ref={modalRef} className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }} role="dialog" aria-modal="true">
         <div className="modal-header">
-          <h2>Modifier le tireur</h2>
+          <h2>{t('editFencer.title')}</h2>
           <button className="btn-close" onClick={onClose}>
             &times;
           </button>
@@ -70,7 +72,7 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
-              <label className="form-label">Nom *</label>
+              <label className="form-label">{t('editFencer.last_name')}</label>
               <input
                 type="text"
                 className="form-input"
@@ -81,7 +83,7 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
             </div>
 
             <div className="form-group">
-              <label className="form-label">Prénom *</label>
+              <label className="form-label">{t('editFencer.first_name')}</label>
               <input
                 type="text"
                 className="form-input"
@@ -113,8 +115,8 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
                 value={status}
                 onChange={e => setStatus(e.target.value as FencerStatus)}
               >
-                <option value={FencerStatus.NOT_CHECKED_IN}>Non pointé</option>
-                <option value={FencerStatus.CHECKED_IN}>Pointé (présent)</option>
+                <option value={FencerStatus.NOT_CHECKED_IN}>{t('editFencer.not_ranked')}</option>
+                <option value={FencerStatus.CHECKED_IN}>{t('editFencer.ranked_present')}</option>
                 <option value={FencerStatus.FORFAIT}>Forfait</option>
                 <option value={FencerStatus.ABANDONED}>Abandon</option>
                 <option value={FencerStatus.EXCLUDED}>Exclu</option>
@@ -135,7 +137,7 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
-              <label className="form-label">Région</label>
+              <label className="form-label">{t('fencer.region')}</label>
               <input
                 type="text"
                 className="form-input"
@@ -146,7 +148,7 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
             </div>
 
             <div className="form-group">
-              <label className="form-label">Nationalité</label>
+              <label className="form-label">{t('fencer.nationality')}</label>
               <input
                 type="text"
                 className="form-input"
@@ -170,14 +172,14 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
             </div>
 
             <div className="form-group">
-              <label className="form-label">Classement</label>
+              <label className="form-label">{t('fencer.ranking')}</label>
               <input
                 type="number"
                 className="form-input"
                 value={ranking}
                 onChange={e => setRanking(e.target.value)}
                 min="1"
-                placeholder="Non classé"
+                placeholder={t('fencer.unranked')}
               />
             </div>
           </div>

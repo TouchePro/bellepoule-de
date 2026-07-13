@@ -11,6 +11,7 @@ import {
   FFEConnectService,
   FFEParticipant,
 } from '@shared/services/ffeConnectService';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface FFEConnectModalProps {
   onImport: (fencers: Partial<Fencer>[]) => void;
@@ -19,6 +20,7 @@ interface FFEConnectModalProps {
 
 const FFEConnectModal: React.FC<FFEConnectModalProps> = ({ onImport, onClose }) => {
   const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
+  const { t } = useTranslation();
   const [competitionCode, setCompetitionCode] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [loading, setLoading] = useState(false);
@@ -91,7 +93,7 @@ const FFEConnectModal: React.FC<FFEConnectModalProps> = ({ onImport, onClose }) 
         aria-modal="true"
       >
         <div className="modal-header">
-          <h2 className="modal-title">Importer depuis FFE Connect</h2>
+          <h2 className="modal-title">{t('ffe.import_title')}</h2>
           <button className="btn btn-icon btn-secondary" onClick={onClose}>
             &times;
           </button>
@@ -100,7 +102,7 @@ const FFEConnectModal: React.FC<FFEConnectModalProps> = ({ onImport, onClose }) 
         <div className="modal-body" style={{ flex: 1, overflow: 'auto' }}>
           <div className="form-row" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
             <div className="form-group" style={{ flex: 2 }}>
-              <label className="form-label">Code de compétition *</label>
+              <label className="form-label">{t('ffe.competition_code')}</label>
               <input
                 className="form-input"
                 type="text"
@@ -112,11 +114,11 @@ const FFEConnectModal: React.FC<FFEConnectModalProps> = ({ onImport, onClose }) 
               />
             </div>
             <div className="form-group" style={{ flex: 2 }}>
-              <label className="form-label">Clé API (optionnelle)</label>
+              <label className="form-label">{t('ffe.api_key_optional')}</label>
               <input
                 className="form-input"
                 type="password"
-                placeholder="Votre clé API FFE"
+                placeholder={t('ffe.api_key')}
                 value={apiKey}
                 onChange={e => setApiKey(e.target.value)}
                 disabled={loading}
@@ -161,7 +163,7 @@ const FFEConnectModal: React.FC<FFEConnectModalProps> = ({ onImport, onClose }) 
               >
                 <span>
                   <strong>{participants.length}</strong> participant(s) trouvé(s) —{' '}
-                  <strong>{selected.size}</strong> sélectionné(s)
+                  <strong>{selected.size}</strong> {t('ffe.selected')}
                 </span>
                 <button className="btn btn-secondary" onClick={toggleAll} style={{ padding: '4px 10px' }}>
                   {selected.size === participants.length ? 'Tout désélectionner' : 'Tout sélectionner'}
@@ -174,13 +176,13 @@ const FFEConnectModal: React.FC<FFEConnectModalProps> = ({ onImport, onClose }) 
                     <tr>
                       <th style={{ width: 36 }}></th>
                       <th>Licence</th>
-                      <th>Nom</th>
-                      <th>Prénom</th>
+                      <th>{t('fencer.last_name')}</th>
+                      <th>{t('fencer.first_name')}</th>
                       <th>Club</th>
                       <th>Ligue</th>
                       <th>Sexe</th>
-                      <th>Nationalité</th>
-                      <th>Classement</th>
+                      <th>{t('fencer.nationality')}</th>
+                      <th>{t('fencer.ranking')}</th>
                     </tr>
                   </thead>
                   <tbody>

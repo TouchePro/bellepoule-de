@@ -6,6 +6,7 @@
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { logError, logComponentError } from '../../shared/utils/errorLogger';
+import { TranslationContext } from '../contexts/TranslationContext';
 
 interface Props {
   children: ReactNode;
@@ -20,6 +21,7 @@ interface State {
 }
 
 export class ErrorBoundary extends Component<Props, State> {
+  static contextType = TranslationContext;
   constructor(props: Props) {
     super(props);
     this.state = { hasError: false };
@@ -167,6 +169,7 @@ export class ErrorBoundary extends Component<Props, State> {
 // ============================================================================
 
 export class CompetitionErrorBoundary extends Component<Props> {
+  static contextType = TranslationContext;
   render() {
     return (
       <ErrorBoundary
@@ -181,7 +184,7 @@ export class CompetitionErrorBoundary extends Component<Props> {
         fallback={
           <div style={{ padding: '20px', textAlign: 'center' }}>
             <h3>🤺 Fehler im Wettbewerb</h3>
-            <p>Beim Laden des Wettbewerbs ist ein Fehler aufgetreten.</p>
+            <p>{this.context.t('errors.load_title')}</p>
             <button onClick={() => window.location.reload()}>App neu laden</button>
           </div>
         }
@@ -212,6 +215,7 @@ export class PoolErrorBoundary extends Component<Props> {
 }
 
 export class DatabaseErrorBoundary extends Component<Props> {
+  static contextType = TranslationContext;
   render() {
     return (
       <ErrorBoundary
@@ -233,7 +237,7 @@ export class DatabaseErrorBoundary extends Component<Props> {
           <div style={{ padding: '20px', textAlign: 'center' }}>
             <h3>💾 Datenbankfehler</h3>
             <p>Beim Zugriff auf die Daten ist ein Fehler aufgetreten.</p>
-            <p>Die Daten könnten beschädigt sein. Bitte den Support kontaktieren.</p>
+            <p>{this.context.t('errors.load_message')}</p>
             <button onClick={() => window.location.reload()}>App neu starten</button>
           </div>
         }

@@ -1440,12 +1440,12 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             {pools.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state-icon">🎯</div>
-                <h2 className="empty-state-title">Pas de poules</h2>
+                <h2 className="empty-state-title">{t('ui.no_pools')}</h2>
                 <p className="empty-state-description">
-                  Retournez à l'appel pour générer les poules
+                  {t('competitionView.return_to_generate')}
                 </p>
                 <button className="btn btn-primary" onClick={() => setCurrentPhase('checkin')}>
-                  Retour à l'appel
+                  {t('competitionView.back_to_call')}
                 </button>
               </div>
             ) : (
@@ -1466,7 +1466,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                     <button
                       className={`btn btn-sm ${poolsViewMode === 'grid' ? 'btn-primary' : 'btn-secondary'}`}
                       onClick={() => setPoolsViewMode('grid')}
-                      title="Afficher toutes les poules dans une grille"
+                      title={t('competitionView.show_grid_attr')}
                       style={{ borderRadius: '4px 0 0 4px' }}
                     >
                       🗂️ Vue globale
@@ -1474,22 +1474,22 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                     <button
                       className={`btn btn-sm ${poolsViewMode === 'single' ? 'btn-primary' : 'btn-secondary'}`}
                       onClick={() => setPoolsViewMode('single')}
-                      title="Afficher une seule poule à la fois"
+                      title={t('competitionView.single_pool_attr')}
                       style={{ borderRadius: '0 4px 4px 0' }}
                     >
-                      🎯 Vue poule unique
+                      {t('competitionView.single_view')}
                     </button>
                   </div>
                   <button
                     className="btn btn-primary"
                     onClick={handlePrintAllPoolsPDF}
-                    title="Imprimer les feuilles de poule (Ctrl+P)"
+                    title={t('competitionView.print_sheets_attr')}
                   >
-                    🖨️ Imprimer les feuilles de poule
+                    {t('competitionView.print')}
                   </button>
                   {pools.length > 1 && (
                     <button className="btn btn-success" onClick={handleExportAllPoolsPDF}>
-                      📄 Exporter toutes les poules en PDF
+                      {t('competitionView.export_pdf')}
                     </button>
                   )}
                 </div>
@@ -1508,8 +1508,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                         className="btn btn-secondary"
                         onClick={() => setSinglePoolIndex(i => (i - 1 + pools.length) % pools.length)}
                         disabled={pools.length <= 1}
-                        title="Poule précédente"
-                        aria-label="Poule précédente"
+                        title={t('ui.previous_pool')}
+                        aria-label={t('ui.previous_pool')}
                       >
                         ◀
                       </button>
@@ -1518,7 +1518,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                         style={{ width: 'auto', fontWeight: 600, textAlign: 'center' }}
                         value={singlePoolIndex}
                         onChange={e => setSinglePoolIndex(Number(e.target.value))}
-                        aria-label="Sélectionner une poule"
+                        aria-label={t('competitionView.select_pool_attr')}
                       >
                         {pools.map((pool, i) => (
                           <option key={pool.id} value={i}>
@@ -1530,8 +1530,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                         className="btn btn-secondary"
                         onClick={() => setSinglePoolIndex(i => (i + 1) % pools.length)}
                         disabled={pools.length <= 1}
-                        title="Poule suivante"
-                        aria-label="Poule suivante"
+                        title={t('ui.next_pool')}
+                        aria-label={t('ui.next_pool')}
                       >
                         ▶
                       </button>
@@ -1621,7 +1621,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         )}
 
         {currentPhase === 'tableau' && (
-          <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Chargement tableau…</div>}>
+          <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>{t('competitionView.loading_tableau')}</div>}>
           {/* Sélecteur de groupe pour compétition couplée */}
           {postPoolSplitCriteria && activeSplitGroup && splitGroups.length > 1 && (
             <div style={{ display: 'flex', gap: '0.5rem', padding: '0.75rem 1rem', borderBottom: '1px solid #e5e7eb', background: '#f9fafb' }}>
@@ -1658,7 +1658,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               fontSize: '0.875rem',
               color: '#713f12',
             }}>
-              <span>🔒 Tableau en lecture seule — résultats finaux générés.</span>
+              <span>{t('competitionView.readonly')}</span>
               <button
                 onClick={async () => {
                   if (await confirm('Modifier le tableau effacera les résultats finaux. Continuer ?')) {
@@ -1677,7 +1677,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                   fontWeight: '600',
                 }}
               >
-                ✏️ Modifier le tableau
+                {t('competitionView.edit_tableau')}
               </button>
             </div>
           )}

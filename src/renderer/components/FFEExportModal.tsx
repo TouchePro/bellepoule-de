@@ -8,6 +8,7 @@ import React, { useState } from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { PoolRanking } from '../../shared/types';
 import { FFEConnectService, FFEResultEntry } from '@shared/services/ffeConnectService';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface FFEExportModalProps {
   ranking: PoolRanking[];
@@ -36,6 +37,7 @@ function toResultEntries(ranking: PoolRanking[]): { entries: FFEResultEntry[]; m
 
 const FFEExportModal: React.FC<FFEExportModalProps> = ({ ranking, onClose }) => {
   const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
+  const { t } = useTranslation();
   const [competitionCode, setCompetitionCode] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [sending, setSending] = useState(false);
@@ -75,13 +77,13 @@ const FFEExportModal: React.FC<FFEExportModalProps> = ({ ranking, onClose }) => 
         aria-modal="true"
       >
         <div className="modal-header">
-          <h2 className="modal-title">Exporter vers FFE Connect</h2>
+          <h2 className="modal-title">{t('ffe.export_title')}</h2>
           <button className="btn btn-icon btn-secondary" onClick={onClose}>&times;</button>
         </div>
 
         <div className="modal-body">
           <div className="form-group" style={{ marginBottom: '1rem' }}>
-            <label className="form-label">Code de compétition *</label>
+            <label className="form-label">{t('ffe.competition_code')}</label>
             <input
               className="form-input"
               type="text"
@@ -92,11 +94,11 @@ const FFEExportModal: React.FC<FFEExportModalProps> = ({ ranking, onClose }) => 
             />
           </div>
           <div className="form-group" style={{ marginBottom: '1rem' }}>
-            <label className="form-label">Clé API (optionnelle)</label>
+            <label className="form-label">{t('ffe.api_key_optional')}</label>
             <input
               className="form-input"
               type="password"
-              placeholder="Votre clé API FFE"
+              placeholder={t('ffe.api_key')}
               value={apiKey}
               onChange={e => setApiKey(e.target.value)}
               disabled={sending}
@@ -115,13 +117,13 @@ const FFEExportModal: React.FC<FFEExportModalProps> = ({ ranking, onClose }) => 
           )}
           {success && (
             <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: '#dcfce7', borderRadius: '6px', color: '#15803d' }}>
-              Résultats envoyés à la FFE avec succès.
+              {t('ffe.export_success')}
             </div>
           )}
         </div>
 
         <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-          <button className="btn btn-secondary" onClick={onClose}>Fermer</button>
+          <button className="btn btn-secondary" onClick={onClose}>{t('actions.close')}</button>
           <button
             className="btn btn-primary"
             onClick={handleExport}

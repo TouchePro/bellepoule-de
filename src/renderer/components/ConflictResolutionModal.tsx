@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { SyncConflict } from '@shared/services/cloudSyncService';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface ConflictResolutionModalProps {
   conflicts: SyncConflict[];
@@ -19,6 +20,7 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
   onClose,
   isOpen,
 }) => {
+  const { t } = useTranslation();
   if (!isOpen) return null;
 
   const typeLabel: Record<SyncConflict['type'], string> = {
@@ -37,7 +39,7 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
-            aria-label="Fermer"
+            aria-label={t('actions.close')}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -90,7 +92,7 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
           ))}
 
           {conflicts.length === 0 && (
-            <p className="text-sm text-gray-500 text-center py-8">Aucun conflit à résoudre.</p>
+            <p className="text-sm text-gray-500 text-center py-8">{t('conflict.none')}</p>
           )}
         </div>
 
@@ -99,7 +101,7 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
             onClick={onClose}
             className="w-full px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200 transition-colors"
           >
-            Fermer
+            {t('actions.close')}
           </button>
         </div>
       </div>
