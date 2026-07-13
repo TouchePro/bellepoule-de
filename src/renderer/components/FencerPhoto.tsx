@@ -6,6 +6,7 @@
 
 import React, { useState, useRef, useCallback } from 'react';
 import { logger, LogCategory } from '@shared/services/logger';
+import { useTranslation } from '../hooks/useTranslation';
 import PhotoBooth from './PhotoBooth';
 
 interface FencerPhotoProps {
@@ -29,6 +30,7 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [showWebcam, setShowWebcam] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { t } = useTranslation();
 
   const sizeClasses = {
     small: 'w-10 h-10 text-xs',
@@ -202,7 +204,7 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
             handleRemovePhoto();
           }}
           className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600 transition-colors shadow-md"
-          title="Supprimer la photo"
+          title={t('photo.delete')}
         >
           ×
         </button>
@@ -216,7 +218,7 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
             setShowWebcam(true);
           }}
           className="absolute -bottom-1 -right-1 h-8 px-2 bg-blue-500 text-white rounded-md flex items-center justify-center gap-1 hover:bg-blue-600 transition-colors shadow-md"
-          title="Prendre une photo avec la webcam"
+          title={t('photo.take_webcam')}
           style={{ fontSize: '14px' }}
         >
           📷 <span style={{ fontSize: '11px', fontWeight: 500 }}>Webcam</span>
@@ -235,7 +237,7 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
 
       {isDragging && (
         <div className="absolute inset-0 bg-blue-500 bg-opacity-20 rounded-full flex items-center justify-center pointer-events-none">
-          <span className="text-blue-700 text-xs font-medium">Déposer ici</span>
+          <span className="text-blue-700 text-xs font-medium">{t('photo.drop_here')}</span>
         </div>
       )}
 
@@ -272,7 +274,7 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
               }}
             >
               <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: 600 }}>
-                Prendre une photo
+                {t('photo.take')}
               </h3>
               <button
                 type="button"

@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useCallback, memo, useMemo } from 'react';
+import { useTranslation } from '../hooks/useTranslation';
 import type { MatchEventEntry, MatchEventType } from '../../shared/types';
 import { useMatchAuditStore } from '../../features/matchAuditLog/hooks/useMatchAuditStore';
 import { useToast } from './Toast';
@@ -72,6 +73,7 @@ const MatchAuditLogComponent: React.FC<MatchAuditLogProps> = ({
   onClose,
 }) => {
   const { showToast } = useToast();
+  const { t } = useTranslation();
   const [refereeView, setRefereeView] = useState(false);
   const { entries, isLoading, error, filterTypes, loadMatchTimeline, loadCompetitionTimeline, setFilterTypes, reset } =
     useMatchAuditStore();
@@ -176,7 +178,7 @@ const MatchAuditLogComponent: React.FC<MatchAuditLogProps> = ({
 
       {/* Filtres */}
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        <span style={{ fontSize: '0.8rem', color: '#6b7280', marginRight: '0.25rem' }}>Filtrer :</span>
+        <span style={{ fontSize: '0.8rem', color: '#6b7280', marginRight: '0.25rem' }}>{t('matchAudit.filter')}</span>
         {ALL_TYPES.map(t => {
           const active = filterTypes.length === 0 || filterTypes.includes(t);
           return (
@@ -214,7 +216,7 @@ const MatchAuditLogComponent: React.FC<MatchAuditLogProps> = ({
             cursor: 'pointer',
           }}
         >
-          Par arbitre
+          {t('matchAudit.by_referee')}
         </button>
         <button
           onClick={handleExportJSON}
@@ -230,27 +232,27 @@ const MatchAuditLogComponent: React.FC<MatchAuditLogProps> = ({
             cursor: entries.length === 0 ? 'not-allowed' : 'pointer',
           }}
         >
-          Export JSON
+          {t('matchAudit.export_json')}
         </button>
       </div>
 
       {/* Tableau */}
       <div style={{ overflowY: 'auto', flex: 1 }}>
         {isLoading ? (
-          <div style={{ textAlign: 'center', padding: '3rem', color: '#6b7280' }}>Chargement…</div>
+          <div style={{ textAlign: 'center', padding: '3rem', color: '#6b7280' }}>{t('ui.loading')}</div>
         ) : refereeView ? (
           refereeLastActions.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '3rem', color: '#9ca3af', fontSize: '0.875rem' }}>
-              Aucune saisie de score enregistrée.
+              {t('matchAudit.no_scores')}
             </div>
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
               <thead>
                 <tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
-                  <th style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>Arbitre</th>
+                  <th style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>{t('referee.label')}</th>
                   <th style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>IP</th>
-                  <th style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>Dernière saisie</th>
-                  <th style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>Score</th>
+                  <th style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>{t('matchAudit.last_entry')}</th>
+                  <th style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>{t('pools.score')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -269,7 +271,7 @@ const MatchAuditLogComponent: React.FC<MatchAuditLogProps> = ({
           )
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '3rem', color: '#9ca3af', fontSize: '0.875rem' }}>
-            Aucun événement enregistré pour ce match.
+            {t('matchAudit.no_events')}
           </div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
@@ -279,10 +281,10 @@ const MatchAuditLogComponent: React.FC<MatchAuditLogProps> = ({
                   Heure
                 </th>
                 <th style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>
-                  Type
+                  {t('matchAudit.type')}
                 </th>
                 <th style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>
-                  Tireur
+                  {t('fencer.fencer_label')}
                 </th>
                 <th style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>
                   Description
@@ -339,7 +341,7 @@ const MatchAuditLogComponent: React.FC<MatchAuditLogProps> = ({
     return (
       <div style={{ padding: '1rem' }}>
         <h3 style={{ margin: '0 0 1rem', fontSize: '1rem', fontWeight: '600', color: '#1f2937' }}>
-          Journal du match
+          {t('matchAudit.title')}
         </h3>
         {content}
       </div>
@@ -360,7 +362,7 @@ const MatchAuditLogComponent: React.FC<MatchAuditLogProps> = ({
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
           <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '700' }}>
-            Journal du match{matchTitle ? ` — ${matchTitle}` : ''}
+            {t('matchAudit.title')}{matchTitle ? ` — ${matchTitle}` : ''}
           </h2>
           <button className="btn-close" onClick={onClose}>&times;</button>
         </div>

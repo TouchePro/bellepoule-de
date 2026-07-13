@@ -399,7 +399,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
           <p className="text-sm text-muted">
             {fencers.length > 0
               ? `${checkedInCount} pointé${checkedInCount !== 1 ? 's' : ''} · ${notCheckedInCount} en attente`
-              : 'Aucun tireur inscrit'}
+              : t('fencerList.none_registered')}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -484,7 +484,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                     style={MENU_ITEM}
                     onClick={() => { handleImportFencers('ranking'); setImportMenuOpen(false); }}
                   >
-                    Importer classement FFE
+                    {t('fencerList.import_ffe_ranking')}
                   </button>
                   {onImportFFEConnect && (
                     <button
@@ -492,7 +492,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                       style={MENU_ITEM}
                       onClick={() => { onImportFFEConnect(); setImportMenuOpen(false); }}
                     >
-                      🔗 Importer depuis FFE Connect
+                      {t('fencerList.import_ffe_connect')}
                     </button>
                   )}
                   {competitionId && (
@@ -521,7 +521,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
             <button
               className="btn btn-secondary"
               onClick={() => setColMenuOpen(o => !o)}
-              title="Afficher/masquer des colonnes"
+              title={t('fencerList.toggle_columns')}
             >
               ⚙ Colonnes ▾
             </button>
@@ -573,7 +573,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                   style={{ display: 'block', width: '100%', textAlign: 'left', padding: '6px 16px', borderRadius: 0, fontSize: '0.8rem', color: 'var(--text-muted, #94a3b8)' }}
                   onClick={() => setColOrder(COLUMNS.map(c => c.id))}
                 >
-                  ↺ Réinitialiser l&apos;ordre
+                  ↺ {t('fencerList.reset_order')}
                 </button>
               </div>
             )}
@@ -674,14 +674,14 @@ const FencerListComponent: React.FC<FencerListProps> = ({
             onClick={e => e.stopPropagation()}
           >
             <h3 style={{ marginBottom: '0.75rem', fontSize: '1.1rem', fontWeight: 700 }}>
-              📱 Inscription tireur
+              {t('fencerList.fencer_registration')}
             </h3>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-muted, #94a3b8)', marginBottom: '1rem' }}>
-              Scannez ce QR code avec la tablette pour accéder au formulaire d&apos;inscription
+              {t('fencerList.qr_hint')}
             </p>
             {registerQRDataUrl
               ? <img src={registerQRDataUrl} alt="QR code inscription" width={220} height={220} style={{ borderRadius: 8 }} />
-              : <div style={{ width: 220, height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>Génération…</div>
+              : <div style={{ width: 220, height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>{t('ui.generating')}</div>
             }
             <code style={{ display: 'block', marginTop: '0.75rem', fontSize: '0.7rem', wordBreak: 'break-all', color: 'var(--text-muted, #94a3b8)' }}>
               {registerUrl}
@@ -691,7 +691,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
               style={{ marginTop: '1rem', width: '100%' }}
               onClick={() => setShowRegisterQR(false)}
             >
-              Fermer
+              {t('actions.close')}
             </button>
           </div>
         </div>
@@ -737,7 +737,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
             type="text"
             className="form-input"
             style={{ width: '100%', paddingLeft: '2.25rem', boxSizing: 'border-box' }}
-            placeholder="Rechercher un tireur…"
+            placeholder={t('fencerList.search_placeholder')}
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
           />
@@ -749,8 +749,8 @@ const FencerListComponent: React.FC<FencerListProps> = ({
           {fencers.length === 0 ? (
             <>
               <div className="empty-state-icon">🤺</div>
-              <h2 className="empty-state-title">Aucun tireur inscrit</h2>
-              <p className="empty-state-description">Importez une liste ou ajoutez des tireurs manuellement</p>
+              <h2 className="empty-state-title">{t('fencerList.none_registered')}</h2>
+              <p className="empty-state-description">{t('fencerList.import_hint')}</p>
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap', marginTop: '1.25rem' }}>
                 {onImport && (
                   <CoachMark id="import-fencers" message="Formats acceptés : XML BellePoule, liste FFE (.fff/.csv/.txt)" position="bottom">
@@ -767,7 +767,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
           ) : (
             <>
               <div className="empty-state-icon">🔍</div>
-              <h2 className="empty-state-title">Aucun résultat</h2>
+              <h2 className="empty-state-title">{t('ui.no_result')}</h2>
               <p className="empty-state-description">« {searchTerm} » ne correspond à aucun tireur</p>
             </>
           )}
@@ -858,7 +858,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                   key={fencer.id}
                   onDoubleClick={() => setEditingFencer(fencer)}
                   style={{ cursor: 'pointer' }}
-                  title="Double-cliquer pour modifier"
+                  title={t('fencerList.dblclick_edit')}
                 >
                   {visibleCols.map(col => {
                     switch (col.id) {
@@ -946,7 +946,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                                 })
                               )
                             }
-                            title="Réactiver"
+                            title={t('fencerList.reactivate')}
                             style={SMALL_BTN}
                           >
                             ✅

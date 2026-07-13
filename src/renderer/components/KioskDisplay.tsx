@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useTranslation } from '../hooks/useTranslation';
 import { Competition, Pool, Weapon, MatchStatus, Fencer } from '../../shared/types';
 import { OrgNote } from '../../shared/types/remote';
 import { TableauMatch } from './tableau/tableauTypes';
@@ -346,6 +347,7 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
   onClose,
 }) => {
   const isLaserSabre = weapon === 'L';
+  const { t } = useTranslation();
 
   // Déterminer la vue initiale selon les données disponibles
   const initialView = useMemo((): KioskView => {
@@ -653,7 +655,7 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
             if (hasRankingData) setCurrentView('ranking');
           }}
         >
-          📊 Classement
+          📊 {t('kiosk.ranking')}
         </button>
         <button
           style={btnStyle(currentView === 'tableau', !hasTableauData)}
@@ -662,15 +664,15 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
             if (hasTableauData) setCurrentView('tableau');
           }}
         >
-          🥇 Tableau
+          🥇 {t('kiosk.tableau')}
         </button>
         <div style={KIOSK_STYLES.menuFlex} />
-        <span style={KIOSK_STYLES.menuEscHint}>Echap pour quitter</span>
+        <span style={KIOSK_STYLES.menuEscHint}>{t('kiosk.esc_exit')}</span>
         <button
           onClick={onClose}
           style={KIOSK_STYLES.menuCloseBtn}
         >
-          ✕ Fermer
+          ✕ {t('kiosk.close')}
         </button>
       </div>
 
@@ -694,7 +696,7 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
               <div style={KIOSK_STYLES.poolsScoreNum}>
                 {poolCompleted}/{poolTotal}
               </div>
-              <div style={KIOSK_STYLES.poolsScoreLabel}>matchs terminés</div>
+              <div style={KIOSK_STYLES.poolsScoreLabel}>{t('kiosk.finished_matches')}</div>
             </div>
           </div>
 
@@ -713,7 +715,7 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
             {/* Classement poule */}
             <div style={KIOSK_STYLES.poolsRankingCol}>
               <h2 style={KIOSK_STYLES.poolsRankingTitle}>
-                Classement
+                {t('kiosk.ranking_label')}
               </h2>
               <div style={KIOSK_STYLES.poolsRankingList}>
                 {currentPool.ranking?.slice(0, 8).map((rank, i) => (
@@ -760,7 +762,7 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
             {/* Matchs en cours */}
             <div style={KIOSK_STYLES.poolsMatchesCol}>
               <h2 style={KIOSK_STYLES.poolsMatchesTitle}>
-                Matchs en cours
+                {t('kiosk.matches_live')}
               </h2>
               <div style={KIOSK_STYLES.poolsMatchesList}>
                 {currentPool.matches
@@ -784,7 +786,7 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
                 {currentPool.matches.filter(m => m.status === MatchStatus.IN_PROGRESS).length ===
                   0 && (
                   <div style={KIOSK_STYLES.poolsMatchEmpty}>
-                    Aucun match en cours
+                    {t('kiosk.no_live')}
                   </div>
                 )}
               </div>
@@ -835,15 +837,15 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
               <thead>
                 <tr style={KIOSK_STYLES.rankingThead}>
                   <th style={KIOSK_STYLES.rankingThRg}>Rg</th>
-                  <th style={KIOSK_STYLES.rankingThName}>Nom</th>
-                  <th style={KIOSK_STYLES.rankingThName}>Prénom</th>
+                  <th style={KIOSK_STYLES.rankingThName}>{t('fencer.last_name')}</th>
+                  <th style={KIOSK_STYLES.rankingThName}>{t('fencer.first_name')}</th>
                   <th style={KIOSK_STYLES.rankingThName}>Club</th>
                   <th style={KIOSK_STYLES.rankingThVm}>V/M</th>
                   <th style={KIOSK_STYLES.rankingThTd}>TD</th>
                   <th style={KIOSK_STYLES.rankingThTr}>TR</th>
                   {isLaserSabre && (
                     <th style={KIOSK_STYLES.rankingThQuest}>
-                      Quest
+                      {t('quest.label')}
                     </th>
                   )}
                   <th style={KIOSK_STYLES.rankingThIndice}>
@@ -908,7 +910,7 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
             <p style={KIOSK_STYLES.tableauRoundLabel}>
               {activeRound !== null
                 ? roundNames[activeRound] || `Tour ${activeRound}`
-                : 'Tableau terminé'}
+                : t('kiosk.tableau_done')}
             </p>
           </div>
 
@@ -1070,7 +1072,7 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
             <div style={KIOSK_STYLES.finishedWrapper}>
               {/* Titre */}
               <div style={KIOSK_STYLES.finishedTitle}>
-                🏆 RÉSULTATS FINAUX
+                🏆 {t('kiosk.final_results')}
               </div>
 
               {/* Podium visuel */}
@@ -1111,21 +1113,21 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
                   </div>
                 </div>
               ) : (
-                <div style={KIOSK_STYLES.podiumEmpty}>Tableau terminé</div>
+                <div style={KIOSK_STYLES.podiumEmpty}>{t('kiosk.tableau_done')}</div>
               )}
 
               {/* Classement général */}
               {elimRanking.length > 0 && (
                 <div ref={tableauScrollRef} style={KIOSK_STYLES.elimRankingWrapper}>
-                  <div style={KIOSK_STYLES.elimRankingLabel}>Classement général</div>
+                  <div style={KIOSK_STYLES.elimRankingLabel}>{t('kiosk.general_ranking')}</div>
                   <table style={KIOSK_STYLES.elimTable}>
                     <thead>
                       <tr style={KIOSK_STYLES.elimThead}>
                         <th style={KIOSK_STYLES.elimThRg}>Rg</th>
-                        <th style={KIOSK_STYLES.elimThName}>Nom</th>
-                        <th style={KIOSK_STYLES.elimThName}>Prénom</th>
+                        <th style={KIOSK_STYLES.elimThName}>{t('fencer.last_name')}</th>
+                        <th style={KIOSK_STYLES.elimThName}>{t('fencer.first_name')}</th>
                         <th style={KIOSK_STYLES.elimThName}>Club</th>
-                        <th style={KIOSK_STYLES.elimThElimAt}>Éliminé en</th>
+                        <th style={KIOSK_STYLES.elimThElimAt}>{t('tableau.elimination_in')}</th>
                       </tr>
                     </thead>
                     <tbody>

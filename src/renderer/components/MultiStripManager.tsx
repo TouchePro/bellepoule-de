@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
+import { useTranslation } from '../hooks/useTranslation';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { Pool, Match, MatchStatus } from '../../shared/types';
 
@@ -29,6 +30,7 @@ export const MultiStripManager: React.FC<MultiStripManagerProps> = ({
   onClose,
 }) => {
   const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
+  const { t } = useTranslation();
   const [strips, setStrips] = useState<StripState[]>(() =>
     Array.from({ length: stripCount }, (_, i) => ({
       id: i + 1,
@@ -115,7 +117,7 @@ export const MultiStripManager: React.FC<MultiStripManagerProps> = ({
               <strong>{finishedMatches}</strong>/{totalMatches} matchs terminés
             </span>
             <span style={{ fontSize: '0.875rem', color: '#16a34a' }}>
-              <strong>{pendingMatches.length}</strong> matchs en attente
+              <strong>{pendingMatches.length}</strong> {t('multiStrip.pending')}
             </span>
           </div>
         </div>
@@ -170,7 +172,7 @@ export const MultiStripManager: React.FC<MultiStripManagerProps> = ({
                         style={{ marginTop: '0.75rem', width: '100%', fontSize: '0.75rem', padding: '0.375rem' }}
                         onClick={() => releaseStrip(strip.id)}
                       >
-                        Libérer la piste
+                        {t('multiStrip.free_strip')}
                       </button>
                     </div>
                   ) : (
@@ -185,11 +187,11 @@ export const MultiStripManager: React.FC<MultiStripManagerProps> = ({
                             style={{ width: '100%', fontSize: '0.75rem', padding: '0.375rem' }}
                             onClick={() => assignNextMatch(strip.id)}
                           >
-                            Assigner match suivant
+                            {t('multiStrip.assign_next')}
                           </button>
                         </>
                       ) : (
-                        <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>Aucun match en attente</div>
+                        <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>{t('multiStrip.none_pending')}</div>
                       )}
                     </div>
                   )}

@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from '../hooks/useTranslation';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { Pool, PoolRanking, Weapon, MatchStatus } from '../../shared/types';
 import { calculateOverallRanking, calculateOverallRankingQuest } from '../../shared/utils/poolCalculations';
@@ -28,6 +29,7 @@ export const LiveInterPoolRanking: React.FC<LiveInterPoolRankingProps> = ({
   onClose,
 }) => {
   const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
+  const { t } = useTranslation();
   const [ranking, setRanking] = useState<RankedEntry[]>([]);
   const [lastUpdate, setLastUpdate] = useState(new Date());
 
@@ -86,7 +88,7 @@ export const LiveInterPoolRanking: React.FC<LiveInterPoolRankingProps> = ({
                 animation: 'pulse 1.5s infinite',
               }}
             />
-            <h2 style={{ margin: 0 }}>Classement général — Live</h2>
+            <h2 style={{ margin: 0 }}>{t('liveInterPool.title')}</h2>
           </div>
           <button className="btn-close" onClick={onClose}>&times;</button>
         </div>
@@ -121,15 +123,15 @@ export const LiveInterPoolRanking: React.FC<LiveInterPoolRankingProps> = ({
             <thead>
               <tr style={{ background: '#f3f4f6', position: 'sticky', top: 0 }}>
                 <th style={thStyle}>Rg</th>
-                <th style={{ ...thStyle, textAlign: 'left' }}>Nom</th>
+                <th style={{ ...thStyle, textAlign: 'left' }}>{t('fencer.last_name')}</th>
                 <th style={{ ...thStyle, textAlign: 'left' }}>Club</th>
-                <th style={thStyle}>Poule</th>
+                <th style={thStyle}>{t('ui.poule')}</th>
                 <th style={thStyle}>V</th>
                 <th style={thStyle}>D</th>
                 <th style={thStyle}>TD</th>
                 <th style={thStyle}>TR</th>
                 <th style={thStyle}>Ind.</th>
-                {isLaserSabre && <th style={thStyle}>Quest</th>}
+                {isLaserSabre && <th style={thStyle}>{t('quest.label')}</th>}
               </tr>
             </thead>
             <tbody>
@@ -162,7 +164,7 @@ export const LiveInterPoolRanking: React.FC<LiveInterPoolRankingProps> = ({
               {ranking.length === 0 && (
                 <tr>
                   <td colSpan={isLaserSabre ? 10 : 9} style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>
-                    Aucun résultat disponible
+                    {t('liveInterPool.no_result')}
                   </td>
                 </tr>
               )}

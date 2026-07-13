@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { useTranslation } from '../hooks/useTranslation';
 import { logger, LogCategory } from '@shared/services/logger';
 
 interface CompetitionResult {
@@ -32,6 +33,7 @@ export const HistoricalStats: React.FC<HistoricalStatsProps> = ({
   onClose,
 }) => {
   const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
+  const { t } = useTranslation();
   const [results, setResults] = useState<CompetitionResult[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -82,7 +84,7 @@ export const HistoricalStats: React.FC<HistoricalStatsProps> = ({
 
         {loading ? (
           <div style={{ padding: '2rem', textAlign: 'center', color: '#9ca3af' }}>
-            Chargement…
+            {t('ui.loading')}
           </div>
         ) : (
           <>
@@ -97,7 +99,7 @@ export const HistoricalStats: React.FC<HistoricalStatsProps> = ({
                 flexShrink: 0,
               }}
             >
-              <StatCard label="Compétitions" value={totalCompetitions.toString()} />
+              <StatCard label={t('stats.competitions')} value={totalCompetitions.toString()} />
               <StatCard label="Meilleur rang" value={bestRank !== null ? `${bestRank}e` : '—'} />
               <StatCard label="Victoires" value={totalVictories.toString()} color="#16a34a" />
               <StatCard label="% victoires" value={`${ratio}%`} />
@@ -106,7 +108,7 @@ export const HistoricalStats: React.FC<HistoricalStatsProps> = ({
             <div style={{ overflowY: 'auto', flex: 1 }}>
               {results.length === 0 ? (
                 <div style={{ padding: '2rem', textAlign: 'center', color: '#9ca3af' }}>
-                  Aucun historique disponible
+                  {t('historicalStats.none')}
                 </div>
               ) : (
                 <>
@@ -117,7 +119,7 @@ export const HistoricalStats: React.FC<HistoricalStatsProps> = ({
                     <thead>
                       <tr style={{ background: '#f3f4f6' }}>
                         <th style={thS}>Date</th>
-                        <th style={{ ...thS, textAlign: 'left' }}>Compétition</th>
+                        <th style={{ ...thS, textAlign: 'left' }}>{t('stats.competition')}</th>
                         <th style={thS}>Arme</th>
                         <th style={thS}>Rang</th>
                         <th style={thS}>V</th>
