@@ -361,7 +361,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
           <div className="form-group">
             <label>Logo organisateur</label>
             <p style={HINT}>
-              Affiché en haut à gauche des PDF exportés et dans le mode kiosque.
+              {t('settings.logo_position')}
             </p>
             <div
               onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
@@ -386,11 +386,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
                 />
               ) : (
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-muted, #6b7280)' }}>
-                  Glissez une image ici ou cliquez pour choisir
+                  {t('settings.drag_image')}
                 </span>
               )}
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted, #9ca3af)', display: 'block', marginTop: logo ? '0' : '0.25rem' }}>
-                PNG, JPG, SVG — max 5 Mo
+                {t('settings.logo_format')}
               </span>
             </div>
             <input
@@ -409,7 +409,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
                 style={{ marginTop: '0.5rem', fontSize: '0.8rem', padding: '0.25rem 0.75rem' }}
                 onClick={handleRemoveLogo}
               >
-                Supprimer le logo
+                {t('settings.delete_logo')}
               </button>
             )}
           </div>
@@ -417,7 +417,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
           <div className="form-group" style={SECTION_DIVIDER}>
             <label style={BOLD}>Exports PDF</label>
             <p style={HINT}>
-              Personnalisez l'apparence de chaque type d'export PDF.
+              {t('settings.pdf_appearance')}
             </p>
             <button
               className="btn btn-secondary"
@@ -442,13 +442,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
                 checked={quickMouseScoring}
                 onChange={e => handleQuickMouseScoringChange(e.target.checked)}
               />
-              <span style={{ fontSize: '0.875rem' }}>Activer la saisie rapide à la souris</span>
+              <span style={{ fontSize: '0.875rem' }}>{t('settings.quick_mouse')}</span>
             </label>
           </div>
 
           {/* Mode de saisie simplifiée */}
           <div className="form-group" style={SECTION_DIVIDER}>
-            <label style={BOLD}>Mode de saisie simplifiée</label>
+            <label style={BOLD}>{t('settings.simplified_mode')}</label>
             <p style={HINT}>
               Clic sur une cellule de poule : saisie directe des scores dans la case, sans ouverture de modal.
               Score nul en laser sabre → ouvre tout de même la modal de victoire.
@@ -459,15 +459,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
                 checked={simplifiedInputMode}
                 onChange={e => handleSimplifiedInputModeChange(e.target.checked)}
               />
-              <span style={{ fontSize: '0.875rem' }}>Activer la saisie simplifiée dans les cases</span>
+              <span style={{ fontSize: '0.875rem' }}>{t('settings.simplified_cells')}</span>
             </label>
           </div>
 
           {/* Journal des scores */}
           <div className="form-group" style={SECTION_DIVIDER}>
-            <label style={BOLD}>Journal des scores</label>
+            <label style={BOLD}>{t('settings.score_journal')}</label>
             <p style={HINT}>
-              Active l'onglet "Historique des scores" dans la vue compétition.
+              {t('settings.score_journal_desc')}
             </p>
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
               <input
@@ -475,7 +475,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
                 checked={auditLogEnabled}
                 onChange={e => handleAuditLogChange(e.target.checked)}
               />
-              <span style={{ fontSize: '0.875rem' }}>Activer le journal d'audit des scores</span>
+              <span style={{ fontSize: '0.875rem' }}>{t('settings.audit_log')}</span>
             </label>
           </div>
 
@@ -483,7 +483,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
           <div className="form-group" style={SECTION_DIVIDER}>
             <label style={BOLD}>Notifications webhook</label>
             <p style={HINT}>
-              URL Discord / Slack / personnalisée (HTTPS uniquement).
+              {t('settings.webhook_url')}
             </p>
             <input
               type="url"
@@ -525,9 +525,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
 
           {/* Tableau arbitrage — minuteur vocal (TTS) */}
           <div className="form-group" style={SECTION_DIVIDER}>
-            <label style={BOLD}>Tableau arbitrage — minuteur vocal</label>
+            <label style={BOLD}>{t('settings.referee_tts')}</label>
             <p style={HINT}>
-              Voix et paliers de temps annoncés sur les tablettes d'arbitrage.
+              {t('settings.tts_desc')}
             </p>
 
             <label style={{ fontSize: '0.85rem' }}>Voix</label>
@@ -538,7 +538,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
                 onChange={e => handleTtsVoiceChange(e.target.value)}
                 style={{ flex: 1 }}
               >
-                <option value="">Voix par défaut (selon la langue)</option>
+                <option value="">{t('settings.tts_default_voice')}</option>
                 {voices.map(v => (
                   <option key={v.name} value={v.name}>{v.name} ({v.lang})</option>
                 ))}
@@ -562,7 +562,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
             />
 
             <label style={{ fontSize: '0.85rem', display: 'block', marginBottom: '0.25rem' }}>
-              Paliers annoncés
+              {t('settings.tts_thresholds')}
             </label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               {TTS_THRESHOLDS.map(({ key, label }) => (

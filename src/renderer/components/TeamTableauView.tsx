@@ -8,6 +8,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from '../hooks/useTranslation';
 import { Card, CardReason } from '../../shared/types';
 import { TeamRow, TeamMatchRow, TeamBoutRow } from '../../features/teams/types/team.types';
 import {
@@ -70,10 +71,11 @@ const TeamTableauView: React.FC<Props> = ({
   onAddCard,
   onGenerate,
 }) => {
+  const { t } = useTranslation();
   if (rankedTeams.length < 2) {
     return (
       <div className="text-center text-gray-400 py-10">
-        Il faut au moins 2 équipes pour générer un tableau.
+        {t('teamTableau.need_two')}
       </div>
     );
   }
@@ -81,7 +83,7 @@ const TeamTableauView: React.FC<Props> = ({
   if (tableauMatches.length === 0) {
     return (
       <div className="text-center py-10">
-        <p className="text-gray-400 mb-4">Aucun tableau généré.</p>
+        <p className="text-gray-400 mb-4">{t('teamTableau.none')}</p>
         <button
           onClick={onGenerate}
           className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
@@ -107,7 +109,7 @@ const TeamTableauView: React.FC<Props> = ({
           onClick={onGenerate}
           className="text-xs px-3 py-1.5 rounded border border-gray-300 text-gray-600 hover:bg-gray-100"
         >
-          ↻ Régénérer / faire avancer le tableau
+          {t('teamTableau.regenerate')}
         </button>
       </div>
       {rounds.map(round => (
@@ -143,7 +145,7 @@ const TeamTableauView: React.FC<Props> = ({
                     key={position}
                     className="text-xs text-gray-400 italic px-3 py-2 border border-dashed border-gray-200 rounded"
                   >
-                    En attente des résultats précédents…
+                    {t('teamTableau.waiting')}
                   </div>
                 );
               }

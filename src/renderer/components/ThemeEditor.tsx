@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef, useId } from 'react';
+import { useTranslation } from '../hooks/useTranslation';
 import { CustomTheme, ThemeTargetType } from '../../shared/types/remote';
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -435,6 +436,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
   onApply,
   onClose,
 }) => {
+  const { t } = useTranslation();
   const instanceId = useId();
   const effectiveType = (targetType ?? 'arena') as ThemeTargetType;
   const isKiosk = effectiveType === 'kiosk';
@@ -657,13 +659,13 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
         {/* ── En-tête ── */}
         <div className="theme-editor-header">
           <div>
-            <h3 style={{ margin: 0 }}>Éditeur de thème</h3>
+            <h3 style={{ margin: 0 }}>{t('theme.editor_title')}</h3>
             <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.2rem' }}>
               Cible : <strong style={{ color: '#60a5fa' }}>{arenaLabel}</strong>
             </div>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <button className="theme-editor-btn secondary" onClick={() => { void handleImport(); }} title="Importer un thème JSON">
+            <button className="theme-editor-btn secondary" onClick={() => { void handleImport(); }} title={t('theme.import_json')}>
               ↑ Importer
             </button>
             <button className="theme-editor-btn secondary" onClick={() => { void handleExport(); }} title="Exporter comme JSON">
@@ -685,7 +687,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
             {/* Nom du thème */}
             <div style={{ marginBottom: '0.75rem' }}>
               <label style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'block', marginBottom: '0.3rem' }}>
-                Nom du thème
+                {t('theme.name')}
               </label>
               <input
                 type="text"
@@ -753,7 +755,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
                           style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#3b82f6' }}
                         />
                         <span style={{ fontSize: '0.8rem', color: overlayMode ? '#60a5fa' : '#94a3b8' }}>
-                          Panneaux transparents sur l'image
+                          {t('theme.transparent_panels')}
                         </span>
                       </label>
                     </div>
@@ -776,7 +778,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
             {savedThemes.length > 0 && (
               <div style={{ marginTop: '1rem' }}>
                 <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.4rem', fontWeight: 600 }}>
-                  Thèmes sauvegardés
+                  {t('theme.saved')}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', maxHeight: '120px', overflowY: 'auto' }}>
                   {savedThemes.map(t => (
@@ -810,7 +812,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
           {/* ── Panneau droit : preview ── */}
           <div className="theme-editor-right">
             <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.5rem', fontWeight: 600, textAlign: 'center' }}>
-              Aperçu en direct
+              {t('theme.live_preview')}
             </div>
             {/* Conteneur externe : clips + ratio 16:9 fixe */}
             <div
@@ -850,9 +852,9 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
                     <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 8, background: 'var(--k-progress)', borderRadius: '4px 4px 0 0' }} />
                     {/* En-tête kiosk */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 16, flexShrink: 0 }}>
-                      <span style={{ fontSize: 28, fontWeight: 800, color: 'var(--k-accent)' }}>🏆 Classement provisoire</span>
+                      <span style={{ fontSize: 28, fontWeight: 800, color: 'var(--k-accent)' }}>{t('theme.provisional_ranking')}</span>
                       <span style={{ fontSize: 18, padding: '4px 16px', borderRadius: 20, background: 'var(--k-card-bg)', border: '1px solid var(--k-border)', color: 'var(--k-accent2)' }}>
-                        16 tireurs
+                        {t('theme.demo_club')}
                       </span>
                     </div>
                     {/* Lignes de classement */}
@@ -892,9 +894,9 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
                       color: 'var(--text)',
                       flexShrink: 0,
                     }}>
-                      <span style={{ fontWeight: 700 }}>⚔ Arène 1</span>
+                      <span style={{ fontWeight: 700 }}>{t('theme.arena1')}</span>
                       <span style={{ background: '#22c55e', borderRadius: '999px', padding: '4px 18px', fontSize: '20px', fontWeight: 700, color: '#fff' }}>
-                        EN COURS
+                        {t('theme.in_progress')}
                       </span>
                     </div>
 

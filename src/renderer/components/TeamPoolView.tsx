@@ -6,6 +6,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from '../hooks/useTranslation';
 import { Card, CardReason, TargetZone, ZONE_POINTS } from '../../shared/types';
 import { TeamRow, TeamMatchRow, TeamBoutRow } from '../../features/teams/types/team.types';
 import { TeamTargetRule, getRelayCap } from '../../features/teams/utils/teamCalculations';
@@ -59,6 +60,7 @@ const TeamPoolView: React.FC<Props> = ({
   onAddCard,
   emptyLabel,
 }) => {
+  const { t } = useTranslation();
   const teamById = new Map(teams.map(t => [t.id, t]));
 
   if (matches.length === 0) {
@@ -184,7 +186,7 @@ const TeamPoolView: React.FC<Props> = ({
                                   : { boutId: bout.id, fencerId: bout.fencerAId }
                               )
                             }
-                            title="Ajouter un carton"
+                            title={t('teamPool.add_card')}
                             className="text-[10px] text-gray-400 hover:text-gray-600 flex-shrink-0"
                           >
                             🚩
@@ -210,7 +212,7 @@ const TeamPoolView: React.FC<Props> = ({
                             <button
                               onClick={() => onScoreBout(bout, 'double')}
                               disabled={done}
-                              title="Touche double simultanée (pas de priorité en épée)"
+                              title={t('teamPool.simultaneous')}
                               className="mt-0.5 text-[10px] px-1.5 py-0.5 rounded border border-purple-300 text-purple-700 bg-purple-50 hover:bg-purple-100 disabled:opacity-40"
                             >
                               ⚔ double
@@ -228,7 +230,7 @@ const TeamPoolView: React.FC<Props> = ({
                                   : { boutId: bout.id, fencerId: bout.fencerBId }
                               )
                             }
-                            title="Ajouter un carton"
+                            title={t('teamPool.add_card')}
                             className="text-[10px] text-gray-400 hover:text-gray-600 flex-shrink-0"
                           >
                             🚩
@@ -268,7 +270,7 @@ const TeamPoolView: React.FC<Props> = ({
                             <button
                               onClick={() => onResetBout(bout)}
                               className="w-6 h-6 text-xs rounded text-red-400 hover:text-red-600 flex-shrink-0"
-                              title="Réinitialiser cet assaut"
+                              title={t('teamPool.reset_bout')}
                             >
                               ↩
                             </button>

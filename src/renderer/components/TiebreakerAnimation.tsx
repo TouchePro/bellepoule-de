@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from '../hooks/useTranslation';
 import { Fencer } from '../../shared/types';
 import { drawWinner } from '../../shared/utils/suddenDeath';
 
@@ -19,6 +20,7 @@ const TiebreakerAnimation: React.FC<TiebreakerAnimationProps> = ({
   fencerB,
   onComplete,
 }) => {
+  const { t } = useTranslation();
   const [phase, setPhase] = useState<'spinning' | 'done'>('spinning');
   const [winner, setWinner] = useState<'A' | 'B' | null>(null);
   const coinRef = useRef<HTMLDivElement>(null);
@@ -55,7 +57,7 @@ const TiebreakerAnimation: React.FC<TiebreakerAnimationProps> = ({
     <div className="tiebreaker-overlay" onClick={e => e.stopPropagation()}>
       <div className="tiebreaker-container">
         <h2 className="tiebreaker-title">Tirage au sort</h2>
-        <p className="tiebreaker-subtitle">Temps écoulé — Égalité persistante</p>
+        <p className="tiebreaker-subtitle">{t('tiebreaker.time_up')}</p>
 
         <div className="coin-scene">
           <div className="coin-3d" ref={coinRef}>

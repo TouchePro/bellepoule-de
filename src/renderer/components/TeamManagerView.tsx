@@ -5,6 +5,7 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from '../hooks/useTranslation';
 import { Card, CardReason, Competition, Fencer, Weapon } from '../../shared/types';
 import { TeamRow, TeamMatchRow, TeamBoutRow } from '../../features/teams/types/team.types';
 import {
@@ -42,6 +43,7 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
   const isEpee = competition.weapon === Weapon.EPEE;
   const isLaserPoints = competition.weapon === Weapon.LASER && targetRule.mode === 'points';
   const tableId = competition.id; // Un seul tableau équipes par compétition
+  const { t } = useTranslation();
   const { confirm } = useConfirm();
   const [view, setView] = useState<ViewMode>('teams');
   const [teams, setTeams] = useState<TeamRow[]>([]);
@@ -331,7 +333,7 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
   if (loading)
     return (
       <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-        <div className="bg-white rounded-xl p-8 text-gray-400">Chargement…</div>
+        <div className="bg-white rounded-xl p-8 text-gray-400">{t('ui.loading')}</div>
       </div>
     );
 
@@ -346,7 +348,7 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Compétition par équipes</h2>
+            <h2 className="text-xl font-bold text-gray-900">{t('team.competition')}</h2>
             <p className="text-sm text-gray-500">
               {competition.title} · {teams.length} équipes
             </p>
@@ -382,7 +384,7 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
                 onClick={handleGeneratePool}
                 className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
               >
-                Générer la poule
+                {t('team.generate_pool')}
               </button>
             )}
           </div>
@@ -395,11 +397,11 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
               {/* Formulaire création */}
               <div className="bg-gray-50 rounded-lg p-4 flex gap-3 items-end">
                 <div className="flex-1">
-                  <label className="text-xs font-medium text-gray-500 block mb-1">Nom équipe</label>
+                  <label className="text-xs font-medium text-gray-500 block mb-1">{t('team.name_label')}</label>
                   <input
                     value={newTeamName}
                     onChange={e => setNewTeamName(e.target.value)}
-                    placeholder="Ex : équipe A"
+                    placeholder={t('team.name_placeholder')}
                     className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:outline-none"
                     onKeyDown={e => e.key === 'Enter' && handleCreateTeam()}
                   />
@@ -418,13 +420,13 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
                   disabled={creating || !newTeamName.trim()}
                   className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-40 whitespace-nowrap"
                 >
-                  + Créer
+                  {t('team.create')}
                 </button>
               </div>
 
               {teams.length === 0 && (
                 <div className="text-center text-gray-400 py-10">
-                  Aucune équipe — créez-en une ci-dessus.
+                  {t('team.none')}
                 </div>
               )}
 
@@ -451,7 +453,7 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
                         <span className="text-sm text-gray-400 ml-2">{team.club}</span>
                         {valid ? (
                           <span className="ml-2 text-xs text-green-600 font-medium">
-                            ✓ Complète
+                            {t('team.complete')}
                           </span>
                         ) : (
                           <span className="ml-2 text-xs text-yellow-600 font-medium">
@@ -501,7 +503,7 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
                           key={reserve.fencerId}
                           className="flex items-center gap-1 bg-gray-50 border border-gray-300 rounded px-2 py-1 text-xs"
                         >
-                          <span className="text-gray-500">Rés.</span>
+                          <span className="text-gray-500">{t('team.result_short')}</span>
                           <span>
                             {reserve.fencerLastName} {reserve.fencerFirstName}
                           </span>
@@ -516,7 +518,7 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
                         </div>
                       ))}
                       {team.fencers.length === 0 && (
-                        <span className="text-xs text-gray-400 italic">Aucun tireur</span>
+                        <span className="text-xs text-gray-400 italic">{t('team.no_fencer')}</span>
                       )}
                     </div>
 
@@ -524,13 +526,13 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
                     {isEditing && (
                       <div className="px-4 py-3 bg-blue-50 border-t border-blue-100 flex gap-3 items-end flex-wrap">
                         <div>
-                          <label className="text-xs text-gray-600 block mb-1">Tireur</label>
+                          <label className="text-xs text-gray-600 block mb-1">{t('fencer.fencer_label')}</label>
                           <select
                             value={selectedFencerId}
                             onChange={e => setSelectedFencerId(e.target.value)}
                             className="border border-gray-300 rounded px-2 py-1.5 text-sm"
                           >
-                            <option value="">-- sélectionner --</option>
+                            <option value="">{t('team.select')}</option>
                             {availableFencers.map(f => (
                               <option key={f.id} value={f.id}>
                                 {f.lastName} {f.firstName ?? ''}
@@ -679,7 +681,7 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
                 </div>
               )}
               {rankings.length === 0 ? (
-                <div className="text-center text-gray-400 py-10">Aucun match joué.</div>
+                <div className="text-center text-gray-400 py-10">{t('team.no_match')}</div>
               ) : (
                 <table className="min-w-full text-sm">
                   <thead className="bg-gray-50">
@@ -688,7 +690,7 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
                         #
                       </th>
                       <th className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase text-left">
-                        Équipe
+                        {t('team.label')}
                       </th>
                       <th className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase text-center">
                         V

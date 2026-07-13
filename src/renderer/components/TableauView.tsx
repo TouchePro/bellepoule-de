@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from '../hooks/useTranslation';
 import { Fencer, FencerStatus, PoolRanking } from '../../shared/types';
 export { TableauMatch, FinalResult, ConsolationBracket, propagateWinners } from './tableau/tableauTypes';
 import { TableauMatch, FinalResult, ConsolationBracket, propagateWinners } from './tableau/tableauTypes';
@@ -146,6 +147,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     onConsolationBracketsChange?.(next);
   };
 
+  const { t } = useTranslation();
   const { modalRef } = useModalResize({
     defaultWidth: 600,
     defaultHeight: 400,
@@ -1314,9 +1316,9 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     return (
       <div className="empty-state">
         <div className="empty-state-icon">🏆</div>
-        <h2 className="empty-state-title">Tableau à élimination directe</h2>
+        <h2 className="empty-state-title">{t('tableauView.title')}</h2>
         <p className="empty-state-description">
-          Terminez d'abord les poules pour générer le tableau
+          {t('tableauView.finish_pools')}
         </p>
       </div>
     );
@@ -1466,7 +1468,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
               ))}
 
               <div style={TV_STYLES.summaryBox}>
-                <h4 style={TV_STYLES.summaryTitle}>Résumé des pistes</h4>
+                <h4 style={TV_STYLES.summaryTitle}>{t('tableauView.strip_summary')}</h4>
                 <div style={TV_STYLES.summaryFlex}>
                   {Array.from({ length: arenaCount }, (_, i) => i + 1).map(arenaNum => {
                     const arenaMatches = pendingMatches.filter(m => m.arena === arenaNum);
@@ -1496,14 +1498,14 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                       border: '1px solid #e5e7eb',
                     }}
                   >
-                    <strong>Non assignés</strong>: {pendingMatches.filter(m => !m.arena).length}{' '}
+                    <strong>{t('tableauView.unassigned')}</strong>: {pendingMatches.filter(m => !m.arena).length}{' '}
                     match{pendingMatches.filter(m => !m.arena).length !== 1 ? 's' : ''}
                   </div>
                 </div>
               </div>
             </>
           ) : (
-            <div style={TV_STYLES.pendingEmpty}>✓ Tous les matches sont terminés</div>
+            <div style={TV_STYLES.pendingEmpty}>{t('tableauView.all_done')}</div>
           )
         ) : pyramidViewMode ? (
           <Bracket matches={convertToBracketMatches()} tableSize={tableauSize} />
@@ -1556,7 +1558,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                   <div style={TV_STYLES.consolationHeader}>
                     <h3 style={TV_STYLES.consolationTitle}>🥋 {bracket.name}</h3>
                     {bracket.isComplete && (
-                      <span style={TV_STYLES.consolationDoneBadge}>Terminé</span>
+                      <span style={TV_STYLES.consolationDoneBadge}>{t('tableau.finished')}</span>
                     )}
                     {finalM?.winner && (
                       <span style={TV_STYLES.consolationWinnerBadge}>
@@ -1634,8 +1636,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
             </div>
             <div className="modal-body" style={TV_STYLES.pdfModalBody}>
               <p style={TV_STYLES.pdfModalHint}>
-                Chaque fiche contient le nom complet des combattants, une case score et une case
-                signature.
+                {t('tableauView.sheet_desc')}
               </p>
               <label style={TV_STYLES.pdfModalLabel}>
                 Matchs par feuille A4{' '}
@@ -1663,7 +1664,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                 ))}
               </div>
               <label style={{ ...TV_STYLES.pdfModalLabel, marginTop: '1rem' }}>
-                Phases à inclure
+                {t('tableau.phases_label')}
               </label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '0.75rem' }}>
                 {[...new Set(matches.filter(m => m.fencerA && m.fencerB && !m.isBye).map(m => m.round))]
@@ -1753,13 +1754,13 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           <div className="modal-overlay" onClick={closeModal}>
             <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
               <div className="modal-header">
-                <h3 className="modal-title">Assigner à une piste</h3>
+                <h3 className="modal-title">{t('tableau.assign_strip')}</h3>
                 <button className="btn-close" onClick={closeModal}>
                   &times;
                 </button>
               </div>
               <div className="modal-body" style={TV_STYLES.arenaModalBody}>
-                <p style={TV_STYLES.arenaModalHint}>Sélectionnez la piste pour ce match :</p>
+                <p style={TV_STYLES.arenaModalHint}>{t('tableau.select_strip')}</p>
                 <div style={TV_STYLES.arenaModalGrid}>
                   <button
                     className={`btn ${!currentArena ? 'btn-primary' : 'btn-secondary'}`}
@@ -1816,12 +1817,12 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           <div className="modal-overlay" onClick={closeModal}>
             <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
               <div className="modal-header">
-                <h3 className="modal-title">Assigner un arbitre</h3>
+                <h3 className="modal-title">{t('referee.assign')}</h3>
                 <button className="btn-close" onClick={closeModal}>&times;</button>
               </div>
               <div className="modal-body" style={{ padding: '1.5rem' }}>
                 <p style={{ marginBottom: '1rem', color: '#6b7280', fontSize: '0.875rem' }}>
-                  Sélectionnez l'arbitre pour ce match :
+                  {t('referee.select_for_match')}
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <button
@@ -1829,11 +1830,11 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                     onClick={() => assignReferee(null)}
                     style={{ padding: '0.75rem', fontSize: '0.875rem' }}
                   >
-                    ✕ Aucun arbitre
+                    {t('referee.none')}
                   </button>
                   {competitionReferees.length === 0 && (
                     <p style={{ color: '#9ca3af', fontSize: '0.875rem', textAlign: 'center' }}>
-                      Aucun arbitre enregistré pour cette compétition
+                      {t('referee.none_registered')}
                     </p>
                   )}
                   {competitionReferees.map(ref => (
