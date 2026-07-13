@@ -715,13 +715,13 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
                       </th>
                       <th
                         className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase text-center"
-                        title="Touches cumulées (règle FIE)"
+                        title={t('team.cumulative_touches')}
                       >
                         Touches+
                       </th>
                       <th
                         className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase text-center"
-                        title="Touches cumulées (règle FIE)"
+                        title={t('team.cumulative_touches')}
                       >
                         Touches-
                       </th>

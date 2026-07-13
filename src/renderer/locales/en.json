@@ -254,6 +254,7 @@
     "save": "Save",
     "cancel": "Cancel",
     "confirm": "Confirm",
+    "copy": "Copy",
     "yes": "Yes",
     "no": "No",
     "ok": "OK",
@@ -477,6 +478,7 @@
     "next_pool": "Next pool",
     "no_pools": "No pools",
     "poule": "Pool",
+    "no_data": "No data",
     "round": "Round",
     "generating": "Generating…",
     "phase": "Phase",
@@ -493,6 +495,8 @@
   },
   "referee": {
     "label": "Referee",
+    "arbitre": "Referee",
+    "available": "Available referees",
     "loading": "Loading referees…",
     "name_placeholder": "First name Last name *",
     "category_placeholder": "Category (Regional…)",
@@ -588,7 +592,8 @@
     "last_name": "Last name *",
     "first_name": "First name *",
     "not_ranked": "Not ranked",
-    "ranked_present": "Ranked (present)"
+    "ranked_present": "Ranked (present)",
+    "club_example": "e.g. CE Melun"
   },
   "errors": {
     "load_title": "An error occurred while loading the competition.",
@@ -725,7 +730,9 @@
     "last_sync": "Last sync:",
     "pending_actions": "Pending actions:",
     "syncing": "Syncing...",
-    "will_sync": "Changes will be synced automatically when the connection is restored."
+    "will_sync": "Changes will be synced automatically when the connection is restored.",
+    "connect": "Connection:",
+    "mode": "Offline mode:"
   },
   "photoBooth": {
     "preview": "Preview",
@@ -877,7 +884,8 @@
     "provisional_ranking": "🏆 Provisional ranking",
     "arena1": "⚔ Arena 1",
     "in_progress": "IN PROGRESS",
-    "demo_club": "CE Orléans"
+    "demo_club": "CE Orléans",
+    "overlay_mode": "Overlay mode"
   },
   "tiebreaker": {
     "time_up": "Time elapsed — persistent tie"
@@ -1021,7 +1029,9 @@
     "zone_name": "Zone name",
     "standard_desc": "Standard (1 touch = 1 pt)",
     "custom": "Custom zones",
-    "add_zone": "+ Add a zone"
+    "add_zone": "+ Add a zone",
+    "delete": "Delete this zone",
+    "delete_zone": "Delete zone"
   },
   "globalPoolColumns": {
     "title": "🧱 Columns (all pools)",

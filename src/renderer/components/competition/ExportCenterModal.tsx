@@ -87,7 +87,7 @@ const ExportCenterModal: React.FC<ExportCenterModalProps> = ({
           )}
 
           {pools.length > 0 && (
-            <Section title="Poules">
+            <Section title={t('phases.pools')}>
               <button className="btn btn-secondary" onClick={() => exportPoolsPDF(pools, currentPoolRound)}>{t('exportCenter.export_pdf')}</button>
               <button className="btn btn-secondary" onClick={() => printPoolsPDF(pools, currentPoolRound)}>Imprimer</button>
             </Section>

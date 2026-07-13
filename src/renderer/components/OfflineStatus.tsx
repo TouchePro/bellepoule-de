@@ -141,7 +141,7 @@ const OfflineStatus_: React.FC<OfflineStatusProps> = ({ className = '' }) => {
           <div className="border-t border-gray-200 p-3 space-y-3">
             {/* Connection status */}
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Connexion:</span>
+              <span className="text-sm text-gray-600">{t('offline.connect')}</span>
               <span
                 className={`text-sm font-medium ${isOnline ? 'text-green-600' : 'text-red-600'}`}
               >
@@ -200,7 +200,7 @@ const OfflineStatus_: React.FC<OfflineStatusProps> = ({ className = '' }) => {
             {!isOnline && (
               <div className="bg-yellow-50 border border-yellow-200 rounded p-2">
                 <p className="text-xs text-yellow-800">
-                  <strong>Mode hors ligne:</strong> {t('offline.will_sync')}
+                  <strong>{t('offline.mode')}</strong> {t('offline.will_sync')}
                 </p>
               </div>
             )}

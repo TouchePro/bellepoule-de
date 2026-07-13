@@ -131,7 +131,7 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
               className="form-input"
               value={club}
               onChange={e => setClub(e.target.value)}
-              placeholder="Ex: CE Melun"
+              placeholder={t('editFencer.club_example')}
             />
           </div>
 

@@ -125,7 +125,7 @@ const ScoringZoneEditor_: React.FC<Props> = ({ scoring, onChange, readOnly }) =>
                   type="button"
                   className="btn btn-icon btn-secondary zone-remove-btn"
                   onClick={() => removeZone(i)}
-                  title="Supprimer cette zone"
+                  title={t('scoringZone.delete')}
                 >
                   ✕
                 </button>

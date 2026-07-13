@@ -334,7 +334,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
                           } catch { /* silencieux */ }
                         }}
                         style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: '1rem' }}
-                        title="Supprimer"
+                        title={t('actions.delete')}
                       >
                         🗑
                       </button>
@@ -545,7 +545,7 @@ export const RefereeManagerComponent: React.FC<RefereeManagerProps> = ({
 
       {/* Arbitres List */}
       <div style={{ marginBottom: '1.5rem' }}>
-        <h3 style={HEADING}>Arbitres Disponibles</h3>
+        <h3 style={HEADING}>{t('referee.available')}</h3>
         <div
           style={{
             display: 'grid',

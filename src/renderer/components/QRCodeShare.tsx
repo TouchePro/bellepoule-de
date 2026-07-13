@@ -148,7 +148,7 @@ const QRCodeShare_: React.FC<QRCodeShareProps> = ({ competition, onClose, mode: 
                 <label className="form-label">URL :</label>
                 <div className="qrcode__url-input">
                   <input type="text" value={shareUrl} readOnly className="form-control" />
-                  <button className="btn btn-secondary" onClick={copyToClipboard}>📋 Copier</button>
+                  <button className="btn btn-secondary" onClick={copyToClipboard}>{t('actions.copy')}</button>
                 </div>
               </div>
             )}

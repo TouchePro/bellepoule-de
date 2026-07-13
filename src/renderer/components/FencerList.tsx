@@ -445,7 +445,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
               <button
                 className="btn btn-secondary"
                 onClick={() => setImportMenuOpen(o => !o)}
-                title="Importer"
+                title={t('actions.import')}
               >
                 📥 Importer ▾
               </button>
@@ -582,7 +582,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
             <button
               className="btn btn-secondary"
               onClick={() => setExportMenuOpen(o => !o)}
-              title="Exporter"
+              title={t('actions.export')}
             >
               📤 Exporter ▾
             </button>
@@ -884,7 +884,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                       <button
                         className="btn btn-sm btn-secondary"
                         onClick={() => setEditingFencer(fencer)}
-                        title="Modifier"
+                        title={t('actions.edit')}
                         style={SMALL_BTN}
                       >
                         ✏️
@@ -956,7 +956,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                         <button
                           className="btn btn-sm btn-danger"
                           onClick={() => handleDeleteFencer(fencer.id)}
-                          title="Supprimer"
+                          title={t('actions.delete')}
                           style={SMALL_BTN}
                         >
                           🗑️

@@ -472,7 +472,7 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
             </div>
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
               <button className="btn btn-primary" style={{ flex: 1 }} onClick={sendKiosk}>{t('ui.send_kiosk')}</button>
-              <button className="btn btn-secondary" onClick={() => setKioskTarget(null)}>Annuler</button>
+              <button className="btn btn-secondary" onClick={() => setKioskTarget(null)}>{t('actions.cancel')}</button>
             </div>
           </div>
         </div>

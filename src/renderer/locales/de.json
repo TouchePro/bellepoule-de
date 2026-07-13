@@ -6,6 +6,7 @@
     "check_in_all": "Alle Einchecken",
     "close": "Schließen",
     "confirm": "Bestätigen",
+    "copy": "Kopieren",
     "default": "Nicht Angegeben",
     "delete": "Löschen",
     "edit": "Bearbeiten",
@@ -477,6 +478,7 @@
     "next_pool": "Nächste Poule",
     "no_pools": "Keine Pools",
     "poule": "Poule",
+    "no_data": "Keine Daten",
     "round": "Runde",
     "generating": "Erzeugung…",
     "phase": "Phase",
@@ -493,6 +495,8 @@
   },
   "referee": {
     "label": "Schiedsrichter",
+    "arbitre": "Schiedsrichter",
+    "available": "Verfügbare Schiedsrichter",
     "loading": "Schiedsrichter werden geladen…",
     "name_placeholder": "Vorname Nachname *",
     "category_placeholder": "Kategorie (Regional…)",
@@ -588,7 +592,8 @@
     "last_name": "Nachname *",
     "first_name": "Vorname *",
     "not_ranked": "Nicht punktiert",
-    "ranked_present": "Punktiert (anwesend)"
+    "ranked_present": "Punktiert (anwesend)",
+    "club_example": "Bsp: CE Melun"
   },
   "errors": {
     "load_title": "Beim Laden des Wettbewerbs ist ein Fehler aufgetreten.",
@@ -725,7 +730,9 @@
     "last_sync": "Letzte Synchronisation:",
     "pending_actions": "Ausstehende Aktionen:",
     "syncing": "Synchronisierung läuft...",
-    "will_sync": "Änderungen werden automatisch synchronisiert, sobald die Verbindung wiederhergestellt ist."
+    "will_sync": "Änderungen werden automatisch synchronisiert, sobald die Verbindung wiederhergestellt ist.",
+    "connect": "Verbindung:",
+    "mode": "Offline-Modus:"
   },
   "photoBooth": {
     "preview": "Vorschau",
@@ -877,7 +884,8 @@
     "provisional_ranking": "🏆 Vorläufige Rangliste",
     "arena1": "⚔ Arena 1",
     "in_progress": "IN BEARBEITUNG",
-    "demo_club": "CE Orléans"
+    "demo_club": "CE Orléans",
+    "overlay_mode": "Overlay-Modus"
   },
   "tiebreaker": {
     "time_up": "Zeit abgelaufen — anhaltendes Unentschieden"
@@ -1021,7 +1029,9 @@
     "zone_name": "Zonenname",
     "standard_desc": "Standard (1 Treffer = 1 Pkt)",
     "custom": "Eigene Zonen",
-    "add_zone": "+ Zone hinzufügen"
+    "add_zone": "+ Zone hinzufügen",
+    "delete": "Diese Zone löschen",
+    "delete_zone": "Zone löschen"
   },
   "globalPoolColumns": {
     "title": "🧱 Spalten (alle Pools)",

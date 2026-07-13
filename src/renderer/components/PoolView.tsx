@@ -1494,8 +1494,8 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           <button
             onClick={handlePrintPool}
             style={{ ...ICON_ONLY_BTN, background: '#3b82f6', color: 'white' }}
-            title="Imprimer la feuille de poule (Ctrl+P)"
-            aria-label="Imprimer la feuille de poule"
+            title={t('poolView.print_sheet')}
+            aria-label={t('poolView.print_sheet')}
           >
             🖨️
           </button>

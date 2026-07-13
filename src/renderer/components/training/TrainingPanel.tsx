@@ -164,7 +164,7 @@ const ArenaBlock: React.FC<ArenaBlockProps> = ({ number, refereeUrl, displayUrl 
       {/* Expanded */}
       {open && (
         <div style={{ padding: '0.5rem 0.75rem', borderTop: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          <UrlRow label="Arbitre" url={refereeUrl} qrDataUrl={qrReferee} />
+          <UrlRow label={t('referee.arbitre')} url={refereeUrl} qrDataUrl={qrReferee} />
           <div style={{ height: '1px', background: 'var(--color-border)', margin: '0.25rem 0' }} />
           <UrlRow label="Affichage" url={displayUrl} qrDataUrl={qrDisplay} />
         </div>

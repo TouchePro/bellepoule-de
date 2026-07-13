@@ -918,7 +918,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             {arenaWallpaper && (
               <img
                 src={arenaWallpaper}
-                alt="Fond d'écran"
+                alt={t('remote_score.wallpaper')}
                 style={RSM_STYLES.wallpaperImg}
               />
             )}
@@ -1391,8 +1391,8 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                   <option value="arena">⚔️ Affichage piste</option>
                   <option value="kiosk">🖥️ Kiosque</option>
                   <option value="public">👥 Public</option>
-                  <option value="referee">🤝 Arbitre</option>
-                  <option value="pool">📋 Poule</option>
+                  <option value="referee">🤝 {t('referee.arbitre')}</option>
+                  <option value="pool">📋 {t('phases.pools')}</option>
                 </select>
                 <select
                   value={globalThemeId}
@@ -1441,7 +1441,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             <button
               className="btn-copy"
               onClick={() => copyToClipboard(kioskUrl, 999)}
-              title="Copier l'URL"
+              title={t('actions.copy')}
             >
               {copiedIndex === 999 ? '✓' : '📋'}
             </button>
@@ -1465,7 +1465,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             <button
               className="btn-copy"
               onClick={() => copyToClipboard(lobbyUrl, 997)}
-              title="Copier l'URL"
+              title={t('actions.copy')}
             >
               {copiedIndex === 997 ? '✓' : '📋'}
             </button>

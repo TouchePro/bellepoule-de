@@ -111,7 +111,7 @@ const WifiQRModal_: React.FC<WifiQRModalProps> = ({ onClose }) => {
           </p>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="wifi-ssid">Nom du réseau (SSID)</label>
+            <label className="form-label" htmlFor="wifi-ssid">{t('wifi.network_name')}</label>
             <input
               id="wifi-ssid"
               type="text"

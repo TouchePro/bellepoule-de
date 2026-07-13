@@ -61,7 +61,7 @@ const Donut: React.FC<{ slices: DonutSlice[]; title: string; centerLabel?: strin
   if (total === 0) return (
     <div className="bg-white rounded-lg border border-gray-100 p-4">
       <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">{title}</div>
-      <div className="text-center text-gray-300 text-sm py-8">Aucune donnée</div>
+      <div className="text-center text-gray-300 text-sm py-8">{t('ui.no_data')}</div>
     </div>
   );
 

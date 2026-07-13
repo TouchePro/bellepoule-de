@@ -668,7 +668,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
             <button className="theme-editor-btn secondary" onClick={() => { void handleImport(); }} title={t('theme.import_json')}>
               ↑ Importer
             </button>
-            <button className="theme-editor-btn secondary" onClick={() => { void handleExport(); }} title="Exporter comme JSON">
+            <button className="theme-editor-btn secondary" onClick={() => { void handleExport(); }} title={t('actions.export')}>
               ↓ Exporter
             </button>
             <button className="theme-editor-btn close" onClick={onClose}>✕</button>
@@ -745,7 +745,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
                     </div>
                   </div>
                   <div className="var-row">
-                    <label className="var-label">Mode Overlay</label>
+                    <label className="var-label">{t('theme.overlay_mode')}</label>
                     <div className="var-control">
                       <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
                         <input
@@ -798,7 +798,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
                       <button
                         onClick={() => handleDeleteSaved(t.id)}
                         style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.9rem' }}
-                        title="Supprimer"
+                        title={t('actions.delete')}
                       >
                         ✕
                       </button>
