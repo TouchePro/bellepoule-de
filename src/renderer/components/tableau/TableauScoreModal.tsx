@@ -5,6 +5,7 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { TableauMatch } from './tableauTypes';
 
 interface TableauScoreModalProps {
@@ -51,6 +52,7 @@ const TableauScoreModalComponent: React.FC<TableauScoreModalProps> = ({
   onSpecialStatus,
   getRoundName,
 }) => {
+  const { t } = useTranslation();
   const [pendingStatus, setPendingStatus] = useState<
     'abandon' | 'forfait' | 'exclusion' | null
   >(null);
@@ -284,7 +286,7 @@ const TableauScoreModalComponent: React.FC<TableauScoreModalProps> = ({
                   {fencerName(match.fencerB) || '—'}
                 </button>
                 <button className="btn btn-secondary" onClick={() => setPendingStatus(null)}>
-                  Annuler
+                  {t('actions.cancel')}
                 </button>
               </div>
             </div>
@@ -295,10 +297,10 @@ const TableauScoreModalComponent: React.FC<TableauScoreModalProps> = ({
           style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}
         >
           <button className="btn btn-secondary" onClick={onClose}>
-            Annuler
+            {t('actions.cancel')}
           </button>
           <button className="btn btn-primary" onClick={onSubmit}>
-            Valider
+            {t('actions.validate')}
           </button>
         </div>
       </div>

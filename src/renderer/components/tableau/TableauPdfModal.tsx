@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { MAX_MATCHES_PER_PAGE_TABLEAU } from '../../../shared/utils/pdfConstants';
 import { TableauMatch } from './tableauTypes';
 import { getRoundName } from './tableauCalculations';
@@ -42,6 +43,7 @@ const TableauPdfModal: React.FC<TableauPdfModalProps> = ({
   onExport,
   onClose,
 }) => {
+  const { t } = useTranslation();
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
@@ -55,8 +57,7 @@ const TableauPdfModal: React.FC<TableauPdfModalProps> = ({
         </div>
         <div className="modal-body" style={PDF_STYLES.pdfModalBody}>
           <p style={PDF_STYLES.pdfModalHint}>
-            Chaque fiche contient le nom complet des combattants, une case score et une case
-            signature.
+            {t('tableauPdf.sheet_desc')}
           </p>
           <label style={PDF_STYLES.pdfModalLabel}>
             Matchs par feuille A4{' '}
@@ -84,7 +85,7 @@ const TableauPdfModal: React.FC<TableauPdfModalProps> = ({
             ))}
           </div>
           <label style={{ ...PDF_STYLES.pdfModalLabel, marginTop: '1rem' }}>
-            Phases à inclure
+            {t('tableau.phases_label')}
           </label>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '0.75rem' }}>
             {[...new Set(matches.filter(m => m.fencerA && m.fencerB && !m.isBye).map(m => m.round))]
@@ -121,7 +122,7 @@ const TableauPdfModal: React.FC<TableauPdfModalProps> = ({
         </div>
         <div className="modal-footer" style={PDF_STYLES.pdfModalFooter}>
           <button className="btn btn-secondary" onClick={onClose}>
-            Annuler
+            {t('actions.cancel')}
           </button>
           <button className="btn btn-primary" onClick={onExport} disabled={selectedRounds.size === 0}>
             {pdfMode === 'print' ? '🖨️ Imprimer' : pdfMode === 'preview' ? '👁️ Aperçu' : '📄 Générer PDF'}

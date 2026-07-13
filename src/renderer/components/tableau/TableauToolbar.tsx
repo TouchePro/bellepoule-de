@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { Fencer } from '../../../shared/types';
 
 interface TableauToolbarProps {
@@ -44,6 +45,7 @@ const TableauToolbarComponent: React.FC<TableauToolbarProps> = ({
   onExportTreeClick,
   champion,
 }) => {
+  const { t } = useTranslation();
   const [fabOpen, setFabOpen] = useState(false);
   const fabRef = useRef<HTMLDivElement>(null);
 
@@ -122,9 +124,9 @@ const TableauToolbarComponent: React.FC<TableauToolbarProps> = ({
           <button
             className="tableau-fab-trigger"
             onClick={() => setFabOpen(o => !o)}
-            title="Options du tableau"
+            title={t('tableauToolbar.options')}
           >
-            {fabOpen ? '✕' : '⋮'} Options
+            {fabOpen ? '✕' : '⋮'} {t('tableauToolbar.options')}
           </button>
 
           {fabOpen && (
@@ -143,7 +145,7 @@ const TableauToolbarComponent: React.FC<TableauToolbarProps> = ({
                     🏟️ Assignation auto
                   </label>
                   <button className="tableau-fab-item tableau-fab-item--danger" onClick={() => closeAndRun(onBulkDeassign)}>
-                    ❌ Désaffecter tout
+                    ❌ {t('tableauToolbar.unassign_all')}
                   </button>
                   <div className="tableau-fab-divider" />
                 </>
@@ -155,15 +157,15 @@ const TableauToolbarComponent: React.FC<TableauToolbarProps> = ({
               </button>
 
               <div className="tableau-fab-divider" />
-              <span className="tableau-fab-section-label">Export</span>
+              <span className="tableau-fab-section-label">{t('tableauToolbar.export')}</span>
               <button className="tableau-fab-item" onClick={() => closeAndRun(onPrintClick)}>
                 🖨️ Imprimer
               </button>
-              <button className="tableau-fab-item" onClick={() => closeAndRun(onPreviewClick)} title="Ouvre un PDF dans le lecteur par défaut pour voir un aperçu avant d'imprimer">
-                👁️ Aperçu avant impression
+              <button className="tableau-fab-item" onClick={() => closeAndRun(onPreviewClick)} title={t('tableauToolbar.preview_desc')}>
+                {t('tableauToolbar.preview')}
               </button>
               <button className="tableau-fab-item" onClick={() => closeAndRun(onExportPdfClick)}>
-                📄 Export PDF
+                {t('tableauToolbar.export_pdf')}
               </button>
               <button className="tableau-fab-item" onClick={() => closeAndRun(onExportTreeClick)}>
                 🌲 Arbre PDF

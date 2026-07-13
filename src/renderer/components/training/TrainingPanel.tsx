@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { X, Swords, Clock, Trophy, Copy, QrCode, ChevronDown, ChevronUp, Check, Settings, Monitor } from 'lucide-react';
 import type { TrainingMatchRecord } from '../../../shared/types/preload';
 
@@ -52,7 +53,7 @@ const UrlRow: React.FC<UrlRowProps> = ({ label, url, qrDataUrl }) => {
           </code>
           <button
             onClick={handleCopy}
-            title="Copier l'URL"
+            title={t('remote_score.copy_url')}
             style={{
               border: 'none', background: 'transparent', cursor: 'pointer', padding: '0.25rem',
               color: copied ? '#16a34a' : 'var(--color-text-muted)',
@@ -96,7 +97,7 @@ const KioskBlock: React.FC<KioskBlockProps> = ({ kioskUrl }) => {
         }}
       >
         <span style={{ fontWeight: 600, fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <Monitor size={13} /> Kiosk grand écran
+          <Monitor size={13} /> {t('trainingPanel.kiosk')}
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
           <QrCode size={13} />
@@ -183,6 +184,7 @@ interface Props {
 }
 
 const TrainingPanel: React.FC<Props> = ({ serverUrl, strips, weapon, onClose, onStop, onOpenSettings }) => {
+  const { t } = useTranslation();
   const [history, setHistory] = useState<TrainingMatchRecord[]>([]);
 
   const refreshHistory = useCallback(async () => {
@@ -238,10 +240,10 @@ const TrainingPanel: React.FC<Props> = ({ serverUrl, strips, weapon, onClose, on
               fontSize: '0.75rem', fontWeight: 600, marginLeft: '0.25rem',
             }}>
               <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#16a34a', display: 'inline-block' }} />
-              EN COURS
+              {t('theme.in_progress')}
             </span>
           </h2>
-          <button className="btn btn-icon" onClick={onClose} title="Fermer (l'entraînement continue)"><X size={16} /></button>
+          <button className="btn btn-icon" onClick={onClose} title={t('trainingPanel.close_continue')}><X size={16} /></button>
         </div>
 
         <div style={{ overflowY: 'auto', padding: '1.25rem 1.5rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -269,7 +271,7 @@ const TrainingPanel: React.FC<Props> = ({ serverUrl, strips, weapon, onClose, on
             </div>
             {history.length === 0 ? (
               <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', padding: '0.75rem', textAlign: 'center', background: 'var(--color-surface-raised, rgba(0,0,0,0.04))', borderRadius: '8px' }}>
-                Aucun combat terminé
+                {t('trainingPanel.no_bout')}
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', maxHeight: '200px', overflowY: 'auto' }}>
@@ -299,10 +301,10 @@ const TrainingPanel: React.FC<Props> = ({ serverUrl, strips, weapon, onClose, on
 
         {/* Footer */}
         <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <button className="btn btn-secondary btn-icon-label" onClick={onOpenSettings} title="Paramètres">
-            <Settings size={14} /> Paramètres
+          <button className="btn btn-secondary btn-icon-label" onClick={onOpenSettings} title={t('trainingPanel.settings')}>
+            <Settings size={14} /> {t('trainingPanel.settings')}
           </button>
-          <button className="btn btn-danger" onClick={onStop}>Arrêter l'entraînement</button>
+          <button className="btn btn-danger" onClick={onStop}>{t('trainingPanel.stop')}</button>
         </div>
       </div>
     </div>

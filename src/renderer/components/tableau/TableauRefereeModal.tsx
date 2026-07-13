@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 
 type RefereeInfo = { id: string; firstName: string; lastName: string };
 
@@ -21,16 +22,17 @@ const TableauRefereeModal: React.FC<TableauRefereeModalProps> = ({
   onAssign,
   onClose,
 }) => {
+  const { t } = useTranslation();
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
         <div className="modal-header">
-          <h3 className="modal-title">Assigner un arbitre</h3>
+          <h3 className="modal-title">{t('referee.assign')}</h3>
           <button className="btn-close" onClick={onClose}>&times;</button>
         </div>
         <div className="modal-body" style={{ padding: '1.5rem' }}>
           <p style={{ marginBottom: '1rem', color: '#6b7280', fontSize: '0.875rem' }}>
-            Sélectionnez l'arbitre pour ce match :
+            {t('referee.select_for_match')}
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <button
@@ -38,11 +40,11 @@ const TableauRefereeModal: React.FC<TableauRefereeModalProps> = ({
               onClick={() => onAssign(null)}
               style={{ padding: '0.75rem', fontSize: '0.875rem' }}
             >
-              ✕ Aucun arbitre
+              ✕ {t('referee.none')}
             </button>
             {referees.length === 0 && (
               <p style={{ color: '#9ca3af', fontSize: '0.875rem', textAlign: 'center' }}>
-                Aucun arbitre enregistré pour cette compétition
+                {t('referee.none_registered')}
               </p>
             )}
             {referees.map(ref => (

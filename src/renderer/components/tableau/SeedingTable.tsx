@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { PoolRanking } from '../../../shared/types';
 
 interface SeedingTableProps {
@@ -6,10 +7,12 @@ interface SeedingTableProps {
   tableauSize: number;
 }
 
-const SeedingTable: React.FC<SeedingTableProps> = ({ ranking, tableauSize }) => (
+const SeedingTable: React.FC<SeedingTableProps> = ({ ranking, tableauSize }) => {
+  const { t } = useTranslation();
+  return (
   <div style={{ marginTop: '2rem' }}>
     <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>
-      Classement après poules
+      {t('seedingTable.after_pools')}
     </h3>
     <div
       style={{
@@ -50,6 +53,7 @@ const SeedingTable: React.FC<SeedingTableProps> = ({ ranking, tableauSize }) => 
       ))}
     </div>
   </div>
-);
+  );
+};
 
 export default React.memo(SeedingTable);

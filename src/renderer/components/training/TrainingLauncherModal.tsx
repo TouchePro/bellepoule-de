@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { X, Swords, Minus, Plus, Clock, Zap } from 'lucide-react';
 import { Weapon, TargetZone, ZONE_POINTS, ZONE_LABELS } from '../../../shared/types';
 import type { TrainingCustomRules } from '../../../shared/types/preload';
@@ -26,6 +27,7 @@ const DURATION_PRESETS = [
 ];
 
 const TrainingLauncherModal: React.FC<Props> = ({ onClose, onLaunch, isLoading }) => {
+  const { t } = useTranslation();
   const [weapon, setWeapon] = useState<string>(Weapon.EPEE);
   const [strips, setStrips] = useState(1);
   const [matchDuration, setMatchDuration] = useState(180);
@@ -85,9 +87,9 @@ const TrainingLauncherModal: React.FC<Props> = ({ onClose, onLaunch, isLoading }
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
           <h2 style={{ margin: 0, fontSize: '1.125rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Swords size={18} /> Mode Entraînement
+            <Swords size={18} /> {t('trainingLauncher.title')}
           </h2>
-          <button className="btn btn-icon" onClick={onClose} title="Fermer"><X size={16} /></button>
+          <button className="btn btn-icon" onClick={onClose} title={t('actions.close')}><X size={16} /></button>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -123,7 +125,7 @@ const TrainingLauncherModal: React.FC<Props> = ({ onClose, onLaunch, isLoading }
           {/* Pistes */}
           <div style={{ marginBottom: '1.25rem' }}>
             <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.5rem', fontSize: '0.875rem' }}>
-              Nombre de pistes
+              {t('trainingLauncher.num_strips')}
             </label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <button
@@ -154,7 +156,7 @@ const TrainingLauncherModal: React.FC<Props> = ({ onClose, onLaunch, isLoading }
           {/* Durée du combat */}
           <div style={{ marginBottom: '1.25rem' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 500, marginBottom: '0.5rem', fontSize: '0.875rem' }}>
-              <Clock size={14} /> Durée du combat — <strong>{durationLabel}</strong>
+              <Clock size={14} /> {t('trainingLauncher.duration')} <strong>{durationLabel}</strong>
             </label>
             <input
               type="range"
@@ -265,12 +267,12 @@ const TrainingLauncherModal: React.FC<Props> = ({ onClose, onLaunch, isLoading }
                   </div>
                   <span style={{ fontSize: '0.875rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                     <Zap size={14} />
-                    Désactiver la mort subite
+                    {t('trainingLauncher.disable_sudden_death')}
                   </span>
                 </label>
                 {disableSuddenDeath && (
                   <p style={{ margin: '0.35rem 0 0 3.25rem', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                    Égalité à temps → fin du match sans prolongation.
+                    {t('trainingLauncher.tie_note')}
                   </p>
                 )}
               </div>
@@ -279,7 +281,7 @@ const TrainingLauncherModal: React.FC<Props> = ({ onClose, onLaunch, isLoading }
 
           <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
             <button type="button" className="btn btn-secondary" onClick={onClose}>
-              Annuler
+              {t('actions.cancel')}
             </button>
             <button type="submit" className="btn btn-primary" disabled={isLoading}>
               {isLoading ? 'Démarrage…' : 'Lancer'}

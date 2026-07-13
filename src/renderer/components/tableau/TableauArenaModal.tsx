@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { TableauMatch } from './tableauTypes';
 
 interface TableauArenaModalProps {
@@ -34,17 +35,18 @@ const TableauArenaModal: React.FC<TableauArenaModalProps> = ({
   onAssign,
   onClose,
 }) => {
+  const { t } = useTranslation();
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
         <div className="modal-header">
-          <h3 className="modal-title">Assigner à une piste</h3>
+          <h3 className="modal-title">{t('tableau.assign_strip')}</h3>
           <button className="btn-close" onClick={onClose}>
             &times;
           </button>
         </div>
         <div className="modal-body" style={ARENA_STYLES.arenaModalBody}>
-          <p style={ARENA_STYLES.arenaModalHint}>Sélectionnez la piste pour ce match :</p>
+          <p style={ARENA_STYLES.arenaModalHint}>{t('tableau.select_strip')}</p>
           <div style={ARENA_STYLES.arenaModalGrid}>
             <button
               className={`btn ${!currentArena ? 'btn-primary' : 'btn-secondary'}`}
