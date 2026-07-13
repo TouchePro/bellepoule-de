@@ -160,12 +160,12 @@ const CompetitionHeaderComponent: React.FC<CompetitionHeaderProps> = ({
                 </button>
                 {competition.weapon === 'L' && (
                   <button className="comp-header-dropdown-item" onClick={() => { setShowSeasonRanking(true); setShowActionsMenu(false); }}>
-                    <Trophy size={14} /> Classement saison Quest
+                    <Trophy size={14} /> {t('competitionHeader.season_quest')}
                   </button>
                 )}
                 {competition.isTeamEvent && (
                   <button className="comp-header-dropdown-item" onClick={() => { setShowTeamManager(true); setShowActionsMenu(false); }}>
-                    <Users size={14} /> Gestion équipes
+                    <Users size={14} /> {t('competitionHeader.team_mgmt')}
                   </button>
                 )}
                 <button className="comp-header-dropdown-item" onClick={() => { setShowQRCode(true); setShowActionsMenu(false); }}>
@@ -174,7 +174,7 @@ const CompetitionHeaderComponent: React.FC<CompetitionHeaderProps> = ({
                 {currentPhase === 'pools' && pools.length > 0 && (
                   <>
                     <button className="comp-header-dropdown-item" onClick={() => { setShowPresentation(true); setShowActionsMenu(false); }}>
-                      <Monitor size={14} /> Mode Présentation
+                      <Monitor size={14} /> {t('competitionHeader.presentation')}
                     </button>
                     <button className="comp-header-dropdown-item" onClick={() => { setShowKiosk(true); setShowActionsMenu(false); }}>
                       <Smartphone size={14} /> Mode Kiosk
@@ -191,7 +191,7 @@ const CompetitionHeaderComponent: React.FC<CompetitionHeaderProps> = ({
                 </button>
                 <div className="comp-header-dropdown-sep" />
                 <button className="comp-header-dropdown-item" onClick={() => { setShowPropertiesModal(true); setShowActionsMenu(false); }}>
-                  <Settings size={14} /> Propriétés
+                  <Settings size={14} /> {t('competitionHeader.properties')}
                 </button>
               </div>
             )}

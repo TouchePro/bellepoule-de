@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface VoiceCommand {
   command: string;
@@ -26,6 +27,7 @@ export const VoiceScoreController: React.FC<{
   onFinish?: () => void;
   language?: string;
 }> = ({ onScoreA, onScoreB, onStart, onPause, onFinish, language = 'fr' }) => {
+  const { t } = useTranslation();
   const langKey = Object.keys(LANG_CONFIG).find(k => language.startsWith(k)) ?? 'fr';
   const lang = LANG_CONFIG[langKey];
   const [isListening, setIsListening] = useState(false);
@@ -190,7 +192,7 @@ export const VoiceScoreController: React.FC<{
           🎤
         </div>
         <div>
-          <h3 style={{ margin: 0, fontSize: '18px' }}>Contrôle Vocal</h3>
+          <h3 style={{ margin: 0, fontSize: '18px' }}>{t('voice.control')}</h3>
           <p style={{ margin: '4px 0 0 0', color: '#6b7280', fontSize: '14px' }}>
             {isListening ? 'Écoute en cours...' : 'Appuyez pour activer'}
           </p>
@@ -240,7 +242,7 @@ export const VoiceScoreController: React.FC<{
             fontSize: '14px',
           }}
         >
-          <strong>Dernière commande:</strong> {transcript}
+          <strong>{t('voice.last_command')}</strong> {transcript}
         </div>
       )}
 

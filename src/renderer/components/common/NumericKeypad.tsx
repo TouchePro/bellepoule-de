@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface NumericKeypadProps {
   /** Valeur courante (chaîne de chiffres, '' si vide). */
@@ -41,6 +42,7 @@ const NumericKeypad: React.FC<NumericKeypadProps> = ({
   onConfirm,
   confirmDisabled = false,
 }) => {
+  const { t } = useTranslation();
   const appendDigit = (d: string) => {
     if (value.length >= maxDigits) return;
     // Évite les zéros de tête non significatifs ('0' + '5' -> '5')
@@ -67,7 +69,7 @@ const NumericKeypad: React.FC<NumericKeypadProps> = ({
   return (
     <div
       role="group"
-      aria-label="Pavé numérique"
+      aria-label={t('numericKeypad.title')}
       style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(3, 1fr)',
@@ -78,7 +80,7 @@ const NumericKeypad: React.FC<NumericKeypadProps> = ({
       <button
         type="button"
         onClick={clear}
-        aria-label="Effacer"
+        aria-label={t('numericKeypad.clear')}
         style={{ ...KEY_STYLE, fontSize: '1rem', color: '#dc2626' }}
       >
         C
@@ -87,7 +89,7 @@ const NumericKeypad: React.FC<NumericKeypadProps> = ({
       <button
         type="button"
         onClick={backspace}
-        aria-label="Retour arrière"
+        aria-label={t('numericKeypad.backspace')}
         style={{ ...KEY_STYLE, fontSize: '1.25rem' }}
       >
         ⌫
@@ -97,7 +99,7 @@ const NumericKeypad: React.FC<NumericKeypadProps> = ({
           type="button"
           onClick={onConfirm}
           disabled={confirmDisabled}
-          aria-label="Valider"
+          aria-label={t('actions.validate')}
           style={{
             ...KEY_STYLE,
             gridColumn: '1 / -1',

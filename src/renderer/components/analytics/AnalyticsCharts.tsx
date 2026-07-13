@@ -5,6 +5,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Competition, FencerCompetitionStats, Weapon } from '../../../shared/types';
+import { useTranslation } from '../../../hooks/useTranslation';
 import { TouchZoneHeatmap } from './TouchZoneHeatmap';
 
 interface Props {
@@ -158,7 +159,7 @@ const AggregateHeatmap: React.FC<{ stats: FencerCompetitionStats[] }> = ({ stats
               </div>
             );
           })}
-          <div className="text-xs text-gray-400 mt-2">Total points marqués : <span className="font-bold text-gray-700">{totalPts}</span></div>
+          <div className="text-xs text-gray-400 mt-2">{t('analyticsCharts.total_points')} <span className="font-bold text-gray-700">{totalPts}</span></div>
         </div>
       </div>
     </div>
@@ -219,7 +220,7 @@ const DurationChart: React.FC<{ stats: FencerCompetitionStats[] }> = ({ stats })
     sublabel: 't.',
   }));
 
-  return <HBar items={items} title="Distribution durée moyenne des matchs" />;
+  return <HBar items={items} title={t('analyticsCharts.avg_duration_dist')} />;
 };
 
 // ── Cards by reason ──────────────────────────────────────────────────────────
@@ -264,7 +265,7 @@ const CardsByReason: React.FC<{ stats: FencerCompetitionStats[] }> = ({ stats })
     color: '#f59e0b',
   }));
 
-  return <HBar items={items} title="Cartons par motif" />;
+  return <HBar items={items} title={t('analyticsCharts.cards_repartition')} />;
 };
 
 // ── Export CSV ─────────────────────────────────────────────────────────────────
@@ -302,6 +303,7 @@ async function exportCSV(competition: Competition, stats: FencerCompetitionStats
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export const AnalyticsCharts: React.FC<Props> = ({ competition, stats }) => {
+  const { t } = useTranslation();
   const [exporting, setExporting] = useState(false);
   const isLaser = competition.weapon === Weapon.LASER;
 
@@ -313,7 +315,7 @@ export const AnalyticsCharts: React.FC<Props> = ({ competition, stats }) => {
     return (
       <div className="text-center py-16 text-gray-400">
         <div className="text-4xl mb-3">📊</div>
-        <div>Aucune statistique disponible — lancez des matchs d'abord.</div>
+        <div>{t('analyticsCharts.no_stats')}</div>
       </div>
     );
   }
@@ -343,7 +345,7 @@ export const AnalyticsCharts: React.FC<Props> = ({ competition, stats }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Donut cartons */}
         <Donut
-          title="Répartition des cartons"
+          title={t('analyticsCharts.cards_repartition')}
           centerLabel={String(totalWhite + totalYellow + totalRed)}
           slices={[
             { label: 'Blancs', value: totalWhite, color: '#d1d5db' },

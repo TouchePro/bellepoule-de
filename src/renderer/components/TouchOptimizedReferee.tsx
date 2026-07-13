@@ -16,6 +16,7 @@ import {
 } from '../../shared/utils/suddenDeath';
 import TiebreakerAnimation from './TiebreakerAnimation';
 import { useMatchAuditStore } from '../../features/matchAuditLog/hooks/useMatchAuditStore';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface TouchOptimizedRefereeProps {
   match: Match;
@@ -125,6 +126,7 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
   const [supplementaryActive, setSupplementaryActive] = useState(false);
   const [showFullLog, setShowFullLog] = useState(false);
 
+  const { t } = useTranslation();
   const { entries, loadMatchTimeline, reset: resetAuditLog } = useMatchAuditStore();
   const reloadTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -510,7 +512,7 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
                 </div>
               </div>
               <div className="mt-4 text-sm text-gray-600 text-center">
-                Glisser vers la gauche ou toucher +1 pour ajouter un point
+                {t('touchReferee.swipe_left')}
               </div>
             </div>
 
@@ -563,7 +565,7 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
                 </div>
               </div>
               <div className="mt-4 text-sm text-gray-600 text-center">
-                Glisser vers la droite ou toucher +1 pour ajouter un point
+                {t('touchReferee.swipe_right')}
               </div>
             </div>
           </div>
@@ -621,7 +623,7 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
               </div>
             </div>
             {chips.length === 0 ? (
-              <div className="text-xs text-gray-400 text-center py-2">Aucun événement enregistré</div>
+              <div className="text-xs text-gray-400 text-center py-2">{t('touchReferee.no_event')}</div>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {chips.map(chip => (
@@ -664,13 +666,13 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
               }}
               className="bg-yellow-500 text-white px-6 py-4 rounded-lg font-medium text-lg active:scale-95 transition-transform"
             >
-              Réinitialiser Score
+              {t('touchReferee.reset_score')}
             </button>
             <button
               onClick={handleMatchEnd}
               className="bg-blue-500 text-white px-6 py-4 rounded-lg font-medium text-lg active:scale-95 transition-transform"
             >
-              Terminer Match
+              {t('touchReferee.finish_match')}
             </button>
           </div>
         </div>
@@ -696,7 +698,7 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
             {isListening && (
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                <span className="text-sm text-gray-600">Écoute...</span>
+                <span className="text-sm text-gray-600">{t('touchReferee.listening')}</span>
               </div>
             )}
           </div>

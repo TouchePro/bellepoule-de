@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { useTranslation } from '../contexts/TranslationContext';
+import { useTranslation } from '../hooks/useTranslation';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import {
   ARTICLES, CATEGORY_LABELS, getLang, getTitle, getContent,
@@ -12,7 +12,7 @@ interface Props {
 }
 
 const WikiModal: React.FC<Props> = ({ onClose }) => {
-  const { language } = useTranslation();
+  const { t, language } = useTranslation();
   const ref = useFocusTrap<HTMLDivElement>(true, onClose);
   const lang = getLang(language);
 
@@ -72,7 +72,7 @@ const WikiModal: React.FC<Props> = ({ onClose }) => {
           />
           <button
             onClick={onClose}
-            aria-label="Fermer"
+            aria-label={t('actions.close')}
             style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: 'var(--color-text-light, #6b7280)', padding: '0.25rem', borderRadius: 4, lineHeight: 1 }}
           >
             ✕
