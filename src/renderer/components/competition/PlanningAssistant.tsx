@@ -13,6 +13,7 @@ import {
   Arena as FlowArena,
   FlowOptimizationResult,
 } from '../../../shared/services/tournamentFlow';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface PlanningAssistantProps {
   competition: Competition;
@@ -27,6 +28,7 @@ const PlanningAssistant: React.FC<PlanningAssistantProps> = ({
   suggestedArenaCount,
   onClose,
 }) => {
+  const { t } = useTranslation();
   const [arenaCount, setArenaCount] = useState(Math.max(1, suggestedArenaCount));
   const [result, setResult] = useState<FlowOptimizationResult | null>(null);
   const [recommendations, setRecommendations] = useState<string[]>([]);
@@ -80,12 +82,12 @@ const PlanningAssistant: React.FC<PlanningAssistantProps> = ({
         aria-labelledby="planning-assistant-title"
       >
         <div className="modal-header">
-          <h2 className="modal-title" id="planning-assistant-title">🗓️ Assistant de planning</h2>
+          <h2 className="modal-title" id="planning-assistant-title">{t('planningAssistant.title')}</h2>
         </div>
         <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <label htmlFor="planning-arena-count" style={{ fontSize: '0.875rem', fontWeight: 600 }}>
-              Nombre de pistes disponibles
+              {t('planningAssistant.available_strips')}
             </label>
             <input
               id="planning-arena-count"
@@ -98,7 +100,7 @@ const PlanningAssistant: React.FC<PlanningAssistantProps> = ({
             />
           </div>
 
-          {loading && <p style={{ color: 'var(--color-text-light)' }}>Calcul en cours…</p>}
+          {loading && <p style={{ color: 'var(--color-text-light)' }}>{t('planningAssistant.calculating')}</p>}
 
           {!loading && insights && (
             <>
@@ -110,7 +112,7 @@ const PlanningAssistant: React.FC<PlanningAssistantProps> = ({
                   fontSize: '0.875rem',
                 }}
               >
-                <strong>Fin estimée :</strong>{' '}
+                <strong>{t('planningAssistant.estimated_end')}</strong>{' '}
                 {insights.estimatedFinishTime.toLocaleTimeString('fr-FR', {
                   hour: '2-digit',
                   minute: '2-digit',
@@ -121,7 +123,7 @@ const PlanningAssistant: React.FC<PlanningAssistantProps> = ({
 
               {recommendations.length === 0 && insights.bottlenecks.length === 0 ? (
                 <p style={{ fontSize: '0.875rem', color: 'var(--color-text-light)' }}>
-                  Aucun point de vigilance détecté avec cette configuration.
+                  {t('planningAssistant.no_warning')}
                 </p>
               ) : (
                 <ul style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.875rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -144,7 +146,7 @@ const PlanningAssistant: React.FC<PlanningAssistantProps> = ({
         </div>
         <div className="modal-footer">
           <button type="button" className="btn btn-primary" onClick={onClose}>
-            Fermer
+            {t('actions.close')}
           </button>
         </div>
       </div>

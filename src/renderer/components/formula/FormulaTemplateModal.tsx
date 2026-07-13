@@ -12,6 +12,7 @@ import {
   importFormulaFromJSON,
   saveCustomFormulaTemplate,
 } from '../../../shared/utils/tournamentTemplates';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface Props {
   mode: 'save' | 'load';
@@ -26,6 +27,7 @@ const FormulaTemplateModal_: React.FC<Props> = ({
   onLoad,
   onClose,
 }) => {
+  const { t } = useTranslation();
   const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
   const [name, setName] = useState('');
   const [templates, setTemplates] = useState(() => getCustomFormulaTemplates());
@@ -94,14 +96,14 @@ const FormulaTemplateModal_: React.FC<Props> = ({
         <div className="modal-body">
           {mode === 'save' && (
             <div className="form-group">
-              <label className="form-label">Nom de la formule</label>
+              <label className="form-label">{t('formulaTemplate.name_label')}</label>
               <div className="input-row">
                 <input
                   type="text"
                   className="form-input"
                   value={name}
                   onChange={e => setName(e.target.value)}
-                  placeholder="Ex: Club Tournoi Standard"
+                  placeholder={t('formulaTemplate.placeholder')}
                   onKeyDown={e => e.key === 'Enter' && handleSave()}
                   autoFocus
                 />
@@ -115,7 +117,7 @@ const FormulaTemplateModal_: React.FC<Props> = ({
 
           <div className="template-list">
             {templates.length === 0 ? (
-              <p className="template-empty">Aucune formule sauvegardée.</p>
+              <p className="template-empty">{t('formulaTemplate.none')}</p>
             ) : (
               templates.map(entry => (
                 <div key={entry.name} className="template-entry">
@@ -176,7 +178,7 @@ const FormulaTemplateModal_: React.FC<Props> = ({
                 className="btn btn-secondary"
                 onClick={() => fileRef.current?.click()}
               >
-                Importer depuis un fichier JSON
+                {t('formulaTemplate.import_json')}
               </button>
               {error && <p className="form-error">{error}</p>}
             </div>

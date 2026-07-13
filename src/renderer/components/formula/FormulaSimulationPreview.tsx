@@ -4,6 +4,7 @@
 
 import React, { memo } from 'react';
 import { FormulaSimulation } from '../../../shared/types';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface Props {
   simulation: FormulaSimulation;
@@ -24,6 +25,7 @@ function phaseLabel(type: string, index: number): string {
 }
 
 const FormulaSimulationPreview_: React.FC<Props> = ({ simulation, fencerCount }) => {
+  const { t } = useTranslation();
   return (
     <div className="formula-simulation-preview">
       <h4 className="simulation-title">Simulation — {fencerCount} tireurs</h4>
@@ -76,11 +78,11 @@ const FormulaSimulationPreview_: React.FC<Props> = ({ simulation, fencerCount })
 
       <div className="simulation-totals">
         <div className="sim-total-item">
-          <span className="sim-total-label">Total matchs</span>
+          <span className="sim-total-label">{t('formulaSim.total_matches')}</span>
           <strong>{simulation.totalMatches}</strong>
         </div>
         <div className="sim-total-item">
-          <span className="sim-total-label">Durée estimée</span>
+          <span className="sim-total-label">{t('formulaSim.estimated_duration')}</span>
           <strong>{formatDuration(simulation.estimatedDurationMinutes)}</strong>
         </div>
       </div>

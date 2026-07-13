@@ -110,7 +110,7 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
             onClick={() => setCurrentPhase('quest')}
             disabled={getCheckedInFencers().length < 2}
           >
-            Tour Quest <ChevronRight size={15} />
+            {t('quest.tour_quest')} <ChevronRight size={15} />
           </button>
         )}
         {currentPhase === 'checkin' && (!questEnabled || questConfig?.hasPreliminaryPools) && (
@@ -147,7 +147,7 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
           <button
             className="btn btn-secondary btn-icon-label"
             onClick={onOpenPlanningAssistant}
-            title="Estimation de fin de tournoi et recommandations de répartition des pistes"
+            title={t('competitionNav.tooltip')}
             style={{ fontSize: '0.8rem', padding: '0.3rem 0.6rem' }}
           >
             <CalendarClock size={14} /> Planning
@@ -156,7 +156,7 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
         <button
           className={`btn btn-secondary btn-icon-label${currentPhase === 'logs' ? ' btn-active' : ''}`}
           onClick={() => setCurrentPhase(currentPhase === 'logs' ? 'checkin' : 'logs')}
-          title="Journal des événements de match"
+          title={t('competitionNav.match_log')}
           style={{ fontSize: '0.8rem', padding: '0.3rem 0.6rem' }}
         >
           <ScrollText size={14} /> Journal

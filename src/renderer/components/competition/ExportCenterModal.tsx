@@ -8,6 +8,7 @@
 import React from 'react';
 import { Fencer, Pool, PoolRanking } from '../../../shared/types';
 import { FinalResult } from '../tableau/tableauTypes';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface ExportCenterModalProps {
   fencers: Fencer[];
@@ -63,6 +64,7 @@ const ExportCenterModal: React.FC<ExportCenterModalProps> = ({
   onGoToResults,
   onExportFFE,
 }) => {
+  const { t } = useTranslation();
   return (
     <div className="modal-overlay" onClick={onClose} style={{ zIndex: 11000 }}>
       <div
@@ -74,7 +76,7 @@ const ExportCenterModal: React.FC<ExportCenterModalProps> = ({
         aria-labelledby="export-center-title"
       >
         <div className="modal-header">
-          <h2 className="modal-title" id="export-center-title">📤 Centre d'export</h2>
+          <h2 className="modal-title" id="export-center-title">{t('exportCenter.title')}</h2>
         </div>
         <div className="modal-body">
           {fencers.length > 0 && (
@@ -86,30 +88,30 @@ const ExportCenterModal: React.FC<ExportCenterModalProps> = ({
 
           {pools.length > 0 && (
             <Section title="Poules">
-              <button className="btn btn-secondary" onClick={() => exportPoolsPDF(pools, currentPoolRound)}>Export PDF</button>
+              <button className="btn btn-secondary" onClick={() => exportPoolsPDF(pools, currentPoolRound)}>{t('exportCenter.export_pdf')}</button>
               <button className="btn btn-secondary" onClick={() => printPoolsPDF(pools, currentPoolRound)}>Imprimer</button>
             </Section>
           )}
 
           {tableauMatchesCount > 0 && (
-            <Section title="Tableau d'élimination">
+            <Section title={t('exportCenter.tableau')}>
               <button className="btn btn-secondary" onClick={onGoToTableau}>
-                Aller à Tableau pour l'export PDF →
+                {t('exportCenter.go_tableau')}
               </button>
             </Section>
           )}
 
           {overallRanking.length > 0 && (
-            <Section title="Classement">
+            <Section title={t('exportCenter.ranking')}>
               <button className="btn btn-secondary" onClick={() => exportRanking(overallRanking, 'csv', isLaserSabre)}>CSV</button>
               <button className="btn btn-secondary" onClick={() => exportRankingExcelCSV(overallRanking)}>CSV Excel</button>
               <button className="btn btn-secondary" onClick={() => exportRanking(overallRanking, 'json', isLaserSabre)}>JSON</button>
-              <button className="btn btn-secondary" onClick={onExportFFE}>📡 Envoyer à la FFE</button>
+              <button className="btn btn-secondary" onClick={onExportFFE}>{t('exportCenter.send_ffe')}</button>
             </Section>
           )}
 
           {finalResults.length > 0 && (
-            <Section title="Résultats finaux">
+            <Section title={t('exportCenter.final_results')}>
               <button className="btn btn-secondary" onClick={() => exportResults(finalResults, 'csv')}>CSV</button>
               <button className="btn btn-secondary" onClick={() => exportResults(finalResults, 'json')}>JSON</button>
               <button className="btn btn-secondary" onClick={() => exportResultsHTML(overallRanking, finalResults)}>HTML</button>
@@ -119,26 +121,26 @@ const ExportCenterModal: React.FC<ExportCenterModalProps> = ({
 
           {pools.length > 0 && overallRanking.length > 0 && (
             <Section title="Statistiques">
-              <button className="btn btn-secondary" onClick={() => exportDetailedStats(pools, overallRanking)}>Stats détaillées (CSV)</button>
+              <button className="btn btn-secondary" onClick={() => exportDetailedStats(pools, overallRanking)}>{t('exportCenter.detailed_csv')}</button>
             </Section>
           )}
 
           {finalResults.length > 0 && (
-            <Section title="Export complet compétition">
+            <Section title={t('exportCenter.full_export')}>
               <button className="btn btn-secondary" onClick={onGoToResults}>
-                Aller à Résultats pour l'export complet →
+                {t('exportCenter.go_results')}
               </button>
             </Section>
           )}
 
           {fencers.length === 0 && pools.length === 0 && (
             <p style={{ color: 'var(--color-text-light)', fontSize: '0.875rem' }}>
-              Aucune donnée à exporter pour le moment — ajoutez des tireurs pour commencer.
+              {t('exportCenter.no_data')}
             </p>
           )}
         </div>
         <div className="modal-footer">
-          <button type="button" className="btn btn-primary" onClick={onClose}>Fermer</button>
+          <button type="button" className="btn btn-primary" onClick={onClose}>{t('actions.close')}</button>
         </div>
       </div>
     </div>

@@ -12,6 +12,7 @@ import {
 import { AdvancementRuleEditor } from './AdvancementRuleEditor';
 import { RankingCriteriaEditor } from './RankingCriteriaEditor';
 import { ScoringZoneEditor } from './ScoringZoneEditor';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface Props {
   node: FormulaPhaseNode;
@@ -50,6 +51,7 @@ const FormulaPhaseCard_: React.FC<Props> = ({
   onMoveUp,
   onMoveDown,
 }) => {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(index === 0);
 
   const updatePoolConfig = (partial: Partial<CustomPoolRoundConfig>) => {
@@ -85,7 +87,7 @@ const FormulaPhaseCard_: React.FC<Props> = ({
             value={node.label ?? NODE_TYPE_LABELS[node.type]}
             onChange={e => onUpdate({ ...node, label: e.target.value })}
             disabled={readOnly}
-            placeholder="Nom de la phase"
+            placeholder={t('formulaPhaseCard.phase_name')}
           />
         </div>
         <div className="phase-card-actions">
@@ -113,7 +115,7 @@ const FormulaPhaseCard_: React.FC<Props> = ({
                 type="button"
                 className="btn btn-icon btn-danger"
                 onClick={onRemove}
-                title="Supprimer cette phase"
+                title={t('formulaPhaseCard.delete_phase')}
               >
                 ✕
               </button>
@@ -138,7 +140,7 @@ const FormulaPhaseCard_: React.FC<Props> = ({
             <>
               <div className="phase-config-grid">
                 <div className="form-group">
-                  <label className="form-label">Taille min / max poule</label>
+                  <label className="form-label">{t('formulaPhaseCard.pool_size')}</label>
                   <div className="input-row">
                     <input
                       type="number"
@@ -167,7 +169,7 @@ const FormulaPhaseCard_: React.FC<Props> = ({
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Score max</label>
+                  <label className="form-label">{t('formulaPhaseCard.max_score')}</label>
                   <select
                     className="form-input"
                     value={poolCfg.maxScore}
@@ -183,7 +185,7 @@ const FormulaPhaseCard_: React.FC<Props> = ({
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Chrono (sec)</label>
+                  <label className="form-label">{t('formulaPhaseCard.timer')}</label>
                   <input
                     type="number"
                     className="form-input"
@@ -197,7 +199,7 @@ const FormulaPhaseCard_: React.FC<Props> = ({
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Répartition</label>
+                  <label className="form-label">{t('formulaPhaseCard.repartition')}</label>
                   <select
                     className="form-input"
                     value={poolCfg.seeding}
@@ -207,14 +209,14 @@ const FormulaPhaseCard_: React.FC<Props> = ({
                     disabled={readOnly}
                   >
                     <option value="serpentine">Serpentine</option>
-                    <option value="sequential">Séquentielle</option>
-                    <option value="random">Aléatoire</option>
+                    <option value="sequential">{t('formulaPhaseCard.sequential')}</option>
+                    <option value="random">{t('formulaPhaseCard.random')}</option>
                   </select>
                 </div>
               </div>
 
               <div className="form-group">
-                <label className="form-label">Séparation</label>
+                <label className="form-label">{t('ui.separation')}</label>
                 <div className="checkbox-row">
                   {(['byClub', 'byRegion', 'byNation'] as const).map(key => (
                     <label key={key} className="checkbox-label">
@@ -235,7 +237,7 @@ const FormulaPhaseCard_: React.FC<Props> = ({
               </div>
 
               <div className="form-group">
-                <label className="form-label">Système de score</label>
+                <label className="form-label">{t('formulaPhaseCard.scoring_system')}</label>
                 <ScoringZoneEditor
                   scoring={poolCfg.scoring}
                   onChange={s => updatePoolConfig({ scoring: s })}
@@ -244,7 +246,7 @@ const FormulaPhaseCard_: React.FC<Props> = ({
               </div>
 
               <div className="form-group">
-                <label className="form-label">Critères de classement</label>
+                <label className="form-label">{t('formulaPhaseCard.ranking_criteria')}</label>
                 <RankingCriteriaEditor
                   criteria={poolCfg.rankingCriteria}
                   onChange={criteria => updatePoolConfig({ rankingCriteria: criteria })}
@@ -253,7 +255,7 @@ const FormulaPhaseCard_: React.FC<Props> = ({
               </div>
 
               <div className="form-group">
-                <label className="form-label">Avancement vers la phase suivante</label>
+                <label className="form-label">{t('formulaPhaseCard.advancement')}</label>
                 <AdvancementRuleEditor
                   rule={poolCfg.advancementRule}
                   onChange={r => updatePoolConfig({ advancementRule: r })}
@@ -269,7 +271,7 @@ const FormulaPhaseCard_: React.FC<Props> = ({
             <>
               <div className="phase-config-grid">
                 <div className="form-group">
-                  <label className="form-label">Score max</label>
+                  <label className="form-label">{t('formulaPhaseCard.max_score')}</label>
                   <select
                     className="form-input"
                     value={deCfg.maxScore}
@@ -285,7 +287,7 @@ const FormulaPhaseCard_: React.FC<Props> = ({
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Chrono (sec)</label>
+                  <label className="form-label">{t('formulaPhaseCard.timer')}</label>
                   <input
                     type="number"
                     className="form-input"
@@ -299,7 +301,7 @@ const FormulaPhaseCard_: React.FC<Props> = ({
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Tableau (taille)</label>
+                  <label className="form-label">{t('formulaPhaseCard.tableau_size')}</label>
                   <select
                     className="form-input"
                     value={deCfg.bracketSizeOverride ?? 0}
@@ -337,13 +339,13 @@ const FormulaPhaseCard_: React.FC<Props> = ({
                       onChange={e => updateDEConfig({ fifthPlaceMatch: e.target.checked })}
                       disabled={readOnly}
                     />
-                    Match pour la 5e place
+                    {t('formulaPhaseCard.fifth_place')}
                   </label>
                 </div>
               </div>
 
               <div className="form-group">
-                <label className="form-label">Système de score</label>
+                <label className="form-label">{t('formulaPhaseCard.scoring_system')}</label>
                 <ScoringZoneEditor
                   scoring={deCfg.scoring}
                   onChange={s => updateDEConfig({ scoring: s })}
@@ -356,7 +358,7 @@ const FormulaPhaseCard_: React.FC<Props> = ({
           {/* Classement final — pas de config particulière */}
           {node.type === 'classification' && (
             <p className="classification-hint">
-              Phase de classement final — aucune configuration requise.
+              {t('formulaPhaseCard.final_classification')}
             </p>
           )}
         </div>

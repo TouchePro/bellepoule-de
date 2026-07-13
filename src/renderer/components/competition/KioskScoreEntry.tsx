@@ -7,6 +7,7 @@
 import React from 'react';
 import { Pool } from '../../../shared/types';
 import { FencerPhoto } from '../FencerPhoto';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface KioskScoreEntryProps {
   pools: Pool[];
@@ -46,6 +47,7 @@ const KioskScoreEntry: React.FC<KioskScoreEntryProps> = ({
   onClose,
   onFinish,
 }) => {
+  const { t } = useTranslation();
   return (
     <div style={KIOSK_STYLES.kioskOverlay}>
       <div style={KIOSK_STYLES.kioskCloseWrapper}>
@@ -54,7 +56,7 @@ const KioskScoreEntry: React.FC<KioskScoreEntryProps> = ({
         </button>
       </div>
       <div style={KIOSK_STYLES.kioskContent}>
-        <h2 style={KIOSK_STYLES.kioskHeading}>Mode Kiosk - Saisie des scores</h2>
+        <h2 style={KIOSK_STYLES.kioskHeading}>{t('kioskScoreEntry.title')}</h2>
         {pools.map((pool, poolIndex) => (
           <div key={pool.id} style={KIOSK_STYLES.kioskPoolCard}>
             <h3 style={KIOSK_STYLES.kioskPoolTitle}>Poule {pool.number}</h3>
@@ -141,7 +143,7 @@ const KioskScoreEntry: React.FC<KioskScoreEntryProps> = ({
         {allPoolsComplete && (
           <div style={KIOSK_STYLES.kioskFinishRow}>
             <button onClick={onFinish} style={KIOSK_STYLES.kioskFinishBtn}>
-              ✓ Tous les matchs sont terminés - Voir le classement
+              {t('kioskScoreEntry.all_done')}
             </button>
           </div>
         )}
