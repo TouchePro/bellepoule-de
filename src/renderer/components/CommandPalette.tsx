@@ -125,7 +125,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Rechercher une compétition ou une action…"
+            placeholder={t('commandPalette.search_placeholder')}
             className="command-palette-input"
             aria-label="Search commands"
           />
@@ -138,7 +138,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
 
         <div ref={listRef} className="command-palette-list" role="listbox">
           {filtered.length === 0 ? (
-            <div className="command-palette-empty">Aucun résultat</div>
+            <div className="command-palette-empty">{t('ui.no_result')}</div>
           ) : (
             filtered.map((cmd, i) => (
               <div
@@ -163,8 +163,8 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
 
         <div className="command-palette-footer">
           <span><kbd>↑↓</kbd> naviguer</span>
-          <span><kbd>↵</kbd> sélectionner</span>
-          <span><kbd>Esc</kbd> fermer</span>
+          <span><kbd>↵</kbd> {t('commandPalette.select')}</span>
+          <span><kbd>Esc</kbd> {t('actions.close')}</span>
         </div>
       </div>
     </div>

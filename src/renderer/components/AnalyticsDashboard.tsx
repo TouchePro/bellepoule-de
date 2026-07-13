@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback, memo, Suspense } from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { useTranslation } from '../hooks/useTranslation';
 import { Competition, Fencer, Pool, Match, MatchStatus, FencerCompetitionStats } from '../../shared/types';
 import { FencerStatsTable } from '../../features/analytics/components/FencerStatsTable';
 import { AnalyticsCharts } from './analytics/AnalyticsCharts';
@@ -275,6 +276,7 @@ const AnalyticsDashboard_: React.FC<AnalyticsDashboardProps> = ({
   onClose,
 }) => {
   const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'performance' | 'stats' | 'charts' | 'journal' | 'referees'>('performance');
   const [fencerStats, setFencerStats] = useState<FencerCompetitionStats[]>([]);
   const [refereeStats, setRefereeStats] = useState<
@@ -361,7 +363,7 @@ const AnalyticsDashboard_: React.FC<AnalyticsDashboardProps> = ({
             onClick={handleExportReport}
             disabled={exporting}
             className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50"
-            title="Exporter le rapport post-tournoi en PDF"
+            title={t('analytics.export_pdf_report')}
           >
             {exporting ? '⏳' : '📄'} Rapport PDF
           </button>
@@ -417,15 +419,15 @@ const AnalyticsDashboard_: React.FC<AnalyticsDashboardProps> = ({
       {activeTab === 'referees' && (
         refereeStats.length === 0 ? (
           <div className="text-center py-12 text-gray-500 text-sm">
-            Aucun match arbitré enregistré pour cette compétition.
+            {t('analytics.no_refereed_matches')}
           </div>
         ) : (
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="bg-gray-50 border-b-2 border-gray-200">
-                <th className="text-left px-3 py-2 font-semibold text-gray-500">Arbitre</th>
+                <th className="text-left px-3 py-2 font-semibold text-gray-500">{t('referee.label')}</th>
                 <th className="text-right px-3 py-2 font-semibold text-gray-500">Matchs</th>
-                <th className="text-right px-3 py-2 font-semibold text-gray-500">Durée moy.</th>
+                <th className="text-right px-3 py-2 font-semibold text-gray-500">{t('stats.avg_duration_short')}</th>
                 <th className="text-right px-3 py-2 font-semibold text-yellow-600">🟨</th>
                 <th className="text-right px-3 py-2 font-semibold text-red-600">🟥</th>
                 <th className="text-right px-3 py-2 font-semibold text-gray-800">⬛</th>

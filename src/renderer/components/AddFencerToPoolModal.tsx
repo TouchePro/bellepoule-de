@@ -9,6 +9,7 @@ import { Fencer, Pool } from '../../shared/types';
 import { useToast } from './Toast';
 import { useDebounce } from '../hooks/useDebounce';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface AddFencerToPoolModalProps {
   pool: Pool;
@@ -27,6 +28,7 @@ const AddFencerToPoolModalComponent: React.FC<AddFencerToPoolModalProps> = ({
 }) => {
   const { showToast } = useToast();
   const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
+  const { t } = useTranslation();
   const [allFencers, setAllFencers] = useState<Fencer[]>([]);
   const [allPoolFencerIds, setAllPoolFencerIds] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
@@ -115,14 +117,13 @@ const AddFencerToPoolModalComponent: React.FC<AddFencerToPoolModalProps> = ({
               fontSize: '0.875rem',
             }}
           >
-            ⚠️ <strong>Opération de sauvetage :</strong> le tireur sera ajouté sans rééquilibrage.
-            Des matchs contre tous les tireurs présents seront créés.
+            ⚠️ <strong>{t('addFencerToPool.rescue_title')}</strong> {t('addFencerToPool.rescue_desc')}
           </div>
 
           <input
             type="text"
-            placeholder="Rechercher par nom…"
-            aria-label="Rechercher un tireur par nom"
+            placeholder={t('addFencerToPool.search_placeholder')}
+            aria-label={t('addFencerToPool.search_aria')}
             value={search}
             onChange={e => setSearch(e.target.value)}
             autoFocus
@@ -154,7 +155,7 @@ const AddFencerToPoolModalComponent: React.FC<AddFencerToPoolModalProps> = ({
                   fontSize: '0.875rem',
                 }}
               >
-                Chargement des tireurs…
+                {t('ui.loading')}
               </div>
             ) : available.length === 0 ? (
               <div
@@ -165,7 +166,7 @@ const AddFencerToPoolModalComponent: React.FC<AddFencerToPoolModalProps> = ({
                   fontSize: '0.875rem',
                 }}
               >
-                Aucun tireur disponible
+                {t('addFencerToPool.none_available')}
               </div>
             ) : (
               available.map(f => {

@@ -78,7 +78,7 @@ const CompetitionListComponent: React.FC<CompetitionListProps> = ({
               Bienvenue sur BellePoule
             </h1>
             <p style={{ color: 'var(--color-text-light)', fontSize: '1rem', maxWidth: '36ch', margin: '0 auto' }}>
-              Gérez vos compétitions d&apos;escrime de l&apos;appel au podium.
+              {t('competitionList.intro')}
             </p>
           </div>
 
@@ -119,7 +119,7 @@ const CompetitionListComponent: React.FC<CompetitionListProps> = ({
 
           <p style={{ color: 'var(--color-text-light)', fontSize: '0.75rem' }}>
             Astuce : appuyez sur <kbd>?</kbd> pour voir les raccourcis clavier, ou{' '}
-            <kbd>Ctrl</kbd>+<kbd>K</kbd> pour ouvrir la palette de commandes.
+            <kbd>Ctrl</kbd>+<kbd>K</kbd> {t('competitionList.palette_hint')}
           </p>
         </div>
       </div>
@@ -202,7 +202,7 @@ const CompetitionListComponent: React.FC<CompetitionListProps> = ({
             className="btn btn-secondary btn-sm"
             onClick={goToFirst}
             disabled={!hasPrev}
-            title="Première page"
+            title={t('pagination.first')}
           >
             «
           </button>
@@ -210,7 +210,7 @@ const CompetitionListComponent: React.FC<CompetitionListProps> = ({
             className="btn btn-secondary btn-sm"
             onClick={goToPrev}
             disabled={!hasPrev}
-            title="Page précédente"
+            title={t('pagination.prev')}
           >
             ‹
           </button>
@@ -221,7 +221,7 @@ const CompetitionListComponent: React.FC<CompetitionListProps> = ({
             className="btn btn-secondary btn-sm"
             onClick={goToNext}
             disabled={!hasNext}
-            title="Page suivante"
+            title={t('pagination.next')}
           >
             ›
           </button>
@@ -229,7 +229,7 @@ const CompetitionListComponent: React.FC<CompetitionListProps> = ({
             className="btn btn-secondary btn-sm"
             onClick={goToLast}
             disabled={!hasNext}
-            title="Dernière page"
+            title={t('pagination.last')}
           >
             »
           </button>

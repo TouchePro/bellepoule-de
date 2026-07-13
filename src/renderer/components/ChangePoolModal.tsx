@@ -6,6 +6,7 @@
 
 import React, { useState, useRef } from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { useTranslation } from '../hooks/useTranslation';
 import { Fencer, Pool, MatchStatus } from '../../shared/types';
 
 interface ChangePoolModalProps {
@@ -24,6 +25,7 @@ const ChangePoolModalComponent: React.FC<ChangePoolModalProps> = ({
   onClose,
 }) => {
   const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
+  const { t } = useTranslation();
   const [selectedPoolIndex, setSelectedPoolIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const dragRef = useRef<boolean>(false);
@@ -51,7 +53,7 @@ const ChangePoolModalComponent: React.FC<ChangePoolModalProps> = ({
     <div className="modal-overlay" onClick={onClose}>
       <div ref={modalRef} className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px' }} role="dialog" aria-modal="true">
         <div className="modal-header">
-          <h2>Changer de poule</h2>
+          <h2>{t('pools.change_pool')}</h2>
           <button className="btn-close" onClick={onClose}>
             &times;
           </button>
@@ -73,7 +75,7 @@ const ChangePoolModalComponent: React.FC<ChangePoolModalProps> = ({
             }}
           >
             <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>
-              ↕ Tireur (glisser vers une poule)
+              {t('changePool.drag_hint')}
             </div>
             <div style={{ fontSize: '1.25rem', fontWeight: '600' }}>
               {fencer.firstName} {fencer.lastName}
@@ -94,8 +96,7 @@ const ChangePoolModalComponent: React.FC<ChangePoolModalProps> = ({
                 fontSize: '0.875rem',
               }}
             >
-              ⚠️ <strong>Attention :</strong> Ce tireur a déjà disputé des matches dans cette poule.
-              Le déplacement supprimera ses résultats.
+              ⚠️ <strong>{t('changePool.already_played')}</strong>
             </div>
           )}
 
@@ -108,7 +109,7 @@ const ChangePoolModalComponent: React.FC<ChangePoolModalProps> = ({
                 marginBottom: '0.5rem',
               }}
             >
-              Déplacer vers :
+              {t('changePool.move_to')}
             </label>
 
             {otherPools.length === 0 ? (
@@ -121,7 +122,7 @@ const ChangePoolModalComponent: React.FC<ChangePoolModalProps> = ({
                   borderRadius: '6px',
                 }}
               >
-                Aucune autre poule disponible
+                {t('changePool.no_other_pool')}
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -207,7 +208,7 @@ const ChangePoolModalComponent: React.FC<ChangePoolModalProps> = ({
                 fontSize: '0.875rem',
               }}
             >
-              ✓ Les matches des deux poules seront recalculés
+              {t('changePool.recalculated')}
             </div>
           )}
         </div>
@@ -221,7 +222,7 @@ const ChangePoolModalComponent: React.FC<ChangePoolModalProps> = ({
             onClick={handleMove}
             disabled={selectedPoolIndex === null}
           >
-            Déplacer le tireur
+            {t('changePool.move_fencer')}
           </button>
         </div>
       </div>

@@ -181,7 +181,7 @@ const AddFencerModalComponent: React.FC<AddFencerModalProps> = ({ onClose, onAdd
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="Île-de-France"
+                  placeholder={t('fencer.region_idf')}
                   value={region}
                   onChange={e => setRegion(e.target.value)}
                 />

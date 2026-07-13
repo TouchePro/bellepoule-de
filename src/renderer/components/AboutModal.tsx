@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { useTranslation } from '../hooks/useTranslation';
 import type { VersionInfo } from '../../shared/types/preload';
 
 interface Props {
@@ -208,6 +209,7 @@ const ANIM_EASE = 'ease-in-out';
 
 const AboutModal: React.FC<Props> = ({ onClose }) => {
   const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
+  const { t } = useTranslation();
   const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
   const [easterActive, setEasterActive] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -244,7 +246,7 @@ const AboutModal: React.FC<Props> = ({ onClose }) => {
   return (
     <div style={styles.overlay} onClick={handleOverlayClick}>
       <div ref={modalRef} style={styles.modal} role="dialog" aria-modal="true">
-        <button style={styles.closeBtn} onClick={onClose} title="Fermer">✕</button>
+        <button style={styles.closeBtn} onClick={onClose} title={t('actions.close')}>✕</button>
 
         <div style={styles.title}>BellePoule Modern</div>
 
@@ -255,18 +257,18 @@ const AboutModal: React.FC<Props> = ({ onClose }) => {
           <span
             style={styles.buildBadge}
             onDoubleClick={triggerEasterEgg}
-            title="Double-clic pour une surprise…"
+            title={t('about.devmode_hint')}
           >
             #{versionInfo?.build ?? '…'}
           </span>
           <span style={styles.meta}>— {buildDate}</span>
         </div>
 
-        <div style={styles.hint}>💡 Double-clique sur le numéro de build…</div>
+        <div style={styles.hint}>{t('about.build_hint')}</div>
 
         <div style={styles.desc}>
-          Logiciel de gestion de tournois d'escrime.<br />
-          Poules, tableaux directs, arbitrage déporté en temps réel.
+          {t('about.desc1')}<br />
+          {t('about.desc2')}
         </div>
 
         <div style={styles.licence}>
