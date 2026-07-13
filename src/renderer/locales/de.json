@@ -106,7 +106,35 @@
     "title": "Titel",
     "weapon": "Waffe",
     "sign_tableau_matches_label": "Unterschrift der Fechter auf Tablet (Tableau)",
-    "sign_tableau_matches_description": "Zeigt nach jedem K.-o.-Match auf dem Tablet einen Unterschriftsbildschirm für beide Fechter an"
+    "sign_tableau_matches_description": "Zeigt nach jedem K.-o.-Match auf dem Tablet einen Unterschriftsbildschirm für beide Fechter an",
+    "pools_rounds": "Gruppenrunden",
+    "round_1": "1 Runde",
+    "round_2": "2 Runden",
+    "round_3": "3 Runden",
+    "direct_elimination": "Direkte Elimination",
+    "max_pool_score": "Max. Pool-Punktzahl",
+    "pool_touches": "Treffer um ein Pool-Match zu gewinnen",
+    "pool_time": "Pool-Chrono (Sekunden)",
+    "tableau_max_score": "Max. Tabellen-Punktzahl (Elimination)",
+    "tableau_time": "Tabellen-Chrono (Sekunden)",
+    "play_all_places": "Alle Plätze ausspielen",
+    "losers_classification": "Die Verlierer jeder Runde bilden ein Klassifikationstableau",
+    "pool_winners_only": "Nur Pool-Sieger gelangen ins Tableau",
+    "first_only_qualified": "Nur der 1. jeder Poule ist für das Eliminationstableau qualifiziert",
+    "coupled": "Gekoppelter Wettkampf (Trennung nach Pools)",
+    "standard": "Keine — Standardwettkampf",
+    "by_gender_separated": "Nach Geschlecht (H/F) — gemischte Pools, getrennte Tableaus",
+    "by_gender_note": "Nützlich wenn H und F aus Personalmangel dieselben Pools teilen",
+    "title_props": "Wettkampfeigenschaften",
+    "general_info": "Allgemeine Informationen",
+    "formula": "Wettkampfformel",
+    "prep_single_pool": "Vorläufige Pools?",
+    "enable_referee_mgmt": "Schiedsrichterverwaltung aktivieren",
+    "referee_mgmt_desc": "Zeigt den Namen des Schiedsrichters in der Arena und erlaubt Änderung aus der Ferneingabe",
+    "advanced_referee_desc": "Aktiviert erweiterte Bearbeitung der Pisten und Schiedsrichteranzahl pro Pool/Match",
+    "max_referees_pool": "Max. Schiedsrichter pro Pool",
+    "max_referees_match": "Max. Schiedsrichter pro Match (Tableau)",
+    "custom_formula": "À la carte (eigene Formel)"
   },
   "fencer": {
     "abandon": "Aufgeben",
@@ -128,7 +156,14 @@
     "present_label": "angemeldet",
     "ranking": "Rangliste",
     "reactivate": "Reaktivieren",
-    "uncheck": "Abmelden"
+    "uncheck": "Abmelden",
+    "region_idf": "Île-de-France",
+    "unranked": "Nicht klassiert",
+    "region": "Region",
+    "fencer_1": "Fechter 1",
+    "select_fencer": "Fechter auswählen",
+    "fencer_2": "Fechter 2",
+    "fencer_label": "Fechter"
   },
   "formula": {
     "add_classification": "Klasse hinzufügen",
@@ -222,7 +257,9 @@
     "importJson": "JSON importieren",
     "modalTitle": "PDF-Exporte anpassen",
     "openButton": "PDFs anpassen",
-    "reset": "Zurücksetzen"
+    "reset": "Zurücksetzen",
+    "no_logo": "Kein Logo",
+    "preview": "Vorschau"
   },
   "phases": {
     "checkin": "Anmeldung",
@@ -295,7 +332,12 @@
   },
   "results": {
     "congratulations": "Herzlichen Glückwunsch an die Gewinner!",
-    "final_ranking": "Endrangliste"
+    "final_ranking": "Endrangliste",
+    "export_desc": "Pools und Direktausscheidungen ohne Unterschriften der Kämpfer",
+    "generating_full": "Vollständiges PDF wird erzeugt…",
+    "second": "2.",
+    "third": "3.",
+    "generating": "Erzeugung…"
   },
   "settings": {
     "cancel": "Abbrechen",
@@ -306,7 +348,23 @@
     "pool_rounds": "Pool-Runden",
     "save": "Speichern",
     "theme": "Thema",
-    "title": "Einstellungen"
+    "title": "Einstellungen",
+    "logo_position": "Oben links auf exportierten PDFs und im Kiosk-Modus angezeigt.",
+    "drag_image": "Bild hierher ziehen oder zum Auswählen klicken",
+    "logo_format": "PNG, JPG, SVG — max 5 MB",
+    "delete_logo": "Logo löschen",
+    "pdf_appearance": "Passen Sie das Erscheinungsbild jedes PDF-Exporttyps an.",
+    "quick_mouse": "Schnelle Mauseingabe aktivieren",
+    "simplified_mode": "Vereinfachter Eingabemodus",
+    "simplified_cells": "Vereinfachte Eingabe in Feldern aktivieren",
+    "score_journal": "Punktejournal",
+    "score_journal_desc": "Aktiviert den Reiter \"Punkteverlauf\" in der Wettkampfansicht.",
+    "audit_log": "Score-Audit-Protokoll aktivieren",
+    "webhook_url": "Discord-/Slack-/eigene URL (nur HTTPS).",
+    "referee_tts": "Schiedsrichter-Tableau — Sprachzeitgeber",
+    "tts_desc": "Stimme und Zeitstufen werden auf Schiedsrichter-Tablets angesagt.",
+    "tts_default_voice": "Standardstimme (je nach Sprache)",
+    "tts_thresholds": "Angesagte Stufen"
   },
   "shortcuts": {
     "category_actions": "Aktionen",
@@ -354,7 +412,10 @@
     "yellow_cards": "Gelbe Karten",
     "zone_a": "Zone A (1 Pt.)",
     "zone_b": "Zone B (3 Pt.)",
-    "zone_c": "Zone C (5 Pt.)"
+    "zone_c": "Zone C (5 Pt.)",
+    "avg_duration_short": "Ø Dauer",
+    "competitions": "Wettkämpfe",
+    "competition": "Wettkampf"
   },
   "status": {
     "abandoned": "Aufgegeben",
@@ -371,7 +432,11 @@
   "tableau": {
     "elimination_in": "Ausgeschieden in",
     "finalist": "Finalist",
-    "winner": "Gewinner"
+    "winner": "Gewinner",
+    "finished": "Beendet",
+    "phases_label": "Einzuschließende Phasen",
+    "assign_strip": "Einer Piste zuweisen",
+    "select_strip": "Wählen Sie die Piste für dieses Match:"
   },
   "time": {
     "days": "Tage",
@@ -385,5 +450,614 @@
     "foil": "Florett",
     "laser": "Laser-Säbel",
     "sabre": "Säbel"
+  },
+  "about": {
+    "devmode_hint": "Doppelklick für eine Überraschung…",
+    "build_hint": "💡 Doppelklick auf die Build-Nummer…",
+    "desc1": "Software zur Verwaltung von Fechtturnieren.",
+    "desc2": "Gruppen, Direktausscheidungen, entfernte Schiedsrichterführung in Echtzeit."
+  },
+  "addFencerToPool": {
+    "search_placeholder": "Nach Name suchen…",
+    "search_aria": "Einen Fechter nach Namen suchen",
+    "rescue_title": "Rettungsaktion:",
+    "rescue_desc": "Der Fechter wird ohne Neuverteilung hinzugefügt. Gegen alle anwesenden Fechter werden Matches erstellt.",
+    "none_available": "Kein Fechter verfügbar"
+  },
+  "ui": {
+    "loading": "Laden…",
+    "no_result": "Kein Ergebnis",
+    "enabled": "Aktiviert",
+    "disabled": "Deaktiviert",
+    "previous_pool": "Vorherige Poule",
+    "next_pool": "Nächste Poule",
+    "no_pools": "Keine Pools",
+    "poule": "Poule",
+    "round": "Runde",
+    "generating": "Erzeugung…",
+    "phase": "Phase",
+    "separation": "Trennung",
+    "configure_send_kiosk": "Konfigurieren und im Kiosk-Modus senden",
+    "configure_kiosk": "🖥️ Kiosk-Modus konfigurieren",
+    "views_label": "Anzuzeigende Ansichten:",
+    "rotation_label": "Rotation (s):",
+    "send_kiosk": "An Kiosk senden"
+  },
+  "analytics": {
+    "export_pdf_report": "Turnierbericht als PDF exportieren",
+    "no_refereed_matches": "Kein geleitetes Match für diesen Wettkampf erfasst."
+  },
+  "referee": {
+    "label": "Schiedsrichter",
+    "loading": "Schiedsrichter werden geladen…",
+    "name_placeholder": "Vorname Nachname *",
+    "category_placeholder": "Kategorie (Regional…)",
+    "nationality_placeholder": "Nationalität (FRA)",
+    "expected_format": "Erwartetes Format: NAME;Vorname;Geschlecht(M/W);Kategorie;Verein;Region;Nationalität — eine Zeile pro Schiedsrichter, Trennzeichen « ; », .txt oder .csv",
+    "export_format": "Exportiert die Liste als CSV — gleiches Format wie der Import: NAME;Vorname;Geschlecht(M/W);Kategorie;Verein;Region;Nationalität",
+    "recommended_rest": "Empfohlene Pause",
+    "title": "👨‍⚖️ Schiedsrichterverwaltung",
+    "add": "Schiedsrichter hinzufügen",
+    "no_registered": "Kein Schiedsrichter erfasst.",
+    "no_assigned_match": "Kein Match mit zugewiesenem Schiedsrichter.",
+    "rotation_config": "Rotationskonfiguration",
+    "avoid_same_club": "Schiedsrichter desselben Vereins vermeiden",
+    "balance_assignments": "Zuweisungen ausgleichen",
+    "max_consecutive": "Max. aufeinanderfolgende Matches:",
+    "min_rest": "Min. Ruhezeit (Min):",
+    "rotation_report": "Rotationsbericht",
+    "assignments": "Match-Zuweisungen",
+    "no_pending": "Kein Match wartet auf Schiedsrichter.",
+    "choose": "-- Schiedsrichter wählen --",
+    "assign": "Schiedsrichter zuweisen",
+    "none": "✕ Kein Schiedsrichter",
+    "none_registered": "Kein Schiedsrichter für diesen Wettkampf erfasst",
+    "select_for_match": "Wählen Sie den Schiedsrichter für dieses Match:"
+  },
+  "changePool": {
+    "drag_hint": "↕ Fechter (in eine Poule ziehen)",
+    "already_played": "Dieser Fechter hat bereits Matches in dieser Poule bestritten. Die Verschiebung löscht seine Ergebnisse.",
+    "move_to": "Verschieben nach:",
+    "no_other_pool": "Keine andere Poule verfügbar",
+    "recalculated": "✓ Die Matches beider Poulens werden neu berechnet",
+    "move_fencer": "Fechter verschieben"
+  },
+  "commandPalette": {
+    "search_placeholder": "Wettbewerb oder Aktion suchen…",
+    "select": "auswählen"
+  },
+  "pagination": {
+    "first": "Erste Seite",
+    "prev": "Vorherige Seite",
+    "last": "Letzte Seite"
+  },
+  "competitionList": {
+    "intro": "Verwalten Sie Ihre Fechtwettbewerbe vom Aufruf bis aufs Podest.",
+    "palette_hint": "um die Befehlspalette zu öffnen."
+  },
+  "quest": {
+    "tour_quest": "Quest-Runde",
+    "tour_quest_enabled": "Quest-Runde aktiviert?",
+    "without_pools": "Ohne (Quest → Tableau)",
+    "with_pools": "Mit (Pools → Quest → Tableau)",
+    "qualified_count": "Anzahl qualifizierter Pools zum Quest-Runde",
+    "victories_played": "Siege / Gespielte Matches",
+    "points": "Quest-Punkte",
+    "cards_received": "Erhaltene Karten (weniger = besser)",
+    "in_progress": "Quest-Runde läuft",
+    "validate": "Quest-Runde validieren →",
+    "cards_label": "Erhaltene Karten",
+    "ranking": "Quest-Runden-Rangliste",
+    "criteria": "Kriterien: V/M fallend → Quest-Punkte fallend → Karten steigend",
+    "config": "Konfiguration der Quest-Runde",
+    "num_fights": "Anzahl Kämpfe",
+    "available_time": "Verfügbare Zeit (Min)",
+    "num_arenas": "Anzahl Arenen",
+    "qualified_fencers": "Qualifizierte Fechter",
+    "override": "Manuelles Override (leer lassen für Formel)",
+    "opposition_constraint": "Gegnerbeschränkung",
+    "need_two": "Mindestens 2 Fechter werden benötigt, um einen Plan zu erstellen.",
+    "repartition": "Verteilung pro Fechter",
+    "launch": "Quest-Runde starten →",
+    "label": "Quest"
+  },
+  "competitionView": {
+    "show_grid_attr": "Alle Pools in einem Raster anzeigen",
+    "single_pool_attr": "Eine Poule gleichzeitig anzeigen",
+    "print_sheets_attr": "Poolblätter drucken (Ctrl+P)",
+    "select_pool_attr": "Poule auswählen",
+    "return_to_generate": "Zurück zum Aufruf, um die Pools zu erstellen",
+    "back_to_call": "Zurück zum Aufruf",
+    "single_view": "🎯 Einzel-Pool-Ansicht",
+    "print": "🖨️ Poolblätter drucken",
+    "export_pdf": "📄 Alle Pools als PDF exportieren",
+    "loading_tableau": "Tableau wird geladen…",
+    "readonly": "🔒 Tableau im Nur-Lese-Modus — Endergebnisse erzeugt.",
+    "edit_tableau": "✏️ Tableau bearbeiten"
+  },
+  "conflict": {
+    "none": "Kein Konflikt zu lösen."
+  },
+  "editFencer": {
+    "title": "Fechter bearbeiten",
+    "last_name": "Nachname *",
+    "first_name": "Vorname *",
+    "not_ranked": "Nicht punktiert",
+    "ranked_present": "Punktiert (anwesend)"
+  },
+  "errors": {
+    "load_title": "Beim Laden des Wettbewerbs ist ein Fehler aufgetreten.",
+    "load_message": "Die Daten könnten beschädigt sein. Bitte den Support kontaktieren."
+  },
+  "ffe": {
+    "api_key": "Ihr FFE-API-Schlüssel",
+    "import_title": "Aus FFE Connect importieren",
+    "competition_code": "Wettkampfcode *",
+    "api_key_optional": "API-Schlüssel (optional)",
+    "selected": "ausgewählt",
+    "export_title": "Nach FFE Connect exportieren",
+    "export_success": "Ergebnisse erfolgreich an die FFE gesendet."
+  },
+  "comparison": {
+    "matches_played": "Gespielte Matches:",
+    "win_rate": "Siegquote:",
+    "touches_given": "Gegebene Treffer:",
+    "touches_received": "Erhaltene Treffer:",
+    "avg_score": "Durchschnittsergebnis",
+    "history_title": "📜 Duellhistorie",
+    "pool_matches": "Pool-Matches",
+    "tableau_matches": "Tableau-Matches",
+    "never_fought": "Diese beiden Fechter sind in diesem Wettkampf nie gegeneinander angetreten."
+  },
+  "fencerList": {
+    "toggle_columns": "Spalten anzeigen/ausblenden",
+    "search_placeholder": "Fechter suchen…",
+    "dblclick_edit": "Doppelklick zum Bearbeiten",
+    "reactivate": "Reaktivieren",
+    "import_ffe_ranking": "FFE-Rangliste importieren",
+    "import_ffe_connect": "🔗 Aus FFE Connect importieren",
+    "reset_order": "↺ Reihenfolge zurücksetzen",
+    "fencer_registration": "📱 Fechter-Anmeldung",
+    "qr_hint": "Scannen Sie diesen QR-Code mit dem Tablet, um zum Anmeldeformular zu gelangen",
+    "none_registered": "Kein Fechter angemeldet",
+    "import_hint": "Importieren Sie eine Liste oder fügen Sie Fechter manuell hinzu"
+  },
+  "photo": {
+    "delete": "Foto löschen",
+    "take_webcam": "Foto mit Webcam aufnehmen",
+    "drop_here": "Hier ablegen",
+    "take": "Foto aufnehmen"
+  },
+  "historicalStats": {
+    "none": "Keine Historie verfügbar"
+  },
+  "kiosk": {
+    "ranking": "📊 Rangliste",
+    "tableau": "🥇 Tableau",
+    "esc_exit": "Esc zum Beenden",
+    "close": "✕ Schließen",
+    "finished_matches": "beendete Matches",
+    "ranking_label": "Rangliste",
+    "matches_live": "Laufende Matches",
+    "no_live": "Kein Match läuft",
+    "final_results": "🏆 ENDERGEBNISSE",
+    "tableau_done": "Tableau beendet",
+    "general_ranking": "Gesamtrangliste"
+  },
+  "live": {
+    "live": "● LIVE",
+    "pool_results": "📋 Pool-Ergebnisse",
+    "elim_phase": "⚔️ Eliminationsphase",
+    "final_ranking": "🏅 Endrangliste",
+    "subtitle": "BellePoule Modern • Verfolgen Sie den Wettkampf in Echtzeit",
+    "no_results_yet": "Noch keine Ergebnisse",
+    "tableau_not_started": "Das Tableau hat noch nicht begonnen",
+    "not_finished": "Der Wettkampf ist noch nicht beendet"
+  },
+  "liveInterPool": {
+    "title": "Gesamtrangliste — Live",
+    "no_result": "Kein Ergebnis verfügbar"
+  },
+  "matchAudit": {
+    "filter": "Filtern:",
+    "by_referee": "Nach Schiedsrichter",
+    "export_json": "JSON exportieren",
+    "no_scores": "Keine Punkteingabe erfasst.",
+    "last_entry": "Letzte Eingabe",
+    "no_events": "Kein Ereignis für dieses Match erfasst.",
+    "type": "Typ",
+    "title": "Match-Protokoll"
+  },
+  "multiStrip": {
+    "pending": "ausstehende Matches",
+    "free_strip": "Piste freigeben",
+    "assign_next": "Nächstes Match zuweisen",
+    "none_pending": "Kein Match ausstehend"
+  },
+  "newCompetition": {
+    "placeholder": "Bsp: Regionalmeisterschaft",
+    "touches_like": "Treffer (wie die anderen Waffen)",
+    "zone_points": "Kumulierte Zonepunkte (A/B/C)"
+  },
+  "team": {
+    "competition": "Mannschaftswettkampf",
+    "starters_per": "Stammspieler pro Mannschaft",
+    "reserves_per": "Reserve pro Mannschaft",
+    "name_placeholder": "Bsp: Mannschaft A",
+    "individual_relays": "Gewonnene/verlorene Einzelstaffeln",
+    "cumulative_touches": "Kumulierte Treffer (FIE-Regel)",
+    "generate_pool": "Die Poule generieren",
+    "name_label": "Mannschaftsname",
+    "create": "+ Erstellen",
+    "none": "Keine Mannschaft — erstellen Sie oben eine.",
+    "complete": "✓ Komplett",
+    "result_short": "Erg.",
+    "no_fencer": "Kein Fechter",
+    "select": "-- auswählen --",
+    "no_match": "Kein Match gespielt.",
+    "label": "Mannschaft"
+  },
+  "obs": {
+    "open_browser": "Im Browser öffnen",
+    "strip_arena": "Piste / Arena",
+    "json_endpoint": "JSON-Endpoint (Drittanbieter-Integrationen)"
+  },
+  "offline": {
+    "last_sync": "Letzte Synchronisation:",
+    "pending_actions": "Ausstehende Aktionen:",
+    "syncing": "Synchronisierung läuft...",
+    "will_sync": "Änderungen werden automatisch synchronisiert, sobald die Verbindung wiederhergestellt ist."
+  },
+  "photoBooth": {
+    "preview": "Vorschau",
+    "start_camera": "Kamera starten"
+  },
+  "poolPrep": {
+    "single_pool": "Alle Fechter in eine einzige Poule",
+    "official_order": "Offizielle FIE/FFE-Matchreihenfolge nach Poolgröße anzeigen",
+    "same_club": "Gleicher Verein in dieser Poule",
+    "num_pools": "Anzahl Pools",
+    "single_pool_label": "Einzige Poule",
+    "fencers_per_pool": "Fechter / Poule",
+    "drag_priority": "(ziehen für Priorität)",
+    "match_order": "Match-Reihenfolge",
+    "direct_to_ranking": "Direkter Übergang zur Anfangsrangliste der Fechter",
+    "drop_here": "Fechter hier ablegen",
+    "drag_hint": "Ziehen Sie Fechter zwischen Pools oder nutzen Sie die Pfeile (← →) zum Verschieben, (↑ ↓) zum Neusortieren."
+  },
+  "poolRanking": {
+    "recalculate": "Rangliste neu berechnen",
+    "toggle_columns": "Spalten anzeigen/ausblenden",
+    "columns_label": "Anzuzeigende Spalten",
+    "general": "🌐 Allgemein",
+    "view_results": "Ergebnisse anzeigen →"
+  },
+  "poolView": {
+    "view_log": "Match-Protokoll anzeigen",
+    "undo": "Letzte Aktion rückgängig",
+    "redo": "Wiederherstellen (Ctrl+Y)",
+    "redo_desc": "Rückgängig gemachte Aktion wiederherstellen",
+    "autofill": "Punkte automatisch füllen (Test)",
+    "print_sheet": "Poolblatt drucken (Ctrl+P)",
+    "preview": "Druckvorschau (öffnet PDF im Standard-Betrachter)",
+    "export_pdf": "Poule als PDF exportieren",
+    "add_fencer": "Fechter zu dieser Poule hinzufügen",
+    "toggle_columns": "Spalten anzeigen/ausblenden",
+    "table_view": "Tabellenansicht",
+    "quick_entry": "Schnelle Punkteingabe",
+    "tie_hint": "💡 Bei Gleichstand auf V klicken, um den Sieg zuzuweisen",
+    "cancel_match": "⏸ Match abbrechen",
+    "not_fenced": "✕ Match nicht ausgetragen",
+    "next_match": "⚔️ Nächstes Match",
+    "enter": "Eingeben",
+    "signed_locked": "🔒 Von allen Kämpfern unterschriebene Liste — Punkte gesperrt",
+    "columns_label": "Anzuzeigende Spalten"
+  },
+  "qrCode": {
+    "generating": "QR-Code wird erzeugt...",
+    "download": "💾 QR-Code herunterladen"
+  },
+  "remote_score": {
+    "unsaved": "Nicht gespeicherte Änderungen",
+    "restart_server": "Server auf diesem Port neu starten",
+    "wallpaper": "Hintergrundbild",
+    "message_placeholder": "Nachricht (z.B. Mittagspause der Schiedsrichter)",
+    "custom_theme": "Eigenes Thema",
+    "unlock_global": "Entsperren — globalem Thema folgen",
+    "apply_saved": "Gespeichertes Thema anwenden",
+    "copy_url": "URL kopieren",
+    "obs_hint": "Einfügen in OBS > Quellen > Browser",
+    "copy_overlay": "Overlay-URL kopieren (OBS Browser-Quelle)",
+    "none_open": "Keiner (freier Zugang)",
+    "set_password": "Passwort festlegen",
+    "kiosk_theme": "Eigenes Kiosk-Thema",
+    "blink": "Diesen Bildschirm blinken lassen zur Identifikation",
+    "desc": "Schiedsrichter geben Punkte über ein Tablet via Webbrowser im lokalen Netz ein.",
+    "network": "Netzwerk",
+    "enable_https": "🔒 HTTPS aktivieren (verschlüsselte Verbindung)",
+    "cert_note": "Selbstsigniertes Zertifikat — die Tablets müssen die Sicherheitswarnung des Browsers einmal akzeptieren.",
+    "stop": "🛑 Stoppen",
+    "show_photos": "Fotos der Kämpfer vor dem Gefecht anzeigen",
+    "card_advance": "📣 Gelbe Karte vorrücken (Banner + Grund auf Bildschirmen anzeigen)",
+    "launch": "🚀 Wettkampf starten",
+    "display_theme": "Anzeigethema:",
+    "wallpaper_arena": "Arena-Hintergrundbild (Wartebildschirm):",
+    "org_note": "Organisationshinweis (Kiosk)",
+    "resume_time": "Fortsetzungszeit",
+    "note_visible": "● Hinweis im Kiosk sichtbar",
+    "themes": "📦 Themen…",
+    "global_theme": "🎨 Globales Thema",
+    "referee_section": "🤝 Schiedsrichter",
+    "pool_section": "📋 Poule",
+    "choose_theme": "— Thema wählen —",
+    "apply_all": "Auf alle anwenden",
+    "theme_edit": "✏️ Thema",
+    "lobby": "🚪 Lobby (Schiedsrichter-Wartebereich)",
+    "referee_instructions": "Anweisungen für Schiedsrichter",
+    "open_browser": "Web-Browser auf dem Tablet öffnen",
+    "go_url": "Zur URL gehen",
+    "corresponding_strip": "entsprechend seiner Piste",
+    "enter_scores": "Punkte des laufenden Matches eingeben",
+    "next_match_hint": "Klicken Sie auf \"Nächstes Match\", um zum nächsten Match zu gelangen"
+  },
+  "scoreAudit": {
+    "filter_referee": "Schiedsrichter filtern…",
+    "title": "📜 Punkteverlauf",
+    "all_pools": "Alle Pools",
+    "export_csv": "⬇ CSV exportieren",
+    "after": "Nach"
+  },
+  "seasonRanking": {
+    "quest_points": "Kumulierte Quest-Punkte",
+    "v4": "Siege 4 Pkt (Abstand ≥12)",
+    "v3": "Siege 3 Pkt (Abstand 8–11)",
+    "v2": "Siege 2 Pkt (Abstand 4–7)",
+    "v1": "Siege 1 Pkt (Abstand ≤3)",
+    "touches_given": "Gegebene Treffer",
+    "touches_received": "Erhaltene Treffer",
+    "competition_short": "Wettk.",
+    "num_competitions": "Anzahl ausgetragener Wettkämpfe",
+    "title": "Saisonale Quest-Rangliste",
+    "reset": "Saison zurücksetzen",
+    "none": "Kein Wettkampf in der Saison.",
+    "add_hint": "Gehen Sie zum Reiter \"Wettkämpfe\", um welche hinzuzufügen.",
+    "in_season": "In der Saison",
+    "available": "Verfügbar (Laser-Säbel / Quest)",
+    "no_pool": "⚠ Keine Poule",
+    "no_laser": "Kein Laser-Säbel-Wettkampf in dieser Sitzung verfügbar.",
+    "reset_confirm": "Saison zurücksetzen?",
+    "reset_warning": "Alle Wettkämpfe und saisonalen Ranglisten werden gelöscht. Diese Aktion ist irreversibel.",
+    "reset_btn": "Zurücksetzen"
+  },
+  "tableauView": {
+    "title": "Direkte Elimination (Tableau)",
+    "finish_pools": "Beenden Sie zuerst die Pools, um das Tableau zu erstellen",
+    "strip_summary": "Pistenübersicht",
+    "unassigned": "Nicht zugewiesen",
+    "all_done": "✓ Alle Matches sind beendet",
+    "sheet_desc": "Jede Karte enthält den vollständigen Namen der Kämpfer, ein Punktefeld und ein Unterschriftsfeld."
+  },
+  "teamPool": {
+    "add_card": "Eine Karte hinzufügen",
+    "simultaneous": "Gleichzeitiger Doppeltreffer (keine Priorität beim Degen)",
+    "reset_bout": "Diesen Assaut zurücksetzen"
+  },
+  "teamTableau": {
+    "need_two": "Mindestens 2 Mannschaften werden benötigt, um ein Tableau zu erstellen.",
+    "none": "Kein Tableau erstellt.",
+    "regenerate": "↻ Neu generieren / Tableau voranbringen",
+    "waiting": "Warten auf vorherige Ergebnisse…"
+  },
+  "theme": {
+    "import_json": "Thema-JSON importieren",
+    "editor_title": "Themeneditor",
+    "name": "Themenname",
+    "transparent_panels": "Transparente Panels auf dem Bild",
+    "saved": "Gespeicherte Themen",
+    "live_preview": "Live-Vorschau",
+    "provisional_ranking": "🏆 Vorläufige Rangliste",
+    "arena1": "⚔ Arena 1",
+    "in_progress": "IN BEARBEITUNG",
+    "demo_club": "CE Orléans"
+  },
+  "tiebreaker": {
+    "time_up": "Zeit abgelaufen — anhaltendes Unentschieden"
+  },
+  "touchReferee": {
+    "swipe_left": "Nach links wischen oder +1 antippen, um einen Punkt hinzuzufügen",
+    "swipe_right": "Nach rechts wischen oder +1 antippen, um einen Punkt hinzuzufügen",
+    "no_event": "Kein Ereignis erfasst",
+    "reset_score": "Punktzahl zurücksetzen",
+    "finish_match": "Match beenden",
+    "listening": "Hört zu..."
+  },
+  "voice": {
+    "control": "Sprachsteuerung",
+    "last_command": "Letzter Befehl:"
+  },
+  "wifi": {
+    "ssid_placeholder": "Mein-WLAN-Netz",
+    "password_placeholder": "WLAN-Passwort",
+    "title": "📶 WLAN-QR-Code-Generator",
+    "desc": "Schiedsrichter-Tablets scannen diesen QR-Code, um dem WLAN beizutreten.",
+    "network_name": "Netzwerkname (SSID)",
+    "security_type": "Sicherheitstyp",
+    "open_network": "Keine (offenes Netzwerk)",
+    "password": "Passwort",
+    "hidden_network": "Verstecktes Netzwerk (SSID verborgen)",
+    "network_label": "Netzwerk:",
+    "download": "💾 Herunterladen"
+  },
+  "xiaomi": {
+    "screen_name": "Bildschirmname…",
+    "click_rename": "Zum Umbenennen klicken",
+    "tablet_role": "Rolle des Tablets",
+    "arena": "Arena",
+    "blink": "Diesen Bildschirm blinken lassen zur Identifikation",
+    "rename": "Diesen Bildschirm umbenennen",
+    "refresh": "Aktualisieren",
+    "bottom_text": "Unten auf allen Bildschirmen angezeigter Text…",
+    "title": "TV-Fernbedienung",
+    "refresh_all": "Alles aktualisieren",
+    "url_no_arena": "URL ohne Arena:",
+    "screens_waiting": "— die Bildschirme warten dort auf ihre Zuweisung",
+    "locked": "Fernbedienung gesperrt — Aktionen deaktiviert. Klicken Sie auf « Gesperrt », um zu entsperren.",
+    "no_screen": "Kein Bildschirm verbunden.",
+    "connect_tv": "an einen TV, damit sie hier erscheint.",
+    "select_2nd": "— einen 2. Bildschirm auswählen"
+  },
+  "analyticsCharts": {
+    "avg_duration_dist": "Verteilung der durchschnittlichen Matchdauer",
+    "cards_repartition": "Aufteilung der Karten",
+    "no_data": "Keine Daten",
+    "total_points": "Erzielte Punkte gesamt:",
+    "no_stats": "Keine Statistik verfügbar — spielen Sie zuerst Matches."
+  },
+  "numericKeypad": {
+    "title": "Ziffernblock",
+    "clear": "Löschen",
+    "backspace": "Rücktaste"
+  },
+  "competitionHeader": {
+    "season_quest": "Saisonale Quest-Rangliste",
+    "team_mgmt": "Mannschaftsverwaltung",
+    "presentation": "Präsentationsmodus",
+    "properties": "Eigenschaften"
+  },
+  "competitionNav": {
+    "tooltip": "Turnierende-Schätzung und Empfehlungen zur Pistenzuteilung",
+    "match_log": "Match-Ereignisprotokoll",
+    "generate_pools": "Pools generieren"
+  },
+  "exportCenter": {
+    "tableau": "Eliminationstableau",
+    "ranking": "Rangliste",
+    "final_results": "Endergebnisse",
+    "full_export": "Vollständiger Wettkampf-Export",
+    "title": "📤 Export-Center",
+    "export_pdf": "PDF exportieren",
+    "go_tableau": "Zum Tableau für den PDF-Export →",
+    "send_ffe": "📡 An FFE senden",
+    "detailed_csv": "Detaillierte Statistiken (CSV)",
+    "go_results": "Zu Ergebnissen für den vollständigen Export →",
+    "no_data": "Derzeit keine Daten zum Exportieren — fügen Sie Fechter hinzu, um zu beginnen."
+  },
+  "kioskScoreEntry": {
+    "title": "Kiosk-Modus - Punkteingabe",
+    "all_done": "✓ Alle Matches sind beendet - Rangliste anzeigen"
+  },
+  "planningAssistant": {
+    "title": "🗓️ Planungsassistent",
+    "available_strips": "Anzahl verfügbarer Pisten",
+    "calculating": "Berechnung läuft…",
+    "estimated_end": "Geschätztes Ende:",
+    "no_warning": "Kein Vorsichtspunkt mit dieser Konfiguration erkannt."
+  },
+  "formulaBuilder": {
+    "name_placeholder": "Name der Formel",
+    "add_pool": "Eine Poolrunde hinzufügen",
+    "add_de": "Eine Direktausscheidungsphase hinzufügen",
+    "add_classification": "Eine Klassifizierungsphase hinzufügen",
+    "save_template": "Als Vorlage speichern",
+    "load_template": "Eine Vorlage laden",
+    "notes": "Notizen zur Formel (optional)",
+    "add_de_short": "+ DE",
+    "add_classification_short": "+ Klassierung",
+    "save_model": "Modell speichern",
+    "load_model": "Modell laden",
+    "no_phase": "Keine Phase konfiguriert.",
+    "use_buttons": "Nutzen Sie die obigen Buttons, um Phasen hinzuzufügen."
+  },
+  "formulaPhaseCard": {
+    "phase_name": "Phasenname",
+    "delete_phase": "Diese Phase löschen",
+    "pool_size": "Min/Max Poolgröße",
+    "max_score": "Max. Punktzahl",
+    "timer": "Chrono (Sek)",
+    "repartition": "Verteilung",
+    "sequential": "Sequenziell",
+    "random": "Zufällig",
+    "scoring_system": "Punktesystem",
+    "ranking_criteria": "Ranglistenkriterien",
+    "advancement": "Aufstieg in die nächste Phase",
+    "tableau_size": "Tableau (Größe)",
+    "fifth_place": "Match um den 5. Platz",
+    "final_classification": "Finale Klassifizierungsphase — keine Konfiguration erforderlich."
+  },
+  "formulaSim": {
+    "total_matches": "Gesamtmatches",
+    "estimated_duration": "Geschätzte Dauer"
+  },
+  "formulaTemplate": {
+    "placeholder": "Bsp: Club-Turnier Standard",
+    "name_label": "Name der Formel",
+    "none": "Keine gespeicherte Formel.",
+    "import_json": "Aus einer JSON-Datei importieren"
+  },
+  "rankingCriteria": {
+    "drag_reorder": "Ziehen zum Neusortieren"
+  },
+  "scoringZone": {
+    "standard": "Standard",
+    "zone_name": "Zonenname",
+    "standard_desc": "Standard (1 Treffer = 1 Pkt)",
+    "custom": "Eigene Zonen",
+    "add_zone": "+ Zone hinzufügen"
+  },
+  "globalPoolColumns": {
+    "title": "🧱 Spalten (alle Pools)",
+    "applied": "Spalten — auf alle Pools angewendet"
+  },
+  "poolMatchList": {
+    "match_log": "Match-Protokoll",
+    "delete_result": "Dieses Ergebnis löschen (Strg+Z zum Rückgängig)",
+    "relaunch": "Dieses Match neu starten",
+    "not_fenced": "✕ Match nicht ausgetragen",
+    "next_match": "⚔ Nächstes Match",
+    "enter_score": "Punktzahl eingeben",
+    "pool_done": "Poule beendet",
+    "all_played": "Alle Matches wurden gespielt"
+  },
+  "poolMatchOrder": {
+    "official": "Offizielle Matchreihenfolge",
+    "reference": "Referenz FIE / FFE",
+    "pool_size": "Poolgröße:"
+  },
+  "poolScoreMatrix": {
+    "not_fenced": "Match nicht ausgetragen (Aufgabe/Nichtantreten)",
+    "cancel_result": "Dieses Ergebnis annullieren",
+    "right_click_hide": "Rechtsklick zum Ausblenden",
+    "reg": "Reg"
+  },
+  "windowSizePresets": {
+    "label": "Fenster:"
+  },
+  "seedingTable": {
+    "after_pools": "Rangliste nach Pools"
+  },
+  "tableauPdf": {
+    "sheet_desc": "Jede Karte enthält den vollständigen Namen der Kämpfer, ein Punktefeld und ein Unterschriftsfeld."
+  },
+  "tableauToolbar": {
+    "options": "Tableau-Optionen",
+    "preview_desc": "Öffnet ein PDF im Standard-Betrachter zur Druckvorschau",
+    "unassign_all": "❌ Alle freigeben",
+    "export": "Export",
+    "preview": "👁️ Druckvorschau",
+    "export_pdf": "📄 PDF-Export"
+  },
+  "trainingLauncher": {
+    "title": "Trainingsmodus",
+    "num_strips": "Anzahl Pisten",
+    "duration": "Kampfdauer —",
+    "disable_sudden_death": "Sudden Death deaktivieren",
+    "tie_note": "Zeitgleich → Match Ende ohne Verlängerung."
+  },
+  "trainingPanel": {
+    "close_continue": "Schließen (Training läuft weiter)",
+    "settings": "Einstellungen",
+    "kiosk": "Kiosk-Großbild",
+    "no_bout": "Kein Kampf beendet",
+    "stop": "Training stoppen"
   }
 }

@@ -1,0 +1,791 @@
+{
+  "AboutModal.tsx": {
+    "Fermer": "actions.close",
+    "Double-clic pour une surprise…": "about.devmode_hint",
+    "💡 Double-clique sur le numéro de build…": "about.build_hint",
+    "Logiciel de gestion de tournois d'escrime.": "about.desc1",
+    "Poules, tableaux directs, arbitrage déporté en temps réel.": "about.desc2"
+  },
+  "AddFencerModal.tsx": {
+    "Île-de-France": "fencer.region_idf"
+  },
+  "AddFencerToPoolModal.tsx": {
+    "Rechercher par nom…": "addFencerToPool.search_placeholder",
+    "Rechercher un tireur par nom": "addFencerToPool.search_aria",
+    "Opération de sauvetage :": "addFencerToPool.rescue_title",
+    "le tireur sera ajouté sans rééquilibrage. Des matchs contre tous les tireurs présents seront créés.": "addFencerToPool.rescue_desc",
+    "Chargement des tireurs…": "ui.loading",
+    "Aucun tireur disponible": "addFencerToPool.none_available"
+  },
+  "AnalyticsDashboard.tsx": {
+    "Exporter le rapport post-tournoi en PDF": "analytics.export_pdf_report",
+    "Aucun match arbitré enregistré pour cette compétition.": "analytics.no_refereed_matches",
+    "Arbitre": "referee.label",
+    "Durée moy.": "stats.avg_duration_short"
+  },
+  "ChangePoolModal.tsx": {
+    "Changer de poule": "pools.change_pool",
+    "↕ Tireur (glisser vers une poule)": "changePool.drag_hint",
+    "Ce tireur a déjà disputé des matches dans cette poule. Le déplacement supprimera ses résultats.": "changePool.already_played",
+    "Déplacer vers :": "changePool.move_to",
+    "Aucune autre poule disponible": "changePool.no_other_pool",
+    "✓ Les matches des deux poules seront recalculés": "changePool.recalculated",
+    "Déplacer le tireur": "changePool.move_fencer"
+  },
+  "CommandPalette.tsx": {
+    "Rechercher une compétition ou une action…": "commandPalette.search_placeholder",
+    "Aucun résultat": "ui.no_result",
+    "sélectionner": "commandPalette.select",
+    "fermer": "actions.close"
+  },
+  "CompetitionList.tsx": {
+    "Première page": "pagination.first",
+    "Page précédente": "pagination.prev",
+    "Dernière page": "pagination.last",
+    "Gérez vos compétitions d&apos;escrime de l&apos;appel au podium.": "competitionList.intro",
+    "pour ouvrir la palette de commandes.": "competitionList.palette_hint"
+  },
+  "CompetitionPropertiesModal.tsx": {
+    "Tours de poules": "competition.pools_rounds",
+    "1 tour": "competition.round_1",
+    "2 tours": "competition.round_2",
+    "3 tours": "competition.round_3",
+    "Élimination directe": "competition.direct_elimination",
+    "Activée": "ui.enabled",
+    "Désactivée": "ui.disabled",
+    "Score max poules": "competition.max_pool_score",
+    "Touches pour gagner un match de poule": "competition.pool_touches",
+    "Chrono poules (secondes)": "competition.pool_time",
+    "Score max tableau élimination": "competition.tableau_max_score",
+    "Chrono tableau (secondes)": "competition.tableau_time",
+    "Jouer toutes les places": "competition.play_all_places",
+    "Les perdants de chaque tour forment un tableau de classement": "competition.losers_classification",
+    "Seuls les vainqueurs de poule accèdent au tableau": "competition.pool_winners_only",
+    "Seul le 1er de chaque poule est qualifié pour le tableau d'élimination": "competition.first_only_qualified",
+    "Compétition couplée (séparation après poules)": "competition.coupled",
+    "Aucune — compétition standard": "competition.standard",
+    "Par genre (H/F) — poules mixtes, tableaux séparés": "competition.by_gender_separated",
+    "Utile quand H et F partagent les mêmes poules faute d'effectif suffisant": "competition.by_gender_note",
+    "Propriétés de la compétition": "competition.title_props",
+    "Informations générales": "competition.general_info",
+    "Épée": "weapons.epee",
+    "À la carte (formule personnalisée)": "competition.custom_formula",
+    "Genre": "competition.gender",
+    "Féminin": "genders.female",
+    "Catégorie": "competition.category",
+    "Vétéran 1": "categories.V1",
+    "Vétéran 2": "categories.V2",
+    "Vétéran 3": "categories.V3",
+    "Vétéran 4": "categories.V4",
+    "Formule de compétition": "competition.formula",
+    "Tour Quest": "quest.tour_quest",
+    "Tour Quest activé ?": "quest.tour_quest_enabled",
+    "Poules préliminaires ?": "competition.prep_single_pool",
+    "Sans (Quest → Tableau)": "quest.without_pools",
+    "Avec (Poules → Quest → Tableau)": "quest.with_pools",
+    "Nombre de qualifiés des poules vers le Tour Quest": "quest.qualified_count",
+    "Activer la gestion des arbitres": "competition.enable_referee_mgmt",
+    "Affiche le nom de l'arbitre sur l'arène et permet de le changer depuis la saisie distante": "competition.referee_mgmt_desc",
+    "Active l'édition avancée des pistes et du nombre d'arbitres par poule / match": "competition.advanced_referee_desc",
+    "Arbitres max par poule": "competition.max_referees_pool",
+    "Arbitres max par match (tableau)": "competition.max_referees_match"
+  },
+  "CompetitionView.tsx": {
+    "Afficher toutes les poules dans une grille": "competitionView.show_grid_attr",
+    "Afficher une seule poule à la fois": "competitionView.single_pool_attr",
+    "Imprimer les feuilles de poule (Ctrl+P)": "competitionView.print_sheets_attr",
+    "Poule précédente": "ui.previous_pool",
+    "Sélectionner une poule": "competitionView.select_pool_attr",
+    "Poule suivante": "ui.next_pool",
+    "Pas de poules": "ui.no_pools",
+    "Retournez à l'appel pour générer les poules": "competitionView.return_to_generate",
+    "Retour à l'appel": "competitionView.back_to_call",
+    "🎯 Vue poule unique": "competitionView.single_view",
+    "🖨️ Imprimer les feuilles de poule": "competitionView.print",
+    "📄 Exporter toutes les poules en PDF": "competitionView.export_pdf",
+    "Chargement tableau…": "competitionView.loading_tableau",
+    "🔒 Tableau en lecture seule — résultats finaux générés.": "competitionView.readonly",
+    "✏️ Modifier le tableau": "competitionView.edit_tableau"
+  },
+  "ConflictResolutionModal.tsx": {
+    "Fermer": "actions.close",
+    "Aucun conflit à résoudre.": "conflict.none"
+  },
+  "EditFencerModal.tsx": {
+    "Non classé": "fencer.unranked",
+    "Modifier le tireur": "editFencer.title",
+    "Nom *": "editFencer.last_name",
+    "Prénom *": "editFencer.first_name",
+    "Non pointé": "editFencer.not_ranked",
+    "Pointé (présent)": "editFencer.ranked_present",
+    "Région": "fencer.region",
+    "Nationalité": "fencer.nationality",
+    "Classement": "fencer.ranking"
+  },
+  "ErrorBoundary.tsx": {
+    "Beim Laden des Wettbewerbs ist ein Fehler aufgetreten.": "errors.load_title",
+    "Die Daten könnten beschädigt sein. Bitte den Support kontaktieren.": "errors.load_message"
+  },
+  "FFEConnectModal.tsx": {
+    "Votre clé API FFE": "ffe.api_key",
+    "Importer depuis FFE Connect": "ffe.import_title",
+    "Code de compétition *": "ffe.competition_code",
+    "Clé API (optionnelle)": "ffe.api_key_optional",
+    "sélectionné(s)": "ffe.selected",
+    "Nom": "fencer.last_name",
+    "Prénom": "fencer.first_name",
+    "Nationalité": "fencer.nationality",
+    "Classement": "fencer.ranking"
+  },
+  "FFEExportModal.tsx": {
+    "Votre clé API FFE": "ffe.api_key",
+    "Exporter vers FFE Connect": "ffe.export_title",
+    "Code de compétition *": "ffe.competition_code",
+    "Clé API (optionnelle)": "ffe.api_key_optional",
+    "Résultats envoyés à la FFE avec succès.": "ffe.export_success",
+    "Fermer": "actions.close"
+  },
+  "FencerComparison.tsx": {
+    "Tireur 1": "fencer.fencer_1",
+    "Sélectionner un tireur": "fencer.select_fencer",
+    "Tireur 2": "fencer.fencer_2",
+    "Matchs joués:": "comparison.matches_played",
+    "Taux de victoire:": "comparison.win_rate",
+    "Touches données:": "comparison.touches_given",
+    "Touches reçues:": "comparison.touches_received",
+    "Score moyen": "comparison.avg_score",
+    "📜 Historique des confrontations": "comparison.history_title",
+    "Matchs de poule": "comparison.pool_matches",
+    "Poule": "ui.poule",
+    "Matchs de tableau": "comparison.tableau_matches",
+    "Tour": "ui.round",
+    "Ces deux tireurs ne se sont jamais affrontés dans cette compétition.": "comparison.never_fought"
+  },
+  "FencerList.tsx": {
+    "Afficher/masquer des colonnes": "fencerList.toggle_columns",
+    "Rechercher un tireur…": "fencerList.search_placeholder",
+    "Double-cliquer pour modifier": "fencerList.dblclick_edit",
+    "Réactiver": "fencerList.reactivate",
+    "Importer classement FFE": "fencerList.import_ffe_ranking",
+    "🔗 Importer depuis FFE Connect": "fencerList.import_ffe_connect",
+    "↺ Réinitialiser l&apos;ordre": "fencerList.reset_order",
+    "📱 Inscription tireur": "fencerList.fencer_registration",
+    "Scannez ce QR code avec la tablette pour accéder au formulaire d&apos;inscription": "fencerList.qr_hint",
+    "Génération…": "ui.generating",
+    "Fermer": "actions.close",
+    "Aucun tireur inscrit": "fencerList.none_registered",
+    "Importez une liste ou ajoutez des tireurs manuellement": "fencerList.import_hint",
+    "Aucun résultat": "ui.no_result"
+  },
+  "FencerPhoto.tsx": {
+    "Supprimer la photo": "photo.delete",
+    "Prendre une photo avec la webcam": "photo.take_webcam",
+    "Déposer ici": "photo.drop_here",
+    "Prendre une photo": "photo.take"
+  },
+  "HistoricalStats.tsx": {
+    "Compétitions": "stats.competitions",
+    "Chargement…": "ui.loading",
+    "Aucun historique disponible": "historicalStats.none",
+    "Compétition": "stats.competition"
+  },
+  "KioskDisplay.tsx": {
+    "📊 Classement": "kiosk.ranking",
+    "🥇 Tableau": "kiosk.tableau",
+    "Echap pour quitter": "kiosk.esc_exit",
+    "✕ Fermer": "kiosk.close",
+    "matchs terminés": "kiosk.finished_matches",
+    "Classement": "kiosk.ranking_label",
+    "Matchs en cours": "kiosk.matches_live",
+    "Aucun match en cours": "kiosk.no_live",
+    "Nom": "fencer.last_name",
+    "Prénom": "fencer.first_name",
+    "Quest": "quest.label",
+    "🏆 RÉSULTATS FINAUX": "kiosk.final_results",
+    "Tableau terminé": "kiosk.tableau_done",
+    "Classement général": "kiosk.general_ranking",
+    "Éliminé en": "tableau.elimination_in"
+  },
+  "LiveDashboard.tsx": {
+    "● EN DIRECT": "live.live",
+    "📋 Résultats des Poules": "live.pool_results",
+    "⚔️ Phase Éliminatoire": "live.elim_phase",
+    "🏅 Classement Final": "live.final_ranking",
+    "BellePoule Modern • Suivez la compétition en temps réel": "live.subtitle",
+    "Tireur": "fencer.fencer_label",
+    "Quest": "quest.label",
+    "Pas encore de résultats": "live.no_results_yet",
+    "Le tableau n'a pas encore commencé": "live.tableau_not_started",
+    "La compétition n'est pas encore terminée": "live.not_finished",
+    "Phase": "ui.phase"
+  },
+  "LiveInterPoolRanking.tsx": {
+    "Classement général — Live": "liveInterPool.title",
+    "Nom": "fencer.last_name",
+    "Poule": "ui.poule",
+    "Quest": "quest.label",
+    "Aucun résultat disponible": "liveInterPool.no_result"
+  },
+  "MatchAuditLog.tsx": {
+    "Filtrer :": "matchAudit.filter",
+    "Par arbitre": "matchAudit.by_referee",
+    "Export JSON": "matchAudit.export_json",
+    "Chargement…": "ui.loading",
+    "Aucune saisie de score enregistrée.": "matchAudit.no_scores",
+    "Arbitre": "referee.label",
+    "Dernière saisie": "matchAudit.last_entry",
+    "Score": "pools.score",
+    "Aucun événement enregistré pour ce match.": "matchAudit.no_events",
+    "Type": "matchAudit.type",
+    "Tireur": "fencer.fencer_label",
+    "Journal du match": "matchAudit.title"
+  },
+  "MultiStripManager.tsx": {
+    "matchs en attente": "multiStrip.pending",
+    "Libérer la piste": "multiStrip.free_strip",
+    "Assigner match suivant": "multiStrip.assign_next",
+    "Aucun match en attente": "multiStrip.none_pending"
+  },
+  "NewCompetitionModal.tsx": {
+    "Ex: Championnat Régional": "newCompetition.placeholder",
+    "À la carte (formule personnalisée)": "competition.custom_formula",
+    "Compétition par équipes": "team.competition",
+    "Titulaires par équipe": "team.starters_per",
+    "Réservistes par équipe": "team.reserves_per",
+    "Touches (comme les autres armes)": "newCompetition.touches_like",
+    "Points de zone cumulés (A/B/C)": "newCompetition.zone_points",
+    "Constructeur de formule": "formula.builder_title"
+  },
+  "OBSOverlayConfig.tsx": {
+    "Ouvrir dans le navigateur": "obs.open_browser",
+    "Piste / Arène": "obs.strip_arena",
+    "Thème": "settings.theme",
+    "Endpoint JSON (intégrations tierces)": "obs.json_endpoint"
+  },
+  "OfflineStatus.tsx": {
+    "Dernière synchro:": "offline.last_sync",
+    "Actions en attente:": "offline.pending_actions",
+    "Synchronisation en cours...": "offline.syncing",
+    "Les modifications seront synchronisées automatiquement lorsque la connexion sera rétablie.": "offline.will_sync"
+  },
+  "PdfTemplateEditor.tsx": {
+    "Aucun logo": "pdfTemplate.no_logo"
+  },
+  "PdfTemplateModal.tsx": {
+    "Prévisualisation": "pdfTemplate.preview"
+  },
+  "PhotoBooth.tsx": {
+    "Aperçu": "photoBooth.preview",
+    "Démarrer la caméra": "photoBooth.start_camera"
+  },
+  "PoolPrepView.tsx": {
+    "Mettre tous les tireurs dans une seule poule": "poolPrep.single_pool",
+    "Afficher l'ordre officiel FIE/FFE des matchs par taille de poule": "poolPrep.official_order",
+    "Même club dans cette poule": "poolPrep.same_club",
+    "Poule précédente": "ui.previous_pool",
+    "Poule suivante": "ui.next_pool",
+    "Nombre de poules": "poolPrep.num_pools",
+    "Poule unique": "poolPrep.single_pool_label",
+    "Tireurs / poule": "poolPrep.fencers_per_pool",
+    "Séparation": "ui.separation",
+    "(glisser pour priorité)": "poolPrep.drag_priority",
+    "Ordre des matchs": "poolPrep.match_order",
+    "Aucune poule": "ui.no_pools",
+    "Passage direct au classement initial des tireurs": "poolPrep.direct_to_ranking",
+    "Déposez des tireurs ici": "poolPrep.drop_here",
+    "Glissez-déposez les tireurs entre poules ou utilisez les flèches (← →) pour déplacer, (↑ ↓) pour réordonner.": "poolPrep.drag_hint"
+  },
+  "PoolRankingView.tsx": {
+    "Recalculer le classement": "poolRanking.recalculate",
+    "Afficher/masquer les colonnes": "poolRanking.toggle_columns",
+    "Colonnes à afficher": "poolRanking.columns_label",
+    "🌐 Général": "poolRanking.general",
+    "Nom": "fencer.last_name",
+    "Prénom": "fencer.first_name",
+    "Quest": "quest.label",
+    "Voir les résultats →": "poolRanking.view_results"
+  },
+  "PoolView.tsx": {
+    "Voir le journal du match": "poolView.view_log",
+    "Annuler la dernière action": "poolView.undo",
+    "Rétablir (Ctrl+Y)": "poolView.redo",
+    "Rétablir l'action annulée": "poolView.redo_desc",
+    "Remplir automatiquement les scores (test)": "poolView.autofill",
+    "Imprimer la feuille de poule (Ctrl+P)": "poolView.print_sheet",
+    "Aperçu avant impression (ouvre un PDF dans le lecteur par défaut)": "poolView.preview",
+    "Exporter la poule en PDF": "poolView.export_pdf",
+    "Ajouter un tireur à cette poule": "poolView.add_fencer",
+    "Afficher/masquer les colonnes": "poolView.toggle_columns",
+    "Vue tableau": "poolView.table_view",
+    "Saisie rapide du score": "poolView.quick_entry",
+    "💡 En cas d'égalité, cliquez sur V pour attribuer la victoire": "poolView.tie_hint",
+    "⏸ Annuler match": "poolView.cancel_match",
+    "Valider": "actions.validate",
+    "✕ Match non disputé": "poolView.not_fenced",
+    "⚔️ Prochain match": "poolView.next_match",
+    "Saisir": "poolView.enter",
+    "🔒 Feuille signée par tous les combattants — scores verrouillés": "poolView.signed_locked",
+    "Colonnes à afficher": "poolView.columns_label",
+    "Assigner un arbitre": "referee.assign",
+    "✕ Aucun arbitre": "referee.none",
+    "Chargement des arbitres…": "referee.loading",
+    "Aucun arbitre enregistré pour cette compétition": "referee.none_registered"
+  },
+  "QRCodeShare.tsx": {
+    "Génération du QR code...": "qrCode.generating",
+    "Fermer": "actions.close",
+    "💾 Télécharger le QR Code": "qrCode.download"
+  },
+  "QuestPhaseView.tsx": {
+    "Victoires / Matchs joués": "quest.victories_played",
+    "Points Quest": "quest.points",
+    "Cartons reçus (moins = mieux)": "quest.cards_received",
+    "Tour Quest en cours": "quest.in_progress",
+    "Valider le Tour Quest →": "quest.validate",
+    "Cartons reçus": "quest.cards_label",
+    "Classement Tour Quest": "quest.ranking",
+    "Tireur": "fencer.fencer_label",
+    "Critères : V/M décroissant → Points Quest décroissants → Cartons croissants": "quest.criteria",
+    "Configuration du Tour Quest": "quest.config",
+    "Nombre de combats": "quest.num_fights",
+    "Temps disponible (min)": "quest.available_time",
+    "Nombre d'arènes": "quest.num_arenas",
+    "Tireurs qualifiés": "quest.qualified_fencers",
+    "Override manuel (laissez vide pour utiliser la formule)": "quest.override",
+    "Contrainte d'opposition": "quest.opposition_constraint",
+    "Il faut au moins 2 tireurs pour générer un planning.": "quest.need_two",
+    "Répartition par tireur": "quest.repartition",
+    "Lancer le Tour Quest →": "quest.launch"
+  },
+  "RefereeManager.tsx": {
+    "Prénom Nom *": "referee.name_placeholder",
+    "Catégorie (Régional…)": "referee.category_placeholder",
+    "Nationalité (FRA)": "referee.nationality_placeholder",
+    "Format attendu : NOM;Prénom;Sexe(M/F);Catégorie;Club;Région;Nationalité — une ligne par arbitre, séparateur « ; », .txt ou .csv": "referee.expected_format",
+    "Exporte la liste en CSV — même format que l'import : NOM;Prénom;Sexe(M/F);Catégorie;Club;Région;Nationalité": "referee.export_format",
+    "Repos recommandé": "referee.recommended_rest",
+    "👨‍⚖️ Gestion des Arbitres": "referee.title",
+    "Ajouter un arbitre": "referee.add",
+    "Aucun arbitre enregistré.": "referee.no_registered",
+    "Aucun match avec arbitre assigné.": "referee.no_assigned_match",
+    "Configuration de Rotation": "referee.rotation_config",
+    "Éviter les arbitres du même club": "referee.avoid_same_club",
+    "Équilibrer les assignations": "referee.balance_assignments",
+    "Matchs consécutifs max:": "referee.max_consecutive",
+    "Temps de repos min (min):": "referee.min_rest",
+    "Rapport de Rotation": "referee.rotation_report",
+    "Assignations des Matchs": "referee.assignments",
+    "Aucun match en attente d'arbitre.": "referee.no_pending",
+    "-- Choisir un arbitre --": "referee.choose"
+  },
+  "RemoteScoreManager.tsx": {
+    "Modifications non sauvegardées": "remote_score.unsaved",
+    "Redémarrer le serveur sur ce port": "remote_score.restart_server",
+    "Fond d'écran": "remote_score.wallpaper",
+    "Message (ex: Déjeuner des arbitres)": "remote_score.message_placeholder",
+    "Thème personnalisé": "remote_score.custom_theme",
+    "Déverrouiller — suivre le thème global": "remote_score.unlock_global",
+    "Appliquer un thème sauvegardé": "remote_score.apply_saved",
+    "Copier l'URL": "remote_score.copy_url",
+    "À coller dans OBS > Sources > Navigateur": "remote_score.obs_hint",
+    "Copier l'URL overlay (OBS Browser Source)": "remote_score.copy_overlay",
+    "Aucun (accès libre)": "remote_score.none_open",
+    "Définir le mot de passe": "remote_score.set_password",
+    "Thème personnalisé kiosk": "remote_score.kiosk_theme",
+    "Faire clignoter cet écran pour l'identifier": "remote_score.blink",
+    "Configurer et envoyer en mode kiosk": "ui.configure_send_kiosk",
+    "Les arbitres saisissent les scores depuis une tablette via navigateur web sur le réseau local.": "remote_score.desc",
+    "Réseau": "remote_score.network",
+    "🔒 Activer HTTPS (connexion chiffrée)": "remote_score.enable_https",
+    "Certificat auto-signé — les tablettes devront accepter l&apos;avertissement de sécurité du navigateur une seule fois.": "remote_score.cert_note",
+    "🛑 Arrêter": "remote_score.stop",
+    "Afficher les photos des combattants avant le combat": "remote_score.show_photos",
+    "📣 Carton avancer (afficher bandeau + raison sur les écrans)": "remote_score.card_advance",
+    "🚀 Lancer la compétition": "remote_score.launch",
+    "Thème de l'affichage :": "remote_score.display_theme",
+    "Fond d'écran arènes (écran d'attente) :": "remote_score.wallpaper_arena",
+    "Note d'organisation (kiosk)": "remote_score.org_note",
+    "Heure de reprise": "remote_score.resume_time",
+    "● Note visible sur le kiosk": "remote_score.note_visible",
+    "📦 Thèmes…": "remote_score.themes",
+    "Arbitre": "referee.label",
+    "Poule": "ui.poule",
+    "🎨 Thème global": "remote_score.global_theme",
+    "🤝 Arbitre": "remote_score.referee_section",
+    "📋 Poule": "remote_score.pool_section",
+    "— Choisir un thème —": "remote_score.choose_theme",
+    "Appliquer à tous": "remote_score.apply_all",
+    "✏️ Thème": "remote_score.theme_edit",
+    "🚪 Lobby (salle d'attente arbitres)": "remote_score.lobby",
+    "Instructions pour les arbitres": "remote_score.referee_instructions",
+    "Ouvrir un navigateur web sur la tablette": "remote_score.open_browser",
+    "Aller à l'URL": "remote_score.go_url",
+    "correspondant à sa piste": "remote_score.corresponding_strip",
+    "Saisir les scores du match en cours": "remote_score.enter_scores",
+    "Cliquer sur \"Match suivant\" pour passer au match suivant": "remote_score.next_match_hint",
+    "🖥️ Configurer le mode kiosk": "ui.configure_kiosk",
+    "Vues à afficher :": "ui.views_label",
+    "Rotation (s) :": "ui.rotation_label",
+    "Envoyer en kiosk": "ui.send_kiosk",
+    "Génération…": "ui.generating",
+    "Fermer": "actions.close"
+  },
+  "ResultsView.tsx": {
+    "Poules et tableaux d'élimination directe, sans les signatures des combattants": "results.export_desc",
+    "Génération du PDF complet…": "results.generating_full",
+    "2ème": "results.second",
+    "3ème": "results.third",
+    "Tireur": "fencer.fencer_label",
+    "Éliminé en": "tableau.elimination_in",
+    "Génération…": "results.generating"
+  },
+  "ScoreAuditLog.tsx": {
+    "Filtrer arbitre…": "scoreAudit.filter_referee",
+    "📜 Historique des scores": "scoreAudit.title",
+    "Toutes les poules": "scoreAudit.all_pools",
+    "⬇ Export CSV": "scoreAudit.export_csv",
+    "Poule": "ui.poule",
+    "Match": "pools.match",
+    "Après": "scoreAudit.after",
+    "Arbitre": "referee.label"
+  },
+  "SeasonRankingView.tsx": {
+    "Points Quest cumulés": "seasonRanking.quest_points",
+    "Victoires 4 pts (écart ≥12)": "seasonRanking.v4",
+    "Victoires 3 pts (écart 8–11)": "seasonRanking.v3",
+    "Victoires 2 pts (écart 4–7)": "seasonRanking.v2",
+    "Victoires 1 pt (écart ≤3)": "seasonRanking.v1",
+    "Touches données": "seasonRanking.touches_given",
+    "Touches reçues": "seasonRanking.touches_received",
+    "Compét.": "seasonRanking.competition_short",
+    "Nombre de compétitions disputées": "seasonRanking.num_competitions",
+    "Classement saisonnier Quest": "seasonRanking.title",
+    "Réinitialiser saison": "seasonRanking.reset",
+    "Chargement…": "ui.loading",
+    "Aucune compétition dans la saison.": "seasonRanking.none",
+    "Allez dans l'onglet \"Compétitions\" pour en ajouter.": "seasonRanking.add_hint",
+    "Nom": "fencer.last_name",
+    "Dans la saison": "seasonRanking.in_season",
+    "Disponibles (Laser Sabre / Quest)": "seasonRanking.available",
+    "⚠ Aucune poule": "seasonRanking.no_pool",
+    "Aucune compétition Sabre Laser disponible dans cette session.": "seasonRanking.no_laser",
+    "Réinitialiser la saison ?": "seasonRanking.reset_confirm",
+    "Toutes les compétitions et tous les classements saisonniers seront effacés. Cette action est irréversible.": "seasonRanking.reset_warning",
+    "Réinitialiser": "seasonRanking.reset_btn"
+  },
+  "SettingsModal.tsx": {
+    "Affiché en haut à gauche des PDF exportés et dans le mode kiosque.": "settings.logo_position",
+    "Glissez une image ici ou cliquez pour choisir": "settings.drag_image",
+    "PNG, JPG, SVG — max 5 Mo": "settings.logo_format",
+    "Supprimer le logo": "settings.delete_logo",
+    "Personnalisez l'apparence de chaque type d'export PDF.": "settings.pdf_appearance",
+    "Activer la saisie rapide à la souris": "settings.quick_mouse",
+    "Mode de saisie simplifiée": "settings.simplified_mode",
+    "Activer la saisie simplifiée dans les cases": "settings.simplified_cells",
+    "Journal des scores": "settings.score_journal",
+    "Active l'onglet \"Historique des scores\" dans la vue compétition.": "settings.score_journal_desc",
+    "Activer le journal d'audit des scores": "settings.audit_log",
+    "URL Discord / Slack / personnalisée (HTTPS uniquement).": "settings.webhook_url",
+    "Tableau arbitrage — minuteur vocal": "settings.referee_tts",
+    "Voix et paliers de temps annoncés sur les tablettes d'arbitrage.": "settings.tts_desc",
+    "Voix par défaut (selon la langue)": "settings.tts_default_voice",
+    "Paliers annoncés": "settings.tts_thresholds"
+  },
+  "TableauView.tsx": {
+    "Tableau à élimination directe": "tableauView.title",
+    "Terminez d'abord les poules pour générer le tableau": "tableauView.finish_pools",
+    "Résumé des pistes": "tableauView.strip_summary",
+    "Non assignés": "tableauView.unassigned",
+    "✓ Tous les matches sont terminés": "tableauView.all_done",
+    "Terminé": "tableau.finished",
+    "Chaque fiche contient le nom complet des combattants, une case score et une case signature.": "tableauView.sheet_desc",
+    "Phases à inclure": "tableau.phases_label",
+    "Assigner à une piste": "tableau.assign_strip",
+    "Sélectionnez la piste pour ce match :": "tableau.select_strip",
+    "Assigner un arbitre": "referee.assign",
+    "Sélectionnez l'arbitre pour ce match :": "referee.select_for_match",
+    "✕ Aucun arbitre": "referee.none",
+    "Aucun arbitre enregistré pour cette compétition": "referee.none_registered"
+  },
+  "TeamManagerView.tsx": {
+    "Ex : équipe A": "team.name_placeholder",
+    "Relais individuels gagnés/perdus": "team.individual_relays",
+    "Touches cumulées (règle FIE)": "team.cumulative_touches",
+    "Chargement…": "ui.loading",
+    "Compétition par équipes": "team.competition",
+    "Générer la poule": "team.generate_pool",
+    "Nom équipe": "team.name_label",
+    "+ Créer": "team.create",
+    "Aucune équipe — créez-en une ci-dessus.": "team.none",
+    "✓ Complète": "team.complete",
+    "Rés.": "team.result_short",
+    "Aucun tireur": "team.no_fencer",
+    "Tireur": "fencer.fencer_label",
+    "-- sélectionner --": "team.select",
+    "Aucun match joué.": "team.no_match",
+    "Équipe": "team.label"
+  },
+  "TeamPoolView.tsx": {
+    "Ajouter un carton": "teamPool.add_card",
+    "Touche double simultanée (pas de priorité en épée)": "teamPool.simultaneous",
+    "Réinitialiser cet assaut": "teamPool.reset_bout"
+  },
+  "TeamTableauView.tsx": {
+    "Il faut au moins 2 équipes pour générer un tableau.": "teamTableau.need_two",
+    "Aucun tableau généré.": "teamTableau.none",
+    "↻ Régénérer / faire avancer le tableau": "teamTableau.regenerate",
+    "En attente des résultats précédents…": "teamTableau.waiting"
+  },
+  "ThemeEditor.tsx": {
+    "Importer un thème JSON": "theme.import_json",
+    "Éditeur de thème": "theme.editor_title",
+    "Nom du thème": "theme.name",
+    "Panneaux transparents sur l'image": "theme.transparent_panels",
+    "Thèmes sauvegardés": "theme.saved",
+    "Aperçu en direct": "theme.live_preview",
+    "🏆 Classement provisoire": "theme.provisional_ranking",
+    "⚔ Arène 1": "theme.arena1",
+    "EN COURS": "theme.in_progress",
+    "CE Orléans": "theme.demo_club"
+  },
+  "TiebreakerAnimation.tsx": {
+    "Temps écoulé — Égalité persistante": "tiebreaker.time_up"
+  },
+  "TouchOptimizedReferee.tsx": {
+    "Glisser vers la gauche ou toucher +1 pour ajouter un point": "touchReferee.swipe_left",
+    "Glisser vers la droite ou toucher +1 pour ajouter un point": "touchReferee.swipe_right",
+    "Aucun événement enregistré": "touchReferee.no_event",
+    "Réinitialiser Score": "touchReferee.reset_score",
+    "Terminer Match": "touchReferee.finish_match",
+    "Écoute...": "touchReferee.listening"
+  },
+  "VoiceScoreController.tsx": {
+    "Contrôle Vocal": "voice.control",
+    "Dernière commande:": "voice.last_command"
+  },
+  "WifiQRModal.tsx": {
+    "Fermer": "actions.close",
+    "Mon-Réseau-WiFi": "wifi.ssid_placeholder",
+    "Mot de passe WiFi": "wifi.password_placeholder",
+    "📶 Générateur QR Code WiFi": "wifi.title",
+    "Les tablettes arbitres scannent ce QR code pour rejoindre le réseau WiFi.": "wifi.desc",
+    "Nom du réseau (SSID)": "wifi.network_name",
+    "Type de sécurité": "wifi.security_type",
+    "Aucune (réseau ouvert)": "wifi.open_network",
+    "Mot de passe": "wifi.password",
+    "Réseau masqué (SSID caché)": "wifi.hidden_network",
+    "Réseau :": "wifi.network_label",
+    "💾 Télécharger": "wifi.download"
+  },
+  "WikiModal.tsx": {
+    "Fermer": "actions.close"
+  },
+  "XiaomiRemotePanel.tsx": {
+    "Nom de l'écran…": "xiaomi.screen_name",
+    "Cliquer pour renommer": "xiaomi.click_rename",
+    "Rôle de la tablette": "xiaomi.tablet_role",
+    "Arène": "xiaomi.arena",
+    "Faire clignoter cet écran pour le repérer": "xiaomi.blink",
+    "Renommer cet écran": "xiaomi.rename",
+    "Configurer et envoyer en mode kiosk": "ui.configure_send_kiosk",
+    "Rafraîchir": "xiaomi.refresh",
+    "Texte affiché en bas de tous les écrans…": "xiaomi.bottom_text",
+    "Télécommande TV": "xiaomi.title",
+    "Tout rafraîchir": "xiaomi.refresh_all",
+    "URL sans arène :": "xiaomi.url_no_arena",
+    "— les écrans y attendent leur affectation": "xiaomi.screens_waiting",
+    "Télécommande verrouillée — actions désactivées. Cliquez sur « Verrouillé » pour déverrouiller.": "xiaomi.locked",
+    "Aucun écran connecté.": "xiaomi.no_screen",
+    "sur une TV pour qu'elle apparaisse ici.": "xiaomi.connect_tv",
+    "— sélectionner un 2ᵉ écran": "xiaomi.select_2nd",
+    "🖥️ Configurer le mode kiosk": "ui.configure_kiosk",
+    "Vues à afficher :": "ui.views_label",
+    "Rotation (s) :": "ui.rotation_label",
+    "Envoyer en kiosk": "ui.send_kiosk"
+  },
+  "analytics/AnalyticsCharts.tsx": {
+    "Distribution durée moyenne des matchs": "analyticsCharts.avg_duration_dist",
+    "Répartition des cartons": "analyticsCharts.cards_repartition",
+    "Aucune donnée": "analyticsCharts.no_data",
+    "Total points marqués :": "analyticsCharts.total_points",
+    "Aucune statistique disponible — lancez des matchs d'abord.": "analyticsCharts.no_stats"
+  },
+  "common/NumericKeypad.tsx": {
+    "Pavé numérique": "numericKeypad.title",
+    "Effacer": "numericKeypad.clear",
+    "Retour arrière": "numericKeypad.backspace",
+    "Valider": "actions.validate"
+  },
+  "competition/CompetitionHeader.tsx": {
+    "Classement saison Quest": "competitionHeader.season_quest",
+    "Gestion équipes": "competitionHeader.team_mgmt",
+    "Mode Présentation": "competitionHeader.presentation",
+    "Propriétés": "competitionHeader.properties"
+  },
+  "competition/CompetitionNav.tsx": {
+    "Estimation de fin de tournoi et recommandations de répartition des pistes": "competitionNav.tooltip",
+    "Journal des événements de match": "competitionNav.match_log",
+    "Tour Quest": "quest.tour_quest",
+    "Générer les poules": "competitionNav.generate_pools"
+  },
+  "competition/ExportCenterModal.tsx": {
+    "Tableau d'élimination": "exportCenter.tableau",
+    "Classement": "exportCenter.ranking",
+    "Résultats finaux": "exportCenter.final_results",
+    "Export complet compétition": "exportCenter.full_export",
+    "📤 Centre d'export": "exportCenter.title",
+    "Export PDF": "exportCenter.export_pdf",
+    "Aller à Tableau pour l'export PDF →": "exportCenter.go_tableau",
+    "📡 Envoyer à la FFE": "exportCenter.send_ffe",
+    "Stats détaillées (CSV)": "exportCenter.detailed_csv",
+    "Aller à Résultats pour l'export complet →": "exportCenter.go_results",
+    "Aucune donnée à exporter pour le moment — ajoutez des tireurs pour commencer.": "exportCenter.no_data",
+    "Fermer": "actions.close"
+  },
+  "competition/KioskScoreEntry.tsx": {
+    "Mode Kiosk - Saisie des scores": "kioskScoreEntry.title",
+    "✓ Tous les matchs sont terminés - Voir le classement": "kioskScoreEntry.all_done"
+  },
+  "competition/PlanningAssistant.tsx": {
+    "🗓️ Assistant de planning": "planningAssistant.title",
+    "Nombre de pistes disponibles": "planningAssistant.available_strips",
+    "Calcul en cours…": "planningAssistant.calculating",
+    "Fin estimée :": "planningAssistant.estimated_end",
+    "Aucun point de vigilance détecté avec cette configuration.": "planningAssistant.no_warning",
+    "Fermer": "actions.close"
+  },
+  "formula/FormulaBuilder.tsx": {
+    "Nom de la formule": "formulaBuilder.name_placeholder",
+    "Ajouter un tour de poules": "formulaBuilder.add_pool",
+    "Ajouter une phase d'élimination directe": "formulaBuilder.add_de",
+    "Ajouter une phase de classement": "formulaBuilder.add_classification",
+    "Enregistrer comme modèle": "formulaBuilder.save_template",
+    "Charger un modèle": "formulaBuilder.load_template",
+    "Notes sur la formule (optionnel)": "formulaBuilder.notes",
+    "+ DE": "formulaBuilder.add_de_short",
+    "+ Classement": "formulaBuilder.add_classification_short",
+    "Enregistrer modèle": "formulaBuilder.save_model",
+    "Charger modèle": "formulaBuilder.load_model",
+    "Aucune phase configurée.": "formulaBuilder.no_phase",
+    "Utilisez les boutons ci-dessus pour ajouter des phases.": "formulaBuilder.use_buttons"
+  },
+  "formula/FormulaPhaseCard.tsx": {
+    "Nom de la phase": "formulaPhaseCard.phase_name",
+    "Supprimer cette phase": "formulaPhaseCard.delete_phase",
+    "Taille min / max poule": "formulaPhaseCard.pool_size",
+    "Score max": "formulaPhaseCard.max_score",
+    "Chrono (sec)": "formulaPhaseCard.timer",
+    "Répartition": "formulaPhaseCard.repartition",
+    "Séquentielle": "formulaPhaseCard.sequential",
+    "Aléatoire": "formulaPhaseCard.random",
+    "Séparation": "ui.separation",
+    "Système de score": "formulaPhaseCard.scoring_system",
+    "Critères de classement": "formulaPhaseCard.ranking_criteria",
+    "Avancement vers la phase suivante": "formulaPhaseCard.advancement",
+    "Tableau (taille)": "formulaPhaseCard.tableau_size",
+    "Match pour la 5e place": "formulaPhaseCard.fifth_place",
+    "Phase de classement final — aucune configuration requise.": "formulaPhaseCard.final_classification"
+  },
+  "formula/FormulaSimulationPreview.tsx": {
+    "Total matchs": "formulaSim.total_matches",
+    "Durée estimée": "formulaSim.estimated_duration"
+  },
+  "formula/FormulaTemplateModal.tsx": {
+    "Ex: Club Tournoi Standard": "formulaTemplate.placeholder",
+    "Nom de la formule": "formulaTemplate.name_label",
+    "Aucune formule sauvegardée.": "formulaTemplate.none",
+    "Importer depuis un fichier JSON": "formulaTemplate.import_json"
+  },
+  "formula/RankingCriteriaEditor.tsx": {
+    "Glisser pour réordonner": "rankingCriteria.drag_reorder"
+  },
+  "formula/ScoringZoneEditor.tsx": {
+    "standard": "scoringZone.standard",
+    "Nom de la zone": "scoringZone.zone_name",
+    "Standard (1 touche = 1 pt)": "scoringZone.standard_desc",
+    "Zones personnalisées": "scoringZone.custom",
+    "+ Ajouter une zone": "scoringZone.add_zone"
+  },
+  "pool/GlobalPoolColumnsMenu.tsx": {
+    "🧱 Colonnes (toutes les poules)": "globalPoolColumns.title",
+    "Colonnes — appliqué à toutes les poules": "globalPoolColumns.applied"
+  },
+  "pool/PoolMatchList.tsx": {
+    "Journal du match": "poolMatchList.match_log",
+    "Supprimer ce résultat (Ctrl+Z pour annuler la suppression)": "poolMatchList.delete_result",
+    "Relancer ce match": "poolMatchList.relaunch",
+    "✕ Match non disputé": "poolMatchList.not_fenced",
+    "⚔ Prochain match": "poolMatchList.next_match",
+    "Saisir le score": "poolMatchList.enter_score",
+    "Poule terminée": "poolMatchList.pool_done",
+    "Tous les matches ont été joués": "poolMatchList.all_played",
+    "Assigner à une piste": "tableau.assign_strip",
+    "Sélectionnez la piste pour ce match :": "tableau.select_strip"
+  },
+  "pool/PoolMatchOrderModal.tsx": {
+    "Fermer": "actions.close",
+    "Ordre officiel des matchs": "poolMatchOrder.official",
+    "Référence FIE / FFE": "poolMatchOrder.reference",
+    "Taille de poule :": "poolMatchOrder.pool_size"
+  },
+  "pool/PoolScoreMatrix.tsx": {
+    "Match non disputé (abandon/forfait)": "poolScoreMatrix.not_fenced",
+    "Annuler ce résultat": "poolScoreMatrix.cancel_result",
+    "Clic droit pour masquer": "poolScoreMatrix.right_click_hide",
+    "Changer de poule": "pools.change_pool",
+    "Quest": "quest.label",
+    "Rég": "poolScoreMatrix.reg"
+  },
+  "pool/WindowSizePresets.tsx": {
+    "Fenêtre :": "windowSizePresets.label"
+  },
+  "tableau/ConsolationBracketsSection.tsx": {
+    "Terminé": "tableau.finished"
+  },
+  "tableau/SeedingTable.tsx": {
+    "Classement après poules": "seedingTable.after_pools"
+  },
+  "tableau/TableauArenaModal.tsx": {
+    "Assigner à une piste": "tableau.assign_strip",
+    "Sélectionnez la piste pour ce match :": "tableau.select_strip"
+  },
+  "tableau/TableauPdfModal.tsx": {
+    "Chaque fiche contient le nom complet des combattants, une case score et une case signature.": "tableauPdf.sheet_desc",
+    "Phases à inclure": "tableau.phases_label"
+  },
+  "tableau/TableauRefereeModal.tsx": {
+    "Assigner un arbitre": "referee.assign",
+    "Sélectionnez l'arbitre pour ce match :": "referee.select_for_match",
+    "✕ Aucun arbitre": "referee.none",
+    "Aucun arbitre enregistré pour cette compétition": "referee.none_registered"
+  },
+  "tableau/TableauScoreModal.tsx": {
+    "Valider": "actions.validate"
+  },
+  "tableau/TableauToolbar.tsx": {
+    "Options du tableau": "tableauToolbar.options",
+    "Ouvre un PDF dans le lecteur par défaut pour voir un aperçu avant d'imprimer": "tableauToolbar.preview_desc",
+    "❌ Désaffecter tout": "tableauToolbar.unassign_all",
+    "Export": "tableauToolbar.export",
+    "👁️ Aperçu avant impression": "tableauToolbar.preview",
+    "📄 Export PDF": "tableauToolbar.export_pdf"
+  },
+  "training/TrainingLauncherModal.tsx": {
+    "Fermer": "actions.close",
+    "Mode Entraînement": "trainingLauncher.title",
+    "Nombre de pistes": "trainingLauncher.num_strips",
+    "Durée du combat —": "trainingLauncher.duration",
+    "Désactiver la mort subite": "trainingLauncher.disable_sudden_death",
+    "Égalité à temps → fin du match sans prolongation.": "trainingLauncher.tie_note"
+  },
+  "training/TrainingPanel.tsx": {
+    "Copier l'URL": "remote_score.copy_url",
+    "Arbitre": "referee.label",
+    "Fermer (l'entraînement continue)": "trainingPanel.close_continue",
+    "Paramètres": "trainingPanel.settings",
+    "Kiosk grand écran": "trainingPanel.kiosk",
+    "EN COURS": "theme.in_progress",
+    "Aucun combat terminé": "trainingPanel.no_bout",
+    "Arrêter l'entraînement": "trainingPanel.stop"
+  }
+}

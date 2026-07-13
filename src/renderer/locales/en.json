@@ -34,7 +34,35 @@
     "comparisons": "Comparisons",
     "analytics": "Analytics",
     "sign_tableau_matches_label": "Fencer signature on tablet (bracket)",
-    "sign_tableau_matches_description": "Shows a signature screen for both fencers on the tablet after each direct-elimination bracket match"
+    "sign_tableau_matches_description": "Shows a signature screen for both fencers on the tablet after each direct-elimination bracket match",
+    "pools_rounds": "Pool rounds",
+    "round_1": "1 round",
+    "round_2": "2 rounds",
+    "round_3": "3 rounds",
+    "direct_elimination": "Direct elimination",
+    "max_pool_score": "Max pool score",
+    "pool_touches": "Touches to win a pool match",
+    "pool_time": "Pool timer (seconds)",
+    "tableau_max_score": "Tableau max score",
+    "tableau_time": "Tableau timer (seconds)",
+    "play_all_places": "Play all places",
+    "losers_classification": "Losers of each round form a classification table",
+    "pool_winners_only": "Only pool winners access the table",
+    "first_only_qualified": "Only the 1st of each pool is qualified for the elimination table",
+    "coupled": "Coupled competition (separation after pools)",
+    "standard": "None — standard competition",
+    "by_gender_separated": "By gender (M/F) — mixed pools, separate tables",
+    "by_gender_note": "Useful when M and F share the same pools for lack of numbers",
+    "title_props": "Competition properties",
+    "general_info": "General information",
+    "formula": "Competition formula",
+    "prep_single_pool": "Preliminary pools?",
+    "enable_referee_mgmt": "Enable referee management",
+    "referee_mgmt_desc": "Displays the referee's name on the arena and allows changing it from remote entry",
+    "advanced_referee_desc": "Enables advanced editing of strips and number of referees per pool / match",
+    "max_referees_pool": "Max referees per pool",
+    "max_referees_match": "Max referees per match (tableau)",
+    "custom_formula": "À la carte (custom formula)"
   },
   "weapons": {
     "epee": "Epee",
@@ -80,7 +108,14 @@
     "reactivate": "Reactivate",
     "points": "Points",
     "label": "fencers",
-    "present_label": "checked in"
+    "present_label": "checked in",
+    "region_idf": "Île-de-France",
+    "unranked": "Unranked",
+    "region": "Region",
+    "fencer_1": "Fencer 1",
+    "select_fencer": "Select a fencer",
+    "fencer_2": "Fencer 2",
+    "fencer_label": "Fencer"
   },
   "status": {
     "checked_in": "Present",
@@ -145,11 +180,20 @@
   "tableau": {
     "elimination_in": "Eliminated in",
     "finalist": "Finalist",
-    "winner": "Winner"
+    "winner": "Winner",
+    "finished": "Finished",
+    "phases_label": "Phases to include",
+    "assign_strip": "Assign to a strip",
+    "select_strip": "Select the strip for this match:"
   },
   "results": {
     "final_ranking": "Final Ranking",
-    "congratulations": "Congratulations to the winners!"
+    "congratulations": "Congratulations to the winners!",
+    "export_desc": "Pools and direct elimination tables, without fighter signatures",
+    "generating_full": "Generating full PDF…",
+    "second": "2nd",
+    "third": "3rd",
+    "generating": "Generating…"
   },
   "remote": {
     "title": "Remote Score Entry",
@@ -181,7 +225,23 @@
     "default_pool_max_score": "Default Pool Max Score",
     "default_table_max_score": "Default Table Max Score",
     "save": "Save",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "logo_position": "Displayed top-left on exported PDFs and in kiosk mode.",
+    "drag_image": "Drag an image here or click to choose",
+    "logo_format": "PNG, JPG, SVG — max 5 MB",
+    "delete_logo": "Delete logo",
+    "pdf_appearance": "Customize the appearance of each PDF export type.",
+    "quick_mouse": "Enable quick mouse entry",
+    "simplified_mode": "Simplified input mode",
+    "simplified_cells": "Enable simplified entry in cells",
+    "score_journal": "Score journal",
+    "score_journal_desc": "Enables the \"Score history\" tab in the competition view.",
+    "audit_log": "Enable score audit log",
+    "webhook_url": "Discord / Slack / custom URL (HTTPS only).",
+    "referee_tts": "Referee table — voice timer",
+    "tts_desc": "Voice and time thresholds announced on refereeing tablets.",
+    "tts_default_voice": "Default voice (by language)",
+    "tts_thresholds": "Announced thresholds"
   },
   "actions": {
     "add": "Add",
@@ -271,7 +331,9 @@
     "reset": "Reset",
     "exportJson": "Export JSON",
     "importJson": "Import JSON",
-    "importError": "Invalid JSON file"
+    "importError": "Invalid JSON file",
+    "no_logo": "No logo",
+    "preview": "Preview"
   },
   "cardModal": {
     "title": "Card for {{name}}",
@@ -329,7 +391,10 @@
     "export_fencer_pdf": "Export this fencer (PDF)",
     "export_competition_pdf": "Competition PDF export",
     "no_data": "No statistics available for this competition.",
-    "laser_only": "Touch zones (A/B/C) are only available in Laser Sabre mode."
+    "laser_only": "Touch zones (A/B/C) are only available in Laser Sabre mode.",
+    "avg_duration_short": "Avg duration",
+    "competitions": "Competitions",
+    "competition": "Competition"
   },
   "shortcuts": {
     "title": "Keyboard Shortcuts",
@@ -385,5 +450,614 @@
   },
   "wiki": {
     "button_title": "Documentation"
+  },
+  "about": {
+    "devmode_hint": "Double-click for a surprise…",
+    "build_hint": "💡 Double-click the build number…",
+    "desc1": "Fencing tournament management software.",
+    "desc2": "Pools, direct elimination, remote refereeing in real time."
+  },
+  "addFencerToPool": {
+    "search_placeholder": "Search by name…",
+    "search_aria": "Search a fencer by name",
+    "rescue_title": "Rescue operation:",
+    "rescue_desc": "The fencer will be added without rebalancing. Matches against all present fencers will be created.",
+    "none_available": "No fencer available"
+  },
+  "ui": {
+    "loading": "Loading…",
+    "no_result": "No result",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "previous_pool": "Previous pool",
+    "next_pool": "Next pool",
+    "no_pools": "No pools",
+    "poule": "Pool",
+    "round": "Round",
+    "generating": "Generating…",
+    "phase": "Phase",
+    "separation": "Separation",
+    "configure_send_kiosk": "Configure and send in kiosk mode",
+    "configure_kiosk": "🖥️ Configure kiosk mode",
+    "views_label": "Views to display:",
+    "rotation_label": "Rotation (s):",
+    "send_kiosk": "Send to kiosk"
+  },
+  "analytics": {
+    "export_pdf_report": "Export post-tournament report as PDF",
+    "no_refereed_matches": "No refereed match recorded for this competition."
+  },
+  "referee": {
+    "label": "Referee",
+    "loading": "Loading referees…",
+    "name_placeholder": "First name Last name *",
+    "category_placeholder": "Category (Regional…)",
+    "nationality_placeholder": "Nationality (FRA)",
+    "expected_format": "Expected format: NAME;First name;Sex(M/F);Category;Club;Region;Nationality — one line per referee, separator « ; », .txt or .csv",
+    "export_format": "Exports the list as CSV — same format as the import: NAME;First name;Sex(M/F);Category;Club;Region;Nationality",
+    "recommended_rest": "Recommended rest",
+    "title": "👨‍⚖️ Referee Management",
+    "add": "Add referee",
+    "no_registered": "No referee registered.",
+    "no_assigned_match": "No match with assigned referee.",
+    "rotation_config": "Rotation Configuration",
+    "avoid_same_club": "Avoid referees from the same club",
+    "balance_assignments": "Balance assignments",
+    "max_consecutive": "Max consecutive matches:",
+    "min_rest": "Min rest time (min):",
+    "rotation_report": "Rotation Report",
+    "assignments": "Match Assignments",
+    "no_pending": "No match pending a referee.",
+    "choose": "-- Choose a referee --",
+    "assign": "Assign a referee",
+    "none": "✕ No referee",
+    "none_registered": "No referee registered for this competition",
+    "select_for_match": "Select the referee for this match:"
+  },
+  "changePool": {
+    "drag_hint": "↕ Fencer (drag to a pool)",
+    "already_played": "This fencer has already played matches in this pool. Moving will delete their results.",
+    "move_to": "Move to:",
+    "no_other_pool": "No other pool available",
+    "recalculated": "✓ Matches of both pools will be recalculated",
+    "move_fencer": "Move fencer"
+  },
+  "commandPalette": {
+    "search_placeholder": "Search a competition or an action…",
+    "select": "select"
+  },
+  "pagination": {
+    "first": "First page",
+    "prev": "Previous page",
+    "last": "Last page"
+  },
+  "competitionList": {
+    "intro": "Manage your fencing competitions from check-in to podium.",
+    "palette_hint": "to open the command palette."
+  },
+  "quest": {
+    "tour_quest": "Quest round",
+    "tour_quest_enabled": "Quest round enabled?",
+    "without_pools": "Without (Quest → Tableau)",
+    "with_pools": "With (Pools → Quest → Tableau)",
+    "qualified_count": "Number of pool qualifiers to the Quest round",
+    "victories_played": "Victories / Matches played",
+    "points": "Quest points",
+    "cards_received": "Cards received (less = better)",
+    "in_progress": "Quest round in progress",
+    "validate": "Validate the Quest round →",
+    "cards_label": "Cards received",
+    "ranking": "Quest round ranking",
+    "criteria": "Criteria: V/M descending → Quest points descending → Cards ascending",
+    "config": "Quest round configuration",
+    "num_fights": "Number of fights",
+    "available_time": "Available time (min)",
+    "num_arenas": "Number of arenas",
+    "qualified_fencers": "Qualified fencers",
+    "override": "Manual override (leave empty to use the formula)",
+    "opposition_constraint": "Opposition constraint",
+    "need_two": "At least 2 fencers are needed to generate a schedule.",
+    "repartition": "Repartition per fencer",
+    "launch": "Launch the Quest round →",
+    "label": "Quest"
+  },
+  "competitionView": {
+    "show_grid_attr": "Show all pools in a grid",
+    "single_pool_attr": "Show a single pool at a time",
+    "print_sheets_attr": "Print pool sheets (Ctrl+P)",
+    "select_pool_attr": "Select a pool",
+    "return_to_generate": "Return to check-in to generate pools",
+    "back_to_call": "Back to check-in",
+    "single_view": "🎯 Single pool view",
+    "print": "🖨️ Print pool sheets",
+    "export_pdf": "📄 Export all pools as PDF",
+    "loading_tableau": "Loading tableau…",
+    "readonly": "🔒 Tableau in read-only — final results generated.",
+    "edit_tableau": "✏️ Edit tableau"
+  },
+  "conflict": {
+    "none": "No conflict to resolve."
+  },
+  "editFencer": {
+    "title": "Edit fencer",
+    "last_name": "Last name *",
+    "first_name": "First name *",
+    "not_ranked": "Not ranked",
+    "ranked_present": "Ranked (present)"
+  },
+  "errors": {
+    "load_title": "An error occurred while loading the competition.",
+    "load_message": "The data may be corrupted. Please contact support."
+  },
+  "ffe": {
+    "api_key": "Your FFE API key",
+    "import_title": "Import from FFE Connect",
+    "competition_code": "Competition code *",
+    "api_key_optional": "API key (optional)",
+    "selected": "selected",
+    "export_title": "Export to FFE Connect",
+    "export_success": "Results sent to FFE successfully."
+  },
+  "comparison": {
+    "matches_played": "Matches played:",
+    "win_rate": "Win rate:",
+    "touches_given": "Touches given:",
+    "touches_received": "Touches received:",
+    "avg_score": "Average score",
+    "history_title": "📜 Head-to-head history",
+    "pool_matches": "Pool matches",
+    "tableau_matches": "Tableau matches",
+    "never_fought": "These two fencers have never faced each other in this competition."
+  },
+  "fencerList": {
+    "toggle_columns": "Show/hide columns",
+    "search_placeholder": "Search a fencer…",
+    "dblclick_edit": "Double-click to edit",
+    "reactivate": "Reactivate",
+    "import_ffe_ranking": "Import FFE ranking",
+    "import_ffe_connect": "🔗 Import from FFE Connect",
+    "reset_order": "↺ Reset order",
+    "fencer_registration": "📱 Fencer registration",
+    "qr_hint": "Scan this QR code with the tablet to access the registration form",
+    "none_registered": "No fencer registered",
+    "import_hint": "Import a list or add fencers manually"
+  },
+  "photo": {
+    "delete": "Delete photo",
+    "take_webcam": "Take a photo with the webcam",
+    "drop_here": "Drop here",
+    "take": "Take a photo"
+  },
+  "historicalStats": {
+    "none": "No history available"
+  },
+  "kiosk": {
+    "ranking": "📊 Ranking",
+    "tableau": "🥇 Tableau",
+    "esc_exit": "Esc to quit",
+    "close": "✕ Close",
+    "finished_matches": "finished matches",
+    "ranking_label": "Ranking",
+    "matches_live": "Matches in progress",
+    "no_live": "No match in progress",
+    "final_results": "🏆 FINAL RESULTS",
+    "tableau_done": "Tableau finished",
+    "general_ranking": "General ranking"
+  },
+  "live": {
+    "live": "● LIVE",
+    "pool_results": "📋 Pool Results",
+    "elim_phase": "⚔️ Elimination Phase",
+    "final_ranking": "🏅 Final Ranking",
+    "subtitle": "BellePoule Modern • Follow the competition live",
+    "no_results_yet": "No results yet",
+    "tableau_not_started": "The tableau has not started yet",
+    "not_finished": "The competition is not finished yet"
+  },
+  "liveInterPool": {
+    "title": "General ranking — Live",
+    "no_result": "No result available"
+  },
+  "matchAudit": {
+    "filter": "Filter:",
+    "by_referee": "By referee",
+    "export_json": "Export JSON",
+    "no_scores": "No score entry recorded.",
+    "last_entry": "Last entry",
+    "no_events": "No event recorded for this match.",
+    "type": "Type",
+    "title": "Match log"
+  },
+  "multiStrip": {
+    "pending": "pending matches",
+    "free_strip": "Free the strip",
+    "assign_next": "Assign next match",
+    "none_pending": "No pending match"
+  },
+  "newCompetition": {
+    "placeholder": "Ex: Regional Championship",
+    "touches_like": "Touches (like other weapons)",
+    "zone_points": "Cumulative zone points (A/B/C)"
+  },
+  "team": {
+    "competition": "Team competition",
+    "starters_per": "Starters per team",
+    "reserves_per": "Reserves per team",
+    "name_placeholder": "Ex: team A",
+    "individual_relays": "Individual relays won/lost",
+    "cumulative_touches": "Cumulative touches (FIE rule)",
+    "generate_pool": "Generate the pool",
+    "name_label": "Team name",
+    "create": "+ Create",
+    "none": "No team — create one above.",
+    "complete": "✓ Complete",
+    "result_short": "Res.",
+    "no_fencer": "No fencer",
+    "select": "-- select --",
+    "no_match": "No match played.",
+    "label": "Team"
+  },
+  "obs": {
+    "open_browser": "Open in browser",
+    "strip_arena": "Strip / Arena",
+    "json_endpoint": "JSON endpoint (third-party integrations)"
+  },
+  "offline": {
+    "last_sync": "Last sync:",
+    "pending_actions": "Pending actions:",
+    "syncing": "Syncing...",
+    "will_sync": "Changes will be synced automatically when the connection is restored."
+  },
+  "photoBooth": {
+    "preview": "Preview",
+    "start_camera": "Start camera"
+  },
+  "poolPrep": {
+    "single_pool": "Put all fencers in a single pool",
+    "official_order": "Show official FIE/FFE match order by pool size",
+    "same_club": "Same club in this pool",
+    "num_pools": "Number of pools",
+    "single_pool_label": "Single pool",
+    "fencers_per_pool": "Fencers / pool",
+    "drag_priority": "(drag for priority)",
+    "match_order": "Match order",
+    "direct_to_ranking": "Direct passage to initial fencer ranking",
+    "drop_here": "Drop fencers here",
+    "drag_hint": "Drag fencers between pools or use arrows (← →) to move, (↑ ↓) to reorder."
+  },
+  "poolRanking": {
+    "recalculate": "Recalculate ranking",
+    "toggle_columns": "Show/hide columns",
+    "columns_label": "Columns to display",
+    "general": "🌐 General",
+    "view_results": "View results →"
+  },
+  "poolView": {
+    "view_log": "View match log",
+    "undo": "Undo last action",
+    "redo": "Redo (Ctrl+Y)",
+    "redo_desc": "Redo the undone action",
+    "autofill": "Auto-fill scores (test)",
+    "print_sheet": "Print pool sheet (Ctrl+P)",
+    "preview": "Print preview (opens PDF in default viewer)",
+    "export_pdf": "Export pool as PDF",
+    "add_fencer": "Add a fencer to this pool",
+    "toggle_columns": "Show/hide columns",
+    "table_view": "Table view",
+    "quick_entry": "Quick score entry",
+    "tie_hint": "💡 In case of a tie, click V to assign the victory",
+    "cancel_match": "⏸ Cancel match",
+    "not_fenced": "✕ Match not fenced",
+    "next_match": "⚔️ Next match",
+    "enter": "Enter",
+    "signed_locked": "🔒 Sheet signed by all fencers — scores locked",
+    "columns_label": "Columns to display"
+  },
+  "qrCode": {
+    "generating": "Generating QR code...",
+    "download": "💾 Download QR Code"
+  },
+  "remote_score": {
+    "unsaved": "Unsaved changes",
+    "restart_server": "Restart server on this port",
+    "wallpaper": "Wallpaper",
+    "message_placeholder": "Message (e.g. Referees lunch)",
+    "custom_theme": "Custom theme",
+    "unlock_global": "Unlock — follow global theme",
+    "apply_saved": "Apply a saved theme",
+    "copy_url": "Copy URL",
+    "obs_hint": "To paste in OBS > Sources > Browser",
+    "copy_overlay": "Copy overlay URL (OBS Browser Source)",
+    "none_open": "None (open access)",
+    "set_password": "Set password",
+    "kiosk_theme": "Custom kiosk theme",
+    "blink": "Make this screen blink to identify it",
+    "desc": "Referees enter scores from a tablet via web browser on the local network.",
+    "network": "Network",
+    "enable_https": "🔒 Enable HTTPS (encrypted connection)",
+    "cert_note": "Self-signed certificate — tablets will need to accept the browser security warning once.",
+    "stop": "🛑 Stop",
+    "show_photos": "Show fighter photos before the bout",
+    "card_advance": "📣 Advance card (show banner + reason on screens)",
+    "launch": "🚀 Launch competition",
+    "display_theme": "Display theme:",
+    "wallpaper_arena": "Arena wallpaper (waiting screen):",
+    "org_note": "Organization note (kiosk)",
+    "resume_time": "Resume time",
+    "note_visible": "● Note visible on the kiosk",
+    "themes": "📦 Themes…",
+    "global_theme": "🎨 Global theme",
+    "referee_section": "🤝 Referee",
+    "pool_section": "📋 Pool",
+    "choose_theme": "— Choose a theme —",
+    "apply_all": "Apply to all",
+    "theme_edit": "✏️ Theme",
+    "lobby": "🚪 Lobby (referee waiting room)",
+    "referee_instructions": "Instructions for referees",
+    "open_browser": "Open a web browser on the tablet",
+    "go_url": "Go to URL",
+    "corresponding_strip": "corresponding to their strip",
+    "enter_scores": "Enter scores of the current match",
+    "next_match_hint": "Click \"Next match\" to go to the next match"
+  },
+  "scoreAudit": {
+    "filter_referee": "Filter referee…",
+    "title": "📜 Score history",
+    "all_pools": "All pools",
+    "export_csv": "⬇ Export CSV",
+    "after": "After"
+  },
+  "seasonRanking": {
+    "quest_points": "Cumulative Quest points",
+    "v4": "Victories 4 pts (gap ≥12)",
+    "v3": "Victories 3 pts (gap 8–11)",
+    "v2": "Victories 2 pts (gap 4–7)",
+    "v1": "Victories 1 pt (gap ≤3)",
+    "touches_given": "Touches given",
+    "touches_received": "Touches received",
+    "competition_short": "Comp.",
+    "num_competitions": "Number of competitions played",
+    "title": "Seasonal Quest ranking",
+    "reset": "Reset season",
+    "none": "No competition in the season.",
+    "add_hint": "Go to the \"Competitions\" tab to add some.",
+    "in_season": "In season",
+    "available": "Available (Laser Sabre / Quest)",
+    "no_pool": "⚠ No pool",
+    "no_laser": "No Laser Sabre competition available in this session.",
+    "reset_confirm": "Reset the season?",
+    "reset_warning": "All competitions and seasonal rankings will be erased. This action is irreversible.",
+    "reset_btn": "Reset"
+  },
+  "tableauView": {
+    "title": "Direct elimination table",
+    "finish_pools": "Finish pools first to generate the table",
+    "strip_summary": "Strip summary",
+    "unassigned": "Unassigned",
+    "all_done": "✓ All matches are finished",
+    "sheet_desc": "Each sheet contains the full name of the fighters, a score box and a signature box."
+  },
+  "teamPool": {
+    "add_card": "Add a card",
+    "simultaneous": "Simultaneous double touch (no priority in epee)",
+    "reset_bout": "Reset this bout"
+  },
+  "teamTableau": {
+    "need_two": "At least 2 teams are needed to generate a table.",
+    "none": "No table generated.",
+    "regenerate": "↻ Regenerate / advance the table",
+    "waiting": "Waiting for previous results…"
+  },
+  "theme": {
+    "import_json": "Import a theme JSON",
+    "editor_title": "Theme editor",
+    "name": "Theme name",
+    "transparent_panels": "Transparent panels over the image",
+    "saved": "Saved themes",
+    "live_preview": "Live preview",
+    "provisional_ranking": "🏆 Provisional ranking",
+    "arena1": "⚔ Arena 1",
+    "in_progress": "IN PROGRESS",
+    "demo_club": "CE Orléans"
+  },
+  "tiebreaker": {
+    "time_up": "Time elapsed — persistent tie"
+  },
+  "touchReferee": {
+    "swipe_left": "Swipe left or tap +1 to add a point",
+    "swipe_right": "Swipe right or tap +1 to add a point",
+    "no_event": "No event recorded",
+    "reset_score": "Reset Score",
+    "finish_match": "Finish Match",
+    "listening": "Listening..."
+  },
+  "voice": {
+    "control": "Voice Control",
+    "last_command": "Last command:"
+  },
+  "wifi": {
+    "ssid_placeholder": "My-WiFi-Network",
+    "password_placeholder": "WiFi password",
+    "title": "📶 WiFi QR Code Generator",
+    "desc": "Referee tablets scan this QR code to join the WiFi network.",
+    "network_name": "Network name (SSID)",
+    "security_type": "Security type",
+    "open_network": "None (open network)",
+    "password": "Password",
+    "hidden_network": "Hidden network (SSID hidden)",
+    "network_label": "Network:",
+    "download": "💾 Download"
+  },
+  "xiaomi": {
+    "screen_name": "Screen name…",
+    "click_rename": "Click to rename",
+    "tablet_role": "Tablet role",
+    "arena": "Arena",
+    "blink": "Make this screen blink to identify it",
+    "rename": "Rename this screen",
+    "refresh": "Refresh",
+    "bottom_text": "Text displayed at the bottom of all screens…",
+    "title": "TV Remote",
+    "refresh_all": "Refresh all",
+    "url_no_arena": "URL without arena:",
+    "screens_waiting": "— screens wait there for their assignment",
+    "locked": "Remote locked — actions disabled. Click « Locked » to unlock.",
+    "no_screen": "No screen connected.",
+    "connect_tv": "on a TV for it to appear here.",
+    "select_2nd": "— select a 2nd screen"
+  },
+  "analyticsCharts": {
+    "avg_duration_dist": "Average match duration distribution",
+    "cards_repartition": "Cards repartition",
+    "no_data": "No data",
+    "total_points": "Total points scored:",
+    "no_stats": "No statistics available — run matches first."
+  },
+  "numericKeypad": {
+    "title": "Numeric keypad",
+    "clear": "Clear",
+    "backspace": "Backspace"
+  },
+  "competitionHeader": {
+    "season_quest": "Seasonal Quest ranking",
+    "team_mgmt": "Team management",
+    "presentation": "Presentation mode",
+    "properties": "Properties"
+  },
+  "competitionNav": {
+    "tooltip": "Tournament end estimate and strip allocation recommendations",
+    "match_log": "Match event log",
+    "generate_pools": "Generate pools"
+  },
+  "exportCenter": {
+    "tableau": "Elimination table",
+    "ranking": "Ranking",
+    "final_results": "Final results",
+    "full_export": "Full competition export",
+    "title": "📤 Export Center",
+    "export_pdf": "Export PDF",
+    "go_tableau": "Go to Tableau for PDF export →",
+    "send_ffe": "📡 Send to FFE",
+    "detailed_csv": "Detailed stats (CSV)",
+    "go_results": "Go to Results for full export →",
+    "no_data": "No data to export yet — add fencers to start."
+  },
+  "kioskScoreEntry": {
+    "title": "Kiosk Mode - Score Entry",
+    "all_done": "✓ All matches are finished - View ranking"
+  },
+  "planningAssistant": {
+    "title": "🗓️ Planning Assistant",
+    "available_strips": "Number of available strips",
+    "calculating": "Calculating…",
+    "estimated_end": "Estimated end:",
+    "no_warning": "No point of vigilance detected with this configuration."
+  },
+  "formulaBuilder": {
+    "name_placeholder": "Formula name",
+    "add_pool": "Add a pool round",
+    "add_de": "Add a direct elimination phase",
+    "add_classification": "Add a classification phase",
+    "save_template": "Save as template",
+    "load_template": "Load a template",
+    "notes": "Notes on the formula (optional)",
+    "add_de_short": "+ DE",
+    "add_classification_short": "+ Classification",
+    "save_model": "Save model",
+    "load_model": "Load model",
+    "no_phase": "No phase configured.",
+    "use_buttons": "Use the buttons above to add phases."
+  },
+  "formulaPhaseCard": {
+    "phase_name": "Phase name",
+    "delete_phase": "Delete this phase",
+    "pool_size": "Min / max pool size",
+    "max_score": "Max score",
+    "timer": "Timer (sec)",
+    "repartition": "Repartition",
+    "sequential": "Sequential",
+    "random": "Random",
+    "scoring_system": "Scoring system",
+    "ranking_criteria": "Ranking criteria",
+    "advancement": "Advancement to the next phase",
+    "tableau_size": "Tableau (size)",
+    "fifth_place": "Match for 5th place",
+    "final_classification": "Final classification phase — no configuration required."
+  },
+  "formulaSim": {
+    "total_matches": "Total matches",
+    "estimated_duration": "Estimated duration"
+  },
+  "formulaTemplate": {
+    "placeholder": "Ex: Club Tournament Standard",
+    "name_label": "Formula name",
+    "none": "No saved formula.",
+    "import_json": "Import from a JSON file"
+  },
+  "rankingCriteria": {
+    "drag_reorder": "Drag to reorder"
+  },
+  "scoringZone": {
+    "standard": "Standard",
+    "zone_name": "Zone name",
+    "standard_desc": "Standard (1 touch = 1 pt)",
+    "custom": "Custom zones",
+    "add_zone": "+ Add a zone"
+  },
+  "globalPoolColumns": {
+    "title": "🧱 Columns (all pools)",
+    "applied": "Columns — applied to all pools"
+  },
+  "poolMatchList": {
+    "match_log": "Match log",
+    "delete_result": "Delete this result (Ctrl+Z to undo deletion)",
+    "relaunch": "Relaunch this match",
+    "not_fenced": "✕ Match not fenced",
+    "next_match": "⚔ Next match",
+    "enter_score": "Enter score",
+    "pool_done": "Pool finished",
+    "all_played": "All matches have been played"
+  },
+  "poolMatchOrder": {
+    "official": "Official match order",
+    "reference": "FIE / FFE reference",
+    "pool_size": "Pool size:"
+  },
+  "poolScoreMatrix": {
+    "not_fenced": "Match not fenced (abandon/forfeit)",
+    "cancel_result": "Cancel this result",
+    "right_click_hide": "Right-click to hide",
+    "reg": "Reg"
+  },
+  "windowSizePresets": {
+    "label": "Window:"
+  },
+  "seedingTable": {
+    "after_pools": "Ranking after pools"
+  },
+  "tableauPdf": {
+    "sheet_desc": "Each sheet contains the full name of the fighters, a score box and a signature box."
+  },
+  "tableauToolbar": {
+    "options": "Tableau options",
+    "preview_desc": "Opens a PDF in the default viewer for print preview",
+    "unassign_all": "❌ Unassign all",
+    "export": "Export",
+    "preview": "👁️ Print preview",
+    "export_pdf": "📄 Export PDF"
+  },
+  "trainingLauncher": {
+    "title": "Training Mode",
+    "num_strips": "Number of strips",
+    "duration": "Bout duration —",
+    "disable_sudden_death": "Disable sudden death",
+    "tie_note": "Tie at time → end of match without overtime."
+  },
+  "trainingPanel": {
+    "close_continue": "Close (training continues)",
+    "settings": "Settings",
+    "kiosk": "Large-screen kiosk",
+    "no_bout": "No bout finished",
+    "stop": "Stop training"
   }
 }
