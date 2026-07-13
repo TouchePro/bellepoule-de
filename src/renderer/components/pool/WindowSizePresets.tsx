@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const STORAGE_KEY = 'bellepoule-pool-window-size';
 
@@ -18,6 +19,7 @@ const PRESETS = [
 type PresetLabel = (typeof PRESETS)[number]['label'];
 
 const WindowSizePresets: React.FC = () => {
+  const { t } = useTranslation();
   const [active, setActive] = useState<PresetLabel>('Normal');
 
   useEffect(() => {
@@ -35,7 +37,7 @@ const WindowSizePresets: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-      <span style={{ fontSize: '0.75rem', color: '#6b7280', whiteSpace: 'nowrap' }}>Fenêtre :</span>
+      <span style={{ fontSize: '0.75rem', color: '#6b7280', whiteSpace: 'nowrap' }}>{t('windowSizePresets.label')}</span>
       {PRESETS.map(preset => (
         <button
           key={preset.label}

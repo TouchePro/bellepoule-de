@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { TableauMatch, ConsolationBracket } from './tableauTypes';
 import { BASE_MATCH_HEIGHT } from './tableauCalculations';
 import MatchCard from './MatchCard';
@@ -41,6 +42,7 @@ const ConsolationBracketsSection: React.FC<ConsolationBracketsSectionProps> = ({
   onArenaClick,
   onRefereeClick,
 }) => {
+  const { t } = useTranslation();
   return (
     <div style={CONS_STYLES.consolationSection}>
       {consolationBrackets
@@ -59,7 +61,7 @@ const ConsolationBracketsSection: React.FC<ConsolationBracketsSectionProps> = ({
               <div style={CONS_STYLES.consolationHeader}>
                 <h3 style={CONS_STYLES.consolationTitle}>🥋 {bracket.name}</h3>
                 {bracket.isComplete && (
-                  <span style={CONS_STYLES.consolationDoneBadge}>Terminé</span>
+                  <span style={CONS_STYLES.consolationDoneBadge}>{t('tableau.finished')}</span>
                 )}
                 {finalM?.winner && (
                   <span style={CONS_STYLES.consolationWinnerBadge}>

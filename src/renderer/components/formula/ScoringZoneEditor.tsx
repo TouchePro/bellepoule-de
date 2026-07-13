@@ -3,6 +3,7 @@
  */
 
 import React, { memo } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { CustomScoringConfig, CustomTouchZone } from '../../../shared/types';
 
 interface Props {
@@ -26,6 +27,7 @@ function newZone(index: number): CustomTouchZone {
 }
 
 const ScoringZoneEditor_: React.FC<Props> = ({ scoring, onChange, readOnly }) => {
+  const { t } = useTranslation();
   const setType = (type: 'standard' | 'zones') => {
     if (type === 'zones') {
       onChange({
@@ -73,7 +75,7 @@ const ScoringZoneEditor_: React.FC<Props> = ({ scoring, onChange, readOnly }) =>
             onChange={() => setType('standard')}
             disabled={readOnly}
           />
-          <span>Standard (1 touche = 1 pt)</span>
+          <span>{t('scoringZone.standard_desc')}</span>
         </label>
         <label className="scoring-type-option">
           <input
@@ -84,7 +86,7 @@ const ScoringZoneEditor_: React.FC<Props> = ({ scoring, onChange, readOnly }) =>
             onChange={() => setType('zones')}
             disabled={readOnly}
           />
-          <span>Zones personnalisées</span>
+          <span>{t('scoringZone.custom')}</span>
         </label>
       </div>
 
@@ -106,7 +108,7 @@ const ScoringZoneEditor_: React.FC<Props> = ({ scoring, onChange, readOnly }) =>
                 value={zone.label}
                 onChange={e => updateZone(i, { label: e.target.value })}
                 disabled={readOnly}
-                placeholder="Nom de la zone"
+                placeholder={t('scoringZone.zone_name')}
               />
               <input
                 type="number"
@@ -136,7 +138,7 @@ const ScoringZoneEditor_: React.FC<Props> = ({ scoring, onChange, readOnly }) =>
               className="btn btn-secondary zone-add-btn"
               onClick={addZone}
             >
-              + Ajouter une zone
+              {t('scoringZone.add_zone')}
             </button>
           )}
           {(scoring.zones ?? []).length > 0 && (

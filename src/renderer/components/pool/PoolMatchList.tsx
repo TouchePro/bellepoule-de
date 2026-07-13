@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { Match, Fencer, FencerStatus } from '../../../shared/types';
 import { Arena } from '../../../shared/types/remote';
 import {
@@ -125,6 +126,7 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
   matchArenaOverrides,
   onMatchArenaChange,
 }) => {
+  const { t } = useTranslation();
   const [showArenaModal, setShowArenaModal] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [highlightedMatchId, setHighlightedMatchId] = useState<string | null>(null);
@@ -178,7 +180,7 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
               }}
             >
               <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#9ca3af', marginBottom: '0.75rem' }}>
-                ✕ Match non disputé
+                {t('poolMatchList.not_fenced')}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
                 <div style={{ flex: 1, textAlign: 'right' }}>
@@ -215,7 +217,7 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#64748b', fontWeight: 600 }}>
-                ⚔ Prochain match
+                {t('poolMatchList.next_match')}
               </span>
               <ArenaBadge
                 match={nextMatch.match}
@@ -264,7 +266,7 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
                 letterSpacing: '0.02em',
               }}
             >
-              Saisir le score
+              {t('poolMatchList.enter_score')}
             </button>
           </div>
         );
@@ -292,7 +294,7 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
               <div
                 key={index}
                 onClick={() => !isAbandonMatch && openScoreModal(index)}
-                title={isAbandonMatch ? 'Match non disputé' : undefined}
+                title={isAbandonMatch ? t('poolMatchList.not_fenced') : undefined}
                 style={{
                   flexShrink: 0,
                   display: 'flex',
@@ -420,7 +422,7 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
                       e.stopPropagation();
                       onShowMatchAudit(match.id);
                     }}
-                    title="Journal du match"
+                    title={t('poolMatchList.match_log')}
                     style={{
                       padding: '0.2rem 0.4rem',
                       fontSize: '0.7rem',
@@ -441,7 +443,7 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
                       e.stopPropagation();
                       onMatchReset(index);
                     }}
-                    title="Supprimer ce résultat (Ctrl+Z pour annuler la suppression)"
+                    title={t('poolMatchList.delete_result')}
                     style={{
                       padding: '0.2rem 0.4rem',
                       fontSize: '0.7rem',
@@ -494,7 +496,7 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
               {!isLocked && onMatchReset && (
                 <button
                   onClick={() => onMatchReset(index)}
-                  title="Relancer ce match"
+                  title={t('poolMatchList.relaunch')}
                   style={{
                     padding: '0.2rem 0.5rem',
                     fontSize: '0.75rem',
@@ -519,8 +521,8 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
     {orderedMatches.pending.length === 0 && orderedMatches.cancelled.length === 0 && (
       <div style={{ textAlign: 'center', padding: '2.5rem 2rem', color: '#6b7280' }}>
         <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🏁</div>
-        <div style={{ fontWeight: 700, fontSize: '1rem', color: '#374151' }}>Poule terminée</div>
-        <div style={{ fontSize: '0.8rem', marginTop: '0.25rem' }}>Tous les matches ont été joués</div>
+        <div style={{ fontWeight: 700, fontSize: '1rem', color: '#374151' }}>{t('poolMatchList.pool_done')}</div>
+        <div style={{ fontSize: '0.8rem', marginTop: '0.25rem' }}>{t('poolMatchList.all_played')}</div>
       </div>
     )}
 
@@ -529,12 +531,12 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
       <div className="modal-overlay" onClick={closeArenaModal}>
         <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
           <div className="modal-header">
-            <h3 className="modal-title">Assigner à une piste</h3>
+            <h3 className="modal-title">{t('tableau.assign_strip')}</h3>
             <button className="btn-close" onClick={closeArenaModal}>&times;</button>
           </div>
           <div className="modal-body" style={{ padding: '1.5rem' }}>
             <p style={{ marginBottom: '1rem', color: '#6b7280', fontSize: '0.875rem' }}>
-              Sélectionnez la piste pour ce match :
+              {t('tableau.select_strip')}
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
               <button

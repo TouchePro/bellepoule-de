@@ -7,6 +7,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from '../../hooks/useTranslation';
 import { useColumnVisibility, POOL_COLUMNS, ColumnId } from '../../hooks/useColumnVisibility';
 
 interface GlobalPoolColumnsMenuProps {
@@ -14,6 +15,7 @@ interface GlobalPoolColumnsMenuProps {
 }
 
 const GlobalPoolColumnsMenu: React.FC<GlobalPoolColumnsMenuProps> = ({ isLaserSabre }) => {
+  const { t } = useTranslation();
   const { visibility, setAllPoolColumns } = useColumnVisibility();
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
@@ -59,7 +61,7 @@ const GlobalPoolColumnsMenu: React.FC<GlobalPoolColumnsMenuProps> = ({ isLaserSa
   return (
     <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
       <button ref={btnRef} className="btn btn-secondary" onClick={() => setOpen(o => !o)}>
-        🧱 Colonnes (toutes les poules)
+        {t('globalPoolColumns.title')}
       </button>
       {open && createPortal(
         <div
@@ -88,7 +90,7 @@ const GlobalPoolColumnsMenu: React.FC<GlobalPoolColumnsMenuProps> = ({ isLaserSa
               marginBottom: '0.25rem',
             }}
           >
-            Colonnes — appliqué à toutes les poules
+            {t('globalPoolColumns.applied')}
           </div>
           {columns.map(col => (
             <label

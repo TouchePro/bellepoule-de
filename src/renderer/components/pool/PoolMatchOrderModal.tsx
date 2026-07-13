@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { generatePoolMatchOrder } from '../../../shared/utils/poolCalculations';
 
 interface PoolMatchOrderModalProps {
@@ -11,6 +12,7 @@ interface PoolMatchOrderModalProps {
 }
 
 const PoolMatchOrderModal: React.FC<PoolMatchOrderModalProps> = ({ onClose }) => {
+  const { t } = useTranslation();
   const [poolSize, setPoolSize] = useState(6);
 
   const matches = generatePoolMatchOrder(poolSize);
@@ -55,7 +57,7 @@ const PoolMatchOrderModal: React.FC<PoolMatchOrderModalProps> = ({ onClose }) =>
         >
           <div>
             <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>
-              Ordre officiel des matchs
+              {t('poolMatchOrder.official')}
             </div>
             <span
               style={{
@@ -70,12 +72,12 @@ const PoolMatchOrderModal: React.FC<PoolMatchOrderModalProps> = ({ onClose }) =>
                 display: 'inline-block',
               }}
             >
-              Référence FIE / FFE
+              {t('poolMatchOrder.reference')}
             </span>
           </div>
           <button
             onClick={onClose}
-            aria-label="Fermer"
+            aria-label={t('actions.close')}
             style={{
               background: 'none',
               border: 'none',
@@ -103,7 +105,7 @@ const PoolMatchOrderModal: React.FC<PoolMatchOrderModalProps> = ({ onClose }) =>
             htmlFor="pool-order-size"
             style={{ fontSize: '0.875rem', color: '#6b7280', whiteSpace: 'nowrap' }}
           >
-            Taille de poule :
+            {t('poolMatchOrder.pool_size')}
           </label>
           <select
             id="pool-order-size"

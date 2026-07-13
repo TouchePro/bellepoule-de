@@ -3,6 +3,7 @@
  */
 
 import React, { useRef, useState , memo} from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { RankingCriterion, RankingCriterionId } from '../../../shared/types';
 
 const CRITERION_LABELS: Record<RankingCriterionId, string> = {
@@ -22,6 +23,7 @@ interface Props {
 }
 
 const RankingCriteriaEditor_: React.FC<Props> = ({ criteria, onChange, readOnly }) => {
+  const { t } = useTranslation();
   const dragIndex = useRef<number | null>(null);
   const [dragOver, setDragOver] = useState<number | null>(null);
 
@@ -92,7 +94,7 @@ const RankingCriteriaEditor_: React.FC<Props> = ({ criteria, onChange, readOnly 
             onDragEnd={handleDragEnd}
           >
             {/* Grip + priorité */}
-            <div className="criterion-grip" title="Glisser pour réordonner">
+            <div className="criterion-grip" title={t('rankingCriteria.drag_reorder')}>
               <span className="criterion-priority">
                 {criterion.enabled ? activePriority(index) : '—'}
               </span>

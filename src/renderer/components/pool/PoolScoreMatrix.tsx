@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { Pool, Fencer, Score, MatchStatus, FencerStatus } from '../../../shared/types';
 import { formatRatio, formatIndex } from '../../../shared/utils/poolCalculations';
 import { ColumnId } from '../../hooks/useColumnVisibility';
@@ -91,7 +92,7 @@ const ScoreCell = React.memo<ScoreCellProps>(
             backgroundColor: '#e5e7eb',
             color: '#9ca3af',
           }}
-          title="Match non disputé (abandon/forfait)"
+          title={t('poolScoreMatrix.not_fenced')}
         >
           <span>-</span>
         </div>
@@ -176,8 +177,8 @@ const ScoreCell = React.memo<ScoreCellProps>(
                   e.stopPropagation();
                   onMatchReset(rowFencer, colFencer);
                 }}
-                title="Annuler ce résultat"
-                aria-label="Annuler ce résultat"
+                title={t('poolScoreMatrix.cancel_result')}
+                aria-label={t('poolScoreMatrix.cancel_result')}
                 className="pool-cell-reset-btn"
                 style={{
                   position: 'absolute',
@@ -234,6 +235,7 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
   onInlineSubmit,
   onInlineCancel,
 }) => {
+  const { t } = useTranslation();
   const fencers = pool.fencers;
   const [flashCell, setFlashCell] = useState<string | null>(null);
   const prevMatchesRef = useRef<typeof pool.matches>(pool.matches);
@@ -355,7 +357,7 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
           <div
             className="pool-cell pool-cell-header"
             onContextMenu={e => { e.preventDefault(); toggleColumn('pool', 'victories'); }}
-            title="Clic droit pour masquer"
+            title={t('poolScoreMatrix.right_click_hide')}
           >
             V
           </div>
@@ -364,7 +366,7 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
           <div
             className="pool-cell pool-cell-header"
             onContextMenu={e => { e.preventDefault(); toggleColumn('pool', 'ratio'); }}
-            title="Clic droit pour masquer"
+            title={t('poolScoreMatrix.right_click_hide')}
           >
             V/M
           </div>
@@ -373,7 +375,7 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
           <div
             className="pool-cell pool-cell-header"
             onContextMenu={e => { e.preventDefault(); toggleColumn('pool', 'td'); }}
-            title="Clic droit pour masquer"
+            title={t('poolScoreMatrix.right_click_hide')}
           >
             TD
           </div>
@@ -382,7 +384,7 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
           <div
             className="pool-cell pool-cell-header"
             onContextMenu={e => { e.preventDefault(); toggleColumn('pool', 'tr'); }}
-            title="Clic droit pour masquer"
+            title={t('poolScoreMatrix.right_click_hide')}
           >
             TR
           </div>
@@ -392,16 +394,16 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
             className="pool-cell pool-cell-header"
             style={{ color: '#7c3aed' }}
             onContextMenu={e => { e.preventDefault(); toggleColumn('pool', 'quest'); }}
-            title="Clic droit pour masquer"
+            title={t('poolScoreMatrix.right_click_hide')}
           >
-            Quest
+            {t('quest.label')}
           </div>
         )}
         {isVisible('index') && (
           <div
             className="pool-cell pool-cell-header"
             onContextMenu={e => { e.preventDefault(); toggleColumn('pool', 'index'); }}
-            title="Clic droit pour masquer"
+            title={t('poolScoreMatrix.right_click_hide')}
           >
             Ind
           </div>
@@ -410,7 +412,7 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
           <div
             className="pool-cell pool-cell-header"
             onContextMenu={e => { e.preventDefault(); toggleColumn('pool', 'rank'); }}
-            title="Clic droit pour masquer"
+            title={t('poolScoreMatrix.right_click_hide')}
           >
             Rg
           </div>
@@ -419,7 +421,7 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
           <div
             className="pool-cell pool-cell-header"
             onContextMenu={e => { e.preventDefault(); toggleColumn('pool', 'club'); }}
-            title="Clic droit pour masquer"
+            title={t('poolScoreMatrix.right_click_hide')}
           >
             Club
           </div>
@@ -428,7 +430,7 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
           <div
             className="pool-cell pool-cell-header"
             onContextMenu={e => { e.preventDefault(); toggleColumn('pool', 'nation'); }}
-            title="Clic droit pour masquer"
+            title={t('poolScoreMatrix.right_click_hide')}
           >
             Nat
           </div>
@@ -437,9 +439,9 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
           <div
             className="pool-cell pool-cell-header"
             onContextMenu={e => { e.preventDefault(); toggleColumn('pool', 'region'); }}
-            title="Clic droit pour masquer"
+            title={t('poolScoreMatrix.right_click_hide')}
           >
-            Rég
+            {t('poolScoreMatrix.reg')}
           </div>
         )}
       </div>
@@ -518,7 +520,7 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
                     e.stopPropagation();
                     onFencerChangePool(rowFencer);
                   }}
-                  title="Changer de poule"
+                  title={t('pools.change_pool')}
                   aria-label={`Changer ${rowFencer.lastName} de poule`}
                   style={{
                     padding: '0.125rem 0.25rem',
