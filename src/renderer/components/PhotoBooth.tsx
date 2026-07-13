@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { useTranslation } from '../hooks/useTranslation';
 import { logger, LogCategory } from '@shared/services/logger';
 
 interface PhotoBoothProps {
@@ -13,6 +14,7 @@ interface PhotoBoothProps {
 }
 
 export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) => {
+  const { t } = useTranslation();
   const [isCapturing, setIsCapturing] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [photo, setPhoto] = useState<string | null>(null);
@@ -195,7 +197,7 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
               Annuler
             </button>
             <button type="button" className="btn btn-primary" onClick={startCamera}>
-              Démarrer la caméra
+              {t('photoBooth.start_camera')}
             </button>
           </div>
         </div>
@@ -257,7 +259,7 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
         <div style={{ textAlign: 'center' }}>
           <img
             src={photo}
-            alt="Aperçu"
+            alt={t('photoBooth.preview')}
             style={{
               width: '100%',
               borderRadius: '8px',

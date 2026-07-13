@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from '../hooks/useTranslation';
 import { Fencer, Pool, Match, MatchStatus } from '../../shared/types';
 import {
   calculateOptimalPoolCount,
@@ -45,6 +46,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
   onSkipPools,
   onSettingsChange,
 }) => {
+  const { t } = useTranslation();
   const [poolCount, setPoolCount] = useState<number>(0);
   const [minFencersPerPool, setMinFencersPerPool] = useState<number>(initialMin);
   const [maxFencersPerPool, setMaxFencersPerPool] = useState<number>(initialMax);
@@ -460,10 +462,10 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
               <button
                 className="btn btn-secondary"
                 onClick={() => handlePoolCountChange(1)}
-                title="Mettre tous les tireurs dans une seule poule"
+                title={t('poolPrep.single_pool')}
                 style={{ fontSize: '0.75rem', padding: '0.2rem 0.65rem', borderRadius: '999px' }}
               >
-                Poule unique
+                {t('poolPrep.single_pool_label')}
               </button>
             )}
           </div>
@@ -472,7 +474,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
         {/* Min / Max fencers */}
         <div>
           <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 600, marginBottom: '0.4rem', color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Tireurs / poule
+            {t('poolPrep.fencers_per_pool')}
           </label>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <input
@@ -498,7 +500,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
         {/* Separation pill toggles with drag-and-drop priority */}
         <div>
           <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 600, marginBottom: '0.4rem', color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Séparation <span style={{ fontWeight: 400, textTransform: 'none', fontSize: '0.65rem', opacity: 0.7 }}>(glisser pour priorité)</span>
+            {t('ui.separation')} <span style={{ fontWeight: 400, textTransform: 'none', fontSize: '0.65rem', opacity: 0.7 }}>{t('poolPrep.drag_priority')}</span>
           </label>
           <div style={{ display: 'flex', gap: '0.4rem' }}>
             {separationCriteria.map((criterion, idx) => (
@@ -539,10 +541,10 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
         <button
           className="btn btn-secondary"
           onClick={() => setShowMatchOrderModal(true)}
-          title="Afficher l'ordre officiel FIE/FFE des matchs par taille de poule"
+          title={t('poolPrep.official_order')}
           style={{ fontSize: '0.8rem', padding: '0.35rem 0.8rem', alignSelf: 'flex-end', whiteSpace: 'nowrap' }}
         >
-          Ordre des matchs
+          {t('poolPrep.match_order')}
         </button>
 
         <div style={{ marginLeft: 'auto' }} className="pool-prep-stats-badge">
@@ -571,8 +573,8 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
         {poolCount === 0 ? (
           <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-text-muted)' }}>
             <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⏭</div>
-            <div style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.5rem' }}>Aucune poule</div>
-            <div style={{ fontSize: '0.9rem' }}>Passage direct au classement initial des tireurs</div>
+            <div style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.5rem' }}>{t('ui.no_pools')}</div>
+            <div style={{ fontSize: '0.9rem' }}>{t('poolPrep.direct_to_ranking')}</div>
           </div>
         ) : null}
 
@@ -603,7 +605,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
                   </h3>
                   {pools.length === 1 && <span className="pool-prep-badge-unique">unique</span>}
                   {hasConflicts && (
-                    <span className="pool-prep-conflict-warning" title="Même club dans cette poule">
+                    <span className="pool-prep-conflict-warning" title={t('poolPrep.same_club')}>
                       ⚠ club
                     </span>
                   )}
@@ -664,10 +666,10 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
                           <button onClick={() => handleMoveFencerDown(poolIndex, fencerIndex)} title="Descendre" className="pool-prep-btn-move">↓</button>
                         )}
                         {poolIndex > 0 && (
-                          <button onClick={() => handleMoveFencer(fencer.id, poolIndex, poolIndex - 1)} title="Poule précédente" className="pool-prep-btn-shift">←</button>
+                          <button onClick={() => handleMoveFencer(fencer.id, poolIndex, poolIndex - 1)} title={t('ui.previous_pool')} className="pool-prep-btn-shift">←</button>
                         )}
                         {poolIndex < pools.length - 1 && (
-                          <button onClick={() => handleMoveFencer(fencer.id, poolIndex, poolIndex + 1)} title="Poule suivante" className="pool-prep-btn-shift">→</button>
+                          <button onClick={() => handleMoveFencer(fencer.id, poolIndex, poolIndex + 1)} title={t('ui.next_pool')} className="pool-prep-btn-shift">→</button>
                         )}
                       </div>
                     </div>
@@ -677,7 +679,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
 
               {pool.fencers.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
-                  Déposez des tireurs ici
+                  {t('poolPrep.drop_here')}
                 </div>
               )}
             </div>
@@ -687,7 +689,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
 
       {/* Instructions */}
       <div className="pool-prep-hint">
-        Glissez-déposez les tireurs entre poules ou utilisez les flèches (← →) pour déplacer, (↑ ↓) pour réordonner.
+        {t('poolPrep.drag_hint')}
       </div>
 
       {/* Footer */}

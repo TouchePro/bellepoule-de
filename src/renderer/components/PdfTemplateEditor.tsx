@@ -144,7 +144,7 @@ const PdfTemplateEditor: React.FC<Props> = ({ template, onChange, onReset }) => 
             />
           ) : (
             <div style={{ height: '48px', width: '80px', border: '1px dashed var(--color-border, #d1d5db)', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', color: 'var(--color-muted, #9ca3af)' }}>
-              Aucun logo
+              {t('pdfTemplate.no_logo')}
             </div>
           )}
           <button className="btn btn-secondary" style={SM} onClick={() => logoInputRef.current?.click()}>

@@ -131,7 +131,7 @@ const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCr
               <input
                 type="text"
                 className="form-input"
-                placeholder="Ex: Championnat Régional"
+                placeholder={t('newCompetition.placeholder')}
                 value={title}
                 onChange={e => setTitle(e.target.value)}
               />
@@ -160,7 +160,7 @@ const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCr
                   <option value={Weapon.FOIL}>{t('weapons.foil')}</option>
                   <option value={Weapon.SABRE}>{t('weapons.sabre')}</option>
                   <option value={Weapon.LASER}>{t('weapons.laser')}</option>
-                  <option value={Weapon.CUSTOM}>À la carte (formule personnalisée)</option>
+                  <option value={Weapon.CUSTOM}>{t('competition.custom_formula')}</option>
                 </select>
               </div>
 
@@ -206,7 +206,7 @@ const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCr
                   checked={isTeamEvent}
                   onChange={e => setIsTeamEvent(e.target.checked)}
                 />
-                <span className="form-label" style={{ margin: 0 }}>Compétition par équipes</span>
+                <span className="form-label" style={{ margin: 0 }}>{t('team.competition')}</span>
               </label>
             </div>
 
@@ -223,7 +223,7 @@ const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCr
                 }}
               >
                 <div className="form-group">
-                  <label className="form-label">Titulaires par équipe</label>
+                  <label className="form-label">{t('team.starters_per')}</label>
                   <input
                     type="number"
                     className="form-input"
@@ -234,7 +234,7 @@ const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCr
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Réservistes par équipe</label>
+                  <label className="form-label">{t('team.reserves_per')}</label>
                   <input
                     type="number"
                     className="form-input"
@@ -252,8 +252,8 @@ const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCr
                       value={laserTeamMode}
                       onChange={e => setLaserTeamMode(e.target.value as 'touches' | 'points')}
                     >
-                      <option value="touches">Touches (comme les autres armes)</option>
-                      <option value="points">Points de zone cumulés (A/B/C)</option>
+                      <option value="touches">{t('newCompetition.touches_like')}</option>
+                      <option value="points">{t('newCompetition.zone_points')}</option>
                     </select>
                   </div>
                 )}
@@ -277,7 +277,7 @@ const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCr
             {isCustom && (
               <div className="form-group custom-formula-section">
                 <label className="form-label" style={{ fontSize: '1rem', fontWeight: 600 }}>
-                  Constructeur de formule
+                  {t('formula.builder_title')}
                 </label>
                 <FormulaBuilder
                   formula={customFormula}

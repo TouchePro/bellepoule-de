@@ -21,6 +21,7 @@ import {
 } from '../../shared/utils/poolCalculations';
 import { useToast } from './Toast';
 import { useColumnVisibility, RANKING_COLUMNS, ColumnId } from '../hooks/useColumnVisibility';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface PoolRankingViewProps {
   pools: Pool[];
@@ -51,6 +52,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
   poolWinnersOnly = false,
   splitCriteria,
 }) => {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const { isColumnVisible, toggleColumn, getVisibleColumns } = useColumnVisibility();
   const rankingTemplate = usePdfTemplateStore(s => s.templates.ranking);
@@ -348,8 +350,8 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
           {!isInitialRanking && (
-            <button className="btn btn-secondary" onClick={handleRecalculate} title="Recalculer le classement" style={{ fontSize: '0.8rem' }}>
-              Recalculer
+            <button className="btn btn-secondary" onClick={handleRecalculate} title={t('poolRanking.recalculate')} style={{ fontSize: '0.8rem' }}>
+              {t('poolRanking.recalculate')}
             </button>
           )}
           <div style={{ width: '1px', height: '22px', background: 'var(--color-border)', margin: '0 0.15rem' }} />
@@ -371,13 +373,13 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
               onClick={() => setShowColumnMenu(!showColumnMenu)}
               className="btn btn-secondary"
               style={{ fontSize: '0.8rem', padding: '0.375rem 0.65rem' }}
-              title="Afficher/masquer les colonnes"
+              title={t('poolRanking.toggle_columns')}
             >
               Colonnes
             </button>
             {showColumnMenu && (
               <div className="ranking-col-menu">
-                <div className="ranking-col-menu-title">Colonnes à afficher</div>
+                <div className="ranking-col-menu-title">{t('poolRanking.columns_label')}</div>
                 {RANKING_COLUMNS.filter(col => col.id !== 'quest' || isLaserSabre).map(col => (
                   <label key={col.id} className="ranking-col-menu-item">
                     <input
@@ -403,7 +405,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
             style={SM}
             onClick={() => setSplitTab('all')}
           >
-            🌐 Général
+            {t('poolRanking.general')}
           </button>
           {splitGroups.map(g => (
             <button
@@ -624,7 +626,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
             )
           ) : (
             <button className="btn btn-primary" onClick={onGoToResults}>
-              Voir les résultats →
+              {t('poolRanking.view_results')}
             </button>
           )}
         </div>

@@ -73,7 +73,7 @@ const PdfTemplateModal: React.FC<Props> = ({ onClose }) => {
           {/* Right: live preview */}
           <div style={{ flex: '1 1 0', minWidth: '300px', overflowY: 'auto', overflowX: 'hidden' }}>
             <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-muted, #9ca3af)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '0.5rem' }}>
-              Prévisualisation
+              {t('pdfTemplate.preview')}
             </div>
             <PdfPreview template={current} docType={activeType} />
           </div>
@@ -82,7 +82,7 @@ const PdfTemplateModal: React.FC<Props> = ({ onClose }) => {
 
         <div className="modal-footer" style={{ flexShrink: 0 }}>
           <button className="btn btn-primary" onClick={onClose}>
-            {t('actions.close') || 'Fermer'}
+            {t('actions.close')}
           </button>
         </div>
       </div>

@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useMemo, useCallback } from 'react';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface OBSOverlayConfigProps {
   serverUrl: string;
@@ -27,6 +28,7 @@ const HIDE_OPTIONS: { key: string; label: string }[] = [
 ];
 
 export const OBSOverlayConfig: React.FC<OBSOverlayConfigProps> = ({ serverUrl, arenaCount }) => {
+  const { t } = useTranslation();
   const [arena, setArena] = useState(1);
   const [theme, setTheme] = useState<OverlayTheme>('transparent');
   const [hidden, setHidden] = useState<Set<string>>(new Set());
@@ -75,7 +77,7 @@ export const OBSOverlayConfig: React.FC<OBSOverlayConfigProps> = ({ serverUrl, a
     <div style={S.root}>
       {/* Arène */}
       <div style={S.row}>
-        <label style={S.labelText}>Piste / Arène</label>
+        <label style={S.labelText}>{t('obs.strip_arena')}</label>
         <select
           style={S.select}
           value={arena}
@@ -89,7 +91,7 @@ export const OBSOverlayConfig: React.FC<OBSOverlayConfigProps> = ({ serverUrl, a
 
       {/* Thème */}
       <div style={S.row}>
-        <label style={S.labelText}>Thème</label>
+        <label style={S.labelText}>{t('settings.theme')}</label>
         <select style={S.select} value={theme} onChange={e => setTheme(e.target.value as OverlayTheme)}>
           {THEMES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
@@ -140,14 +142,14 @@ export const OBSOverlayConfig: React.FC<OBSOverlayConfigProps> = ({ serverUrl, a
           <button
             style={S.openBtn}
             onClick={() => window.open(overlayUrl, '_blank')}
-            title="Ouvrir dans le navigateur"
+            title={t('obs.open_browser')}
           >↗</button>
         </div>
       </div>
 
       {/* JSON API */}
       <div style={S.urlBox}>
-        <div style={S.urlLabel}>Endpoint JSON (intégrations tierces)</div>
+        <div style={S.urlLabel}>{t('obs.json_endpoint')}</div>
         <div style={S.urlRow}>
           <code style={S.urlCode}>{jsonUrl}</code>
           <button style={S.copyBtn} onClick={copyJson}>{copiedJson ? '✓' : '📋'}</button>
