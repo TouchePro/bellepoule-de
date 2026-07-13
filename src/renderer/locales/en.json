@@ -115,7 +115,8 @@
     "fencer_1": "Fencer 1",
     "select_fencer": "Select a fencer",
     "fencer_2": "Fencer 2",
-    "fencer_label": "Fencer"
+    "fencer_label": "Fencer",
+    "uncheck_all": "Uncheck all"
   },
   "status": {
     "checked_in": "Present",
@@ -220,6 +221,9 @@
     "title": "Settings",
     "language": "Language",
     "theme": "Theme",
+    "theme_default": "Default",
+    "theme_light": "Light",
+    "theme_dark": "Dark",
     "pool_rounds": "Pool Rounds",
     "has_direct_elimination": "Direct Elimination",
     "default_pool_max_score": "Default Pool Max Score",
@@ -529,7 +533,8 @@
   "pagination": {
     "first": "First page",
     "prev": "Previous page",
-    "last": "Last page"
+    "last": "Last page",
+    "next": "Next"
   },
   "competitionList": {
     "intro": "Manage your fencing competitions from check-in to podium.",
@@ -642,7 +647,21 @@
     "no_live": "No match in progress",
     "final_results": "🏆 FINAL RESULTS",
     "tableau_done": "Tableau finished",
-    "general_ranking": "General ranking"
+    "general_ranking": "General ranking",
+    "tbd": "TBD",
+    "round_semi": "Semi-final",
+    "round_quarter": "Quarter-final",
+    "round_8": "Eighth-final",
+    "round_16": "Round of 16",
+    "round_32": "Round of 32",
+    "round_64": "Round of 64",
+    "bye": "Bye"
+  },
+  "bracket": {
+    "expand_all": "Expand all",
+    "collapse_all": "Collapse all",
+    "view_horizontal": "Horizontal view",
+    "view_pyramid": "Pyramid view"
   },
   "live": {
     "live": "● LIVE",
@@ -1059,5 +1078,80 @@
     "kiosk": "Large-screen kiosk",
     "no_bout": "No bout finished",
     "stop": "Stop training"
+  },
+  "language_selector": {
+    "loading": "Loading languages…",
+    "label": "Language"
+  },
+  "timer": {
+    "resume": "Resume",
+    "pause_active": "Pause (active)",
+    "pause_incident": "Pause (incident)"
+  },
+  "pool_grid": {
+    "match_not_played": "Not played",
+    "fencer_col": "Fencer column"
+  },
+  "presentation": {
+    "matches_done": "Matches done",
+    "ranking": "Ranking",
+    "no_club": "No club",
+    "matches_live": "Live matches",
+    "no_matches_live": "No match in progress",
+    "nav_hint": "← → switch pools · Esc to quit"
+  },
+  "report_issue": {
+    "title_required": "Title is required",
+    "title": "Report an issue or idea",
+    "type": "Type",
+    "bug": "Bug",
+    "feature": "Idea",
+    "bug_summary": "Bug summary",
+    "feature_title": "Idea title",
+    "bug_summary_placeholder": "Brief description of the bug",
+    "feature_title_placeholder": "Short title for your idea",
+    "what_happened": "What happened?",
+    "describe_idea": "Describe your idea",
+    "what_happened_placeholder": "Steps to reproduce, expected and actual behaviour",
+    "describe_idea_placeholder": "How would this improve the app?",
+    "included_info": "The following information is attached automatically:",
+    "version": "Version",
+    "system": "System",
+    "date": "Date",
+    "click_github": "Click the button to open a GitHub issue.",
+    "github_login": "You will be prompted for your GitHub login.",
+    "create_github": "Create GitHub issue"
+  },
+  "import_modal": {
+    "title_ranking": "Import ranking",
+    "title_fencers": "Import fencers",
+    "file_label": "File",
+    "format_label": "Format",
+    "errors_label": "Errors",
+    "result_label": "Result",
+    "fencers_updated": "Fencers updated",
+    "fencers_not_found": "Fencers not found",
+    "update_details": "Update details",
+    "col_last_name": "Last name",
+    "col_first_name": "First name",
+    "col_club": "Club",
+    "col_ranking": "Rank",
+    "col_status": "Status",
+    "status_updated": "Updated",
+    "status_not_found": "Not found",
+    "warnings_label": "Warnings",
+    "fencers_found": "Fencers found",
+    "deselect_all": "Deselect all",
+    "select_all": "Select all",
+    "col_gender": "Gender",
+    "no_fencers_found": "No fencers found",
+    "loading": "Loading…"
+  },
+  "update": {
+    "redirecting": "Redirecting…",
+    "later": "Later",
+    "available": "Update available",
+    "download": "Download",
+    "view_notes": "View release notes"
   }
 }

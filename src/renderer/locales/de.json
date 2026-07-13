@@ -163,7 +163,8 @@
     "fencer_1": "Fechter 1",
     "select_fencer": "Fechter auswählen",
     "fencer_2": "Fechter 2",
-    "fencer_label": "Fechter"
+    "fencer_label": "Fechter",
+    "uncheck_all": "Alle abmelden"
   },
   "formula": {
     "add_classification": "Klasse hinzufügen",
@@ -348,6 +349,9 @@
     "pool_rounds": "Pool-Runden",
     "save": "Speichern",
     "theme": "Thema",
+    "theme_default": "Standard",
+    "theme_light": "Hell",
+    "theme_dark": "Dunkel",
     "title": "Einstellungen",
     "logo_position": "Oben links auf exportierten PDFs und im Kiosk-Modus angezeigt.",
     "drag_image": "Bild hierher ziehen oder zum Auswählen klicken",
@@ -529,7 +533,8 @@
   "pagination": {
     "first": "Erste Seite",
     "prev": "Vorherige Seite",
-    "last": "Letzte Seite"
+    "last": "Letzte Seite",
+    "next": "Weiter"
   },
   "competitionList": {
     "intro": "Verwalten Sie Ihre Fechtwettbewerbe vom Aufruf bis aufs Podest.",
@@ -642,7 +647,21 @@
     "no_live": "Kein Match läuft",
     "final_results": "🏆 ENDERGEBNISSE",
     "tableau_done": "Tableau beendet",
-    "general_ranking": "Gesamtrangliste"
+    "general_ranking": "Gesamtrangliste",
+    "tbd": "TBD",
+    "round_semi": "Halbfinale",
+    "round_quarter": "Viertelfinale",
+    "round_8": "Achtelfinale",
+    "round_16": "Achtelfinale (Achtel)",
+    "round_32": "32er-Runde",
+    "round_64": "64er-Runde",
+    "bye": "Freilos"
+  },
+  "bracket": {
+    "expand_all": "Alle erweitern",
+    "collapse_all": "Alle einklappen",
+    "view_horizontal": "Horizontalansicht",
+    "view_pyramid": "Pyramidenansicht"
   },
   "live": {
     "live": "● LIVE",
@@ -1059,5 +1078,80 @@
     "kiosk": "Kiosk-Großbild",
     "no_bout": "Kein Kampf beendet",
     "stop": "Training stoppen"
+  },
+  "language_selector": {
+    "loading": "Sprachen werden geladen…",
+    "label": "Sprache"
+  },
+  "timer": {
+    "resume": "Fortsetzen",
+    "pause_active": "Pause (aktiv)",
+    "pause_incident": "Pause (Zwischenfall)"
+  },
+  "pool_grid": {
+    "match_not_played": "Nicht gespielt",
+    "fencer_col": "Fechter-Spalte"
+  },
+  "presentation": {
+    "matches_done": "Kämpfe beendet",
+    "ranking": "Rangliste",
+    "no_club": "Kein Verein",
+    "matches_live": "Laufende Kämpfe",
+    "no_matches_live": "Kein Kampf läuft",
+    "nav_hint": "← → Pools wechseln · Esc zum Beenden"
+  },
+  "report_issue": {
+    "title_required": "Titel ist erforderlich",
+    "title": "Problem oder Idee melden",
+    "type": "Art",
+    "bug": "Fehler",
+    "feature": "Idee",
+    "bug_summary": "Fehlerzusammenfassung",
+    "feature_title": "Titel der Idee",
+    "bug_summary_placeholder": "Kurze Beschreibung des Fehlers",
+    "feature_title_placeholder": "Kurzer Titel für Ihre Idee",
+    "what_happened": "Was ist passiert?",
+    "describe_idea": "Beschreiben Sie Ihre Idee",
+    "what_happened_placeholder": "Schritte zur Reproduktion, erwartetes und tatsächliches Verhalten",
+    "describe_idea_placeholder": "Wie würde dies die App verbessern?",
+    "included_info": "Folgende Informationen werden automatisch angehängt:",
+    "version": "Version",
+    "system": "System",
+    "date": "Datum",
+    "click_github": "Klicken Sie auf die Schaltfläche, um ein GitHub-Issue zu öffnen.",
+    "github_login": "Sie werden nach Ihrem GitHub-Login gefragt.",
+    "create_github": "GitHub-Issue erstellen"
+  },
+  "import_modal": {
+    "title_ranking": "Rangliste importieren",
+    "title_fencers": "Fechter importieren",
+    "file_label": "Datei",
+    "format_label": "Format",
+    "errors_label": "Fehler",
+    "result_label": "Ergebnis",
+    "fencers_updated": "Fechter aktualisiert",
+    "fencers_not_found": "Fechter nicht gefunden",
+    "update_details": "Aktualisierungsdetails",
+    "col_last_name": "Nachname",
+    "col_first_name": "Vorname",
+    "col_club": "Verein",
+    "col_ranking": "Rang",
+    "col_status": "Status",
+    "status_updated": "Aktualisiert",
+    "status_not_found": "Nicht gefunden",
+    "warnings_label": "Warnungen",
+    "fencers_found": "Fechter gefunden",
+    "deselect_all": "Alle abwählen",
+    "select_all": "Alle auswählen",
+    "col_gender": "Geschlecht",
+    "no_fencers_found": "Keine Fechter gefunden",
+    "loading": "Wird geladen…"
+  },
+  "update": {
+    "redirecting": "Wird umgeleitet…",
+    "later": "Später",
+    "available": "Aktualisierung verfügbar",
+    "download": "Herunterladen",
+    "view_notes": "Versionshinweise ansehen"
   }
 }
