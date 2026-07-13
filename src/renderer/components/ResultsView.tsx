@@ -14,6 +14,7 @@ import type { TableauMatchForPDF, FinalResultForPDF } from '../../shared/utils/p
 import { usePdfTemplateStore } from '../../features/pdfTemplates/hooks/usePdfTemplateStore';
 import type { ConsolationBracket, TableauMatch } from './tableau/tableauTypes';
 import { logger, LogCategory } from '@shared/services/logger';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface FinalResult {
   rank: number;
@@ -88,6 +89,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
   fencers, pools, tableauMatches, consolationBrackets, isLaserSabre,
   appelFencers, appelVisibleColumns,
 }) => {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const rankingTemplate = usePdfTemplateStore(s => s.templates.ranking);
   const [isExportingFull, setIsExportingFull] = React.useState(false);
@@ -342,7 +344,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
       {isExportingFull && (
         <div style={RV_STYLES.overlay}>
           <div style={RV_STYLES.overlaySpinner} />
-          <div style={RV_STYLES.overlayText}>Génération du PDF complet…</div>
+          <div style={RV_STYLES.overlayText}>{t('results.generating_full')}</div>
         </div>
       )}
       {/* En-tête avec le champion */}
@@ -366,7 +368,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
           <div style={RV_STYLES.podium2}>
             <div style={RV_STYLES.podium2Medal}>🥈</div>
             <div style={RV_STYLES.podium2Name}>{resultsToDisplay[1].fencer.lastName}</div>
-            <div style={RV_STYLES.podium2Place}>2ème</div>
+            <div style={RV_STYLES.podium2Place}>{t('results.second')}</div>
           </div>
         )}
 
@@ -384,7 +386,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
           <div style={RV_STYLES.podium3}>
             <div style={RV_STYLES.podium3Medal}>🥉</div>
             <div style={RV_STYLES.podium3Name}>{resultsToDisplay[2].fencer.lastName}</div>
-            <div style={RV_STYLES.podium3Place}>3ème</div>
+            <div style={RV_STYLES.podium3Place}>{t('results.third')}</div>
           </div>
         )}
       </div>
@@ -399,9 +401,9 @@ const ResultsView: React.FC<ResultsViewProps> = ({
           <thead>
             <tr style={RV_STYLES.thead}>
               <th style={RV_STYLES.thRank}>Rang</th>
-              <th style={RV_STYLES.thLeft}>Tireur</th>
+              <th style={RV_STYLES.thLeft}>{t('fencer.fencer_label')}</th>
               <th style={RV_STYLES.thLeft}>Club</th>
-              <th style={RV_STYLES.thCenter}>Éliminé en</th>
+              <th style={RV_STYLES.thCenter}>{t('tableau.elimination_in')}</th>
             </tr>
           </thead>
           <tbody>
@@ -467,7 +469,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
         >
           {isExportingFull ? (
             <>
-              <span style={RV_STYLES.spinner} /> Génération…
+              <span style={RV_STYLES.spinner} /> {t('results.generating')}
             </>
           ) : (
             '📦 Export complet PDF'
@@ -477,11 +479,11 @@ const ResultsView: React.FC<ResultsViewProps> = ({
           onClick={exportNoSignaturePDF}
           style={{ ...RV_STYLES.btnFullPdf, opacity: isExportingFull ? 0.6 : 1, cursor: isExportingFull ? 'wait' : 'pointer' }}
           disabled={isExportingFull}
-          title="Poules et tableaux d'élimination directe, sans les signatures des combattants"
+          title={t('results.export_desc')}
         >
           {isExportingFull ? (
             <>
-              <span style={RV_STYLES.spinner} /> Génération…
+              <span style={RV_STYLES.spinner} /> {t('results.generating')}
             </>
           ) : (
             '📄 Export PDF complet sans signature'

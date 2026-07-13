@@ -8,6 +8,7 @@ import React, { useState, useEffect , memo} from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { logger, LogCategory } from '@shared/services/logger';
 import { Competition } from '../../shared/types';
+import { useTranslation } from '../hooks/useTranslation';
 
 type QRMode = 'results' | 'checkin';
 
@@ -18,6 +19,7 @@ interface QRCodeShareProps {
 }
 
 const QRCodeShare_: React.FC<QRCodeShareProps> = ({ competition, onClose, mode: initialMode = 'results' }) => {
+  const { t } = useTranslation();
   const modalRef = useFocusTrap<HTMLDivElement>(true, onClose);
   const [activeMode, setActiveMode] = useState<QRMode>(initialMode);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
@@ -132,7 +134,7 @@ const QRCodeShare_: React.FC<QRCodeShareProps> = ({ competition, onClose, mode: 
               {isGenerating ? (
                 <div className="qrcode__loading">
                   <div className="spinner" />
-                  <p>Génération du QR code...</p>
+                  <p>{t('qrCode.generating')}</p>
                 </div>
               ) : error ? (
                 <div className="alert alert--error" style={{ whiteSpace: 'pre-line' }}>{error}</div>
@@ -160,13 +162,13 @@ const QRCodeShare_: React.FC<QRCodeShareProps> = ({ competition, onClose, mode: 
         </div>
 
         <div className="modal__footer">
-          <button className="btn btn-secondary" onClick={onClose}>Fermer</button>
+          <button className="btn btn-secondary" onClick={onClose}>{t('actions.close')}</button>
           <button
             className="btn btn-primary"
             onClick={downloadQRCode}
             disabled={!qrCodeUrl || isGenerating}
           >
-            💾 Télécharger le QR Code
+            {t('qrCode.download')}
           </button>
         </div>
       </div>

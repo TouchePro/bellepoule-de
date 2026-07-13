@@ -21,6 +21,7 @@ import PoolMatchList from './pool/PoolMatchList';
 import Confetti from './Confetti';
 import AddFencerToPoolModal from './AddFencerToPoolModal';
 import { MatchAuditLog } from './MatchAuditLog';
+import { useTranslation } from '../hooks/useTranslation';
 import {
   ICON_BTN,
   ICON_ONLY_BTN,
@@ -114,6 +115,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   onMatchArenaChange,
   onRefereeAssigned,
 }) => {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const { confirm } = useConfirm();
   const { isColumnVisible, toggleColumn, getVisibleColumns } = useColumnVisibility();
@@ -835,7 +837,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     const sigsArray = await window.electronAPI.db.getPoolSignatures(pool.id);
     const signatures = Object.fromEntries(sigsArray.map(s => [s.fencerId, s.signatureData]));
     return {
-      title: `Poule ${pool.number} - ${pool.fencers.length} tireurs`,
+      title: `${t('ui.poule')} ${pool.number} - ${pool.fencers.length} tireurs`,
       includeFinishedMatches: true,
       includePendingMatches: true,
       includePoolStats: true,
@@ -853,7 +855,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
       const options = await buildPoolPrintOptions();
       const { exportPoolToPDF } = await import('../../shared/utils/pdfExport');
       await exportPoolToPDF(pool, options, poolTemplate);
-      showToast(`Export PDF de la poule ${pool.number} généré avec succès`, 'success');
+      showToast(t('messages.export_success', { format: `PDF ${t('ui.poule')} ${pool.number}` }), 'success');
     } catch (error) {
       logger.error(LogCategory.UI, "Erreur lors de l'export PDF", error as Error);
       showToast(
@@ -900,7 +902,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
       message:
         'Remplir automatiquement tous les scores des matchs non terminés ?\n\nLes scores seront générés aléatoirement pour les tests.',
       confirmLabel: 'Remplir',
-      cancelLabel: 'Annuler',
+      cancelLabel: t('actions.cancel'),
     });
 
     if (!confirmed) return;
@@ -970,7 +972,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           onClick={e => e.stopPropagation()}
         >
           <div className="modal-header" style={{ cursor: 'move' }}>
-            <h3 className="modal-title">Saisie rapide du score</h3>
+            <h3 className="modal-title">{t('poolView.quick_entry')}</h3>
           </div>
           <div className="modal-body" style={{ padding: '2rem' }}>
             {/* Ligne unique avec les deux tireurs côte à côte */}
@@ -1118,7 +1120,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                 className="text-sm text-muted"
                 style={{ textAlign: 'center', marginBottom: '1rem' }}
               >
-                💡 En cas d'égalité, cliquez sur V pour attribuer la victoire
+                {t('poolView.tie_hint')}
               </p>
             )}
 
@@ -1160,7 +1162,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                   }}
                   style={SPECIAL_BTN}
                 >
-                  ⏸ Annuler match
+                  {t('poolView.cancel_match')}
                 </button>
               )}
             </div>
@@ -1176,10 +1178,10 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                 setIsMatchInverted(false);
               }}
             >
-              Annuler
+              {t('actions.cancel')}
             </button>
             <button className="btn btn-primary" onClick={handleScoreSubmit}>
-              Valider
+              {t('actions.validate')}
             </button>
           </div>
         </div>
@@ -1249,7 +1251,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               className="btn btn-secondary"
               onClick={() => setPendingSpecialStatus(null)}
             >
-              Annuler
+              {t('actions.cancel')}
             </button>
           </div>
         </div>
@@ -1304,7 +1306,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                 key={match.id}
                 onClick={() => setAuditMatchId(match.id)}
                 style={LOG_ITEM}
-                title="Voir le journal du match"
+                title={t('poolView.view_log')}
               >
                 📋 {match.fencerA?.lastName} vs {match.fencerB?.lastName}
               </button>
@@ -1338,7 +1340,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         <div style={{ ...NEXT_MATCH_BOX, background: '#6b7280', opacity: 0.7 }}>
           <div style={ROW_BETWEEN}>
             <div style={MATCH_LABEL}>
-              ✕ Match non disputé
+              {t('poolView.not_fenced')}
             </div>
             <div style={MATCH_CENTER}>
               <span style={abandonName(fencerAAbandoned)}>
@@ -1360,7 +1362,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
       <div style={{ ...NEXT_MATCH_BOX, background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' }}>
         <div style={ROW_BETWEEN}>
           <div style={MATCH_LABEL}>
-            ⚔️ Prochain match
+            {t('poolView.next_match')}
           </div>
           <div style={MATCH_CENTER}>
             <span style={FENCER_NAME}>
@@ -1377,7 +1379,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
             onClick={() => openScoreModal(nextMatch.index)}
             style={NEXT_MATCH_SUBMIT}
           >
-            Saisir
+            {t('poolView.enter')}
           </button>
         </div>
       </div>
@@ -1391,7 +1393,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
       <Confetti active={showPoolConfetti} particleCount={100} origin={{ x: 0.5, y: 0.5 }} />
       {isLocked && (
         <div style={LOCKED_BANNER}>
-          🔒 Feuille signée par tous les combattants — scores verrouillés
+          {t('poolView.signed_locked')}
         </div>
       )}
       <div
@@ -1399,7 +1401,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         style={ROW_BETWEEN}
       >
         <div style={HEADER_LEFT}>
-          <span>Poule {pool.number}</span>
+          <span>{t('ui.poule')} {pool.number}</span>
           <span className={`badge ${pool.isComplete ? 'badge-success' : 'badge-warning'}`}>
             {pool.isComplete ? 'Terminée' : `${finishedCount}/${totalMatches}`}
           </span>
@@ -1440,7 +1442,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           })()}
           <button
             onClick={openRefereeModal}
-            title={assignedReferee ? `Arbitre : ${assignedReferee.lastName} ${assignedReferee.firstName}` : 'Assigner un arbitre'}
+            title={assignedReferee ? `Arbitre : ${assignedReferee.lastName} ${assignedReferee.firstName}` : t('referee.assign')}
             style={{
               ...BADGE_PILL,
               cursor: 'pointer',
@@ -1462,8 +1464,8 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               color: canUndo ? 'white' : '#9ca3af',
               cursor: canUndo ? 'pointer' : 'not-allowed',
             }}
-            title="Annuler (Ctrl+Z)"
-            aria-label="Annuler la dernière action"
+            title={`${t('shortcuts.undo')} (Ctrl+Z)`}
+            aria-label={t('poolView.undo')}
           >
             ↩
           </button>
@@ -1476,16 +1478,16 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               color: canRedo ? 'white' : '#9ca3af',
               cursor: canRedo ? 'pointer' : 'not-allowed',
             }}
-            title="Rétablir (Ctrl+Y)"
-            aria-label="Rétablir l'action annulée"
+            title={t('poolView.redo')}
+            aria-label={t('poolView.redo_desc')}
           >
             ↪
           </button>
           <button
             onClick={handleAutoFillScores}
             style={{ ...ICON_ONLY_BTN, background: '#f59e0b', color: 'white' }}
-            title="Remplir automatiquement les scores (test)"
-            aria-label="Remplir automatiquement les scores (test)"
+            title={t('poolView.autofill')}
+            aria-label={t('poolView.autofill')}
           >
             🎲
           </button>
@@ -1500,16 +1502,16 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           <button
             onClick={handlePreviewPool}
             style={{ ...ICON_ONLY_BTN, background: '#8b5cf6', color: 'white' }}
-            title="Aperçu avant impression (ouvre un PDF dans le lecteur par défaut)"
-            aria-label="Aperçu avant impression"
+            title={t('poolView.preview')}
+            aria-label={t('poolView.preview')}
           >
             👁️
           </button>
           <button
             onClick={handleExportPDF}
             style={{ ...ICON_ONLY_BTN, background: '#10b981', color: 'white' }}
-            title="Exporter la poule en PDF"
-            aria-label="Exporter la poule en PDF"
+            title={t('poolView.export_pdf')}
+            aria-label={t('poolView.export_pdf')}
           >
             📄
           </button>
@@ -1534,8 +1536,8 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
             <button
               onClick={() => setShowAddFencerModal(true)}
               style={{ ...ICON_ONLY_BTN, background: '#e5e7eb', color: '#374151' }}
-              title="Ajouter un tireur à cette poule"
-              aria-label="Ajouter un tireur à cette poule"
+              title={t('poolView.add_fencer')}
+              aria-label={t('poolView.add_fencer')}
             >
               ➕
             </button>
@@ -1548,15 +1550,15 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                 background: showColumnMenu ? '#6b7280' : '#e5e7eb',
                 color: showColumnMenu ? 'white' : '#374151',
               }}
-              title="Afficher/masquer les colonnes"
-              aria-label="Afficher/masquer les colonnes"
+              title={t('poolView.toggle_columns')}
+              aria-label={t('poolView.toggle_columns')}
             >
               ⚙️
             </button>
             {showColumnMenu && (
               <div style={COL_MENU}>
                 <div style={COL_MENU_HEADER}>
-                  Colonnes à afficher
+                  {t('poolView.columns_label')}
                 </div>
                 {POOL_COLUMNS.filter(col => col.id !== 'quest' || isLaserSabre).map(col => (
                   <label
@@ -1586,8 +1588,8 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                 color: viewMode === 'grid' ? 'white' : '#374151',
                 borderRadius: '4px 0 0 4px',
               }}
-              title="Vue tableau"
-              aria-label="Vue tableau"
+              title={t('poolView.table_view')}
+              aria-label={t('poolView.table_view')}
             >
               📊
             </button>
@@ -1662,7 +1664,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           aria-labelledby="referee-modal-title"
         >
           <div className="modal-header">
-            <h3 className="modal-title" id="referee-modal-title">Assigner un arbitre</h3>
+            <h3 className="modal-title" id="referee-modal-title">{t('referee.assign')}</h3>
             <button className="btn-close" onClick={() => setShowRefereeModal(false)}>&times;</button>
           </div>
           <div className="modal-body" style={{ padding: '1.5rem' }}>
@@ -1675,16 +1677,16 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                 onClick={() => handleAssignReferee(null)}
                 style={REF_BTN}
               >
-                ✕ Aucun arbitre
+                {t('referee.none')}
               </button>
               {isLoadingReferees && (
                 <p style={REF_EMPTY}>
-                  Chargement des arbitres…
+                  {t('referee.loading')}
                 </p>
               )}
               {!isLoadingReferees && competitionReferees.length === 0 && (
                 <p style={REF_EMPTY}>
-                  Aucun arbitre enregistré pour cette compétition
+                  {t('referee.none_registered')}
                 </p>
               )}
               {!isLoadingReferees && competitionReferees.map(ref => (

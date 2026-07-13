@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useCallback , memo} from 'react';
 import { ScoreAuditEntry, ScoreIpConflict } from '../../shared/types/preload';
 import { useToast } from './Toast';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface Props {
   competitionId: string;
@@ -21,6 +22,7 @@ function formatScore(score: any): string {
 }
 
 const ScoreAuditLog_: React.FC<Props> = ({ competitionId }) => {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const [entries, setEntries] = useState<ScoreAuditEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -100,22 +102,22 @@ const ScoreAuditLog_: React.FC<Props> = ({ competitionId }) => {
   return (
     <div style={{ padding: '1.5rem', maxWidth: '100%', overflowX: 'auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-        <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600 }}>📜 Historique des scores</h2>
+        <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600 }}>{t('scoreAudit.title')}</h2>
 
         <select
           value={filterPool}
           onChange={e => setFilterPool(e.target.value)}
           style={{ padding: '0.3rem 0.6rem', borderRadius: 4, border: '1px solid #D1D5DB' }}
         >
-          <option value="">Toutes les poules</option>
+          <option value="">{t('scoreAudit.all_pools')}</option>
           {poolNumbers.map(n => (
-            <option key={n} value={String(n)}>Poule {n}</option>
+            <option key={n} value={String(n)}>{t('ui.poule')} {n}</option>
           ))}
         </select>
 
         <input
           type="text"
-          placeholder="Filtrer arbitre…"
+          placeholder={t('scoreAudit.filter_referee')}
           value={filterReferee}
           onChange={e => setFilterReferee(e.target.value)}
           style={{ padding: '0.3rem 0.6rem', borderRadius: 4, border: '1px solid #D1D5DB', minWidth: 140 }}
@@ -126,7 +128,7 @@ const ScoreAuditLog_: React.FC<Props> = ({ competitionId }) => {
           onClick={exportCsv}
           disabled={filtered.length === 0}
         >
-          ⬇ Export CSV
+          {t('scoreAudit.export_csv')}
         </button>
 
         <button
@@ -148,11 +150,11 @@ const ScoreAuditLog_: React.FC<Props> = ({ competitionId }) => {
           <thead>
             <tr style={{ background: '#F3F4F6', textAlign: 'left' }}>
               <th style={th}>Horodatage</th>
-              <th style={th}>Poule</th>
-              <th style={th}>Match</th>
+              <th style={th}>{t('ui.poule')}</th>
+              <th style={th}>{t('pools.match')}</th>
               <th style={th}>Avant</th>
-              <th style={th}>Après</th>
-              <th style={th}>Arbitre</th>
+              <th style={th}>{t('scoreAudit.after')}</th>
+              <th style={th}>{t('referee.label')}</th>
               <th style={th}>IP</th>
             </tr>
           </thead>
@@ -160,8 +162,8 @@ const ScoreAuditLog_: React.FC<Props> = ({ competitionId }) => {
             {filtered.map(e => (
               <tr key={e.id} style={{ borderBottom: '1px solid #E5E7EB' }}>
                 <td style={td}>{new Date(e.changedAt).toLocaleString()}</td>
-                <td style={td}>{e.poolNumber != null ? `Poule ${e.poolNumber}` : '—'}</td>
-                <td style={td}>{e.matchNumber != null ? `Match ${e.matchNumber}` : '—'}</td>
+                <td style={td}>{e.poolNumber != null ? `${t('ui.poule')} ${e.poolNumber}` : '—'}</td>
+                <td style={td}>{e.matchNumber != null ? `${t('pools.match')} ${e.matchNumber}` : '—'}</td>
                 <td style={td}>
                   {e.previousScoreA != null
                     ? `${formatScore(e.previousScoreA)} / ${formatScore(e.previousScoreB)}`

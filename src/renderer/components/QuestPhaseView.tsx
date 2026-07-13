@@ -25,6 +25,7 @@ import {
   CARD_TITLE,
   MUTED,
 } from './questPhaseView.styles';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface QuestPhaseViewProps {
   fencers: Fencer[];
@@ -45,6 +46,7 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
   onQuestComplete,
   onConfigUpdate,
 }) => {
+  const { t } = useTranslation();
   const [state, setState] = useState<QuestState>('config');
 
   // Config
@@ -214,10 +216,10 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
     return (
       <div className="content">
         <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Tour Quest en cours</h2>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>{t('quest.in_progress')}</h2>
           {allComplete && (
             <button className="btn btn-primary" onClick={() => onQuestComplete(ranking ?? [])}>
-              Valider le Tour Quest →
+              {t('quest.validate')}
             </button>
           )}
         </div>
@@ -239,7 +241,7 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
         {/* Compteur de cartons */}
         <div style={CARD_TOP}>
           <p style={CARD_TITLE}>
-            Cartons reçus
+            {t('quest.cards_label')}
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
             {fencers.map(f => {
@@ -279,16 +281,16 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
         {allComplete && ranking && (
           <div style={CARD_TOP}>
             <p style={CARD_TITLE}>
-              Classement Tour Quest
+              {t('quest.ranking')}
             </p>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
               <thead>
                 <tr style={{ background: '#f3f4f6' }}>
                   <th style={{ padding: '0.5rem 0.75rem', textAlign: 'center', borderBottom: '2px solid #e5e7eb', width: '3rem' }}>Rg</th>
-                  <th style={TH_LEFT}>Tireur</th>
-                  <th style={TH_CENTER} title="Victoires / Matchs joués">V/M</th>
-                  <th style={TH_CENTER} title="Points Quest">Pts Q</th>
-                  <th style={TH_CENTER} title="Cartons reçus (moins = mieux)">Cart.</th>
+                  <th style={TH_LEFT}>{t('fencer.fencer_label')}</th>
+                  <th style={TH_CENTER} title={t('quest.victories_played')}>V/M</th>
+                  <th style={TH_CENTER} title={t('quest.points')}>Pts Q</th>
+                  <th style={TH_CENTER} title={t('quest.cards_received')}>Cart.</th>
                 </tr>
               </thead>
               <tbody>
@@ -318,7 +320,7 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
               </tbody>
             </table>
             <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.75rem' }}>
-              Critères : V/M décroissant → Points Quest décroissants → Cartons croissants
+              {t('quest.criteria')}
             </p>
           </div>
         )}
@@ -329,16 +331,16 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
   return (
     <div className="content" style={{ maxWidth: '900px', margin: '0 auto' }}>
       <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem' }}>
-        Configuration du Tour Quest
+        {t('quest.config')}
       </h2>
 
       {/* Section calcul du nombre de combats */}
       <div style={CARD}>
-        <p style={sectionTitle}>Nombre de combats</p>
+        <p style={sectionTitle}>{t('quest.num_fights')}</p>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
           <div>
-            <label style={labelStyle}>Temps disponible (min)</label>
+            <label style={labelStyle}>{t('quest.available_time')}</label>
             <input
               type="number"
               style={inputStyle}
@@ -352,7 +354,7 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
             />
           </div>
           <div>
-            <label style={labelStyle}>Nombre d'arènes</label>
+            <label style={labelStyle}>{t('quest.num_arenas')}</label>
             <input
               type="number"
               style={inputStyle}
@@ -366,7 +368,7 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
             />
           </div>
           <div>
-            <label style={labelStyle}>Tireurs qualifiés</label>
+            <label style={labelStyle}>{t('quest.qualified_fencers')}</label>
             <input
               type="number"
               style={inputStyle}
@@ -395,7 +397,7 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
         </div>
 
         <div>
-          <label style={labelStyle}>Override manuel (laissez vide pour utiliser la formule)</label>
+          <label style={labelStyle}>{t('quest.override')}</label>
           <input
             type="number"
             style={{ ...inputStyle, maxWidth: '200px' }}
@@ -418,7 +420,7 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
 
       {/* Contrainte d'adversaire */}
       <div style={CARD}>
-        <p style={sectionTitle}>Contrainte d'opposition</p>
+        <p style={sectionTitle}>{t('quest.opposition_constraint')}</p>
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
           {(['none', 'club', 'region', 'nation'] as OpponentConstraint[]).map(c => (
             <label key={c} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.875rem' }}>
@@ -452,7 +454,7 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
         </button>
         {fencers.length < 2 && (
           <p style={{ ...smallText, color: '#dc2626', marginTop: '0.5rem' }}>
-            Il faut au moins 2 tireurs pour générer un planning.
+            {t('quest.need_two')}
           </p>
         )}
       </div>
@@ -533,7 +535,7 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
           {/* Récap combats par tireur */}
           <details style={{ marginTop: '1rem' }}>
             <summary style={{ cursor: 'pointer', fontSize: '0.8rem', color: '#6b7280' }}>
-              Répartition par tireur
+              {t('quest.repartition')}
             </summary>
             <div style={{ marginTop: '0.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
               {fencers.map(f => {
@@ -566,7 +568,7 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
             onClick={handleLaunch}
             style={{ fontSize: '1rem', padding: '0.75rem 2rem' }}
           >
-            Lancer le Tour Quest →
+            {t('quest.launch')}
           </button>
         </div>
       )}
