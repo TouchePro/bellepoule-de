@@ -561,6 +561,12 @@ export interface QuestPhaseConfig {
   opponentConstraint: 'none' | 'club' | 'region' | 'nation';
 }
 
+export interface TrainingCustomRules {
+  matchDurationSeconds: number;
+  allowedZones: TargetZone[];    // vide = toutes les zones autorisées
+  disableSuddenDeath: boolean;
+}
+
 export interface CompetitionSettings {
   defaultPoolMaxScore: number; // Score max en poules (défaut: 5)
   defaultTableMaxScore: number; // Score max en tableau (défaut: 10 ou 15)
@@ -569,10 +575,14 @@ export interface CompetitionSettings {
   poolRounds: number; // Nombre de tours de poules (défaut: 1)
   hasDirectElimination: boolean; // Phase d'élimination directe activée (défaut: true)
   thirdPlaceMatch: boolean; // Match pour la 3ème place activé (défaut: false)
+  signTableauMatches?: boolean; // Signature des combattants sur tablette après chaque match du tableau (défaut: true)
   manualRanking: boolean; // Classement manuel
   defaultRanking: number; // Classement par défaut pour non-classés
   randomScore: boolean; // Scores aléatoires (pour tests)
-  minTeamSize: number; // Taille min équipe (compétitions par équipes)
+  minTeamSize: number; // Taille équipe = nombre de titulaires (compétitions par équipes)
+  teamReserveCount?: number; // Nombre de réservistes par équipe (défaut: 1)
+  laserTeamMode?: 'touches' | 'points'; // Cible équipe Sabre Laser : touches (défaut) ou points de zone cumulés
+  teamRelayStepSize?: number; // Palier de progression par relais (défaut: 5, cf. règle FIE)
   questConfig?: QuestPhaseConfig; // Configuration du Tour Quest (Sabre Laser uniquement)
   refereeFeatureEnabled?: boolean; // Activer la gestion des arbitres sur arènes et saisie distante
   customFormula?: CustomFormulaConfig; // Formule à la carte (arme CUSTOM uniquement)

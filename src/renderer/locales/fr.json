@@ -32,7 +32,9 @@
     "third_place_match_label": "Petite finale (match pour la 3ème place)",
     "third_place_match_description": "Organise un match supplémentaire entre les deux demi-finalistes perdants pour déterminer la 3ème et 4ème place",
     "comparisons": "Comparaisons",
-    "analytics": "Analytics"
+    "analytics": "Analytics",
+    "sign_tableau_matches_label": "Signature des combattants sur tablette (tableau)",
+    "sign_tableau_matches_description": "Affiche un écran de signature pour les deux tireurs sur la tablette après chaque match du tableau d’élimination directe"
   },
   "weapons": {
     "epee": "Épée",
@@ -207,7 +209,8 @@
     "check_in_all": "Tout pointer",
     "uncheck_all": "Tout dépointer",
     "view": "Voir",
-    "default": "Non spécifié"
+    "default": "Non spécifié",
+    "save_and_add": "Enregistrer et ajouter"
   },
   "messages": {
     "confirm_delete_fencer": "Êtes-vous sûr de vouloir supprimer ce tireur ? Cette action est irréversible.",
@@ -222,7 +225,7 @@
     "import_failed": "Importation échouée",
     "no_fencers": "Aucun tireur",
     "no_competitions": "Aucune compétition.",
-	"create_competition": "Créez une compétition en cliquant sur",
+    "create_competition": "Créez une compétition en cliquant sur",
     "loading": "Chargement...",
     "error": "Erreur",
     "success": "Succès",
@@ -351,7 +354,8 @@
     "refresh_data": "Rafraîchir les données",
     "timer": "Démarrer/Pause le chronomètre",
     "nav_list": "Naviguer dans la liste",
-    "validate": "Valider / Ouvrir"
+    "validate": "Valider / Ouvrir",
+    "print_sheets": "Imprimer les feuilles de poule / de match"
   },
   "wiki": {
     "button_title": "Documentation"

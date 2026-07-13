@@ -7,6 +7,34 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            npm ci && break
+            echo "npm ci failed, trying npm install..."
+            npm install && break
+            echo "Failed, waiting 5s before retry..."
+            [ $i -lt 3 ] && sleep 5
+          done || exit 1
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Unit tests
+        run: npm run test:run
+
   increment-version:
     runs-on: ubuntu-latest
     permissions:
@@ -71,7 +99,7 @@ jobs:
           git push || echo "Nothing to push"
 
   build-windows:
-    needs: increment-version
+    needs: [increment-version, quality]
     runs-on: windows-latest
 
     steps:
@@ -144,7 +172,7 @@ jobs:
           retention-days: 7
 
   build-macos-x64:
-    needs: increment-version
+    needs: [increment-version, quality]
     runs-on: macos-latest
 
     steps:
@@ -229,7 +257,7 @@ jobs:
           retention-days: 7
 
   build-macos-arm64:
-    needs: increment-version
+    needs: [increment-version, quality]
     runs-on: macos-latest
 
     steps:
@@ -314,7 +342,7 @@ jobs:
           retention-days: 7
 
   build-linux-x64:
-    needs: increment-version
+    needs: [increment-version, quality]
     runs-on: ubuntu-latest
 
     steps:
@@ -381,7 +409,7 @@ jobs:
           retention-days: 7
 
   build-linux-arm64:
-    needs: increment-version
+    needs: [increment-version, quality]
     runs-on: ubuntu-latest
     continue-on-error: true
 

@@ -21,6 +21,7 @@ const CLIENT_TYPE_LABELS: Record<string, string> = {
   public: 'Public',
   pool: 'Poules',
   dashboard: 'Dashboard',
+  referee: 'Arbitre',
 };
 
 function getOnlineStatus(lastSeen: string): 'online' | 'warn' | 'offline' {
@@ -43,7 +44,37 @@ const STATUS_COLORS: Record<string, string> = {
   offline: '#6b7280',
 };
 
+type AssignRole = 'affichage' | 'arbitre' | 'kiosk';
+
+const ASSIGN_ROLES: { value: AssignRole; label: string }[] = [
+  { value: 'affichage', label: '📺 Affichage' },
+  { value: 'arbitre', label: '🤺 Arbitre' },
+  { value: 'kiosk', label: '🖥️ Kiosk' },
+];
+
+function arenaNum(client: ConnectedClient): number {
+  if (!client.arenaId) return 1;
+  return parseInt(client.arenaId.replace('arena', ''), 10) || 1;
+}
+
+function defaultAssign(client: ConnectedClient): { role: AssignRole; arena: number } {
+  if (client.clientType === 'referee') return { role: 'arbitre', arena: arenaNum(client) };
+  if (client.clientType === 'kiosk') return { role: 'kiosk', arena: arenaNum(client) };
+  if (client.clientType === 'arena') return { role: 'affichage', arena: arenaNum(client) };
+  return { role: 'affichage', arena: 1 }; // lobby et autres
+}
+
+function assignUrl(base: string, role: AssignRole, arena: number): string {
+  if (role === 'kiosk') return `${base}/kiosk`;
+  if (role === 'arbitre') return `${base}/arene${arena}/arbitre`;
+  return `${base}/arene${arena}`;
+}
+
 function clientDisplayUrl(base: string, client: ConnectedClient): string {
+  if (client.clientType === 'referee') {
+    const num = client.arenaId ? client.arenaId.replace('arena', '') : '1';
+    return `${base}/arene${num}/arbitre`;
+  }
   if (client.clientType === 'lobby' || !client.arenaId) return `${base}/lobby`;
   const num = client.arenaId.replace('arena', '');
   return `${base}/arene${num}`;
@@ -52,7 +83,7 @@ function clientDisplayUrl(base: string, client: ConnectedClient): string {
 function clientLabel(client: ConnectedClient): string {
   if (client.label) return client.label;
   const type = CLIENT_TYPE_LABELS[client.clientType] ?? client.clientType;
-  if (client.clientType === 'arena' && client.arenaId) {
+  if ((client.clientType === 'arena' || client.clientType === 'referee') && client.arenaId) {
     const num = client.arenaId.replace('arena', '');
     return `${type} ${num}`;
   }
@@ -100,6 +131,7 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
   const [kioskTarget, setKioskTarget] = useState<string | null>(null);
   const [kioskConfig, setKioskConfig] = useState<KioskScreenConfig>(loadKioskConfig);
   const [locked, setLocked] = useState<boolean>(() => localStorage.getItem('bp_remote_locked') === '1');
+  const [assign, setAssign] = useState<Record<string, { role: AssignRole; arena: number }>>({});
 
   const toggleLock = () => {
     setLocked(prev => {
@@ -186,9 +218,18 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
     broadcastCmd({ type: 'message', text: message.trim(), duration: msgDuration * 1000 });
   };
 
+  const getAssign = (client: ConnectedClient) => assign[client.socketId] ?? defaultAssign(client);
+
+  const applyAssign = (client: ConnectedClient, role: AssignRole, arena: number) => {
+    setAssign(prev => ({ ...prev, [client.socketId]: { role, arena } }));
+    sendCmd(client.socketId, { type: 'navigate', url: assignUrl(base, role, arena) });
+  };
+
   const swapCandidates = clients.filter(c => swapSet.has(c.socketId));
   const canSwap = swapSet.size === 2;
   const isArenaOrLobby = (c: ConnectedClient) => c.clientType === 'arena' || c.clientType === 'lobby';
+  const isAssignable = (c: ConnectedClient) =>
+    c.clientType === 'arena' || c.clientType === 'lobby' || c.clientType === 'referee' || c.clientType === 'kiosk';
 
   return (
     <div
@@ -277,20 +318,34 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
                     </div>
                   </div>
 
-                  {/* Affecter à (arena/lobby only) */}
-                  {isArenaOrLobby(client) && (
-                    <select
-                      value={clientDisplayUrl(base, client)}
-                      onChange={e => sendCmd(client.socketId, { type: 'navigate', url: e.target.value })}
-                      style={{ padding: '0.2rem 0.3rem', fontSize: '0.75rem', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '5px', color: 'inherit', maxWidth: '120px' }}
-                      title="Affecter à…"
-                    >
-                      <option value={`${base}/lobby`}>Lobby</option>
-                      {Array.from({ length: arenaCount }, (_, i) => (
-                        <option key={i + 1} value={`${base}/arene${i + 1}`}>Arène {i + 1}</option>
-                      ))}
-                    </select>
-                  )}
+                  {/* Affecter : rôle + arène */}
+                  {isAssignable(client) && (() => {
+                    const a = getAssign(client);
+                    return (
+                      <>
+                        <select
+                          value={a.role}
+                          onChange={e => applyAssign(client, e.target.value as AssignRole, a.arena)}
+                          style={{ padding: '0.2rem 0.3rem', fontSize: '0.75rem', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '5px', color: 'inherit' }}
+                          title="Rôle de la tablette"
+                        >
+                          {ASSIGN_ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                        </select>
+                        {a.role !== 'kiosk' && (
+                          <select
+                            value={a.arena}
+                            onChange={e => applyAssign(client, a.role, Number(e.target.value))}
+                            style={{ padding: '0.2rem 0.3rem', fontSize: '0.75rem', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '5px', color: 'inherit' }}
+                            title="Arène"
+                          >
+                            {Array.from({ length: arenaCount }, (_, i) => (
+                              <option key={i + 1} value={i + 1}>Arène {i + 1}</option>
+                            ))}
+                          </select>
+                        )}
+                      </>
+                    );
+                  })()}
 
                   {/* Identifier */}
                   <button className="btn btn-secondary" style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', whiteSpace: 'nowrap' }} onClick={() => window.electronAPI.remote.identifyClient(competitionId, client.socketId)} title="Faire clignoter cet écran pour le repérer">🔦 Identifier</button>
@@ -389,9 +444,9 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}
           onClick={e => { if (e.target === e.currentTarget) setKioskTarget(null); }}
         >
-          <div style={{ background: 'var(--bg-card, #1e293b)', border: '1px solid var(--border-color, rgba(255,255,255,0.1))', borderRadius: '12px', width: '360px', maxWidth: '94vw', padding: '1.25rem' }}>
+          <div style={{ background: 'var(--color-surface, #1e293b)', color: 'var(--color-text, #f1f5f9)', border: '1px solid var(--color-border, rgba(255,255,255,0.1))', borderRadius: '12px', width: '360px', maxWidth: '94vw', padding: '1.25rem' }}>
             <div style={{ fontWeight: 600, fontSize: '1rem', marginBottom: '0.85rem' }}>🖥️ Configurer le mode kiosk</div>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted, #94a3b8)', marginBottom: '0.5rem' }}>Vues à afficher :</div>
+            <div style={{ fontSize: '0.82rem', color: 'var(--color-text-light, #94a3b8)', marginBottom: '0.5rem' }}>Vues à afficher :</div>
             {KIOSK_VIEWS.map(({ key, label }) => (
               <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.3rem 0', cursor: 'pointer' }}>
                 <input
@@ -403,14 +458,14 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
               </label>
             ))}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem' }}>
-              <label style={{ fontSize: '0.82rem', color: 'var(--text-muted, #94a3b8)', whiteSpace: 'nowrap' }}>Rotation (s) :</label>
+              <label style={{ fontSize: '0.82rem', color: 'var(--color-text-light, #94a3b8)', whiteSpace: 'nowrap' }}>Rotation (s) :</label>
               <input
                 type="number"
                 min={3}
                 max={300}
                 value={kioskConfig.rotationSec}
                 onChange={e => setKioskConfig(c => ({ ...c, rotationSec: Math.max(3, parseInt(e.target.value) || 15) }))}
-                style={{ width: '5rem', padding: '0.3rem 0.5rem', borderRadius: '5px', border: '1px solid var(--border-color, rgba(255,255,255,0.15))', background: 'var(--bg-secondary, rgba(255,255,255,0.06))', color: 'inherit' }}
+                style={{ width: '5rem', padding: '0.3rem 0.5rem', borderRadius: '5px', border: '1px solid var(--color-border, rgba(255,255,255,0.15))', background: 'var(--color-bg, rgba(255,255,255,0.06))', color: 'inherit' }}
               />
             </div>
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>

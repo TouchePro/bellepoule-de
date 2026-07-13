@@ -2,84 +2,57 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { DatabaseManager } from './index';
 import { ValidationError } from './validation';
 
-vi.mock('sql.js', () => ({
-  default: vi.fn().mockResolvedValue({
-    Database: vi.fn().mockImplementation(() => ({
-      run: vi.fn(),
-      exec: vi.fn(),
-      prepare: vi.fn().mockReturnValue({
-        run: vi.fn(),
-        step: vi.fn().mockReturnValue(false),
-        getAsObject: vi.fn().mockReturnValue({}),
-        bind: vi.fn(),
-        free: vi.fn(),
-      }),
-      export: vi.fn().mockReturnValue(new Uint8Array()),
-      close: vi.fn(),
-    })),
-  }),
+let mockDb: any;
+
+const makeStmt = (overrides: Partial<{ get: any; all: any; run: any }> = {}) => ({
+  get: vi.fn().mockReturnValue(null),
+  all: vi.fn().mockReturnValue([]),
+  run: vi.fn().mockReturnValue({ changes: 1, lastInsertRowid: 1 }),
+  ...overrides,
+});
+
+vi.mock('better-sqlite3', () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  default: vi.fn().mockImplementation(function(this: any) { return mockDb; }),
 }));
 
 vi.mock('fs', () => ({
   existsSync: vi.fn().mockReturnValue(false),
   mkdirSync: vi.fn(),
-  readFileSync: vi.fn().mockReturnValue(Buffer.from([])),
-  writeFileSync: vi.fn(),
-  renameSync: vi.fn(),
-  unlinkSync: vi.fn(),
 }));
 
 vi.mock('./migrations', () => ({
-  MigrationManager: vi.fn().mockImplementation(() => ({
-    run: vi.fn(),
-  })),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  MigrationManager: vi.fn().mockImplementation(function(this: any) { return { run: vi.fn().mockReturnValue(0) }; }),
 }));
 
 vi.mock('./migrations/migrations', () => ({
   ALL_MIGRATIONS: [],
 }));
 
-interface MockStmt {
-  run: ReturnType<typeof vi.fn>;
-  step: ReturnType<typeof vi.fn>;
-  getAsObject: ReturnType<typeof vi.fn>;
-  bind: ReturnType<typeof vi.fn>;
-  free: ReturnType<typeof vi.fn>;
-}
-
-const makeStmt = (overrides: Partial<MockStmt> = {}): MockStmt => ({
-  run: vi.fn(),
-  step: vi.fn().mockReturnValue(false),
-  getAsObject: vi.fn().mockReturnValue({}),
-  bind: vi.fn(),
-  free: vi.fn(),
-  ...overrides,
-});
-
 describe('DatabaseManager', () => {
   let manager: DatabaseManager;
-  let mockDb: any;
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    const initSqlJs = (await import('sql.js')).default as any;
-    const sqlModule = await initSqlJs();
     mockDb = {
-      run: vi.fn(),
+      pragma: vi.fn(),
       exec: vi.fn(),
       prepare: vi.fn().mockReturnValue(makeStmt()),
-      export: vi.fn().mockReturnValue(new Uint8Array()),
       close: vi.fn(),
+      backup: vi.fn().mockResolvedValue(undefined),
+      transaction: vi.fn().mockImplementation((fn: any) => (...args: any[]) => fn(...args)),
     };
-    sqlModule.Database.mockImplementation(() => mockDb);
     manager = new DatabaseManager('/tmp/test-bellepoule.db');
   });
 
   describe('initialize (open)', () => {
-    it('appelle initSqlJs et crée une Database', async () => {
-      const initSqlJs = (await import('sql.js')).default as any;
+    it('crée une Database et configure les pragmas', async () => {
+      const Database = (await import('better-sqlite3')).default as any;
       await manager.open();
-      expect(initSqlJs).toHaveBeenCalled();
+      expect(Database).toHaveBeenCalledWith('/tmp/test-bellepoule.db');
+      expect(mockDb.pragma).toHaveBeenCalledWith('journal_mode = WAL');
+      expect(mockDb.pragma).toHaveBeenCalledWith('foreign_keys = ON');
     });
 
     it('lance runMigrations après ouverture', async () => {
@@ -106,33 +79,17 @@ describe('DatabaseManager', () => {
     it('insère une compétition et retourne un objet avec id', () => {
       const now = new Date().toISOString();
       const compRow = {
-        id: 'comp-uuid-1',
-        title: 'Championnat Test',
-        short_title: null,
-        date: now,
-        location: 'Paris',
-        organizer: null,
-        weapon: 'E',
-        gender: 'M',
-        category: 'SEN',
-        championship: null,
-        color: '#3B82F6',
-        current_phase_index: 0,
-        is_team_event: 0,
-        status: 'active',
-        settings: '{}',
-        created_at: now,
-        updated_at: now,
+        id: 'comp-uuid-1', title: 'Championnat Test', short_title: null,
+        date: now, location: 'Paris', organizer: null, weapon: 'E',
+        gender: 'M', category: 'SEN', championship: null, color: '#3B82F6',
+        current_phase_index: 0, is_team_event: 0, status: 'active',
+        settings: '{}', created_at: now, updated_at: now,
       };
-      const stmtGet = makeStmt({
-        step: vi.fn().mockReturnValue(true),
-        getAsObject: vi.fn().mockReturnValue(compRow),
-      });
-      mockDb.prepare.mockReturnValue(stmtGet);
-
+      mockDb.prepare.mockReturnValue(makeStmt({
+        get: vi.fn().mockReturnValue(compRow),
+      }));
       const result = manager.createCompetition({ title: 'Championnat Test', location: 'Paris' });
-
-      expect(mockDb.run).toHaveBeenCalled();
+      expect(mockDb.prepare).toHaveBeenCalled();
       expect(result).toBeDefined();
       expect(result.id).toBeDefined();
     });
@@ -141,31 +98,13 @@ describe('DatabaseManager', () => {
       const customId = 'my-custom-id';
       const now = new Date().toISOString();
       const compRow = {
-        id: customId,
-        title: 'Test',
-        short_title: null,
-        date: now,
-        location: '',
-        organizer: null,
-        weapon: 'E',
-        gender: 'M',
-        category: 'SEN',
-        championship: null,
-        color: '#3B82F6',
-        current_phase_index: 0,
-        is_team_event: 0,
-        status: null,
-        settings: '{}',
-        created_at: now,
-        updated_at: now,
+        id: customId, title: 'Test', short_title: null,
+        date: now, location: '', organizer: null, weapon: 'E',
+        gender: 'M', category: 'SEN', championship: null, color: '#3B82F6',
+        current_phase_index: 0, is_team_event: 0, status: null,
+        settings: '{}', created_at: now, updated_at: now,
       };
-      mockDb.prepare.mockReturnValue(
-        makeStmt({
-          step: vi.fn().mockReturnValue(true),
-          getAsObject: vi.fn().mockReturnValue(compRow),
-        })
-      );
-
+      mockDb.prepare.mockReturnValue(makeStmt({ get: vi.fn().mockReturnValue(compRow) }));
       const result = manager.createCompetition({ id: customId });
       expect(result.id).toBe(customId);
     });
@@ -176,8 +115,8 @@ describe('DatabaseManager', () => {
       await manager.open();
     });
 
-    it('retourne null si le tireur n\'est pas trouvé', () => {
-      mockDb.prepare.mockReturnValue(makeStmt({ step: vi.fn().mockReturnValue(false) }));
+    it("retourne null si le tireur n'est pas trouvé", () => {
+      mockDb.prepare.mockReturnValue(makeStmt({ get: vi.fn().mockReturnValue(null) }));
       const result = manager.getFencer('nonexistent-id');
       expect(result).toBeNull();
     });
@@ -185,32 +124,13 @@ describe('DatabaseManager', () => {
     it('retourne un objet Fencer si trouvé', () => {
       const now = new Date().toISOString();
       const fencerRow = {
-        id: 'fencer-1',
-        ref: 1,
-        last_name: 'Dupont',
-        first_name: 'Jean',
-        birth_date: null,
-        gender: 'M',
-        nationality: 'FRA',
-        region: null,
-        club: 'Club Paris',
-        license: '12345',
-        ranking: 10,
-        status: 'Q',
-        seed_number: null,
-        final_ranking: null,
-        pool_stats: null,
-        photo: null,
-        created_at: now,
-        updated_at: now,
+        id: 'fencer-1', ref: 1, last_name: 'Dupont', first_name: 'Jean',
+        birth_date: null, gender: 'M', nationality: 'FRA', region: null,
+        club: 'Club Paris', license: '12345', ranking: 10, status: 'Q',
+        seed_number: null, final_ranking: null, pool_stats: null, photo: null,
+        created_at: now, updated_at: now,
       };
-      mockDb.prepare.mockReturnValue(
-        makeStmt({
-          step: vi.fn().mockReturnValue(true),
-          getAsObject: vi.fn().mockReturnValue(fencerRow),
-        })
-      );
-
+      mockDb.prepare.mockReturnValue(makeStmt({ get: vi.fn().mockReturnValue(fencerRow) }));
       const result = manager.getFencer('fencer-1');
       expect(result).not.toBeNull();
       expect(result!.lastName).toBe('Dupont');
@@ -226,29 +146,14 @@ describe('DatabaseManager', () => {
     it('insère un match avec les champs requis', () => {
       const now = new Date().toISOString();
       const matchRow = {
-        id: 'match-uuid-1',
-        number: 1,
-        pool_id: 'pool-1',
-        fencer_a_id: null,
-        fencer_b_id: null,
-        score_a: null,
-        score_b: null,
-        max_score: 5,
-        status: 'not_started',
-        table_id: null,
-        round: null,
-        created_at: now,
-        updated_at: now,
+        id: 'match-uuid-1', number: 1, pool_id: 'pool-1',
+        fencer_a_id: null, fencer_b_id: null, score_a: null, score_b: null,
+        max_score: 5, status: 'not_started', table_id: null, round: null,
+        referee_id: null, created_at: now, updated_at: now,
       };
-      const stmtGetMatch = makeStmt({
-        step: vi.fn().mockReturnValue(true),
-        getAsObject: vi.fn().mockReturnValue(matchRow),
-      });
-      mockDb.prepare.mockReturnValue(stmtGetMatch);
-
+      mockDb.prepare.mockReturnValue(makeStmt({ get: vi.fn().mockReturnValue(matchRow) }));
       const result = manager.createMatch({ number: 1, maxScore: 5 }, 'pool-1');
-
-      expect(mockDb.run).toHaveBeenCalled();
+      expect(mockDb.prepare).toHaveBeenCalled();
       expect(result).toBeDefined();
       expect(result.id).toBeDefined();
     });
@@ -259,28 +164,22 @@ describe('DatabaseManager', () => {
       await manager.open();
     });
 
-    it('met à jour le score A', () => {
+    it('appelle prepare avec score_a pour scoreA', () => {
       manager.updateMatch('match-id', { scoreA: { value: 5, isVictory: true, isAbstention: false, isExclusion: false, isForfait: false } });
-      expect(mockDb.run).toHaveBeenCalledWith(
-        expect.stringContaining('score_a'),
-        expect.any(Array)
-      );
+      const calls = (mockDb.prepare as any).mock.calls.map((c: any) => c[0] as string);
+      expect(calls.some((sql: string) => sql.includes('score_a'))).toBe(true);
     });
 
-    it('met à jour le score B', () => {
+    it('appelle prepare avec score_b pour scoreB', () => {
       manager.updateMatch('match-id', { scoreB: { value: 3, isVictory: false, isAbstention: false, isExclusion: false, isForfait: false } });
-      expect(mockDb.run).toHaveBeenCalledWith(
-        expect.stringContaining('score_b'),
-        expect.any(Array)
-      );
+      const calls = (mockDb.prepare as any).mock.calls.map((c: any) => c[0] as string);
+      expect(calls.some((sql: string) => sql.includes('score_b'))).toBe(true);
     });
 
-    it('met à jour le statut', () => {
+    it('appelle prepare avec status pour status', () => {
       manager.updateMatch('match-id', { status: 'finished' as any });
-      expect(mockDb.run).toHaveBeenCalledWith(
-        expect.stringContaining('status'),
-        expect.any(Array)
-      );
+      const calls = (mockDb.prepare as any).mock.calls.map((c: any) => c[0] as string);
+      expect(calls.some((sql: string) => sql.includes('status'))).toBe(true);
     });
   });
 
@@ -290,35 +189,23 @@ describe('DatabaseManager', () => {
     });
 
     it('retourne un tableau vide si aucune poule', () => {
-      mockDb.prepare.mockReturnValue(makeStmt({ step: vi.fn().mockReturnValue(false) }));
+      mockDb.prepare.mockReturnValue(makeStmt({ all: vi.fn().mockReturnValue([]) }));
       const result = manager.getPoolsByPhase('phase-1');
       expect(Array.isArray(result)).toBe(true);
       expect(result).toHaveLength(0);
     });
 
     it('retourne un tableau de poules si des poules existent', () => {
-      let callCount = 0;
-      mockDb.prepare.mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) {
-          return makeStmt({
-            step: vi.fn()
-              .mockReturnValueOnce(true)
-              .mockReturnValue(false),
-            getAsObject: vi.fn().mockReturnValue({
-              id: 'pool-1',
-              phase_id: 'phase-1',
-              number: 1,
-              is_complete: 0,
-              has_error: 0,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            }),
-          });
-        }
-        return makeStmt({ step: vi.fn().mockReturnValue(false) });
-      });
-
+      const now = new Date().toISOString();
+      const poolRow = {
+        id: 'pool-1', phase_id: 'phase-1', number: 1,
+        is_complete: 0, has_error: 0, referee_id: null,
+        created_at: now, updated_at: now,
+      };
+      mockDb.prepare.mockReturnValue(makeStmt({
+        all: vi.fn().mockReturnValueOnce([poolRow]).mockReturnValue([]),
+        get: vi.fn().mockReturnValue(null),
+      }));
       const result = manager.getPoolsByPhase('phase-1');
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('pool-1');
@@ -353,6 +240,7 @@ describe('DatabaseManager', () => {
       expect(manager.isOpen()).toBe(true);
       manager.close();
       expect(manager.isOpen()).toBe(false);
+      expect(mockDb.close).toHaveBeenCalled();
     });
   });
 });

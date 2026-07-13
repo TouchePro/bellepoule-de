@@ -3,7 +3,7 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useEffect, useCallback, memo } from 'react';
+import React, { useState, useEffect, useCallback, memo, useMemo } from 'react';
 import type { MatchEventEntry, MatchEventType } from '../../shared/types';
 import { useMatchAuditStore } from '../../features/matchAuditLog/hooks/useMatchAuditStore';
 import { useToast } from './Toast';
@@ -54,6 +54,16 @@ function fencerLabel(entry: MatchEventEntry): { label: string; color: string } {
   };
 }
 
+function buildRefereeLastActions(entries: MatchEventEntry[]): { key: string; label: string; entry: MatchEventEntry }[] {
+  const map = new Map<string, { label: string; entry: MatchEventEntry }>();
+  for (const e of entries) {
+    if (e.eventType !== 'score_change') continue;
+    const key = e.refereeName ?? e.changedBy ?? e.ipAddress ?? 'inconnu';
+    map.set(key, { label: key, entry: e });
+  }
+  return Array.from(map.entries()).map(([key, v]) => ({ key, ...v }));
+}
+
 const MatchAuditLogComponent: React.FC<MatchAuditLogProps> = ({
   matchId,
   competitionId,
@@ -62,6 +72,7 @@ const MatchAuditLogComponent: React.FC<MatchAuditLogProps> = ({
   onClose,
 }) => {
   const { showToast } = useToast();
+  const [refereeView, setRefereeView] = useState(false);
   const { entries, isLoading, error, filterTypes, loadMatchTimeline, loadCompetitionTimeline, setFilterTypes, reset } =
     useMatchAuditStore();
 
@@ -79,6 +90,20 @@ const MatchAuditLogComponent: React.FC<MatchAuditLogProps> = ({
   }, [error]);
 
   const baseTs = entries.length > 0 ? entries[0].timestamp : null;
+  const refereeLastActions = buildRefereeLastActions(entries);
+
+  const zoneStats = useMemo(() => {
+    type ZoneSide = { A: number; B: number; C: number };
+    const stats: Record<'A' | 'B', ZoneSide> = { A: { A: 0, B: 0, C: 0 }, B: { A: 0, B: 0, C: 0 } };
+    for (const e of entries) {
+      if (e.eventType === 'touch' && e.zone && (e.fencerSide === 'A' || e.fencerSide === 'B')) {
+        const z = e.zone as 'A' | 'B' | 'C';
+        if (z === 'A' || z === 'B' || z === 'C') stats[e.fencerSide][z]++;
+      }
+    }
+    const hasZones = Object.values(stats).some(s => s.A + s.B + s.C > 0);
+    return hasZones ? stats : null;
+  }, [entries]);
 
   const filtered =
     filterTypes.length === 0 ? entries : entries.filter(e => filterTypes.includes(e.eventType));
@@ -114,6 +139,41 @@ const MatchAuditLogComponent: React.FC<MatchAuditLogProps> = ({
 
   const content = (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '1rem' }}>
+
+      {/* Heatmap zones Laser Sabre (visible quand matchId et données disponibles) */}
+      {matchId && zoneStats && (
+        <div style={{ display: 'flex', gap: '1rem', padding: '0.75rem', background: '#1e1b4b', borderRadius: '0.5rem', border: '1px solid #3730a3' }}>
+          {(['A', 'B'] as const).map(side => {
+            const s = zoneStats[side];
+            const total = s.A + s.B + s.C;
+            const ZONE_COLORS: Record<string, string> = { A: '#22c55e', B: '#f59e0b', C: '#ef4444' };
+            const ZONE_PTS: Record<string, string> = { A: '1pt', B: '3pt', C: '5pt' };
+            return (
+              <div key={side} style={{ flex: 1 }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: side === 'A' ? '#60a5fa' : '#f87171', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
+                  Côté {side}
+                </div>
+                {(['A', 'B', 'C'] as const).map(z => {
+                  const count = s[z];
+                  const pct = total > 0 ? (count / total) * 100 : 0;
+                  return (
+                    <div key={z} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.25rem' }}>
+                      <span style={{ width: '28px', fontSize: '0.72rem', color: ZONE_COLORS[z], fontWeight: 700 }}>
+                        {z} <span style={{ fontSize: '0.6rem', opacity: 0.7 }}>{ZONE_PTS[z]}</span>
+                      </span>
+                      <div style={{ flex: 1, height: '8px', background: '#312e81', borderRadius: '4px', overflow: 'hidden' }}>
+                        <div style={{ width: `${pct}%`, height: '100%', background: ZONE_COLORS[z], borderRadius: '4px', transition: 'width 0.3s' }} />
+                      </div>
+                      <span style={{ width: '20px', fontSize: '0.72rem', color: '#c7d2fe', textAlign: 'right' }}>{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Filtres */}
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
         <span style={{ fontSize: '0.8rem', color: '#6b7280', marginRight: '0.25rem' }}>Filtrer :</span>
@@ -142,6 +202,21 @@ const MatchAuditLogComponent: React.FC<MatchAuditLogProps> = ({
           {filtered.length} événement{filtered.length !== 1 ? 's' : ''}
         </span>
         <button
+          onClick={() => setRefereeView(v => !v)}
+          style={{
+            padding: '0.3rem 0.75rem',
+            fontSize: '0.75rem',
+            fontWeight: '600',
+            borderRadius: '6px',
+            border: '1px solid #8b5cf6',
+            background: refereeView ? '#8b5cf6' : 'transparent',
+            color: refereeView ? 'white' : '#8b5cf6',
+            cursor: 'pointer',
+          }}
+        >
+          Par arbitre
+        </button>
+        <button
           onClick={handleExportJSON}
           disabled={entries.length === 0}
           style={{
@@ -163,6 +238,35 @@ const MatchAuditLogComponent: React.FC<MatchAuditLogProps> = ({
       <div style={{ overflowY: 'auto', flex: 1 }}>
         {isLoading ? (
           <div style={{ textAlign: 'center', padding: '3rem', color: '#6b7280' }}>Chargement…</div>
+        ) : refereeView ? (
+          refereeLastActions.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '3rem', color: '#9ca3af', fontSize: '0.875rem' }}>
+              Aucune saisie de score enregistrée.
+            </div>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+              <thead>
+                <tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
+                  <th style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>Arbitre</th>
+                  <th style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>IP</th>
+                  <th style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>Dernière saisie</th>
+                  <th style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>Score</th>
+                </tr>
+              </thead>
+              <tbody>
+                {refereeLastActions.map(({ key, label, entry }, i) => (
+                  <tr key={key} style={{ borderBottom: '1px solid #f3f4f6', background: i % 2 === 0 ? 'white' : '#fafafa' }}>
+                    <td style={{ padding: '0.5rem 0.75rem', fontWeight: '600', color: '#1f2937' }}>{label}</td>
+                    <td style={{ padding: '0.5rem 0.75rem', color: '#6b7280', fontFamily: 'monospace' }}>{entry.ipAddress ?? '—'}</td>
+                    <td style={{ padding: '0.5rem 0.75rem', color: '#6b7280', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+                      {formatTimestamp(entry.timestamp, baseTs)}
+                    </td>
+                    <td style={{ padding: '0.5rem 0.75rem', color: '#374151' }}>{describeMatchEvent(entry)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '3rem', color: '#9ca3af', fontSize: '0.875rem' }}>
             Aucun événement enregistré pour ce match.

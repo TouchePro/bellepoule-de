@@ -3,34 +3,35 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useLayoutEffect } from 'react';
 
 interface CoachMarkProps {
-  id: string;
+  id?: string;
   message: string;
   position?: 'top' | 'bottom' | 'left' | 'right';
   children: React.ReactNode;
 }
 
-const CoachMark: React.FC<CoachMarkProps> = ({ id, message, position = 'bottom', children }) => {
-  const key = `bellepoule-coach-${id}`;
-  const [visible, setVisible] = useState(() => localStorage.getItem(key) !== 'seen');
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+const CoachMark: React.FC<CoachMarkProps> = ({ message, position = 'bottom', children }) => {
+  // Sous-titre affiché uniquement au survol / focus du bouton
+  const [visible, setVisible] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
 
-  useEffect(() => {
-    if (!visible) return;
-    timerRef.current = setTimeout(() => dismiss(), 6000);
-    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, [visible]);
-
-  const dismiss = () => {
-    localStorage.setItem(key, 'seen');
-    setVisible(false);
-  };
+  useLayoutEffect(() => {
+    if (!visible || !wrapRef.current) return;
+    const r = wrapRef.current.getBoundingClientRect();
+    if (position === 'top')        setPos({ top: r.top - 8, left: r.left + r.width / 2 });
+    else if (position === 'left')  setPos({ top: r.top + r.height / 2, left: r.left - 8 });
+    else if (position === 'right') setPos({ top: r.top + r.height / 2, left: r.right + 8 });
+    else                           setPos({ top: r.bottom + 8, left: r.left + r.width / 2 });
+  }, [visible, position]);
 
   const tooltipStyle: React.CSSProperties = {
-    position: 'absolute',
-    zIndex: 9999,
+    position: 'fixed',
+    top: pos.top,
+    left: pos.left,
+    zIndex: 99999,
     background: '#1e40af',
     color: 'white',
     padding: '0.5rem 0.75rem',
@@ -39,10 +40,10 @@ const CoachMark: React.FC<CoachMarkProps> = ({ id, message, position = 'bottom',
     whiteSpace: 'nowrap',
     boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
     pointerEvents: 'none',
-    ...(position === 'bottom' ? { top: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)' } :
-        position === 'top'    ? { bottom: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)' } :
-        position === 'right'  ? { left: 'calc(100% + 8px)', top: '50%', transform: 'translateY(-50%)' } :
-                                { right: 'calc(100% + 8px)', top: '50%', transform: 'translateY(-50%)' }),
+    ...(position === 'bottom' ? { transform: 'translateX(-50%)' } :
+        position === 'top'    ? { transform: 'translate(-50%, -100%)' } :
+        position === 'right'  ? { transform: 'translateY(-50%)' } :
+                                { transform: 'translate(-100%, -50%)' }),
   };
 
   const arrowStyle: React.CSSProperties = {
@@ -54,17 +55,14 @@ const CoachMark: React.FC<CoachMarkProps> = ({ id, message, position = 'bottom',
   };
 
   return (
-    <div style={{ position: 'relative', display: 'inline-flex' }} onClick={visible ? dismiss : undefined}>
-      {visible && (
-        <span style={{
-          position: 'absolute', inset: '-4px',
-          borderRadius: '0.5rem',
-          border: '2px solid #3b82f6',
-          animation: 'coach-pulse 1.5s ease-in-out infinite',
-          pointerEvents: 'none',
-          zIndex: 9998,
-        }} />
-      )}
+    <div
+      ref={wrapRef}
+      style={{ position: 'relative', display: 'inline-flex' }}
+      onMouseEnter={() => setVisible(true)}
+      onMouseLeave={() => setVisible(false)}
+      onFocus={() => setVisible(true)}
+      onBlur={() => setVisible(false)}
+    >
       {children}
       {visible && (
         <div style={tooltipStyle}>

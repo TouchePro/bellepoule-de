@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Arène BellePoule</title>
     <script src="/i18n.js"></script>
-    <script src="/socket.io/socket.io.js"></script>
+    <script src="/socket.io.min.js"></script>
     <style>
 
       /* Police 7 segments — style radio-réveil LCD (embarquée en base64) */
@@ -54,6 +54,43 @@
       --idle-label-color: rgba(255, 255, 255, 0.5);
       --vs-color: #ef4444;
       --vs-font-family: system-ui, sans-serif;
+      /* Visibilité éléments */
+      --header-display: flex;
+      --vs-divider-display: flex;
+      --timer-label-display: none;
+      /* Positionnement overlay (pour thèmes avec image de fond) */
+      --timer-section-position: relative;
+      --timer-section-top: auto;
+      --timer-section-left: auto;
+      --timer-section-right: auto;
+      --timer-section-bottom: auto;
+      --timer-section-width: auto;
+      --timer-section-transform: none;
+      --timer-section-z-index: 1;
+      --score-a-position: relative;
+      --score-a-top: auto;
+      --score-a-left: auto;
+      --score-a-right: auto;
+      --score-a-bottom: auto;
+      --score-a-transform: none;
+      --score-b-position: relative;
+      --score-b-top: auto;
+      --score-b-left: auto;
+      --score-b-right: auto;
+      --score-b-bottom: auto;
+      --score-b-transform: none;
+      --name-a-position: relative;
+      --name-a-top: auto;
+      --name-a-left: auto;
+      --name-a-right: auto;
+      --name-a-width: auto;
+      --name-a-transform: none;
+      --name-b-position: relative;
+      --name-b-top: auto;
+      --name-b-left: auto;
+      --name-b-right: auto;
+      --name-b-width: auto;
+      --name-b-transform: none;
     }
 
     /* ── Thème Light ── */
@@ -118,6 +155,70 @@
       --vs-font-family: system-ui, sans-serif;
     }
 
+    /* ── Thème Unicorn – image de fond + overlay ── */
+    [data-theme="unicorn"] {
+      --bg: url('/unicorn-bg.png') center / cover no-repeat #1a0a2e;
+      --text: #ffffff;
+      --header-bg: rgba(12, 4, 28, 0.62);
+      --match-bg: transparent;
+      --fencer-name-color: #ffffff;
+      --fencer-club-color: rgba(255, 230, 255, 0.85);
+      --green-side-bg: rgba(0, 28, 14, 0.50);
+      --green-side-border: #00e87a;
+      --red-side-bg: rgba(58, 0, 28, 0.50);
+      --red-side-border: #ff3ab0;
+      --score-bg: transparent;
+      --score-green: #00ff88;
+      --score-green-glow: rgba(0, 255, 136, 0.9), rgba(0, 255, 136, 0.5);
+      --score-red: #ff2d9e;
+      --score-red-glow: rgba(255, 45, 158, 0.9), rgba(255, 45, 158, 0.5);
+      --timer-bg: rgba(8, 4, 24, 0.58);
+      --timer-color: #ffd700;
+      --timer-glow: rgba(255, 215, 0, 0.92), rgba(255, 215, 0, 0.45);
+      --timer-border: rgba(255, 215, 0, 0.38);
+      --timer-run-color: #00ff88;
+      --timer-run-glow: rgba(0, 255, 136, 0.95), rgba(0, 255, 136, 0.5);
+      --timer-run-border: rgba(0, 255, 136, 0.45);
+      --waiting-color: #f0e6ff;
+      --idle-number-color: rgba(248, 238, 255, 0.92);
+      --idle-label-color: rgba(248, 238, 255, 0.5);
+      --vs-color: #ff80cc;
+      --vs-font-family: Georgia, 'Times New Roman', serif;
+    }
+
+    [data-theme="unicorn"] .match-display {
+      box-shadow: none;
+    }
+
+    [data-theme="unicorn"] .score-big {
+      box-shadow: none;
+    }
+
+    [data-theme="unicorn"] .fencer-name {
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0, 0, 0, 0.7);
+    }
+
+    [data-theme="unicorn"] .fencer-club {
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+    }
+
+    /* ── Mode Overlay (thème custom avec image de fond) ── */
+    [data-overlay="true"] .match-display {
+      box-shadow: none !important;
+    }
+
+    [data-overlay="true"] .score-big {
+      box-shadow: none !important;
+    }
+
+    [data-overlay="true"] .fencer-name {
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0, 0, 0, 0.7);
+    }
+
+    [data-overlay="true"] .fencer-club {
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+    }
+
     /* ── Thème Custom (variables injectées dynamiquement par JS) ── */
     [data-theme="custom"] {
       /* hérite du thème dark par défaut, les variables seront surchargées */
@@ -152,6 +253,43 @@
       --score-font-size: clamp(7rem, 23vw, 44vh);
       --timer-font-size: clamp(3.5rem, 11vw, 18vh);
       --fencer-name-font-size: clamp(1rem, 3.5vw, 5vh);
+      /* Visibilité éléments */
+      --header-display: flex;
+      --vs-divider-display: flex;
+      --timer-label-display: none;
+      /* Positionnement overlay (pour thèmes avec image de fond) */
+      --timer-section-position: relative;
+      --timer-section-top: auto;
+      --timer-section-left: auto;
+      --timer-section-right: auto;
+      --timer-section-bottom: auto;
+      --timer-section-width: auto;
+      --timer-section-transform: none;
+      --timer-section-z-index: 1;
+      --score-a-position: relative;
+      --score-a-top: auto;
+      --score-a-left: auto;
+      --score-a-right: auto;
+      --score-a-bottom: auto;
+      --score-a-transform: none;
+      --score-b-position: relative;
+      --score-b-top: auto;
+      --score-b-left: auto;
+      --score-b-right: auto;
+      --score-b-bottom: auto;
+      --score-b-transform: none;
+      --name-a-position: relative;
+      --name-a-top: auto;
+      --name-a-left: auto;
+      --name-a-right: auto;
+      --name-a-width: auto;
+      --name-a-transform: none;
+      --name-b-position: relative;
+      --name-b-top: auto;
+      --name-b-left: auto;
+      --name-b-right: auto;
+      --name-b-width: auto;
+      --name-b-transform: none;
     }
 
     * {
@@ -251,7 +389,7 @@
       .header {
         background: var(--header-bg);
         padding: 0.4rem 1rem;
-        display: flex;
+        display: var(--header-display, flex);
         justify-content: space-between;
         align-items: center;
         backdrop-filter: blur(10px);
@@ -558,7 +696,7 @@
         color: var(--vs-color);
         text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         font-family: var(--vs-font-family);
-        display: flex;
+        display: var(--vs-divider-display, flex);
         align-items: center;
       }
 
@@ -567,6 +705,14 @@
         margin-top: 0.4rem;
         text-align: center;
         flex-shrink: 0;
+        position: var(--timer-section-position, relative);
+        top: var(--timer-section-top, auto);
+        left: var(--timer-section-left, auto);
+        right: var(--timer-section-right, auto);
+        bottom: var(--timer-section-bottom, auto);
+        width: var(--timer-section-width, auto);
+        transform: var(--timer-section-transform, none);
+        z-index: var(--timer-section-z-index, 1);
       }
 
       .timer-display {
@@ -678,7 +824,43 @@
       }
 
       .timer-label {
-        display: none;
+        display: var(--timer-label-display, none);
+      }
+
+      #score-a {
+        position: var(--score-a-position, relative);
+        top: var(--score-a-top, auto);
+        left: var(--score-a-left, auto);
+        right: var(--score-a-right, auto);
+        bottom: var(--score-a-bottom, auto);
+        transform: var(--score-a-transform, none);
+      }
+
+      #score-b {
+        position: var(--score-b-position, relative);
+        top: var(--score-b-top, auto);
+        left: var(--score-b-left, auto);
+        right: var(--score-b-right, auto);
+        bottom: var(--score-b-bottom, auto);
+        transform: var(--score-b-transform, none);
+      }
+
+      #fencer-a-name {
+        position: var(--name-a-position, relative);
+        top: var(--name-a-top, auto);
+        left: var(--name-a-left, auto);
+        right: var(--name-a-right, auto);
+        width: var(--name-a-width, auto);
+        transform: var(--name-a-transform, none);
+      }
+
+      #fencer-b-name {
+        position: var(--name-b-position, relative);
+        top: var(--name-b-top, auto);
+        left: var(--name-b-left, auto);
+        right: var(--name-b-right, auto);
+        width: var(--name-b-width, auto);
+        transform: var(--name-b-transform, none);
       }
 
       /* Écran d'attente */
@@ -1122,9 +1304,9 @@
       <span class="arena-word-label">Arène</span> <span id="arena-strip-number">1</span>
     </div>
 
-    <div class="header">
+    <header class="header">
       <div class="arena-title">
-        <span>⚔️</span>
+        <span aria-hidden="true">⚔️</span>
         <span><span class="arena-word-label">Arène</span> <span id="arena-number">1</span></span>
       </div>
       <div class="status-section">
@@ -1132,15 +1314,15 @@
           <input type="checkbox" id="inversion-checkbox" />
           <label for="inversion-checkbox" data-i18n="arena.invert">⇄ Inverser</label>
         </div>
-        <div class="match-status-badge status-waiting" id="match-status" data-i18n="arena.waiting">En attente</div>
-        <div class="connection-indicator">
-          <div id="connection-dot" class="connection-dot"></div>
+        <div class="match-status-badge status-waiting" id="match-status" role="status" aria-live="polite" data-i18n="arena.waiting">En attente</div>
+        <div class="connection-indicator" role="status" aria-live="polite">
+          <div id="connection-dot" class="connection-dot" aria-hidden="true"></div>
           <span id="connection-text" data-i18n="remote.connecting">Connexion...</span>
         </div>
       </div>
-    </div>
+    </header>
 
-    <div class="main-content">
+    <main class="main-content">
       <!-- Écran d'attente -->
       <div class="waiting-screen" id="waiting-screen">
         <!-- Aperçu prochain combat (visible quand nextMatch disponible) -->
@@ -1237,31 +1419,31 @@
       <div class="match-display" id="match-display">
         <div class="fencers-row">
           <!-- Tireur A (Rouge) -->
-          <div id="fencer-a-display" class="fencer-display red-side">
-            <div id="color-badge-a" class="color-badge red"></div>
+          <div id="fencer-a-display" class="fencer-display red-side" role="region" aria-label="Tireur rouge">
+            <div id="color-badge-a" class="color-badge red" aria-hidden="true"></div>
             <div class="fencer-name" id="fencer-a-name">-</div>
             <div class="fencer-club" id="fencer-a-club">-</div>
             <div class="cards-container" id="fencer-a-cards"></div>
-            <div class="score-big red" id="score-a">0</div>
+            <div class="score-big red" id="score-a" role="status" aria-live="polite" aria-atomic="true">0</div>
           </div>
 
           <!-- VS -->
-          <div class="vs-divider">VS</div>
+          <div class="vs-divider" aria-hidden="true">VS</div>
 
           <!-- Tireur B (Vert) -->
-          <div id="fencer-b-display" class="fencer-display green-side">
-            <div id="color-badge-b" class="color-badge green"></div>
+          <div id="fencer-b-display" class="fencer-display green-side" role="region" aria-label="Tireur vert">
+            <div id="color-badge-b" class="color-badge green" aria-hidden="true"></div>
             <div class="fencer-name" id="fencer-b-name">-</div>
             <div class="fencer-club" id="fencer-b-club">-</div>
             <div class="cards-container" id="fencer-b-cards"></div>
-            <div class="score-big green" id="score-b">0</div>
+            <div class="score-big green" id="score-b" role="status" aria-live="polite" aria-atomic="true">0</div>
           </div>
         </div>
 
         <!-- Chronomètre -->
         <div class="timer-section">
           <div class="mort-subite-banner" id="mort-subite-banner">⚡ MORT SUBITE</div>
-          <div class="timer-display" id="timer-display">03:00</div>
+          <div class="timer-display" id="timer-display" role="timer" aria-label="Temps restant">03:00</div>
           <div class="waiting-overtime-banner" id="waiting-overtime-banner">⚖️ ÉGALITÉ – attente arbitre</div>
           <div class="sudden-death-banner" id="sudden-death-banner">⏱ 30s SUPPLEMENTAIRE</div>
           <div class="timer-label">Temps restant</div>
@@ -1298,7 +1480,7 @@
           <div class="next-referee-name hidden" id="next-referee-name">⚖️ <span id="next-referee-label"></span></div>
         </div>
       </div>
-    </div>
+    </main>
 
     <script>
       class ArenaDisplay {
@@ -1346,7 +1528,7 @@
             .then(r => (r.ok ? r.json() : null))
             .then(s => {
               if (s && ['E', 'F', 'S'].includes(s.weapon)) {
-                document.querySelectorAll('.arena-word-label').forEach(el => (el.textContent = 'Piste'));
+                document.querySelectorAll('.arena-word-label').forEach(el => (el.textContent = window.T('remote.piste')));
               }
             })
             .catch(() => {});
@@ -1359,9 +1541,10 @@
             document.documentElement.setAttribute('data-theme', 'custom');
             this.applyCustomTheme(customTheme);
           } else {
-            const valid = ['dark', 'light', 'neon'];
+            const valid = ['dark', 'light', 'neon', 'unicorn'];
             this.theme = valid.includes(theme) ? theme : 'dark';
             document.documentElement.setAttribute('data-theme', this.theme);
+            document.documentElement.removeAttribute('data-overlay');
             // Supprimer le style custom si présent
             const existing = document.getElementById('custom-theme-style');
             if (existing) existing.remove();
@@ -1380,6 +1563,11 @@
             .map(([k, v]) => `  ${k}: ${v};`)
             .join('\n');
           styleEl.textContent = `[data-theme="custom"] {\n${vars}\n}`;
+          if (customTheme.overlayMode) {
+            document.documentElement.setAttribute('data-overlay', 'true');
+          } else {
+            document.documentElement.removeAttribute('data-overlay');
+          }
         }
 
         setupHeaderAutoHide() {
@@ -1458,6 +1646,12 @@
 
           this.socket.on('disconnect', () => {
             this.updateConnectionStatus(false);
+          });
+
+          this.socket.on('connect_error', (err) => {
+            this.updateConnectionStatus(false);
+            const text = document.getElementById('connection-text');
+            if (text) text.textContent = `❌ ${err?.message || 'Erreur réseau'}`;
           });
 
           this.socket.on(`arena:${this.arenaId}:update`, data => {
@@ -2040,9 +2234,17 @@
 
       // Démarrer l'affichage
       document.addEventListener('DOMContentLoaded', async () => {
-        await window.initRemoteI18n();
-        document.title = window.T('arena.title');
-        new ArenaDisplay();
+        try {
+          await window.initRemoteI18n();
+          document.title = window.T('arena.title');
+          new ArenaDisplay();
+        } catch (e) {
+          console.error('[ArenaDisplay] Erreur init:', e);
+          const dot = document.getElementById('connection-dot');
+          const text = document.getElementById('connection-text');
+          if (dot) { dot.classList.add('disconnected'); dot.classList.remove('connected'); }
+          if (text) text.textContent = '❌ Erreur: ' + (e?.message || e);
+        }
       });
     </script>
   </body>

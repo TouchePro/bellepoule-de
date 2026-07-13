@@ -12,7 +12,7 @@ import { exportResultsXMLFFE } from '../../shared/utils/multiFormatExport';
 // pdfExport (jsPDF) chargé à la demande pour alléger le bundle initial
 import type { TableauMatchForPDF, FinalResultForPDF } from '../../shared/utils/pdfExport';
 import { usePdfTemplateStore } from '../../features/pdfTemplates/hooks/usePdfTemplateStore';
-import type { ConsolationBracket } from './tableau/tableauTypes';
+import type { ConsolationBracket, TableauMatch } from './tableau/tableauTypes';
 import { logger, LogCategory } from '@shared/services/logger';
 
 interface FinalResult {
@@ -27,7 +27,7 @@ interface ResultsViewProps {
   finalResults: FinalResult[];
   fencers?: Fencer[];
   pools?: Pool[];
-  tableauMatches?: TableauMatchForPDF[];
+  tableauMatches?: TableauMatch[];
   consolationBrackets?: ConsolationBracket[];
   isLaserSabre?: boolean;
   /** Tireurs triés/filtrés tels qu'affichés dans l'appel */
@@ -188,7 +188,8 @@ const ResultsView: React.FC<ResultsViewProps> = ({
         fencer: r.fencer,
         eliminatedAt: r.eliminatedAt,
       })),
-      pools
+      pools,
+      tableauMatches
     );
 
     const blob = new Blob([xmlContent], { type: 'application/xml' });
@@ -232,6 +233,36 @@ const ResultsView: React.FC<ResultsViewProps> = ({
         }, 'poules', []);
       }
 
+      // Signatures des poules : poolId → (fencerId → data URL)
+      const poolSignatures = await safe(async () => {
+        const entries = await Promise.all(
+          effectivePools.map(async (p) => {
+            const sigs = (await api?.db?.getPoolSignatures?.(p.id)) ?? [];
+            return [p.id, Object.fromEntries(sigs.map((s: { fencerId: string; signatureData: string }) => [s.fencerId, s.signatureData]))] as const;
+          })
+        );
+        return Object.fromEntries(entries) as Record<string, Record<string, string>>;
+      }, 'signatures poules', {} as Record<string, Record<string, string>>);
+
+      // Signatures des matchs de TDE : matchId → { A, B }
+      const allTableauMatches = [
+        ...(effectiveTableauMatches as TableauMatchForPDF[]),
+        ...(consolationBrackets ?? []).flatMap(b => b.matches as TableauMatchForPDF[]),
+      ];
+      const tableauSignatures = await safe(async () => {
+        const ids = allTableauMatches.map(m => m.id).filter(Boolean);
+        const rows = (await api?.db?.getDEMatchSignaturesByMatchIds?.(ids)) ?? [];
+        const out: Record<string, { A?: string; B?: string }> = {};
+        for (const row of rows as { matchId: string; fencerId: string; signatureData: string }[]) {
+          const match = allTableauMatches.find(m => m.id === row.matchId);
+          if (!match) continue;
+          const slot = match.fencerA?.id === row.fencerId ? 'A' : match.fencerB?.id === row.fencerId ? 'B' : null;
+          if (!slot) continue;
+          (out[row.matchId] ??= {})[slot] = row.signatureData;
+        }
+        return out;
+      }, 'signatures tableau', {} as Record<string, { A?: string; B?: string }>);
+
       const { exportFullCompetitionPDF } = await import('../../shared/utils/pdfExport');
       await exportFullCompetitionPDF({
         fencers: effectiveFencers,
@@ -247,6 +278,53 @@ const ResultsView: React.FC<ResultsViewProps> = ({
         finalResults: resultsToDisplay as FinalResultForPDF[],
         competitionTitle: competition.title,
         isLaserSabre,
+        template: rankingTemplate,
+        poolSignatures,
+        tableauSignatures,
+      });
+    } catch (e) {
+      showToast((e as Error).message, 'error');
+    } finally {
+      setIsExportingFull(false);
+    }
+  };
+
+  const exportNoSignaturePDF = async () => {
+    setIsExportingFull(true);
+    try {
+      const api = (window as any).electronAPI;
+
+      const safe = async <T,>(fn: () => Promise<T>, label: string, fallback: T): Promise<T> => {
+        try { return await fn(); } catch (e) {
+          logger.warn(LogCategory.DATABASE, `export sans signature — ${label} échoué`, e instanceof Error ? e : undefined);
+          return fallback;
+        }
+      };
+
+      const effectiveTableauMatches = (tableauMatches && tableauMatches.length > 0)
+        ? tableauMatches
+        : await safe(() => api?.db?.getTableauMatchesForExport?.(competition.id) ?? [], 'matchs tableau', []);
+
+      let effectivePools: Pool[] = pools && pools.length > 0 ? pools : [];
+      if (effectivePools.length === 0 && api?.db?.getPhasesByCompetition && api?.db?.getPoolsByPhase) {
+        effectivePools = await safe(async () => {
+          const phases = await api.db.getPhasesByCompetition(competition.id);
+          const poolPhases = phases.filter((p: { type: string }) => p.type === 'pool');
+          const poolArrays = await Promise.all(poolPhases.map((ph: { id: string }) => api.db.getPoolsByPhase(ph.id)));
+          return poolArrays.flat();
+        }, 'poules', []);
+      }
+
+      const { exportPoolsAndTableauxNoSignaturePDF } = await import('../../shared/utils/pdfExport');
+      await exportPoolsAndTableauxNoSignaturePDF({
+        pools: effectivePools,
+        tableauMatches: effectiveTableauMatches as TableauMatchForPDF[],
+        consolationBrackets: (consolationBrackets ?? []).map(b => ({
+          id: b.id,
+          name: b.name,
+          matches: b.matches as TableauMatchForPDF[],
+        })),
+        competitionTitle: competition.title,
         template: rankingTemplate,
       });
     } catch (e) {
@@ -393,6 +471,20 @@ const ResultsView: React.FC<ResultsViewProps> = ({
             </>
           ) : (
             '📦 Export complet PDF'
+          )}
+        </button>
+        <button
+          onClick={exportNoSignaturePDF}
+          style={{ ...RV_STYLES.btnFullPdf, opacity: isExportingFull ? 0.6 : 1, cursor: isExportingFull ? 'wait' : 'pointer' }}
+          disabled={isExportingFull}
+          title="Poules et tableaux d'élimination directe, sans les signatures des combattants"
+        >
+          {isExportingFull ? (
+            <>
+              <span style={RV_STYLES.spinner} /> Génération…
+            </>
+          ) : (
+            '📄 Export PDF complet sans signature'
           )}
         </button>
       </div>

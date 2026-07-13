@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>En attente — BellePoule Modern</title>
-    <script src="/socket.io/socket.io.js"></script>
+    <script src="/socket.io.min.js"></script>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
       body {
@@ -163,6 +163,10 @@
           clearTimeout(b._t);
           b._t = setTimeout(() => { b.style.opacity = '0'; }, cmd.duration ?? 5000);
         }
+      });
+
+      socket.on('connect_error', (err) => {
+        console.error('[Lobby] Erreur Socket.IO:', err?.message || err);
       });
 
       setInterval(() => { if (socket.connected) socket.emit('client:pong'); }, 30000);

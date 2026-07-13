@@ -81,10 +81,10 @@ describe('RefereeManager', () => {
       ];
       const manager = new RefereeManager(referees);
       const report = manager.generateRotationReport();
-      const names = report.map(r => r.refereeName);
-      expect(names).not.toContain('Test ARBITRE');
-      // only 2 available arbitres included
+      // Tous les arbitres de test partagent le même nom : on vérifie le nombre, pas le nom
+      expect(report).toHaveLength(2);
       const instance = manager as unknown as { referees: Referee[] };
+      expect(instance.referees.map(r => r.id)).toEqual(['r1', 'r3']);
       // test via assignRefereesToMatches: only available can be assigned
       const matches = [makeMatch('m1')];
       const assignments = manager.assignRefereesToMatches(matches, []);

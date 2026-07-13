@@ -23,6 +23,15 @@ export interface FFEConnectConfig {
   baseUrl?: string;
 }
 
+export interface FFEResultEntry {
+  licence: string;
+  rank: number;
+  victories?: number;
+  defeats?: number;
+  touchesScored?: number;
+  touchesReceived?: number;
+}
+
 const DEFAULT_BASE_URL = 'https://api.ffe.fr';
 const TIMEOUT_MS = 5000;
 
@@ -89,6 +98,51 @@ export class FFEConnectService {
       }
       const message = err instanceof Error ? err.message : String(err);
       return { success: false, participants: [], errors: [`Erreur réseau: ${message}`] };
+    }
+  }
+
+  async exportResults(
+    competitionCode: string,
+    results: FFEResultEntry[]
+  ): Promise<{ success: boolean; errors: string[] }> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+    const url = `${this.baseUrl}/competition/${encodeURIComponent(competitionCode)}/results`;
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    };
+    if (this.apiKey) {
+      headers['X-Api-Key'] = this.apiKey;
+    }
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        signal: controller.signal,
+        headers,
+        body: JSON.stringify({ results }),
+      });
+      clearTimeout(timeoutId);
+
+      if (response.status === 401) {
+        return { success: false, errors: ['Clé API invalide'] };
+      }
+      if (response.status === 404) {
+        return { success: false, errors: ['Compétition non trouvée'] };
+      }
+      if (!response.ok) {
+        return { success: false, errors: [`Erreur serveur: ${response.status} ${response.statusText}`] };
+      }
+      return { success: true, errors: [] };
+    } catch (err: unknown) {
+      clearTimeout(timeoutId);
+      if (err instanceof Error && err.name === 'AbortError') {
+        return { success: false, errors: ['Délai de connexion dépassé (5s)'] };
+      }
+      const message = err instanceof Error ? err.message : String(err);
+      return { success: false, errors: [`Erreur réseau: ${message}`] };
     }
   }
 

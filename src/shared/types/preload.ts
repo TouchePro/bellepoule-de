@@ -21,6 +21,13 @@ import {
 // Re-export Pool for preload
 export type { Pool } from '../types';
 
+// Config TTS (minuteur vocal) des tablettes d'arbitrage, réglée dans les paramètres globaux
+export interface TtsConfig {
+  voiceName: string | null; // Nom de la voix (SpeechSynthesisVoice.name) ; null = voix par défaut de la langue
+  rate: number; // Vitesse d'élocution (0.5 – 2)
+  announce: Record<string, boolean>; // Paliers annoncés : '60','30','10','5','countdown','0'
+}
+
 // ============================================================================
 // Database API Types
 // ============================================================================
@@ -333,11 +340,13 @@ export interface RemoteServerInfo {
   url: string;
   ip: string;
   port: number;
+  useHttps?: boolean;
+  certFingerprint?: string;
 }
 
 export interface ConnectedClient {
   socketId: string;
-  clientType: 'arena' | 'kiosk' | 'public' | 'pool' | 'dashboard' | 'lobby';
+  clientType: 'arena' | 'kiosk' | 'public' | 'pool' | 'dashboard' | 'lobby' | 'referee';
   arenaId?: string;
   ip: string;
   userAgent: string;
@@ -345,6 +354,7 @@ export interface ConnectedClient {
   lastSeen: string;
   label?: string;
   screenId?: string;
+  battery?: { level: number; charging: boolean; updatedAt: string };
 }
 
 export interface KioskScreenConfig {
@@ -374,10 +384,12 @@ export interface RemoteServerAPI {
   startServer: (
     competitionId: string,
     port?: number,
-    host?: string
+    host?: string,
+    useHttps?: boolean
   ) => Promise<{ success: boolean; serverInfo?: RemoteServerInfo; error?: string }>;
   stopServer: (competitionId: string) => Promise<{ success: boolean; error?: string }>;
   getServerInfo: (competitionId: string) => Promise<{ success: boolean; serverInfo?: RemoteServerInfo; error?: string }>;
+  getCertFingerprint: () => Promise<{ success: boolean; fingerprint?: string; error?: string }>;
   startSession: (
     competitionId: string,
     strips: number,
@@ -434,8 +446,23 @@ export interface RemoteServerAPI {
     theme: import('../types/remote').DisplayTheme,
     customTheme?: import('../types/remote').CustomTheme
   ) => Promise<{ success: boolean; error?: string }>;
+  clearArenaThemeOverride: (
+    competitionId: string,
+    arenaId: string
+  ) => Promise<{ success: boolean; error?: string }>;
+  updateKioskTheme: (
+    competitionId: string,
+    variables: Record<string, string>
+  ) => Promise<{ success: boolean; error?: string }>;
+  updateArenaScreenTheme: (
+    competitionId: string,
+    arenaId: string,
+    targetType: import('../types/remote').ThemeTargetType,
+    customTheme?: import('../types/remote').CustomTheme
+  ) => Promise<{ success: boolean; error?: string }>;
   setWebhookUrl: (url: string | null) => Promise<{ success: boolean; error?: string }>;
   updateLogo: (logo: string | null) => Promise<{ success: boolean; error?: string }>;
+  setTtsConfig: (config: TtsConfig) => Promise<{ success: boolean; error?: string }>;
   setWallpaper: (
     competitionId: string,
     wallpaper: string | null
@@ -451,6 +478,12 @@ export interface RemoteServerAPI {
   resetPoolMatch: (
     competitionId: string,
     matchId: string
+  ) => Promise<{ success: boolean; error?: string }>;
+  finishPoolMatch: (
+    competitionId: string,
+    matchId: string,
+    scoreA: number,
+    scoreB: number
   ) => Promise<{ success: boolean; error?: string }>;
   setRegistrationEnabled: (
     competitionId: string,
@@ -520,8 +553,8 @@ export interface DatabaseAPI {
   ) => Promise<void>;
   getTableauMatchesForExport: (competitionId: string) => Promise<Array<{
     id: string; round: number; position: number; isBye: boolean;
-    fencerA: { firstName?: string; lastName: string; club?: string } | null;
-    fencerB: { firstName?: string; lastName: string; club?: string } | null;
+    fencerA: { id: string; firstName?: string; lastName: string; club?: string } | null;
+    fencerB: { id: string; firstName?: string; lastName: string; club?: string } | null;
     scoreA: number | null; scoreB: number | null;
     winner: { id: string } | null;
   }>>;
@@ -535,6 +568,9 @@ export interface DatabaseAPI {
   getPoolsByPhase: (phaseId: string) => Promise<Pool[]>;
   updatePool: (pool: Pool) => Promise<void>;
   getPoolSignatures: (poolId: string) => Promise<{ fencerId: string; signatureData: string }[]>;
+  getDEMatchSignaturesByMatchIds: (
+    matchIds: string[]
+  ) => Promise<{ matchId: string; fencerId: string; signatureData: string }[]>;
   updatePoolReferee: (poolId: string, refereeId: string | null) => Promise<void>;
 
   // Phases
@@ -565,6 +601,10 @@ export interface DatabaseAPI {
     fencerAName: string; fencerBName: string;
     scoreA: number | null; scoreB: number | null; status: string;
     refereeId: string | null; refereeName: string | null;
+  }>>;
+  getRefereeStats: (competitionId: string) => Promise<Array<{
+    refereeId: string; refereeName: string; matchesCount: number;
+    averageDuration: number; cardsYellow: number; cardsRed: number; cardsBlack: number;
   }>>;
 
   // Touch / Card read
@@ -619,9 +659,84 @@ export interface DatabaseAPI {
   // Score audit log
   getScoreAuditLogByCompetition: (competitionId: string) => Promise<ScoreAuditEntry[]>;
 
+  // Classement saisonnier Quest
+  addCompetitionToSeason: (payload: {
+    competitionId: string;
+    competitionTitle: string;
+    competitionDate: string;
+    entries: Array<{
+      fencerId: string;
+      fencerLastName: string;
+      fencerFirstName: string;
+      fencerClub?: string;
+      victories: number;
+      matchesPlayed: number;
+      questPoints: number;
+      questV4: number;
+      questV3: number;
+      questV2: number;
+      questV1: number;
+      touchesScored: number;
+      touchesReceived: number;
+      redCards: number;
+      compRank: number;
+    }>;
+  }) => Promise<void>;
+  getSeasonRanking: () => Promise<Array<{
+    fencerId: string;
+    fencerLastName: string;
+    fencerFirstName: string;
+    fencerClub: string | null;
+    totalVictories: number;
+    totalMatchesPlayed: number;
+    totalQuestPoints: number;
+    totalQuestV4: number;
+    totalQuestV3: number;
+    totalQuestV2: number;
+    totalQuestV1: number;
+    totalTouchesScored: number;
+    totalTouchesReceived: number;
+    totalRedCards: number;
+    competitionCount: number;
+    ratio: number;
+  }>>;
+  getSeasonCompetitions: () => Promise<Array<{
+    competitionId: string;
+    competitionTitle: string;
+    competitionDate: string;
+    fencerCount: number;
+    addedAt: string;
+  }>>;
+  removeCompetitionFromSeason: (competitionId: string) => Promise<void>;
+  resetSeason: () => Promise<void>;
+
   // Match timeline
   getMatchTimeline: (matchId: string) => Promise<import('./index').MatchEventEntry[]>;
   getCompetitionTimeline: (competitionId: string) => Promise<import('./index').MatchEventEntry[]>;
+
+  // Équipes
+  createTeam: (competitionId: string, name: string, club: string) => Promise<{ id: string }>;
+  getTeamsByCompetition: (competitionId: string) => Promise<Array<{
+    id: string; name: string; club: string;
+    fencers: Array<{ fencerId: string; fencerLastName: string; fencerFirstName: string; teamOrder: number; isReserve: boolean }>;
+  }>>;
+  deleteTeam: (teamId: string) => Promise<void>;
+  upsertTeamFencer: (teamId: string, fencerId: string, teamOrder: number, isReserve: boolean) => Promise<void>;
+  removeTeamFencer: (teamId: string, fencerId: string) => Promise<void>;
+  createTeamMatch: (competitionId: string, poolNumber: number, teamAId: string, teamBId: string) => Promise<{ id: string }>;
+  getTeamMatchesByCompetition: (competitionId: string) => Promise<Array<{
+    id: string; poolNumber: number; teamAId: string; teamBId: string;
+    scoreBoutsA: number; scoreBoutsB: number; status: string; winnerId: string | null; currentBoutIndex: number;
+    bouts: Array<{ id: string; boutOrder: number; fencerAId: string; fencerBId: string; scoreA: number; scoreB: number; maxScore: number; status: string; winnerId: string | null }>;
+  }>>;
+  createTeamBout: (matchId: string, boutOrder: number, fencerAId: string, fencerBId: string, maxScore: number) => Promise<{ id: string }>;
+  updateTeamBout: (boutId: string, scoreA: number, scoreB: number, status: string, winnerId: string | null) => Promise<void>;
+  createTeamTableauMatch: (competitionId: string, tableId: string, round: number, position: number, teamAId: string, teamBId: string) => Promise<{ id: string }>;
+  getTeamTableauMatches: (competitionId: string, tableId: string) => Promise<Array<{
+    id: string; round: number; position: number; teamAId: string; teamBId: string;
+    scoreBoutsA: number; scoreBoutsB: number; status: string; winnerId: string | null; currentBoutIndex: number;
+    bouts: Array<{ id: string; boutOrder: number; fencerAId: string; fencerBId: string; scoreA: number; scoreB: number; maxScore: number; status: string; winnerId: string | null }>;
+  }>>;
 }
 
 export interface FileAPI {
@@ -633,6 +748,7 @@ export interface FileAPI {
     html: string,
     outputPath: string
   ) => Promise<{ success: boolean; path?: string; error?: string }>;
+  previewHtmlAsPDF: (html: string) => Promise<{ success: boolean; path?: string; error?: string }>;
   exportPhotos: (competitionId: string, filepath: string) => Promise<{ count: number }>;
   importPhotos: (
     competitionId: string,
@@ -659,6 +775,7 @@ export interface MenuAPI {
   onMenuNextPhase: (callback: () => void) => void;
   onMenuExport: (callback: (format: string) => void) => void;
   onMenuImport: (callback: (format: string, filepath: string, content: string) => void) => void;
+  onMenuOpenSettings: (callback: () => void) => void;
   onMenuReportIssue: (callback: () => void) => void;
   onShowAbout: (callback: () => void) => void;
   onFileOpened: (callback: (filepath: string) => void) => void;
@@ -670,6 +787,7 @@ export interface MenuAPI {
 
 export interface UtilityAPI {
   print: () => Promise<void>;
+  setWindowSize: (width: number, height: number) => Promise<void>;
   openExternal: (url: string) => Promise<void>;
   getVersionInfo: () => Promise<VersionInfo>;
   removeAllListeners: (channel: string) => void;
@@ -758,6 +876,34 @@ export interface CryptoAPI {
   unprotect: (ciphertext: string) => Promise<string | null>;
 }
 
+export interface TrainingCustomRules {
+  matchDurationSeconds: number;
+  allowedZones: string[];
+  disableSuddenDeath: boolean;
+}
+
+export interface TrainingMatchRecord {
+  id: string;
+  arenaId: string;
+  arenaNumber: number;
+  weapon: string;
+  scoreA: number;
+  scoreB: number;
+  durationSec: number;
+  finishedAt: string;
+}
+
+export interface TrainingAPI {
+  startServer: (port?: number, host?: string, useHttps?: boolean) => Promise<{ success: boolean; serverInfo?: { url: string; ip: string; port: number; useHttps: boolean; certFingerprint?: string }; error?: string }>;
+  stopServer: () => Promise<{ success: boolean; error?: string }>;
+  startSession: (strips: number, weapon: string, customRules?: TrainingCustomRules) => Promise<{ success: boolean; session?: any; error?: string }>;
+  stopSession: () => Promise<{ success: boolean; error?: string }>;
+  getHistory: () => Promise<{ success: boolean; history: TrainingMatchRecord[]; error?: string }>;
+  getSession: () => Promise<{ success: boolean; session: any | null; error?: string }>;
+  getArenas: () => Promise<{ success: boolean; arenas: any[]; error?: string }>;
+  getServerInfo: () => Promise<{ success: boolean; serverInfo?: { url: string; ip: string; port: number; useHttps: boolean; certFingerprint?: string }; error?: string }>;
+}
+
 export interface ElectronAPI extends MenuAPI, UtilityAPI {
   db: DatabaseAPI;
   file: FileAPI;
@@ -765,8 +911,10 @@ export interface ElectronAPI extends MenuAPI, UtilityAPI {
   updater: UpdaterAPI;
   crypto: CryptoAPI;
   remote: RemoteServerAPI;
+  training: TrainingAPI;
   onRemoteArenaUpdate: (callback: (data: any) => void) => () => void;
   onRemoteMatchFinished: (callback: (data: any) => void) => () => void;
+  onTrainingMatchFinished: (callback: (data: { record: TrainingMatchRecord | null }) => void) => () => void;
   onRemoteFencerExcluded: (callback: (data: { fencerId: string; matchId: string }) => void) => (() => void);
   onKioskNoteUpdate: (
     callback: (note: import('../types/remote').OrgNote | null) => void
@@ -778,6 +926,13 @@ export interface ElectronAPI extends MenuAPI, UtilityAPI {
   onScoreIpConflict: (callback: (data: ScoreIpConflict) => void) => () => void;
   onPoolSignatureUpdated: (callback: (data: { poolId: string; signedFencerIds: string[]; totalFencers: number }) => void) => () => void;
   notifyLanguageChanged: (lang: string) => void;
+  initialLanguage: string | null;
   getLogo: () => Promise<string | null>;
+  getTtsConfig: () => Promise<TtsConfig | null>;
   onLogoLoaded: (callback: (logo: string | null) => void) => () => void;
+  themes: {
+    list: () => Promise<import('../types/remote').CustomTheme[]>;
+    save: (theme: import('../types/remote').CustomTheme) => Promise<{ success: boolean; error?: string }>;
+    delete: (id: string) => Promise<{ success: boolean; error?: string }>;
+  };
 }

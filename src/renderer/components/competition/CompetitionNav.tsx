@@ -3,12 +3,11 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React from 'react';
+import { ChevronLeft, ChevronRight, Swords, Target, Zap, Trophy, ScrollText, CalendarClock } from 'lucide-react';
 import { Competition, MatchStatus, QuestPhaseConfig, Fencer } from '../../../shared/types';
 import { Phase } from '../../hooks/useCompetitionSession';
 import CoachMark from '../CoachMark';
-import { WifiQRModal } from '../WifiQRModal';
-import { XiaomiRemotePanel } from '../XiaomiRemotePanel';
 
 interface PhaseItem {
   id: string;
@@ -50,8 +49,7 @@ interface CompetitionNavProps {
   getCheckedInFencers: () => Fencer[];
   pools: PoolItem[];
   tableauMatches: TableauMatchItem[];
-  remoteServerUrl?: string;
-  remoteArenaCount?: number;
+  onOpenPlanningAssistant?: () => void;
 }
 
 const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
@@ -69,30 +67,8 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
   getCheckedInFencers,
   pools,
   tableauMatches,
-  remoteServerUrl,
-  remoteArenaCount = 4,
+  onOpenPlanningAssistant,
 }) => {
-  const [showToolsMenu, setShowToolsMenu] = useState(false);
-  const [showWifiQR, setShowWifiQR] = useState(false);
-  const [showTVRemote, setShowTVRemote] = useState(false);
-  const toolsMenuRef = useRef<HTMLDivElement>(null);
-  const toolsBtnRef = useRef<HTMLButtonElement>(null);
-  const [toolsMenuPos, setToolsMenuPos] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
-
-  useEffect(() => {
-    if (!showToolsMenu) return;
-    const rect = toolsBtnRef.current?.getBoundingClientRect();
-    if (rect) {
-      setToolsMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
-    }
-    const handler = (e: MouseEvent) => {
-      if (toolsMenuRef.current && !toolsMenuRef.current.contains(e.target as Node)) {
-        setShowToolsMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [showToolsMenu]);
 
   return (
   <>
@@ -118,87 +94,74 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
             <span>{phase.label}</span>
           </div>
           {index < phases.length - 1 && (
-            <div style={{ display: 'flex', alignItems: 'center', color: '#9CA3AF' }}>→</div>
+            <div className={`phase-step-connector${!phase.disabled && !phases[index + 1]?.disabled ? ' connector-done' : ''}`} />
           )}
         </React.Fragment>
       ))}
       <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
         {currentPhase !== 'checkin' && (
-          <button className="btn btn-secondary" onClick={handleGoBack}>
-            ← Retour
+          <button className="btn btn-secondary btn-icon-label" onClick={handleGoBack}>
+            <ChevronLeft size={15} /> Retour
           </button>
         )}
         {currentPhase === 'checkin' && questEnabled && !questConfig?.hasPreliminaryPools && (
           <button
-            className="btn btn-primary"
+            className="btn btn-primary btn-icon-label"
             onClick={() => setCurrentPhase('quest')}
             disabled={getCheckedInFencers().length < 2}
           >
-            Tour Quest →
+            Tour Quest <ChevronRight size={15} />
           </button>
         )}
         {currentPhase === 'checkin' && (!questEnabled || questConfig?.hasPreliminaryPools) && (
           <CoachMark id="generate-pools" message="Cliquez ici après avoir pointé tous vos tireurs" position="bottom">
             <button
-              className="btn btn-primary"
+              className="btn btn-primary btn-icon-label"
               onClick={handleGeneratePools}
               disabled={getCheckedInFencers().length < 4}
+              title={
+                getCheckedInFencers().length < 4
+                  ? `Minimum 4 tireurs pointés requis (${getCheckedInFencers().length} actuellement)`
+                  : getCheckedInFencers().length === fencers.length && fencers.length > 0
+                    ? 'Tous les tireurs sont pointés — prêt !'
+                    : undefined
+              }
+              style={
+                getCheckedInFencers().length === fencers.length && fencers.length >= 4
+                  ? { background: '#16a34a', borderColor: '#15803d' }
+                  : undefined
+              }
             >
-              Générer les poules →
+              Générer les poules <ChevronRight size={15} />
             </button>
           </CoachMark>
         )}
         {currentPhase === 'pools' && poolsNextAction && (
-          <button className="btn btn-primary" onClick={poolsNextAction.action}>
-            {poolsNextAction.label}
+          <CoachMark id="pools-next-action" message="Étape suivante une fois les poules terminées" position="bottom">
+            <button className="btn btn-primary" onClick={poolsNextAction.action}>
+              {poolsNextAction.label}
+            </button>
+          </CoachMark>
+        )}
+        {currentPhase === 'pools' && onOpenPlanningAssistant && pools.length > 0 && (
+          <button
+            className="btn btn-secondary btn-icon-label"
+            onClick={onOpenPlanningAssistant}
+            title="Estimation de fin de tournoi et recommandations de répartition des pistes"
+            style={{ fontSize: '0.8rem', padding: '0.3rem 0.6rem' }}
+          >
+            <CalendarClock size={14} /> Planning
           </button>
         )}
+        <button
+          className={`btn btn-secondary btn-icon-label${currentPhase === 'logs' ? ' btn-active' : ''}`}
+          onClick={() => setCurrentPhase(currentPhase === 'logs' ? 'checkin' : 'logs')}
+          title="Journal des événements de match"
+          style={{ fontSize: '0.8rem', padding: '0.3rem 0.6rem' }}
+        >
+          <ScrollText size={14} /> Journal
+        </button>
 
-        {/* Bouton menu outils */}
-        <div ref={toolsMenuRef} style={{ position: 'relative' }}>
-          <button
-            ref={toolsBtnRef}
-            className="btn btn-secondary"
-            onClick={() => setShowToolsMenu(v => !v)}
-            title="Outils"
-            aria-haspopup="true"
-            aria-expanded={showToolsMenu}
-          >
-            🔧 Outils
-          </button>
-          {showToolsMenu && (
-            <div
-              style={{
-                position: 'fixed',
-                right: toolsMenuPos.right,
-                top: toolsMenuPos.top,
-                background: 'var(--color-surface)',
-                color: 'var(--color-text)',
-                border: '1px solid var(--color-border)',
-                borderRadius: '8px',
-                boxShadow: 'var(--shadow-xl)',
-                minWidth: '200px',
-                zIndex: 1100,
-                overflow: 'hidden',
-              }}
-            >
-              <button
-                className="comp-header-dropdown-item"
-                onClick={() => { setShowWifiQR(true); setShowToolsMenu(false); }}
-                style={{ width: '100%', textAlign: 'left' }}
-              >
-                📶 QR Code WiFi
-              </button>
-              <button
-                className="comp-header-dropdown-item"
-                onClick={() => { setShowTVRemote(true); setShowToolsMenu(false); }}
-                style={{ width: '100%', textAlign: 'left' }}
-              >
-                📺 Télécommande TV
-              </button>
-            </div>
-          )}
-        </div>
       </div>
     </div>
 
@@ -206,19 +169,19 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
     {(pools.length > 0 || tableauMatches.length > 0 || fencers.length > 0) && (
       <div className="comp-stats-bar">
         <div className="comp-stats-bar-item">
-          <span className="comp-stats-bar-icon">🤺</span>
+          <span className="comp-stats-bar-icon"><Swords size={13} /></span>
           <span>{getCheckedInFencers().length}/{fencers.length} tireurs</span>
         </div>
         {pools.length > 0 && (
           <>
             <div className="comp-stats-bar-sep" />
             <div className="comp-stats-bar-item">
-              <span className="comp-stats-bar-icon">🎯</span>
+              <span className="comp-stats-bar-icon"><Target size={13} /></span>
               <span>{pools.filter(p => p.isComplete).length}/{pools.length} poules</span>
             </div>
             <div className="comp-stats-bar-sep" />
             <div className="comp-stats-bar-item">
-              <span className="comp-stats-bar-icon">⚡</span>
+              <span className="comp-stats-bar-icon"><Zap size={13} /></span>
               <span>
                 {pools.reduce((s, p) => s + p.matches.filter(m => m.status === MatchStatus.FINISHED).length, 0)}/
                 {pools.reduce((s, p) => s + p.matches.length, 0)} matchs
@@ -230,7 +193,7 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
           <>
             <div className="comp-stats-bar-sep" />
             <div className="comp-stats-bar-item">
-              <span className="comp-stats-bar-icon">🏆</span>
+              <span className="comp-stats-bar-icon"><Trophy size={13} /></span>
               <span>
                 {tableauMatches.filter(m => m.winner !== null).length}/
                 {tableauMatches.filter(m => m.fencerA && m.fencerB).length} tableau
@@ -241,15 +204,6 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
       </div>
     )}
 
-    {showWifiQR && <WifiQRModal onClose={() => setShowWifiQR(false)} />}
-    {showTVRemote && (
-      <XiaomiRemotePanel
-        competitionId={competition.id}
-        serverUrl={remoteServerUrl ?? ''}
-        arenaCount={remoteArenaCount}
-        onClose={() => setShowTVRemote(false)}
-      />
-    )}
   </>
   );
 };

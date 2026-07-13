@@ -25,7 +25,8 @@
     "uncheck_all": "Alle Austragen",
     "validate": "Validieren",
     "view": "Anzeigen",
-    "yes": "Ja"
+    "yes": "Ja",
+    "save_and_add": "Speichern und hinzufügen"
   },
   "app": {
     "back_to_list": "Zurück zur Wettbewerbliste",
@@ -103,7 +104,9 @@
     "third_place_match_label": "Kleines Finale (Spiel um den 3. Platz)",
     "third_place_match_ok": "Klicken Sie auf OK, um das kleine Finale hinzuzufügen",
     "title": "Titel",
-    "weapon": "Waffe"
+    "weapon": "Waffe",
+    "sign_tableau_matches_label": "Unterschrift der Fechter auf Tablet (Tableau)",
+    "sign_tableau_matches_description": "Zeigt nach jedem K.-o.-Match auf dem Tablet einen Unterschriftsbildschirm für beide Fechter an"
   },
   "fencer": {
     "abandon": "Aufgeben",
@@ -319,6 +322,7 @@
     "nav_fields": "Zwischen Feldern navigieren",
     "nav_list": "In der Liste navigieren",
     "new_competition": "Neuer Wettkampf",
+    "print_sheets": "Poolblätter / Gefechtsblätter drucken",
     "quick_search": "Schnellsuche",
     "redo": "Wiederholen",
     "refresh_data": "Daten aktualisieren",

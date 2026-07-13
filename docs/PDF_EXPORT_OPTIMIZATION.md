@@ -196,12 +196,12 @@ describe('OptimizedPDFExporter', () => {
 describe('PDF Export Integration', () => {
   it('should export pool successfully', async () => {
     const pool = createTestPool();
-    await expect(exportOptimizedPoolToPDF(pool)).resolves.not.toThrow();
+    await expect(exportPoolToPDF(pool)).resolves.not.toThrow();
   });
   
   it('should handle errors gracefully', async () => {
     const invalidPool = { fencers: [], matches: [] };
-    await expect(exportOptimizedPoolToPDF(invalidPool)).rejects.toThrow();
+    await expect(exportPoolToPDF(invalidPool)).rejects.toThrow();
   });
 });
 ```
@@ -215,13 +215,13 @@ describe('PDF Export Integration', () => {
    import { exportPoolToPDF } from './pdfExport';
    
    // New
-   import { exportOptimizedPoolToPDF } from './pdfExport';
+   import { exportPoolToPDF } from './pdfExport';
    ```
 
 2. **Update function calls:**
    ```typescript
    // Old methods still work, but new optimized methods are preferred
-   await exportOptimizedPoolToPDF(pool, options);
+   await exportPoolToPDF(pool, options);
    ```
 
 ### For New Features:

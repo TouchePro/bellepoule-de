@@ -8,8 +8,19 @@
     />
     <title>Arbitrage - Arène BellePoule</title>
     <script src="/i18n.js"></script>
-    <script src="/socket.io/socket.io.js"></script>
+    <script src="/socket.io.min.js"></script>
     <style>
+      :root {
+        --ref-bg: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        --ref-header-bg: rgba(0, 0, 0, 0.3);
+        --ref-accent: #3b82f6;
+        --ref-accent2: #f59e0b;
+        --ref-text: #ffffff;
+        --ref-muted: rgba(255,255,255,0.6);
+        --ref-card-bg: rgba(255, 255, 255, 0.05);
+        --ref-border: rgba(255, 255, 255, 0.1);
+      }
+
       * {
         margin: 0;
         padding: 0;
@@ -21,14 +32,14 @@
         font-family:
           -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell,
           sans-serif;
-        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        background: var(--ref-bg);
         min-height: 100vh;
-        color: #fff;
+        color: var(--ref-text);
         overflow-x: hidden;
       }
 
       .header {
-        background: rgba(0, 0, 0, 0.3);
+        background: var(--ref-header-bg);
         padding: 1rem;
         display: flex;
         justify-content: space-between;
@@ -54,8 +65,12 @@
         width: 10px;
         height: 10px;
         border-radius: 50%;
-        background: #ef4444;
+        background: #f59e0b;
         animation: pulse 2s infinite;
+      }
+
+      .status-dot.disconnected {
+        background: #ef4444;
       }
 
       .status-dot.connected {
@@ -107,6 +122,8 @@
         text-align: center;
         border: 3px solid transparent;
         transition: all 0.2s;
+        min-width: 0;
+        overflow: hidden;
       }
 
       .fencer-box.red-side {
@@ -1031,6 +1048,147 @@
         .next-matches-screen { background: rgba(0,0,0,0.5); }
       }
 
+      /* ── Overlay signature des combattants (match tableau) ── */
+      .match-sig-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 950;
+        background: rgba(0, 0, 0, 0.85);
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+      }
+      .match-sig-overlay.visible { display: flex; }
+      .match-sig-box {
+        background: #1e293b;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        width: 760px;
+        max-width: 96vw;
+        max-height: 94vh;
+        overflow: auto;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
+      }
+      .match-sig-box h2 {
+        margin: 0 0 0.25rem;
+        text-align: center;
+        font-size: 1.25rem;
+        color: #e2e8f0;
+      }
+      .match-sig-instructions {
+        margin: 0 0 1rem;
+        text-align: center;
+        font-size: 0.85rem;
+        color: #94a3b8;
+      }
+      .match-sig-score-recall {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.15rem;
+        margin: 0 0 1rem;
+      }
+      .match-sig-score-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #64748b;
+      }
+      .match-sig-score-value {
+        font-size: 1.9rem;
+        font-weight: 800;
+        color: #e2e8f0;
+        letter-spacing: 0.05em;
+      }
+      .match-sig-grid {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+      .match-sig-pad {
+        flex: 1 1 320px;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        border: 2px solid transparent;
+        border-radius: 0.6rem;
+        padding: 0.5rem;
+      }
+      .match-sig-pad.winner {
+        border-color: #16a34a;
+        background: rgba(22, 163, 74, 0.08);
+      }
+      .match-sig-victory {
+        display: inline-block;
+        background: #16a34a;
+        color: #fff;
+        font-weight: 800;
+        border-radius: 0.35rem;
+        padding: 0.05rem 0.45rem;
+        margin-right: 0.25rem;
+      }
+      .match-sig-fencer {
+        font-size: 0.95rem;
+        color: #e2e8f0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .match-sig-letter {
+        background: #4f46e5;
+        color: #fff;
+        font-weight: 800;
+        border-radius: 0.4rem;
+        padding: 0.1rem 0.55rem;
+      }
+      .match-sig-canvas {
+        background: #fff;
+        border-radius: 0.5rem;
+        touch-action: none;
+        cursor: crosshair;
+        width: 100%;
+        height: 170px;
+        display: block;
+      }
+      .match-sig-clear {
+        align-self: flex-start;
+        background: #334155;
+        color: #cbd5e1;
+        border: none;
+        border-radius: 0.5rem;
+        padding: 0.4rem 0.9rem;
+        font-size: 0.8rem;
+        cursor: pointer;
+      }
+      .match-sig-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        margin-top: 1.25rem;
+      }
+      .match-sig-skip {
+        background: transparent;
+        color: #94a3b8;
+        border: 1px solid #475569;
+        border-radius: 0.6rem;
+        padding: 0.7rem 1.3rem;
+        font-size: 0.95rem;
+        cursor: pointer;
+      }
+      .match-sig-validate {
+        background: #16a34a;
+        color: #fff;
+        border: none;
+        border-radius: 0.6rem;
+        padding: 0.7rem 1.5rem;
+        font-size: 0.95rem;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .match-sig-validate:disabled { opacity: 0.5; cursor: default; }
+
       /* ── Overlay fin de poule / signature ── */
       .pool-complete-overlay {
         display: none;
@@ -1102,6 +1260,20 @@
           data-i18n="remote.syncing"
         >
           ⟳ Sync...
+        </span>
+        <span
+          id="battery-badge"
+          style="
+            display: none;
+            background: #ef4444;
+            padding: 0.15rem 0.45rem;
+            border-radius: 1rem;
+            font-size: 0.7rem;
+            margin-left: 0.4rem;
+          "
+          title="Batterie faible"
+        >
+          🔋 <span id="battery-level">--</span>%
         </span>
         <button
           id="btn-dt-icon"
@@ -1319,7 +1491,7 @@
 
       <!-- Écran de sélection de match -->
       <div class="next-matches-screen" id="next-matches-screen">
-        <h2>📋 Matchs — Arène <span id="next-arena-number">1</span></h2>
+        <h2>📋 Matchs — <span id="next-arena-label">Arène</span> <span id="next-arena-number">1</span></h2>
         <input
           type="search"
           id="match-search"
@@ -1399,6 +1571,19 @@
     <div class="notification" id="notification"></div>
 
     <script>
+      function applyScreenTheme(variables) {
+        if (!variables) {
+          document.documentElement.removeAttribute('data-screen-theme');
+          const old = document.getElementById('screen-theme-style');
+          if (old) old.remove();
+          return;
+        }
+        let styleEl = document.getElementById('screen-theme-style');
+        if (!styleEl) { styleEl = document.createElement('style'); styleEl.id = 'screen-theme-style'; document.head.appendChild(styleEl); }
+        const vars = Object.entries(variables).map(([k, v]) => `  ${k}: ${v};`).join('\n');
+        styleEl.textContent = `:root {\n${vars}\n}`;
+      }
+
       // ─── Utilitaire sécurité : encodage HTML pour éviter les XSS ───────────
       function escHtml(str) {
         if (str === null || str === undefined) return '';
@@ -1597,16 +1782,23 @@
           this.refereesList = []; // Liste des arbitres de la compétition
           this.swapped = false;
           this.pausedForModal = false;
+          this.trainingCustomRules = null; // { matchDurationSeconds, allowedZones, disableSuddenDeath }
           this.offlineQueue = new OfflineQueueInline();
           this.ttsEnabled = false;
           this._ttsAnnouncedSeconds = new Set();
+          // Config TTS poussée depuis les paramètres globaux de l'application
+          this.ttsConfig = {
+            voiceName: null,
+            rate: 1.1,
+            announce: { '60': true, '30': true, '10': true, '5': true, 'countdown': true, '0': true },
+          };
 
           this.init();
         }
 
         getArenaId() {
           const path = window.location.pathname;
-          const match = path.match(/arene(\d+)/i);
+          const match = path.match(/arene(\d+)/i) || path.match(/arena(\d+)/i);
           return match ? `arena${match[1]}` : 'arena1';
         }
 
@@ -1620,6 +1812,7 @@
           this.setupSocketListeners();
           this.setupTimerInteractions();
           this.setupLongPressInteractions();
+          this.setupBatteryMonitor();
           this.showNextMatchesScreen();
           // Détecter l'arme de la compétition pour la mort subite Laser Sabre
           fetch('/api/session')
@@ -1628,12 +1821,21 @@
               if (s) {
               this.isLaserSabre = s.weapon === 'L';
               this.isModernFencing = ['E', 'F', 'S'].includes(s.weapon);
+              if (s.trainingCustomRules) this.trainingCustomRules = s.trainingCustomRules;
               if (this.isModernFencing) {
-                document.getElementById('arena-label').textContent = 'Piste';
+                const pisteLabel = window.T('remote.piste');
+                document.getElementById('arena-label').textContent = pisteLabel;
+                const nextLabel = document.getElementById('next-arena-label');
+                if (nextLabel) nextLabel.textContent = pisteLabel;
                 document.querySelectorAll('.btn-plus-3, .btn-plus-5').forEach(b => (b.style.display = 'none'));
               }
             }
             })
+            .catch(() => {});
+          // Config TTS (voix + paliers annoncés) depuis les paramètres globaux
+          fetch('/api/tts-config')
+            .then(r => (r.ok ? r.json() : null))
+            .then(c => { if (c) this.applyTtsConfig(c); })
             .catch(() => {});
           // Service Worker PWA
           if ('serviceWorker' in navigator) {
@@ -1654,16 +1856,11 @@
         }
 
         updateConnectionUI(online) {
-          const dot = document.getElementById('status-dot');
-          const text = document.getElementById('connection-text');
+          // Gère uniquement le badge hors-ligne ; la dot est pilotée par l'état socket
           const badge = document.getElementById('offline-badge');
           if (online) {
-            if (dot) dot.classList.add('connected');
-            if (text) text.textContent = window.T('remote.connected');
             if (badge) badge.style.display = 'none';
           } else {
-            if (dot) dot.classList.remove('connected');
-            if (text) text.textContent = window.T('remote.offline');
             if (badge) badge.style.display = 'inline';
             this.updateOfflineBadge();
           }
@@ -1886,18 +2083,76 @@
           }
         }
 
+        showIdentifyOverlay(label, durationMs) {
+          let ov = document.getElementById('bp-identify-overlay');
+          if (!ov) {
+            ov = document.createElement('div');
+            ov.id = 'bp-identify-overlay';
+            ov.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;pointer-events:none;animation:bp-identify-blink 0.5s ease-in-out infinite alternate;';
+            const style = document.createElement('style');
+            style.textContent = '@keyframes bp-identify-blink{from{background:rgba(59,130,246,0.55)}to{background:rgba(139,92,246,0.65)}}';
+            document.head.appendChild(style);
+            document.body.appendChild(ov);
+          }
+          ov.innerHTML = '<div style="background:rgba(0,0,0,0.85);border:3px solid #3b82f6;border-radius:1.5rem;padding:2rem 4rem;text-align:center;max-width:80vw;">'
+            + '<div style="font-size:2.5rem;font-weight:900;color:#fff;margin-bottom:0.5rem;">🤺 ' + String(label).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c])) + '</div>'
+            + '<div style="font-size:1rem;color:#94a3b8;">Identification tablette arbitre</div>'
+            + '</div>';
+          ov.style.display = 'flex';
+          clearTimeout(ov._t);
+          ov._t = setTimeout(() => { ov.style.display = 'none'; }, durationMs ?? 5000);
+        }
+
         setupSocketListeners() {
+          // Identifiant persistant de cette tablette (survit aux rechargements/reconnexions)
+          let _screenId = localStorage.getItem('bp_screen_id');
+          if (!_screenId) {
+            _screenId = 'scr_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+            localStorage.setItem('bp_screen_id', _screenId);
+          }
+
+          // Mise à jour live de la config TTS depuis les paramètres globaux
+          this.socket.on('tts:update', d => { if (d) this.applyTtsConfig(d); });
+
           this.socket.on('connect', () => {
             this.updateConnectionStatus(true);
             this.socket.emit('join_arena', { arenaId: this.arenaId, role: 'referee' });
+            this.socket.emit('client:register', { clientType: 'referee', arenaId: this.arenaId, userAgent: navigator.userAgent, screenId: _screenId });
             this.showNotification('✅ Connecté au serveur');
             // Synchroniser les actions mises en file hors-ligne
             this.syncOfflineQueue();
           });
 
+          this.socket.on('server:command', cmd => {
+            if (cmd.type === 'refresh') { location.reload(); return; }
+            if (cmd.type === 'navigate' && cmd.url) { location.href = cmd.url; return; }
+            if (cmd.type === 'ping') { this.socket.emit('client:pong'); return; }
+            if (cmd.type === 'identify') {
+              const lbl = cmd.screenLabel || localStorage.getItem('bp_screen_label') || _screenId;
+              if (cmd.screenLabel) localStorage.setItem('bp_screen_label', cmd.screenLabel);
+              this.showIdentifyOverlay(lbl, cmd.duration ?? 5000);
+              return;
+            }
+            if (cmd.type === 'message' && cmd.text) { this.showNotification(cmd.text); }
+            if (cmd.type === 'referee:theme') { applyScreenTheme(cmd.variables); }
+          });
+
+          setInterval(() => { if (this.socket.connected) this.socket.emit('client:pong'); }, 30000);
+
           this.socket.on('disconnect', () => {
             this.updateConnectionStatus(false);
             this.showNotification('❌ Déconnecté', true);
+          });
+
+          this.socket.on('connect_error', (err) => {
+            this.updateConnectionStatus(false);
+            const text = document.getElementById('connection-text');
+            if (text) text.textContent = `❌ ${err?.message || 'Erreur réseau'}`;
+          });
+
+          this.socket.on('auth_error', () => {
+            this.socket.disconnect();
+            window.location.href = `/login?arena=${this.arenaId}&return=${encodeURIComponent(window.location.pathname)}`;
           });
 
           this.socket.on(`arena:${this.arenaId}:update`, data => {
@@ -1981,11 +2236,45 @@
 
           if (connected) {
             dot.classList.add('connected');
+            dot.classList.remove('disconnected');
             text.textContent = window.T('remote.online');
           } else {
             dot.classList.remove('connected');
+            dot.classList.add('disconnected');
             text.textContent = window.T('remote.offline');
           }
+        }
+
+        setupBatteryMonitor() {
+          if (!navigator.getBattery) return;
+          const badge = document.getElementById('battery-badge');
+          const levelSpan = document.getElementById('battery-level');
+          const LOW_THRESHOLD = 0.2;
+          let lastSent = 0;
+
+          const report = (battery, force) => {
+            const level = battery.level;
+            const pct = Math.round(level * 100);
+            const low = level <= LOW_THRESHOLD && !battery.charging;
+            badge.style.display = low ? 'inline-block' : 'none';
+            levelSpan.textContent = pct;
+            const now = Date.now();
+            if (force || now - lastSent > 60000) {
+              lastSent = now;
+              if (this.socket && this.socket.connected) {
+                this.socket.emit('client:battery', { level, charging: battery.charging });
+              }
+            }
+            if (low && force) {
+              this.showNotification(`🔋 Batterie faible (${pct}%)`, true);
+            }
+          };
+
+          navigator.getBattery().then(battery => {
+            report(battery, true);
+            battery.addEventListener('levelchange', () => report(battery, true));
+            battery.addEventListener('chargingchange', () => report(battery, true));
+          }).catch(() => {});
         }
 
         selectMatch(matchId) {
@@ -2055,6 +2344,19 @@
             return;
           }
 
+          // Restriction de zones en mode entraînement
+          const _zone = points === 1 ? 'A' : points === 3 ? 'B' : 'C';
+          if (
+            this.trainingCustomRules &&
+            this.trainingCustomRules.allowedZones &&
+            this.trainingCustomRules.allowedZones.length > 0 &&
+            !this.trainingCustomRules.allowedZones.includes(_zone)
+          ) {
+            const allowed = this.trainingCustomRules.allowedZones.join(', ');
+            this.showNotification(`Zone ${_zone} non autorisée (entraînement : ${allowed} uniquement)`);
+            return;
+          }
+
           this.pushHistory('score');
           if (navigator.vibrate) navigator.vibrate(points === 5 ? 120 : points === 3 ? 80 : 40);
 
@@ -2075,6 +2377,7 @@
           // Le déclenchement est autorisé hors mort subite ET pendant le temps supplémentaire
           if (
             this.isLaserSabre &&
+            !(this.trainingCustomRules && this.trainingCustomRules.disableSuddenDeath) &&
             (!this.isSuddenDeath || this.overtimeType === 'supplementary')
           ) {
             if (this.scoreA >= 10 && this.scoreB >= 10) {
@@ -2086,7 +2389,7 @@
           this.saveScore();
         }
 
-        addCard(fencer, cardType) {
+        addCard(fencer, cardType, noBlackEscalation = false) {
           if (!this.currentMatch) return;
           if (this.matchStatus === 'not_started') {
             this.showNotification('⏱ Démarrez le match pour saisir des touches');
@@ -2110,7 +2413,8 @@
           }
 
           // 2ème rouge (hors escrime moderne) = carton noir → confirmation
-          if (cardType === 'red' && !this.isModernFencing) {
+          // noBlackEscalation = true quand le rouge vient d'un jaune escaladé (3ème jaune → rouge, pas noir)
+          if (cardType === 'red' && !this.isModernFencing && !noBlackEscalation) {
             const redCount = cards.filter(c => c === 'red').length;
             if (redCount >= 1) {
               this._pendingBlackCardFencer = ef;
@@ -2155,7 +2459,16 @@
           if (this.cardAnnounceEnabled) {
             this.openReasonSelector(ef, cardType);
           } else {
-            this.addCard(ef, cardType);
+            if (cardType === 'yellow') {
+              const history = ef === 'A' ? this.faultHistoryA : this.faultHistoryB;
+              const g2count = history[2] || 0;
+              const escalatedToRed = g2count >= 1;
+              if (escalatedToRed) cardType = 'red';
+              this.addCard(ef, cardType, escalatedToRed);
+              history[2] = g2count + 1; // après pushHistory dans addCard
+            } else {
+              this.addCard(ef, cardType);
+            }
           }
         }
 
@@ -2653,7 +2966,7 @@
             btn.style.cursor = 'pointer';
             btn.title = 'Retour à la liste des matchs';
           }
-        },
+        }
 
         startTimer() {
           if (this.timerRunning) return;
@@ -2674,11 +2987,12 @@
               if (this.timerSeconds === 0) {
                 this.stopTimer();
                 if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
-                if (this.scoreA === this.scoreB &&
+                const _sdDisabled = this.trainingCustomRules && this.trainingCustomRules.disableSuddenDeath;
+                if (!_sdDisabled && this.scoreA === this.scoreB &&
                     (!this.isSuddenDeath || this.overtimeType === 'challenger')) {
                   // Égalité : attente manuelle de l'arbitre pour lancer les 30s
                   this.prepareSuddenDeath();
-                } else if (this.isSuddenDeath && this.scoreA === this.scoreB) {
+                } else if (!_sdDisabled && this.isSuddenDeath && this.scoreA === this.scoreB) {
                   // Fin des 30s supplémentaires avec égalité → tirage au sort
                   this.triggerTiebreaker();
                 } else {
@@ -2722,16 +3036,51 @@
           this.ttsEnabled = !this.ttsEnabled;
           const btn = document.getElementById('btn-tts-toggle');
           if (btn) btn.textContent = this.ttsEnabled ? '🔊 Voix' : '🔇 Voix';
-          if (this.ttsEnabled) this.ttsSpeak('Minuteur vocal activé');
+          if (this.ttsEnabled) {
+            const MSG = {
+              fr: 'Minuteur vocal activé', en: 'Voice timer enabled',
+              de: 'Sprachtimer aktiviert', 'zh-HK': '語音計時器已啟用',
+            };
+            this.ttsSpeak(MSG[this.ttsLangCode()] || MSG.fr);
+          }
+        }
+
+        // Fusionne une config TTS partielle reçue du serveur dans la config locale
+        applyTtsConfig(c) {
+          if (!c || typeof c !== 'object') return;
+          if (typeof c.voiceName === 'string' || c.voiceName === null) this.ttsConfig.voiceName = c.voiceName;
+          if (typeof c.rate === 'number' && c.rate > 0) this.ttsConfig.rate = c.rate;
+          if (c.announce && typeof c.announce === 'object') {
+            this.ttsConfig.announce = { ...this.ttsConfig.announce, ...c.announce };
+          }
+        }
+
+        // Code de langue normalisé pour le TTS (fr / en / de / zh-HK)
+        ttsLangCode() {
+          const lang = (document.documentElement.lang || 'fr').toLowerCase();
+          if (lang.startsWith('de')) return 'de';
+          if (lang.startsWith('en')) return 'en';
+          if (lang.startsWith('zh')) return 'zh-HK';
+          return 'fr';
+        }
+
+        // Balise BCP-47 pour SpeechSynthesisUtterance.lang
+        ttsBcp47(code) {
+          return { fr: 'fr-FR', en: 'en-GB', de: 'de-DE', 'zh-HK': 'zh-HK' }[code] || 'fr-FR';
         }
 
         ttsSpeak(text) {
           if (!this.ttsEnabled || !window.speechSynthesis) return;
           window.speechSynthesis.cancel();
           const utt = new SpeechSynthesisUtterance(text);
-          const lang = (document.documentElement.lang || 'fr').toLowerCase();
-          utt.lang = lang.startsWith('de') ? 'de-DE' : lang.startsWith('en') ? 'en-GB' : 'fr-FR';
-          utt.rate = 1.1;
+          utt.lang = this.ttsBcp47(this.ttsLangCode());
+          // Voix choisie dans les paramètres globaux (sinon voix par défaut de la langue)
+          const wanted = this.ttsConfig.voiceName;
+          if (wanted && window.speechSynthesis.getVoices) {
+            const v = window.speechSynthesis.getVoices().find(x => x.name === wanted);
+            if (v) { utt.voice = v; utt.lang = v.lang; }
+          }
+          utt.rate = this.ttsConfig.rate || 1.1;
           utt.volume = 1.0;
           window.speechSynthesis.speak(utt);
         }
@@ -2740,16 +3089,30 @@
           if (!this.ttsEnabled) return;
           const s = this.timerSeconds;
           if (this._ttsAnnouncedSeconds.has(s)) return;
-          const lang = (document.documentElement.lang || 'fr').toLowerCase();
-          const isFr = !lang.startsWith('de') && !lang.startsWith('en');
-          const isEn = lang.startsWith('en');
-          const THRESHOLDS = {
-            60: isFr ? 'Une minute' : isEn ? 'One minute' : 'Eine Minute',
-            30: isFr ? 'Trente secondes' : isEn ? 'Thirty seconds' : 'Dreißig Sekunden',
-            10: isFr ? 'Dix secondes' : isEn ? 'Ten seconds' : 'Zehn Sekunden',
-            5:  '5', 4: '4', 3: '3', 2: '2', 1: '1',
-            0:  isFr ? 'Halte !' : isEn ? 'Stop!' : 'Halt!',
+          const L = this.ttsLangCode();
+          const PHRASES = {
+            fr: { 60: 'Une minute', 30: 'Trente secondes', 10: 'Dix secondes', 0: 'Temps !' },
+            en: { 60: 'One minute', 30: 'Thirty seconds', 10: 'Ten seconds', 0: 'Time!' },
+            de: { 60: 'Eine Minute', 30: 'Dreißig Sekunden', 10: 'Zehn Sekunden', 0: 'Zeit!' },
+            'zh-HK': { 60: '一分鐘', 30: '三十秒', 10: '十秒', 0: '時間！' },
           };
+          const NUMS = {
+            fr: { 5: '5', 4: '4', 3: '3', 2: '2', 1: '1' },
+            en: { 5: '5', 4: '4', 3: '3', 2: '2', 1: '1' },
+            de: { 5: '5', 4: '4', 3: '3', 2: '2', 1: '1' },
+            'zh-HK': { 5: '五', 4: '四', 3: '三', 2: '二', 1: '一' },
+          };
+          const THRESHOLDS = { ...PHRASES[L], ...NUMS[L] };
+          // Quel palier (clé de config announce) correspond à cette seconde ?
+          const a = this.ttsConfig.announce || {};
+          let key = null;
+          if (s === 60) key = '60';
+          else if (s === 30) key = '30';
+          else if (s === 10) key = '10';
+          else if (s === 5) key = '5';
+          else if (s >= 1 && s <= 4) key = 'countdown';
+          else if (s === 0) key = '0';
+          if (key && a[key] === false) { this._ttsAnnouncedSeconds.add(s); return; }
           if (s in THRESHOLDS) {
             this._ttsAnnouncedSeconds.add(s);
             this.ttsSpeak(THRESHOLDS[s]);
@@ -3023,12 +3386,15 @@
         async confirmFinish() {
           if (!this.currentMatch) return;
 
+          // Conserver les infos du match avant réinitialisation (pour la signature)
+          const finishedMatch = this.currentMatch;
+
           this.matchStatus = 'finished';
           this.stopTimer();
           this.hideFinishModal();
 
           try {
-            await fetch(`/api/matches/${this.currentMatch.id}/finish`, {
+            const resp = await fetch(`/api/matches/${this.currentMatch.id}/finish`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -3038,6 +3404,7 @@
                 cardsB: this.cardsB,
               }),
             });
+            const result = await resp.json().catch(() => ({}));
 
             this.updateMatchStatus();
             this.updateControlButtons();
@@ -3048,6 +3415,11 @@
             });
 
             this.showNotification('✅ Match terminé et enregistré !');
+
+            // Signature requise sur tablette après un match du tableau
+            if (result.requireSignature && finishedMatch.fencerA?.id && finishedMatch.fencerB?.id) {
+              this.openMatchSignature(finishedMatch, this.scoreA, this.scoreB);
+            }
 
             // Afficher l'écran des prochains matchs
             setTimeout(() => {
@@ -3072,6 +3444,109 @@
           } catch (error) {
             console.error('Erreur fin de match:', error);
             this.showNotification(window.T('referee.error_save'), true);
+          }
+        }
+
+        // ── Signature des combattants après un match du tableau ──
+        openMatchSignature(match, scoreA, scoreB) {
+          this.signMatch = match;
+          const overlay = document.getElementById('match-sig-overlay');
+          const fullName = f => `${(f.lastName || '').toUpperCase()} ${f.firstName || ''}`.trim();
+          const aWins = scoreA > scoreB;
+          const bWins = scoreB > scoreA;
+          // Rappel du score et indication du vainqueur (V)
+          document.getElementById('match-sig-score').textContent = `${scoreA} – ${scoreB}`;
+          const vTag = win => (win ? '<span class="match-sig-victory">V</span> ' : '');
+          document.getElementById('match-sig-name-a').innerHTML = vTag(aWins) + fullName(match.fencerA);
+          document.getElementById('match-sig-name-b').innerHTML = vTag(bWins) + fullName(match.fencerB);
+          document.getElementById('match-sig-pad-a').classList.toggle('winner', aWins);
+          document.getElementById('match-sig-pad-b').classList.toggle('winner', bWins);
+          overlay.classList.add('visible');
+          this._setupSigCanvas('match-sig-canvas-a');
+          this._setupSigCanvas('match-sig-canvas-b');
+        }
+
+        _setupSigCanvas(canvasId) {
+          const canvas = document.getElementById(canvasId);
+          const ctx = canvas.getContext('2d');
+          const rect = canvas.getBoundingClientRect();
+          canvas.width = rect.width * window.devicePixelRatio;
+          canvas.height = rect.height * window.devicePixelRatio;
+          ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+          ctx.strokeStyle = '#1e293b';
+          ctx.lineWidth = 2.5;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.clearRect(0, 0, rect.width, rect.height);
+          canvas._hasInk = false;
+
+          if (canvas._sigBound) return;
+          canvas._sigBound = true;
+          let drawing = false;
+          const pos = e => {
+            const r = canvas.getBoundingClientRect();
+            return { x: e.clientX - r.left, y: e.clientY - r.top };
+          };
+          canvas.addEventListener('pointerdown', e => {
+            drawing = true;
+            const p = pos(e);
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            canvas.setPointerCapture(e.pointerId);
+          });
+          canvas.addEventListener('pointermove', e => {
+            if (!drawing) return;
+            const p = pos(e);
+            ctx.lineTo(p.x, p.y);
+            ctx.stroke();
+            canvas._hasInk = true;
+          });
+          canvas.addEventListener('pointerup', () => { drawing = false; });
+          canvas.addEventListener('pointercancel', () => { drawing = false; });
+        }
+
+        clearMatchSig(slot) {
+          const canvas = document.getElementById(`match-sig-canvas-${slot}`);
+          const ctx = canvas.getContext('2d');
+          const rect = canvas.getBoundingClientRect();
+          ctx.clearRect(0, 0, rect.width, rect.height);
+          canvas._hasInk = false;
+        }
+
+        closeMatchSignature() {
+          document.getElementById('match-sig-overlay').classList.remove('visible');
+          this.signMatch = null;
+        }
+
+        async submitMatchSignatures() {
+          const match = this.signMatch;
+          if (!match) return;
+          const canvasA = document.getElementById('match-sig-canvas-a');
+          const canvasB = document.getElementById('match-sig-canvas-b');
+          if (!canvasA._hasInk || !canvasB._hasInk) {
+            this.showNotification('✍️ Les deux tireurs doivent signer', true);
+            return;
+          }
+          const btn = document.getElementById('match-sig-submit');
+          btn.disabled = true;
+          try {
+            const send = (fencerId, dataURL) =>
+              fetch(`/api/matches/${match.id}/fencers/${fencerId}/signature`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ signatureData: dataURL }),
+              });
+            await Promise.all([
+              send(match.fencerA.id, canvasA.toDataURL('image/png')),
+              send(match.fencerB.id, canvasB.toDataURL('image/png')),
+            ]);
+            this.showNotification('✅ Signatures enregistrées');
+            this.closeMatchSignature();
+          } catch (e) {
+            console.error('Erreur signatures match:', e);
+            this.showNotification(window.T('referee.error_save'), true);
+          } finally {
+            btn.disabled = false;
           }
         }
 
@@ -3154,8 +3629,14 @@
         }
 
         handleArenaUpdate(data) {
+          if (data.screenThemes?.referee) { applyScreenTheme(data.screenThemes.referee.variables); }
+
           if (data.timerDuration !== undefined && data.timerDuration > 0) {
             this.defaultTimerSeconds = data.timerDuration;
+          }
+
+          if (data.trainingCustomRules !== undefined) {
+            this.trainingCustomRules = data.trainingCustomRules;
           }
 
           if (data.cardAnnounce !== undefined) {
@@ -3188,6 +3669,28 @@
               this._clearActiveMatch();
               this.showNextMatchesScreen();
             }
+            return;
+          }
+
+          // Reconnexion pendant un match en cours — restaurer la liste de sélection
+          if (data.status === 'in_progress' && data.match && data.match.id) {
+            if (this.currentMatch && this.currentMatch.id === data.match.id) return;
+            if (this.matchStatus === 'in_progress') return;
+            const fencerA = data.fencerA || data.match.fencerA;
+            const fencerB = data.fencerB || data.match.fencerB;
+            const scoreAVal = typeof data.scoreA === 'object' ? (data.scoreA?.value ?? 0) : (data.scoreA ?? 0);
+            const scoreBVal = typeof data.scoreB === 'object' ? (data.scoreB?.value ?? 0) : (data.scoreB ?? 0);
+            const restored = {
+              id: data.match.id, poolId: data.match.poolId,
+              fencerA, fencerB,
+              scoreA: { value: scoreAVal }, scoreB: { value: scoreBVal },
+              status: 'in_progress',
+            };
+            const idx = this.matches.findIndex(m => m.id === restored.id);
+            if (idx >= 0) this.matches[idx] = restored; else this.matches.push(restored);
+            this.loadNextMatches();
+            this.showNextMatchesScreen();
+            this.showNotification('↩ Match en cours — appuyez pour reprendre');
             return;
           }
 
@@ -3451,9 +3954,17 @@
       // Initialisation
       let refereeApp;
       document.addEventListener('DOMContentLoaded', async () => {
-        await window.initRemoteI18n();
-        document.title = window.T('referee.title');
-        refereeApp = new RefereeApp();
+        try {
+          await window.initRemoteI18n();
+          document.title = window.T('referee.title');
+          refereeApp = new RefereeApp();
+        } catch (e) {
+          console.error('[RefereeApp] Erreur init:', e);
+          const dot = document.getElementById('status-dot');
+          const text = document.getElementById('connection-text');
+          if (dot) { dot.classList.add('disconnected'); dot.classList.remove('connected'); }
+          if (text) text.textContent = '❌ Erreur: ' + (e?.message || e);
+        }
       });
     </script>
 
@@ -3482,6 +3993,34 @@
       <button class="pco-btn" onclick="window.open(`/arene${refereeApp.arenaNumber}/journal`, '_blank')" style="margin-top:1rem; background:#4c1d95; animation:none; font-size:1.2rem; padding:0.9rem 2rem;">
         📋 JOURNAL
       </button>
+    </div>
+
+    <!-- Overlay signature des combattants après un match du tableau -->
+    <div id="match-sig-overlay" class="match-sig-overlay">
+      <div class="match-sig-box">
+        <h2>✍️ Signature des combattants</h2>
+        <p class="match-sig-instructions">Chaque tireur signe pour valider le score du match</p>
+        <div class="match-sig-score-recall">
+          <span class="match-sig-score-label">Score final</span>
+          <span id="match-sig-score" class="match-sig-score-value"></span>
+        </div>
+        <div class="match-sig-grid">
+          <div id="match-sig-pad-a" class="match-sig-pad">
+            <div class="match-sig-fencer"><span class="match-sig-letter">A</span> <strong id="match-sig-name-a"></strong></div>
+            <canvas id="match-sig-canvas-a" class="match-sig-canvas"></canvas>
+            <button class="match-sig-clear" onclick="refereeApp.clearMatchSig('a')">Effacer</button>
+          </div>
+          <div id="match-sig-pad-b" class="match-sig-pad">
+            <div class="match-sig-fencer"><span class="match-sig-letter">B</span> <strong id="match-sig-name-b"></strong></div>
+            <canvas id="match-sig-canvas-b" class="match-sig-canvas"></canvas>
+            <button class="match-sig-clear" onclick="refereeApp.clearMatchSig('b')">Effacer</button>
+          </div>
+        </div>
+        <div class="match-sig-actions">
+          <button class="match-sig-skip" onclick="refereeApp.closeMatchSignature()">Passer</button>
+          <button id="match-sig-submit" class="match-sig-validate" onclick="refereeApp.submitMatchSignatures()">Valider les signatures</button>
+        </div>
+      </div>
     </div>
   </body>
 </html>

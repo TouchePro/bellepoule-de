@@ -3,7 +3,8 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useEffect, useCallback, useState, Suspense } from 'react';
+import React, { useEffect, useCallback, useState, useRef, Suspense } from 'react';
+import { Home, Plus, Radio, Sun, Moon, Contrast, BookOpen, Settings, X, Swords, Wrench, Wifi, Tv2 } from 'lucide-react';
 import { Competition, PhaseType } from '../shared/types';
 import type { CompetitionCreateData } from '../shared/types/preload';
 import { logger, LogCategory } from '@shared/services/logger';
@@ -18,6 +19,11 @@ const DTCallNotification = React.lazy(() => import('./components/DTCallNotificat
 const UpdateNotification = React.lazy(() => import('./components/UpdateNotification'));
 const KeyboardShortcutsHelp = React.lazy(() => import('./components/KeyboardShortcutsHelp'));
 const WikiModal = React.lazy(() => import('./components/WikiModal'));
+const WifiQRModal = React.lazy(() => import('./components/WifiQRModal').then(m => ({ default: m.WifiQRModal })));
+const XiaomiRemotePanel = React.lazy(() => import('./components/XiaomiRemotePanel').then(m => ({ default: m.XiaomiRemotePanel })));
+const TrainingLauncherModal = React.lazy(() => import('./components/training/TrainingLauncherModal'));
+const TrainingPanel = React.lazy(() => import('./components/training/TrainingPanel'));
+import { CompetitionViewSkeleton } from './components/Skeleton';
 import { ToastProvider, useToast } from './components/Toast';
 import { ConfirmProvider, useConfirm } from './components/ConfirmDialog';
 import { TranslationProvider, useTranslation, Theme } from './contexts/TranslationContext';
@@ -32,8 +38,12 @@ const PHASE_BADGE: Record<string, { label: string; cls: string }> = {
   [PhaseType.CLASSIFICATION]: { label: 'Résultats', cls: 'badge-results' },
 };
 
-const THEME_ICONS: Record<string, string> = { default: '🌓', light: '☀️', dark: '🌙' };
 const THEME_CYCLE: Theme[] = ['default', 'light', 'dark'];
+const ThemeIcon: React.FC<{ theme: Theme }> = ({ theme }) => {
+  if (theme === 'light') return <Sun size={16} />;
+  if (theme === 'dark') return <Moon size={16} />;
+  return <Contrast size={16} />;
+};
 
 const AppContent: React.FC = () => {
   const { t, isLoading: translationLoading, theme, changeTheme } = useTranslation();
@@ -43,6 +53,21 @@ const AppContent: React.FC = () => {
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [showWikiModal, setShowWikiModal] = useState(false);
   const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
+  const [showToolsMenu, setShowToolsMenu] = useState(false);
+  const [showWifiQR, setShowWifiQR] = useState(false);
+  const [showTVRemote, setShowTVRemote] = useState(false);
+  const [remoteServerUrl, setRemoteServerUrl] = useState<string | null>(null);
+  const [remoteArenaCount, setRemoteArenaCount] = useState<number>(1);
+  const [showTrainingModal, setShowTrainingModal] = useState(false);
+  const [trainingActive, setTrainingActive] = useState(false);
+  const [showTrainingPanel, setShowTrainingPanel] = useState(false);
+  const [trainingServerUrl, setTrainingServerUrl] = useState('');
+  const [trainingStrips, setTrainingStrips] = useState(1);
+  const [trainingWeapon, setTrainingWeapon] = useState('');
+  const [trainingLaunching, setTrainingLaunching] = useState(false);
+  const toolsMenuRef = useRef<HTMLDivElement>(null);
+  const toolsBtnRef = useRef<HTMLButtonElement>(null);
+  const [toolsMenuPos, setToolsMenuPos] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
 
   const {
     view,
@@ -108,6 +133,10 @@ const AppContent: React.FC = () => {
         showToast('Sauvegarde effectuée', 'success');
       });
 
+      window.electronAPI.onMenuOpenSettings(() => {
+        setShowSettingsModal(true);
+      });
+
       window.electronAPI.onAutosaveCompleted(() => {
         logger.debug(LogCategory.UI, 'Autosave OK');
       });
@@ -119,6 +148,7 @@ const AppContent: React.FC = () => {
 
     return () => {
       if (window.electronAPI?.removeAllListeners) {
+        window.electronAPI.removeAllListeners('menu:open-settings');
         window.electronAPI.removeAllListeners('menu:new-competition');
         window.electronAPI.removeAllListeners('menu:report-issue');
         window.electronAPI.removeAllListeners('menu:show-about');
@@ -143,6 +173,19 @@ const AppContent: React.FC = () => {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
+  // Un scroll (trackpad macOS notamment) sur un input number focus ne doit pas
+  // en changer la valeur (comportement natif Chromium trompeur, ex: score max)
+  useEffect(() => {
+    const handler = (e: WheelEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target instanceof HTMLInputElement && target.type === 'number' && document.activeElement === target) {
+        target.blur();
+      }
+    };
+    document.addEventListener('wheel', handler, { passive: true, capture: true });
+    return () => document.removeEventListener('wheel', handler, { capture: true });
+  }, []);
+
   // Sync logo from disk to localStorage so PDF exports always find it
   useEffect(() => {
     if (!window.electronAPI) return;
@@ -159,6 +202,17 @@ const AppContent: React.FC = () => {
     return () => { if (typeof unsub === 'function') unsub(); };
   }, []);
 
+
+  useEffect(() => {
+    if (!showToolsMenu) return;
+    const rect = toolsBtnRef.current?.getBoundingClientRect();
+    if (rect) setToolsMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+    const handler = (e: MouseEvent) => {
+      if (toolsMenuRef.current && !toolsMenuRef.current.contains(e.target as Node)) setShowToolsMenu(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showToolsMenu]);
 
   const handleCreateCompetition = useCallback(async (data: Partial<Competition>) => {
     try {
@@ -267,6 +321,47 @@ const AppContent: React.FC = () => {
     }
   }, [openCompetitions, activeTabId, confirm]);
 
+  const handleLaunchTraining = useCallback(async (weapon: string, strips: number, customRules?: any) => {
+    if (!window.electronAPI?.training) return;
+    setTrainingLaunching(true);
+    try {
+      const startRes = await window.electronAPI.training.startServer();
+      if (!startRes.success || !startRes.serverInfo) {
+        showToast(startRes.error ?? 'Impossible de démarrer le serveur', 'error');
+        return;
+      }
+      const sessionRes = await window.electronAPI.training.startSession(strips, weapon, customRules);
+      if (!sessionRes.success) {
+        await window.electronAPI.training.stopServer();
+        showToast(sessionRes.error ?? 'Impossible de démarrer la session', 'error');
+        return;
+      }
+      setTrainingServerUrl(startRes.serverInfo.url);
+      setTrainingStrips(strips);
+      setTrainingWeapon(weapon);
+      setTrainingActive(true);
+      setShowTrainingPanel(true);
+      setShowTrainingModal(false);
+    } catch (err) {
+      showToast('Erreur lors du lancement de l\'entraînement', 'error');
+    } finally {
+      setTrainingLaunching(false);
+    }
+  }, [showToast]);
+
+  const handleStopTraining = useCallback(async () => {
+    if (!window.electronAPI?.training) return;
+    try {
+      await window.electronAPI.training.stopSession();
+      await window.electronAPI.training.stopServer();
+    } catch { /* ignore */ }
+    setTrainingActive(false);
+    setShowTrainingPanel(false);
+    setTrainingServerUrl('');
+    setTrainingStrips(1);
+    setTrainingWeapon('');
+  }, []);
+
   const handleDeleteCompetition = useCallback(async (id: string) => {
     try {
       if (window.electronAPI) {
@@ -309,19 +404,7 @@ const AppContent: React.FC = () => {
       <div className="app">
         <header className="header">
           <div className="header-title">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M14.5 17.5L3 6V3h3l11.5 11.5" />
-              <path d="M13 19l6-6" />
-              <path d="M16 16l4 4" />
-              <path d="M19 21a2 2 0 100-4 2 2 0 000 4z" />
-            </svg>
+            <Swords size={22} strokeWidth={1.75} />
             {t('app.title')}
           </div>
           {/* Ctrl+K hint — clickable */}
@@ -336,28 +419,42 @@ const AppContent: React.FC = () => {
           <div className="header-nav">
             {openCompetitions.length > 0 && view === 'competition' && (
               <button
-                className="btn btn-secondary"
+                className="btn btn-secondary btn-icon-label"
                 onClick={() => {
                   setView('home');
                   setActiveTabId(null);
                 }}
                 title={t('app.back_to_list')}
               >
-                🏠 {t('app.home')}
+                <Home size={15} />
+                {t('app.home')}
               </button>
             )}
-            <button className="btn btn-primary" onClick={() => setShowNewCompetitionModal(true)}>
-              + {t('menu.new_competition')}
+            <button className="btn btn-primary btn-icon-label" onClick={() => setShowNewCompetitionModal(true)}>
+              <Plus size={15} />
+              {t('menu.new_competition')}
+            </button>
+            <button
+              className={`btn btn-icon-label ${trainingActive ? 'btn-danger' : 'btn-secondary'}`}
+              onClick={() => {
+                if (!trainingActive) setShowTrainingModal(true);
+                else setShowTrainingPanel(v => !v);
+              }}
+              title={trainingActive ? (showTrainingPanel ? 'Masquer le panneau entraînement' : 'Afficher le panneau entraînement') : 'Mode entraînement'}
+            >
+              <Swords size={15} />
+              Entraînement
             </button>
             {view === 'competition' && currentCompetition && (
               <button
-                className="btn btn-secondary"
+                className="btn btn-secondary btn-icon-label"
                 onClick={() => {
                   setRequestedPhase('remote');
                 }}
                 title={t('phases.remote')}
               >
-                📡 {t('phases.remote')}
+                <Radio size={15} />
+                {t('phases.remote')}
               </button>
             )}
             <button
@@ -368,21 +465,68 @@ const AppContent: React.FC = () => {
               }}
               title={`Thème : ${theme}`}
             >
-              {THEME_ICONS[theme]}
+              <ThemeIcon theme={theme} />
             </button>
             <button
-              className="btn btn-secondary"
+              className="btn btn-icon"
               onClick={() => setShowWikiModal(true)}
               title={t('wiki.button_title')}
             >
-              📖
+              <BookOpen size={16} />
             </button>
+            {view === 'competition' && currentCompetition && (
+              <div ref={toolsMenuRef} style={{ position: 'relative' }}>
+                <button
+                  ref={toolsBtnRef}
+                  className="btn btn-secondary btn-icon-label"
+                  onClick={() => setShowToolsMenu(v => !v)}
+                  title="Outils"
+                  aria-haspopup="true"
+                  aria-expanded={showToolsMenu}
+                >
+                  <Wrench size={15} /> Outils
+                </button>
+                {showToolsMenu && (
+                  <div
+                    style={{
+                      position: 'fixed',
+                      right: toolsMenuPos.right,
+                      top: toolsMenuPos.top,
+                      background: 'var(--color-surface)',
+                      color: 'var(--color-text)',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: '8px',
+                      boxShadow: 'var(--shadow-xl)',
+                      minWidth: '200px',
+                      zIndex: 1100,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <button
+                      className="comp-header-dropdown-item"
+                      onClick={() => { setShowWifiQR(true); setShowToolsMenu(false); }}
+                      style={{ width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                    >
+                      <Wifi size={15} /> QR Code WiFi
+                    </button>
+                    <button
+                      className="comp-header-dropdown-item"
+                      onClick={() => { setShowTVRemote(true); setShowToolsMenu(false); }}
+                      style={{ width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                    >
+                      <Tv2 size={15} /> Télécommande TV
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
             <button
-              className="btn btn-secondary"
+              className="btn btn-secondary btn-icon-label"
               onClick={() => setShowSettingsModal(true)}
               title={t('settings.title')}
             >
-              ⚙️ {t('settings.title')}
+              <Settings size={15} />
+              {t('settings.title')}
             </button>
           </div>
         </header>
@@ -445,7 +589,7 @@ const AppContent: React.FC = () => {
                   gap: '0.5rem',
                 }}
               >
-                🏠 {t('app.home')}
+                <Home size={13} /> {t('app.home')}
               </span>
             </div>
 
@@ -539,7 +683,7 @@ const AppContent: React.FC = () => {
                   onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280'; }}
                   title={t('app.close_tab')}
                 >
-                  ×
+                  <X size={12} />
                 </button>
               </div>
             ))}
@@ -551,7 +695,7 @@ const AppContent: React.FC = () => {
             <ErrorBoundary
               fallback={
                 <div style={{ padding: '20px', textAlign: 'center' }}>
-                  <h3>🏠 {t('app.load_error_title')}</h3>
+                  <h3>{t('app.load_error_title')}</h3>
                   <p>{t('app.load_error_message')}</p>
                   <button onClick={() => window.location.reload()}>{t('app.reload')}</button>
                 </div>
@@ -569,12 +713,13 @@ const AppContent: React.FC = () => {
 
           {view === 'competition' && currentCompetition && activeTabId && (
             <CompetitionErrorBoundary key={currentCompetition.id}>
-              <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Chargement…</div>}>
+              <Suspense fallback={<CompetitionViewSkeleton />}>
                 <CompetitionView
                   competition={currentCompetition}
                   onUpdate={handleUpdateCompetition}
                   requestPhase={requestedPhase ?? undefined}
                   onPhaseApplied={() => setRequestedPhase(null)}
+                  onRemoteServerChange={(url, count) => { setRemoteServerUrl(url); setRemoteArenaCount(count); }}
                 />
               </Suspense>
             </CompetitionErrorBoundary>
@@ -614,6 +759,23 @@ const AppContent: React.FC = () => {
           </Suspense>
         )}
 
+        {showWifiQR && (
+          <Suspense fallback={null}>
+            <WifiQRModal onClose={() => setShowWifiQR(false)} />
+          </Suspense>
+        )}
+
+        {showTVRemote && currentCompetition && (
+          <Suspense fallback={null}>
+            <XiaomiRemotePanel
+              competitionId={currentCompetition.id}
+              serverUrl={remoteServerUrl ?? ''}
+              arenaCount={remoteArenaCount}
+              onClose={() => setShowTVRemote(false)}
+            />
+          </Suspense>
+        )}
+
         {showCommandPalette && (
           <Suspense fallback={null}>
             <CommandPalette
@@ -639,6 +801,29 @@ const AppContent: React.FC = () => {
         <Suspense fallback={null}>
           <KeyboardShortcutsHelp />
         </Suspense>
+
+        {showTrainingModal && (
+          <Suspense fallback={null}>
+            <TrainingLauncherModal
+              onClose={() => setShowTrainingModal(false)}
+              onLaunch={handleLaunchTraining}
+              isLoading={trainingLaunching}
+            />
+          </Suspense>
+        )}
+
+        {trainingActive && showTrainingPanel && (
+          <Suspense fallback={null}>
+            <TrainingPanel
+              serverUrl={trainingServerUrl}
+              strips={trainingStrips}
+              weapon={trainingWeapon}
+              onClose={() => setShowTrainingPanel(false)}
+              onStop={handleStopTraining}
+              onOpenSettings={() => { setShowTrainingPanel(false); setShowSettingsModal(true); }}
+            />
+          </Suspense>
+        )}
       </div>
     </>
   );

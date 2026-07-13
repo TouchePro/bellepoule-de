@@ -12,28 +12,54 @@ import LanguageSelector from './LanguageSelector';
 // Chargé à la demande : embarque jsPDF, lourd pour le bundle initial
 const PdfTemplateModal = React.lazy(() => import('./PdfTemplateModal'));
 import { logger, LogCategory } from '@shared/services/logger';
+import { isWebhookUrlSafe } from '@shared/services/notificationService';
 
 const LOGO_STORAGE_KEY = 'bellepoule-logo';
 const WEBHOOK_STORAGE_KEY = 'bellepoule-webhook-url';
 const AUDIT_LOG_KEY = 'bellepoule-audit-log-enabled';
+const TTS_CONFIG_KEY = 'bellepoule-tts-config';
+export const QUICK_MOUSE_KEY = 'bellepoule-quick-mouse-scoring';
+export const SIMPLIFIED_INPUT_KEY = 'bellepoule-simplified-input-mode';
 
-function isWebhookUrlSafe(rawUrl: string): boolean {
-  try {
-    const url = new URL(rawUrl);
-    if (url.protocol !== 'https:') return false;
-    const h = url.hostname;
-    if (
-      h === 'localhost' ||
-      h === '127.0.0.1' ||
-      /^10\./.test(h) ||
-      /^172\.(1[6-9]|2\d|3[01])\./.test(h) ||
-      /^192\.168\./.test(h)
-    ) return false;
-    return true;
-  } catch {
-    return false;
-  }
+interface TtsConfig {
+  voiceName: string | null;
+  rate: number;
+  announce: Record<string, boolean>;
 }
+
+const DEFAULT_TTS_CONFIG: TtsConfig = {
+  voiceName: null,
+  rate: 1.1,
+  announce: { '60': true, '30': true, '10': true, '5': true, countdown: true, '0': true },
+};
+
+// Paliers annoncés par le minuteur vocal — clé de config + libellé affiché
+const TTS_THRESHOLDS: { key: string; label: string }[] = [
+  { key: '60', label: '1 minute' },
+  { key: '30', label: '30 secondes' },
+  { key: '10', label: '10 secondes' },
+  { key: '5', label: '5 secondes' },
+  { key: 'countdown', label: 'Décompte 4 → 1' },
+  { key: '0', label: '« Temps ! » (fin)' },
+];
+
+function loadTtsConfig(): TtsConfig {
+  try {
+    const raw = localStorage.getItem(TTS_CONFIG_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        ...DEFAULT_TTS_CONFIG,
+        ...parsed,
+        announce: { ...DEFAULT_TTS_CONFIG.announce, ...(parsed.announce ?? {}) },
+      };
+    }
+  } catch {
+    /* config corrompue → défaut */
+  }
+  return { ...DEFAULT_TTS_CONFIG, announce: { ...DEFAULT_TTS_CONFIG.announce } };
+}
+
 const LOGO_MAX_W = 600;
 const LOGO_MAX_H = 200;
 
@@ -82,8 +108,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
   const [logoError, setLogoError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Activé par défaut (journal désactivable explicitement, pas activable par défaut négatif)
   const [auditLogEnabled, setAuditLogEnabled] = useState<boolean>(
-    () => localStorage.getItem(AUDIT_LOG_KEY) === 'true'
+    () => localStorage.getItem(AUDIT_LOG_KEY) !== 'false'
+  );
+
+  const [quickMouseScoring, setQuickMouseScoring] = useState<boolean>(
+    () => localStorage.getItem(QUICK_MOUSE_KEY) === 'true'
+  );
+
+  const [simplifiedInputMode, setSimplifiedInputMode] = useState<boolean>(
+    () => localStorage.getItem(SIMPLIFIED_INPUT_KEY) === 'true'
   );
 
   const [webhookUrl, setWebhookUrl] = useState<string>(
@@ -91,6 +126,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
   );
   const [webhookTestStatus, setWebhookTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [webhookTestMessage, setWebhookTestMessage] = useState<string>('');
+
+  // Paramètres minuteur vocal (TTS) des tablettes d'arbitrage
+  const [ttsConfig, setTtsConfig] = useState<TtsConfig>(() => loadTtsConfig());
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
 
   useEffect(() => {
     console.log(
@@ -120,6 +159,44 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
     return () => { if (typeof unsub === 'function') unsub(); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Liste des voix disponibles (peut arriver de façon asynchrone)
+  useEffect(() => {
+    if (!('speechSynthesis' in window)) return;
+    const refresh = () => setVoices(window.speechSynthesis.getVoices());
+    refresh();
+    window.speechSynthesis.onvoiceschanged = refresh;
+    return () => { window.speechSynthesis.onvoiceschanged = null; };
+  }, []);
+
+  // Pousse la config TTS : persistance locale + serveurs distants actifs
+  const persistTtsConfig = useCallback((next: TtsConfig) => {
+    setTtsConfig(next);
+    localStorage.setItem(TTS_CONFIG_KEY, JSON.stringify(next));
+    (window as any).electronAPI?.remote?.setTtsConfig?.(next)?.catch?.(() => {/* serveur inactif */});
+  }, []);
+
+  const handleTtsVoiceChange = (voiceName: string) => {
+    persistTtsConfig({ ...ttsConfig, voiceName: voiceName || null });
+  };
+
+  const handleTtsRateChange = (rate: number) => {
+    persistTtsConfig({ ...ttsConfig, rate });
+  };
+
+  const handleTtsThresholdToggle = (key: string, enabled: boolean) => {
+    persistTtsConfig({ ...ttsConfig, announce: { ...ttsConfig.announce, [key]: enabled } });
+  };
+
+  const handleTtsTestVoice = () => {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance('30 secondes');
+    const v = voices.find(x => x.name === ttsConfig.voiceName);
+    if (v) { utt.voice = v; utt.lang = v.lang; }
+    utt.rate = ttsConfig.rate;
+    window.speechSynthesis.speak(utt);
+  };
 
   const handleLanguageChange = (newLanguage: Language) => {
     console.log(
@@ -215,6 +292,16 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
   const handleAuditLogChange = (enabled: boolean) => {
     setAuditLogEnabled(enabled);
     localStorage.setItem(AUDIT_LOG_KEY, String(enabled));
+  };
+
+  const handleQuickMouseScoringChange = (enabled: boolean) => {
+    setQuickMouseScoring(enabled);
+    localStorage.setItem(QUICK_MOUSE_KEY, String(enabled));
+  };
+
+  const handleSimplifiedInputModeChange = (enabled: boolean) => {
+    setSimplifiedInputMode(enabled);
+    localStorage.setItem(SIMPLIFIED_INPUT_KEY, String(enabled));
   };
 
   const handleSave = () => {
@@ -341,6 +428,41 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
             </button>
           </div>
 
+          {/* Saisie rapide souris */}
+          <div className="form-group" style={SECTION_DIVIDER}>
+            <label style={BOLD}>Saisie rapide souris</label>
+            <p style={HINT}>
+              Survol d'une cellule : met en évidence la cellule miroir et les noms.
+              Roulette : ±1 au score du tireur (ligne). Shift+roulette : score de l'adversaire (colonne).
+              Score nul en laser sabre → ouvre la modal de victoire.
+            </p>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={quickMouseScoring}
+                onChange={e => handleQuickMouseScoringChange(e.target.checked)}
+              />
+              <span style={{ fontSize: '0.875rem' }}>Activer la saisie rapide à la souris</span>
+            </label>
+          </div>
+
+          {/* Mode de saisie simplifiée */}
+          <div className="form-group" style={SECTION_DIVIDER}>
+            <label style={BOLD}>Mode de saisie simplifiée</label>
+            <p style={HINT}>
+              Clic sur une cellule de poule : saisie directe des scores dans la case, sans ouverture de modal.
+              Score nul en laser sabre → ouvre tout de même la modal de victoire.
+            </p>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={simplifiedInputMode}
+                onChange={e => handleSimplifiedInputModeChange(e.target.checked)}
+              />
+              <span style={{ fontSize: '0.875rem' }}>Activer la saisie simplifiée dans les cases</span>
+            </label>
+          </div>
+
           {/* Journal des scores */}
           <div className="form-group" style={SECTION_DIVIDER}>
             <label style={BOLD}>Journal des scores</label>
@@ -399,6 +521,61 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
                 {webhookTestMessage}
               </p>
             )}
+          </div>
+
+          {/* Tableau arbitrage — minuteur vocal (TTS) */}
+          <div className="form-group" style={SECTION_DIVIDER}>
+            <label style={BOLD}>Tableau arbitrage — minuteur vocal</label>
+            <p style={HINT}>
+              Voix et paliers de temps annoncés sur les tablettes d'arbitrage.
+            </p>
+
+            <label style={{ fontSize: '0.85rem' }}>Voix</label>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <select
+                className="form-input form-select"
+                value={ttsConfig.voiceName ?? ''}
+                onChange={e => handleTtsVoiceChange(e.target.value)}
+                style={{ flex: 1 }}
+              >
+                <option value="">Voix par défaut (selon la langue)</option>
+                {voices.map(v => (
+                  <option key={v.name} value={v.name}>{v.name} ({v.lang})</option>
+                ))}
+              </select>
+              <button className="btn btn-secondary" style={SMALL_BTN} onClick={handleTtsTestVoice}>
+                🔊 Tester
+              </button>
+            </div>
+
+            <label style={{ fontSize: '0.85rem' }}>
+              Vitesse : {ttsConfig.rate.toFixed(1)}×
+            </label>
+            <input
+              type="range"
+              min="0.5"
+              max="2"
+              step="0.1"
+              value={ttsConfig.rate}
+              onChange={e => handleTtsRateChange(parseFloat(e.target.value))}
+              style={{ width: '100%', marginBottom: '0.5rem' }}
+            />
+
+            <label style={{ fontSize: '0.85rem', display: 'block', marginBottom: '0.25rem' }}>
+              Paliers annoncés
+            </label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              {TTS_THRESHOLDS.map(({ key, label }) => (
+                <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={ttsConfig.announce[key] !== false}
+                    onChange={e => handleTtsThresholdToggle(key, e.target.checked)}
+                  />
+                  <span style={{ fontSize: '0.875rem' }}>{label}</span>
+                </label>
+              ))}
+            </div>
           </div>
         </div>
 

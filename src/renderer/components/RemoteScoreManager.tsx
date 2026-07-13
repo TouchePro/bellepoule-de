@@ -5,12 +5,14 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 // qrcode chargé à la demande (génération du QR uniquement à l'affichage)
 import { Competition, Pool } from '../../shared/types';
 import { logger, LogCategory } from '@shared/services/logger';
 import { TableauMatch, ConsolationBracket } from './tableau/tableauTypes';
 import { useToast } from './Toast';
 import ThemeEditor from './ThemeEditor';
+import { OBSOverlayConfig } from './OBSOverlayConfig';
 import { CustomTheme, DisplayTheme } from '../../shared/types/remote';
 import { ConnectedClient, KioskScreenConfig } from '../../shared/types/preload';
 
@@ -107,6 +109,10 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const [session, setSession] = useState<RemoteSession | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [serverUrl, setServerUrl] = useState<string>('');
+  const [useHttps, setUseHttps] = useState<boolean>(() => {
+    return localStorage.getItem('bellepoule-remote-https') === 'true';
+  });
+  const [certFingerprint, setCertFingerprint] = useState<string | null>(null);
   const [remotePort, setRemotePort] = useState<number>(() => {
     const saved = localStorage.getItem(`bellepoule-remote-port-${competition.id}`);
     return saved ? parseInt(saved, 10) : 8066;
@@ -127,7 +133,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [showPhotos, setShowPhotos] = useState(false);
   const [cardAnnounce, setCardAnnounce] = useState(false);
-  const [displayTheme, setDisplayTheme] = useState<'dark' | 'light' | 'neon'>('dark');
+  const [displayTheme, setDisplayTheme] = useState<'dark' | 'light' | 'neon' | 'unicorn'>('dark');
   const [arenaWallpaper, setArenaWallpaper] = useState<string | null>(null);
   const [kioskViews, setKioskViews] = useState({
     poules: true,
@@ -140,12 +146,23 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const [orgNoteTime, setOrgNoteTime] = useState('');
   const [orgNotePrefix, setOrgNotePrefix] = useState('Reprise');
   const [orgNoteActive, setOrgNoteActive] = useState(false);
-  // Thèmes par arène : arenaId → { theme, customTheme? }
+  // Thèmes par arène : arenaId → { theme, customTheme?, screenThemes }
   const [arenaThemes, setArenaThemes] = useState<
-    Record<string, { theme: DisplayTheme; customTheme?: CustomTheme }>
+    Record<string, { theme: DisplayTheme; customTheme?: CustomTheme; screenThemes: Partial<Record<'public' | 'referee' | 'pool', CustomTheme>> }>
   >({});
-  // Éditeur de thème
+  // Onglet de type d'écran sélectionné par arène
+  const [arenaScreenTab, setArenaScreenTab] = useState<Record<string, 'arena' | 'public' | 'referee' | 'pool'>>({});
+  // Éditeur de thème (arène + type d'écran)
   const [themeEditorTarget, setThemeEditorTarget] = useState<string | null>(null);
+  const [themeEditorScreenType, setThemeEditorScreenType] = useState<'arena' | 'public' | 'referee' | 'pool'>('arena');
+  // Éditeur de thème kiosk
+  const [kioskThemeEditorOpen, setKioskThemeEditorOpen] = useState(false);
+  const [kioskTheme, setKioskTheme] = useState<CustomTheme | undefined>(undefined);
+  // Thèmes sauvegardés (depuis IPC)
+  const [savedThemes, setSavedThemes] = useState<CustomTheme[]>([]);
+  // Sélecteur de thème global
+  const [globalThemeSection, setGlobalThemeSection] = useState<'arena' | 'kiosk' | 'public' | 'referee' | 'pool'>('arena');
+  const [globalThemeId, setGlobalThemeId] = useState('');
   // Lancement de la compétition
   const [isLaunched, setIsLaunched] = useState<boolean>(() => {
     const key = `bellepoule-remote-launched-${competition.id}`;
@@ -256,10 +273,10 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     [tableauMatches, consolationBrackets]
   );
   useEffect(() => {
+    if (!isRemoteActive || !session || pendingDeMatches.length === 0) return;
     const key = pendingDeMatches.map(m => m.id).join(',');
     if (key === prevDeMatchesKeyRef.current) return;
     prevDeMatchesKeyRef.current = key;
-    if (!isRemoteActive || !session || pendingDeMatches.length === 0) return;
     window.electronAPI.remote.refreshDeMatches(competition.id, pendingDeMatches).catch((err: unknown) => {
       logger.warn(LogCategory.NETWORK, 'Échec refreshDeMatches', err instanceof Error ? err : undefined);
     });
@@ -285,7 +302,10 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       if (result.success && result.session) {
         // Récupérer l'IP réseau réelle (éviter localhost)
         const info = await window.electronAPI.remote.getServerInfo(competition.id);
-        if (info.success && info.serverInfo) setServerUrl(info.serverInfo.url);
+        if (info.success && info.serverInfo) {
+          setServerUrl(info.serverInfo.url);
+          setCertFingerprint(info.serverInfo.certFingerprint ?? null);
+        }
         setSession(result.session);
         const existingCount = result.session.strips.length;
         setPendingCount(existingCount);
@@ -299,7 +319,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const startRemoteServer = async () => {
     try {
       setIsLoading(true);
-      const result = await window.electronAPI.remote.startServer(competition.id, remotePort, selectedInterface);
+      const result = await window.electronAPI.remote.startServer(competition.id, remotePort, selectedInterface, useHttps);
 
       if (result.success && result.serverInfo) {
         if (result.serverInfo.port !== remotePort) {
@@ -307,6 +327,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           localStorage.setItem(`bellepoule-remote-port-${competition.id}`, String(result.serverInfo.port));
         }
         setServerUrl(result.serverInfo.url);
+        setCertFingerprint(result.serverInfo.certFingerprint ?? null);
         await startSession(result.serverInfo.url, effectivePending);
       } else {
         showToast(`Erreur: ${result.error || 'Impossible de démarrer le serveur'}`, 'error');
@@ -470,10 +491,10 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     }
   }, []);
 
-  // Appliquer un thème (prédéfini ou custom) à une arène
+  // Appliquer un thème (prédéfini ou custom) à une arène — affichage principal
   const handleArenaThemeChange = useCallback(
     async (arenaId: string, theme: DisplayTheme, customTheme?: CustomTheme) => {
-      setArenaThemes(prev => ({ ...prev, [arenaId]: { theme, customTheme } }));
+      setArenaThemes(prev => ({ ...prev, [arenaId]: { ...(prev[arenaId] ?? { screenThemes: {} }), theme, customTheme } }));
       if (session) {
         await window.electronAPI.remote.updateArenaTheme(competition.id, arenaId, theme, customTheme);
       }
@@ -481,9 +502,96 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     [session]
   );
 
+  // Appliquer un thème custom à un type d'écran spécifique d'une arène
+  const handleArenaScreenThemeChange = useCallback(
+    async (arenaId: string, screenType: 'public' | 'referee' | 'pool', customTheme?: CustomTheme) => {
+      setArenaThemes(prev => {
+        const existing = prev[arenaId] ?? { theme: 'dark' as DisplayTheme, screenThemes: {} };
+        return { ...prev, [arenaId]: { ...existing, screenThemes: { ...existing.screenThemes, [screenType]: customTheme } } };
+      });
+      if (session) {
+        await window.electronAPI.remote.updateArenaScreenTheme(competition.id, arenaId, screenType, customTheme);
+      }
+    },
+    [session]
+  );
+
+  // Supprimer le verrou de thème d'une arène (retour au thème global)
+  const handleClearArenaThemeOverride = useCallback(
+    async (arenaId: string) => {
+      setArenaThemes(prev => {
+        const next = { ...prev };
+        delete next[arenaId];
+        return next;
+      });
+      if (session) {
+        await window.electronAPI.remote.clearArenaThemeOverride(competition.id, arenaId);
+      }
+    },
+    [session, competition.id]
+  );
+
+  // Supprimer le verrou de thème d'écran d'une arène
+  const handleClearArenaScreenTheme = useCallback(
+    async (arenaId: string, screenType: 'public' | 'referee' | 'pool') => {
+      await handleArenaScreenThemeChange(arenaId, screenType, undefined);
+    },
+    [handleArenaScreenThemeChange]
+  );
+
+  // Charger tous les thèmes depuis l'app (+ migration one-shot depuis localStorage)
+  const refreshSavedThemes = useCallback(() => {
+    window.electronAPI.themes.list().then(setSavedThemes).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const MIGRATION_KEY = 'bp-themes-migrated-v1';
+    if (!localStorage.getItem(MIGRATION_KEY)) {
+      try {
+        const raw = localStorage.getItem('bellepoule-custom-themes');
+        if (raw) {
+          const old: CustomTheme[] = JSON.parse(raw);
+          Promise.all(
+            old.map(t => window.electronAPI.themes.save({ ...t, targetType: t.targetType ?? 'arena' }))
+          ).then(() => {
+            localStorage.setItem(MIGRATION_KEY, '1');
+            refreshSavedThemes();
+          }).catch(() => {});
+        } else {
+          localStorage.setItem(MIGRATION_KEY, '1');
+        }
+      } catch { localStorage.setItem(MIGRATION_KEY, '1'); }
+    }
+    refreshSavedThemes();
+  }, [refreshSavedThemes]);
+
+  // Appliquer un thème sauvegardé globalement (toutes les arènes, un type d'écran)
+  const handleGlobalThemeApply = useCallback(async () => {
+    const theme = savedThemes.find(t => t.id === globalThemeId);
+    if (!theme) return;
+    if (globalThemeSection === 'arena') {
+      await handleArenaThemeChange('all', 'custom', theme);
+      showToast(`Thème "${theme.name}" appliqué à toutes les pistes`, 'success');
+    } else if (globalThemeSection === 'kiosk') {
+      const result = await window.electronAPI.remote.updateKioskTheme(competition.id, theme.variables);
+      setKioskTheme(theme);
+      if (result?.success) showToast(`Thème "${theme.name}" appliqué au kiosque`, 'success');
+      else showToast(result?.error ?? 'Erreur', 'error');
+    } else {
+      // public / referee / pool → appliquer à toutes les arènes pour ce type d'écran
+      const count = session ? session.strips.length : effectiveCommitted;
+      for (let i = 1; i <= count; i++) {
+        await window.electronAPI.remote.updateArenaScreenTheme(competition.id, `arena${i}`, globalThemeSection, theme);
+      }
+      showToast(`Thème "${theme.name}" appliqué (${globalThemeSection}) à toutes les pistes`, 'success');
+    }
+    setGlobalThemeId('');
+  }, [savedThemes, globalThemeId, globalThemeSection, handleArenaThemeChange, competition.id, session, effectiveCommitted]);
+
   // La grille d'URLs reflète l'état réel du serveur (committedCount) ou la session active
   const arenaCount = session ? session.strips.length : effectiveCommitted;
   const kioskUrl = `${serverUrl}/kiosk`;
+  const lobbyUrl = `${serverUrl}/lobby`;
   const arenaUrls = Array.from({ length: arenaCount }, (_, i) => ({
     number: i + 1,
     refereeUrl: `${serverUrl}/arene${i + 1}/arbitre`,
@@ -533,92 +641,143 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   if (!isVisible) return null;
 
   if (!isRemoteActive) {
+    const portValid = remotePort >= 1 && remotePort <= 65535 && !isNaN(remotePort);
+    const previewHost = selectedInterface === '0.0.0.0'
+      ? (networkInterfaces.find(i => i.address !== '0.0.0.0')?.address ?? 'localhost')
+      : selectedInterface;
+    const networkPreview = `${useHttps ? 'https' : 'http'}://${previewHost}:${remotePort}`;
+
+    const kioskPills = (
+      [
+        { key: 'poules', label: 'Poules' },
+        { key: 'classement', label: 'Classement' },
+        { key: 'direct', label: 'En direct' },
+        { key: 'suivants', label: 'Suivants' },
+      ] as const
+    ).map(({ key, label }) => (
+      <button
+        key={key}
+        type="button"
+        className={`rsm-pill${kioskViews[key] ? ' rsm-pill--on' : ''}`}
+        onClick={() => setKioskViews(v => ({ ...v, [key]: !v[key] }))}
+      >
+        {kioskViews[key] ? '✓' : '○'} {label}
+      </button>
+    ));
+
     return (
       <div className="remote-score-manager">
-        <div className="remote-status inactive">
-          <h3>🔴 Saisie distante inactive</h3>
-          <p>
-            La saisie distante permet aux arbitres de saisir les scores depuis une tablette. Les
-            arbitres se connectent via un navigateur web sur le réseau local.
-          </p>
-          <div style={RSM_STYLES.stripCountRow}>
-            <span>Pistes :</span>
-            {stripCountControls}
+        <div className="rsm-inactive">
+          {/* Hero */}
+          <div className="rsm-hero">
+            <span className="rsm-status-dot rsm-status-dot--off" />
+            <div>
+              <h3 className="rsm-hero-title">Saisie distante inactive</h3>
+              <p className="rsm-hero-desc">
+                Les arbitres saisissent les scores depuis une tablette via navigateur web sur le réseau local.
+              </p>
+            </div>
           </div>
-          <label style={RSM_STYLES.checkboxLabel}>
-            <input
-              type="checkbox"
-              checked={showPhotos}
-              onChange={e => setShowPhotos(e.target.checked)}
-            />
-            Afficher les photos des combattants avant le combat
-          </label>
-          <label style={RSM_STYLES.checkboxLabel}>
-            <input
-              type="checkbox"
-              checked={cardAnnounce}
-              onChange={e => setCardAnnounce(e.target.checked)}
-            />
-            📣 Carton avancer (afficher bandeau + raison sur les écrans)
-          </label>
-          <div style={RSM_STYLES.kioskViewsSection}>
-            <div style={RSM_STYLES.kioskViewsTitle}>Vues kiosk :</div>
-            {(
-              [
-                { key: 'poules', label: 'Poules' },
-                { key: 'classement', label: 'Classement' },
-                { key: 'direct', label: 'Matchs en direct' },
-                { key: 'suivants', label: 'Matchs suivants' },
-              ] as const
-            ).map(({ key, label }) => (
-              <label key={key} style={RSM_STYLES.kioskViewLabel}>
+
+          {/* Sections grid */}
+          <div className="rsm-sections">
+            {/* Pistes */}
+            <div className="rsm-section">
+              <div className="rsm-section-label">Pistes</div>
+              <div className="rsm-strip-row">{stripCountControls}</div>
+            </div>
+
+            {/* Options d'affichage */}
+            <div className="rsm-section">
+              <div className="rsm-section-label">Affichage</div>
+              <label className="rsm-toggle-row">
                 <input
                   type="checkbox"
-                  checked={kioskViews[key]}
-                  onChange={e => setKioskViews(v => ({ ...v, [key]: e.target.checked }))}
+                  checked={showPhotos}
+                  onChange={e => setShowPhotos(e.target.checked)}
                 />
-                {label}
+                Photos combattants
               </label>
-            ))}
+              <label className="rsm-toggle-row">
+                <input
+                  type="checkbox"
+                  checked={cardAnnounce}
+                  onChange={e => setCardAnnounce(e.target.checked)}
+                />
+                📣 Bandeau carton
+              </label>
+            </div>
+
+            {/* Vues kiosque — pills */}
+            <div className="rsm-section rsm-section--full">
+              <div className="rsm-section-label">Vues kiosque</div>
+              <div className="rsm-pills">{kioskPills}</div>
+            </div>
+
+            {/* Réseau */}
+            <div className="rsm-section rsm-section--full">
+              <div className="rsm-section-label">Réseau</div>
+              <div className="rsm-network-grid">
+                <select
+                  id="remote-interface"
+                  value={selectedInterface}
+                  onChange={e => {
+                    setSelectedInterface(e.target.value);
+                    localStorage.setItem('bellepoule-remote-interface', e.target.value);
+                  }}
+                  disabled={isLoading}
+                >
+                  {networkInterfaces.map(iface => (
+                    <option key={iface.address} value={iface.address}>
+                      {iface.name}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  id="remote-port"
+                  type="number"
+                  min={1}
+                  max={65535}
+                  value={remotePort}
+                  onChange={e => handlePortChange(parseInt(e.target.value, 10))}
+                  className={portValid ? '' : 'rsm-input-error'}
+                  disabled={isLoading}
+                />
+              </div>
+              {!portValid && (
+                <div className="rsm-port-error">Port invalide (1–65535)</div>
+              )}
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={useHttps}
+                  onChange={e => {
+                    setUseHttps(e.target.checked);
+                    localStorage.setItem('bellepoule-remote-https', String(e.target.checked));
+                  }}
+                  disabled={isLoading}
+                />
+                🔒 Activer HTTPS (connexion chiffrée)
+              </label>
+              {useHttps && (
+                <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '0.25rem', lineHeight: 1.4 }}>
+                  Certificat auto-signé — les tablettes devront accepter l&apos;avertissement de sécurité du navigateur une seule fois.
+                </div>
+              )}
+              <span className="rsm-network-preview">{networkPreview}</span>
+            </div>
           </div>
-          <div style={RSM_STYLES.interfaceRow}>
-            <label htmlFor="remote-interface" style={RSM_STYLES.interfaceLabel}>
-              Interface :
-            </label>
-            <select
-              id="remote-interface"
-              value={selectedInterface}
-              onChange={e => {
-                setSelectedInterface(e.target.value);
-                localStorage.setItem('bellepoule-remote-interface', e.target.value);
-              }}
-              disabled={isLoading}
-            >
-              {networkInterfaces.map(iface => (
-                <option key={iface.address} value={iface.address}>
-                  {iface.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div style={RSM_STYLES.portRow}>
-            <label htmlFor="remote-port" style={RSM_STYLES.interfaceLabel}>
-              Port :
-            </label>
-            <input
-              id="remote-port"
-              type="number"
-              min={1}
-              max={65535}
-              value={remotePort}
-              onChange={e => handlePortChange(parseInt(e.target.value, 10))}
-              style={RSM_STYLES.portInput}
-              disabled={isLoading}
-            />
-            <span style={RSM_STYLES.portHint}>1–65535, défaut 8066</span>
-          </div>
-          <button className="btn-primary" onClick={onStartRemote}>
-            ⚡ Démarrer la saisie distante
+
+          {/* CTA */}
+          <button
+            className="rsm-start-btn"
+            onClick={onStartRemote}
+            disabled={!portValid || isLoading}
+          >
+            {isLoading
+              ? <span className="rsm-spinner" />
+              : '⚡'}
+            Démarrer la saisie distante
           </button>
         </div>
       </div>
@@ -633,6 +792,11 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           <p>
             Serveur: <strong>{serverUrl}</strong>
           </p>
+          {certFingerprint && (
+            <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: '0.25rem 0 0', wordBreak: 'break-all' }}>
+              🔒 Empreinte cert. SHA-256 : <code style={{ fontSize: '0.7rem' }}>{certFingerprint}</code>
+            </p>
+          )}
           <div style={RSM_STYLES.portActiveRow}>
             <label htmlFor={`remote-port-active-${competition.id}`} style={RSM_STYLES.portActiveLabel}>
               Port :
@@ -719,6 +883,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                 { value: 'dark', label: 'Sombre', icon: '🌙' },
                 { value: 'light', label: 'Clair', icon: '☀️' },
                 { value: 'neon', label: 'Néon', icon: '⚡' },
+                { value: 'unicorn', label: 'Unicorn', icon: '🦄' },
               ] as const
             ).map(({ value, label, icon }) => (
               <button
@@ -912,34 +1077,120 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           {arenaUrls.map(arena => {
             const arenaId = `arena${arena.number}`;
             const arenaTheme = arenaThemes[arenaId];
+            const screenTab = arenaScreenTab[arenaId] ?? 'arena';
+            const screenThemeTypes = [
+              { value: 'arena' as const,   label: 'Affichage' },
+              { value: 'public' as const,  label: 'Public' },
+              { value: 'referee' as const, label: 'Arbitre' },
+              { value: 'pool' as const,    label: 'Poule' },
+            ] as const;
+            const filteredForScreen = savedThemes.filter(t => (t.targetType ?? 'arena') === screenTab);
             return (
               <div key={arena.number} className="arena-url-card">
                 <div className="arena-url-header">
                   <strong>Piste {arena.number}</strong>
-                  {/* Sélecteur de thème par arène */}
-                  <div className="arena-theme-picker">
-                    {[
-                      { value: 'dark' as const, icon: '🌙', title: 'Sombre' },
-                      { value: 'light' as const, icon: '☀️', title: 'Clair' },
-                      { value: 'neon' as const, icon: '⚡', title: 'Néon' },
-                    ].map(({ value, icon, title }) => (
-                      <button
-                        key={value}
-                        title={title}
-                        className={`arena-theme-btn ${arenaTheme?.theme === value ? 'active' : ''}`}
-                        onClick={() => handleArenaThemeChange(arenaId, value)}
-                      >
-                        {icon}
-                      </button>
-                    ))}
+                </div>
+                {/* Onglets type d'écran */}
+                <div style={{ display: 'flex', gap: '0.25rem', margin: '0.4rem 0 0.25rem' }}>
+                  {screenThemeTypes.map(({ value, label }) => (
                     <button
-                      title="Thème personnalisé"
-                      className={`arena-theme-btn ${arenaTheme?.theme === 'custom' ? 'active' : ''}`}
-                      onClick={() => setThemeEditorTarget(arenaId)}
+                      key={value}
+                      onClick={() => setArenaScreenTab(prev => ({ ...prev, [arenaId]: value }))}
+                      style={{
+                        padding: '0.15rem 0.45rem', fontSize: '0.7rem', borderRadius: '0.25rem',
+                        border: `1px solid ${screenTab === value ? '#3b82f6' : '#475569'}`,
+                        background: screenTab === value ? '#1d4ed8' : 'transparent',
+                        color: screenTab === value ? '#fff' : '#94a3b8',
+                        cursor: 'pointer', fontWeight: screenTab === value ? 700 : 400,
+                      }}
                     >
-                      ✏️
+                      {label}
                     </button>
-                  </div>
+                  ))}
+                </div>
+                {/* Sélecteur de thème selon l'onglet */}
+                <div className="arena-theme-picker">
+                  {screenTab === 'arena' ? (
+                    <>
+                      {[
+                        { value: 'dark' as const, icon: '🌙', title: 'Sombre' },
+                        { value: 'light' as const, icon: '☀️', title: 'Clair' },
+                        { value: 'neon' as const, icon: '⚡', title: 'Néon' },
+                      ].map(({ value, icon, title }) => (
+                        <button
+                          key={value}
+                          title={title}
+                          className={`arena-theme-btn ${arenaTheme?.theme === value ? 'active' : ''}`}
+                          onClick={() => handleArenaThemeChange(arenaId, value)}
+                        >
+                          {icon}
+                        </button>
+                      ))}
+                      <button
+                        title="Thème personnalisé"
+                        className={`arena-theme-btn ${arenaTheme?.theme === 'custom' ? 'active' : ''}`}
+                        onClick={() => { setThemeEditorScreenType('arena'); setThemeEditorTarget(arenaId); }}
+                      >
+                        ✏️
+                      </button>
+                      {arenaThemes[arenaId] && (
+                        <button
+                          title="Déverrouiller — suivre le thème global"
+                          className="arena-theme-btn"
+                          style={{ color: '#f59e0b', borderColor: '#f59e0b' }}
+                          onClick={() => void handleClearArenaThemeOverride(arenaId)}
+                        >
+                          🔓
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        title={`Personnaliser ${screenTab}`}
+                        className={`arena-theme-btn ${arenaTheme?.screenThemes?.[screenTab] ? 'active' : ''}`}
+                        onClick={() => { setThemeEditorScreenType(screenTab); setThemeEditorTarget(arenaId); }}
+                      >
+                        ✏️ {arenaTheme?.screenThemes?.[screenTab] ? '●' : ''}
+                      </button>
+                      {arenaTheme?.screenThemes?.[screenTab] && (
+                        <button
+                          title="Déverrouiller — suivre le thème global"
+                          className="arena-theme-btn"
+                          style={{ color: '#f59e0b', borderColor: '#f59e0b' }}
+                          onClick={() => void handleClearArenaScreenTheme(arenaId, screenTab)}
+                        >
+                          🔓
+                        </button>
+                      )}
+                    </>
+                  )}
+                  {filteredForScreen.length > 0 && (
+                    <select
+                      title="Appliquer un thème sauvegardé"
+                      value=""
+                      onChange={async e => {
+                        const t = savedThemes.find(x => x.id === e.target.value);
+                        if (!t) return;
+                        if (screenTab === 'arena') {
+                          await handleArenaThemeChange(arenaId, 'custom', t);
+                        } else {
+                          await handleArenaScreenThemeChange(arenaId, screenTab, t);
+                        }
+                        e.currentTarget.value = '';
+                      }}
+                      style={{
+                        padding: '0.2rem 0.4rem', borderRadius: '0.3rem',
+                        border: '1px solid #475569', background: '#1e293b', color: '#e2e8f0',
+                        fontSize: '0.75rem', cursor: 'pointer', maxWidth: 110,
+                      }}
+                    >
+                      <option value="">📦 Thèmes…</option>
+                      {filteredForScreen.map(t => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                  )}
                 </div>
                 <div className="arena-url-row">
                   <span className="arena-url-label">Arbitre</span>
@@ -1120,34 +1371,67 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           })}
         </div>
 
+        {/* ── Thème global ── */}
+        {(() => {
+          const filteredForSection = savedThemes.filter(t => (t.targetType ?? 'arena') === globalThemeSection);
+          if (savedThemes.length === 0) return null;
+          return (
+            <div className="arena-url-card" style={RSM_STYLES.kioskCard}>
+              <div className="arena-url-header">
+                <strong>🎨 Thème global</strong>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '0.25rem' }}>
+                <select
+                  value={globalThemeSection}
+                  onChange={e => { setGlobalThemeSection(e.target.value as typeof globalThemeSection); setGlobalThemeId(''); }}
+                  style={{ padding: '0.35rem 0.5rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#1e293b', color: '#e2e8f0', fontSize: '0.85rem' }}
+                >
+                  <option value="arena">⚔️ Affichage piste</option>
+                  <option value="kiosk">🖥️ Kiosque</option>
+                  <option value="public">👥 Public</option>
+                  <option value="referee">🤝 Arbitre</option>
+                  <option value="pool">📋 Poule</option>
+                </select>
+                <select
+                  value={globalThemeId}
+                  onChange={e => setGlobalThemeId(e.target.value)}
+                  style={{ flex: 1, minWidth: 120, padding: '0.35rem 0.5rem', borderRadius: '0.3rem', border: '1px solid #475569', background: '#1e293b', color: '#e2e8f0', fontSize: '0.85rem' }}
+                >
+                  <option value="">— Choisir un thème —</option>
+                  {filteredForSection.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+                <button
+                  className="btn btn-primary"
+                  disabled={!globalThemeId}
+                  onClick={() => void handleGlobalThemeApply()}
+                  style={{ whiteSpace: 'nowrap' }}
+                >
+                  Appliquer à tous
+                </button>
+              </div>
+            </div>
+          );
+        })()}
+
         <div className="arena-url-card" style={RSM_STYLES.kioskCard}>
           <div className="arena-url-header">
             <strong>🎥 Overlay streaming (OBS / vMix)</strong>
           </div>
-          <div className="arena-url-row">
-            <span className="arena-url-label" title="Configurateur visuel pour générer l'URL OBS">Configurateur</span>
-            <code className="arena-url-value">{serverUrl}/overlay-config</code>
-            <button
-              className="btn-copy"
-              onClick={() => copyToClipboard(`${serverUrl}/overlay-config`, 998)}
-              title="Copier l'URL du configurateur"
-            >
-              {copiedIndex === 998 ? '✓' : '📋'}
-            </button>
-            <button
-              className="btn-ghost"
-              style={{ fontSize: '13px', padding: '2px 8px', borderRadius: 4, border: '1px solid #ccc', cursor: 'pointer', background: 'transparent' }}
-              onClick={() => window.open(`${serverUrl}/overlay-config?arenas=${arenaCount}`, '_blank')}
-              title="Ouvrir le configurateur"
-            >
-              ↗
-            </button>
-          </div>
+          <OBSOverlayConfig serverUrl={serverUrl} arenaCount={arenaCount} />
         </div>
 
         <div className="arena-url-card" style={RSM_STYLES.kioskCard}>
-          <div className="arena-url-header">
+          <div className="arena-url-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <strong>🖥️ Kiosk (affichage public)</strong>
+            <button
+              title="Thème personnalisé kiosk"
+              className={`arena-theme-btn ${kioskTheme ? 'active' : ''}`}
+              onClick={() => setKioskThemeEditorOpen(true)}
+            >
+              ✏️ Thème
+            </button>
           </div>
           <div className="arena-url-row">
             <span className="arena-url-label">URL</span>
@@ -1168,6 +1452,30 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             </button>
           </div>
         </div>
+
+        <div className="arena-url-card" style={RSM_STYLES.kioskCard}>
+          <div className="arena-url-header">
+            <strong>🚪 Lobby (salle d'attente arbitres)</strong>
+          </div>
+          <div className="arena-url-row">
+            <span className="arena-url-label">URL</span>
+            <code className="arena-url-value">{lobbyUrl}</code>
+            <button
+              className="btn-copy"
+              onClick={() => copyToClipboard(lobbyUrl, 997)}
+              title="Copier l'URL"
+            >
+              {copiedIndex === 997 ? '✓' : '📋'}
+            </button>
+            <button
+              className="btn-qr"
+              onClick={() => setActiveQR({ url: lobbyUrl, label: 'Lobby – Salle d\'attente' })}
+              title="QR code"
+            >
+              📱
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* ── Section : Écrans connectés ── */}
@@ -1179,7 +1487,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           {connectedClients.map(client => {
             const clientLabel = client.label || client.screenId?.slice(0, 8) || client.socketId.slice(0, 8);
             const typeLabel: Record<string, string> = {
-              kiosk: 'Kiosk', arena: 'Arène', public: 'Public', pool: 'Poule', dashboard: 'Dashboard', lobby: 'Lobby',
+              kiosk: 'Kiosk', arena: 'Arène', public: 'Public', pool: 'Poule', dashboard: 'Dashboard', lobby: 'Lobby', referee: 'Arbitre',
             };
             return (
               <div key={client.socketId} style={{
@@ -1193,6 +1501,21 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                   {clientLabel}
                 </span>
                 <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{client.ip}</span>
+                {client.battery && (
+                  <span
+                    title={client.battery.charging ? 'En charge' : 'Sur batterie'}
+                    style={{
+                      fontSize: '0.75rem',
+                      padding: '0.15rem 0.4rem',
+                      borderRadius: '0.3rem',
+                      background: client.battery.level <= 0.2 && !client.battery.charging ? '#7f1d1d' : '#1e293b',
+                      color: client.battery.level <= 0.2 && !client.battery.charging ? '#fca5a5' : '#94a3b8',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {client.battery.charging ? '🔌' : '🔋'} {Math.round(client.battery.level * 100)}%
+                  </span>
+                )}
                 <div style={{ display: 'flex', gap: '0.35rem', marginLeft: 'auto', flexWrap: 'wrap' }}>
                   <button
                     className="btn-secondary"
@@ -1257,7 +1580,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       </div>
 
       {/* ── Modal kiosk config ── */}
-      {kioskModal && (
+      {kioskModal && createPortal(
         <div className="qr-popup-overlay" onClick={() => setKioskModal(null)}>
           <div className="qr-popup" onClick={e => e.stopPropagation()} style={{ minWidth: '20rem', maxWidth: '26rem' }}>
             <strong style={{ fontSize: '1rem' }}>🖥️ Configurer le mode kiosk</strong>
@@ -1309,23 +1632,52 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {themeEditorTarget && (
         <ThemeEditor
           targetArenaId={themeEditorTarget}
-          initialTheme={arenaThemes[themeEditorTarget]?.customTheme}
+          targetType={themeEditorScreenType}
+          initialTheme={
+            themeEditorScreenType === 'arena'
+              ? arenaThemes[themeEditorTarget]?.customTheme
+              : arenaThemes[themeEditorTarget]?.screenThemes?.[themeEditorScreenType as 'public' | 'referee' | 'pool']
+          }
           onApply={async (arenaId, theme) => {
-            await handleArenaThemeChange(arenaId, 'custom', theme);
+            if (themeEditorScreenType === 'arena') {
+              await handleArenaThemeChange(arenaId, 'custom', theme);
+            } else {
+              await handleArenaScreenThemeChange(arenaId, themeEditorScreenType as 'public' | 'referee' | 'pool', theme);
+            }
             setThemeEditorTarget(null);
             showToast('Thème personnalisé appliqué', 'success');
           }}
-          onClose={() => setThemeEditorTarget(null)}
+          onClose={() => { setThemeEditorTarget(null); refreshSavedThemes(); }}
         />
       )}
 
-      {activeQR && (
+      {kioskThemeEditorOpen && (
+        <ThemeEditor
+          targetArenaId="kiosk"
+          targetType="kiosk"
+          initialTheme={kioskTheme}
+          onApply={async (_arenaId, theme) => {
+            setKioskTheme(theme);
+            const result = await window.electronAPI.remote.updateKioskTheme(competition.id, theme.variables);
+            setKioskThemeEditorOpen(false);
+            if (result?.success) {
+              showToast('Thème kiosk appliqué', 'success');
+            } else {
+              showToast(result?.error ?? 'Erreur application thème kiosk', 'error');
+            }
+          }}
+          onClose={() => { setKioskThemeEditorOpen(false); refreshSavedThemes(); }}
+        />
+      )}
+
+      {activeQR && createPortal(
         <div className="qr-popup-overlay" onClick={() => setActiveQR(null)}>
           <div className="qr-popup" onClick={e => e.stopPropagation()}>
             <strong>{activeQR.label}</strong>
@@ -1341,7 +1693,8 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
               Fermer
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

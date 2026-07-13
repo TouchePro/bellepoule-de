@@ -1,4 +1,4 @@
-﻿{
+{
   "app": {
     "title": "BellePoule Modern",
     "home": "主頁",
@@ -32,7 +32,9 @@
     "third_place_match_label": "銅牌賽（季軍賽）",
     "third_place_match_description": "為兩位落敗半準決賽選手安排額外比賽，以決定第三及第四名",
     "comparisons": "比較",
-    "analytics": "分析"
+    "analytics": "分析",
+    "sign_tableau_matches_label": "選手在平板上簽名（淘汰表）",
+    "sign_tableau_matches_description": "在每場直接淘汰賽後於平板上向兩位選手顯示簽名畫面"
   },
   "weapons": {
     "epee": "重劍",
@@ -207,7 +209,8 @@
     "check_in_all": "全部報到",
     "uncheck_all": "全部取消報到",
     "view": "查看",
-    "default": "未指定"
+    "default": "未指定",
+    "save_and_add": "儲存並新增"
   },
   "messages": {
     "confirm_delete_fencer": "確定要刪除此劍手嗎？此操作不可復原。",
@@ -241,17 +244,34 @@
   "pdfTemplate": {
     "modalTitle": "自訂PDF匯出",
     "openButton": "自訂PDF",
-    "docType": { "pool": "分組", "tableau": "淘汰賽", "ranking": "排名" },
+    "docType": {
+      "pool": "分組",
+      "tableau": "淘汰賽",
+      "ranking": "排名"
+    },
     "customTitle": "自訂標題",
     "customTitlePlaceholder": "留空使用自動標題",
-    "colors": { "navy": "主色", "gold": "強調色", "green": "勝利色" },
-    "elements": {
-      "header": "頁首", "gold-bar": "金色分隔線", "competition-name": "比賽名稱", "meta-chips": "資訊標籤",
-      "score-grid": "分數表格", "pending-matches": "待打比賽",
-      "finished-matches": "結果", "match-cards": "比賽卡片",
-      "ranking-table": "排名表", "footer": "頁尾"
+    "colors": {
+      "navy": "主色",
+      "gold": "強調色",
+      "green": "勝利色"
     },
-    "reset": "重設", "exportJson": "匯出JSON", "importJson": "匯入JSON", "importError": "JSON檔案無效"
+    "elements": {
+      "header": "頁首",
+      "gold-bar": "金色分隔線",
+      "competition-name": "比賽名稱",
+      "meta-chips": "資訊標籤",
+      "score-grid": "分數表格",
+      "pending-matches": "待打比賽",
+      "finished-matches": "結果",
+      "match-cards": "比賽卡片",
+      "ranking-table": "排名表",
+      "footer": "頁尾"
+    },
+    "reset": "重設",
+    "exportJson": "匯出JSON",
+    "importJson": "匯入JSON",
+    "importError": "JSON檔案無效"
   },
   "cardModal": {
     "title": "{{name}} 的罰牌",
@@ -334,7 +354,8 @@
     "refresh_data": "重新整理資料",
     "timer": "開始/暫停計時器",
     "nav_list": "在列表中導航",
-    "validate": "確認 / 開啟"
+    "validate": "確認 / 開啟",
+    "print_sheets": "列印小組賽 / 對戰表"
   },
   "formula": {
     "builder_title": "賽制編輯器",

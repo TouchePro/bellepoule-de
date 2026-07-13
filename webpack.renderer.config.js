@@ -85,7 +85,7 @@ module.exports = (env = {}) => ({
     rules: [
       {
         test: /\.tsx?$/,
-        use: 'ts-loader',
+        use: { loader: 'ts-loader', options: { ignoreDiagnostics: [5011, 5103] } },
         exclude: /node_modules/,
       },
       {
@@ -118,6 +118,13 @@ module.exports = (env = {}) => ({
           from: 'src/remote',
           to: '../remote',
           noErrorOnMissing: true,
+        },
+        {
+          // Le client socket.io n'est PAS dans node_modules de l'app packagée
+          // (socket.io est bundlé côté serveur, node_modules non inclus).
+          // On le copie dans dist/remote → servi en statique par le serveur distant.
+          from: 'node_modules/socket.io/client-dist/socket.io.min.js',
+          to: '../remote/socket.io.min.js',
         },
         {
           from: 'src/main/splash.html',
