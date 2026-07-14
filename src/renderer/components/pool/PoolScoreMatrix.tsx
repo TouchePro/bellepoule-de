@@ -56,6 +56,7 @@ const ScoreCell = React.memo<ScoreCellProps>(
   ({ rowFencer, colFencer, abandoned, score, isFlashing, isLocked, onCellClick, onMatchReset,
      isHighlighted, quickMouseScoring, simplifiedInputMode, onHoverIn, onHoverOut, onWheelScore,
      isInlineEditing, inlineSingleScore, bufferedScore, onInlineSingleScoreChange, onInlineSubmit, onInlineCancel }) => {
+    const { t } = useTranslation();
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {

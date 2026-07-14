@@ -367,6 +367,7 @@ const PoolResultsCard_: React.FC<{ pool: Pool; isLaserSabre?: boolean }> = ({
   pool,
   isLaserSabre = false,
 }) => {
+  const { t } = useTranslation();
   const completedCount = pool.matches.filter(m => m.status === MatchStatus.FINISHED).length;
   const progress = pool.matches.length > 0 ? (completedCount / pool.matches.length) * 100 : 0;
 
@@ -544,6 +545,7 @@ const PoolResultsCard_: React.FC<{ pool: Pool; isLaserSabre?: boolean }> = ({
 
 // Tableau View Component
 const TableauView_: React.FC<{ matches: Match[] }> = ({ matches }) => {
+  const { t } = useTranslation();
   const rounds = [128, 64, 32, 16, 8, 4, 2, 1];
 
   return (
@@ -654,6 +656,7 @@ const TableauView_: React.FC<{ matches: Match[] }> = ({ matches }) => {
 
 // Final Ranking View
 const FinalRankingView_: React.FC<{ results: any[] }> = ({ results }) => {
+  const { t } = useTranslation();
   return (
     <div
       style={{

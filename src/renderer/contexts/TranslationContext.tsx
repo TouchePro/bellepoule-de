@@ -36,7 +36,7 @@ interface TranslationContextValue {
   availableThemes: readonly { code: Theme; name: string }[];
 }
 
-const TranslationContext = createContext<TranslationContextValue | undefined>(undefined);
+export const TranslationContext = createContext<TranslationContextValue | undefined>(undefined);
 
 const getFallbackTranslations = (language: Language): Translations => {
   const fallbackTranslations: Record<Language, Translations> = {

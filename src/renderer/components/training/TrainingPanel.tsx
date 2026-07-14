@@ -20,6 +20,7 @@ interface UrlRowProps {
   qrDataUrl: string | null;
 }
 const UrlRow: React.FC<UrlRowProps> = ({ label, url, qrDataUrl }) => {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
@@ -71,6 +72,7 @@ const UrlRow: React.FC<UrlRowProps> = ({ label, url, qrDataUrl }) => {
 // ── Bloc kiosk grand écran ───────────────────────────────────────────────────
 interface KioskBlockProps { kioskUrl: string; }
 const KioskBlock: React.FC<KioskBlockProps> = ({ kioskUrl }) => {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [qr, setQr] = useState<string | null>(null);
 
@@ -120,6 +122,7 @@ interface ArenaBlockProps {
   displayUrl: string;
 }
 const ArenaBlock: React.FC<ArenaBlockProps> = ({ number, refereeUrl, displayUrl }) => {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [qrReferee, setQrReferee] = useState<string | null>(null);
   const [qrDisplay, setQrDisplay] = useState<string | null>(null);

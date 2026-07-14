@@ -1439,6 +1439,12 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           setSelectedRounds(new Set(rounds));
           setShowPdfModal(true);
         }}
+        onPreviewClick={() => {
+          setPdfMode('pdf');
+          const rounds = [...new Set(matches.filter(m => m.fencerA && m.fencerB && !m.isBye).map(m => m.round))].sort((a, b) => b - a);
+          setSelectedRounds(new Set(rounds));
+          setShowPdfModal(true);
+        }}
         onExportTreeClick={handleExportTree}
         champion={champion}
       />

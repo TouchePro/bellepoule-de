@@ -781,9 +781,9 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
                   {t('theme.saved')}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', maxHeight: '120px', overflowY: 'auto' }}>
-                  {savedThemes.map(t => (
+                  {savedThemes.map(savedTheme => (
                     <div
-                      key={t.id}
+                      key={savedTheme.id}
                       style={{
                         display: 'flex', alignItems: 'center', gap: '0.4rem',
                         padding: '0.3rem 0.5rem', background: '#1e293b', borderRadius: '0.3rem',
@@ -791,12 +791,12 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
                     >
                       <span
                         style={{ flex: 1, fontSize: '0.85rem', color: '#e2e8f0', cursor: 'pointer' }}
-                        onClick={() => handleLoadSaved(t)}
+                        onClick={() => handleLoadSaved(savedTheme)}
                       >
-                        {t.name}
+                        {savedTheme.name}
                       </span>
                       <button
-                        onClick={() => handleDeleteSaved(t.id)}
+                        onClick={() => handleDeleteSaved(savedTheme.id)}
                         style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.9rem' }}
                         title={t('actions.delete')}
                       >
