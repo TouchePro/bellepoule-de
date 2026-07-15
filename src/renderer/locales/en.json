@@ -1186,7 +1186,15 @@
     "not_fenced": "Match not fenced (abandon/forfeit)",
     "cancel_result": "Cancel this result",
     "right_click_hide": "Right-click to hide",
-    "reg": "Reg"
+    "reg": "Reg",
+    "victories": "V",
+    "ratio": "V/M",
+    "td": "TS",
+    "tr": "TR",
+    "index": "Ind",
+    "rank": "Rk",
+    "club": "Club",
+    "nation": "Nat"
   },
   "windowSizePresets": {
     "label": "Window:"
