@@ -170,6 +170,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
 export class CompetitionErrorBoundary extends Component<Props> {
   static contextType = TranslationContext;
+  declare context: React.ContextType<typeof TranslationContext>;
   render() {
     return (
       <ErrorBoundary
@@ -184,7 +185,7 @@ export class CompetitionErrorBoundary extends Component<Props> {
         fallback={
           <div style={{ padding: '20px', textAlign: 'center' }}>
             <h3>🤺 Fehler im Wettbewerb</h3>
-            <p>{this.context.t('errors.load_title')}</p>
+            <p>{this.context?.t('errors.load_title')}</p>
             <button onClick={() => window.location.reload()}>App neu laden</button>
           </div>
         }
@@ -216,6 +217,7 @@ export class PoolErrorBoundary extends Component<Props> {
 
 export class DatabaseErrorBoundary extends Component<Props> {
   static contextType = TranslationContext;
+  declare context: React.ContextType<typeof TranslationContext>;
   render() {
     return (
       <ErrorBoundary
@@ -237,7 +239,7 @@ export class DatabaseErrorBoundary extends Component<Props> {
           <div style={{ padding: '20px', textAlign: 'center' }}>
             <h3>💾 Datenbankfehler</h3>
             <p>Beim Zugriff auf die Daten ist ein Fehler aufgetreten.</p>
-            <p>{this.context.t('errors.load_message')}</p>
+            <p>{this.context?.t('errors.load_message')}</p>
             <button onClick={() => window.location.reload()}>App neu starten</button>
           </div>
         }

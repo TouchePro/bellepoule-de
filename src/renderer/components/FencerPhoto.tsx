@@ -95,13 +95,13 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
 
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        alert('Veuillez sélectionner une image valide');
+        alert(t('messages.image_select_invalid'));
         return;
       }
 
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        alert("L'image ne doit pas dépasser 5 Mo");
+        alert(t('messages.image_max_size_exceeded'));
         return;
       }
 
@@ -111,7 +111,7 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
         onPhotoChange?.(base64);
       } catch (error) {
         logger.error(LogCategory.UI, 'Error processing image', error as Error);
-        alert("Erreur lors du traitement de l'image");
+        alert(t('messages.image_processing_error'));
       } finally {
         setIsLoading(false);
       }
@@ -128,12 +128,12 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
       if (!file) return;
 
       if (!file.type.startsWith('image/')) {
-        alert('Veuillez déposer une image valide');
+        alert(t('messages.image_drop_invalid'));
         return;
       }
 
       if (file.size > 5 * 1024 * 1024) {
-        alert("L'image ne doit pas dépasser 5 Mo");
+        alert(t('messages.image_max_size_exceeded'));
         return;
       }
 
@@ -143,7 +143,7 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
         onPhotoChange?.(base64);
       } catch (error) {
         logger.error(LogCategory.UI, 'Error processing image', error as Error);
-        alert("Erreur lors du traitement de l'image");
+        alert(t('messages.image_processing_error'));
       } finally {
         setIsLoading(false);
       }

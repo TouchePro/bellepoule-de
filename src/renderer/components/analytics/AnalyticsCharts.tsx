@@ -5,7 +5,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Competition, FencerCompetitionStats, Weapon } from '../../../shared/types';
-import { useTranslation } from '../../../hooks/useTranslation';
+import { useTranslation } from '../../hooks/useTranslation';
 import { TouchZoneHeatmap } from './TouchZoneHeatmap';
 
 interface Props {
@@ -57,6 +57,7 @@ interface DonutSlice {
 }
 
 const Donut: React.FC<{ slices: DonutSlice[]; title: string; centerLabel?: string }> = ({ slices, title, centerLabel }) => {
+  const { t } = useTranslation();
   const total = slices.reduce((s, x) => s + x.value, 0);
   if (total === 0) return (
     <div className="bg-white rounded-lg border border-gray-100 p-4">
@@ -120,6 +121,7 @@ const Donut: React.FC<{ slices: DonutSlice[]; title: string; centerLabel?: strin
 // ── Aggregated heatmap (moyenne sur tous les tireurs) ──────────────────────────
 
 const AggregateHeatmap: React.FC<{ stats: FencerCompetitionStats[] }> = ({ stats }) => {
+  const { t } = useTranslation();
   const totA = stats.reduce((s, x) => s + x.touchesZoneA, 0);
   const totB = stats.reduce((s, x) => s + x.touchesZoneB, 0);
   const totC = stats.reduce((s, x) => s + x.touchesZoneC, 0);
@@ -202,6 +204,7 @@ const TopFencersChart: React.FC<{ stats: FencerCompetitionStats[]; isLaser: bool
 // ── Durée moyenne par tireur (histogram) ──────────────────────────────────────
 
 const DurationChart: React.FC<{ stats: FencerCompetitionStats[] }> = ({ stats }) => {
+  const { t } = useTranslation();
   const withDuration = stats.filter(s => s.averageDurationSeconds > 0);
   if (withDuration.length === 0) return null;
 
@@ -246,6 +249,7 @@ const CARD_REASON_FR: Record<string, string> = {
 };
 
 const CardsByReason: React.FC<{ stats: FencerCompetitionStats[] }> = ({ stats }) => {
+  const { t } = useTranslation();
   const totals: Record<string, number> = {};
   for (const s of stats) {
     for (const [reason, count] of Object.entries(s.cardsByReason ?? {})) {

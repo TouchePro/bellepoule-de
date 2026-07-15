@@ -332,11 +332,11 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         setCertFingerprint(result.serverInfo.certFingerprint ?? null);
         await startSession(result.serverInfo.url, effectivePending);
       } else {
-        showToast(`Erreur: ${result.error || 'Impossible de démarrer le serveur'}`, 'error');
+        showToast(t('messages.error_with_detail', { error: result.error || t('messages.server_start_failed') }), 'error');
       }
     } catch (error) {
       logger.error(LogCategory.UI, 'Failed to start remote server', error as Error);
-      showToast('Impossible de démarrer le serveur distant', 'error');
+      showToast(t('messages.remote_server_start_failed'), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -380,7 +380,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         setSession(result.session);
         setCommittedCount(count);
         onArenaCountChange?.(count);
-        showToast('Saisie distante démarrée', 'success');
+        showToast(t('messages.remote_input_started'), 'success');
         // Synchroniser le webhook URL configuré vers le serveur qui vient de démarrer
         const savedWebhook = localStorage.getItem('bellepoule-webhook-url');
         if (savedWebhook) {
@@ -393,7 +393,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           prevDeMatchesKeyRef.current = deMatches.map((m: any) => m.id).join(',');
         }
       } else {
-        showToast(`Erreur session: ${result.error}`, 'error');
+        showToast(t('messages.session_error', { error: result.error ?? t('messages.error') }), 'error');
       }
     } catch (error) {
       logger.error(LogCategory.UI, 'Failed to start session', error as Error);
@@ -413,20 +413,20 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           setCommittedCount(newCount);
           onArenaCountChange?.(newCount);
           localStorage.setItem(`bellepoule-remote-strips-${competition.id}`, String(newCount));
-          showToast('Nombre de pistes mis à jour', 'success');
+          showToast(t('messages.lanes_updated_count'), 'success');
         } else {
-          showToast(`Erreur: ${result.error}`, 'error');
+          showToast(t('messages.error_with_detail', { error: result.error ?? t('messages.error') }), 'error');
         }
       } catch (error) {
         logger.error(LogCategory.UI, 'Failed to update strip count', error as Error);
-        showToast('Erreur lors de la mise à jour des pistes', 'error');
+        showToast(t('messages.lanes_update_failed'), 'error');
       }
     } else {
       // Serveur non démarré : persister la préférence
       setCommittedCount(newCount);
       onArenaCountChange?.(newCount);
       localStorage.setItem(`bellepoule-remote-strips-${competition.id}`, String(newCount));
-      showToast('Préférence sauvegardée', 'success');
+      showToast(t('messages.preference_saved'), 'success');
     }
   };
 
@@ -442,9 +442,9 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       const result = await window.electronAPI.remote.changePort(competition.id, remotePort);
       if (result.success && result.serverInfo) {
         setServerUrl(result.serverInfo.url);
-        showToast(`Port changé : ${result.serverInfo.port}`, 'success');
+        showToast(t('messages.port_changed', { port: result.serverInfo.port }), 'success');
       } else {
-        showToast(`Erreur: ${result.error}`, 'error');
+        showToast(t('messages.error_with_detail', { error: result.error ?? t('messages.error') }), 'error');
       }
     } catch (error) {
       logger.error(LogCategory.UI, 'Failed to change port', error as Error);
@@ -462,14 +462,14 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         setSession(null);
         setIsLaunched(false);
         localStorage.removeItem(`bellepoule-remote-launched-${competition.id}`);
-        showToast('Saisie distante arrêtée', 'success');
+        showToast(t('messages.remote_input_stopped'), 'success');
         onStopRemote();
       } else {
-        showToast(`Erreur: ${result.error || "Impossible d'arrêter le serveur"}`, 'error');
+        showToast(t('messages.error_with_detail', { error: result.error || t('messages.server_stop_failed') }), 'error');
       }
     } catch (error) {
       logger.error(LogCategory.UI, 'Failed to stop remote server', error as Error);
-      showToast("Impossible d'arrêter le serveur distant", 'error');
+      showToast(t('messages.remote_server_stop_failed'), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -573,19 +573,22 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     if (!theme) return;
     if (globalThemeSection === 'arena') {
       await handleArenaThemeChange('all', 'custom', theme);
-      showToast(`Thème "${theme.name}" appliqué à toutes les pistes`, 'success');
+      showToast(t('messages.theme_applied_to_lanes', { theme: theme.name }), 'success');
     } else if (globalThemeSection === 'kiosk') {
       const result = await window.electronAPI.remote.updateKioskTheme(competition.id, theme.variables);
       setKioskTheme(theme);
-      if (result?.success) showToast(`Thème "${theme.name}" appliqué au kiosque`, 'success');
-      else showToast(result?.error ?? 'Erreur', 'error');
+      if (result?.success) showToast(t('messages.theme_applied_to_kiosk', { theme: theme.name }), 'success');
+      else showToast(result?.error ?? t('messages.error'), 'error');
     } else {
       // public / referee / pool → appliquer à toutes les arènes pour ce type d'écran
       const count = session ? session.strips.length : effectiveCommitted;
       for (let i = 1; i <= count; i++) {
         await window.electronAPI.remote.updateArenaScreenTheme(competition.id, `arena${i}`, globalThemeSection, theme);
       }
-      showToast(`Thème "${theme.name}" appliqué (${globalThemeSection}) à toutes les pistes`, 'success');
+      showToast(
+        t('messages.theme_applied_to_lanes_section', { theme: theme.name, section: globalThemeSection }),
+        'success'
+      );
     }
     setGlobalThemeId('');
   }, [savedThemes, globalThemeId, globalThemeSection, handleArenaThemeChange, competition.id, session, effectiveCommitted]);
@@ -674,7 +677,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           <div className="rsm-hero">
             <span className="rsm-status-dot rsm-status-dot--off" />
             <div>
-              <h3 className="rsm-hero-title">Saisie distante inactive</h3>
+              <h3 className="rsm-hero-title">{t('remote_score.title_inactive')}</h3>
               <p className="rsm-hero-desc">
                 {t('remote_score.desc')}
               </p>
@@ -790,7 +793,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     <div className="remote-score-manager">
       <div className="remote-header">
         <div className="remote-status active">
-          <h3>🟢 Saisie distante active</h3>
+          <h3>🟢 {t('remote_score.title_active')}</h3>
           <p>
             Serveur: <strong>{serverUrl}</strong>
           </p>
@@ -867,9 +870,9 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                   const key = `bellepoule-remote-launched-${competition.id}`;
                   setIsLaunched(true);
                   localStorage.setItem(key, 'true');
-                  showToast('Compétition lancée sur les écrans', 'success');
+                  showToast(t('messages.competition_broadcast_started'), 'success');
                 } else {
-                  showToast(`Erreur: ${result.error}`, 'error');
+                  showToast(t('messages.error_with_detail', { error: result.error ?? t('messages.error') }), 'error');
                 }
               }}
             >
@@ -1338,7 +1341,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                             'success'
                           );
                         } else {
-                          showToast(result.error ?? 'Erreur', 'error');
+                          showToast(result.error ?? t('messages.error'), 'error');
                         }
                       }
                     }}
@@ -1624,7 +1627,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
                 onClick={async () => {
                   await window.electronAPI.remote.setClientKioskMode(competition.id, kioskModal, kioskModalConfig);
                   setKioskModal(null);
-                  showToast('Écran basculé en mode kiosk', 'success');
+                  showToast(t('messages.screen_switched_to_kiosk'), 'success');
                 }}
               >
                 {t('ui.send_kiosk')}
@@ -1654,7 +1657,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
               await handleArenaScreenThemeChange(arenaId, themeEditorScreenType as 'public' | 'referee' | 'pool', theme);
             }
             setThemeEditorTarget(null);
-            showToast('Thème personnalisé appliqué', 'success');
+            showToast(t('messages.custom_theme_applied'), 'success');
           }}
           onClose={() => { setThemeEditorTarget(null); refreshSavedThemes(); }}
         />
@@ -1670,9 +1673,9 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             const result = await window.electronAPI.remote.updateKioskTheme(competition.id, theme.variables);
             setKioskThemeEditorOpen(false);
             if (result?.success) {
-              showToast('Thème kiosk appliqué', 'success');
+              showToast(t('messages.kiosk_theme_applied'), 'success');
             } else {
-              showToast(result?.error ?? 'Erreur application thème kiosk', 'error');
+              showToast(result?.error ?? t('messages.kiosk_theme_error_fallback'), 'error');
             }
           }}
           onClose={() => { setKioskThemeEditorOpen(false); refreshSavedThemes(); }}

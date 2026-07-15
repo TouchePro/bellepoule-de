@@ -35,7 +35,7 @@ const ScoreAuditLog_: React.FC<Props> = ({ competitionId }) => {
       const data = await window.electronAPI.db.getScoreAuditLogByCompetition(competitionId);
       setEntries(data);
     } catch {
-      showToast('Erreur chargement historique', 'error');
+      showToast(t('messages.score_audit_log_load_error'), 'error');
     } finally {
       setLoading(false);
     }
@@ -48,7 +48,14 @@ const ScoreAuditLog_: React.FC<Props> = ({ competitionId }) => {
   // Écoute des alertes de conflit IP
   useEffect(() => {
     const unsub = window.electronAPI.onScoreIpConflict((conflict: ScoreIpConflict) => {
-      const msg = `⚠️ Conflit IP — Poule ${conflict.poolNumber ?? '?'} Match ${conflict.matchNumber ?? '?'} : ${conflict.attemptReferee} (${conflict.attemptIp}) tente de modifier un score saisi par ${conflict.originalReferee ?? 'inconnu'} (${conflict.originalIp})`;
+      const msg = t('messages.ip_conflict_alert', {
+        pool: conflict.poolNumber ?? '?',
+        match: conflict.matchNumber ?? '?',
+        referee: conflict.attemptReferee,
+        ip: conflict.attemptIp,
+        originalReferee: conflict.originalReferee ?? t('messages.unknown'),
+        originalIp: conflict.originalIp,
+      });
       showToast(msg, 'error');
       load();
     });
@@ -86,16 +93,16 @@ const ScoreAuditLog_: React.FC<Props> = ({ competitionId }) => {
     const csv = header + rows.join('\n');
     try {
       const result = await window.electronAPI.dialog.saveFile({
-        title: 'Exporter le journal des scores',
+        title: t('messages.export_scores_log_title'),
         defaultPath: `historique_scores_${new Date().toISOString().slice(0,10)}.csv`,
         filters: [{ name: 'CSV / TXT', extensions: ['csv', 'txt'] }],
       });
       if (result && !result.canceled && result.filePath) {
         await window.electronAPI.file.writeContent(result.filePath, csv);
-        showToast('Fichier exporté', 'success');
+        showToast(t('messages.export_success', { format: 'CSV' }), 'success');
       }
     } catch {
-      showToast('Erreur export', 'error');
+      showToast(t('messages.export_failed', { format: 'CSV' }), 'error');
     }
   }, [filtered, showToast]);
 

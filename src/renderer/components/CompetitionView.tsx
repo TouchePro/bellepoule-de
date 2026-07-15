@@ -645,24 +645,24 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     onExportFencers: format => exportFencersList(fencers, format),
     onExportFencersBpf: async () => {
       const result = await window.electronAPI.dialog.saveFile({
-        title: 'Exporter tireurs + photos (.bpf)',
+        title: t('messages.export_fencers_archive_title'),
         defaultPath: `tireurs-${competition.title}.bpf`,
         filters: [{ name: 'BellePoule Fencers', extensions: ['bpf'] }],
       });
       if (result && !result.canceled && result.filePath) {
         const { count } = await window.electronAPI.file.exportFencersArchive(competition.id, result.filePath);
-        showToast(`${count} tireur${count !== 1 ? 's' : ''} exporté${count !== 1 ? 's' : ''} (.bpf)`, 'success');
+        showToast(t('messages.fencers_exported_count', { count }), 'success');
       }
     },
     onExportPhotos: async () => {
       const result = await window.electronAPI.dialog.saveFile({
-        title: 'Exporter les photos (.zip)',
+        title: t('messages.export_photos_title'),
         defaultPath: `photos-${competition.title}.zip`,
         filters: [{ name: 'Archive ZIP', extensions: ['zip'] }],
       });
       if (result && !result.canceled && result.filePath) {
         const { count } = await window.electronAPI.file.exportPhotos(competition.id, result.filePath);
-        showToast(`${count} photo${count !== 1 ? 's' : ''} exportée${count !== 1 ? 's' : ''}`, 'success');
+        showToast(t('messages.photos_exported_count', { count }), 'success');
       }
     },
     onExportRanking: format => exportRanking(overallRanking, format, isLaserSabre),
@@ -805,7 +805,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
   const handleImportRanking = async (result: RankingImportResult) => {
     if (!window.electronAPI?.db?.updateFencer) {
-      showToast('Erreur: API non disponible', 'error');
+      showToast(t('messages.api_not_available'), 'error');
       return;
     }
 
@@ -828,13 +828,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       });
 
       showToast(
-        `Classement importé: ${result.updated} tireur(s) mis à jour`,
+        t('messages.ranking_imported_updates', { updatedCount: result.updated }),
         result.errors.length > 0 ? 'warning' : 'success'
       );
       setImportData(null);
     } catch (error) {
       logger.error(LogCategory.UI, 'Failed to import ranking', error as Error);
-      showToast("Erreur lors de l'import du classement", 'error');
+      showToast(t('messages.ranking_import_failed'), 'error');
     }
   };
 
@@ -897,7 +897,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       setTableauMatches([]);
       setConsolationBrackets([]);
       setRankingChanged(false);
-      showToast("Le classement a changé. Le tableau d'élimination va être régénéré.", 'warning');
+      showToast(t('messages.ranking_changed_regenerate_bracket'), 'warning');
     }
 
     setShowThirdPlaceDialog(true);
@@ -1661,7 +1661,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               <span>{t('competitionView.readonly')}</span>
               <button
                 onClick={async () => {
-                  if (await confirm('Modifier le tableau effacera les résultats finaux. Continuer ?')) {
+                  if (await confirm(t('messages.confirm_bracket_regen_overwrite_finals'))) {
                     setFinalResults([]);
                   }
                 }}

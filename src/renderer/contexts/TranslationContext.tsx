@@ -36,7 +36,7 @@ interface TranslationContextValue {
   availableThemes: readonly { code: Theme; name: string }[];
 }
 
-const TranslationContext = createContext<TranslationContextValue | undefined>(undefined);
+export const TranslationContext = createContext<TranslationContextValue | undefined>(undefined);
 
 const getFallbackTranslations = (language: Language): Translations => {
   const fallbackTranslations: Record<Language, Translations> = {
@@ -121,6 +121,21 @@ const loadTranslations = (language: Language): Translations => {
   return bundledTranslations[language] || getFallbackTranslations(language);
 };
 
+const resolveKey = (source: Translations, key: TranslationKey): string | undefined => {
+  const keys = key.split('.');
+  let value: unknown = source;
+
+  for (const k of keys) {
+    if (value && typeof value === 'object') {
+      value = (value as Record<string, unknown>)[k];
+    } else {
+      return undefined;
+    }
+  }
+
+  return typeof value === 'string' ? value : undefined;
+};
+
 const applyTheme = (theme: Theme): void => {
   document.body.classList.remove('theme-dark', 'theme-light', 'theme-default');
   if (theme !== 'default') {
@@ -133,7 +148,7 @@ interface TranslationProviderProps {
 }
 
 export const TranslationProvider: React.FC<TranslationProviderProps> = ({ children }) => {
-  const [language, setLanguage] = useState<Language>('fr');
+  const [language, setLanguage] = useState<Language>('de');
   const [theme, setTheme] = useState<Theme>('default');
   const [translations, setTranslations] = useState<Translations>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -157,7 +172,8 @@ export const TranslationProvider: React.FC<TranslationProviderProps> = ({ childr
   useEffect(() => {
     const initialize = async () => {
       const injectedLang = window.electronAPI?.initialLanguage as Language | null;
-      const savedLanguage = injectedLang || (localStorage.getItem('bellepoule-language') as Language) || 'fr';
+      const savedLanguage =
+        injectedLang || (localStorage.getItem('bellepoule-language') as Language) || 'de';
       if (injectedLang) localStorage.setItem('bellepoule-language', injectedLang);
       const savedTheme = (localStorage.getItem('bellepoule-theme') as Theme) || 'default';
 
@@ -175,18 +191,19 @@ export const TranslationProvider: React.FC<TranslationProviderProps> = ({ childr
 
   const t = useCallback(
     (key: TranslationKey, params?: { [key: string]: string | number }): string => {
-      const keys = key.split('.');
-      let value: unknown = translations;
+      let value = resolveKey(translations, key);
 
-      for (const k of keys) {
-        if (value && typeof value === 'object') {
-          value = (value as Record<string, unknown>)[k];
-        } else {
-          return key;
+      if (value === undefined && language !== 'de') {
+        value = resolveKey(bundledTranslations.de, key);
+        if (value !== undefined) {
+          logger.debug(
+            LogCategory.UI,
+            `i18n-Fallback auf de für Key "${key}" (Sprache: ${language})`
+          );
         }
       }
 
-      if (typeof value !== 'string') {
+      if (value === undefined) {
         return key;
       }
 
@@ -198,7 +215,7 @@ export const TranslationProvider: React.FC<TranslationProviderProps> = ({ childr
 
       return value;
     },
-    [translations]
+    [translations, language]
   );
 
   const value: TranslationContextValue = {

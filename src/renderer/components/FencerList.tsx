@@ -224,7 +224,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
     const filterName = format === 'fff' ? 'Fichier FFE' : 'Fichier texte';
 
     const result = await window.electronAPI.dialog.saveFile({
-      title: `Exporter les tireurs (.${extension})`,
+      title: t('messages.export_fencers_title', { extension }),
       defaultPath: `tireurs.${extension}`,
       filters: [
         { name: filterName, extensions: [extension] },
@@ -252,7 +252,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
   const handleExportPhotos = async () => {
     if (!competitionId) return;
     const result = await window.electronAPI.dialog.saveFile({
-      title: 'Exporter les photos (.zip)',
+      title: t('messages.export_photos_title'),
       defaultPath: 'photos-tireurs.zip',
       filters: [{ name: 'Archive ZIP', extensions: ['zip'] }],
     });
@@ -262,11 +262,9 @@ const FencerListComponent: React.FC<FencerListProps> = ({
           competitionId,
           result.filePath
         );
-        showPhotoMessage(
-          `${count} photo${count !== 1 ? 's' : ''} exportée${count !== 1 ? 's' : ''}`
-        );
+        showPhotoMessage(t('messages.photos_exported_count', { count }));
       } catch {
-        showPhotoMessage("Erreur lors de l'export");
+        showPhotoMessage(t('messages.export_failed', { format: 'Fotos' }));
       }
     }
   };
@@ -274,7 +272,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
   const handleImportPhotos = async () => {
     if (!competitionId) return;
     const result = await window.electronAPI.dialog.openFile({
-      title: 'Importer les photos (.zip)',
+      title: t('messages.import_photos_title'),
       filters: [{ name: 'Archive ZIP', extensions: ['zip'] }],
     });
     if (result && result.filePath) {
@@ -283,11 +281,9 @@ const FencerListComponent: React.FC<FencerListProps> = ({
           competitionId,
           result.filePath
         );
-        showPhotoMessage(
-          `${matched}/${total} photo${total !== 1 ? 's' : ''} importée${total !== 1 ? 's' : ''}`
-        );
+        showPhotoMessage(t('messages.photos_imported_count', { matched, total }));
       } catch {
-        showPhotoMessage("Erreur lors de l'import");
+        showPhotoMessage(t('messages.import_failed'));
       }
     }
   };
@@ -295,7 +291,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
   const handleExportFencersArchive = async () => {
     if (!competitionId) return;
     const result = await window.electronAPI.dialog.saveFile({
-      title: 'Exporter tireurs + photos (.bpf)',
+      title: t('messages.export_fencers_archive_title'),
       defaultPath: 'tireurs.bpf',
       filters: [{ name: 'BellePoule Fencers', extensions: ['bpf'] }],
     });
@@ -305,11 +301,9 @@ const FencerListComponent: React.FC<FencerListProps> = ({
           competitionId,
           result.filePath
         );
-        showPhotoMessage(
-          `${count} tireur${count !== 1 ? 's' : ''} exporté${count !== 1 ? 's' : ''} (.bpf)`
-        );
+        showPhotoMessage(t('messages.fencers_exported_count', { count }));
       } catch {
-        showPhotoMessage("Erreur lors de l'export .bpf");
+        showPhotoMessage(t('messages.export_failed', { format: '.bpf' }));
       }
     }
   };
@@ -317,7 +311,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
   const handleImportFencersArchive = async () => {
     if (!competitionId) return;
     const result = await window.electronAPI.dialog.openFile({
-      title: 'Importer tireurs + photos (.bpf)',
+      title: t('messages.import_fencers_archive_title'),
       filters: [{ name: 'BellePoule Fencers', extensions: ['bpf'] }],
     });
     if (result && result.filePath) {
@@ -326,10 +320,10 @@ const FencerListComponent: React.FC<FencerListProps> = ({
           competitionId,
           result.filePath
         );
-        showPhotoMessage(`${added} ajouté${added !== 1 ? 's' : ''}, ${updated} mis à jour (.bpf)`);
+        showPhotoMessage(t('messages.fencers_archive_imported', { added, updated }));
         if (onFencersImported) onFencersImported();
       } catch {
-        showPhotoMessage("Erreur lors de l'import .bpf");
+        showPhotoMessage(t('messages.import_failed'));
       }
     }
   };
