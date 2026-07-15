@@ -132,9 +132,9 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
     setRecalcKey(prev => prev + 1);
 
     if (rankingChanged) {
-      showToast('Classement recalculé et modifié ! Le tableau sera régénéré.', 'warning');
+      showToast(t('messages.ranking_recalculated_modified'), 'warning');
     } else {
-      showToast('Classement recalculé avec succès !', 'success');
+      showToast(t('messages.ranking_recalculated_success'), 'success');
     }
   }, [pools, isLaserSabre, onPoolsChange, onRankingChange, showToast, overallRanking]);
 
@@ -193,9 +193,9 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      showToast('Export CSV réussi', 'success');
+      showToast(t('messages.export_csv_success'), 'success');
     } else {
-      showToast(`Export ${format.toUpperCase()} non implémenté`, 'warning');
+      showToast(t('messages.export_format_not_implemented', { format: format.toUpperCase() }), 'warning');
     }
   };
 
@@ -425,8 +425,8 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
           <thead>
             <tr>
               {isVisible('rank') && <th style={W50}>Rg</th>}
-              {isVisible('lastName') && <th>Nom</th>}
-              {isVisible('firstName') && <th>Prénom</th>}
+              {isVisible('lastName') && <th>{t('fencer.last_name')}</th>}
+              {isVisible('firstName') && <th>{t('fencer.first_name')}</th>}
               {isVisible('club') && <th>Club</th>}
               {isVisible('victories') && <th style={W40}>V</th>}
               {isVisible('matches') && <th style={W40}>M</th>}

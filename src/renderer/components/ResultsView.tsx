@@ -161,7 +161,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
     link.href = URL.createObjectURL(blob);
     link.download = `resultats_${competition.title.replace(/[^a-z0-9]/gi, '_')}.csv`;
     link.click();
-    showToast('Export CSV réussi !', 'success');
+    showToast(t('messages.export_csv_success'), 'success');
   };
 
   // Export PDF
@@ -199,7 +199,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
     link.href = URL.createObjectURL(blob);
     link.download = `resultats_${competition.title.replace(/[^a-z0-9]/gi, '_')}.xml`;
     link.click();
-    showToast('Export XML réussi !', 'success');
+    showToast(t('messages.export_xml_success'), 'success');
   };
 
   const exportFullPDF = async () => {
@@ -447,7 +447,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
               )
               .join('\n');
             navigator.clipboard.writeText(text);
-            showToast('Résultats copiés dans le presse-papier !', 'success');
+            showToast(t('messages.results_copied_clipboard'), 'success');
           }}
           style={RV_STYLES.btnCopy}
         >

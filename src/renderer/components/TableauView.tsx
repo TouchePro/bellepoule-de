@@ -683,21 +683,19 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   };
 
   const getRoundName = (round: number): string => {
-    if (round === 2) return 'Finale';
-    if (round === 3) return 'Petite finale';
-    if (round === 4) return 'Demi-finales';
-    if (round === 8) return 'Quarts de finale';
-    if (round === 16) return 'Tableau de 16';
-    if (round === 32) return 'Tableau de 32';
-    if (round === 64) return 'Tableau de 64';
-    return `Tableau de ${round}`;
+    if (round === 2) return t('tableau.round_final');
+    if (round === 3) return t('tableau.round_third_place');
+    if (round === 4) return t('tableau.round_semifinals');
+    if (round === 8) return t('tableau.round_quarterfinals');
+    if (round === 16) return t('tableau.round_of_16');
+    if (round === 32) return t('tableau.round_of_32');
+    if (round === 64) return t('tableau.round_of_64');
+    return t('tableau.round_of_n', { round });
   };
 
   const handleAutoFillScores = () => {
     if (readOnly) return;
-    const confirmed = window.confirm(
-      'Remplir automatiquement tous les scores des matchs non terminés ?\n\nLes scores seront générés aléatoirement pour les tests.'
-    );
+    const confirmed = window.confirm(t('messages.autofill_scores_confirm'));
 
     if (!confirmed) return;
 
@@ -788,7 +786,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     // Créer une copie profonde pour forcer React à re-renderer
     const matchesCopy = updatedMatches.map(m => ({ ...m }));
     onMatchesChange(matchesCopy);
-    showToast(`Scores générés pour ${filledCount} match(s)`, 'success');
+    showToast(t('messages.scores_generated_for_matches', { matchCount: filledCount }), 'success');
 
     // Vérifier si le tableau est complet
     const champion = updatedMatches.find(m => m.round === 2)?.winner;
@@ -824,13 +822,13 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
     // Validation
     if (scoreA === scoreB && !victoryA && !victoryB) {
-      showToast('Les scores ne peuvent pas être égaux en élimination directe', 'error');
+      showToast(t('messages.scores_equal_forbidden_de'), 'error');
       return;
     }
 
     if (!isUnlimitedScore && maxScore > 0) {
       if (scoreA > maxScore || scoreB > maxScore) {
-        showToast(`Le score ne peut pas dépasser ${maxScore}`, 'error');
+        showToast(t('messages.score_exceeds_maximum', { maxScore }), 'error');
         return;
       }
     }
@@ -922,7 +920,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
       .sort((a, b) => b - a)
       .map(r => getRoundName(r))
       .join(', ');
-    const title = `Tableau de ${tableauSize}${roundLabel ? ` — ${roundLabel}` : ''}`;
+    const title = `${t('tableau.bracket_of_size', { size: tableauSize })}${roundLabel ? ` — ${roundLabel}` : ''}`;
     const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
     try {
       if (pdfMode === 'print') {
@@ -937,7 +935,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   };
 
   const handleExportTree = async () => {
-    const title = `Arbre — Tableau de ${tableauSize}`;
+    const title = t('tableau.bracket_tree_of_size', { size: tableauSize });
     const logo = localStorage.getItem('bellepoule-logo') ?? undefined;
     try {
       await exportBracketTreeToPDF(matches, title, logo, tableauTemplate);
@@ -1367,7 +1365,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
       .filter(m => m.round === round)
       .sort((a, b) => a.position - b.position);
     const isExpanded = expandedRounds.has(round);
-    const roundName = round === 3 ? 'Petite Finale' : `Tableau de ${round}`;
+    const roundName = getRoundName(round);
 
     return (
       <div
@@ -1575,7 +1573,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                   <div style={TV_STYLES.consolationRoundsRow}>
                     {bracketRounds.map(round => {
                       const roundMatches = bracket.matches.filter(m => m.round === round).sort((a, b) => a.position - b.position);
-                      const roundName = round === 3 ? 'Petite finale' : round === 2 ? 'Finale' : round === 4 ? 'Demi-finales' : round === 8 ? 'Quarts' : `Tableau de ${round}`;
+                      const roundName = round === 3 ? t('tableau.round_third_place') : round === 2 ? t('tableau.round_final') : round === 4 ? t('tableau.round_semifinals') : round === 8 ? t('tableau.round_quarters_short') : t('tableau.round_of_n', { round });
                       return (
                         <div key={round} style={TV_STYLES.consolationRoundCol}>
                           <div style={TV_STYLES.consolationRoundTitle}>{roundName}</div>

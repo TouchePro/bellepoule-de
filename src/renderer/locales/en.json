@@ -185,7 +185,18 @@
     "finished": "Finished",
     "phases_label": "Phases to include",
     "assign_strip": "Assign to a strip",
-    "select_strip": "Select the strip for this match:"
+    "select_strip": "Select the strip for this match:",
+    "round_final": "Final",
+    "round_third_place": "Third place match",
+    "round_semifinals": "Semi-finals",
+    "round_quarterfinals": "Quarter-finals",
+    "round_of_16": "Round of 16",
+    "round_of_32": "Round of 32",
+    "round_of_64": "Round of 64",
+    "round_of_n": "Round of {{round}}",
+    "round_quarters_short": "Quarters",
+    "bracket_of_size": "Bracket of {{size}}",
+    "bracket_tree_of_size": "Tree — Bracket of {{size}}"
   },
   "results": {
     "final_ranking": "Final Ranking",
@@ -330,7 +341,19 @@
     "ranking_imported_updates": "Ranking imported: {{updatedCount}} fencer(s) updated",
     "ranking_import_failed": "Error while importing ranking",
     "ranking_changed_regenerate_bracket": "Ranking has changed. The elimination bracket will be regenerated.",
-    "confirm_bracket_regen_overwrite_finals": "Modifying the elimination bracket will delete the final scores. Continue?"
+    "confirm_bracket_regen_overwrite_finals": "Modifying the elimination bracket will delete the final scores. Continue?",
+    "image_select_invalid": "Please select a valid image",
+    "image_max_size_exceeded": "The image must not exceed 5 MB",
+    "image_processing_error": "Error while processing the image",
+    "image_drop_invalid": "Please drop a valid image here",
+    "ranking_recalculated_modified": "Ranking recalculated and modified! The elimination bracket will be regenerated.",
+    "ranking_recalculated_success": "Ranking successfully recalculated!",
+    "export_csv_success": "CSV export successful!",
+    "export_format_not_implemented": "Export {{format}} not implemented",
+    "autofill_scores_confirm": "Automatically fill in all scores for unfinished matches?\n\nScores will be randomly generated for testing purposes.",
+    "scores_equal_forbidden_de": "Scores cannot be equal in direct elimination",
+    "export_xml_success": "XML export successful!",
+    "results_copied_clipboard": "Results copied to clipboard!"
   },
   "time": {
     "minutes": "minutes",

@@ -145,7 +145,18 @@
   "tableau": {
     "elimination_in": "Éliminé en",
     "finalist": "Finaliste",
-    "winner": "Vainqueur"
+    "winner": "Vainqueur",
+    "round_final": "Finale",
+    "round_third_place": "Petite finale",
+    "round_semifinals": "Demi-finales",
+    "round_quarterfinals": "Quarts de finale",
+    "round_of_16": "Tableau de 16",
+    "round_of_32": "Tableau de 32",
+    "round_of_64": "Tableau de 64",
+    "round_of_n": "Tableau de {{round}}",
+    "round_quarters_short": "Quarts",
+    "bracket_of_size": "Tableau de {{size}}",
+    "bracket_tree_of_size": "Arbre — Tableau de {{size}}"
   },
   "results": {
     "final_ranking": "Classement final",
@@ -265,7 +276,19 @@
     "ranking_imported_updates": "Classement importé : {{updatedCount}} tireur(s) mis à jour",
     "ranking_import_failed": "Erreur lors de l'import du classement",
     "ranking_changed_regenerate_bracket": "Le classement a changé. Le tableau d'élimination va être régénéré.",
-    "confirm_bracket_regen_overwrite_finals": "Modifier le tableau effacera les résultats finaux. Continuer ?"
+    "confirm_bracket_regen_overwrite_finals": "Modifier le tableau effacera les résultats finaux. Continuer ?",
+    "image_select_invalid": "Veuillez sélectionner une image valide",
+    "image_max_size_exceeded": "L'image ne doit pas dépasser 5 Mo",
+    "image_processing_error": "Erreur lors du traitement de l'image",
+    "image_drop_invalid": "Veuillez déposer une image valide",
+    "ranking_recalculated_modified": "Classement recalculé et modifié ! Le tableau sera régénéré.",
+    "ranking_recalculated_success": "Classement recalculé avec succès !",
+    "export_csv_success": "Export CSV réussi !",
+    "export_format_not_implemented": "Export {{format}} non implémenté",
+    "autofill_scores_confirm": "Remplir automatiquement tous les scores des matchs non terminés ?\n\nLes scores seront générés aléatoirement pour les tests.",
+    "scores_equal_forbidden_de": "Les scores ne peuvent pas être égaux en élimination directe",
+    "export_xml_success": "Export XML réussi !",
+    "results_copied_clipboard": "Résultats copiés dans le presse-papier !"
   },
   "time": {
     "minutes": "minutes",

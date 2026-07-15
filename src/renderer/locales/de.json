@@ -259,7 +259,19 @@
     "ranking_imported_updates": "Rangliste importiert: {{updatedCount}} Fechter aktualisiert",
     "ranking_import_failed": "Fehler beim Importieren der Rangliste",
     "ranking_changed_regenerate_bracket": "Rangliste hat sich geändert. Die Direktausscheidungen werden neu generiert.",
-    "confirm_bracket_regen_overwrite_finals": "Das Ändern der Direktausscheidungen löscht die Endergebnisse. Fortfahren?"
+    "confirm_bracket_regen_overwrite_finals": "Das Ändern der Direktausscheidungen löscht die Endergebnisse. Fortfahren?",
+    "image_select_invalid": "Bitte wählen Sie ein gültiges Bild aus",
+    "image_max_size_exceeded": "Das Bild darf maximal 5 MB groß sein",
+    "image_processing_error": "Fehler bei der Bildverarbeitung",
+    "image_drop_invalid": "Bitte ziehen Sie ein gültiges Bild hierher",
+    "ranking_recalculated_modified": "Rangliste neu berechnet und geändert! Die Direktausscheidungen werden neu generiert.",
+    "ranking_recalculated_success": "Rangliste erfolgreich neu berechnet!",
+    "export_csv_success": "CSV-Export erfolgreich!",
+    "export_format_not_implemented": "Export {{format}} nicht implementiert",
+    "autofill_scores_confirm": "Alle Ergebnisse der unbeendeten Matches automatisch ausfüllen?\n\nDie Ergebnisse werden zufällig für Testzwecke generiert.",
+    "scores_equal_forbidden_de": "Die Ergebnisse dürfen in der Direktausscheidung nicht gleich sein",
+    "export_xml_success": "XML-Export erfolgreich!",
+    "results_copied_clipboard": "Ergebnisse in die Zwischenablage kopiert!"
   },
   "pdfTemplate": {
     "colors": {
@@ -473,7 +485,18 @@
     "finished": "Beendet",
     "phases_label": "Einzuschließende Phasen",
     "assign_strip": "Einer Piste zuweisen",
-    "select_strip": "Wählen Sie die Piste für dieses Match:"
+    "select_strip": "Wählen Sie die Piste für dieses Match:",
+    "round_final": "Finale",
+    "round_third_place": "Kleines Finale",
+    "round_semifinals": "Halbfinale",
+    "round_quarterfinals": "Viertelfinale",
+    "round_of_16": "Achtelfinale",
+    "round_of_32": "32er-Runde",
+    "round_of_64": "64er-Runde",
+    "round_of_n": "Tableau von {{round}}",
+    "round_quarters_short": "Viertel",
+    "bracket_of_size": "Tableau von {{size}}",
+    "bracket_tree_of_size": "Baum — Tableau von {{size}}"
   },
   "time": {
     "days": "Tage",
