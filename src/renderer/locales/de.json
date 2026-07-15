@@ -1186,7 +1186,15 @@
     "not_fenced": "Match nicht ausgetragen (Aufgabe/Nichtantreten)",
     "cancel_result": "Dieses Ergebnis annullieren",
     "right_click_hide": "Rechtsklick zum Ausblenden",
-    "reg": "Reg"
+    "reg": "Reg",
+    "victories": "S",
+    "ratio": "S/K",
+    "td": "TG",
+    "tr": "TE",
+    "index": "Ind",
+    "rank": "Rg",
+    "club": "Club",
+    "nation": "Nat"
   },
   "windowSizePresets": {
     "label": "Fenster:"

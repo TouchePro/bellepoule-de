@@ -478,5 +478,15 @@
     "club": "Club",
     "nation": "Nation",
     "region": "Région"
+  },
+  "poolScoreMatrix": {
+    "victories": "V",
+    "ratio": "V/M",
+    "td": "TD",
+    "tr": "TR",
+    "index": "Ind",
+    "rank": "Rg",
+    "club": "Club",
+    "nation": "Nat"
   }
 }
