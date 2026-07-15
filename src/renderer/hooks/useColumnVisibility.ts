@@ -20,35 +20,35 @@ export type ColumnId =
 
 export interface ColumnDefinition {
   id: ColumnId;
-  label: string;
+  labelKey: string;
   labelShort: string;
 }
 
 export const POOL_COLUMNS: ColumnDefinition[] = [
-  { id: 'victories', label: 'Victoires', labelShort: 'V' },
-  { id: 'ratio', label: 'Ratio V/M', labelShort: 'V/M' },
-  { id: 'td', label: 'TD (Touches données)', labelShort: 'TD' },
-  { id: 'tr', label: 'TR (Touches reçues)', labelShort: 'TR' },
-  { id: 'quest', label: 'Quest', labelShort: 'Quest' },
-  { id: 'index',  label: 'Indice (TD-TR)', labelShort: 'Ind' },
-  { id: 'rank',   label: 'Rang',           labelShort: 'Rg' },
-  { id: 'club',   label: 'Club',           labelShort: 'Club' },
-  { id: 'nation', label: 'Nation',         labelShort: 'Nat' },
-  { id: 'region', label: 'Région',         labelShort: 'Rég' },
+  { id: 'victories', labelKey: 'columns.victories', labelShort: 'V' },
+  { id: 'ratio', labelKey: 'columns.ratio', labelShort: 'V/M' },
+  { id: 'td', labelKey: 'columns.td', labelShort: 'TD' },
+  { id: 'tr', labelKey: 'columns.tr', labelShort: 'TR' },
+  { id: 'quest', labelKey: 'columns.quest', labelShort: 'Quest' },
+  { id: 'index', labelKey: 'columns.index', labelShort: 'Ind' },
+  { id: 'rank', labelKey: 'columns.rank', labelShort: 'Rg' },
+  { id: 'club', labelKey: 'columns.club', labelShort: 'Club' },
+  { id: 'nation', labelKey: 'columns.nation', labelShort: 'Nat' },
+  { id: 'region', labelKey: 'columns.region', labelShort: 'Rég' },
 ];
 
 export const RANKING_COLUMNS: ColumnDefinition[] = [
-  { id: 'rank', label: 'Rang', labelShort: 'Rg' },
-  { id: 'lastName', label: 'Nom', labelShort: 'Nom' },
-  { id: 'firstName', label: 'Prénom', labelShort: 'Prénom' },
-  { id: 'club', label: 'Club', labelShort: 'Club' },
-  { id: 'victories', label: 'Victoires', labelShort: 'V' },
-  { id: 'matches', label: 'Matchs', labelShort: 'M' },
-  { id: 'ratio', label: 'Ratio V/M', labelShort: 'V/M' },
-  { id: 'td', label: 'TD (Touches données)', labelShort: 'TD' },
-  { id: 'tr', label: 'TR (Touches reçues)', labelShort: 'TR' },
-  { id: 'quest', label: 'Quest', labelShort: 'Quest' },
-  { id: 'index', label: 'Indice (TD-TR)', labelShort: 'Indice' },
+  { id: 'rank', labelKey: 'columns.rank', labelShort: 'Rg' },
+  { id: 'lastName', labelKey: 'columns.lastName', labelShort: 'Nom' },
+  { id: 'firstName', labelKey: 'columns.firstName', labelShort: 'Prénom' },
+  { id: 'club', labelKey: 'columns.club', labelShort: 'Club' },
+  { id: 'victories', labelKey: 'columns.victories', labelShort: 'V' },
+  { id: 'matches', labelKey: 'columns.matches', labelShort: 'M' },
+  { id: 'ratio', labelKey: 'columns.ratio', labelShort: 'V/M' },
+  { id: 'td', labelKey: 'columns.td', labelShort: 'TD' },
+  { id: 'tr', labelKey: 'columns.tr', labelShort: 'TR' },
+  { id: 'quest', labelKey: 'columns.quest', labelShort: 'Quest' },
+  { id: 'index', labelKey: 'columns.index', labelShort: 'Indice' },
 ];
 
 interface VisibilityState {

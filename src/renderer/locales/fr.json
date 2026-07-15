@@ -463,5 +463,20 @@
     "scoring_zones": "Zones personnalisées",
     "zone_label": "Zone",
     "zone_points": "Points"
+  },
+  "columns": {
+    "victories": "Victoires",
+    "matches": "Matchs",
+    "ratio": "Ratio V/M",
+    "td": "TD (Touches données)",
+    "tr": "TR (Touches reçues)",
+    "quest": "Quest",
+    "index": "Indice (TD-TR)",
+    "rank": "Rang",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "club": "Club",
+    "nation": "Nation",
+    "region": "Région"
   }
 }
