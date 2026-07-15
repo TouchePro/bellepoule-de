@@ -645,7 +645,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     onExportFencers: format => exportFencersList(fencers, format),
     onExportFencersBpf: async () => {
       const result = await window.electronAPI.dialog.saveFile({
-        title: 'Exporter tireurs + photos (.bpf)',
+        title: t('messages.export_fencers_archive_title'),
         defaultPath: `tireurs-${competition.title}.bpf`,
         filters: [{ name: 'BellePoule Fencers', extensions: ['bpf'] }],
       });
@@ -656,13 +656,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     },
     onExportPhotos: async () => {
       const result = await window.electronAPI.dialog.saveFile({
-        title: 'Exporter les photos (.zip)',
+        title: t('messages.export_photos_title'),
         defaultPath: `photos-${competition.title}.zip`,
         filters: [{ name: 'Archive ZIP', extensions: ['zip'] }],
       });
       if (result && !result.canceled && result.filePath) {
         const { count } = await window.electronAPI.file.exportPhotos(competition.id, result.filePath);
-        showToast(`${count} photo${count !== 1 ? 's' : ''} exportée${count !== 1 ? 's' : ''}`, 'success');
+        showToast(t('messages.photos_exported_count', { count }), 'success');
       }
     },
     onExportRanking: format => exportRanking(overallRanking, format, isLaserSabre),
