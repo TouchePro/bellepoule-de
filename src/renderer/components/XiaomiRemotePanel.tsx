@@ -16,7 +16,6 @@ interface XiaomiRemotePanelProps {
 }
 
 const CLIENT_TYPE_LABELS: Record<string, string> = {
-  arena: 'Arène',
   lobby: 'Lobby',
   kiosk: 'Kiosk',
   public: 'Public',
@@ -32,9 +31,9 @@ function getOnlineStatus(lastSeen: string): 'online' | 'warn' | 'offline' {
   return 'offline';
 }
 
-function formatLastSeen(lastSeen: string): string {
+function formatLastSeen(lastSeen: string, t: (key: string, params?: { [key: string]: string | number }) => string): string {
   const diff = Math.floor((Date.now() - new Date(lastSeen).getTime()) / 1000);
-  if (diff < 10) return 'à l\'instant';
+  if (diff < 10) return t('xiaomi.just_now');
   if (diff < 60) return `il y a ${diff}s`;
   return `il y a ${Math.floor(diff / 60)}m`;
 }
@@ -81,9 +80,9 @@ function clientDisplayUrl(base: string, client: ConnectedClient): string {
   return `${base}/arene${num}`;
 }
 
-function clientLabel(client: ConnectedClient): string {
+function clientLabel(client: ConnectedClient, t: (key: string, params?: { [key: string]: string | number }) => string): string {
   if (client.label) return client.label;
-  const type = CLIENT_TYPE_LABELS[client.clientType] ?? client.clientType;
+  const type = client.clientType === 'arena' ? t('xiaomi.arena_label') : (CLIENT_TYPE_LABELS[client.clientType] ?? client.clientType);
   if ((client.clientType === 'arena' || client.clientType === 'referee') && client.arenaId) {
     const num = client.arenaId.replace('arena', '');
     return `${type} ${num}`;
@@ -144,7 +143,7 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
   };
 
   const base = serverUrl.replace(/\/$/, '');
-  const allNavTargets = buildNavTargets(base, arenaCount);
+  const allNavTargets = buildNavTargets(base, arenaCount, t);
 
   const fetchClients = useCallback(async () => {
     const res = await window.electronAPI.remote.getConnectedClients(competitionId);
@@ -250,9 +249,9 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
             className={`btn ${locked ? 'btn-primary' : 'btn-secondary'}`}
             onClick={toggleLock}
             style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem' }}
-            title={locked ? 'Déverrouiller la télécommande' : 'Verrouiller la télécommande pour éviter les changements'}
+            title={locked ? t('xiaomi.unlock_tooltip') : t('xiaomi.lock_tooltip')}
           >
-            {locked ? '🔒 Verrouillé' : '🔓 Verrouiller'}
+            {locked ? t('xiaomi.locked_label') : t('xiaomi.lock_label')}
           </button>
           <button className="btn btn-secondary" onClick={fetchClients} style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem' }} title="Actualiser">↻</button>
           <button className="btn btn-primary" onClick={() => broadcastCmd({ type: 'refresh' })} disabled={locked} style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem', opacity: locked ? 0.4 : 1 }}>{t('xiaomi.refresh_all')}</button>
@@ -309,14 +308,14 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
                       <div
                         style={{ fontWeight: 500, fontSize: '0.88rem', cursor: 'text', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
                         title={t('xiaomi.click_rename')}
-                        onClick={() => { setRenameTarget(client.socketId); setRenameValue(clientLabel(client)); }}
+                        onClick={() => { setRenameTarget(client.socketId); setRenameValue(clientLabel(client, t)); }}
                       >
-                        {clientLabel(client)}
+                        {clientLabel(client, t)}
                         <span style={{ fontSize: '0.7rem', opacity: 0.5 }}>✎</span>
                       </div>
                     )}
                     <div style={{ fontSize: '0.73rem', color: 'var(--color-text-light)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {client.ip} · {formatLastSeen(client.lastSeen)}
+                      {client.ip} · {formatLastSeen(client.lastSeen, t)}
                     </div>
                   </div>
 
@@ -381,7 +380,7 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
                       className={`btn ${inSwap ? 'btn-primary' : 'btn-secondary'}`}
                       style={{ padding: '0.2rem 0.45rem', fontSize: '0.75rem', opacity: swapFull ? 0.4 : 1 }}
                       onClick={() => !swapFull && toggleSwap(client.socketId)}
-                      title={inSwap ? 'Retirer de la sélection' : 'Sélectionner pour intervertir'}
+                      title={inSwap ? t('xiaomi.deselect_swap') : t('xiaomi.select_swap')}
                       disabled={swapFull}
                     >
                       ⇄
@@ -398,7 +397,7 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
           <div style={{ padding: '0.65rem 1.25rem', background: 'rgba(249,115,22,0.12)', borderTop: '1px solid rgba(249,115,22,0.3)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <span style={{ fontSize: '0.88rem', flex: 1, color: '#ea580c' }}>
               ⇄ Intervertir{' '}
-              {swapCandidates.map(c => <strong key={c.socketId}>{clientLabel(c)}</strong>).reduce((a, b) => <>{a} <span style={{ color: '#94a3b8' }}>↔</span> {b}</> as any)}
+              {swapCandidates.map(c => <strong key={c.socketId}>{clientLabel(c, t)}</strong>).reduce((a, b) => <>{a} <span style={{ color: '#94a3b8' }}>↔</span> {b}</> as any)}
               {swapSet.size === 1 && <span style={{ color: '#94a3b8' }}> {t('xiaomi.select_2nd')}</span>}
             </span>
             {canSwap && (
@@ -481,9 +480,9 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
   );
 };
 
-function buildNavTargets(base: string, arenaCount: number) {
-  const targets: { label: string; url: string }[] = [{ label: 'Salle d\'attente (Lobby)', url: `${base}/lobby` }];
-  for (let i = 1; i <= arenaCount; i++) targets.push({ label: `Arène ${i}`, url: `${base}/arene${i}` });
+function buildNavTargets(base: string, arenaCount: number, t: (key: string, params?: { [key: string]: string | number }) => string) {
+  const targets: { label: string; url: string }[] = [{ label: t('xiaomi.nav_lobby'), url: `${base}/lobby` }];
+  for (let i = 1; i <= arenaCount; i++) targets.push({ label: t('xiaomi.nav_arena', { n: i }), url: `${base}/arene${i}` });
   targets.push({ label: 'Kiosk public', url: `${base}/kiosk` });
   targets.push({ label: 'Classement', url: `${base}/` });
   return targets;

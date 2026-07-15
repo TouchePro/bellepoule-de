@@ -159,8 +159,40 @@
     "bracket_tree_of_size": "Arbre — Tableau de {{size}}"
   },
   "results": {
+    "header_rank": "Rang",
+    "header_name": "Nom",
+    "header_firstname": "Prénom",
+    "header_club": "Club",
+    "header_status": "Statut",
+    "header_eliminated_at": "Éliminé à",
+    "pdf_title": "Résultats — {{title}}",
     "final_ranking": "Classement final",
     "congratulations": "Félicitations aux vainqueurs !"
+  },
+  "tableauToolbar": {
+    "qualified_count": "{{count}} qualifiés"
+  },
+  "xiaomi": {
+    "arena_label": "Arène",
+    "just_now": "à l'instant",
+    "unlock_tooltip": "Déverrouiller la télécommande",
+    "lock_tooltip": "Verrouiller la télécommande pour éviter les changements",
+    "locked_label": "🔒 Verrouillé",
+    "lock_label": "🔓 Verrouiller",
+    "deselect_swap": "Retirer de la sélection",
+    "select_swap": "Sélectionner pour intervertir",
+    "nav_lobby": "Salle d'attente (Lobby)",
+    "nav_arena": "Arène {{n}}"
+  },
+  "kiosk": {
+    "tbd": "À déterminer",
+    "resume_at": "Reprise à {{time}}"
+  },
+  "team": {
+    "teams_label": "équipes",
+    "manage": "Gérer",
+    "reserve_max": "Réserviste (max {{count}})",
+    "empty_pool_hint": "Aucun match — cliquez sur \"Générer la poule\" dans l'onglet Équipes."
   },
   "remote": {
     "title": "Saisie distante",

@@ -400,6 +400,13 @@
     "waiting_match": "Warten auf nächstes Match"
   },
   "results": {
+    "header_rank": "Rang",
+    "header_name": "Name",
+    "header_firstname": "Vorname",
+    "header_club": "Verein",
+    "header_status": "Status",
+    "header_eliminated_at": "Ausgeschieden bei",
+    "pdf_title": "Ergebnisse — {{title}}",
     "congratulations": "Herzlichen Glückwunsch an die Gewinner!",
     "final_ranking": "Endrangliste",
     "export_desc": "Pools und Direktausscheidungen ohne Unterschriften der Kämpfer",
@@ -754,6 +761,7 @@
     "tableau_done": "Tableau beendet",
     "general_ranking": "Gesamtrangliste",
     "tbd": "TBD",
+    "resume_at": "Fortsetzung um {{time}}",
     "round_semi": "Halbfinale",
     "round_quarter": "Viertelfinale",
     "round_8": "Achtelfinale",
@@ -804,6 +812,10 @@
     "zone_points": "Kumulierte Zonepunkte (A/B/C)"
   },
   "team": {
+    "teams_label": "Mannschaften",
+    "manage": "Verwalten",
+    "reserve_max": "Ersatz (max. {{count}})",
+    "empty_pool_hint": "Kein Match — klicken Sie auf „Poule generieren\" im Reiter Mannschaften.",
     "competition": "Mannschaftswettkampf",
     "starters_per": "Stammspieler pro Mannschaft",
     "reserves_per": "Reserve pro Mannschaft",
@@ -1046,6 +1058,16 @@
     "download": "💾 Herunterladen"
   },
   "xiaomi": {
+    "arena_label": "Arena",
+    "just_now": "gerade eben",
+    "unlock_tooltip": "Fernbedienung entsperren",
+    "lock_tooltip": "Fernbedienung sperren, um Änderungen zu verhindern",
+    "locked_label": "🔒 Gesperrt",
+    "lock_label": "🔓 Sperren",
+    "deselect_swap": "Aus der Auswahl entfernen",
+    "select_swap": "Zum Tauschen auswählen",
+    "nav_lobby": "Warteraum (Lobby)",
+    "nav_arena": "Arena {{n}}",
     "screen_name": "Bildschirmname…",
     "click_rename": "Zum Umbenennen klicken",
     "tablet_role": "Rolle des Tablets",
@@ -1206,6 +1228,7 @@
     "sheet_desc": "Jede Karte enthält den vollständigen Namen der Kämpfer, ein Punktefeld und ein Unterschriftsfeld."
   },
   "tableauToolbar": {
+    "qualified_count": "{{count}} qualifiziert",
     "options": "Tableau-Optionen",
     "preview_desc": "Öffnet ein PDF im Standard-Betrachter zur Druckvorschau",
     "unassign_all": "❌ Alle freigeben",

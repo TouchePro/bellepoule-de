@@ -350,7 +350,7 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
           <div>
             <h2 className="text-xl font-bold text-gray-900">{t('team.competition')}</h2>
             <p className="text-sm text-gray-500">
-              {competition.title} · {teams.length} équipes
+              {competition.title} · {teams.length} {t('team.teams_label')}
             </p>
           </div>
           <button
@@ -466,7 +466,7 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
                           onClick={() => setEditTeamId(isEditing ? null : team.id)}
                           className="text-xs px-3 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-100"
                         >
-                          {isEditing ? 'Fermer' : 'Gérer'}
+                          {isEditing ? t('actions.close') : t('team.manage')}
                         </button>
                         <button
                           onClick={() => handleDeleteTeam(team.id)}
@@ -566,7 +566,7 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
                             onChange={e => setSelectedIsReserve(e.target.checked)}
                           />
                           <label htmlFor={`res-${team.id}`} className="text-sm text-gray-600">
-                            Réserviste (max {reserveCount})
+                            {t('team.reserve_max', { count: reserveCount })}
                           </label>
                         </div>
                         <button
@@ -609,7 +609,7 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
               selectedReason={selectedReason}
               onSelectReason={setSelectedReason}
               onAddCard={handleAddCard}
-              emptyLabel='Aucun match — cliquez sur "Générer la poule" dans l&apos;onglet Équipes.'
+              emptyLabel={t('team.empty_pool_hint')}
             />
           )}
 

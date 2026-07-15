@@ -199,6 +199,13 @@
     "bracket_tree_of_size": "Tree — Bracket of {{size}}"
   },
   "results": {
+    "header_rank": "Rank",
+    "header_name": "Name",
+    "header_firstname": "First Name",
+    "header_club": "Club",
+    "header_status": "Status",
+    "header_eliminated_at": "Eliminated at",
+    "pdf_title": "Results — {{title}}",
     "final_ranking": "Final Ranking",
     "congratulations": "Congratulations to the winners!",
     "export_desc": "Pools and direct elimination tables, without fighter signatures",
@@ -754,6 +761,7 @@
     "tableau_done": "Tableau finished",
     "general_ranking": "General ranking",
     "tbd": "TBD",
+    "resume_at": "Resuming at {{time}}",
     "round_semi": "Semi-final",
     "round_quarter": "Quarter-final",
     "round_8": "Eighth-final",
@@ -804,6 +812,10 @@
     "zone_points": "Cumulative zone points (A/B/C)"
   },
   "team": {
+    "teams_label": "teams",
+    "manage": "Manage",
+    "reserve_max": "Reserve (max {{count}})",
+    "empty_pool_hint": "No match — click \"Generate pool\" in the Teams tab.",
     "competition": "Team competition",
     "starters_per": "Starters per team",
     "reserves_per": "Reserves per team",
@@ -1046,6 +1058,16 @@
     "download": "💾 Download"
   },
   "xiaomi": {
+    "arena_label": "Arena",
+    "just_now": "just now",
+    "unlock_tooltip": "Unlock the remote control",
+    "lock_tooltip": "Lock the remote control to prevent changes",
+    "locked_label": "🔒 Locked",
+    "lock_label": "🔓 Lock",
+    "deselect_swap": "Remove from selection",
+    "select_swap": "Select to swap",
+    "nav_lobby": "Waiting room (Lobby)",
+    "nav_arena": "Arena {{n}}",
     "screen_name": "Screen name…",
     "click_rename": "Click to rename",
     "tablet_role": "Tablet role",
@@ -1206,6 +1228,7 @@
     "sheet_desc": "Each sheet contains the full name of the fighters, a score box and a signature box."
   },
   "tableauToolbar": {
+    "qualified_count": "{{count}} qualified",
     "options": "Tableau options",
     "preview_desc": "Opens a PDF in the default viewer for print preview",
     "unassign_all": "❌ Unassign all",

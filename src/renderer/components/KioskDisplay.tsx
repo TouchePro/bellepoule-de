@@ -981,7 +981,7 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
                         >
                           {match.fencerA
                             ? `${match.fencerA.lastName} ${match.fencerA.firstName.charAt(0)}.`
-                            : 'À déterminer'}
+                            : t('kiosk.tbd')}
                           {match.fencerA?.club && (
                             <span
                               style={{ fontSize: '0.8rem', color: '#64748b', marginLeft: '8px' }}
@@ -1041,7 +1041,7 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
                         >
                           {match.fencerB
                             ? `${match.fencerB.lastName} ${match.fencerB.firstName.charAt(0)}.`
-                            : 'À déterminer'}
+                            : t('kiosk.tbd')}
                           {match.fencerB?.club && (
                             <span
                               style={{ fontSize: '0.8rem', color: '#64748b', marginLeft: '8px' }}
@@ -1169,7 +1169,7 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
           {orgNote.type === 'target_time' && orgNote.targetTime && (
             <>
               <div style={KIOSK_STYLES.orgNoteResumeTime}>
-                Reprise à {orgNote.targetTime.replace(':', 'h')}
+                {t('kiosk.resume_at', { time: orgNote.targetTime.replace(':', 'h') })}
               </div>
               <div style={KIOSK_STYLES.orgNoteCountdown}>dans {orgNoteCountdown}</div>
             </>

@@ -73,7 +73,7 @@ const TableauToolbarComponent: React.FC<TableauToolbarProps> = ({
         <h2 style={{ fontSize: '1.25rem', fontWeight: '600', margin: 0, whiteSpace: 'nowrap' }}>
           Tableau de {tableauSize}
           <span style={{ fontWeight: 400, color: '#6b7280', fontSize: '1rem', marginLeft: '0.375rem' }}>
-            — {rankingCount} qualifiés
+            — {t('tableauToolbar.qualified_count', { count: rankingCount })}
           </span>
         </h2>
         {champion && (

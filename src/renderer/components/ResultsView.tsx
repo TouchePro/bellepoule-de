@@ -129,7 +129,14 @@ const ResultsView: React.FC<ResultsViewProps> = ({
 
   // Export CSV
   const exportCSV = () => {
-    const headers = ['Rang', 'Nom', 'Prénom', 'Club', 'Statut', 'Éliminé à'];
+    const headers = [
+      t('results.header_rank'),
+      t('results.header_name'),
+      t('results.header_firstname'),
+      t('results.header_club'),
+      t('results.header_status'),
+      t('results.header_eliminated_at'),
+    ];
 
     const getStatusLabel = (status: FencerStatus) => {
       switch (status) {
@@ -171,7 +178,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
       const { exportResultsToPDF } = await import('../../shared/utils/pdfExport');
       await exportResultsToPDF(
         resultsToDisplay,
-        `Résultats — ${competition.title}`,
+        t('results.pdf_title', { title: competition.title }),
         logo,
         rankingTemplate
       );
