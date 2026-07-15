@@ -48,9 +48,9 @@ function readSavedLanguage(): string {
   try {
     const raw = fs.readFileSync(LANG_FILE(), 'utf-8');
     const parsed = JSON.parse(raw) as { language?: string };
-    return parsed.language || 'fr';
+    return parsed.language || 'de';
   } catch {
-    return 'fr';
+    return 'de';
   }
 }
 
@@ -123,7 +123,7 @@ function createSplashWindow(): void {
 // IPC: splash confirms language choice
 ipcMain.once('splash:confirm', (_event, lang: string) => {
   const validLangs = ['fr', 'en', 'de', 'es', 'zh-HK', 'br', 'ca'];
-  const confirmed = validLangs.includes(lang) ? lang : 'fr';
+  const confirmed = validLangs.includes(lang) ? lang : 'de';
   saveLanguageToFile(confirmed);
   currentMenuLanguage = confirmed;
   splashConfirmResolve?.(confirmed);
@@ -163,7 +163,7 @@ function closeSplash(onClosed?: () => void): void {
 }
 
 // Current UI language (kept in sync via IPC)
-let currentMenuLanguage = 'fr';
+let currentMenuLanguage = 'de';
 
 // ============================================================================
 // Menu Translations
@@ -517,7 +517,7 @@ const MENU_LABELS: Record<MenuLang, Record<string, string>> = {
 
 function getL(): Record<string, string> {
   const lang = (
-    MENU_LABELS[currentMenuLanguage as MenuLang] ? currentMenuLanguage : 'fr'
+    MENU_LABELS[currentMenuLanguage as MenuLang] ? currentMenuLanguage : 'de'
   ) as MenuLang;
   return MENU_LABELS[lang];
 }
@@ -705,7 +705,7 @@ function createWindow(initialLang?: string): void {
 // ============================================================================
 
 function createMenu(language?: string): void {
-  const lang = (MENU_LABELS[language as MenuLang] ? language : 'fr') as MenuLang;
+  const lang = (MENU_LABELS[language as MenuLang] ? language : 'de') as MenuLang;
   const L = MENU_LABELS[lang];
 
   const template: Electron.MenuItemConstructorOptions[] = [
