@@ -628,11 +628,11 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
 
       const effectiveMax = pool.matches[matchIndex]?.maxScore || maxScore || 0;
       if (effectiveMax > 0 && (actualScoreA > effectiveMax || actualScoreB > effectiveMax)) {
-        showToast(`Score maximum : ${effectiveMax}`, 'error');
+        showToast(t('messages.score_exceeds_maximum', { maxScore: effectiveMax }), 'error');
         return;
       }
       if (actualScoreA === actualScoreB && !isLaserSabre) {
-        showToast("Match nul impossible !", 'error');
+        showToast(t('messages.draw_impossible'), 'error');
         return;
       }
 
@@ -662,11 +662,11 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     const effectiveMax = pool.matches[editingMatch]?.maxScore || maxScore || 0;
     if (effectiveMax > 0) {
       if (scoreLeft > effectiveMax) {
-        showToast(`Le score du tireur A ne peut pas dépasser ${effectiveMax}`, 'error');
+        showToast(t('messages.score_fencer_a_exceeds_max', { maxScore: effectiveMax }), 'error');
         return;
       }
       if (scoreRight > effectiveMax) {
-        showToast(`Le score du tireur B ne peut pas dépasser ${effectiveMax}`, 'error');
+        showToast(t('messages.score_fencer_b_exceeds_max', { maxScore: effectiveMax }), 'error');
         return;
       }
     }
@@ -707,7 +707,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         });
         onScoreUpdate(editingMatch, actualScoreA, actualScoreB, winner);
       } else if (isLaserSabre) {
-        showToast('Match nul : cliquez sur V pour attribuer la victoire', 'warning');
+        showToast(t('messages.draw_click_v_to_assign_win'), 'warning');
         return;
       } else if (victoryA || victoryB) {
         // Tirage au sort déjà décidé (ex: résultat importé depuis une tablette arbitre)
@@ -728,10 +728,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         });
         onScoreUpdate(editingMatch, actualScoreA, actualScoreB, winner);
       } else {
-        showToast(
-          "Match nul impossible ! En match en direct, la mort subite de 30s s'applique automatiquement",
-          'error'
-        );
+        showToast(t('messages.draw_impossible_live_rule'), 'error');
         return;
       }
     } else {
@@ -859,7 +856,9 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     } catch (error) {
       logger.error(LogCategory.UI, "Erreur lors de l'export PDF", error as Error);
       showToast(
-        `Erreur lors de la génération du PDF: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
+        t('messages.pdf_generation_failed', {
+          error: error instanceof Error ? error.message : t('messages.unknown_error'),
+        }),
         'error'
       );
     }
@@ -874,7 +873,9 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     } catch (error) {
       logger.error(LogCategory.UI, "Erreur lors de l'impression de la poule", error as Error);
       showToast(
-        `Erreur lors de l'impression: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
+        t('messages.print_failed', {
+          error: error instanceof Error ? error.message : t('messages.unknown_error'),
+        }),
         'error'
       );
     }
@@ -890,7 +891,9 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     } catch (error) {
       logger.error(LogCategory.UI, "Erreur lors de l'aperçu de la poule", error as Error);
       showToast(
-        `Erreur lors de la génération de l'aperçu: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
+        t('messages.preview_generation_failed', {
+          error: error instanceof Error ? error.message : t('messages.unknown_error'),
+        }),
         'error'
       );
     }
@@ -912,7 +915,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
       .filter(({ match }) => match.status !== MatchStatus.FINISHED);
 
     if (pendingMatches.length === 0) {
-      showToast('Tous les matchs sont déjà terminés', 'info');
+      showToast(t('messages.all_matches_already_finished'), 'info');
       return;
     }
 
@@ -949,7 +952,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     }
 
     setMatchesUpdateTrigger(prev => prev + 1);
-    showToast(`Scores générés pour ${pendingMatches.length} match(s)`, 'success');
+    showToast(t('messages.scores_generated_for_matches', { matchCount: pendingMatches.length }), 'success');
   };
 
   // Render Score Modal
