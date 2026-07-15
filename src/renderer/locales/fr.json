@@ -296,7 +296,13 @@
     "unknown": "inconnu",
     "no_pools_available": "Aucune poule disponible pour cette compétition.",
     "regenerate_team_pools_confirm": "Des matchs existent déjà. Supprimer et régénérer ?",
-    "individual_relays_column_tooltip": "Relais individuels gagnés/perdus"
+    "individual_relays_column_tooltip": "Relais individuels gagnés/perdus",
+    "error_with_detail": "Erreur: {{error}}",
+    "session_error": "Erreur session: {{error}}",
+    "server_start_failed": "Impossible de démarrer le serveur",
+    "server_stop_failed": "Impossible d'arrêter le serveur",
+    "remote_server_stop_failed": "Impossible d'arrêter le serveur distant",
+    "kiosk_theme_error_fallback": "Erreur application thème kiosk"
   },
   "time": {
     "minutes": "minutes",

@@ -361,7 +361,13 @@
     "unknown": "unknown",
     "no_pools_available": "No pools available for this competition.",
     "regenerate_team_pools_confirm": "Matches already exist. Delete and regenerate?",
-    "individual_relays_column_tooltip": "Individual Relays Won/Lost"
+    "individual_relays_column_tooltip": "Individual Relays Won/Lost",
+    "error_with_detail": "Error: {{error}}",
+    "session_error": "Session error: {{error}}",
+    "server_start_failed": "Server could not be started",
+    "server_stop_failed": "Server could not be stopped",
+    "remote_server_stop_failed": "The remote server could not be stopped",
+    "kiosk_theme_error_fallback": "Error applying kiosk theme"
   },
   "time": {
     "minutes": "minutes",
@@ -772,6 +778,8 @@
     "reserves_per": "Reserves per team",
     "name_placeholder": "Ex: team A",
     "individual_relays": "Individual relays won/lost",
+    "relay_won_header": "Relay W",
+    "relay_lost_header": "Relay L",
     "cumulative_touches": "Cumulative touches (FIE rule)",
     "generate_pool": "Generate the pool",
     "name_label": "Team name",
@@ -862,6 +870,8 @@
     "kiosk_theme": "Custom kiosk theme",
     "blink": "Make this screen blink to identify it",
     "desc": "Referees enter scores from a tablet via web browser on the local network.",
+    "title_inactive": "Remote input inactive",
+    "title_active": "Remote input active",
     "network": "Network",
     "enable_https": "🔒 Enable HTTPS (encrypted connection)",
     "cert_note": "Self-signed certificate — tablets will need to accept the browser security warning once.",

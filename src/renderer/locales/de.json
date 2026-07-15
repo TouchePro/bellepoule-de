@@ -279,7 +279,13 @@
     "unknown": "unbekannt",
     "no_pools_available": "Für diesen Wettbewerb sind keine Gruppen verfügbar.",
     "regenerate_team_pools_confirm": "Es existieren bereits Matches. Löschen und neu generieren?",
-    "individual_relays_column_tooltip": "Individuelle Relais-Siege/Niederlagen"
+    "individual_relays_column_tooltip": "Individuelle Relais-Siege/Niederlagen",
+    "error_with_detail": "Fehler: {{error}}",
+    "session_error": "Fehler bei der Sitzung: {{error}}",
+    "server_start_failed": "Server konnte nicht gestartet werden",
+    "server_stop_failed": "Server konnte nicht gestoppt werden",
+    "remote_server_stop_failed": "Der Remote-Server konnte nicht gestoppt werden",
+    "kiosk_theme_error_fallback": "Fehler beim Anwenden des Kiosk-Themes"
   },
   "pdfTemplate": {
     "colors": {
@@ -501,10 +507,10 @@
     "round_of_16": "Achtelfinale",
     "round_of_32": "32er-Runde",
     "round_of_64": "64er-Runde",
-    "round_of_n": "Tableau von {{round}}",
+    "round_of_n": "{{round}}er-Runde",
     "round_quarters_short": "Viertel",
-    "bracket_of_size": "Tableau von {{size}}",
-    "bracket_tree_of_size": "Baum — Tableau von {{size}}"
+    "bracket_of_size": "Direktausscheidungen ({{size}})",
+    "bracket_tree_of_size": "Baum — Direktausscheidungen ({{size}})"
   },
   "time": {
     "days": "Tage",
@@ -772,6 +778,8 @@
     "reserves_per": "Reserve pro Mannschaft",
     "name_placeholder": "Bsp: Mannschaft A",
     "individual_relays": "Gewonnene/verlorene Einzelstaffeln",
+    "relay_won_header": "Staffel G",
+    "relay_lost_header": "Staffel N",
     "cumulative_touches": "Kumulierte Treffer (FIE-Regel)",
     "generate_pool": "Die Poule generieren",
     "name_label": "Mannschaftsname",
@@ -862,6 +870,8 @@
     "kiosk_theme": "Eigenes Kiosk-Thema",
     "blink": "Diesen Bildschirm blinken lassen zur Identifikation",
     "desc": "Schiedsrichter geben Punkte über ein Tablet via Webbrowser im lokalen Netz ein.",
+    "title_inactive": "Remote-Eingabe inaktiv",
+    "title_active": "Remote-Eingabe aktiv",
     "network": "Netzwerk",
     "enable_https": "🔒 HTTPS aktivieren (verschlüsselte Verbindung)",
     "cert_note": "Selbstsigniertes Zertifikat — die Tablets müssen die Sicherheitswarnung des Browsers einmal akzeptieren.",
