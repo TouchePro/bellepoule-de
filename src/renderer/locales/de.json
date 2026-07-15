@@ -1293,5 +1293,20 @@
     "available": "Aktualisierung verfügbar",
     "download": "Herunterladen",
     "view_notes": "Versionshinweise ansehen"
+  },
+  "columns": {
+    "victories": "Siege",
+    "matches": "Kämpfe",
+    "ratio": "Verhältnis",
+    "td": "Treffer gegeben",
+    "tr": "Treffer erhalten",
+    "quest": "Quest",
+    "index": "Index (TD-TR)",
+    "rank": "Rang",
+    "firstName": "Vorname",
+    "lastName": "Nachname",
+    "club": "Verein",
+    "nation": "Nation",
+    "region": "Region"
   }
 }

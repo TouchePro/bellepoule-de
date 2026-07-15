@@ -1293,5 +1293,20 @@
     "available": "Update available",
     "download": "Download",
     "view_notes": "View release notes"
+  },
+  "columns": {
+    "victories": "Wins",
+    "matches": "Matches",
+    "ratio": "Ratio",
+    "td": "Touches Scored",
+    "tr": "Touches Received",
+    "quest": "Quest",
+    "index": "Index (TD-TR)",
+    "rank": "Rank",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "club": "Club",
+    "nation": "Nation",
+    "region": "Region"
   }
 }

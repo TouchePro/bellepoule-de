@@ -7,7 +7,15 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useModalResize } from '../hooks/useModalResize';
 import { useFocusTrap } from '../hooks/useFocusTrap';
-import { Pool, Fencer, MatchStatus, Score, Weapon, FencerStatus, Referee } from '../../shared/types';
+import {
+  Pool,
+  Fencer,
+  MatchStatus,
+  Score,
+  Weapon,
+  FencerStatus,
+  Referee,
+} from '../../shared/types';
 import { Arena } from '../../shared/types/remote';
 import { logger, LogCategory } from '@shared/services/logger';
 import { useToast } from './Toast';
@@ -140,41 +148,52 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   const [showRefereeModal, setShowRefereeModal] = useState(false);
   const [competitionReferees, setCompetitionReferees] = useState<Referee[]>([]);
   const [isLoadingReferees, setIsLoadingReferees] = useState(false);
-  const [assignedReferee, setAssignedReferee] = useState<Referee | null>(pool.referees?.[0] ?? null);
+  const [assignedReferee, setAssignedReferee] = useState<Referee | null>(
+    pool.referees?.[0] ?? null
+  );
   const [hoveredFencerIds, setHoveredFencerIds] = useState<Set<string>>(new Set());
   const quickMouseScoring = localStorage.getItem('bellepoule-quick-mouse-scoring') === 'true';
   const simplifiedInputMode = localStorage.getItem('bellepoule-simplified-input-mode') === 'true';
-  const [inlineEditCell, setInlineEditCell] = useState<{ key: string; rowId: string; colId: string; matchIndex: number; inverted: boolean } | null>(null);
+  const [inlineEditCell, setInlineEditCell] = useState<{
+    key: string;
+    rowId: string;
+    colId: string;
+    matchIndex: number;
+    inverted: boolean;
+  } | null>(null);
   const [inlineSingleScore, setInlineSingleScore] = useState('');
   const [cellScoreBuffer, setCellScoreBuffer] = useState<Record<string, number>>({});
 
   const defaultArena = (pool.strip != null && pool.strip > 0 ? pool.strip : pool.number) ?? 1;
 
-  const handleMatchArenaChange = useCallback((
-    matchId: string,
-    oldArena: number,
-    newArena: number | null,
-    fencerA?: Fencer | null,
-    fencerB?: Fencer | null
-  ) => {
-    setMatchArenaOverrides(prev => {
-      const next = new Map(prev);
-      if (newArena === null) {
-        next.delete(matchId);
-      } else {
-        next.set(matchId, newArena);
-      }
-      return next;
-    });
-    onMatchArenaChange?.(matchId, oldArena, newArena, fencerA, fencerB);
-  }, [onMatchArenaChange]);
-
+  const handleMatchArenaChange = useCallback(
+    (
+      matchId: string,
+      oldArena: number,
+      newArena: number | null,
+      fencerA?: Fencer | null,
+      fencerB?: Fencer | null
+    ) => {
+      setMatchArenaOverrides(prev => {
+        const next = new Map(prev);
+        if (newArena === null) {
+          next.delete(matchId);
+        } else {
+          next.set(matchId, newArena);
+        }
+        return next;
+      });
+      onMatchArenaChange?.(matchId, oldArena, newArena, fencerA, fencerB);
+    },
+    [onMatchArenaChange]
+  );
 
   const openRefereeModal = useCallback(() => {
     setShowRefereeModal(true);
     if (competitionId) {
       setIsLoadingReferees(true);
-      window.electronAPI.db.getRefereesByCompetition(competitionId)
+      window.electronAPI.db
+        .getRefereesByCompetition(competitionId)
         .then(refs => setCompetitionReferees(refs))
         .finally(() => setIsLoadingReferees(false));
     }
@@ -183,12 +202,15 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   const closeRefereeModal = useCallback(() => setShowRefereeModal(false), []);
   const refereeModalRef = useFocusTrap<HTMLDivElement>(showRefereeModal, closeRefereeModal);
 
-  const handleAssignReferee = useCallback((referee: Referee | null) => {
-    window.electronAPI.db.updatePoolReferee(pool.id, referee?.id ?? null);
-    setAssignedReferee(referee);
-    setShowRefereeModal(false);
-    onRefereeAssigned?.(pool.id, referee);
-  }, [pool.id, onRefereeAssigned]);
+  const handleAssignReferee = useCallback(
+    (referee: Referee | null) => {
+      window.electronAPI.db.updatePoolReferee(pool.id, referee?.id ?? null);
+      setAssignedReferee(referee);
+      setShowRefereeModal(false);
+      onRefereeAssigned?.(pool.id, referee);
+    },
+    [pool.id, onRefereeAssigned]
+  );
 
   const { addAction, undo, redo, canUndo, canRedo } = useHistory();
 
@@ -252,7 +274,9 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   }, [pool.isComplete]);
 
   const isLaserSabre = weapon === Weapon.LASER;
-  const isLocked = pool.fencers.length > 0 && signedFencerIds.filter(id => pool.fencers.some(f => f.id === id)).length >= pool.fencers.length;
+  const isLocked =
+    pool.fencers.length > 0 &&
+    signedFencerIds.filter(id => pool.fencers.some(f => f.id === id)).length >= pool.fencers.length;
   const fencers = pool.fencers;
 
   const isVisible = useCallback(
@@ -296,10 +320,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   // Raccourcis clavier
 
   // Clé de statut stable : recalculée seulement quand un statut change réellement
-  const matchesStatusKey = useMemo(
-    () => pool.matches.map(m => m.status).join(','),
-    [pool.matches]
-  );
+  const matchesStatusKey = useMemo(() => pool.matches.map(m => m.status).join(','), [pool.matches]);
 
   const orderedMatches = useMemo(() => {
     const cancelled = pool.matches
@@ -308,7 +329,10 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
 
     const pending = pool.matches
       .map((m, idx) => ({ match: m, index: idx }))
-      .filter(({ match }) => match.status !== MatchStatus.FINISHED && match.status !== MatchStatus.CANCELLED);
+      .filter(
+        ({ match }) =>
+          match.status !== MatchStatus.FINISHED && match.status !== MatchStatus.CANCELLED
+      );
 
     const finished = pool.matches
       .map((m, idx) => ({ match: m, index: idx }))
@@ -522,7 +546,12 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
 
   const handleHoverLeave = () => setHoveredFencerIds(new Set());
 
-  const handleWheelScore = (rowFencer: Fencer, colFencer: Fencer, shiftKey: boolean, delta: number) => {
+  const handleWheelScore = (
+    rowFencer: Fencer,
+    colFencer: Fencer,
+    shiftKey: boolean,
+    delta: number
+  ) => {
     if (isLocked) return;
     const matchIndex = getMatchIndex(rowFencer, colFencer);
     if (matchIndex === -1) return;
@@ -557,33 +586,60 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   };
 
   const getOrderedCells = () => {
-    const cells: Array<{ rowFencer: Fencer; colFencer: Fencer; key: string; matchIndex: number; inverted: boolean }> = [];
+    const cells: Array<{
+      rowFencer: Fencer;
+      colFencer: Fencer;
+      key: string;
+      matchIndex: number;
+      inverted: boolean;
+    }> = [];
     for (const rowFencer of fencers) {
       for (const colFencer of fencers) {
         if (rowFencer.id === colFencer.id) continue;
         const isAbandoned =
-          rowFencer.status === FencerStatus.ABANDONED || rowFencer.status === FencerStatus.FORFAIT || rowFencer.status === FencerStatus.EXCLUDED ||
-          colFencer.status === FencerStatus.ABANDONED || colFencer.status === FencerStatus.FORFAIT || colFencer.status === FencerStatus.EXCLUDED;
+          rowFencer.status === FencerStatus.ABANDONED ||
+          rowFencer.status === FencerStatus.FORFAIT ||
+          rowFencer.status === FencerStatus.EXCLUDED ||
+          colFencer.status === FencerStatus.ABANDONED ||
+          colFencer.status === FencerStatus.FORFAIT ||
+          colFencer.status === FencerStatus.EXCLUDED;
         if (isAbandoned) continue;
         const matchIndex = getMatchIndex(rowFencer, colFencer);
         if (matchIndex === -1) continue;
         const match = pool.matches[matchIndex];
-        if (match.status === MatchStatus.FINISHED || match.status === MatchStatus.CANCELLED) continue;
+        if (match.status === MatchStatus.FINISHED || match.status === MatchStatus.CANCELLED)
+          continue;
         const inverted = match.fencerA?.id === colFencer.id;
-        cells.push({ rowFencer, colFencer, key: `${rowFencer.id}-${colFencer.id}`, matchIndex, inverted });
+        cells.push({
+          rowFencer,
+          colFencer,
+          key: `${rowFencer.id}-${colFencer.id}`,
+          matchIndex,
+          inverted,
+        });
       }
     }
     return cells;
   };
 
-  const openNextCell = (currentKey: string, skipKeys: Set<string>, buffer: Record<string, number>) => {
+  const openNextCell = (
+    currentKey: string,
+    skipKeys: Set<string>,
+    buffer: Record<string, number>
+  ) => {
     const cells = getOrderedCells();
     const currentIndex = cells.findIndex(c => c.key === currentKey);
     const startFrom = currentIndex === -1 ? 0 : currentIndex + 1;
     for (let i = startFrom; i < cells.length; i++) {
       if (!skipKeys.has(cells[i].key)) {
         const next = cells[i];
-        setInlineEditCell({ key: next.key, rowId: next.rowFencer.id, colId: next.colFencer.id, matchIndex: next.matchIndex, inverted: next.inverted });
+        setInlineEditCell({
+          key: next.key,
+          rowId: next.rowFencer.id,
+          colId: next.colFencer.id,
+          matchIndex: next.matchIndex,
+          inverted: next.inverted,
+        });
         setInlineSingleScore(buffer[next.key] !== undefined ? String(buffer[next.key]) : '');
         return;
       }
@@ -713,8 +769,12 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         // Tirage au sort déjà décidé (ex: résultat importé depuis une tablette arbitre)
         const winnerLeft = victoryA;
         const winner: 'A' | 'B' = isMatchInverted
-          ? winnerLeft ? 'B' : 'A'
-          : winnerLeft ? 'A' : 'B';
+          ? winnerLeft
+            ? 'B'
+            : 'A'
+          : winnerLeft
+            ? 'A'
+            : 'B';
         addAction({
           type: 'UPDATE_SCORE',
           description: `Score poule ${pool.number} match ${matchIdx + 1}`,
@@ -852,7 +912,10 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
       const options = await buildPoolPrintOptions();
       const { exportPoolToPDF } = await import('../../shared/utils/pdfExport');
       await exportPoolToPDF(pool, options, poolTemplate);
-      showToast(t('messages.export_success', { format: `PDF ${t('ui.poule')} ${pool.number}` }), 'success');
+      showToast(
+        t('messages.export_success', { format: `PDF ${t('ui.poule')} ${pool.number}` }),
+        'success'
+      );
     } catch (error) {
       logger.error(LogCategory.UI, "Erreur lors de l'export PDF", error as Error);
       showToast(
@@ -952,7 +1015,10 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     }
 
     setMatchesUpdateTrigger(prev => prev + 1);
-    showToast(t('messages.scores_generated_for_matches', { matchCount: pendingMatches.length }), 'success');
+    showToast(
+      t('messages.scores_generated_for_matches', { matchCount: pendingMatches.length }),
+      'success'
+    );
   };
 
   // Render Score Modal
@@ -969,11 +1035,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
           setIsMatchInverted(false);
         }}
       >
-        <div
-          ref={modalRef}
-          className="modal resizable"
-          onClick={e => e.stopPropagation()}
-        >
+        <div ref={modalRef} className="modal resizable" onClick={e => e.stopPropagation()}>
           <div className="modal-header" style={{ cursor: 'move' }}>
             <h3 className="modal-title">{t('poolView.quick_entry')}</h3>
           </div>
@@ -985,9 +1047,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                 const f = isMatchInverted ? match.fencerB : match.fencerA;
                 return (
                   <div style={nameCol('flex-end')}>
-                    <div style={nameLast('right')}>
-                      {f?.lastName}
-                    </div>
+                    <div style={nameLast('right')}>{f?.lastName}</div>
                     <div style={nameFirst('right')}>
                       {f?.firstName} {f?.club && `(${f.club})`}
                     </div>
@@ -1106,9 +1166,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                 const f = isMatchInverted ? match.fencerA : match.fencerB;
                 return (
                   <div style={nameCol('flex-start')}>
-                    <div style={nameLast('left')}>
-                      {f?.lastName}
-                    </div>
+                    <div style={nameLast('left')}>{f?.lastName}</div>
                     <div style={nameFirst('left')}>
                       {f?.firstName} {f?.club && `(${f.club})`}
                     </div>
@@ -1170,10 +1228,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               )}
             </div>
           </div>
-          <div
-            className="modal-footer"
-            style={FOOTER_RIGHT}
-          >
+          <div className="modal-footer" style={FOOTER_RIGHT}>
             <button
               className="btn btn-secondary"
               onClick={() => {
@@ -1273,10 +1328,14 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
         onCellClick={handleCellClick}
         onFencerChangePool={onFencerChangePool}
         isLocked={isLocked}
-        onMatchReset={!isLocked && onMatchReset ? (rowFencer, colFencer) => {
-          const matchIndex = getMatchIndex(rowFencer, colFencer);
-          if (matchIndex !== -1) handleMatchDelete(matchIndex);
-        } : undefined}
+        onMatchReset={
+          !isLocked && onMatchReset
+            ? (rowFencer, colFencer) => {
+                const matchIndex = getMatchIndex(rowFencer, colFencer);
+                if (matchIndex !== -1) handleMatchDelete(matchIndex);
+              }
+            : undefined
+        }
         quickMouseScoring={quickMouseScoring}
         highlightedFencerIds={hoveredFencerIds}
         onHoverCell={quickMouseScoring || simplifiedInputMode ? handleHoverCell : undefined}
@@ -1293,28 +1352,33 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
       {orderedMatches.finished.length > 0 && (
         <div style={{ marginTop: '1rem' }}>
           <button
-            onClick={() => setShowFinishedLog((v) => !v)}
+            onClick={() => setShowFinishedLog(v => !v)}
             aria-expanded={showFinishedLog}
             style={LOG_TOGGLE}
           >
-            <span style={{ transition: 'transform 0.15s', transform: showFinishedLog ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+            <span
+              style={{
+                transition: 'transform 0.15s',
+                transform: showFinishedLog ? 'rotate(90deg)' : 'rotate(0deg)',
+              }}
+            >
               ▶
             </span>
             Journal des matchs terminés ({orderedMatches.finished.length})
           </button>
           {showFinishedLog && (
-          <div style={LOG_WRAP}>
-            {orderedMatches.finished.map(({ match }) => (
-              <button
-                key={match.id}
-                onClick={() => setAuditMatchId(match.id)}
-                style={LOG_ITEM}
-                title={t('poolView.view_log')}
-              >
-                📋 {match.fencerA?.lastName} vs {match.fencerB?.lastName}
-              </button>
-            ))}
-          </div>
+            <div style={LOG_WRAP}>
+              {orderedMatches.finished.map(({ match }) => (
+                <button
+                  key={match.id}
+                  onClick={() => setAuditMatchId(match.id)}
+                  style={LOG_ITEM}
+                  title={t('poolView.view_log')}
+                >
+                  📋 {match.fencerA?.lastName} vs {match.fencerB?.lastName}
+                </button>
+              ))}
+            </div>
           )}
         </div>
       )}
@@ -1342,9 +1406,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
       return (
         <div style={{ ...NEXT_MATCH_BOX, background: '#6b7280', opacity: 0.7 }}>
           <div style={ROW_BETWEEN}>
-            <div style={MATCH_LABEL}>
-              {t('poolView.not_fenced')}
-            </div>
+            <div style={MATCH_LABEL}>{t('poolView.not_fenced')}</div>
             <div style={MATCH_CENTER}>
               <span style={abandonName(fencerAAbandoned)}>
                 {nextMatch.match.fencerA?.lastName} {nextMatch.match.fencerA?.firstName?.charAt(0)}.
@@ -1362,11 +1424,14 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     }
 
     return (
-      <div style={{ ...NEXT_MATCH_BOX, background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' }}>
+      <div
+        style={{
+          ...NEXT_MATCH_BOX,
+          background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+        }}
+      >
         <div style={ROW_BETWEEN}>
-          <div style={MATCH_LABEL}>
-            {t('poolView.next_match')}
-          </div>
+          <div style={MATCH_LABEL}>{t('poolView.next_match')}</div>
           <div style={MATCH_CENTER}>
             <span style={FENCER_NAME}>
               {nextMatch.match.fencerA?.lastName} {nextMatch.match.fencerA?.firstName?.charAt(0)}.
@@ -1378,10 +1443,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               {nextMatch.match.fencerB?.ranking && ` #${nextMatch.match.fencerB.ranking}`}
             </span>
           </div>
-          <button
-            onClick={() => openScoreModal(nextMatch.index)}
-            style={NEXT_MATCH_SUBMIT}
-          >
+          <button onClick={() => openScoreModal(nextMatch.index)} style={NEXT_MATCH_SUBMIT}>
             {t('poolView.enter')}
           </button>
         </div>
@@ -1389,325 +1451,347 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     );
   };
 
-
   return (
     <>
-    <div className="card">
-      <Confetti active={showPoolConfetti} particleCount={100} origin={{ x: 0.5, y: 0.5 }} />
-      {isLocked && (
-        <div style={LOCKED_BANNER}>
-          {t('poolView.signed_locked')}
-        </div>
-      )}
-      <div
-        className="card-header"
-        style={ROW_BETWEEN}
-      >
-        <div style={HEADER_LEFT}>
-          <span>{t('ui.poule')} {pool.number}</span>
-          <span className={`badge ${pool.isComplete ? 'badge-success' : 'badge-warning'}`}>
-            {pool.isComplete ? 'Terminée' : `${finishedCount}/${totalMatches}`}
-          </span>
-          {!pool.isComplete && totalMatches > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-              <div style={{ width: '72px', height: '5px', background: '#e5e7eb', borderRadius: '3px', overflow: 'hidden' }}>
-                <div style={{
-                  height: '100%',
-                  width: `${(finishedCount / totalMatches) * 100}%`,
-                  background: finishedCount / totalMatches >= 0.7 ? '#10b981' : '#f59e0b',
-                  borderRadius: '3px',
-                  transition: 'width 0.4s ease',
-                }} />
-              </div>
-              <span style={{ fontSize: '0.7rem', color: '#9ca3af', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                {finishedCount}/{totalMatches}
-              </span>
-            </div>
-          )}
-          {(() => {
-            const total = pool.fencers.length;
-            const signed = signedFencerIds.filter(id => pool.fencers.some(f => f.id === id)).length;
-            const allSigned = signed === total && total > 0;
-            const noneSigned = signed === 0;
-            return (
-              <span
-                title={allSigned ? 'Tous les combattants ont signé — PDF disponible' : `${signed}/${total} signature(s)`}
-                style={{
-                  ...BADGE_PILL,
-                  background: allSigned ? '#d1fae5' : noneSigned ? '#f3f4f6' : '#fef3c7',
-                  color: allSigned ? '#065f46' : noneSigned ? '#6b7280' : '#92400e',
-                  border: `1px solid ${allSigned ? '#6ee7b7' : noneSigned ? '#e5e7eb' : '#fcd34d'}`,
-                }}
-              >
-                ✍️ {signed}/{total}
-              </span>
-            );
-          })()}
-          <button
-            onClick={openRefereeModal}
-            title={assignedReferee ? `Arbitre : ${assignedReferee.lastName} ${assignedReferee.firstName}` : t('referee.assign')}
-            style={{
-              ...BADGE_PILL,
-              cursor: 'pointer',
-              background: assignedReferee ? '#dbeafe' : '#f3f4f6',
-              color: assignedReferee ? '#1d4ed8' : '#6b7280',
-              border: `1px solid ${assignedReferee ? '#93c5fd' : '#e5e7eb'}`,
-            }}
-          >
-            🧑‍⚖️ {assignedReferee ? `${assignedReferee.lastName}` : '+Arbitre'}
-          </button>
-        </div>
-        <div style={TOOLBAR_GROUP}>
-          <button
-            onClick={undo}
-            disabled={!canUndo}
-            style={{
-              ...ICON_BTN,
-              background: canUndo ? '#6b7280' : '#e5e7eb',
-              color: canUndo ? 'white' : '#9ca3af',
-              cursor: canUndo ? 'pointer' : 'not-allowed',
-            }}
-            title={`${t('shortcuts.undo')} (Ctrl+Z)`}
-            aria-label={t('poolView.undo')}
-          >
-            ↩
-          </button>
-          <button
-            onClick={redo}
-            disabled={!canRedo}
-            style={{
-              ...ICON_BTN,
-              background: canRedo ? '#6b7280' : '#e5e7eb',
-              color: canRedo ? 'white' : '#9ca3af',
-              cursor: canRedo ? 'pointer' : 'not-allowed',
-            }}
-            title={t('poolView.redo')}
-            aria-label={t('poolView.redo_desc')}
-          >
-            ↪
-          </button>
-          <button
-            onClick={handleAutoFillScores}
-            style={{ ...ICON_ONLY_BTN, background: '#f59e0b', color: 'white' }}
-            title={t('poolView.autofill')}
-            aria-label={t('poolView.autofill')}
-          >
-            🎲
-          </button>
-          <button
-            onClick={handlePrintPool}
-            style={{ ...ICON_ONLY_BTN, background: '#3b82f6', color: 'white' }}
-            title={t('poolView.print_sheet')}
-            aria-label={t('poolView.print_sheet')}
-          >
-            🖨️
-          </button>
-          <button
-            onClick={handlePreviewPool}
-            style={{ ...ICON_ONLY_BTN, background: '#8b5cf6', color: 'white' }}
-            title={t('poolView.preview')}
-            aria-label={t('poolView.preview')}
-          >
-            👁️
-          </button>
-          <button
-            onClick={handleExportPDF}
-            style={{ ...ICON_ONLY_BTN, background: '#10b981', color: 'white' }}
-            title={t('poolView.export_pdf')}
-            aria-label={t('poolView.export_pdf')}
-          >
-            📄
-          </button>
-          {pool.isComplete && isRemoteActive && remoteServerUrl && (
-            <button
-              onClick={() => {
-                const url = `${remoteServerUrl}/arene${defaultArena}/poule`;
-                if (window.electronAPI?.openExternal) {
-                  window.electronAPI.openExternal(url);
-                } else {
-                  window.open(url, '_blank');
-                }
-              }}
-              style={{ ...ICON_ONLY_BTN, background: '#6366f1', color: 'white' }}
-              title={`Page signatures — arène ${defaultArena}`}
-              aria-label="Page signatures"
-            >
-              ✍️
-            </button>
-          )}
-          {competitionId && (
-            <button
-              onClick={() => setShowAddFencerModal(true)}
-              style={{ ...ICON_ONLY_BTN, background: '#e5e7eb', color: '#374151' }}
-              title={t('poolView.add_fencer')}
-              aria-label={t('poolView.add_fencer')}
-            >
-              ➕
-            </button>
-          )}
-          <div style={RELATIVE} ref={columnMenuRef}>
-            <button
-              onClick={() => setShowColumnMenu(!showColumnMenu)}
-              style={{
-                ...ICON_ONLY_BTN,
-                background: showColumnMenu ? '#6b7280' : '#e5e7eb',
-                color: showColumnMenu ? 'white' : '#374151',
-              }}
-              title={t('poolView.toggle_columns')}
-              aria-label={t('poolView.toggle_columns')}
-            >
-              ⚙️
-            </button>
-            {showColumnMenu && (
-              <div style={COL_MENU}>
-                <div style={COL_MENU_HEADER}>
-                  {t('poolView.columns_label')}
+      <div className="card">
+        <Confetti active={showPoolConfetti} particleCount={100} origin={{ x: 0.5, y: 0.5 }} />
+        {isLocked && <div style={LOCKED_BANNER}>{t('poolView.signed_locked')}</div>}
+        <div className="card-header" style={ROW_BETWEEN}>
+          <div style={HEADER_LEFT}>
+            <span>
+              {t('ui.poule')} {pool.number}
+            </span>
+            <span className={`badge ${pool.isComplete ? 'badge-success' : 'badge-warning'}`}>
+              {pool.isComplete ? 'Terminée' : `${finishedCount}/${totalMatches}`}
+            </span>
+            {!pool.isComplete && totalMatches > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                <div
+                  style={{
+                    width: '72px',
+                    height: '5px',
+                    background: '#e5e7eb',
+                    borderRadius: '3px',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div
+                    style={{
+                      height: '100%',
+                      width: `${(finishedCount / totalMatches) * 100}%`,
+                      background: finishedCount / totalMatches >= 0.7 ? '#10b981' : '#f59e0b',
+                      borderRadius: '3px',
+                      transition: 'width 0.4s ease',
+                    }}
+                  />
                 </div>
-                {POOL_COLUMNS.filter(col => col.id !== 'quest' || isLaserSabre).map(col => (
-                  <label
-                    key={col.id}
-                    style={COL_MENU_LABEL}
-                    onMouseEnter={e => (e.currentTarget.style.background = '#f3f4f6')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isVisible(col.id)}
-                      onChange={() => toggleColumn('pool', col.id, pool.id)}
-                      style={{ cursor: 'pointer' }}
-                    />
-                    {col.label}
-                  </label>
-                ))}
+                <span
+                  style={{
+                    fontSize: '0.7rem',
+                    color: '#9ca3af',
+                    fontWeight: 600,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {finishedCount}/{totalMatches}
+                </span>
               </div>
             )}
-          </div>
-          <div style={VIEW_GROUP}>
-            <button
-              onClick={() => setViewMode('grid')}
-              style={{
-                ...ICON_ONLY_BTN,
-                background: viewMode === 'grid' ? '#3b82f6' : '#e5e7eb',
-                color: viewMode === 'grid' ? 'white' : '#374151',
-                borderRadius: '4px 0 0 4px',
-              }}
-              title={t('poolView.table_view')}
-              aria-label={t('poolView.table_view')}
-            >
-              📊
-            </button>
-            <button
-              onClick={() => setViewMode('matches')}
-              style={{
-                ...ICON_ONLY_BTN,
-                background: viewMode === 'matches' ? '#3b82f6' : '#e5e7eb',
-                color: viewMode === 'matches' ? 'white' : '#374151',
-                borderRadius: '0 4px 4px 0',
-              }}
-              title="Vue matches"
-              aria-label="Vue matches"
-            >
-              ⚔️
-            </button>
-          </div>
-        </div>
-      </div>
-      <div className="card-body" style={{ overflowX: 'auto' }}>
-        {viewMode === 'grid' ? (
-          <>
-            {renderGridView()}
-            {renderNextMatch()}
-          </>
-        ) : (
-          <PoolMatchList
-            orderedMatches={orderedMatches}
-            isLaserSabre={isLaserSabre}
-            isLocked={isLocked}
-            openScoreModal={openScoreModal}
-            onMatchReset={onMatchReset ? handleMatchDelete : undefined}
-            onShowMatchAudit={setAuditMatchId}
-            defaultArena={defaultArena}
-            arenaCount={arenaCount}
-            arenas={arenas}
-            isRemoteActive={isRemoteActive}
-            matchArenaOverrides={matchArenaOverrides}
-            onMatchArenaChange={handleMatchArenaChange}
-          />
-)}
-        {renderScoreModal()}
-        {renderSpecialStatusModal()}
-      </div>
-    </div>
-    {showAddFencerModal && competitionId && (
-      <AddFencerToPoolModal
-        pool={pool}
-        competitionId={competitionId}
-        maxScore={maxScore}
-        onConfirm={updatedPool => {
-          setShowAddFencerModal(false);
-          onFencerAdded?.(updatedPool);
-        }}
-        onClose={() => setShowAddFencerModal(false)}
-      />
-    )}
-    {auditMatchId && (
-      <React.Suspense fallback={null}>
-        <MatchAuditLog matchId={auditMatchId} onClose={() => setAuditMatchId(null)} />
-      </React.Suspense>
-    )}
-    {showRefereeModal && (
-      <div className="modal-overlay" onClick={() => setShowRefereeModal(false)}>
-        <div
-          ref={refereeModalRef}
-          className="modal"
-          onClick={e => e.stopPropagation()}
-          style={{ maxWidth: '400px' }}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="referee-modal-title"
-        >
-          <div className="modal-header">
-            <h3 className="modal-title" id="referee-modal-title">{t('referee.assign')}</h3>
-            <button className="btn-close" onClick={() => setShowRefereeModal(false)}>&times;</button>
-          </div>
-          <div className="modal-body" style={{ padding: '1.5rem' }}>
-            <p style={{ marginBottom: '1rem', color: '#6b7280', fontSize: '0.875rem' }}>
-              Sélectionnez l'arbitre pour la poule {pool.number} :
-            </p>
-            <div style={COL_GAP}>
-              <button
-                className={`btn ${!assignedReferee ? 'btn-primary' : 'btn-secondary'}`}
-                onClick={() => handleAssignReferee(null)}
-                style={REF_BTN}
-              >
-                {t('referee.none')}
-              </button>
-              {isLoadingReferees && (
-                <p style={REF_EMPTY}>
-                  {t('referee.loading')}
-                </p>
-              )}
-              {!isLoadingReferees && competitionReferees.length === 0 && (
-                <p style={REF_EMPTY}>
-                  {t('referee.none_registered')}
-                </p>
-              )}
-              {!isLoadingReferees && competitionReferees.map(ref => (
-                <button
-                  key={ref.id}
-                  className={`btn ${assignedReferee?.id === ref.id ? 'btn-primary' : 'btn-secondary'}`}
-                  onClick={() => handleAssignReferee(ref)}
-                  style={{ ...REF_BTN, textAlign: 'left' }}
+            {(() => {
+              const total = pool.fencers.length;
+              const signed = signedFencerIds.filter(id =>
+                pool.fencers.some(f => f.id === id)
+              ).length;
+              const allSigned = signed === total && total > 0;
+              const noneSigned = signed === 0;
+              return (
+                <span
+                  title={
+                    allSigned
+                      ? 'Tous les combattants ont signé — PDF disponible'
+                      : `${signed}/${total} signature(s)`
+                  }
+                  style={{
+                    ...BADGE_PILL,
+                    background: allSigned ? '#d1fae5' : noneSigned ? '#f3f4f6' : '#fef3c7',
+                    color: allSigned ? '#065f46' : noneSigned ? '#6b7280' : '#92400e',
+                    border: `1px solid ${allSigned ? '#6ee7b7' : noneSigned ? '#e5e7eb' : '#fcd34d'}`,
+                  }}
                 >
-                  🧑‍⚖️ {ref.lastName} {ref.firstName}
-                  {ref.club && <span style={{ marginLeft: '0.5rem', opacity: 0.6, fontSize: '0.8rem' }}>({ref.club})</span>}
-                </button>
-              ))}
+                  ✍️ {signed}/{total}
+                </span>
+              );
+            })()}
+            <button
+              onClick={openRefereeModal}
+              title={
+                assignedReferee
+                  ? `Arbitre : ${assignedReferee.lastName} ${assignedReferee.firstName}`
+                  : t('referee.assign')
+              }
+              style={{
+                ...BADGE_PILL,
+                cursor: 'pointer',
+                background: assignedReferee ? '#dbeafe' : '#f3f4f6',
+                color: assignedReferee ? '#1d4ed8' : '#6b7280',
+                border: `1px solid ${assignedReferee ? '#93c5fd' : '#e5e7eb'}`,
+              }}
+            >
+              🧑‍⚖️ {assignedReferee ? `${assignedReferee.lastName}` : '+Arbitre'}
+            </button>
+          </div>
+          <div style={TOOLBAR_GROUP}>
+            <button
+              onClick={undo}
+              disabled={!canUndo}
+              style={{
+                ...ICON_BTN,
+                background: canUndo ? '#6b7280' : '#e5e7eb',
+                color: canUndo ? 'white' : '#9ca3af',
+                cursor: canUndo ? 'pointer' : 'not-allowed',
+              }}
+              title={`${t('shortcuts.undo')} (Ctrl+Z)`}
+              aria-label={t('poolView.undo')}
+            >
+              ↩
+            </button>
+            <button
+              onClick={redo}
+              disabled={!canRedo}
+              style={{
+                ...ICON_BTN,
+                background: canRedo ? '#6b7280' : '#e5e7eb',
+                color: canRedo ? 'white' : '#9ca3af',
+                cursor: canRedo ? 'pointer' : 'not-allowed',
+              }}
+              title={t('poolView.redo')}
+              aria-label={t('poolView.redo_desc')}
+            >
+              ↪
+            </button>
+            <button
+              onClick={handleAutoFillScores}
+              style={{ ...ICON_ONLY_BTN, background: '#f59e0b', color: 'white' }}
+              title={t('poolView.autofill')}
+              aria-label={t('poolView.autofill')}
+            >
+              🎲
+            </button>
+            <button
+              onClick={handlePrintPool}
+              style={{ ...ICON_ONLY_BTN, background: '#3b82f6', color: 'white' }}
+              title={t('poolView.print_sheet')}
+              aria-label={t('poolView.print_sheet')}
+            >
+              🖨️
+            </button>
+            <button
+              onClick={handlePreviewPool}
+              style={{ ...ICON_ONLY_BTN, background: '#8b5cf6', color: 'white' }}
+              title={t('poolView.preview')}
+              aria-label={t('poolView.preview')}
+            >
+              👁️
+            </button>
+            <button
+              onClick={handleExportPDF}
+              style={{ ...ICON_ONLY_BTN, background: '#10b981', color: 'white' }}
+              title={t('poolView.export_pdf')}
+              aria-label={t('poolView.export_pdf')}
+            >
+              📄
+            </button>
+            {pool.isComplete && isRemoteActive && remoteServerUrl && (
+              <button
+                onClick={() => {
+                  const url = `${remoteServerUrl}/arene${defaultArena}/poule`;
+                  if (window.electronAPI?.openExternal) {
+                    window.electronAPI.openExternal(url);
+                  } else {
+                    window.open(url, '_blank');
+                  }
+                }}
+                style={{ ...ICON_ONLY_BTN, background: '#6366f1', color: 'white' }}
+                title={`Page signatures — arène ${defaultArena}`}
+                aria-label="Page signatures"
+              >
+                ✍️
+              </button>
+            )}
+            {competitionId && (
+              <button
+                onClick={() => setShowAddFencerModal(true)}
+                style={{ ...ICON_ONLY_BTN, background: '#e5e7eb', color: '#374151' }}
+                title={t('poolView.add_fencer')}
+                aria-label={t('poolView.add_fencer')}
+              >
+                ➕
+              </button>
+            )}
+            <div style={RELATIVE} ref={columnMenuRef}>
+              <button
+                onClick={() => setShowColumnMenu(!showColumnMenu)}
+                style={{
+                  ...ICON_ONLY_BTN,
+                  background: showColumnMenu ? '#6b7280' : '#e5e7eb',
+                  color: showColumnMenu ? 'white' : '#374151',
+                }}
+                title={t('poolView.toggle_columns')}
+                aria-label={t('poolView.toggle_columns')}
+              >
+                ⚙️
+              </button>
+              {showColumnMenu && (
+                <div style={COL_MENU}>
+                  <div style={COL_MENU_HEADER}>{t('poolView.columns_label')}</div>
+                  {POOL_COLUMNS.filter(col => col.id !== 'quest' || isLaserSabre).map(col => (
+                    <label
+                      key={col.id}
+                      style={COL_MENU_LABEL}
+                      onMouseEnter={e => (e.currentTarget.style.background = '#f3f4f6')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isVisible(col.id)}
+                        onChange={() => toggleColumn('pool', col.id, pool.id)}
+                        style={{ cursor: 'pointer' }}
+                      />
+                      {t(col.labelKey)}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div style={VIEW_GROUP}>
+              <button
+                onClick={() => setViewMode('grid')}
+                style={{
+                  ...ICON_ONLY_BTN,
+                  background: viewMode === 'grid' ? '#3b82f6' : '#e5e7eb',
+                  color: viewMode === 'grid' ? 'white' : '#374151',
+                  borderRadius: '4px 0 0 4px',
+                }}
+                title={t('poolView.table_view')}
+                aria-label={t('poolView.table_view')}
+              >
+                📊
+              </button>
+              <button
+                onClick={() => setViewMode('matches')}
+                style={{
+                  ...ICON_ONLY_BTN,
+                  background: viewMode === 'matches' ? '#3b82f6' : '#e5e7eb',
+                  color: viewMode === 'matches' ? 'white' : '#374151',
+                  borderRadius: '0 4px 4px 0',
+                }}
+                title="Vue matches"
+                aria-label="Vue matches"
+              >
+                ⚔️
+              </button>
             </div>
           </div>
         </div>
+        <div className="card-body" style={{ overflowX: 'auto' }}>
+          {viewMode === 'grid' ? (
+            <>
+              {renderGridView()}
+              {renderNextMatch()}
+            </>
+          ) : (
+            <PoolMatchList
+              orderedMatches={orderedMatches}
+              isLaserSabre={isLaserSabre}
+              isLocked={isLocked}
+              openScoreModal={openScoreModal}
+              onMatchReset={onMatchReset ? handleMatchDelete : undefined}
+              onShowMatchAudit={setAuditMatchId}
+              defaultArena={defaultArena}
+              arenaCount={arenaCount}
+              arenas={arenas}
+              isRemoteActive={isRemoteActive}
+              matchArenaOverrides={matchArenaOverrides}
+              onMatchArenaChange={handleMatchArenaChange}
+            />
+          )}
+          {renderScoreModal()}
+          {renderSpecialStatusModal()}
+        </div>
       </div>
-    )}
+      {showAddFencerModal && competitionId && (
+        <AddFencerToPoolModal
+          pool={pool}
+          competitionId={competitionId}
+          maxScore={maxScore}
+          onConfirm={updatedPool => {
+            setShowAddFencerModal(false);
+            onFencerAdded?.(updatedPool);
+          }}
+          onClose={() => setShowAddFencerModal(false)}
+        />
+      )}
+      {auditMatchId && (
+        <React.Suspense fallback={null}>
+          <MatchAuditLog matchId={auditMatchId} onClose={() => setAuditMatchId(null)} />
+        </React.Suspense>
+      )}
+      {showRefereeModal && (
+        <div className="modal-overlay" onClick={() => setShowRefereeModal(false)}>
+          <div
+            ref={refereeModalRef}
+            className="modal"
+            onClick={e => e.stopPropagation()}
+            style={{ maxWidth: '400px' }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="referee-modal-title"
+          >
+            <div className="modal-header">
+              <h3 className="modal-title" id="referee-modal-title">
+                {t('referee.assign')}
+              </h3>
+              <button className="btn-close" onClick={() => setShowRefereeModal(false)}>
+                &times;
+              </button>
+            </div>
+            <div className="modal-body" style={{ padding: '1.5rem' }}>
+              <p style={{ marginBottom: '1rem', color: '#6b7280', fontSize: '0.875rem' }}>
+                Sélectionnez l'arbitre pour la poule {pool.number} :
+              </p>
+              <div style={COL_GAP}>
+                <button
+                  className={`btn ${!assignedReferee ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => handleAssignReferee(null)}
+                  style={REF_BTN}
+                >
+                  {t('referee.none')}
+                </button>
+                {isLoadingReferees && <p style={REF_EMPTY}>{t('referee.loading')}</p>}
+                {!isLoadingReferees && competitionReferees.length === 0 && (
+                  <p style={REF_EMPTY}>{t('referee.none_registered')}</p>
+                )}
+                {!isLoadingReferees &&
+                  competitionReferees.map(ref => (
+                    <button
+                      key={ref.id}
+                      className={`btn ${assignedReferee?.id === ref.id ? 'btn-primary' : 'btn-secondary'}`}
+                      onClick={() => handleAssignReferee(ref)}
+                      style={{ ...REF_BTN, textAlign: 'left' }}
+                    >
+                      🧑‍⚖️ {ref.lastName} {ref.firstName}
+                      {ref.club && (
+                        <span style={{ marginLeft: '0.5rem', opacity: 0.6, fontSize: '0.8rem' }}>
+                          ({ref.club})
+                        </span>
+                      )}
+                    </button>
+                  ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
