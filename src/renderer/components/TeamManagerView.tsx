@@ -222,7 +222,7 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
   // ── Générer poule (round-robin) ───────────────────────────────────────────────
   const handleGeneratePool = async () => {
     if (teams.length < 2) return;
-    if (matches.length > 0 && !(await confirm('Des matchs existent déjà. Supprimer et régénérer ?')))
+    if (matches.length > 0 && !(await confirm(t('messages.regenerate_team_pools_confirm'))))
       return;
 
     for (let i = 0; i < teams.length; i++) {
@@ -700,13 +700,13 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
                       </th>
                       <th
                         className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase text-center"
-                        title="Relais individuels gagnés/perdus"
+                        title={t('messages.individual_relays_column_tooltip')}
                       >
                         Relais G
                       </th>
                       <th
                         className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase text-center"
-                        title="Relais individuels gagnés/perdus"
+                        title={t('messages.individual_relays_column_tooltip')}
                       >
                         Relais P
                       </th>

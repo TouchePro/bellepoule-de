@@ -338,7 +338,7 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
                             value={a.arena}
                             onChange={e => applyAssign(client, a.role, Number(e.target.value))}
                             style={{ padding: '0.2rem 0.3rem', fontSize: '0.75rem', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '5px', color: 'inherit' }}
-                            title="Arène"
+                            title={t('xiaomi.arena')}
                           >
                             {Array.from({ length: arenaCount }, (_, i) => (
                               <option key={i + 1} value={i + 1}>{t('xiaomi.arena')} {i + 1}</option>

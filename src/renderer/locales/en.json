@@ -353,7 +353,15 @@
     "autofill_scores_confirm": "Automatically fill in all scores for unfinished matches?\n\nScores will be randomly generated for testing purposes.",
     "scores_equal_forbidden_de": "Scores cannot be equal in direct elimination",
     "export_xml_success": "XML export successful!",
-    "results_copied_clipboard": "Results copied to clipboard!"
+    "results_copied_clipboard": "Results copied to clipboard!",
+    "add_fencer_to_pool_error": "Error adding fencer: {{error}}",
+    "qr_code_copied": "URL copied to clipboard!",
+    "score_audit_log_load_error": "Error loading history",
+    "ip_conflict_alert": "⚠️ IP conflict — Pool {{pool}} Match {{match}}: {{referee}} ({{ip}}) attempts to modify a score entered by {{originalReferee}} ({{originalIp}})",
+    "unknown": "unknown",
+    "no_pools_available": "No pools available for this competition.",
+    "regenerate_team_pools_confirm": "Matches already exist. Delete and regenerate?",
+    "individual_relays_column_tooltip": "Individual Relays Won/Lost"
   },
   "time": {
     "minutes": "minutes",

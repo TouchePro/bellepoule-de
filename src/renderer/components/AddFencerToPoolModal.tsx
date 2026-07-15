@@ -82,7 +82,9 @@ const AddFencerToPoolModalComponent: React.FC<AddFencerToPoolModalProps> = ({
       onConfirm(updatedPool);
     } catch (err) {
       showToast(
-        "Erreur lors de l'ajout : " + (err instanceof Error ? err.message : 'Erreur inconnue'),
+        t('messages.add_fencer_to_pool_error', {
+          error: err instanceof Error ? err.message : t('messages.unknown_error'),
+        }),
         'error'
       );
     } finally {

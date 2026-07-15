@@ -103,7 +103,7 @@ export const SeasonRankingView: React.FC<SeasonRankingViewProps> = ({
   const handleAddCompetition = async (comp: Competition) => {
     const pools = availablePoolsByComp[comp.id];
     if (!pools || pools.length === 0) {
-      alert('Aucune poule disponible pour cette compétition.');
+      alert(t('messages.no_pools_available'));
       return;
     }
     setAdding(true);

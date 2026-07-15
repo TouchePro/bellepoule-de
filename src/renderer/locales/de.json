@@ -271,7 +271,15 @@
     "autofill_scores_confirm": "Alle Ergebnisse der unbeendeten Matches automatisch ausfüllen?\n\nDie Ergebnisse werden zufällig für Testzwecke generiert.",
     "scores_equal_forbidden_de": "Die Ergebnisse dürfen in der Direktausscheidung nicht gleich sein",
     "export_xml_success": "XML-Export erfolgreich!",
-    "results_copied_clipboard": "Ergebnisse in die Zwischenablage kopiert!"
+    "results_copied_clipboard": "Ergebnisse in die Zwischenablage kopiert!",
+    "add_fencer_to_pool_error": "Fehler beim Hinzufügen: {{error}}",
+    "qr_code_copied": "URL in die Zwischenablage kopiert!",
+    "score_audit_log_load_error": "Fehler beim Laden des Verlaufs",
+    "ip_conflict_alert": "⚠️ IP-Konflikt — Gruppe {{pool}} Match {{match}}: {{referee}} ({{ip}}) versucht, ein Ergebnis zu ändern, das von {{originalReferee}} ({{originalIp}}) erfasst wurde",
+    "unknown": "unbekannt",
+    "no_pools_available": "Für diesen Wettbewerb sind keine Gruppen verfügbar.",
+    "regenerate_team_pools_confirm": "Es existieren bereits Matches. Löschen und neu generieren?",
+    "individual_relays_column_tooltip": "Individuelle Relais-Siege/Niederlagen"
   },
   "pdfTemplate": {
     "colors": {

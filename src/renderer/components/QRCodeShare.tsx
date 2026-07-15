@@ -77,7 +77,7 @@ const QRCodeShare_: React.FC<QRCodeShareProps> = ({ competition, onClose, mode: 
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(shareUrl).then(() => {
-      alert('URL copiée dans le presse-papier !');
+      alert(t('messages.qr_code_copied'));
     });
   };
 

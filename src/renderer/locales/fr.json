@@ -288,7 +288,15 @@
     "autofill_scores_confirm": "Remplir automatiquement tous les scores des matchs non terminés ?\n\nLes scores seront générés aléatoirement pour les tests.",
     "scores_equal_forbidden_de": "Les scores ne peuvent pas être égaux en élimination directe",
     "export_xml_success": "Export XML réussi !",
-    "results_copied_clipboard": "Résultats copiés dans le presse-papier !"
+    "results_copied_clipboard": "Résultats copiés dans le presse-papier !",
+    "add_fencer_to_pool_error": "Erreur lors de l'ajout : {{error}}",
+    "qr_code_copied": "URL copiée dans le presse-papier !",
+    "score_audit_log_load_error": "Erreur chargement historique",
+    "ip_conflict_alert": "⚠️ Conflit IP — Poule {{pool}} Match {{match}} : {{referee}} ({{ip}}) tente de modifier un score saisi par {{originalReferee}} ({{originalIp}})",
+    "unknown": "inconnu",
+    "no_pools_available": "Aucune poule disponible pour cette compétition.",
+    "regenerate_team_pools_confirm": "Des matchs existent déjà. Supprimer et régénérer ?",
+    "individual_relays_column_tooltip": "Relais individuels gagnés/perdus"
   },
   "time": {
     "minutes": "minutes",

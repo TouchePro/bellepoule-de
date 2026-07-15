@@ -132,10 +132,10 @@ const MatchAuditLogComponent: React.FC<MatchAuditLogProps> = ({
       });
       if (result?.filePath) {
         await window.electronAPI.file.writeContent(result.filePath, json);
-        showToast('Export JSON réussi', 'success');
+        showToast(t('messages.export_success', { format: 'JSON' }), 'success');
       }
     } catch {
-      showToast("Erreur lors de l'export", 'error');
+      showToast(t('messages.export_failed', { format: 'JSON' }), 'error');
     }
   }, [entries, matchTitle, matchId, competitionId, competitionName]);
 
