@@ -339,6 +339,7 @@
     "pools_round": "Gruppen ({{current}}/{{total}})",
     "pools_skip": "Gruppen (übersprungen)",
     "pools_skip_tooltip": "Gruppenphase übersprungen (0 Gruppen)",
+    "quest": "Quest-Runde",
     "ranking": "Rangliste",
     "referees": "Schiedsrichter",
     "remote": "Ferne Eingabe",
@@ -689,7 +690,16 @@
     "export_pdf": "📄 Alle Pools als PDF exportieren",
     "loading_tableau": "Tableau wird geladen…",
     "readonly": "🔒 Tableau im Nur-Lese-Modus — Endergebnisse erzeugt.",
-    "edit_tableau": "✏️ Tableau bearbeiten"
+    "edit_tableau": "✏️ Tableau bearbeiten",
+    "grid_view": "🗂️ Raster-Ansicht",
+    "webhook_match_finished_title": "✅ Match beendet — {{title}}",
+    "webhook_score_body": "Punktzahl: {{scoreA}} – {{scoreB}}",
+    "webhook_score_body_tableau": "Punktzahl: {{scoreA}} – {{scoreB}} (Tableau)",
+    "import_xml_dialog_title": "BellePoule-XML-Datei importieren",
+    "import_ffe_list_dialog_title": "FFE-Liste importieren (.fff, .csv, .txt)",
+    "import_ffe_list_filter": "FFE-/TXT-Dateien",
+    "import_ffe_ranking_dialog_title": "FFE-Rangliste importieren",
+    "import_ranking_filter": "Rangliste-Datei"
   },
   "conflict": {
     "none": "Kein Konflikt zu lösen."

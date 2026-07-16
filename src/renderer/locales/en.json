@@ -144,7 +144,8 @@
     "results": "Results",
     "remote": "Remote Entry",
     "logs": "History",
-    "referees": "Referees"
+    "referees": "Referees",
+    "quest": "Quest round"
   },
   "pools": {
     "generate": "Generate Pools",
@@ -689,7 +690,16 @@
     "export_pdf": "📄 Export all pools as PDF",
     "loading_tableau": "Loading tableau…",
     "readonly": "🔒 Tableau in read-only — final results generated.",
-    "edit_tableau": "✏️ Edit tableau"
+    "edit_tableau": "✏️ Edit tableau",
+    "grid_view": "🗂️ Grid view",
+    "webhook_match_finished_title": "✅ Match finished — {{title}}",
+    "webhook_score_body": "Score: {{scoreA}} – {{scoreB}}",
+    "webhook_score_body_tableau": "Score: {{scoreA}} – {{scoreB}} (Tableau)",
+    "import_xml_dialog_title": "Import a BellePoule XML file",
+    "import_ffe_list_dialog_title": "Import an FFE list (.fff, .csv, .txt)",
+    "import_ffe_list_filter": "FFE/TXT files",
+    "import_ffe_ranking_dialog_title": "Import an FFE ranking",
+    "import_ranking_filter": "Ranking file"
   },
   "conflict": {
     "none": "No conflict to resolve."

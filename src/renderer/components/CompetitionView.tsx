@@ -572,8 +572,10 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       );
       applyRemoteScore(matchId, scoreA, scoreB, true, winnerOverride);
       fireWebhookNotif(
-        `✅ Match terminé — ${competition.title}`,
-        `Score : ${scoreA} – ${scoreB}${isTableau ? ' (tableau)' : ''}`
+        t('competitionView.webhook_match_finished_title', { title: competition.title }),
+        isTableau
+          ? t('competitionView.webhook_score_body_tableau', { scoreA, scoreB })
+          : t('competitionView.webhook_score_body', { scoreA, scoreB })
       );
     };
 
@@ -770,22 +772,22 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const handleOpenImportDialog = async (type: 'xml' | 'fff' | 'ranking' = 'fff') => {
     const configs = {
       xml: {
-        title: 'Importer un fichier XML BellePoule',
+        title: t('competitionView.import_xml_dialog_title'),
         filters: [{ name: 'XML BellePoule', extensions: ['xml', 'cotcot'] }],
       },
       fff: {
-        title: 'Importer une liste FFE (.fff, .csv, .txt)',
-        filters: [{ name: 'Fichiers FFE / TXT', extensions: ['fff', 'csv', 'txt'] }],
+        title: t('competitionView.import_ffe_list_dialog_title'),
+        filters: [{ name: t('competitionView.import_ffe_list_filter'), extensions: ['fff', 'csv', 'txt'] }],
       },
       ranking: {
-        title: 'Importer un classement FFE',
-        filters: [{ name: 'Fichier classement', extensions: ['fff', 'csv', 'txt', 'xlsx'] }],
+        title: t('competitionView.import_ffe_ranking_dialog_title'),
+        filters: [{ name: t('competitionView.import_ranking_filter'), extensions: ['fff', 'csv', 'txt', 'xlsx'] }],
       },
     };
     const cfg = configs[type];
     const result = await window.electronAPI.dialog.openFile({
       title: cfg.title,
-      filters: [...cfg.filters, { name: 'Tous les fichiers', extensions: ['*'] }],
+      filters: [...cfg.filters, { name: t('fencerList.filter_all_files'), extensions: ['*'] }],
       properties: ['openFile'],
     });
 
@@ -1085,7 +1087,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       ? [
           {
             id: 'quest',
-            label: 'Tour Quest',
+            label: t('phases.quest'),
             icon: '⚔️',
             disabled: false,
             title: undefined as string | undefined,
@@ -1140,7 +1142,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       ? [
           {
             id: 'referees',
-            label: t('phases.referees') || 'Arbitres',
+            label: t('phases.referees'),
             icon: '🧑‍⚖️',
             disabled: false,
             title: undefined as string | undefined,
@@ -1252,8 +1254,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             const nameA = m?.fencerA ? `${m.fencerA.lastName}` : 'A';
             const nameB = m?.fencerB ? `${m.fencerB.lastName}` : 'B';
             fireWebhookNotif(
-              `✅ Match terminé — ${competition.title}`,
-              `${nameA} ${scoreA} – ${scoreB} ${nameB} (Poule ${pool.number})`
+              t('competitionView.webhook_match_finished_title', { title: competition.title }),
+              `${nameA} ${scoreA} – ${scoreB} ${nameB} (${t('pools.pool_number')} ${pool.number})`
             );
           }
           if (isRemoteActive && competition?.id) {
@@ -1469,7 +1471,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                       title={t('competitionView.show_grid_attr')}
                       style={{ borderRadius: '4px 0 0 4px' }}
                     >
-                      🗂️ Vue globale
+                      {t('competitionView.grid_view')}
                     </button>
                     <button
                       className={`btn btn-sm ${poolsViewMode === 'single' ? 'btn-primary' : 'btn-secondary'}`}
@@ -1522,7 +1524,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                       >
                         {pools.map((pool, i) => (
                           <option key={pool.id} value={i}>
-                            Poule {pool.number}
+                            {t('pools.pool_number')} {pool.number}
                           </option>
                         ))}
                       </select>
@@ -1640,7 +1642,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                     fontSize: '0.875rem',
                   }}
                 >
-                  {g === Gender.MALE ? '♂ Hommes' : g === Gender.FEMALE ? '♀ Femmes' : g}
+                  {g === Gender.MALE ? t('poolRanking.gender_male') : g === Gender.FEMALE ? t('poolRanking.gender_female') : g}
                 </button>
               ))}
             </div>
@@ -1871,10 +1873,10 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             </h3>
             <div style={CV_STYLES.thirdPlaceBtnRow}>
               <button className="btn btn-secondary" onClick={() => handleThirdPlaceDecision(false)}>
-                Non
+                {t('actions.no')}
               </button>
               <button className="btn btn-primary" onClick={() => handleThirdPlaceDecision(true)}>
-                Oui
+                {t('actions.yes')}
               </button>
             </div>
           </div>
