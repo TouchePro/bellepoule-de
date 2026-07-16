@@ -894,7 +894,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     const sigsArray = await window.electronAPI.db.getPoolSignatures(pool.id);
     const signatures = Object.fromEntries(sigsArray.map(s => [s.fencerId, s.signatureData]));
     return {
-      title: `${t('ui.poule')} ${pool.number} - ${pool.fencers.length} tireurs`,
+      title: `${t('ui.poule')} ${pool.number} - ${t('poolView.fencers_count_suffix', { count: pool.fencers.length })}`,
       includeFinishedMatches: true,
       includePendingMatches: true,
       includePoolStats: true,
@@ -965,9 +965,8 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   // Fonction pour remplir automatiquement tous les scores de la poule (pour les tests)
   const handleAutoFillScores = async () => {
     const confirmed = await confirm({
-      message:
-        'Remplir automatiquement tous les scores des matchs non terminés ?\n\nLes scores seront générés aléatoirement pour les tests.',
-      confirmLabel: 'Remplir',
+      message: t('messages.autofill_scores_confirm'),
+      confirmLabel: t('poolView.fill'),
       cancelLabel: t('actions.cancel'),
     });
 
@@ -1192,21 +1191,21 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                 onClick={() => handleSpecialStatus('abandon')}
                 style={SPECIAL_BTN}
               >
-                🚴 Abandon
+                🚴 {t('fencer.abandon')}
               </button>
               <button
                 className="btn btn-warning"
                 onClick={() => handleSpecialStatus('forfait')}
                 style={SPECIAL_BTN}
               >
-                📋 Forfait
+                📋 {t('fencer.forfait')}
               </button>
               <button
                 className="btn btn-danger"
                 onClick={() => handleSpecialStatus('exclusion')}
                 style={SPECIAL_BTN}
               >
-                🚫 Exclusion
+                🚫 {t('poolView.exclusion')}
               </button>
               {onMatchCancel && editingMatch !== null && (
                 <button
@@ -1256,18 +1255,14 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     const fencerLeft = isMatchInverted ? match.fencerB : match.fencerA;
     const fencerRight = isMatchInverted ? match.fencerA : match.fencerB;
 
-    const statusLabel =
+    const statusTitleKey =
       pendingSpecialStatus === 'abandon'
-        ? 'abandonné'
+        ? 'poolView.who_abandoned_title'
         : pendingSpecialStatus === 'forfait'
-          ? 'forfait'
-          : 'exclu';
-    const statusHint =
-      pendingSpecialStatus === 'abandon'
-        ? 'Il perd ce match ; son adversaire est déclaré vainqueur.'
-        : pendingSpecialStatus === 'forfait'
-          ? 'Il perd ce match ; son adversaire est déclaré vainqueur.'
-          : 'Il est exclu ; son adversaire est déclaré vainqueur de ce match.';
+          ? 'poolView.who_forfeited_title'
+          : 'poolView.who_excluded_title';
+    const statusHintKey =
+      pendingSpecialStatus === 'exclusion' ? 'poolView.exclusion_hint' : 'poolView.loss_hint';
 
     const fencerName = (f?: typeof fencerLeft) =>
       f ? `${f.lastName} ${f.firstName ?? ''}`.trim() : '—';
@@ -1280,10 +1275,10 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
       >
         <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '420px' }}>
           <div className="modal-header">
-            <h2 className="modal-title">Quel est le combattant {statusLabel} ?</h2>
+            <h2 className="modal-title">{t(statusTitleKey)}</h2>
           </div>
           <div className="modal-body">
-            <p style={MUTED_HINT}>{statusHint}</p>
+            <p style={MUTED_HINT}>{t(statusHintKey)}</p>
             <div style={COL_GAP}>
               <button
                 type="button"
@@ -1364,7 +1359,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
             >
               ▶
             </span>
-            Journal des matchs terminés ({orderedMatches.finished.length})
+            {t('poolView.finished_log', { count: orderedMatches.finished.length })}
           </button>
           {showFinishedLog && (
             <div style={LOG_WRAP}>
@@ -1462,7 +1457,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               {t('ui.poule')} {pool.number}
             </span>
             <span className={`badge ${pool.isComplete ? 'badge-success' : 'badge-warning'}`}>
-              {pool.isComplete ? 'Terminée' : `${finishedCount}/${totalMatches}`}
+              {pool.isComplete ? t('status.finished') : `${finishedCount}/${totalMatches}`}
             </span>
             {!pool.isComplete && totalMatches > 0 && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
@@ -1508,8 +1503,8 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                 <span
                   title={
                     allSigned
-                      ? 'Tous les combattants ont signé — PDF disponible'
-                      : `${signed}/${total} signature(s)`
+                      ? t('poolView.all_signed_pdf_available')
+                      : t('poolView.signatures_count', { signed, total })
                   }
                   style={{
                     ...BADGE_PILL,
@@ -1526,7 +1521,10 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
               onClick={openRefereeModal}
               title={
                 assignedReferee
-                  ? `Arbitre : ${assignedReferee.lastName} ${assignedReferee.firstName}`
+                  ? t('poolView.referee_title', {
+                      lastName: assignedReferee.lastName,
+                      firstName: assignedReferee.firstName,
+                    })
                   : t('referee.assign')
               }
               style={{
@@ -1537,7 +1535,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                 border: `1px solid ${assignedReferee ? '#93c5fd' : '#e5e7eb'}`,
               }}
             >
-              🧑‍⚖️ {assignedReferee ? `${assignedReferee.lastName}` : '+Arbitre'}
+              🧑‍⚖️ {assignedReferee ? `${assignedReferee.lastName}` : t('poolView.add_referee')}
             </button>
           </div>
           <div style={TOOLBAR_GROUP}>
@@ -1612,8 +1610,8 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                   }
                 }}
                 style={{ ...ICON_ONLY_BTN, background: '#6366f1', color: 'white' }}
-                title={`Page signatures — arène ${defaultArena}`}
-                aria-label="Page signatures"
+                title={t('poolView.signature_page_title', { arena: defaultArena })}
+                aria-label={t('poolView.signature_page')}
               >
                 ✍️
               </button>
@@ -1685,8 +1683,8 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
                   color: viewMode === 'matches' ? 'white' : '#374151',
                   borderRadius: '0 4px 4px 0',
                 }}
-                title="Vue matches"
-                aria-label="Vue matches"
+                title={t('poolView.matches_view')}
+                aria-label={t('poolView.matches_view')}
               >
                 ⚔️
               </button>
@@ -1757,7 +1755,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
             </div>
             <div className="modal-body" style={{ padding: '1.5rem' }}>
               <p style={{ marginBottom: '1rem', color: '#6b7280', fontSize: '0.875rem' }}>
-                Sélectionnez l'arbitre pour la poule {pool.number} :
+                {t('poolView.select_referee_for_pool', { number: pool.number })}
               </p>
               <div style={COL_GAP}>
                 <button
