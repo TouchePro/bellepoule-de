@@ -24,9 +24,9 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
   if (!isOpen) return null;
 
   const typeLabel: Record<SyncConflict['type'], string> = {
-    competition: 'Compétition',
-    fencer: 'Tireur',
-    match: 'Match',
+    competition: t('conflict.type_competition'),
+    fencer: t('conflict.type_fencer'),
+    match: t('conflict.type_match'),
   };
 
   return (
@@ -34,7 +34,7 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-800">
-            Conflits de synchronisation ({conflicts.length})
+            {t('conflict.title', { count: conflicts.length })}
           </h2>
           <button
             onClick={onClose}
@@ -61,13 +61,13 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
 
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">Local</p>
+                  <p className="text-xs font-medium text-gray-500 mb-1">{t('conflict.local')}</p>
                   <pre className="text-xs bg-gray-50 border border-gray-200 rounded p-2 overflow-auto max-h-32 whitespace-pre-wrap break-all">
                     {JSON.stringify(conflict.localData, null, 2)}
                   </pre>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">Distant</p>
+                  <p className="text-xs font-medium text-gray-500 mb-1">{t('conflict.remote')}</p>
                   <pre className="text-xs bg-gray-50 border border-gray-200 rounded p-2 overflow-auto max-h-32 whitespace-pre-wrap break-all">
                     {JSON.stringify(conflict.remoteData, null, 2)}
                   </pre>
@@ -79,13 +79,13 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
                   onClick={() => onResolve(conflict.id, 'local')}
                   className="flex-1 px-3 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition-colors"
                 >
-                  Garder local
+                  {t('conflict.keep_local')}
                 </button>
                 <button
                   onClick={() => onResolve(conflict.id, 'remote')}
                   className="flex-1 px-3 py-2 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300 transition-colors"
                 >
-                  Garder distant
+                  {t('conflict.keep_remote')}
                 </button>
               </div>
             </div>

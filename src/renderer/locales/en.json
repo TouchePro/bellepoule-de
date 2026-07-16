@@ -736,7 +736,15 @@
     "import_ranking_filter": "Ranking file"
   },
   "conflict": {
-    "none": "No conflict to resolve."
+    "none": "No conflict to resolve.",
+    "title": "Sync Conflicts ({{count}})",
+    "type_competition": "Competition",
+    "type_fencer": "Fencer",
+    "type_match": "Match",
+    "local": "Local",
+    "remote": "Remote",
+    "keep_local": "Keep local",
+    "keep_remote": "Keep remote"
   },
   "editFencer": {
     "title": "Edit fencer",
@@ -744,7 +752,9 @@
     "first_name": "First name *",
     "not_ranked": "Not ranked",
     "ranked_present": "Ranked (present)",
-    "club_example": "e.g. CE Melun"
+    "club_example": "e.g. CE Melun",
+    "status": "Status",
+    "region_example": "e.g. IDF"
   },
   "errors": {
     "load_title": "An error occurred while loading the competition.",
@@ -1672,5 +1682,16 @@
     "club": "Club",
     "nation": "Nation",
     "region": "Region"
+  },
+  "dtCallNotification": {
+    "title": "📣 DT call — arena {{arena}}",
+    "match_number": "Match #{{number}}",
+    "acknowledging": "⏳ Processing...",
+    "resolve_button": "✅ DT on the way — Resolved"
+  },
+  "dashboard": {
+    "vs_last_month": "vs last month",
+    "current_user_tag": "(You)",
+    "abbr_points": "pts"
   }
 }

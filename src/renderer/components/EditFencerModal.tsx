@@ -96,20 +96,20 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
-              <label className="form-label">Sexe</label>
+              <label className="form-label">{t('fencer.gender')}</label>
               <select
                 className="form-input form-select"
                 value={gender}
                 onChange={e => setGender(e.target.value as Gender)}
               >
-                <option value={Gender.MALE}>Homme</option>
-                <option value={Gender.FEMALE}>Femme</option>
-                <option value={Gender.MIXED}>Mixte</option>
+                <option value={Gender.MALE}>{t('genders.male')}</option>
+                <option value={Gender.FEMALE}>{t('genders.female')}</option>
+                <option value={Gender.MIXED}>{t('genders.mixed')}</option>
               </select>
             </div>
 
             <div className="form-group">
-              <label className="form-label">Statut</label>
+              <label className="form-label">{t('editFencer.status')}</label>
               <select
                 className="form-input form-select"
                 value={status}
@@ -117,15 +117,15 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
               >
                 <option value={FencerStatus.NOT_CHECKED_IN}>{t('editFencer.not_ranked')}</option>
                 <option value={FencerStatus.CHECKED_IN}>{t('editFencer.ranked_present')}</option>
-                <option value={FencerStatus.FORFAIT}>Forfait</option>
-                <option value={FencerStatus.ABANDONED}>Abandon</option>
-                <option value={FencerStatus.EXCLUDED}>Exclu</option>
+                <option value={FencerStatus.FORFAIT}>{t('status.forfeit')}</option>
+                <option value={FencerStatus.ABANDONED}>{t('status.abandoned')}</option>
+                <option value={FencerStatus.EXCLUDED}>{t('status.excluded')}</option>
               </select>
             </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Club</label>
+            <label className="form-label">{t('fencer.club')}</label>
             <input
               type="text"
               className="form-input"
@@ -143,7 +143,7 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
                 className="form-input"
                 value={region}
                 onChange={e => setRegion(e.target.value)}
-                placeholder="Ex: IDF"
+                placeholder={t('editFencer.region_example')}
               />
             </div>
 
@@ -162,7 +162,7 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
-              <label className="form-label">N° Licence</label>
+              <label className="form-label">{t('fencer.license')}</label>
               <input
                 type="text"
                 className="form-input"
@@ -186,10 +186,10 @@ const EditFencerModal: React.FC<EditFencerModalProps> = ({ fencer, onSave, onClo
 
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary" onClick={onClose}>
-              Annuler
+              {t('actions.cancel')}
             </button>
             <button type="submit" className="btn btn-primary">
-              Enregistrer
+              {t('actions.save')}
             </button>
           </div>
         </form>

@@ -736,7 +736,15 @@
     "import_ranking_filter": "Rangliste-Datei"
   },
   "conflict": {
-    "none": "Kein Konflikt zu lösen."
+    "none": "Kein Konflikt zu lösen.",
+    "title": "Synchronisationskonflikte ({{count}})",
+    "type_competition": "Wettkampf",
+    "type_fencer": "Fechter",
+    "type_match": "Match",
+    "local": "Lokal",
+    "remote": "Fern",
+    "keep_local": "Lokal behalten",
+    "keep_remote": "Fern behalten"
   },
   "editFencer": {
     "title": "Fechter bearbeiten",
@@ -744,7 +752,9 @@
     "first_name": "Vorname *",
     "not_ranked": "Nicht punktiert",
     "ranked_present": "Punktiert (anwesend)",
-    "club_example": "Bsp: CE Melun"
+    "club_example": "Bsp: CE Melun",
+    "status": "Status",
+    "region_example": "Bsp: IDF"
   },
   "errors": {
     "load_title": "Beim Laden des Wettbewerbs ist ein Fehler aufgetreten.",
@@ -1672,5 +1682,16 @@
     "club": "Verein",
     "nation": "Nation",
     "region": "Region"
+  },
+  "dtCallNotification": {
+    "title": "📣 DT-Ruf — Arena {{arena}}",
+    "match_number": "Match Nr. {{number}}",
+    "acknowledging": "⏳ Wird bearbeitet...",
+    "resolve_button": "✅ DT unterwegs — Erledigt"
+  },
+  "dashboard": {
+    "vs_last_month": "vs. letzten Monat",
+    "current_user_tag": "(Sie)",
+    "abbr_points": "Pkt."
   }
 }

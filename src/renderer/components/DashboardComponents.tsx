@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from '../hooks/useTranslation';
 
 // Modern Stat Card with icon and trend
 interface StatCardProps {
@@ -16,6 +17,7 @@ interface StatCardProps {
 }
 
 const ModernStatCard_: React.FC<StatCardProps> = ({ title, value, icon, trend, color }) => {
+  const { t } = useTranslation();
   const colors = {
     blue: { bg: '#eff6ff', icon: '#3b82f6', text: '#1e40af' },
     green: { bg: '#f0fdf4', icon: '#10b981', text: '#065f46' },
@@ -69,7 +71,9 @@ const ModernStatCard_: React.FC<StatCardProps> = ({ title, value, icon, trend, c
             >
               {trend.isPositive ? '↑' : '↓'} {Math.abs(trend.value)}%
             </span>
-            <span style={{ color: '#9ca3af', fontSize: '12px' }}>vs dernier mois</span>
+            <span style={{ color: '#9ca3af', fontSize: '12px' }}>
+              {t('dashboard.vs_last_month')}
+            </span>
           </div>
         )}
       </div>
@@ -251,6 +255,7 @@ const LeaderboardItem_: React.FC<{
   avatar?: string;
   isCurrentUser?: boolean;
 }> = ({ rank, name, score, avatar, isCurrentUser }) => {
+  const { t } = useTranslation();
   const getRankColor = () => {
     switch (rank) {
       case 1:
@@ -330,14 +335,16 @@ const LeaderboardItem_: React.FC<{
           <span
             style={{ marginLeft: '8px', fontSize: '12px', color: '#3b82f6', fontWeight: '500' }}
           >
-            (Vous)
+            {t('dashboard.current_user_tag')}
           </span>
         )}
       </div>
 
       <div style={{ textAlign: 'right' }}>
         <span style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827' }}>{score}</span>
-        <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: '4px' }}>pts</span>
+        <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: '4px' }}>
+          {t('dashboard.abbr_points')}
+        </span>
       </div>
     </div>
   );

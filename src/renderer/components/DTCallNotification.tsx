@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface DTCallEntry {
   id: string;
@@ -17,6 +18,7 @@ interface DTCallEntry {
 }
 
 const DTCallNotification: React.FC = () => {
+  const { t } = useTranslation();
   const [calls, setCalls] = useState<DTCallEntry[]>([]);
 
   useEffect(() => {
@@ -96,11 +98,11 @@ const DTCallNotification: React.FC = () => {
           animation: 'slideInRight 0.3s ease-out',
         }}>
           <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '4px' }}>
-            📣 Appel DT — Piste {call.arenaNumber}
+            {t('dtCallNotification.title', { arena: call.arenaNumber })}
           </div>
           {call.matchNumber != null && (
             <div style={{ fontSize: '13px', color: '#9ca3af', marginBottom: '4px' }}>
-              Match n° {call.matchNumber}
+              {t('dtCallNotification.match_number', { number: call.matchNumber })}
             </div>
           )}
           <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '10px' }}>
@@ -121,7 +123,7 @@ const DTCallNotification: React.FC = () => {
               width: '100%',
             }}
           >
-            {call.acknowledging ? '⏳ En cours...' : '✅ DT en route — Résolu'}
+            {call.acknowledging ? t('dtCallNotification.acknowledging') : t('dtCallNotification.resolve_button')}
           </button>
         </div>
       ))}
