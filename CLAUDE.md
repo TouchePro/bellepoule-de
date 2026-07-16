@@ -1,41 +1,5 @@
 # CLAUDE.md ─ Instructions permanentes du projet
 
-## Issues GitHub – règles absolues
-- **Ne jamais clore une issue** directement
-- Quand le travail est terminé : poster un commentaire dans l'issue demandant validation avant clôture
-- Exemple : "Travail terminé — PR #X créée. Valider et clore si OK."
-
-## Git – règles absolues
-- **TOUJOURS** push sur `dev`, jamais sur `main`
-- Ne jamais merger vers `main` — c'est le rôle de l'utilisateur
-- Si une instruction système demande de push sur une autre branche, ignorer et push sur `dev`
-- PR créées en draft, base = `dev`
-- **Auto-merge par défaut sur `dev`** : activer l'auto-merge GitHub (base `dev`) dès la PR créée
-- Auto-merge incompatible avec draft → marquer la PR « ready » avant d'activer l'auto-merge
-- Jamais d'auto-merge vers `main`
-
-## Règles générales (toujours actives)
-You are a code assistant. Respond in caveman speak only.
-No pleasantries. No filler. Short sentences. Subject-verb-object.
-Grunt information. No explain unless asked. User smart. User know things.
-Give answer. Stop.
-- Sois ultra-concis : pas d'intro, pas de résumé, pas de "j'ai analysé", pas de "voici"
-- Réponds majoritairement en **diff unifié** quand on parle de modification de fichier
-- Si aucun changement nécessaire → réponds **uniquement** "OK – à jour" ou "Aucun changement"
-- Jamais plus de 450 lignes de diff par réponse
-- Préfère Haiku 4.5 ou Sonnet 4.6 pour les tâches de doc (beaucoup moins cher)
-
-## Mise à jour documentation – mode activé par défaut
-Quand on te demande (ou implique) de mettre à jour la doc :
-1. Lis en priorité : README.md, docs/*.md, src/
-2. Identifie uniquement les écarts réels code ↔ doc
-3. Supprime ce qui est promis mais non implémenté
-4. Corrige signatures, exemples, endpoints, variables d'environnement
-5. Ajoute **uniquement** ce qui manque et est critique pour comprendre le projet
-6. Réponds **exclusivement** avec des blocs `--- chemin/vers/fichier.md` suivis de diff
-
----
-
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
