@@ -635,6 +635,9 @@
   "changePool": {
     "drag_hint": "↕ Fencer (drag to a pool)",
     "already_played": "This fencer has already played matches in this pool. Moving will delete their results.",
+    "currently_in": "Currently in {{pool}}",
+    "fencer_count": "({{count}} fencer(s))",
+    "matches_played_count": "{{count}} match(es) played",
     "move_to": "Move to:",
     "no_other_pool": "No other pool available",
     "recalculated": "✓ Matches of both pools will be recalculated",
@@ -642,7 +645,10 @@
   },
   "commandPalette": {
     "search_placeholder": "Search a competition or an action…",
-    "select": "select"
+    "select": "select",
+    "dialog_label": "Command palette",
+    "search_aria_label": "Search commands",
+    "navigate": "navigate"
   },
   "pagination": {
     "first": "First page",
@@ -1377,12 +1383,31 @@
     "season_quest": "Seasonal Quest ranking",
     "team_mgmt": "Team management",
     "presentation": "Presentation mode",
-    "properties": "Properties"
+    "properties": "Properties",
+    "matches_label": "Matches",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "coachmark_actions": "Comparisons, analytics, QR sharing...",
+    "actions_menu": "Actions",
+    "share": "Share",
+    "kiosk_mode": "Kiosk mode",
+    "kiosk_public": "Public kiosk"
   },
   "competitionNav": {
     "tooltip": "Tournament end estimate and strip allocation recommendations",
     "match_log": "Match event log",
-    "generate_pools": "Generate pools"
+    "generate_pools": "Generate pools",
+    "section_unavailable": "Section unavailable",
+    "coachmark_checkin": "Click here after checking in all your fencers",
+    "min_fencers_required": "Minimum 4 checked-in fencers required ({{count}} currently)",
+    "all_fencers_ready": "All fencers are checked in — ready!",
+    "coachmark_pools_next": "Next step once pools are complete",
+    "planning_button": "Planning",
+    "journal_button": "Log",
+    "stats_fencers": "fencers",
+    "stats_pools": "pools",
+    "stats_matches": "matches",
+    "stats_tableau": "bracket"
   },
   "exportCenter": {
     "tableau": "Elimination table",

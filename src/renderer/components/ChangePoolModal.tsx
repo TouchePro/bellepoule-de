@@ -81,7 +81,9 @@ const ChangePoolModalComponent: React.FC<ChangePoolModalProps> = ({
               {fencer.firstName} {fencer.lastName}
             </div>
             <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-              Actuellement en Poule {currentPool.number}
+              {t('changePool.currently_in', {
+                pool: `${t('pools.pool_number')} ${currentPool.number}`,
+              })}
             </div>
           </div>
 
@@ -156,7 +158,9 @@ const ChangePoolModalComponent: React.FC<ChangePoolModalProps> = ({
                         }}
                       >
                         <div>
-                          <span style={{ fontWeight: '600' }}>Poule {pool.number}</span>
+                          <span style={{ fontWeight: '600' }}>
+                            {t('pools.pool_number')} {pool.number}
+                          </span>
                           <span
                             style={{
                               marginLeft: '0.5rem',
@@ -164,7 +168,7 @@ const ChangePoolModalComponent: React.FC<ChangePoolModalProps> = ({
                               color: '#6b7280',
                             }}
                           >
-                            ({pool.fencers.length} tireurs)
+                            {t('changePool.fencer_count', { count: pool.fencers.length })}
                           </span>
                         </div>
                         {matchesPlayed > 0 && (
@@ -177,8 +181,7 @@ const ChangePoolModalComponent: React.FC<ChangePoolModalProps> = ({
                               borderRadius: '4px',
                             }}
                           >
-                            {matchesPlayed} match{matchesPlayed > 1 ? 's' : ''} joué
-                            {matchesPlayed > 1 ? 's' : ''}
+                            {t('changePool.matches_played_count', { count: matchesPlayed })}
                           </span>
                         )}
                       </div>
@@ -215,7 +218,7 @@ const ChangePoolModalComponent: React.FC<ChangePoolModalProps> = ({
 
         <div className="modal-footer">
           <button className="btn btn-secondary" onClick={onClose}>
-            Annuler
+            {t('actions.cancel')}
           </button>
           <button
             className="btn btn-primary"

@@ -122,7 +122,7 @@ const CompetitionHeaderComponent: React.FC<CompetitionHeaderProps> = ({
                   <div className="comp-stat-sep" />
                   <div className="comp-stat">
                     <span className="comp-stat-value">{matchProgress.done}/{matchProgress.total}</span>
-                    <span className="comp-stat-label">matchs</span>
+                    <span className="comp-stat-label">{t('competitionHeader.matches_label')}</span>
                   </div>
                 </>
               )}
@@ -133,7 +133,7 @@ const CompetitionHeaderComponent: React.FC<CompetitionHeaderProps> = ({
           <button
             className="comp-header-collapse-btn"
             onClick={toggleExpanded}
-            title={expanded ? 'Réduire' : 'Développer'}
+            title={expanded ? t('competitionHeader.collapse') : t('competitionHeader.expand')}
             aria-expanded={expanded}
           >
             {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -141,11 +141,11 @@ const CompetitionHeaderComponent: React.FC<CompetitionHeaderProps> = ({
 
           {/* Menu actions */}
           <div className="comp-header-actions" ref={actionsMenuRef}>
-            <CoachMark id="actions-menu" message="Comparaison, analytiques, partage QR..." position="left">
+            <CoachMark id="actions-menu" message={t('competitionHeader.coachmark_actions')} position="left">
               <button
                 className="comp-header-menu-btn"
                 onClick={() => setShowActionsMenu(v => !v)}
-                title="Actions"
+                title={t('competitionHeader.actions_menu')}
               >
                 <MoreHorizontal size={18} />
               </button>
@@ -169,7 +169,7 @@ const CompetitionHeaderComponent: React.FC<CompetitionHeaderProps> = ({
                   </button>
                 )}
                 <button className="comp-header-dropdown-item" onClick={() => { setShowQRCode(true); setShowActionsMenu(false); }}>
-                  <Share2 size={14} /> Partager
+                  <Share2 size={14} /> {t('competitionHeader.share')}
                 </button>
                 {currentPhase === 'pools' && pools.length > 0 && (
                   <>
@@ -177,17 +177,17 @@ const CompetitionHeaderComponent: React.FC<CompetitionHeaderProps> = ({
                       <Monitor size={14} /> {t('competitionHeader.presentation')}
                     </button>
                     <button className="comp-header-dropdown-item" onClick={() => { setShowKiosk(true); setShowActionsMenu(false); }}>
-                      <Smartphone size={14} /> Mode Kiosk
+                      <Smartphone size={14} /> {t('competitionHeader.kiosk_mode')}
                     </button>
                   </>
                 )}
                 {(pools.length > 0 || tableauMatches.length > 0) && (
                   <button className="comp-header-dropdown-item" onClick={() => { setShowKioskDisplay(true); setShowActionsMenu(false); }}>
-                    <Monitor size={14} /> Kiosk Public
+                    <Monitor size={14} /> {t('competitionHeader.kiosk_public')}
                   </button>
                 )}
                 <button className="comp-header-dropdown-item" onClick={() => { setShowExportCenter(true); setShowActionsMenu(false); }}>
-                  <Download size={14} /> Exporter
+                  <Download size={14} /> {t('actions.export')}
                 </button>
                 <div className="comp-header-dropdown-sep" />
                 <button className="comp-header-dropdown-item" onClick={() => { setShowPropertiesModal(true); setShowActionsMenu(false); }}>

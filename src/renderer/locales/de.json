@@ -635,6 +635,9 @@
   "changePool": {
     "drag_hint": "↕ Fechter (in eine Poule ziehen)",
     "already_played": "Dieser Fechter hat bereits Matches in dieser Poule bestritten. Die Verschiebung löscht seine Ergebnisse.",
+    "currently_in": "Aktuell in {{pool}}",
+    "fencer_count": "({{count}} Fechter)",
+    "matches_played_count": "{{count}} Match(es) gespielt",
     "move_to": "Verschieben nach:",
     "no_other_pool": "Keine andere Poule verfügbar",
     "recalculated": "✓ Die Matches beider Poulens werden neu berechnet",
@@ -642,7 +645,10 @@
   },
   "commandPalette": {
     "search_placeholder": "Wettbewerb oder Aktion suchen…",
-    "select": "auswählen"
+    "select": "auswählen",
+    "dialog_label": "Befehlspalette",
+    "search_aria_label": "Befehle durchsuchen",
+    "navigate": "navigieren"
   },
   "pagination": {
     "first": "Erste Seite",
@@ -1377,12 +1383,31 @@
     "season_quest": "Saisonale Quest-Rangliste",
     "team_mgmt": "Mannschaftsverwaltung",
     "presentation": "Präsentationsmodus",
-    "properties": "Eigenschaften"
+    "properties": "Eigenschaften",
+    "matches_label": "Matches",
+    "collapse": "Reduzieren",
+    "expand": "Erweitern",
+    "coachmark_actions": "Vergleich, Analysen, QR-Freigabe...",
+    "actions_menu": "Aktionen",
+    "share": "Teilen",
+    "kiosk_mode": "Kiosk-Modus",
+    "kiosk_public": "Öffentlicher Kiosk"
   },
   "competitionNav": {
     "tooltip": "Turnierende-Schätzung und Empfehlungen zur Pistenzuteilung",
     "match_log": "Match-Ereignisprotokoll",
-    "generate_pools": "Pools generieren"
+    "generate_pools": "Pools generieren",
+    "section_unavailable": "Bereich nicht verfügbar",
+    "coachmark_checkin": "Klicken Sie hier, nachdem Sie alle Fechter eingecheckt haben",
+    "min_fencers_required": "Mindestens 4 eingecheckte Fechter erforderlich ({{count}} aktuell)",
+    "all_fencers_ready": "Alle Fechter sind eingecheckt — bereit!",
+    "coachmark_pools_next": "Nächster Schritt, sobald die Pools abgeschlossen sind",
+    "planning_button": "Planung",
+    "journal_button": "Journal",
+    "stats_fencers": "Fechter",
+    "stats_pools": "Pools",
+    "stats_matches": "Matches",
+    "stats_tableau": "Tableau"
   },
   "exportCenter": {
     "tableau": "Eliminationstableau",

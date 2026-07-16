@@ -88,7 +88,7 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
           <div
             className={`phase-step ${currentPhase === phase.id ? 'phase-step-active' : ''} ${phase.disabled ? 'phase-step-disabled' : ''}`}
             onClick={() => !phase.disabled && setCurrentPhase(phase.id as Phase)}
-            title={phase.title ?? (phase.disabled ? 'Section non disponible' : undefined)}
+            title={phase.title ?? (phase.disabled ? t('competitionNav.section_unavailable') : undefined)}
           >
             <span className="phase-step-number">{phase.icon}</span>
             <span>{phase.label}</span>
@@ -101,7 +101,7 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
       <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
         {currentPhase !== 'checkin' && (
           <button className="btn btn-secondary btn-icon-label" onClick={handleGoBack}>
-            <ChevronLeft size={15} /> Retour
+            <ChevronLeft size={15} /> {t('actions.back')}
           </button>
         )}
         {currentPhase === 'checkin' && questEnabled && !questConfig?.hasPreliminaryPools && (
@@ -114,16 +114,16 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
           </button>
         )}
         {currentPhase === 'checkin' && (!questEnabled || questConfig?.hasPreliminaryPools) && (
-          <CoachMark id="generate-pools" message="Cliquez ici après avoir pointé tous vos tireurs" position="bottom">
+          <CoachMark id="generate-pools" message={t('competitionNav.coachmark_checkin')} position="bottom">
             <button
               className="btn btn-primary btn-icon-label"
               onClick={handleGeneratePools}
               disabled={getCheckedInFencers().length < 4}
               title={
                 getCheckedInFencers().length < 4
-                  ? `Minimum 4 tireurs pointés requis (${getCheckedInFencers().length} actuellement)`
+                  ? t('competitionNav.min_fencers_required', { count: getCheckedInFencers().length })
                   : getCheckedInFencers().length === fencers.length && fencers.length > 0
-                    ? 'Tous les tireurs sont pointés — prêt !'
+                    ? t('competitionNav.all_fencers_ready')
                     : undefined
               }
               style={
@@ -132,12 +132,12 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
                   : undefined
               }
             >
-              Générer les poules <ChevronRight size={15} />
+              {t('competitionNav.generate_pools')} <ChevronRight size={15} />
             </button>
           </CoachMark>
         )}
         {currentPhase === 'pools' && poolsNextAction && (
-          <CoachMark id="pools-next-action" message="Étape suivante une fois les poules terminées" position="bottom">
+          <CoachMark id="pools-next-action" message={t('competitionNav.coachmark_pools_next')} position="bottom">
             <button className="btn btn-primary" onClick={poolsNextAction.action}>
               {poolsNextAction.label}
             </button>
@@ -150,7 +150,7 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
             title={t('competitionNav.tooltip')}
             style={{ fontSize: '0.8rem', padding: '0.3rem 0.6rem' }}
           >
-            <CalendarClock size={14} /> Planning
+            <CalendarClock size={14} /> {t('competitionNav.planning_button')}
           </button>
         )}
         <button
@@ -159,7 +159,7 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
           title={t('competitionNav.match_log')}
           style={{ fontSize: '0.8rem', padding: '0.3rem 0.6rem' }}
         >
-          <ScrollText size={14} /> Journal
+          <ScrollText size={14} /> {t('competitionNav.journal_button')}
         </button>
 
       </div>
@@ -170,21 +170,21 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
       <div className="comp-stats-bar">
         <div className="comp-stats-bar-item">
           <span className="comp-stats-bar-icon"><Swords size={13} /></span>
-          <span>{getCheckedInFencers().length}/{fencers.length} tireurs</span>
+          <span>{getCheckedInFencers().length}/{fencers.length} {t('competitionNav.stats_fencers')}</span>
         </div>
         {pools.length > 0 && (
           <>
             <div className="comp-stats-bar-sep" />
             <div className="comp-stats-bar-item">
               <span className="comp-stats-bar-icon"><Target size={13} /></span>
-              <span>{pools.filter(p => p.isComplete).length}/{pools.length} poules</span>
+              <span>{pools.filter(p => p.isComplete).length}/{pools.length} {t('competitionNav.stats_pools')}</span>
             </div>
             <div className="comp-stats-bar-sep" />
             <div className="comp-stats-bar-item">
               <span className="comp-stats-bar-icon"><Zap size={13} /></span>
               <span>
                 {pools.reduce((s, p) => s + p.matches.filter(m => m.status === MatchStatus.FINISHED).length, 0)}/
-                {pools.reduce((s, p) => s + p.matches.length, 0)} matchs
+                {pools.reduce((s, p) => s + p.matches.length, 0)} {t('competitionNav.stats_matches')}
               </span>
             </div>
           </>
@@ -196,7 +196,7 @@ const CompetitionNavComponent: React.FC<CompetitionNavProps> = ({
               <span className="comp-stats-bar-icon"><Trophy size={13} /></span>
               <span>
                 {tableauMatches.filter(m => m.winner !== null).length}/
-                {tableauMatches.filter(m => m.fencerA && m.fencerB).length} tableau
+                {tableauMatches.filter(m => m.fencerA && m.fencerB).length} {t('competitionNav.stats_tableau')}
               </span>
             </div>
           </>

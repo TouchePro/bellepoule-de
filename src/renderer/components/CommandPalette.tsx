@@ -58,7 +58,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
     const competitionCommands: Command[] = competitions.map(c => ({
       id: `comp-${c.id}`,
       label: c.title,
-      description: `${c.weapon} · ${c.category} · ${c.fencers.length} tireurs`,
+      description: `${c.weapon} · ${c.category} · ${t('poolView.fencers_count_suffix', { count: c.fencers.length })}`,
       icon: '🏆',
       action: () => { onClose(); onSelectCompetition(c.id); },
       keywords: [c.title.toLowerCase(), c.weapon, c.category],
@@ -115,7 +115,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
         className="command-palette"
         onClick={e => e.stopPropagation()}
         role="dialog"
-        aria-label="Command palette"
+        aria-label={t('commandPalette.dialog_label')}
       >
         <div className="command-palette-search">
           <span className="command-palette-search-icon">⌘</span>
@@ -127,7 +127,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
             onKeyDown={handleKeyDown}
             placeholder={t('commandPalette.search_placeholder')}
             className="command-palette-input"
-            aria-label="Search commands"
+            aria-label={t('commandPalette.search_aria_label')}
           />
           {query && (
             <button className="command-palette-clear" onClick={() => setQuery('')}>
@@ -162,7 +162,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
         </div>
 
         <div className="command-palette-footer">
-          <span><kbd>↑↓</kbd> naviguer</span>
+          <span><kbd>↑↓</kbd> {t('commandPalette.navigate')}</span>
           <span><kbd>↵</kbd> {t('commandPalette.select')}</span>
           <span><kbd>Esc</kbd> {t('actions.close')}</span>
         </div>
