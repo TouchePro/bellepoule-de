@@ -80,16 +80,16 @@ const ExportCenterModal: React.FC<ExportCenterModalProps> = ({
         </div>
         <div className="modal-body">
           {fencers.length > 0 && (
-            <Section title="Tireurs">
-              <button className="btn btn-secondary" onClick={() => exportFencersList(fencers, 'txt')}>Liste (.txt)</button>
-              <button className="btn btn-secondary" onClick={() => exportFencersList(fencers, 'fff')}>Liste FFE (.fff)</button>
+            <Section title={t('exportCenter.fencers')}>
+              <button className="btn btn-secondary" onClick={() => exportFencersList(fencers, 'txt')}>{t('exportCenter.export_txt')}</button>
+              <button className="btn btn-secondary" onClick={() => exportFencersList(fencers, 'fff')}>{t('exportCenter.export_fff')}</button>
             </Section>
           )}
 
           {pools.length > 0 && (
             <Section title={t('phases.pools')}>
               <button className="btn btn-secondary" onClick={() => exportPoolsPDF(pools, currentPoolRound)}>{t('exportCenter.export_pdf')}</button>
-              <button className="btn btn-secondary" onClick={() => printPoolsPDF(pools, currentPoolRound)}>Imprimer</button>
+              <button className="btn btn-secondary" onClick={() => printPoolsPDF(pools, currentPoolRound)}>{t('poolRanking.print')}</button>
             </Section>
           )}
 
@@ -120,7 +120,7 @@ const ExportCenterModal: React.FC<ExportCenterModalProps> = ({
           )}
 
           {pools.length > 0 && overallRanking.length > 0 && (
-            <Section title="Statistiques">
+            <Section title={t('analytics.tab_stats')}>
               <button className="btn btn-secondary" onClick={() => exportDetailedStats(pools, overallRanking)}>{t('exportCenter.detailed_csv')}</button>
             </Section>
           )}

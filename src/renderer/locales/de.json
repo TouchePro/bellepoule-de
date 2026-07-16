@@ -135,7 +135,17 @@
     "advanced_referee_desc": "Aktiviert erweiterte Bearbeitung der Pisten und Schiedsrichteranzahl pro Pool/Match",
     "max_referees_pool": "Max. Schiedsrichter pro Pool",
     "max_referees_match": "Max. Schiedsrichter pro Match (Tableau)",
-    "custom_formula": "À la carte (eigene Formel)"
+    "custom_formula": "À la carte (eigene Formel)",
+    "configuration": "Konfiguration",
+    "expert_mode": "Expertenmodus",
+    "pool_rounds_forced_hint": "1 Runde vor der Quest-Runde vorgeschrieben",
+    "pool_rounds_hint": "Anzahl der Gruppenrunden vor dem Tableau",
+    "tableau_after_pools_hint": "Tableau nach den Gruppen",
+    "final_ranking_pools_hint": "Endergebnis anhand der Gruppen",
+    "pool_timer_hint": "{{min}}min {{sec}}s pro Poolgefecht",
+    "tableau_timer_hint": "{{min}}min {{sec}}s pro Tableau-Gefecht",
+    "tableau_score_unlimited": "0 = unbegrenzt (kein Limit)",
+    "tableau_touches_to_win": "{{count}} Treffer zum Sieg"
   },
   "fencer": {
     "abandon": "Aufgeben",
@@ -654,11 +664,25 @@
     "first": "Erste Seite",
     "prev": "Vorherige Seite",
     "last": "Letzte Seite",
-    "next": "Weiter"
+    "next": "Weiter",
+    "per_page": "{{count}} / Seite"
   },
   "competitionList": {
     "intro": "Verwalten Sie Ihre Fechtwettbewerbe vom Aufruf bis aufs Podest.",
-    "palette_hint": "um die Befehlspalette zu öffnen."
+    "palette_hint": "um die Befehlspalette zu öffnen.",
+    "welcome_title": "Willkommen bei BellePoule",
+    "step_create": "Erstellen",
+    "step_create_desc": "einen Wettbewerb",
+    "step_add_desc": "die Fechter",
+    "step_generate": "Generieren",
+    "step_generate_desc": "die Pools",
+    "step_publish": "Veröffentlichen",
+    "step_publish_desc": "die Ergebnisse",
+    "step_number": "Schritt {{step}}",
+    "shortcuts_hint_prefix": "Tipp: Drücken Sie",
+    "shortcuts_hint_middle": "um die Tastaturkürzel anzuzeigen, oder",
+    "fencers_count": "{{count}} Fechter",
+    "open_arrow": "Öffnen →"
   },
   "quest": {
     "tour_quest": "Quest-Runde",
@@ -684,7 +708,9 @@
     "need_two": "Mindestens 2 Fechter werden benötigt, um einen Plan zu erstellen.",
     "repartition": "Verteilung pro Fechter",
     "launch": "Quest-Runde starten →",
-    "label": "Quest"
+    "label": "Quest",
+    "formula_summary_with_pools": "Formel: 1 Gruppenrunde → Top {{count}} qualifiziert → Quest-Runde → Tableau",
+    "formula_summary_direct": "Formel: Direkte Quest-Runde → Tableau"
   },
   "competitionView": {
     "show_grid_attr": "Alle Pools in einem Raster anzeigen",
@@ -1420,10 +1446,14 @@
     "send_ffe": "📡 An FFE senden",
     "detailed_csv": "Detaillierte Statistiken (CSV)",
     "go_results": "Zu Ergebnissen für den vollständigen Export →",
-    "no_data": "Derzeit keine Daten zum Exportieren — fügen Sie Fechter hinzu, um zu beginnen."
+    "no_data": "Derzeit keine Daten zum Exportieren — fügen Sie Fechter hinzu, um zu beginnen.",
+    "fencers": "Fechter",
+    "export_txt": "Liste (.txt)",
+    "export_fff": "FFE-Liste (.fff)"
   },
   "kioskScoreEntry": {
     "title": "Kiosk-Modus - Punkteingabe",
+    "close": "✕ Kiosk-Modus verlassen",
     "all_done": "✓ Alle Matches sind beendet - Rangliste anzeigen"
   },
   "planningAssistant": {
@@ -1431,7 +1461,9 @@
     "available_strips": "Anzahl verfügbarer Pisten",
     "calculating": "Berechnung läuft…",
     "estimated_end": "Geschätztes Ende:",
-    "no_warning": "Kein Vorsichtspunkt mit dieser Konfiguration erkannt."
+    "no_warning": "Kein Vorsichtspunkt mit dieser Konfiguration erkannt.",
+    "remaining_matches": "Verbleibende Matches:",
+    "average_wait_time": "Geschätzte durchschnittliche Wartezeit: {{minutes}} Min."
   },
   "formulaBuilder": {
     "name_placeholder": "Name der Formel",

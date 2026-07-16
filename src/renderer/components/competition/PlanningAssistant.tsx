@@ -118,7 +118,7 @@ const PlanningAssistant: React.FC<PlanningAssistantProps> = ({
                   minute: '2-digit',
                 })}
                 <br />
-                <strong>Matchs restants :</strong> {remainingMatches}
+                <strong>{t('planningAssistant.remaining_matches')}</strong> {remainingMatches}
               </div>
 
               {recommendations.length === 0 && insights.bottlenecks.length === 0 ? (
@@ -138,7 +138,9 @@ const PlanningAssistant: React.FC<PlanningAssistantProps> = ({
 
               {result && result.metrics.arenaUtilization && (
                 <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-light)' }}>
-                  Temps d'attente moyen estimé : {Math.max(0, Math.round(result.metrics.averageWaitTime))} min
+                  {t('planningAssistant.average_wait_time', {
+                    minutes: Math.max(0, Math.round(result.metrics.averageWaitTime)),
+                  })}
                 </div>
               )}
             </>

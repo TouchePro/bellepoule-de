@@ -52,14 +52,16 @@ const KioskScoreEntry: React.FC<KioskScoreEntryProps> = ({
     <div style={KIOSK_STYLES.kioskOverlay}>
       <div style={KIOSK_STYLES.kioskCloseWrapper}>
         <button onClick={onClose} style={KIOSK_STYLES.kioskCloseBtn}>
-          ✕ Quitter Mode Kiosk
+          {t('kioskScoreEntry.close')}
         </button>
       </div>
       <div style={KIOSK_STYLES.kioskContent}>
         <h2 style={KIOSK_STYLES.kioskHeading}>{t('kioskScoreEntry.title')}</h2>
         {pools.map((pool, poolIndex) => (
           <div key={pool.id} style={KIOSK_STYLES.kioskPoolCard}>
-            <h3 style={KIOSK_STYLES.kioskPoolTitle}>Poule {pool.number}</h3>
+            <h3 style={KIOSK_STYLES.kioskPoolTitle}>
+              {t('pools.pool_number')} {pool.number}
+            </h3>
             <div style={KIOSK_STYLES.kioskMatchGrid}>
               {pool.matches.map(
                 (match, matchIndex) =>

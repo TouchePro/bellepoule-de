@@ -62,7 +62,17 @@
     "advanced_referee_desc": "Enables advanced editing of strips and number of referees per pool / match",
     "max_referees_pool": "Max referees per pool",
     "max_referees_match": "Max referees per match (tableau)",
-    "custom_formula": "À la carte (custom formula)"
+    "custom_formula": "À la carte (custom formula)",
+    "configuration": "Configuration",
+    "expert_mode": "Expert mode",
+    "pool_rounds_forced_hint": "1 round required before the Quest round",
+    "pool_rounds_hint": "Number of pool rounds before the tableau",
+    "tableau_after_pools_hint": "Tableau after the pools",
+    "final_ranking_pools_hint": "Final ranking based on the pools",
+    "pool_timer_hint": "{{min}}min {{sec}}s per pool match",
+    "tableau_timer_hint": "{{min}}min {{sec}}s per tableau match",
+    "tableau_score_unlimited": "0 = unlimited (no limit)",
+    "tableau_touches_to_win": "{{count}} touches to win"
   },
   "weapons": {
     "epee": "Epee",
@@ -654,11 +664,25 @@
     "first": "First page",
     "prev": "Previous page",
     "last": "Last page",
-    "next": "Next"
+    "next": "Next",
+    "per_page": "{{count}} / page"
   },
   "competitionList": {
     "intro": "Manage your fencing competitions from check-in to podium.",
-    "palette_hint": "to open the command palette."
+    "palette_hint": "to open the command palette.",
+    "welcome_title": "Welcome to BellePoule",
+    "step_create": "Create",
+    "step_create_desc": "a competition",
+    "step_add_desc": "the fencers",
+    "step_generate": "Generate",
+    "step_generate_desc": "the pools",
+    "step_publish": "Publish",
+    "step_publish_desc": "the results",
+    "step_number": "Step {{step}}",
+    "shortcuts_hint_prefix": "Tip: press",
+    "shortcuts_hint_middle": "to see keyboard shortcuts, or",
+    "fencers_count": "{{count}} fencer(s)",
+    "open_arrow": "Open →"
   },
   "quest": {
     "tour_quest": "Quest round",
@@ -684,7 +708,9 @@
     "need_two": "At least 2 fencers are needed to generate a schedule.",
     "repartition": "Repartition per fencer",
     "launch": "Launch the Quest round →",
-    "label": "Quest"
+    "label": "Quest",
+    "formula_summary_with_pools": "Formula: 1 pool round → Top {{count}} qualified → Quest round → Tableau",
+    "formula_summary_direct": "Formula: Direct Quest round → Tableau"
   },
   "competitionView": {
     "show_grid_attr": "Show all pools in a grid",
@@ -1420,10 +1446,14 @@
     "send_ffe": "📡 Send to FFE",
     "detailed_csv": "Detailed stats (CSV)",
     "go_results": "Go to Results for full export →",
-    "no_data": "No data to export yet — add fencers to start."
+    "no_data": "No data to export yet — add fencers to start.",
+    "fencers": "Fencers",
+    "export_txt": "List (.txt)",
+    "export_fff": "FFE list (.fff)"
   },
   "kioskScoreEntry": {
     "title": "Kiosk Mode - Score Entry",
+    "close": "✕ Exit Kiosk Mode",
     "all_done": "✓ All matches are finished - View ranking"
   },
   "planningAssistant": {
@@ -1431,7 +1461,9 @@
     "available_strips": "Number of available strips",
     "calculating": "Calculating…",
     "estimated_end": "Estimated end:",
-    "no_warning": "No point of vigilance detected with this configuration."
+    "no_warning": "No point of vigilance detected with this configuration.",
+    "remaining_matches": "Remaining matches:",
+    "average_wait_time": "Estimated average wait time: {{minutes}} min"
   },
   "formulaBuilder": {
     "name_placeholder": "Formula name",

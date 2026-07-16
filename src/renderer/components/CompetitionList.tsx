@@ -75,7 +75,7 @@ const CompetitionListComponent: React.FC<CompetitionListProps> = ({
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>🤺</div>
             <h1 style={{ fontSize: '1.75rem', fontWeight: 700, letterSpacing: '-0.03em', marginBottom: '0.5rem' }}>
-              Bienvenue sur BellePoule
+              {t('competitionList.welcome_title')}
             </h1>
             <p style={{ color: 'var(--color-text-light)', fontSize: '1rem', maxWidth: '36ch', margin: '0 auto' }}>
               {t('competitionList.intro')}
@@ -84,10 +84,10 @@ const CompetitionListComponent: React.FC<CompetitionListProps> = ({
 
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
             {[
-              { step: '1', icon: '🏆', label: 'Créer', desc: 'une compétition' },
-              { step: '2', icon: '🤺', label: 'Ajouter', desc: 'les tireurs' },
-              { step: '3', icon: '🎯', label: 'Générer', desc: 'les poules' },
-              { step: '4', icon: '🏅', label: 'Publier', desc: 'les résultats' },
+              { step: '1', icon: '🏆', label: t('competitionList.step_create'), desc: t('competitionList.step_create_desc') },
+              { step: '2', icon: '🤺', label: t('actions.add'), desc: t('competitionList.step_add_desc') },
+              { step: '3', icon: '🎯', label: t('competitionList.step_generate'), desc: t('competitionList.step_generate_desc') },
+              { step: '4', icon: '🏅', label: t('competitionList.step_publish'), desc: t('competitionList.step_publish_desc') },
             ].map(({ step, icon, label, desc }) => (
               <div key={step} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', width: 100 }}>
                 <div style={{
@@ -99,7 +99,7 @@ const CompetitionListComponent: React.FC<CompetitionListProps> = ({
                   {icon}
                 </div>
                 <div style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--color-text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                  Étape {step}
+                  {t('competitionList.step_number', { step })}
                 </div>
                 <div style={{ textAlign: 'center', fontSize: '0.8125rem', fontWeight: 600 }}>{label}</div>
                 <div style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--color-text-light)' }}>{desc}</div>
@@ -118,7 +118,7 @@ const CompetitionListComponent: React.FC<CompetitionListProps> = ({
           </button>
 
           <p style={{ color: 'var(--color-text-light)', fontSize: '0.75rem' }}>
-            Astuce : appuyez sur <kbd>?</kbd> pour voir les raccourcis clavier, ou{' '}
+            {t('competitionList.shortcuts_hint_prefix')} <kbd>?</kbd> {t('competitionList.shortcuts_hint_middle')}{' '}
             <kbd>Ctrl</kbd>+<kbd>K</kbd> {t('competitionList.palette_hint')}
           </p>
         </div>
@@ -178,9 +178,9 @@ const CompetitionListComponent: React.FC<CompetitionListProps> = ({
 
               <div className="comp-card-footer">
                 <span className="comp-card-fencers">
-                  🤺 {competition.fencers.length} tireurs
+                  🤺 {t('competitionList.fencers_count', { count: competition.fencers.length })}
                 </span>
-                <span className="comp-card-open">Ouvrir →</span>
+                <span className="comp-card-open">{t('competitionList.open_arrow')}</span>
               </div>
             </div>
           </div>
@@ -241,7 +241,7 @@ const CompetitionListComponent: React.FC<CompetitionListProps> = ({
           >
             {pageSizeOptions.map(s => (
               <option key={s} value={s}>
-                {s} / page
+                {t('pagination.per_page', { count: s })}
               </option>
             ))}
           </select>
