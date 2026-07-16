@@ -19,13 +19,13 @@ import { MENU_ITEM, SMALL_BTN, W250, DROPDOWN_WRAP } from './fencerList.styles';
 type SortableCol = 'ref' | 'lastName' | 'firstName' | 'birthDate' | 'club' | 'ranking' | 'status';
 
 const COLUMNS = [
-  { id: 'ref'       as SortableCol, label: 'N°',         width: '50px'  },
-  { id: 'lastName'  as SortableCol, label: 'Nom'                         },
-  { id: 'firstName' as SortableCol, label: 'Prénom'                      },
-  { id: 'birthDate' as SortableCol, label: 'Né(e)',       width: '70px'  },
-  { id: 'club'      as SortableCol, label: 'Club'                        },
-  { id: 'ranking'   as SortableCol, label: 'Classement', width: '110px' },
-  { id: 'status'    as SortableCol, label: 'Statut',     width: '90px'  },
+  { id: 'ref'       as SortableCol, labelKey: 'fencerList.column_number',     width: '50px'  },
+  { id: 'lastName'  as SortableCol, labelKey: 'fencer.last_name'                              },
+  { id: 'firstName' as SortableCol, labelKey: 'fencer.first_name'                             },
+  { id: 'birthDate' as SortableCol, labelKey: 'fencerList.column_birth_date', width: '70px'  },
+  { id: 'club'      as SortableCol, labelKey: 'fencer.club'                                   },
+  { id: 'ranking'   as SortableCol, labelKey: 'fencer.ranking',              width: '110px' },
+  { id: 'status'    as SortableCol, labelKey: 'fencerList.column_status',    width: '90px'  },
 ];
 
 interface FencerListProps {
@@ -221,14 +221,14 @@ const FencerListComponent: React.FC<FencerListProps> = ({
 
   const handleExportFencers = async (format: 'txt' | 'fff') => {
     const extension = format === 'fff' ? 'fff' : 'txt';
-    const filterName = format === 'fff' ? 'Fichier FFE' : 'Fichier texte';
+    const filterName = format === 'fff' ? t('fencerList.filter_fff') : t('fencerList.filter_txt');
 
     const result = await window.electronAPI.dialog.saveFile({
       title: t('messages.export_fencers_title', { extension }),
       defaultPath: `tireurs.${extension}`,
       filters: [
         { name: filterName, extensions: [extension] },
-        { name: 'Tous les fichiers', extensions: ['*'] },
+        { name: t('fencerList.filter_all_files'), extensions: ['*'] },
       ],
     });
 
@@ -254,7 +254,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
     const result = await window.electronAPI.dialog.saveFile({
       title: t('messages.export_photos_title'),
       defaultPath: 'photos-tireurs.zip',
-      filters: [{ name: 'Archive ZIP', extensions: ['zip'] }],
+      filters: [{ name: t('fencerList.filter_zip_archive'), extensions: ['zip'] }],
     });
     if (result && !result.canceled && result.filePath) {
       try {
@@ -273,7 +273,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
     if (!competitionId) return;
     const result = await window.electronAPI.dialog.openFile({
       title: t('messages.import_photos_title'),
-      filters: [{ name: 'Archive ZIP', extensions: ['zip'] }],
+      filters: [{ name: t('fencerList.filter_zip_archive'), extensions: ['zip'] }],
     });
     if (result && result.filePath) {
       try {
@@ -293,7 +293,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
     const result = await window.electronAPI.dialog.saveFile({
       title: t('messages.export_fencers_archive_title'),
       defaultPath: 'tireurs.bpf',
-      filters: [{ name: 'BellePoule Fencers', extensions: ['bpf'] }],
+      filters: [{ name: t('fencerList.filter_bpf_archive'), extensions: ['bpf'] }],
     });
     if (result && !result.canceled && result.filePath) {
       try {
@@ -312,7 +312,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
     if (!competitionId) return;
     const result = await window.electronAPI.dialog.openFile({
       title: t('messages.import_fencers_archive_title'),
-      filters: [{ name: 'BellePoule Fencers', extensions: ['bpf'] }],
+      filters: [{ name: t('fencerList.filter_bpf_archive'), extensions: ['bpf'] }],
     });
     if (result && result.filePath) {
       try {
@@ -387,12 +387,12 @@ const FencerListComponent: React.FC<FencerListProps> = ({
         <div>
           <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>
             {fencers.length > 0
-              ? `${fencers.length} tireur${fencers.length > 1 ? 's' : ''} inscrit${fencers.length > 1 ? 's' : ''}`
-              : 'Appel'}
+              ? t('fencerList.title_registered', { count: fencers.length })
+              : t('fencerList.title_default')}
           </h2>
           <p className="text-sm text-muted">
             {fencers.length > 0
-              ? `${checkedInCount} pointé${checkedInCount !== 1 ? 's' : ''} · ${notCheckedInCount} en attente`
+              ? t('fencerList.status_summary', { checkedIn: checkedInCount, waiting: notCheckedInCount })
               : t('fencerList.none_registered')}
           </p>
         </div>
@@ -403,7 +403,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                 <button
                   className="btn btn-secondary"
                   onClick={onCheckInAll}
-                  title={`Pointer les ${notCheckedInCount} tireurs non pointés`}
+                  title={t('fencerList.check_in_all_title', { count: notCheckedInCount })}
                 >
                   ✓ {t('actions.check_in_all')}
                 </button>
@@ -425,7 +425,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                       onDeleteAllFencers();
                     }
                   }}
-                  title={`Supprimer les ${fencers.length} tireurs`}
+                  title={t('fencerList.delete_all_title', { count: fencers.length })}
                   style={{ padding: '0.4rem 0.6rem' }}
                 >
                   🗑️
@@ -441,7 +441,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                 onClick={() => setImportMenuOpen(o => !o)}
                 title={t('actions.import')}
               >
-                📥 Importer ▾
+                📥 {t('actions.import')} ▾
               </button>
               {importMenuOpen && (
                 <div style={{
@@ -464,14 +464,14 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                     style={MENU_ITEM}
                     onClick={() => { handleImportFencers('xml'); setImportMenuOpen(false); }}
                   >
-                    Importer XML (BellePoule)
+                    {t('fencerList.import_xml_menu')}
                   </button>
                   <button
                     className="btn btn-ghost"
                     style={MENU_ITEM}
                     onClick={() => { handleImportFencers('fff'); setImportMenuOpen(false); }}
                   >
-                    Importer liste FFE (.fff)
+                    {t('fencerList.import_fff_menu')}
                   </button>
                   <button
                     className="btn btn-ghost"
@@ -496,14 +496,14 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                         style={MENU_ITEM}
                         onClick={() => { handleImportFencersArchive(); setImportMenuOpen(false); }}
                       >
-                        Importer tireurs + photos (.bpf)
+                        {t('fencerList.import_archive_menu')}
                       </button>
                       <button
                         className="btn btn-ghost"
                         style={MENU_ITEM}
                         onClick={() => { handleImportPhotos(); setImportMenuOpen(false); }}
                       >
-                        Importer photos (.zip)
+                        {t('fencerList.import_photos_menu')}
                       </button>
                     </>
                   )}
@@ -517,7 +517,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
               onClick={() => setColMenuOpen(o => !o)}
               title={t('fencerList.toggle_columns')}
             >
-              ⚙ Colonnes ▾
+              ⚙ {t('fencerList.columns_label')} ▾
             </button>
             {colMenuOpen && (
               <div style={{
@@ -558,7 +558,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                         });
                       }}
                     />
-                    {col.label}
+                    {t(col.labelKey)}
                   </label>
                 ))}
                 <div style={{ borderTop: '1px solid var(--border-color, #444)', margin: '4px 0' }} />
@@ -578,7 +578,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
               onClick={() => setExportMenuOpen(o => !o)}
               title={t('actions.export')}
             >
-              📤 Exporter ▾
+              📤 {t('actions.export')} ▾
             </button>
             {exportMenuOpen && (
               <div style={{
@@ -601,35 +601,35 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                   style={MENU_ITEM}
                   onClick={() => { handleExportPDF(); setExportMenuOpen(false); }}
                 >
-                  Exporter PDF (appel)
+                  {t('fencerList.export_pdf_menu')}
                 </button>
                 <button
                   className="btn btn-ghost"
                   style={MENU_ITEM}
                   onClick={() => { handleExportFencers('txt'); setExportMenuOpen(false); }}
                 >
-                  Exporter TXT
+                  {t('fencerList.export_txt_menu')}
                 </button>
                 <button
                   className="btn btn-ghost"
                   style={MENU_ITEM}
                   onClick={() => { handleExportFencers('fff'); setExportMenuOpen(false); }}
                 >
-                  Exporter FFF
+                  {t('fencerList.export_fff_menu')}
                 </button>
                 <button
                   className="btn btn-ghost"
                   style={MENU_ITEM}
                   onClick={() => { handleExportFencersArchive(); setExportMenuOpen(false); }}
                 >
-                  Exporter tireurs + photos (.bpf)
+                  {t('fencerList.export_archive_menu')}
                 </button>
                 <button
                   className="btn btn-ghost"
                   style={MENU_ITEM}
                   onClick={() => { handleExportPhotos(); setExportMenuOpen(false); }}
                 >
-                  Exporter photos (.zip)
+                  {t('fencerList.export_photos_menu')}
                 </button>
               </div>
             )}
@@ -637,11 +637,11 @@ const FencerListComponent: React.FC<FencerListProps> = ({
           {registerUrl && (
             <button
               className="btn btn-secondary"
-              title={`Inscription tablette : ${registerUrl}`}
+              title={t('fencerList.register_qr_title', { url: registerUrl })}
               onClick={() => setShowRegisterQR(true)}
               style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
             >
-              <span>📱</span> QR Inscription
+              <span>📱</span> {t('fencerList.qr_register_button')}
             </button>
           )}
           <button className="btn btn-primary" onClick={onAddFencer}>
@@ -674,7 +674,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
               {t('fencerList.qr_hint')}
             </p>
             {registerQRDataUrl
-              ? <img src={registerQRDataUrl} alt="QR code inscription" width={220} height={220} style={{ borderRadius: 8 }} />
+              ? <img src={registerQRDataUrl} alt={t('fencerList.qr_code_alt')} width={220} height={220} style={{ borderRadius: 8 }} />
               : <div style={{ width: 220, height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>{t('ui.generating')}</div>
             }
             <code style={{ display: 'block', marginTop: '0.75rem', fontSize: '0.7rem', wordBreak: 'break-all', color: 'var(--text-muted, #94a3b8)' }}>
@@ -703,7 +703,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
       {fencers.length > 0 && (
         <div style={{ marginBottom: '1rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: '0.75rem', color: 'var(--text-muted, #6b7280)', marginBottom: '5px' }}>
-            <span>Pointage</span>
+            <span>{t('fencerList.checkin_progress_label')}</span>
             <span style={{ fontWeight: 600, color: checkedInCount === fencers.length ? '#22c55e' : 'inherit' }}>
               {checkedInCount} / {fencers.length} · {Math.round((checkedInCount / fencers.length) * 100)} %
             </span>
@@ -747,9 +747,9 @@ const FencerListComponent: React.FC<FencerListProps> = ({
               <p className="empty-state-description">{t('fencerList.import_hint')}</p>
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap', marginTop: '1.25rem' }}>
                 {onImport && (
-                  <CoachMark id="import-fencers" message="Formats acceptés : XML BellePoule, liste FFE (.fff/.csv/.txt)" position="bottom">
+                  <CoachMark id="import-fencers" message={t('fencerList.import_formats_hint')} position="bottom">
                     <button className="btn btn-secondary" onClick={() => handleImportFencers('xml')}>
-                      📥 Importer XML
+                      📥 {t('fencerList.import_xml_button')}
                     </button>
                   </CoachMark>
                 )}
@@ -762,7 +762,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
             <>
               <div className="empty-state-icon">🔍</div>
               <h2 className="empty-state-title">{t('ui.no_result')}</h2>
-              <p className="empty-state-description">« {searchTerm} » ne correspond à aucun tireur</p>
+              <p className="empty-state-description">{t('fencerList.no_search_results', { term: searchTerm })}</p>
             </>
           )}
         </div>
@@ -794,10 +794,10 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                       }}
                       onClick={() => handleSort(col.id)}
                     >
-                      {col.label}{sortBy === col.id ? (sortOrder === 'asc' ? ' ▲' : ' ▼') : ''}
+                      {t(col.labelKey)}{sortBy === col.id ? (sortOrder === 'asc' ? ' ▲' : ' ▼') : ''}
                     </th>
                   ))}
-                  <th>Actions</th>
+                  <th>{t('fencerList.actions_column')}</th>
                 </tr>
               </thead>
             </table>
@@ -836,10 +836,10 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                         }}
                         onClick={() => handleSort(col.id)}
                       >
-                        {col.label}{sortBy === col.id ? (sortOrder === 'asc' ? ' ▲' : ' ▼') : ''}
+                        {t(col.labelKey)}{sortBy === col.id ? (sortOrder === 'asc' ? ' ▲' : ' ▼') : ''}
                       </th>
                     ))}
-                    <th style={W250}>Actions</th>
+                    <th style={W250}>{t('fencerList.actions_column')}</th>
                   </tr>
                 </thead>
               )}
@@ -888,7 +888,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                         onClick={() => onCheckIn(fencer.id)}
                         style={SMALL_BTN}
                       >
-                        {fencer.status === FencerStatus.CHECKED_IN ? 'Annuler' : 'Pointer'}
+                        {fencer.status === FencerStatus.CHECKED_IN ? t('fencer.uncheck') : t('fencer.check_in')}
                       </button>
                       {onSetFencerStatus && fencer.status === FencerStatus.CHECKED_IN && (
                         <>
@@ -903,7 +903,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                                 })
                               )
                             }
-                            title="Abandonner"
+                            title={t('fencer.abandon')}
                             style={SMALL_BTN}
                           >
                             🚶
@@ -919,7 +919,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
                                 })
                               )
                             }
-                            title="Forfait"
+                            title={t('fencer.forfait')}
                             style={SMALL_BTN}
                           >
                             📋
