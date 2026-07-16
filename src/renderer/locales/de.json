@@ -1279,7 +1279,24 @@
   },
   "voice": {
     "control": "Sprachsteuerung",
-    "last_command": "Letzter Befehl:"
+    "last_command": "Letzter Befehl:",
+    "available_commands": "Verfügbare Befehle:",
+    "button_start": "Sprachsteuerung aktivieren",
+    "button_stop": "Zuhören beenden",
+    "command_finish_description": "Gefecht beenden",
+    "command_increment_description": "Punkt hinzufügen (z. B. \"plus A\")",
+    "command_pause_description": "Pausieren",
+    "command_score_description": "Stand festlegen (z. B. \"score A 5\")",
+    "command_start_description": "Gefecht starten",
+    "error_generic": "Fehler: {{error}}",
+    "error_not_supported": "Spracherkennung wird von diesem Browser nicht unterstützt",
+    "last_command_finished": "⏹ Beendet",
+    "last_command_increment": "+1 {{player}}",
+    "last_command_paused": "⏸ Pause",
+    "last_command_score": "Stand {{player}}: {{score}}",
+    "last_command_started": "▶ Gestartet",
+    "status_idle": "Zum Aktivieren tippen",
+    "status_listening": "Zuhören läuft..."
   },
   "wifi": {
     "ssid_placeholder": "Mein-WLAN-Netz",

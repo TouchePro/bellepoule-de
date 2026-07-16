@@ -56,22 +56,22 @@ export const VoiceScoreController: React.FC<{
           }
         }
       },
-      description: 'Définir le score (ex: "score A 5")',
+      description: t('voice.command_score_description'),
     },
     {
       command: 'démarrer|start|commencer',
       action: () => onStart?.(),
-      description: 'Démarrer le match',
+      description: t('voice.command_start_description'),
     },
     {
       command: 'pause|stop',
       action: () => onPause?.(),
-      description: 'Mettre en pause',
+      description: t('voice.command_pause_description'),
     },
     {
       command: 'terminer|fini|fin',
       action: () => onFinish?.(),
-      description: 'Terminer le match',
+      description: t('voice.command_finish_description'),
     },
     {
       command: 'plus [A|B]',
@@ -90,7 +90,7 @@ export const VoiceScoreController: React.FC<{
           }
         }
       },
-      description: 'Ajouter un point (ex: "plus A")',
+      description: t('voice.command_increment_description'),
     },
   ];
 
@@ -101,34 +101,39 @@ export const VoiceScoreController: React.FC<{
       const scoreMatch = lowerText.match(lang.score);
       if (scoreMatch) {
         commands[0].action([scoreMatch[1], scoreMatch[2]]);
-        setLastCommand(`Score ${scoreMatch[1].toUpperCase()}: ${scoreMatch[2]}`);
+        setLastCommand(
+          t('voice.last_command_score', {
+            player: scoreMatch[1].toUpperCase(),
+            score: scoreMatch[2],
+          })
+        );
         return;
       }
 
       const plusMatch = lowerText.match(lang.increment);
       if (plusMatch) {
         commands[4].action([plusMatch[1]]);
-        setLastCommand(`+1 ${plusMatch[1].toUpperCase()}`);
+        setLastCommand(t('voice.last_command_increment', { player: plusMatch[1].toUpperCase() }));
         return;
       }
 
       if (lang.start.test(lowerText)) {
         commands[1].action();
-        setLastCommand('▶ Démarré');
+        setLastCommand(t('voice.last_command_started'));
       } else if (lang.pause.test(lowerText)) {
         commands[2].action();
-        setLastCommand('⏸ Pause');
+        setLastCommand(t('voice.last_command_paused'));
       } else if (lang.finish.test(lowerText)) {
         commands[3].action();
-        setLastCommand('⏹ Terminé');
+        setLastCommand(t('voice.last_command_finished'));
       }
     },
-    [commands]
+    [commands, t]
   );
 
   useEffect(() => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      setError("La reconnaissance vocale n'est pas supportée par ce navigateur");
+      setError(t('voice.error_not_supported'));
       return;
     }
 
@@ -151,7 +156,7 @@ export const VoiceScoreController: React.FC<{
     };
 
     recognition.onerror = (event: any) => {
-      setError(`Erreur: ${event.error}`);
+      setError(t('voice.error_generic', { error: event.error }));
       setIsListening(false);
     };
 
@@ -162,7 +167,7 @@ export const VoiceScoreController: React.FC<{
     return () => {
       recognition.stop();
     };
-  }, [isListening, processCommand]);
+  }, [isListening, processCommand, t]);
 
   return (
     <div
@@ -194,7 +199,7 @@ export const VoiceScoreController: React.FC<{
         <div>
           <h3 style={{ margin: 0, fontSize: '18px' }}>{t('voice.control')}</h3>
           <p style={{ margin: '4px 0 0 0', color: '#6b7280', fontSize: '14px' }}>
-            {isListening ? 'Écoute en cours...' : 'Appuyez pour activer'}
+            {isListening ? t('voice.status_listening') : t('voice.status_idle')}
           </p>
         </div>
       </div>
@@ -229,7 +234,7 @@ export const VoiceScoreController: React.FC<{
           transition: 'all 0.2s',
         }}
       >
-        {isListening ? "Arrêter l'écoute" : 'Activer la voix'}
+        {isListening ? t('voice.button_stop') : t('voice.button_start')}
       </button>
 
       {transcript && (
@@ -263,7 +268,7 @@ export const VoiceScoreController: React.FC<{
 
       <div style={{ marginTop: '16px' }}>
         <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#374151' }}>
-          Commandes disponibles:
+          {t('voice.available_commands')}
         </h4>
         <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#6b7280' }}>
           {commands.map((cmd, idx) => (

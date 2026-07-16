@@ -1279,7 +1279,24 @@
   },
   "voice": {
     "control": "Voice Control",
-    "last_command": "Last command:"
+    "last_command": "Last command:",
+    "available_commands": "Available commands:",
+    "button_start": "Activate voice",
+    "button_stop": "Stop listening",
+    "command_finish_description": "Finish the match",
+    "command_increment_description": "Add a point (e.g. \"plus A\")",
+    "command_pause_description": "Pause",
+    "command_score_description": "Set the score (e.g. \"score A 5\")",
+    "command_start_description": "Start the match",
+    "error_generic": "Error: {{error}}",
+    "error_not_supported": "Speech recognition is not supported by this browser",
+    "last_command_finished": "⏹ Finished",
+    "last_command_increment": "+1 {{player}}",
+    "last_command_paused": "⏸ Paused",
+    "last_command_score": "Score {{player}}: {{score}}",
+    "last_command_started": "▶ Started",
+    "status_idle": "Tap to activate",
+    "status_listening": "Listening..."
   },
   "wifi": {
     "ssid_placeholder": "My-WiFi-Network",
