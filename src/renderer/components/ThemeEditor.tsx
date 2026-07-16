@@ -89,144 +89,150 @@ const DARK_DEFAULTS: Record<string, string> = {
 // ──────────────────────────────────────────────────────────────────────────────
 interface VarDef {
   key: string;
-  label: string;
+  /** Clé i18n du libellé (résolue via t() au rendu) */
+  labelKey: string;
   /** color → color-picker + text; text → texte libre; size → presets de taille; font → menu déroulant police */
   type: 'color' | 'text' | 'size' | 'font';
 }
 
 interface VarGroup {
-  label: string;
+  labelKey: string;
   vars: VarDef[];
 }
 
 const VAR_GROUPS: VarGroup[] = [
   {
-    label: 'Arrière-plans',
+    labelKey: 'theme.group_backgrounds',
     vars: [
-      { key: '--bg',         label: 'Fond général',    type: 'text'  },
-      { key: '--header-bg',  label: 'Fond en-tête',    type: 'text'  },
-      { key: '--match-bg',   label: 'Fond match',      type: 'text'  },
-      { key: '--score-bg',   label: 'Fond score',      type: 'text'  },
-      { key: '--timer-bg',   label: 'Fond chrono',     type: 'text'  },
+      { key: '--bg',         labelKey: 'theme.var_bg_general',  type: 'text'  },
+      { key: '--header-bg',  labelKey: 'theme.var_bg_header',   type: 'text'  },
+      { key: '--match-bg',   labelKey: 'theme.var_bg_match',    type: 'text'  },
+      { key: '--score-bg',   labelKey: 'theme.var_bg_score',    type: 'text'  },
+      { key: '--timer-bg',   labelKey: 'theme.var_bg_timer',    type: 'text'  },
     ],
   },
   {
-    label: 'Textes',
+    labelKey: 'theme.group_texts',
     vars: [
-      { key: '--text',               label: 'Texte principal',     type: 'color' },
-      { key: '--fencer-name-color',  label: 'Nom combattant',      type: 'color' },
-      { key: '--fencer-club-color',  label: 'Club combattant',     type: 'color' },
-      { key: '--waiting-color',      label: 'Écran attente',       type: 'color' },
-      { key: '--idle-number-color',  label: 'Numéro arène',        type: 'text'  },
-      { key: '--idle-label-color',   label: 'Label arène',         type: 'text'  },
+      { key: '--text',               labelKey: 'theme.var_text_main',       type: 'color' },
+      { key: '--fencer-name-color',  labelKey: 'theme.var_fencer_name',     type: 'color' },
+      { key: '--fencer-club-color',  labelKey: 'theme.var_fencer_club',     type: 'color' },
+      { key: '--waiting-color',      labelKey: 'theme.var_waiting_screen',  type: 'color' },
+      { key: '--idle-number-color',  labelKey: 'theme.var_arena_number',    type: 'text'  },
+      { key: '--idle-label-color',   labelKey: 'theme.var_arena_label',     type: 'text'  },
     ],
   },
   {
-    label: 'Côté gauche (vert)',
+    labelKey: 'theme.group_left_green',
     vars: [
-      { key: '--green-side-bg',     label: 'Fond',           type: 'text'  },
-      { key: '--green-side-border', label: 'Bordure',        type: 'color' },
-      { key: '--score-green',       label: 'Couleur score',  type: 'color' },
-      { key: '--score-green-glow',  label: 'Lueur score',    type: 'text'  },
+      { key: '--green-side-bg',     labelKey: 'theme.var_bg',           type: 'text'  },
+      { key: '--green-side-border', labelKey: 'theme.var_border',       type: 'color' },
+      { key: '--score-green',       labelKey: 'theme.var_score_color',  type: 'color' },
+      { key: '--score-green-glow',  labelKey: 'theme.var_score_glow',   type: 'text'  },
     ],
   },
   {
-    label: 'Côté droit (rouge)',
+    labelKey: 'theme.group_right_red',
     vars: [
-      { key: '--red-side-bg',     label: 'Fond',           type: 'text'  },
-      { key: '--red-side-border', label: 'Bordure',        type: 'color' },
-      { key: '--score-red',       label: 'Couleur score',  type: 'color' },
-      { key: '--score-red-glow',  label: 'Lueur score',    type: 'text'  },
+      { key: '--red-side-bg',     labelKey: 'theme.var_bg',           type: 'text'  },
+      { key: '--red-side-border', labelKey: 'theme.var_border',       type: 'color' },
+      { key: '--score-red',       labelKey: 'theme.var_score_color',  type: 'color' },
+      { key: '--score-red-glow',  labelKey: 'theme.var_score_glow',   type: 'text'  },
     ],
   },
   {
-    label: 'Chronomètre',
+    labelKey: 'theme.group_timer',
     vars: [
-      { key: '--timer-color',      label: 'Couleur arrêt',    type: 'color' },
-      { key: '--timer-glow',       label: 'Lueur arrêt',      type: 'text'  },
-      { key: '--timer-border',     label: 'Bordure arrêt',    type: 'text'  },
-      { key: '--timer-run-color',  label: 'Couleur en cours', type: 'color' },
-      { key: '--timer-run-glow',   label: 'Lueur en cours',   type: 'text'  },
-      { key: '--timer-run-border', label: 'Bordure en cours', type: 'text'  },
+      { key: '--timer-color',      labelKey: 'theme.var_timer_color_stopped',  type: 'color' },
+      { key: '--timer-glow',       labelKey: 'theme.var_timer_glow_stopped',   type: 'text'  },
+      { key: '--timer-border',     labelKey: 'theme.var_timer_border_stopped', type: 'text'  },
+      { key: '--timer-run-color',  labelKey: 'theme.var_timer_color_running',  type: 'color' },
+      { key: '--timer-run-glow',   labelKey: 'theme.var_timer_glow_running',   type: 'text'  },
+      { key: '--timer-run-border', labelKey: 'theme.var_timer_border_running', type: 'text'  },
     ],
   },
   {
-    label: 'Disposition',
+    labelKey: 'theme.group_layout',
     vars: [
-      { key: '--score-font-size',       label: 'Taille scores',     type: 'size' },
-      { key: '--timer-font-size',       label: 'Taille chrono',     type: 'size' },
-      { key: '--fencer-name-font-size', label: 'Taille noms',       type: 'size' },
-      { key: '--score-font-family',       label: 'Police scores',   type: 'font' },
-      { key: '--timer-font-family',       label: 'Police chrono',   type: 'font' },
-      { key: '--fencer-name-font-family', label: 'Police noms',     type: 'font' },
-      { key: '--vs-color',                label: 'Couleur VS',      type: 'color' },
-      { key: '--vs-font-family',          label: 'Police VS',       type: 'font' },
+      { key: '--score-font-size',       labelKey: 'theme.var_score_size',   type: 'size' },
+      { key: '--timer-font-size',       labelKey: 'theme.var_timer_size',   type: 'size' },
+      { key: '--fencer-name-font-size', labelKey: 'theme.var_name_size',    type: 'size' },
+      { key: '--score-font-family',       labelKey: 'theme.var_score_font', type: 'font' },
+      { key: '--timer-font-family',       labelKey: 'theme.var_timer_font', type: 'font' },
+      { key: '--fencer-name-font-family', labelKey: 'theme.var_name_font',  type: 'font' },
+      { key: '--vs-color',                labelKey: 'theme.var_vs_color',   type: 'color' },
+      { key: '--vs-font-family',          labelKey: 'theme.var_vs_font',    type: 'font' },
     ],
   },
   {
-    label: 'Positionnement',
+    labelKey: 'theme.group_positioning',
     vars: [
-      { key: '--header-display',          label: 'En-tête (flex/none)',       type: 'text' },
-      { key: '--vs-divider-display',      label: 'VS (flex/none)',            type: 'text' },
-      { key: '--timer-label-display',     label: '"Tps restant" (none/block)', type: 'text' },
-      { key: '--timer-section-position',  label: 'Chrono position',           type: 'text' },
-      { key: '--timer-section-top',       label: 'Chrono haut',               type: 'text' },
-      { key: '--timer-section-left',      label: 'Chrono gauche',             type: 'text' },
-      { key: '--timer-section-right',     label: 'Chrono droite',             type: 'text' },
-      { key: '--timer-section-bottom',    label: 'Chrono bas',                type: 'text' },
-      { key: '--timer-section-width',     label: 'Chrono largeur',            type: 'text' },
-      { key: '--timer-section-transform', label: 'Chrono transform',          type: 'text' },
-      { key: '--score-a-position',        label: 'Score G position',          type: 'text' },
-      { key: '--score-a-top',             label: 'Score G haut',              type: 'text' },
-      { key: '--score-a-left',            label: 'Score G gauche',            type: 'text' },
-      { key: '--score-a-right',           label: 'Score G droite',            type: 'text' },
-      { key: '--score-a-bottom',          label: 'Score G bas',               type: 'text' },
-      { key: '--score-a-transform',       label: 'Score G transform',         type: 'text' },
-      { key: '--score-b-position',        label: 'Score D position',          type: 'text' },
-      { key: '--score-b-top',             label: 'Score D haut',              type: 'text' },
-      { key: '--score-b-left',            label: 'Score D gauche',            type: 'text' },
-      { key: '--score-b-right',           label: 'Score D droite',            type: 'text' },
-      { key: '--score-b-bottom',          label: 'Score D bas',               type: 'text' },
-      { key: '--score-b-transform',       label: 'Score D transform',         type: 'text' },
-      { key: '--name-a-position',         label: 'Nom G position',            type: 'text' },
-      { key: '--name-a-top',              label: 'Nom G haut',                type: 'text' },
-      { key: '--name-a-left',             label: 'Nom G gauche',              type: 'text' },
-      { key: '--name-a-right',            label: 'Nom G droite',              type: 'text' },
-      { key: '--name-a-width',            label: 'Nom G largeur',             type: 'text' },
-      { key: '--name-a-transform',        label: 'Nom G transform',           type: 'text' },
-      { key: '--name-b-position',         label: 'Nom D position',            type: 'text' },
-      { key: '--name-b-top',              label: 'Nom D haut',                type: 'text' },
-      { key: '--name-b-left',             label: 'Nom D gauche',              type: 'text' },
-      { key: '--name-b-right',            label: 'Nom D droite',              type: 'text' },
-      { key: '--name-b-width',            label: 'Nom D largeur',             type: 'text' },
-      { key: '--name-b-transform',        label: 'Nom D transform',           type: 'text' },
+      { key: '--header-display',          labelKey: 'theme.var_pos_header_display',      type: 'text' },
+      { key: '--vs-divider-display',      labelKey: 'theme.var_pos_vs_display',          type: 'text' },
+      { key: '--timer-label-display',     labelKey: 'theme.var_pos_timer_label_display', type: 'text' },
+      { key: '--timer-section-position',  labelKey: 'theme.var_pos_timer_position',      type: 'text' },
+      { key: '--timer-section-top',       labelKey: 'theme.var_pos_timer_top',           type: 'text' },
+      { key: '--timer-section-left',      labelKey: 'theme.var_pos_timer_left',          type: 'text' },
+      { key: '--timer-section-right',     labelKey: 'theme.var_pos_timer_right',         type: 'text' },
+      { key: '--timer-section-bottom',    labelKey: 'theme.var_pos_timer_bottom',        type: 'text' },
+      { key: '--timer-section-width',     labelKey: 'theme.var_pos_timer_width',         type: 'text' },
+      { key: '--timer-section-transform', labelKey: 'theme.var_pos_timer_transform',     type: 'text' },
+      { key: '--score-a-position',        labelKey: 'theme.var_pos_score_l_position',    type: 'text' },
+      { key: '--score-a-top',             labelKey: 'theme.var_pos_score_l_top',         type: 'text' },
+      { key: '--score-a-left',            labelKey: 'theme.var_pos_score_l_left',        type: 'text' },
+      { key: '--score-a-right',           labelKey: 'theme.var_pos_score_l_right',       type: 'text' },
+      { key: '--score-a-bottom',          labelKey: 'theme.var_pos_score_l_bottom',      type: 'text' },
+      { key: '--score-a-transform',       labelKey: 'theme.var_pos_score_l_transform',   type: 'text' },
+      { key: '--score-b-position',        labelKey: 'theme.var_pos_score_r_position',    type: 'text' },
+      { key: '--score-b-top',             labelKey: 'theme.var_pos_score_r_top',         type: 'text' },
+      { key: '--score-b-left',            labelKey: 'theme.var_pos_score_r_left',        type: 'text' },
+      { key: '--score-b-right',           labelKey: 'theme.var_pos_score_r_right',       type: 'text' },
+      { key: '--score-b-bottom',          labelKey: 'theme.var_pos_score_r_bottom',      type: 'text' },
+      { key: '--score-b-transform',       labelKey: 'theme.var_pos_score_r_transform',   type: 'text' },
+      { key: '--name-a-position',         labelKey: 'theme.var_pos_name_l_position',     type: 'text' },
+      { key: '--name-a-top',              labelKey: 'theme.var_pos_name_l_top',          type: 'text' },
+      { key: '--name-a-left',             labelKey: 'theme.var_pos_name_l_left',         type: 'text' },
+      { key: '--name-a-right',            labelKey: 'theme.var_pos_name_l_right',        type: 'text' },
+      { key: '--name-a-width',            labelKey: 'theme.var_pos_name_l_width',        type: 'text' },
+      { key: '--name-a-transform',        labelKey: 'theme.var_pos_name_l_transform',    type: 'text' },
+      { key: '--name-b-position',         labelKey: 'theme.var_pos_name_r_position',     type: 'text' },
+      { key: '--name-b-top',              labelKey: 'theme.var_pos_name_r_top',          type: 'text' },
+      { key: '--name-b-left',             labelKey: 'theme.var_pos_name_r_left',         type: 'text' },
+      { key: '--name-b-right',            labelKey: 'theme.var_pos_name_r_right',        type: 'text' },
+      { key: '--name-b-width',            labelKey: 'theme.var_pos_name_r_width',        type: 'text' },
+      { key: '--name-b-transform',        labelKey: 'theme.var_pos_name_r_transform',    type: 'text' },
     ],
   },
 ];
 
-const SIZE_PRESETS: Record<string, Record<string, string>> = {
-  '--score-font-size': {
-    'Petit':       'clamp(4rem, 14vw, 28vh)',
-    'Normal':      'clamp(7rem, 23vw, 44vh)',
-    'Grand':       'clamp(9rem, 29vw, 55vh)',
-    'Très grand':  'clamp(11rem, 35vw, 66vh)',
-  },
-  '--timer-font-size': {
-    'Petit':      'clamp(2rem, 6vw, 10vh)',
-    'Normal':     'clamp(3.5rem, 11vw, 18vh)',
-    'Grand':      'clamp(4.5rem, 14vw, 24vh)',
-    'Très grand': 'clamp(6rem, 18vw, 30vh)',
-  },
-  '--fencer-name-font-size': {
-    'Petit':      'clamp(0.7rem, 2vw, 3vh)',
-    'Normal':     'clamp(1rem, 3.5vw, 5vh)',
-    'Grand':      'clamp(1.4rem, 5vw, 7vh)',
-    'Très grand': 'clamp(1.8rem, 6.5vw, 9vh)',
-  },
+interface SizePreset {
+  labelKey: string;
+  value: string;
+}
+
+const SIZE_PRESETS: Record<string, SizePreset[]> = {
+  '--score-font-size': [
+    { labelKey: 'theme.size_small',  value: 'clamp(4rem, 14vw, 28vh)' },
+    { labelKey: 'theme.size_normal', value: 'clamp(7rem, 23vw, 44vh)' },
+    { labelKey: 'theme.size_large',  value: 'clamp(9rem, 29vw, 55vh)' },
+    { labelKey: 'theme.size_xlarge', value: 'clamp(11rem, 35vw, 66vh)' },
+  ],
+  '--timer-font-size': [
+    { labelKey: 'theme.size_small',  value: 'clamp(2rem, 6vw, 10vh)' },
+    { labelKey: 'theme.size_normal', value: 'clamp(3.5rem, 11vw, 18vh)' },
+    { labelKey: 'theme.size_large',  value: 'clamp(4.5rem, 14vw, 24vh)' },
+    { labelKey: 'theme.size_xlarge', value: 'clamp(6rem, 18vw, 30vh)' },
+  ],
+  '--fencer-name-font-size': [
+    { labelKey: 'theme.size_small',  value: 'clamp(0.7rem, 2vw, 3vh)' },
+    { labelKey: 'theme.size_normal', value: 'clamp(1rem, 3.5vw, 5vh)' },
+    { labelKey: 'theme.size_large',  value: 'clamp(1.4rem, 5vw, 7vh)' },
+    { labelKey: 'theme.size_xlarge', value: 'clamp(1.8rem, 6.5vw, 9vh)' },
+  ],
 };
 
-const FONT_OPTIONS: { label: string; value: string }[] = [
-  { label: 'Monospace (défaut)',    value: 'monospace' },
+const FONT_OPTIONS: { label: string; value: string; labelKey?: string }[] = [
+  { label: 'Monospace', labelKey: 'theme.font_monospace_default', value: 'monospace' },
   { label: 'Courier New',          value: '"Courier New", monospace' },
   { label: 'System UI',            value: 'system-ui, sans-serif' },
   { label: 'Arial',                value: 'Arial, sans-serif' },
@@ -279,26 +285,26 @@ const REFEREE_DEFAULTS: Record<string, string> = {
 
 const REFEREE_VAR_GROUPS: VarGroup[] = [
   {
-    label: 'Arbitre – Arrière-plan',
+    labelKey: 'theme.group_referee_bg',
     vars: [
-      { key: '--ref-bg',        label: 'Fond page',         type: 'text'  },
-      { key: '--ref-header-bg', label: 'Fond en-tête',      type: 'text'  },
+      { key: '--ref-bg',        labelKey: 'theme.var_bg_page',    type: 'text'  },
+      { key: '--ref-header-bg', labelKey: 'theme.var_bg_header',  type: 'text'  },
     ],
   },
   {
-    label: 'Arbitre – Couleurs',
+    labelKey: 'theme.group_referee_colors',
     vars: [
-      { key: '--ref-accent',  label: 'Couleur accent 1',  type: 'color' },
-      { key: '--ref-accent2', label: 'Couleur accent 2',  type: 'color' },
-      { key: '--ref-text',    label: 'Texte principal',   type: 'color' },
-      { key: '--ref-muted',   label: 'Texte discret',     type: 'color' },
+      { key: '--ref-accent',  labelKey: 'theme.var_accent1',     type: 'color' },
+      { key: '--ref-accent2', labelKey: 'theme.var_accent2',     type: 'color' },
+      { key: '--ref-text',    labelKey: 'theme.var_text_main',   type: 'color' },
+      { key: '--ref-muted',   labelKey: 'theme.var_text_muted',  type: 'color' },
     ],
   },
   {
-    label: 'Arbitre – Cartes',
+    labelKey: 'theme.group_referee_cards',
     vars: [
-      { key: '--ref-card-bg', label: 'Fond cartes',  type: 'text'  },
-      { key: '--ref-border',  label: 'Bordures',     type: 'text'  },
+      { key: '--ref-card-bg', labelKey: 'theme.var_bg_cards',  type: 'text'  },
+      { key: '--ref-border',  labelKey: 'theme.var_border',    type: 'text'  },
     ],
   },
 ];
@@ -319,26 +325,26 @@ const POOL_DEFAULTS: Record<string, string> = {
 
 const POOL_VAR_GROUPS: VarGroup[] = [
   {
-    label: 'Poule – Arrière-plan',
+    labelKey: 'theme.group_pool_bg',
     vars: [
-      { key: '--pool-bg',        label: 'Fond page',     type: 'text'  },
-      { key: '--pool-header-bg', label: 'Fond en-tête',  type: 'text'  },
+      { key: '--pool-bg',        labelKey: 'theme.var_bg_page',    type: 'text'  },
+      { key: '--pool-header-bg', labelKey: 'theme.var_bg_header',  type: 'text'  },
     ],
   },
   {
-    label: 'Poule – Couleurs',
+    labelKey: 'theme.group_pool_colors',
     vars: [
-      { key: '--pool-accent',  label: 'Couleur accent 1',  type: 'color' },
-      { key: '--pool-accent2', label: 'Couleur accent 2',  type: 'color' },
-      { key: '--pool-text',    label: 'Texte principal',   type: 'color' },
-      { key: '--pool-muted',   label: 'Texte discret',     type: 'color' },
+      { key: '--pool-accent',  labelKey: 'theme.var_accent1',     type: 'color' },
+      { key: '--pool-accent2', labelKey: 'theme.var_accent2',     type: 'color' },
+      { key: '--pool-text',    labelKey: 'theme.var_text_main',   type: 'color' },
+      { key: '--pool-muted',   labelKey: 'theme.var_text_muted',  type: 'color' },
     ],
   },
   {
-    label: 'Poule – Cartes',
+    labelKey: 'theme.group_pool_cards',
     vars: [
-      { key: '--pool-card-bg', label: 'Fond cartes',  type: 'text'  },
-      { key: '--pool-border',  label: 'Bordures',     type: 'text'  },
+      { key: '--pool-card-bg', labelKey: 'theme.var_bg_cards',  type: 'text'  },
+      { key: '--pool-border',  labelKey: 'theme.var_border',    type: 'text'  },
     ],
   },
 ];
@@ -359,26 +365,26 @@ const PUBLIC_DEFAULTS: Record<string, string> = {
 
 const PUBLIC_VAR_GROUPS: VarGroup[] = [
   {
-    label: 'Public – Arrière-plan',
+    labelKey: 'theme.group_public_bg',
     vars: [
-      { key: '--pub-bg',        label: 'Fond page',     type: 'text'  },
-      { key: '--pub-header-bg', label: 'Fond en-tête',  type: 'text'  },
+      { key: '--pub-bg',        labelKey: 'theme.var_bg_page',    type: 'text'  },
+      { key: '--pub-header-bg', labelKey: 'theme.var_bg_header',  type: 'text'  },
     ],
   },
   {
-    label: 'Public – Couleurs',
+    labelKey: 'theme.group_public_colors',
     vars: [
-      { key: '--pub-accent',  label: 'Couleur accent 1',  type: 'color' },
-      { key: '--pub-accent2', label: 'Couleur accent 2',  type: 'color' },
-      { key: '--pub-text',    label: 'Texte principal',   type: 'color' },
-      { key: '--pub-muted',   label: 'Texte discret',     type: 'color' },
+      { key: '--pub-accent',  labelKey: 'theme.var_accent1',     type: 'color' },
+      { key: '--pub-accent2', labelKey: 'theme.var_accent2',     type: 'color' },
+      { key: '--pub-text',    labelKey: 'theme.var_text_main',   type: 'color' },
+      { key: '--pub-muted',   labelKey: 'theme.var_text_muted',  type: 'color' },
     ],
   },
   {
-    label: 'Public – Cartes',
+    labelKey: 'theme.group_public_cards',
     vars: [
-      { key: '--pub-card-bg', label: 'Fond cartes',  type: 'text'  },
-      { key: '--pub-border',  label: 'Bordures',     type: 'text'  },
+      { key: '--pub-card-bg', labelKey: 'theme.var_bg_cards',  type: 'text'  },
+      { key: '--pub-border',  labelKey: 'theme.var_border',    type: 'text'  },
     ],
   },
 ];
@@ -398,15 +404,15 @@ const KIOSK_DEFAULTS: Record<string, string> = {
 
 const KIOSK_VAR_GROUPS: VarGroup[] = [
   {
-    label: 'Kiosk',
+    labelKey: 'theme.group_kiosk',
     vars: [
-      { key: '--k-bg',       label: 'Fond',              type: 'text'  },
-      { key: '--k-accent',   label: 'Couleur accent',    type: 'color' },
-      { key: '--k-accent2',  label: 'Couleur interactive', type: 'color' },
-      { key: '--k-card-bg',  label: 'Fond cartes',       type: 'text'  },
-      { key: '--k-border',   label: 'Bordures',          type: 'text'  },
-      { key: '--k-muted',    label: 'Texte discret',     type: 'color' },
-      { key: '--k-progress', label: 'Barre progression', type: 'text'  },
+      { key: '--k-bg',       labelKey: 'theme.var_bg',                 type: 'text'  },
+      { key: '--k-accent',   labelKey: 'theme.var_accent',             type: 'color' },
+      { key: '--k-accent2',  labelKey: 'theme.var_interactive_color',  type: 'color' },
+      { key: '--k-card-bg',  labelKey: 'theme.var_bg_cards',           type: 'text'  },
+      { key: '--k-border',   labelKey: 'theme.var_border',             type: 'text'  },
+      { key: '--k-muted',    labelKey: 'theme.var_text_muted',         type: 'color' },
+      { key: '--k-progress', labelKey: 'theme.var_progress_bar',       type: 'text'  },
     ],
   },
 ];
@@ -453,11 +459,11 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
     effectiveType === 'public'   ? PUBLIC_VAR_GROUPS :
     VAR_GROUPS;
   const defaultName =
-    effectiveType === 'kiosk'   ? 'Thème kiosk' :
-    effectiveType === 'referee' ? 'Thème arbitre' :
-    effectiveType === 'pool'    ? 'Thème poule' :
-    effectiveType === 'public'  ? 'Thème public' :
-    'Mon thème';
+    effectiveType === 'kiosk'   ? t('theme.default_name_kiosk') :
+    effectiveType === 'referee' ? t('theme.default_name_referee') :
+    effectiveType === 'pool'    ? t('theme.default_name_pool') :
+    effectiveType === 'public'  ? t('theme.default_name_public') :
+    t('theme.default_name');
 
   const [themeName, setThemeName] = useState(initialTheme?.name ?? defaultName);
   const [vars, setVars] = useState<Record<string, string>>(() => ({
@@ -573,7 +579,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
   // ── Sauvegarde dans l'app ──
   const handleSave = () => {
     const id = initialTheme?.id ?? `custom-${Date.now()}`;
-    const theme: CustomTheme = { id, name: themeName.trim() || 'Sans nom', targetType: effectiveType, variables: vars, overlayMode };
+    const theme: CustomTheme = { id, name: themeName.trim() || t('theme.unnamed'), targetType: effectiveType, variables: vars, overlayMode };
     window.electronAPI.themes.save(theme).then(() => {
       setSavedThemes(prev => {
         const idx = prev.findIndex(t => t.id === id);
@@ -598,7 +604,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
   const handleExport = async () => {
     const theme: CustomTheme = {
       id: initialTheme?.id ?? `custom-${Date.now()}`,
-      name: themeName.trim() || 'Mon thème',
+      name: themeName.trim() || t('theme.default_name'),
       targetType: effectiveType,
       variables: vars,
     };
@@ -606,7 +612,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
     const safeName = theme.name.replace(/[^a-z0-9_-]/gi, '-');
     const result = await window.electronAPI.dialog.saveFile({
       defaultPath: `theme-${safeName}.json`,
-      filters: [{ name: 'Thème JSON', extensions: ['json'] }],
+      filters: [{ name: t('theme.file_filter_json'), extensions: ['json'] }],
     });
     if (result && !result.canceled && result.filePath) {
       await window.electronAPI.file.writeContent(result.filePath, json);
@@ -615,22 +621,22 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
 
   const handleImport = async () => {
     const result = await window.electronAPI.dialog.openFile({
-      filters: [{ name: 'Thème JSON', extensions: ['json'] }],
+      filters: [{ name: t('theme.file_filter_json'), extensions: ['json'] }],
       properties: ['openFile'],
     });
     if (!result || !result.content) return;
     try {
       const parsed: CustomTheme = JSON.parse(result.content);
       if (!parsed.variables || typeof parsed.variables !== 'object') {
-        setImportError('Fichier invalide : propriété "variables" manquante');
+        setImportError(t('theme.import_invalid_missing_variables'));
         return;
       }
-      setThemeName(parsed.name ?? 'Thème importé');
+      setThemeName(parsed.name ?? t('theme.imported_name'));
       setVars({ ...activeDefaults, ...parsed.variables });
       setOverlayMode(parsed.overlayMode ?? false);
       setImportError('');
     } catch {
-      setImportError('Fichier JSON invalide');
+      setImportError(t('theme.import_invalid_json'));
     }
   };
 
@@ -638,7 +644,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
   const handleApply = () => {
     const theme: CustomTheme = {
       id: initialTheme?.id ?? `custom-${Date.now()}`,
-      name: themeName.trim() || 'Mon thème',
+      name: themeName.trim() || t('theme.default_name'),
       targetType: effectiveType,
       variables: vars,
       overlayMode,
@@ -646,12 +652,12 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
     onApply(targetArenaId, theme);
   };
 
-  const arenaLabel = effectiveType === 'kiosk'   ? 'Kiosque'
-    : effectiveType === 'public'   ? 'Affichage public'
-    : effectiveType === 'referee'  ? 'Tablette arbitre'
-    : effectiveType === 'pool'     ? 'Affichage poule'
-    : targetArenaId === 'all' ? 'Toutes les pistes'
-    : `Piste ${targetArenaId.replace('arena', '')}`;
+  const arenaLabel = effectiveType === 'kiosk'   ? t('theme.target_kiosk')
+    : effectiveType === 'public'   ? t('theme.target_public')
+    : effectiveType === 'referee'  ? t('theme.target_referee')
+    : effectiveType === 'pool'     ? t('theme.target_pool')
+    : targetArenaId === 'all' ? t('theme.target_all_pistes')
+    : t('theme.target_piste', { number: targetArenaId.replace('arena', '') });
 
   return (
     <div className="theme-editor-overlay" onClick={onClose}>
@@ -661,15 +667,15 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
           <div>
             <h3 style={{ margin: 0 }}>{t('theme.editor_title')}</h3>
             <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.2rem' }}>
-              Cible : <strong style={{ color: '#60a5fa' }}>{arenaLabel}</strong>
+              {t('theme.target_label')} <strong style={{ color: '#60a5fa' }}>{arenaLabel}</strong>
             </div>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             <button className="theme-editor-btn secondary" onClick={() => { void handleImport(); }} title={t('theme.import_json')}>
-              ↑ Importer
+              ↑ {t('actions.import')}
             </button>
             <button className="theme-editor-btn secondary" onClick={() => { void handleExport(); }} title={t('actions.export')}>
-              ↓ Exporter
+              ↓ {t('actions.export')}
             </button>
             <button className="theme-editor-btn close" onClick={onClose}>✕</button>
           </div>
@@ -705,11 +711,11 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
             <div className="theme-editor-tabs">
               {activeVarGroups.map((g, i) => (
                 <button
-                  key={g.label}
+                  key={g.labelKey}
                   className={`theme-editor-tab ${activeGroup === i ? 'active' : ''}`}
                   onClick={() => setActiveGroup(i)}
                 >
-                  {g.label}
+                  {t(g.labelKey)}
                 </button>
               ))}
             </div>
@@ -720,14 +726,14 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
               {activeGroup === 0 && (
                 <div style={{ borderBottom: '1px solid #334155', paddingBottom: '0.75rem', marginBottom: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <div className="var-row">
-                    <label className="var-label">Image fond</label>
+                    <label className="var-label">{t('theme.var_bg_image')}</label>
                     <div className="var-control" style={{ gap: '0.4rem', flexWrap: 'wrap' }}>
                       <label style={{
                         cursor: 'pointer', padding: '0.3rem 0.6rem', borderRadius: '0.3rem',
                         border: '1px solid #475569', background: '#1e293b', color: '#94a3b8',
                         fontSize: '0.8rem', whiteSpace: 'nowrap',
                       }}>
-                        📷 Choisir image
+                        📷 {t('theme.choose_image')}
                         <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} />
                       </label>
                       {vars[bgVar]?.includes('url(') && (
@@ -739,7 +745,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
                             fontSize: '0.8rem', cursor: 'pointer',
                           }}
                         >
-                          ✕ Retirer
+                          ✕ {t('theme.remove_image')}
                         </button>
                       )}
                     </div>
@@ -762,11 +768,11 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
                   </div>
                 </div>
               )}
-              {activeVarGroups[activeGroup]?.vars.map(({ key, label, type }) => (
+              {activeVarGroups[activeGroup]?.vars.map(({ key, labelKey, type }) => (
                 <VarRow
                   key={key}
                   varKey={key}
-                  label={label}
+                  label={t(labelKey)}
                   type={type}
                   value={vars[key] ?? activeDefaults[key] ?? ''}
                   onChange={val => setVar(key, val)}
@@ -1010,7 +1016,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
                     {/* Écran attente */}
                     <div style={{ textAlign: 'center', fontSize: '22px', color: 'var(--idle-label-color)', flexShrink: 0 }}>
                       <span style={{ fontSize: '36px', fontWeight: 900, color: 'var(--idle-number-color)' }}>2</span>
-                      {' '}— Arène en attente
+                      {' '}— {t('theme.arena_waiting')}
                     </div>
                   </>
                 )}
@@ -1022,14 +1028,14 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({
         {/* ── Pied de page ── */}
         <div className="theme-editor-footer">
           <button className="theme-editor-btn secondary" onClick={handleSave}>
-            💾 Sauvegarder
+            💾 {t('actions.save')}
           </button>
           <div style={{ flex: 1 }} />
           <button className="theme-editor-btn secondary" onClick={onClose}>
-            Annuler
+            {t('actions.cancel')}
           </button>
           <button className="theme-editor-btn primary" onClick={handleApply}>
-            ✓ Appliquer à {arenaLabel}
+            ✓ {t('theme.apply_to', { target: arenaLabel })}
           </button>
         </div>
       </div>
@@ -1049,12 +1055,12 @@ interface VarRowProps {
 }
 
 const VarRow: React.FC<VarRowProps> = ({ varKey, label, type, value, onChange }) => {
+  const { t } = useTranslation();
   const isSimpleColor = (v: string) => /^#[0-9a-fA-F]{3,8}$/.test(v.trim());
 
   if (type === 'size') {
-    const presets = SIZE_PRESETS[varKey] ?? {};
-    const entries = Object.entries(presets);
-    const currentIdx = entries.findIndex(([, v]) => v === value);
+    const presets = SIZE_PRESETS[varKey] ?? [];
+    const currentIdx = presets.findIndex(p => p.value === value);
     const sliderIdx = currentIdx >= 0 ? currentIdx : 1;
 
     return (
@@ -1066,26 +1072,26 @@ const VarRow: React.FC<VarRowProps> = ({ varKey, label, type, value, onChange })
             <input
               type="range"
               min={0}
-              max={entries.length - 1}
+              max={presets.length - 1}
               step={1}
               value={sliderIdx}
-              onChange={e => onChange(entries[Number(e.target.value)][1])}
+              onChange={e => onChange(presets[Number(e.target.value)].value)}
               style={{ flex: 1, accentColor: '#3b82f6', cursor: 'pointer' }}
             />
             <span style={{ fontSize: '1.1rem', color: '#94a3b8', userSelect: 'none', width: 14, textAlign: 'center', fontWeight: 700 }}>A</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 2px' }}>
-            {entries.map(([name], i) => (
+            {presets.map((preset, i) => (
               <span
-                key={name}
-                onClick={() => onChange(entries[i][1])}
+                key={preset.labelKey}
+                onClick={() => onChange(preset.value)}
                 style={{
                   fontSize: '0.62rem',
                   color: i === sliderIdx ? '#60a5fa' : '#64748b',
                   cursor: 'pointer',
                 }}
               >
-                {name}
+                {t(preset.labelKey)}
               </span>
             ))}
           </div>
@@ -1110,7 +1116,7 @@ const VarRow: React.FC<VarRowProps> = ({ varKey, label, type, value, onChange })
           >
             {FONT_OPTIONS.map(opt => (
               <option key={opt.value} value={opt.value} style={{ fontFamily: opt.value }}>
-                {opt.label}
+                {opt.labelKey ? t(opt.labelKey) : opt.label}
               </option>
             ))}
           </select>
@@ -1162,7 +1168,7 @@ const VarRow: React.FC<VarRowProps> = ({ varKey, label, type, value, onChange })
           value={value}
           onChange={e => onChange(e.target.value)}
           className="var-text-input"
-          placeholder="ex: linear-gradient(135deg,#000,#111)"
+          placeholder={t('theme.gradient_placeholder')}
         />
       </div>
     </div>
