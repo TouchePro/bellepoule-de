@@ -130,15 +130,15 @@ const AggregateHeatmap: React.FC<{ stats: FencerCompetitionStats[] }> = ({ stats
   return (
     <div className="bg-white rounded-lg border border-gray-100 p-4">
       <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-        Zones de touches — {stats.length} tireurs
+        {t('analyticsCharts.touch_zones_title', { count: stats.length })}
       </div>
       <div className="flex items-center gap-6">
         <TouchZoneHeatmap zoneA={totA} zoneB={totB} zoneC={totC} />
         <div className="space-y-3 flex-1">
           {[
-            { zone: 'A', count: totA, pts: 1, color: '#bfdbfe', border: '#93c5fd', text: 'Main/Arme' },
-            { zone: 'B', count: totB, pts: 3, color: '#60a5fa', border: '#3b82f6', text: 'Bras/Jambes' },
-            { zone: 'C', count: totC, pts: 5, color: '#1d4ed8', border: '#1e40af', text: 'Tête/Torse' },
+            { zone: 'A', count: totA, pts: 1, color: '#bfdbfe', border: '#93c5fd', text: t('analyticsCharts.zone_hand_weapon') },
+            { zone: 'B', count: totB, pts: 3, color: '#60a5fa', border: '#3b82f6', text: t('analyticsCharts.zone_arms_legs') },
+            { zone: 'C', count: totC, pts: 5, color: '#1d4ed8', border: '#1e40af', text: t('analyticsCharts.zone_head_torso') },
           ].map(z => {
             const total = totA + totB + totC;
             const pct = total > 0 ? ((z.count / total) * 100).toFixed(1) : '0.0';
@@ -171,6 +171,7 @@ const AggregateHeatmap: React.FC<{ stats: FencerCompetitionStats[] }> = ({ stats
 // ── Top tireurs bar chart ──────────────────────────────────────────────────────
 
 const TopFencersChart: React.FC<{ stats: FencerCompetitionStats[]; isLaser: boolean }> = ({ stats, isLaser }) => {
+  const { t } = useTranslation();
   const sorted = [...stats]
     .sort((a, b) =>
       isLaser
@@ -189,14 +190,14 @@ const TopFencersChart: React.FC<{ stats: FencerCompetitionStats[]; isLaser: bool
     label: `${i + 1}. ${s.fencerLastName}`,
     value: isLaser ? s.totalTouchPoints : s.matchesPlayed,
     color: i === 0 ? '#f59e0b' : i === 1 ? '#9ca3af' : i === 2 ? '#b45309' : '#3b82f6',
-    sublabel: isLaser ? 'pts' : 'M',
+    sublabel: isLaser ? 'pts' : t('analyticsCharts.abbr_matches'),
   }));
 
   return (
     <HBar
       items={items}
       maxValue={max}
-      title={isLaser ? 'Top tireurs — Points touches' : 'Top tireurs — Matchs joués'}
+      title={isLaser ? t('analyticsCharts.top_fencers_touch_points') : t('analyticsCharts.top_fencers_matches')}
     />
   );
 };
@@ -220,33 +221,13 @@ const DurationChart: React.FC<{ stats: FencerCompetitionStats[] }> = ({ stats })
     label: b.label,
     value: withDuration.filter(s => s.averageDurationSeconds >= b.min && s.averageDurationSeconds < b.max).length,
     color: b.color,
-    sublabel: 't.',
+    sublabel: t('analyticsCharts.abbr_fencers'),
   }));
 
   return <HBar items={items} title={t('analyticsCharts.avg_duration_dist')} />;
 };
 
 // ── Cards by reason ──────────────────────────────────────────────────────────
-
-const CARD_REASON_FR: Record<string, string> = {
-  EARLY_START: 'Départ anticipé',
-  LATE_STOP: 'Arrêt tardif',
-  BODY_CONTACT: 'Contact corporel',
-  COUNTER_ATTACK: 'Contre-attaque',
-  TARGET_SUBSTITUTION: 'Substitution cible',
-  VOLUNTARY_DROP: 'Abandon arme',
-  TIME_WASTING: 'Perte de temps',
-  NON_COMPLIANT_GEAR: 'Équip. non conforme',
-  ESTOC: 'Estoc',
-  UNARMED_HAND: 'Main libre',
-  VOLUNTARY_EXIT: 'Sortie volontaire',
-  HEAVY_HIT: 'Coup violent',
-  BRUTALITY: 'Brutalité',
-  DANGEROUS: 'Dangereux',
-  REFUSAL: 'Refus',
-  UNSPORTSMANLIKE: 'Antisportif',
-  CHEATING: 'Triche',
-};
 
 const CardsByReason: React.FC<{ stats: FencerCompetitionStats[] }> = ({ stats }) => {
   const { t } = useTranslation();
@@ -263,24 +244,31 @@ const CardsByReason: React.FC<{ stats: FencerCompetitionStats[] }> = ({ stats })
 
   if (entries.length === 0) return null;
 
-  const items: BarItem[] = entries.map(([reason, count]) => ({
-    label: CARD_REASON_FR[reason] ?? reason,
-    value: count,
-    color: '#f59e0b',
-  }));
+  const items: BarItem[] = entries.map(([reason, count]) => {
+    const translated = t(`cardReasons.${reason}`);
+    return {
+      label: translated === `cardReasons.${reason}` ? reason : translated,
+      value: count,
+      color: '#f59e0b',
+    };
+  });
 
   return <HBar items={items} title={t('analyticsCharts.cards_repartition')} />;
 };
 
 // ── Export CSV ─────────────────────────────────────────────────────────────────
 
-async function exportCSV(competition: Competition, stats: FencerCompetitionStats[]) {
+async function exportCSV(
+  competition: Competition,
+  stats: FencerCompetitionStats[],
+  t: (key: string, params?: { [key: string]: string | number }) => string
+) {
   const isLaser = competition.weapon === Weapon.LASER;
   const headers = [
-    'Nom', 'Prénom', 'Club',
-    ...(isLaser ? ['Zone A', 'Zone B', 'Zone C', 'Points total'] : []),
-    'Cartons blancs', 'Cartons jaunes', 'Cartons rouges',
-    'Sorties piste', 'Matchs joués', 'Durée moy. (s)', 'Fins anticipées',
+    t('fencer.last_name'), t('fencer.first_name'), t('fencer.club'),
+    ...(isLaser ? ['Zone A', 'Zone B', 'Zone C', t('stats.total_points')] : []),
+    t('stats.white_cards'), t('stats.yellow_cards'), t('stats.red_cards'),
+    t('stats.arena_exits'), t('stats.matches_played'), t('analyticsCharts.csv_avg_duration'), t('analyticsCharts.csv_finished_early'),
   ];
 
   const rows = stats.map(s => [
@@ -326,7 +314,7 @@ export const AnalyticsCharts: React.FC<Props> = ({ competition, stats }) => {
 
   const handleExportCSV = async () => {
     setExporting(true);
-    try { await exportCSV(competition, stats); }
+    try { await exportCSV(competition, stats, t); }
     finally { setExporting(false); }
   };
 
@@ -339,7 +327,7 @@ export const AnalyticsCharts: React.FC<Props> = ({ competition, stats }) => {
           disabled={exporting}
           className="px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50"
         >
-          {exporting ? 'Export…' : '⬇ CSV'}
+          {exporting ? t('analyticsCharts.exporting') : '⬇ CSV'}
         </button>
       </div>
 
@@ -352,9 +340,9 @@ export const AnalyticsCharts: React.FC<Props> = ({ competition, stats }) => {
           title={t('analyticsCharts.cards_repartition')}
           centerLabel={String(totalWhite + totalYellow + totalRed)}
           slices={[
-            { label: 'Blancs', value: totalWhite, color: '#d1d5db' },
-            { label: 'Jaunes', value: totalYellow, color: '#f59e0b' },
-            { label: 'Rouges', value: totalRed, color: '#ef4444' },
+            { label: t('analyticsCharts.color_white'), value: totalWhite, color: '#d1d5db' },
+            { label: t('analyticsCharts.color_yellow'), value: totalYellow, color: '#f59e0b' },
+            { label: t('analyticsCharts.color_red'), value: totalRed, color: '#ef4444' },
           ]}
         />
 
