@@ -546,7 +546,9 @@
     "devmode_hint": "Double-click for a surprise…",
     "build_hint": "💡 Double-click the build number…",
     "desc1": "Fencing tournament management software.",
-    "desc2": "Pools, direct elimination, remote refereeing in real time."
+    "desc2": "Pools, direct elimination, remote refereeing in real time.",
+    "license_label": "License:",
+    "easter_sound": "Cluck-cluck!"
   },
   "addFencerToPool": {
     "search_placeholder": "Search by name…",
@@ -1344,7 +1346,27 @@
     "cards_repartition": "Cards repartition",
     "no_data": "No data",
     "total_points": "Total points scored:",
-    "no_stats": "No statistics available — run matches first."
+    "no_stats": "No statistics available — run matches first.",
+    "touch_zones_title": "Touch zones — {{count}} fencers",
+    "zone_hand_weapon": "Hand/Weapon",
+    "zone_arms_legs": "Arms/Legs",
+    "zone_head_torso": "Head/Torso",
+    "top_fencers_touch_points": "Top fencers — Touch points",
+    "top_fencers_matches": "Top fencers — Matches played",
+    "color_white": "White",
+    "color_yellow": "Yellow",
+    "color_red": "Red",
+    "exporting": "Exporting…",
+    "csv_avg_duration": "Avg duration (s)",
+    "csv_finished_early": "Finished early",
+    "abbr_matches": "M",
+    "abbr_fencers": "f."
+  },
+  "touchZoneHeatmap": {
+    "points_a": "1 pt",
+    "points_b": "3 pts",
+    "points_c": "5 pts",
+    "touch_count": "{{count}} touch(es)"
   },
   "numericKeypad": {
     "title": "Numeric keypad",

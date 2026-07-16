@@ -546,7 +546,9 @@
     "devmode_hint": "Doppelklick für eine Überraschung…",
     "build_hint": "💡 Doppelklick auf die Build-Nummer…",
     "desc1": "Software zur Verwaltung von Fechtturnieren.",
-    "desc2": "Gruppen, Direktausscheidungen, entfernte Schiedsrichterführung in Echtzeit."
+    "desc2": "Gruppen, Direktausscheidungen, entfernte Schiedsrichterführung in Echtzeit.",
+    "license_label": "Lizenz:",
+    "easter_sound": "Gack-gack!"
   },
   "addFencerToPool": {
     "search_placeholder": "Nach Name suchen…",
@@ -1344,7 +1346,27 @@
     "cards_repartition": "Aufteilung der Karten",
     "no_data": "Keine Daten",
     "total_points": "Erzielte Punkte gesamt:",
-    "no_stats": "Keine Statistik verfügbar — spielen Sie zuerst Matches."
+    "no_stats": "Keine Statistik verfügbar — spielen Sie zuerst Matches.",
+    "touch_zones_title": "Trefferzonen — {{count}} Fechter",
+    "zone_hand_weapon": "Hand/Waffe",
+    "zone_arms_legs": "Arme/Beine",
+    "zone_head_torso": "Kopf/Rumpf",
+    "top_fencers_touch_points": "Top-Fechter — Trefferpunkte",
+    "top_fencers_matches": "Top-Fechter — Gespielte Gefechte",
+    "color_white": "Weiß",
+    "color_yellow": "Gelb",
+    "color_red": "Rot",
+    "exporting": "Exportiere…",
+    "csv_avg_duration": "Ø Dauer (s)",
+    "csv_finished_early": "Vorzeitige Beendigungen",
+    "abbr_matches": "Gef.",
+    "abbr_fencers": "F."
+  },
+  "touchZoneHeatmap": {
+    "points_a": "1 Pt.",
+    "points_b": "3 Pt.",
+    "points_c": "5 Pt.",
+    "touch_count": "{{count}} Treffer"
   },
   "numericKeypad": {
     "title": "Ziffernblock",

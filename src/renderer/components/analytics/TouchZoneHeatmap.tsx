@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from '../../contexts/TranslationContext';
 
 interface Props {
   zoneA: number;
@@ -28,6 +29,7 @@ function stroke(count: number, max: number): string {
 }
 
 export const TouchZoneHeatmap: React.FC<Props> = ({ zoneA, zoneB, zoneC, label }) => {
+  const { t } = useTranslation();
   const max = Math.max(zoneA, zoneB, zoneC, 1);
   const total = zoneA + zoneB + zoneC;
 
@@ -74,9 +76,9 @@ export const TouchZoneHeatmap: React.FC<Props> = ({ zoneA, zoneB, zoneC, label }
       {/* Légende */}
       <div className="grid grid-cols-3 gap-1 w-full text-center">
         {[
-          { zone: 'A', count: zoneA, pts: '1pt', color: 'bg-blue-100 text-blue-800' },
-          { zone: 'B', count: zoneB, pts: '3pts', color: 'bg-blue-200 text-blue-900' },
-          { zone: 'C', count: zoneC, pts: '5pts', color: 'bg-blue-400 text-white' },
+          { zone: 'A', count: zoneA, pts: t('touchZoneHeatmap.points_a'), color: 'bg-blue-100 text-blue-800' },
+          { zone: 'B', count: zoneB, pts: t('touchZoneHeatmap.points_b'), color: 'bg-blue-200 text-blue-900' },
+          { zone: 'C', count: zoneC, pts: t('touchZoneHeatmap.points_c'), color: 'bg-blue-400 text-white' },
         ].map(({ zone, count, pts, color }) => (
           <div key={zone} className={`rounded px-1 py-0.5 ${color}`}>
             <div className="text-xs font-bold">{count}</div>
@@ -85,7 +87,9 @@ export const TouchZoneHeatmap: React.FC<Props> = ({ zoneA, zoneB, zoneC, label }
         ))}
       </div>
       {total > 0 && (
-        <div className="text-[10px] text-gray-400">{total} touche{total > 1 ? 's' : ''}</div>
+        <div className="text-[10px] text-gray-400">
+          {t('touchZoneHeatmap.touch_count', { count: total })}
+        </div>
       )}
     </div>
   );

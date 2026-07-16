@@ -272,7 +272,7 @@ const AboutModal: React.FC<Props> = ({ onClose }) => {
         </div>
 
         <div style={styles.licence}>
-          Licence : GPL-3.0 &nbsp;·&nbsp; © 2024-2026 BellePoule Modern Contributors
+          {t('about.license_label')} GPL-3.0 &nbsp;·&nbsp; © 2024-2026 BellePoule Modern Contributors
         </div>
 
         {easterActive && (
@@ -332,7 +332,7 @@ const AboutModal: React.FC<Props> = ({ onClose }) => {
               }}>✨⚡✨</div>
             </div>
 
-            <div style={styles.easterText}>🐔 &nbsp; Cot-cot ! &nbsp; 🐔</div>
+            <div style={styles.easterText}>🐔 &nbsp; {t('about.easter_sound')} &nbsp; 🐔</div>
           </>
         )}
       </div>
