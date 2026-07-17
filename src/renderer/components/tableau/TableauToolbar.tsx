@@ -71,7 +71,7 @@ const TableauToolbarComponent: React.FC<TableauToolbarProps> = ({
       {/* Left: title + champion */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0 }}>
         <h2 style={{ fontSize: '1.25rem', fontWeight: '600', margin: 0, whiteSpace: 'nowrap' }}>
-          Tableau de {tableauSize}
+          {t('tableauToolbar.title_size', { size: tableauSize })}
           <span style={{ fontWeight: 400, color: '#6b7280', fontSize: '1rem', marginLeft: '0.375rem' }}>
             — {t('tableauToolbar.qualified_count', { count: rankingCount })}
           </span>
@@ -98,9 +98,9 @@ const TableauToolbarComponent: React.FC<TableauToolbarProps> = ({
             fontSize: '0.875rem',
             fontWeight: '500',
           }}
-          title={viewMode === 'full' ? 'Liste des matchs' : 'Tableau complet'}
+          title={viewMode === 'full' ? t('tableauToolbar.view_list_title') : t('tableauToolbar.view_tableau_title')}
         >
-          {viewMode === 'full' ? '📋 Liste des matchs' : '📊 Tableau'}
+          {viewMode === 'full' ? t('tableauToolbar.view_list_label') : t('tableauToolbar.view_tableau_label')}
         </button>
         <button
           onClick={onPyramidViewModeToggle}
@@ -114,9 +114,9 @@ const TableauToolbarComponent: React.FC<TableauToolbarProps> = ({
             fontSize: '0.875rem',
             fontWeight: '500',
           }}
-          title={pyramidViewMode ? 'Vue tableau' : 'Vue pyramidale'}
+          title={pyramidViewMode ? t('tableauToolbar.pyramid_tableau_title') : t('tableauToolbar.pyramid_pyramid_title')}
         >
-          {pyramidViewMode ? '🔲 Tableau' : '🔺 Pyramide'}
+          {pyramidViewMode ? t('tableauToolbar.pyramid_tableau_label') : t('tableauToolbar.pyramid_pyramid_label')}
         </button>
 
         {/* FAB */}
@@ -133,7 +133,7 @@ const TableauToolbarComponent: React.FC<TableauToolbarProps> = ({
             <div className="tableau-fab-menu">
               {arenaCount > 0 && (
                 <>
-                  <span className="tableau-fab-section-label">Pistes</span>
+                  <span className="tableau-fab-section-label">{t('tableauToolbar.section_arenas')}</span>
                   <label
                     style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.875rem', fontWeight: '500', background: autoAssignArenas ? 'rgba(59,130,246,0.08)' : 'transparent', color: autoAssignArenas ? '#2563eb' : 'var(--color-text)' }}
                   >
@@ -142,7 +142,7 @@ const TableauToolbarComponent: React.FC<TableauToolbarProps> = ({
                       checked={autoAssignArenas}
                       onChange={e => onAutoAssignToggle(e.target.checked)}
                     />
-                    🏟️ Assignation auto
+                    {t('tableauToolbar.auto_assign_arenas')}
                   </label>
                   <button className="tableau-fab-item tableau-fab-item--danger" onClick={() => closeAndRun(onBulkDeassign)}>
                     ❌ {t('tableauToolbar.unassign_all')}
@@ -151,15 +151,15 @@ const TableauToolbarComponent: React.FC<TableauToolbarProps> = ({
                 </>
               )}
 
-              <span className="tableau-fab-section-label">Actions</span>
+              <span className="tableau-fab-section-label">{t('tableauToolbar.section_actions')}</span>
               <button className="tableau-fab-item" onClick={() => closeAndRun(onAutoFillScores)}>
-                🎲 Remplir auto (test)
+                {t('tableauToolbar.autofill_scores')}
               </button>
 
               <div className="tableau-fab-divider" />
               <span className="tableau-fab-section-label">{t('tableauToolbar.export')}</span>
               <button className="tableau-fab-item" onClick={() => closeAndRun(onPrintClick)}>
-                🖨️ Imprimer
+                {t('tableauToolbar.print')}
               </button>
               <button className="tableau-fab-item" onClick={() => closeAndRun(onPreviewClick)} title={t('tableauToolbar.preview_desc')}>
                 {t('tableauToolbar.preview')}
@@ -168,7 +168,7 @@ const TableauToolbarComponent: React.FC<TableauToolbarProps> = ({
                 {t('tableauToolbar.export_pdf')}
               </button>
               <button className="tableau-fab-item" onClick={() => closeAndRun(onExportTreeClick)}>
-                🌲 Arbre PDF
+                {t('tableauToolbar.export_tree')}
               </button>
             </div>
           )}

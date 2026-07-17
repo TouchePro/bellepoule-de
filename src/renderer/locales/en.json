@@ -207,7 +207,13 @@
     "round_of_n": "Round of {{round}}",
     "round_quarters_short": "Quarters",
     "bracket_of_size": "Bracket of {{size}}",
-    "bracket_tree_of_size": "Tree — Bracket of {{size}}"
+    "bracket_tree_of_size": "Tree — Bracket of {{size}}",
+    "places_range": "Places {{firstPlace}}–{{lastPlace}}",
+    "order_ascending": "Ascending",
+    "order_descending": "Descending",
+    "order_ascending_hint": "Ascending order",
+    "order_descending_hint": "Descending order",
+    "barrages_title": "Barrages"
   },
   "results": {
     "header_rank": "Rank",
@@ -223,7 +229,12 @@
     "generating_full": "Generating full PDF…",
     "second": "2nd",
     "third": "3rd",
-    "generating": "Generating…"
+    "generating": "Generating…",
+    "champion_title": "Champion",
+    "first": "1st",
+    "table_title": "Final ranking – {{count}} fencer(s)",
+    "export_full_pdf": "Full PDF export",
+    "export_full_pdf_no_signature": "Full PDF export without signature"
   },
   "remote": {
     "title": "Remote Score Entry",
@@ -853,7 +864,13 @@
     "round_16": "Round of 16",
     "round_32": "Round of 32",
     "round_64": "Round of 64",
-    "bye": "Bye"
+    "bye": "Bye",
+    "pools": "Pools",
+    "navigate_hint": "← → navigate",
+    "provisional_ranking": "Provisional ranking",
+    "countdown_in": "in {{duration}}",
+    "victory_short": "V",
+    "defeat_short": "D"
   },
   "bracket": {
     "expand_all": "Expand all",
@@ -918,7 +935,14 @@
     "no_fencer": "No fencer",
     "select": "-- select --",
     "no_match": "No match played.",
-    "label": "Team"
+    "label": "Team",
+    "tab_teams": "Teams",
+    "tab_pool": "Pool ({{count}} matches)",
+    "club_placeholder": "Club / association",
+    "position_label": "Position",
+    "assign": "Assign",
+    "fencers_missing": "{{count}} fencer(s) missing",
+    "defeats_header": "D"
   },
   "obs": {
     "open_browser": "Open in browser",
@@ -1168,7 +1192,10 @@
     "strip_summary": "Strip summary",
     "unassigned": "Unassigned",
     "all_done": "✓ All matches are finished",
-    "sheet_desc": "Each sheet contains the full name of the fighters, a score box and a signature box."
+    "sheet_desc": "Each sheet contains the full name of the fighters, a score box and a signature box.",
+    "pdf_modal_title_print": "Print – Match sheets",
+    "pdf_modal_title_export": "Export PDF – Match sheets",
+    "matches_per_sheet_label": "Matches per A4 sheet"
   },
   "teamPool": {
     "add_card": "Add a card",
@@ -1381,7 +1408,18 @@
     "locked": "Remote locked — actions disabled. Click « Locked » to unlock.",
     "no_screen": "No screen connected.",
     "connect_tv": "on a TV for it to appear here.",
-    "select_2nd": "— select a 2nd screen"
+    "select_2nd": "— select a 2nd screen",
+    "client_type_lobby": "Lobby",
+    "client_type_kiosk": "Kiosk",
+    "client_type_public": "Public",
+    "client_type_dashboard": "Dashboard",
+    "seconds_ago": "{{s}}s ago",
+    "minutes_ago": "{{m}}m ago",
+    "swap_label": "⇄ Swap",
+    "global_message_label": "Global message",
+    "send": "Send",
+    "nav_kiosk_public": "Public kiosk",
+    "nav_ranking": "Ranking"
   },
   "analyticsCharts": {
     "avg_duration_dist": "Average match duration distribution",
@@ -1577,7 +1615,22 @@
     "unassign_all": "❌ Unassign all",
     "export": "Export",
     "preview": "👁️ Print preview",
-    "export_pdf": "📄 Export PDF"
+    "export_pdf": "📄 Export PDF",
+    "title_size": "Tableau of {{size}}",
+    "view_list_label": "📋 Match list",
+    "view_list_title": "Match list",
+    "view_tableau_label": "📊 Tableau",
+    "view_tableau_title": "Full tableau",
+    "pyramid_tableau_label": "🔲 Tableau",
+    "pyramid_tableau_title": "Tableau view",
+    "pyramid_pyramid_label": "🔺 Pyramid",
+    "pyramid_pyramid_title": "Pyramid view",
+    "section_arenas": "Strips",
+    "auto_assign_arenas": "🏟️ Auto-assign",
+    "section_actions": "Actions",
+    "autofill_scores": "🎲 Auto-fill scores (test)",
+    "print": "🖨️ Print",
+    "export_tree": "🌲 Tree PDF"
   },
   "trainingLauncher": {
     "title": "Training Mode",

@@ -320,15 +320,22 @@ const KIOSK_STYLES = {
   orgNoteMessage: { fontSize: 'clamp(2rem, 7vw, 6rem)' as const, color: '#94a3b8', fontStyle: 'italic' as const },
 } satisfies Record<string, React.CSSProperties>;
 
-const roundNames: Record<number, string> = {
-  2: 'Finale',
-  3: 'Petite finale',
-  4: 'Demi-finales',
-  8: 'Quarts de finale',
-  16: '1/8 de finale',
-  32: '1/16 de finale',
-  64: '1/32 de finale',
-  128: '1/64 de finale',
+// Rounds sans contexte de rendu : t() est reçu en paramètre (cf. useColumnVisibility.ts / XiaomiRemotePanel.tsx)
+type TFunction = (key: string, params?: { [key: string]: string | number }) => string;
+
+const ROUND_LABEL_KEYS: Record<number, string> = {
+  2: 'tableau.round_final',
+  3: 'tableau.round_third_place',
+  4: 'tableau.round_semifinals',
+  8: 'tableau.round_quarterfinals',
+  16: 'tableau.round_of_16',
+  32: 'tableau.round_of_32',
+  64: 'tableau.round_of_64',
+};
+
+const getRoundLabel = (round: number, t: TFunction): string => {
+  const key = ROUND_LABEL_KEYS[round];
+  return key ? t(key) : t('tableau.round_of_n', { round });
 };
 
 interface KioskDisplayProps {
@@ -417,21 +424,22 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
     const first = finalMatch.winner;
     const second = finalMatch.fencerA?.id === first.id ? finalMatch.fencerB : finalMatch.fencerA;
     results.push({ place: 1, fencer: first, eliminatedAt: '' });
-    if (second) results.push({ place: 2, fencer: second, eliminatedAt: 'Finale' });
+    if (second) results.push({ place: 2, fencer: second, eliminatedAt: t('tableau.round_final') });
 
     const thirdMatch = tableauMatches.find(m => m.round === 3);
     if (thirdMatch?.winner) {
       const third = thirdMatch.winner;
       const fourth = thirdMatch.fencerA?.id === third.id ? thirdMatch.fencerB : thirdMatch.fencerA;
       results.push({ place: 3, fencer: third, eliminatedAt: '' });
-      if (fourth) results.push({ place: 4, fencer: fourth, eliminatedAt: 'Petite finale' });
+      if (fourth)
+        results.push({ place: 4, fencer: fourth, eliminatedAt: t('tableau.round_third_place') });
     } else {
       // Sans petite finale : perdants des demi-finales ex-aequo 3e
       const semis = tableauMatches.filter(m => m.round === 4 && m.winner);
       let place = 3;
       for (const semi of semis) {
         const loser = semi.fencerA?.id === semi.winner!.id ? semi.fencerB : semi.fencerA;
-        if (loser) results.push({ place, fencer: loser, eliminatedAt: 'Demi-finales' });
+        if (loser) results.push({ place, fencer: loser, eliminatedAt: t('tableau.round_semifinals') });
         place++;
       }
     }
@@ -447,14 +455,14 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
           results.push({
             place: currentPlace,
             fencer: loser,
-            eliminatedAt: roundNames[round] || `Tour ${round}`,
+            eliminatedAt: getRoundLabel(round, t),
           });
       }
       currentPlace += roundMatches.length;
     }
 
     return results;
-  }, [tableauMatches, activeRound]);
+  }, [tableauMatches, activeRound, t]);
 
   // Menu auto-masquant
   const showMenu = useCallback(() => {
@@ -637,7 +645,7 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
         }}
       >
         <span style={KIOSK_STYLES.menuLabel}>
-          Mode Kiosk
+          {t('competitionHeader.kiosk_mode')}
         </span>
         <button
           style={btnStyle(currentView === 'pools', !hasPoolData)}
@@ -646,7 +654,7 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
             if (hasPoolData) setCurrentView('pools');
           }}
         >
-          🏆 Poules
+          🏆 {t('kiosk.pools')}
         </button>
         <button
           style={btnStyle(currentView === 'ranking', !hasRankingData)}
@@ -686,9 +694,9 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
                 {competition.title}
               </h1>
               <p style={KIOSK_STYLES.poolsSubtitle}>
-                Poule {currentPool.number} / {pools.length}
+                {t('pools.pool_number')} {currentPool.number} / {pools.length}
                 <span style={KIOSK_STYLES.poolsNavHint}>
-                  {pools.length > 1 && '← → naviguer'}
+                  {pools.length > 1 && t('kiosk.navigate_hint')}
                 </span>
               </p>
             </div>
@@ -740,18 +748,21 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
                         {rank.fencer.lastName} {rank.fencer.firstName}
                       </div>
                       <div style={KIOSK_STYLES.poolsRankClub}>
-                        {rank.fencer.club || 'Sans club'}
+                        {rank.fencer.club || t('presentation.no_club')}
                       </div>
                     </div>
                     <div style={KIOSK_STYLES.poolsRankStats}>
                       <div style={KIOSK_STYLES.poolsRankScore}>
-                        {rank.victories}V – {rank.defeats}D
+                        {rank.victories}
+                        {t('kiosk.victory_short')} – {rank.defeats}
+                        {t('kiosk.defeat_short')}
                       </div>
                       <div style={KIOSK_STYLES.poolsRankMatches}>
-                        {rank.matchesPlayed} match{rank.matchesPlayed !== 1 ? 's' : ''}
+                        {t('changePool.matches_played_count', { count: rank.matchesPlayed })}
                       </div>
                       <div style={KIOSK_STYLES.poolsRankTouches}>
-                        TD {rank.touchesScored} / TR {rank.touchesReceived}
+                        {t('ranking.touches_scored')} {rank.touchesScored} /{' '}
+                        {t('ranking.touches_received')} {rank.touchesReceived}
                       </div>
                     </div>
                   </div>
@@ -774,12 +785,12 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
                       style={KIOSK_STYLES.poolsMatchCard}
                     >
                       <div style={KIOSK_STYLES.poolsMatchCardRow}>
-                        <span>{match.fencerA?.lastName || 'TBD'}</span>
+                        <span>{match.fencerA?.lastName || t('kiosk.tbd')}</span>
                         <span style={KIOSK_STYLES.poolsMatchVs}>VS</span>
-                        <span>{match.fencerB?.lastName || 'TBD'}</span>
+                        <span>{match.fencerB?.lastName || t('kiosk.tbd')}</span>
                       </div>
                       <div style={KIOSK_STYLES.poolsMatchStrip}>
-                        Piste {match.strip || idx + 1}
+                        {t('remote_score.lane_number', { number: match.strip || idx + 1 })}
                       </div>
                     </div>
                   ))}
@@ -822,8 +833,8 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
           <div style={KIOSK_STYLES.rankingHeader}>
             <h1 style={KIOSK_STYLES.rankingTitle}>{competition.title}</h1>
             <p style={KIOSK_STYLES.rankingSubtitle}>
-              Classement Provisoire · {overallRanking.length} tireur
-              {overallRanking.length > 1 ? 's' : ''}
+              {t('kiosk.provisional_ranking')} ·{' '}
+              {t('poolView.fencers_count_suffix', { count: overallRanking.length })}
             </p>
           </div>
 
@@ -836,20 +847,20 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
             <table style={KIOSK_STYLES.rankingTable}>
               <thead>
                 <tr style={KIOSK_STYLES.rankingThead}>
-                  <th style={KIOSK_STYLES.rankingThRg}>Rg</th>
+                  <th style={KIOSK_STYLES.rankingThRg}>{t('ranking.rank')}</th>
                   <th style={KIOSK_STYLES.rankingThName}>{t('fencer.last_name')}</th>
                   <th style={KIOSK_STYLES.rankingThName}>{t('fencer.first_name')}</th>
-                  <th style={KIOSK_STYLES.rankingThName}>Club</th>
-                  <th style={KIOSK_STYLES.rankingThVm}>V/M</th>
-                  <th style={KIOSK_STYLES.rankingThTd}>TD</th>
-                  <th style={KIOSK_STYLES.rankingThTr}>TR</th>
+                  <th style={KIOSK_STYLES.rankingThName}>{t('fencer.club')}</th>
+                  <th style={KIOSK_STYLES.rankingThVm}>{t('ranking.ratio')}</th>
+                  <th style={KIOSK_STYLES.rankingThTd}>{t('ranking.touches_scored')}</th>
+                  <th style={KIOSK_STYLES.rankingThTr}>{t('ranking.touches_received')}</th>
                   {isLaserSabre && (
                     <th style={KIOSK_STYLES.rankingThQuest}>
                       {t('quest.label')}
                     </th>
                   )}
                   <th style={KIOSK_STYLES.rankingThIndice}>
-                    Indice
+                    {t('ranking.index')}
                   </th>
                 </tr>
               </thead>
@@ -909,7 +920,7 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
             <h1 style={KIOSK_STYLES.tableauTitle}>{competition.title}</h1>
             <p style={KIOSK_STYLES.tableauRoundLabel}>
               {activeRound !== null
-                ? roundNames[activeRound] || `Tour ${activeRound}`
+                ? getRoundLabel(activeRound, t)
                 : t('kiosk.tableau_done')}
             </p>
           </div>
@@ -930,7 +941,7 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
                         style={KIOSK_STYLES.matchCardBye}
                       >
                         <div style={KIOSK_STYLES.matchCardByeLabel}>
-                          EXEMPT
+                          {t('kiosk.bye')}
                         </div>
                         <div style={KIOSK_STYLES.matchCardByeName}>
                           {match.fencerA?.lastName || match.fencerB?.lastName || '–'}
@@ -1123,10 +1134,10 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
                   <table style={KIOSK_STYLES.elimTable}>
                     <thead>
                       <tr style={KIOSK_STYLES.elimThead}>
-                        <th style={KIOSK_STYLES.elimThRg}>Rg</th>
+                        <th style={KIOSK_STYLES.elimThRg}>{t('ranking.rank')}</th>
                         <th style={KIOSK_STYLES.elimThName}>{t('fencer.last_name')}</th>
                         <th style={KIOSK_STYLES.elimThName}>{t('fencer.first_name')}</th>
-                        <th style={KIOSK_STYLES.elimThName}>Club</th>
+                        <th style={KIOSK_STYLES.elimThName}>{t('fencer.club')}</th>
                         <th style={KIOSK_STYLES.elimThElimAt}>{t('tableau.elimination_in')}</th>
                       </tr>
                     </thead>
@@ -1165,13 +1176,15 @@ const KioskDisplay: React.FC<KioskDisplayProps> = ({
       {/* ===== OVERLAY NOTE D'ORGANISATION ===== */}
       {orgNote && (
         <div style={KIOSK_STYLES.orgNoteOverlay}>
-          <div style={KIOSK_STYLES.orgNotePauseLabel}>⏸ Pause</div>
+          <div style={KIOSK_STYLES.orgNotePauseLabel}>⏸ {t('remote_score.prefix_break')}</div>
           {orgNote.type === 'target_time' && orgNote.targetTime && (
             <>
               <div style={KIOSK_STYLES.orgNoteResumeTime}>
                 {t('kiosk.resume_at', { time: orgNote.targetTime.replace(':', 'h') })}
               </div>
-              <div style={KIOSK_STYLES.orgNoteCountdown}>dans {orgNoteCountdown}</div>
+              <div style={KIOSK_STYLES.orgNoteCountdown}>
+                {t('kiosk.countdown_in', { duration: orgNoteCountdown })}
+              </div>
             </>
           )}
           {orgNote.message && (

@@ -113,7 +113,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
       return poolRanking.map((pr, idx) => ({
         rank: idx + 1,
         fencer: pr.fencer,
-        eliminatedAt: 'Poules' as const,
+        eliminatedAt: t('phases.pools'),
       }));
     }
     const tableauIds = new Set(finalResults.map(r => r.fencer.id));
@@ -122,7 +122,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
       .map((pr, idx) => ({
         rank: finalResults.length + idx + 1,
         fencer: pr.fencer,
-        eliminatedAt: 'Poules' as const,
+        eliminatedAt: t('phases.pools'),
       }));
     return [...finalResults, ...poolEliminated];
   })();
@@ -358,7 +358,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
       {champion && (
         <div style={RV_STYLES.champHeader}>
           <div style={RV_STYLES.champTrophy}>🏆</div>
-          <h1 style={RV_STYLES.champTitle}>Champion</h1>
+          <h1 style={RV_STYLES.champTitle}>{t('results.champion_title')}</h1>
           <div style={RV_STYLES.champName}>
             {champion.fencer.firstName} {champion.fencer.lastName}
           </div>
@@ -384,7 +384,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
           <div style={RV_STYLES.podium1}>
             <div style={RV_STYLES.podium1Medal}>🥇</div>
             <div style={RV_STYLES.podium1Name}>{resultsToDisplay[0].fencer.lastName}</div>
-            <div style={RV_STYLES.podium1Place}>1er</div>
+            <div style={RV_STYLES.podium1Place}>{t('results.first')}</div>
           </div>
         )}
 
@@ -401,15 +401,15 @@ const ResultsView: React.FC<ResultsViewProps> = ({
       {/* Tableau complet des résultats */}
       <div style={RV_STYLES.tableWrapper}>
         <div style={RV_STYLES.tableHeader}>
-          📊 Classement final - {resultsToDisplay.length} tireurs
+          📊 {t('results.table_title', { count: resultsToDisplay.length })}
         </div>
 
         <table style={RV_STYLES.table}>
           <thead>
             <tr style={RV_STYLES.thead}>
-              <th style={RV_STYLES.thRank}>Rang</th>
+              <th style={RV_STYLES.thRank}>{t('results.header_rank')}</th>
               <th style={RV_STYLES.thLeft}>{t('fencer.fencer_label')}</th>
-              <th style={RV_STYLES.thLeft}>Club</th>
+              <th style={RV_STYLES.thLeft}>{t('results.header_club')}</th>
               <th style={RV_STYLES.thCenter}>{t('tableau.elimination_in')}</th>
             </tr>
           </thead>
@@ -443,14 +443,14 @@ const ResultsView: React.FC<ResultsViewProps> = ({
       {/* Boutons d'export */}
       <div style={RV_STYLES.exportRow}>
         <button onClick={() => window.electronAPI.print()} style={RV_STYLES.btnPrint}>
-          🖨️ Imprimer
+          🖨️ {t('poolRanking.print')}
         </button>
         <button
           onClick={() => {
             const text = resultsToDisplay
               .map(
                 r =>
-                  `${r.rank}. ${r.fencer.firstName} ${r.fencer.lastName} (${r.fencer.club || 'Sans club'})`
+                  `${r.rank}. ${r.fencer.firstName} ${r.fencer.lastName} (${r.fencer.club || t('presentation.no_club')})`
               )
               .join('\n');
             navigator.clipboard.writeText(text);
@@ -458,7 +458,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
           }}
           style={RV_STYLES.btnCopy}
         >
-          📋 Copier
+          📋 {t('actions.copy')}
         </button>
         <button onClick={exportCSV} style={RV_STYLES.btnCsv}>
           📊 CSV
@@ -479,7 +479,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
               <span style={RV_STYLES.spinner} /> {t('results.generating')}
             </>
           ) : (
-            '📦 Export complet PDF'
+            <>📦 {t('results.export_full_pdf')}</>
           )}
         </button>
         <button
@@ -493,13 +493,13 @@ const ResultsView: React.FC<ResultsViewProps> = ({
               <span style={RV_STYLES.spinner} /> {t('results.generating')}
             </>
           ) : (
-            '📄 Export PDF complet sans signature'
+            <>📄 {t('results.export_full_pdf_no_signature')}</>
           )}
         </button>
       </div>
 
       {/* Légende */}
-      <div style={RV_STYLES.legend}>(A) = Abandon • (F) = Forfait • (X) = Exclu</div>
+      <div style={RV_STYLES.legend}>(A) = {t('status.abandoned')} • (F) = {t('fencer.forfait')} • (X) = {t('status.excluded')}</div>
     </div>
   );
 };

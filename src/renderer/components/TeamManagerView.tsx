@@ -370,12 +370,12 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
               className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${view === v ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
             >
               {v === 'teams'
-                ? 'Équipes'
+                ? t('team.tab_teams')
                 : v === 'pool'
-                  ? `Poule (${matches.length} matchs)`
+                  ? t('team.tab_pool', { count: matches.length })
                   : v === 'tableau'
-                    ? 'Tableau'
-                    : 'Classement'}
+                    ? t('phases.tableau')
+                    : t('phases.ranking')}
             </button>
           ))}
           <div className="ml-auto flex items-center gap-2 py-2">
@@ -407,11 +407,11 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="text-xs font-medium text-gray-500 block mb-1">Club</label>
+                  <label className="text-xs font-medium text-gray-500 block mb-1">{t('fencer.club')}</label>
                   <input
                     value={newTeamClub}
                     onChange={e => setNewTeamClub(e.target.value)}
-                    placeholder="Club / association"
+                    placeholder={t('team.club_placeholder')}
                     className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
@@ -457,7 +457,7 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
                           </span>
                         ) : (
                           <span className="ml-2 text-xs text-yellow-600 font-medium">
-                            ⚠ {teamSize - mainFencers.length} tireur(s) manquant(s)
+                            ⚠ {t('team.fencers_missing', { count: teamSize - mainFencers.length })}
                           </span>
                         )}
                       </div>
@@ -541,7 +541,7 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
                           </select>
                         </div>
                         <div>
-                          <label className="text-xs text-gray-600 block mb-1">Position</label>
+                          <label className="text-xs text-gray-600 block mb-1">{t('team.position_label')}</label>
                           <select
                             value={selectedOrder}
                             onChange={e => setSelectedOrder(Number(e.target.value))}
@@ -579,7 +579,7 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
                           }
                           className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-40"
                         >
-                          Affecter
+                          {t('team.assign')}
                         </button>
                       </div>
                     )}
@@ -650,7 +650,18 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
                     style={{ fontSize: '0.8rem', padding: '0.3rem 0.7rem' }}
                     onClick={() => {
                       const header =
-                        'Rang,Équipe,Club,V,D,RelaisG,RelaisP,Ind.,Touches+,Touches-\n';
+                        [
+                          t('columns.rank'),
+                          t('team.label'),
+                          t('fencer.club'),
+                          t('poolScoreMatrix.victories'),
+                          t('team.defeats_header'),
+                          t('team.relay_won_header'),
+                          t('team.relay_lost_header'),
+                          t('poolScoreMatrix.index'),
+                          t('ranking.touches_scored'),
+                          t('ranking.touches_received'),
+                        ].join(',') + '\n';
                       const rows = rankings
                         .map((r, i) =>
                           [
@@ -676,7 +687,7 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
                       URL.revokeObjectURL(url);
                     }}
                   >
-                    ↓ Exporter CSV
+                    {t('scoreAudit.export_csv')}
                   </button>
                 </div>
               )}
@@ -693,10 +704,10 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
                         {t('team.label')}
                       </th>
                       <th className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase text-center">
-                        V
+                        {t('poolScoreMatrix.victories')}
                       </th>
                       <th className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase text-center">
-                        D
+                        {t('team.defeats_header')}
                       </th>
                       <th
                         className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase text-center"
@@ -711,19 +722,19 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
                         {t('team.relay_lost_header')}
                       </th>
                       <th className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase text-center">
-                        Ind.
+                        {t('poolScoreMatrix.index')}
                       </th>
                       <th
                         className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase text-center"
                         title={t('team.cumulative_touches')}
                       >
-                        Touches+
+                        {t('ranking.touches_scored')}
                       </th>
                       <th
                         className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase text-center"
                         title={t('team.cumulative_touches')}
                       >
-                        Touches-
+                        {t('ranking.touches_received')}
                       </th>
                     </tr>
                   </thead>

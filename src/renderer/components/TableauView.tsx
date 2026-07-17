@@ -644,7 +644,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     const bracketMatches = generateBracketMatches(sorted, bracketSize, true, idPrefix);
     return {
       id: idPrefix,
-      name: `Places ${firstPlace}–${lastPlace}`,
+      name: t('tableau.places_range', { firstPlace, lastPlace }),
       firstPlace,
       matches: bracketMatches,
       size: bracketSize,
@@ -1043,7 +1043,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
       results.push({
         rank: 1,
         fencer: finalMatch.winner,
-        eliminatedAt: 'Vainqueur',
+        eliminatedAt: t('tableau.winner'),
         poolTouches: winnerPoolData?.touchesScored,
         tableTouches: getTableTouches(finalMatch.winner.id, matchList),
         totalTouches:
@@ -1059,7 +1059,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         results.push({
           rank: 2,
           fencer: loser,
-          eliminatedAt: 'Finale',
+          eliminatedAt: t('tableau.round_final'),
           poolTouches: loserPoolData?.touchesScored,
           tableTouches: getTableTouches(loser.id, matchList),
           totalTouches: (loserPoolData?.touchesScored ?? 0) + getTableTouches(loser.id, matchList),
@@ -1078,7 +1078,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
       results.push({
         rank: 3,
         fencer: thirdPlaceMatch.winner,
-        eliminatedAt: 'Petite Finale',
+        eliminatedAt: t('tableau.round_third_place'),
         poolTouches: winnerPoolData?.touchesScored,
         tableTouches: getTableTouches(thirdPlaceMatch.winner.id, matchList),
         totalTouches:
@@ -1098,7 +1098,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         results.push({
           rank: 4,
           fencer: fourthPlace,
-          eliminatedAt: 'Petite Finale',
+          eliminatedAt: t('tableau.round_third_place'),
           poolTouches: fourthPoolData?.touchesScored,
           tableTouches: getTableTouches(fourthPlace.id, matchList),
           totalTouches:
@@ -1180,17 +1180,17 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     const finalM = mainMatches.find(m => m.round === 2);
     const thirdM = mainMatches.find(m => m.round === 3);
     if (finalM?.winner) {
-      results.push({ rank: 1, fencer: finalM.winner, eliminatedAt: 'Vainqueur',
+      results.push({ rank: 1, fencer: finalM.winner, eliminatedAt: t('tableau.winner'),
         poolTouches: getPoolTouches(finalM.winner.id), tableTouches: getTableTouches(finalM.winner.id, mainMatches), totalTouches: getPoolTouches(finalM.winner.id) + getTableTouches(finalM.winner.id, mainMatches) });
       const loser2 = finalM.fencerA?.id === finalM.winner.id ? finalM.fencerB : finalM.fencerA;
-      if (loser2) results.push({ rank: 2, fencer: loser2, eliminatedAt: 'Finale',
+      if (loser2) results.push({ rank: 2, fencer: loser2, eliminatedAt: t('tableau.round_final'),
         poolTouches: getPoolTouches(loser2.id), tableTouches: getTableTouches(loser2.id, mainMatches), totalTouches: getPoolTouches(loser2.id) + getTableTouches(loser2.id, mainMatches) });
     }
     if (thirdM?.winner) {
-      results.push({ rank: 3, fencer: thirdM.winner, eliminatedAt: 'Petite Finale',
+      results.push({ rank: 3, fencer: thirdM.winner, eliminatedAt: t('tableau.round_third_place'),
         poolTouches: getPoolTouches(thirdM.winner.id), tableTouches: getTableTouches(thirdM.winner.id, mainMatches), totalTouches: getPoolTouches(thirdM.winner.id) + getTableTouches(thirdM.winner.id, mainMatches) });
       const loser4 = thirdM.fencerA?.id === thirdM.winner.id ? thirdM.fencerB : thirdM.fencerA;
-      if (loser4) results.push({ rank: 4, fencer: loser4, eliminatedAt: 'Petite Finale',
+      if (loser4) results.push({ rank: 4, fencer: loser4, eliminatedAt: t('tableau.round_third_place'),
         poolTouches: getPoolTouches(loser4.id), tableTouches: getTableTouches(loser4.id, mainMatches), totalTouches: getPoolTouches(loser4.id) + getTableTouches(loser4.id, mainMatches) });
     }
 
@@ -1455,9 +1455,9 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                 <button
                   onClick={() => setPendingOrder(prev => (prev === 'asc' ? 'desc' : 'asc'))}
                   style={TV_STYLES.pendingOrderBtn}
-                  title={pendingOrder === 'asc' ? 'Affichage croissant' : 'Affichage décroissant'}
+                  title={pendingOrder === 'asc' ? t('tableau.order_ascending_hint') : t('tableau.order_descending_hint')}
                 >
-                  {pendingOrder === 'asc' ? '🔼 Croissant' : '🔽 Décroissant'}
+                  {pendingOrder === 'asc' ? `🔼 ${t('tableau.order_ascending')}` : `🔽 ${t('tableau.order_descending')}`}
                 </button>
               </div>
               {pendingViewRounds.map(round => (
@@ -1487,7 +1487,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                           border: '1px solid #e5e7eb',
                         }}
                       >
-                        <strong>Piste {arenaNum}</strong>: {arenaMatches.length} match
+                        <strong>{t('remote_score.lane_number', { number: arenaNum })}</strong>: {arenaMatches.length} match
                         {arenaMatches.length !== 1 ? 's' : ''}
                       </div>
                     );
@@ -1517,7 +1517,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           <>
             {playAllPositions && matches.some(m => m.round === tableauSize * 2) && (
               <div style={TV_STYLES.barragesBox}>
-                <div style={TV_STYLES.barragesTitle}>Barrages</div>
+                <div style={TV_STYLES.barragesTitle}>{t('tableau.barrages_title')}</div>
                 <div style={TV_STYLES.barragesFlex}>
                   {matches.filter(m => m.round === tableauSize * 2).sort((a, b) => a.position - b.position).map(match => (
                     <MatchCard
@@ -1633,7 +1633,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         <div className="modal-overlay" onClick={() => setShowPdfModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
             <div className="modal-header">
-              <h3 className="modal-title">{pdfMode === 'print' ? 'Imprimer' : 'Export PDF'} – Feuilles de match</h3>
+              <h3 className="modal-title">{pdfMode === 'print' ? t('tableauView.pdf_modal_title_print') : t('tableauView.pdf_modal_title_export')}</h3>
               <button className="btn-close" onClick={() => setShowPdfModal(false)}>
                 &times;
               </button>
@@ -1643,7 +1643,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                 {t('tableauView.sheet_desc')}
               </p>
               <label style={TV_STYLES.pdfModalLabel}>
-                Matchs par feuille A4{' '}
+                {t('tableauView.matches_per_sheet_label')}{' '}
                 <span style={TV_STYLES.pdfModalMaxHint}>(max {MAX_MATCHES_PER_PAGE_TABLEAU})</span>
               </label>
               <div style={TV_STYLES.pdfModalBtnRow}>
@@ -1705,10 +1705,10 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
             </div>
             <div className="modal-footer" style={TV_STYLES.pdfModalFooter}>
               <button className="btn btn-secondary" onClick={() => setShowPdfModal(false)}>
-                Annuler
+                {t('actions.cancel')}
               </button>
               <button className="btn btn-primary" onClick={handleExportPDF} disabled={selectedRounds.size === 0}>
-                {pdfMode === 'print' ? '🖨️ Imprimer' : '📄 Générer PDF'}
+                {pdfMode === 'print' ? t('tableauToolbar.print') : t('tableauToolbar.export_pdf')}
               </button>
             </div>
           </div>
@@ -1784,7 +1784,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                         onClick={() => assignArena(arenaNum)}
                         style={{ padding: '0.75rem', position: 'relative' }}
                       >
-                        Piste {arenaNum}
+                        {t('remote_score.lane_number', { number: arenaNum })}
                         {queueCount > 0 && (
                           <span style={TV_STYLES.arenaQueueHint}>
                             (+{queueCount})

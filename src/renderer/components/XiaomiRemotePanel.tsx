@@ -15,15 +15,6 @@ interface XiaomiRemotePanelProps {
   onClose: () => void;
 }
 
-const CLIENT_TYPE_LABELS: Record<string, string> = {
-  lobby: 'Lobby',
-  kiosk: 'Kiosk',
-  public: 'Public',
-  pool: 'Poules',
-  dashboard: 'Dashboard',
-  referee: 'Arbitre',
-};
-
 function getOnlineStatus(lastSeen: string): 'online' | 'warn' | 'offline' {
   const diff = Date.now() - new Date(lastSeen).getTime();
   if (diff < 35000) return 'online';
@@ -34,8 +25,8 @@ function getOnlineStatus(lastSeen: string): 'online' | 'warn' | 'offline' {
 function formatLastSeen(lastSeen: string, t: (key: string, params?: { [key: string]: string | number }) => string): string {
   const diff = Math.floor((Date.now() - new Date(lastSeen).getTime()) / 1000);
   if (diff < 10) return t('xiaomi.just_now');
-  if (diff < 60) return `il y a ${diff}s`;
-  return `il y a ${Math.floor(diff / 60)}m`;
+  if (diff < 60) return t('xiaomi.seconds_ago', { s: diff });
+  return t('xiaomi.minutes_ago', { m: Math.floor(diff / 60) });
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -46,11 +37,13 @@ const STATUS_COLORS: Record<string, string> = {
 
 type AssignRole = 'affichage' | 'arbitre' | 'kiosk';
 
-const ASSIGN_ROLES: { value: AssignRole; label: string }[] = [
-  { value: 'affichage', label: '📺 Affichage' },
-  { value: 'arbitre', label: '🤺 Arbitre' },
-  { value: 'kiosk', label: '🖥️ Kiosk' },
-];
+function buildAssignRoles(t: (key: string, params?: { [key: string]: string | number }) => string): { value: AssignRole; label: string }[] {
+  return [
+    { value: 'affichage', label: `📺 ${t('remote_score.screen_type_display')}` },
+    { value: 'arbitre', label: `🤺 ${t('referee.arbitre')}` },
+    { value: 'kiosk', label: `🖥️ ${t('xiaomi.client_type_kiosk')}` },
+  ];
+}
 
 function arenaNum(client: ConnectedClient): number {
   if (!client.arenaId) return 1;
@@ -82,7 +75,15 @@ function clientDisplayUrl(base: string, client: ConnectedClient): string {
 
 function clientLabel(client: ConnectedClient, t: (key: string, params?: { [key: string]: string | number }) => string): string {
   if (client.label) return client.label;
-  const type = client.clientType === 'arena' ? t('xiaomi.arena_label') : (CLIENT_TYPE_LABELS[client.clientType] ?? client.clientType);
+  const typeLabels: Record<string, string> = {
+    lobby: t('xiaomi.client_type_lobby'),
+    kiosk: t('xiaomi.client_type_kiosk'),
+    public: t('xiaomi.client_type_public'),
+    pool: t('ui.poule'),
+    dashboard: t('xiaomi.client_type_dashboard'),
+    referee: t('referee.arbitre'),
+  };
+  const type = client.clientType === 'arena' ? t('xiaomi.arena_label') : (typeLabels[client.clientType] ?? client.clientType);
   if ((client.clientType === 'arena' || client.clientType === 'referee') && client.arenaId) {
     const num = client.arenaId.replace('arena', '');
     return `${type} ${num}`;
@@ -104,14 +105,16 @@ function loadKioskConfig(): KioskScreenConfig {
   return DEFAULT_KIOSK_CONFIG;
 }
 
-const KIOSK_VIEWS: { key: keyof KioskScreenConfig; label: string }[] = [
-  { key: 'poules', label: 'Poules' },
-  { key: 'classement', label: 'Classement' },
-  { key: 'final', label: 'Classement final' },
-  { key: 'direct', label: 'Matchs en direct' },
-  { key: 'suivants', label: 'Matchs suivants' },
-  { key: 'tableau', label: 'Tableau DE' },
-];
+function buildKioskViews(t: (key: string, params?: { [key: string]: string | number }) => string): { key: keyof KioskScreenConfig; label: string }[] {
+  return [
+    { key: 'poules', label: t('remote_score.view_pools') },
+    { key: 'classement', label: t('remote_score.view_ranking') },
+    { key: 'final', label: t('remote_score.view_final_ranking') },
+    { key: 'direct', label: t('remote_score.view_live_matches') },
+    { key: 'suivants', label: t('remote_score.view_next_matches') },
+    { key: 'tableau', label: t('remote_score.view_bracket') },
+  ];
+}
 
 const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
   competitionId,
@@ -144,6 +147,8 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
 
   const base = serverUrl.replace(/\/$/, '');
   const allNavTargets = buildNavTargets(base, arenaCount, t);
+  const assignRoles = buildAssignRoles(t);
+  const kioskViews = buildKioskViews(t);
 
   const fetchClients = useCallback(async () => {
     const res = await window.electronAPI.remote.getConnectedClients(competitionId);
@@ -253,7 +258,7 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
           >
             {locked ? t('xiaomi.locked_label') : t('xiaomi.lock_label')}
           </button>
-          <button className="btn btn-secondary" onClick={fetchClients} style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem' }} title="Actualiser">↻</button>
+          <button className="btn btn-secondary" onClick={fetchClients} style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem' }} title={t('xiaomi.refresh')}>↻</button>
           <button className="btn btn-primary" onClick={() => broadcastCmd({ type: 'refresh' })} disabled={locked} style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem', opacity: locked ? 0.4 : 1 }}>{t('xiaomi.refresh_all')}</button>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-light)', fontSize: '1.2rem', padding: '0 0.2rem' }}>×</button>
         </div>
@@ -330,7 +335,7 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
                           style={{ padding: '0.2rem 0.3rem', fontSize: '0.75rem', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '5px', color: 'inherit' }}
                           title={t('xiaomi.tablet_role')}
                         >
-                          {ASSIGN_ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                          {assignRoles.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
                         </select>
                         {a.role !== 'kiosk' && (
                           <select
@@ -349,7 +354,7 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
                   })()}
 
                   {/* Identifier */}
-                  <button className="btn btn-secondary" style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', whiteSpace: 'nowrap' }} onClick={() => window.electronAPI.remote.identifyClient(competitionId, client.socketId)} title={t('xiaomi.blink')}>🔦 Identifier</button>
+                  <button className="btn btn-secondary" style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', whiteSpace: 'nowrap' }} onClick={() => window.electronAPI.remote.identifyClient(competitionId, client.socketId)} title={t('xiaomi.blink')}>{t('remote_score.identify_button')}</button>
 
                   {/* Renommer */}
                   <button className="btn btn-secondary" style={{ padding: '0.2rem 0.45rem', fontSize: '0.75rem' }} onClick={() => { setRenameTarget(client.socketId); setRenameValue(client.label ?? ''); }} title={t('xiaomi.rename')}>✏️</button>
@@ -396,24 +401,24 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
         {swapSet.size > 0 && (
           <div style={{ padding: '0.65rem 1.25rem', background: 'rgba(249,115,22,0.12)', borderTop: '1px solid rgba(249,115,22,0.3)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <span style={{ fontSize: '0.88rem', flex: 1, color: '#ea580c' }}>
-              ⇄ Intervertir{' '}
+              {t('xiaomi.swap_label')}{' '}
               {swapCandidates.map(c => <strong key={c.socketId}>{clientLabel(c, t)}</strong>).reduce((a, b) => <>{a} <span style={{ color: '#94a3b8' }}>↔</span> {b}</> as any)}
               {swapSet.size === 1 && <span style={{ color: '#94a3b8' }}> {t('xiaomi.select_2nd')}</span>}
             </span>
             {canSwap && (
               <button className="btn btn-primary" style={{ padding: '0.3rem 0.75rem', fontSize: '0.82rem' }} onClick={confirmSwap}>
-                Confirmer
+                {t('actions.confirm')}
               </button>
             )}
             <button className="btn btn-secondary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.82rem' }} onClick={() => setSwapSet(new Set())}>
-              Annuler
+              {t('actions.cancel')}
             </button>
           </div>
         )}
 
         {/* Message global */}
         <div style={{ padding: '0.75rem 1.25rem', borderTop: '1px solid var(--color-border)', pointerEvents: locked ? 'none' : 'auto', opacity: locked ? 0.55 : 1 }}>
-          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Message global</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('xiaomi.global_message_label')}</div>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             <input
               type="text"
@@ -434,7 +439,7 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
               <option value={30}>30s</option>
               <option value={60}>60s</option>
             </select>
-            <button className="btn btn-primary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }} onClick={sendMessage}>Envoyer</button>
+            <button className="btn btn-primary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }} onClick={sendMessage}>{t('xiaomi.send')}</button>
           </div>
         </div>
       </div>
@@ -448,7 +453,7 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
           <div style={{ background: 'var(--color-surface, #1e293b)', color: 'var(--color-text, #f1f5f9)', border: '1px solid var(--color-border, rgba(255,255,255,0.1))', borderRadius: '12px', width: '360px', maxWidth: '94vw', padding: '1.25rem' }}>
             <div style={{ fontWeight: 600, fontSize: '1rem', marginBottom: '0.85rem' }}>{t('ui.configure_kiosk')}</div>
             <div style={{ fontSize: '0.82rem', color: 'var(--color-text-light, #94a3b8)', marginBottom: '0.5rem' }}>{t('ui.views_label')}</div>
-            {KIOSK_VIEWS.map(({ key, label }) => (
+            {kioskViews.map(({ key, label }) => (
               <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.3rem 0', cursor: 'pointer' }}>
                 <input
                   type="checkbox"
@@ -483,8 +488,8 @@ const XiaomiRemotePanelComponent: React.FC<XiaomiRemotePanelProps> = ({
 function buildNavTargets(base: string, arenaCount: number, t: (key: string, params?: { [key: string]: string | number }) => string) {
   const targets: { label: string; url: string }[] = [{ label: t('xiaomi.nav_lobby'), url: `${base}/lobby` }];
   for (let i = 1; i <= arenaCount; i++) targets.push({ label: t('xiaomi.nav_arena', { n: i }), url: `${base}/arene${i}` });
-  targets.push({ label: 'Kiosk public', url: `${base}/kiosk` });
-  targets.push({ label: 'Classement', url: `${base}/` });
+  targets.push({ label: t('xiaomi.nav_kiosk_public'), url: `${base}/kiosk` });
+  targets.push({ label: t('xiaomi.nav_ranking'), url: `${base}/` });
   return targets;
 }
 
