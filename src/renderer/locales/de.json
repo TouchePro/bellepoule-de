@@ -185,7 +185,9 @@
     "advancement_bracket": "Nächster Abschnitt",
     "advancement_fixed": "Feste Anzahl",
     "advancement_percent": "Top %",
+    "advancement_pool_winner": "Pool-Sieger",
     "advancement_rule": "Qualifikationsregel",
+    "advancing_suffix": "kommen weiter",
     "builder_title": "Formeleditor",
     "criterion_direct": "Direktgefecht",
     "criterion_index": "Index (TD−TR)",
@@ -769,7 +771,8 @@
   },
   "errors": {
     "load_title": "Beim Laden des Wettbewerbs ist ein Fehler aufgetreten.",
-    "load_message": "Die Daten könnten beschädigt sein. Bitte den Support kontaktieren."
+    "load_message": "Die Daten könnten beschädigt sein. Bitte den Support kontaktieren.",
+    "component_stack": "Komponentenstapel:"
   },
   "ffe": {
     "api_key": "Ihr FFE-API-Schlüssel",
@@ -778,14 +781,29 @@
     "api_key_optional": "API-Schlüssel (optional)",
     "selected": "ausgewählt",
     "export_title": "Nach FFE Connect exportieren",
-    "export_success": "Ergebnisse erfolgreich an die FFE gesendet."
+    "export_success": "Ergebnisse erfolgreich an die FFE gesendet.",
+    "competition_code_required": "Der Wettkampfcode ist erforderlich",
+    "export_failed": "Export fehlgeschlagen",
+    "competition_code_example": "Bsp: 2024-IDF-001",
+    "fencers_ready": "{{count}} Fechter bereit zum Export",
+    "missing_license": "{{count}} ohne Lizenznummer (ignoriert)",
+    "sending": "Sende…",
+    "no_participants_found": "Kein Teilnehmer für diesen Wettkampfcode gefunden",
+    "participants_found": "Teilnehmer gefunden",
+    "add_selected": "Ausgewählte hinzufügen ({{count}})"
   },
   "comparison": {
+    "title": "⚔️ Kopf-an-Kopf-Vergleich",
+    "global_stats_title": "📊 Globale Statistiken",
     "matches_played": "Gespielte Matches:",
+    "victories": "Siege:",
     "win_rate": "Siegquote:",
     "touches_given": "Gegebene Treffer:",
     "touches_received": "Erhaltene Treffer:",
+    "index": "Index:",
+    "direct_wins": "Direkte Siege",
     "avg_score": "Durchschnittsergebnis",
+    "total_matches_count": "{{count}} Match(es)",
     "history_title": "📜 Duellhistorie",
     "pool_matches": "Pool-Matches",
     "tableau_matches": "Tableau-Matches",
@@ -839,7 +857,8 @@
     "delete": "Foto löschen",
     "take_webcam": "Foto mit Webcam aufnehmen",
     "drop_here": "Hier ablegen",
-    "take": "Foto aufnehmen"
+    "take": "Foto aufnehmen",
+    "click_or_drop": "Klicken oder Foto hierher ziehen"
   },
   "historicalStats": {
     "none": "Keine Historie verfügbar"

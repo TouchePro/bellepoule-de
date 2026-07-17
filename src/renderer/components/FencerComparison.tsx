@@ -191,7 +191,7 @@ const FencerComparison_: React.FC<FencerComparisonProps> = ({
     <div className="modal-overlay" onClick={onClose}>
       <div ref={modalRef} className="modal modal--lg" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
         <div className="modal__header">
-          <h2 className="modal__title">⚔️ Comparaison Head-to-Head</h2>
+          <h2 className="modal__title">{t('comparison.title')}</h2>
           <button className="modal__close" onClick={onClose}>
             ×
           </button>
@@ -240,7 +240,7 @@ const FencerComparison_: React.FC<FencerComparisonProps> = ({
             <div className="comparison__results">
               {/* Statistiques globales */}
               <div className="comparison__global-stats">
-                <h4>📊 Statistiques globales</h4>
+                <h4>{t('comparison.global_stats_title')}</h4>
                 <div className="comparison__stats-grid">
                   {(['fencer1GlobalStats', 'fencer2GlobalStats'] as const).map((key, idx) => {
                     const stats = comparison[key];
@@ -261,7 +261,7 @@ const FencerComparison_: React.FC<FencerComparisonProps> = ({
                           </span>
                         </div>
                         <div className="comparison__stat-row">
-                          <span className="comparison__stat-label">Victoires:</span>
+                          <span className="comparison__stat-label">{t('comparison.victories')}</span>
                           <span className={`comparison__stat-value ${cmp(stats.victories, otherStats.victories)}`}>
                             {stats.victories}
                           </span>
@@ -285,7 +285,7 @@ const FencerComparison_: React.FC<FencerComparisonProps> = ({
                           </span>
                         </div>
                         <div className="comparison__stat-row">
-                          <span className="comparison__stat-label">Index:</span>
+                          <span className="comparison__stat-label">{t('comparison.index')}</span>
                           <span className={`comparison__stat-value ${cmp(stats.index, otherStats.index)}`}>
                             {stats.index}
                           </span>
@@ -309,7 +309,7 @@ const FencerComparison_: React.FC<FencerComparisonProps> = ({
                     <span className="comparison__stat-value comparison__stat-value--large">
                       {comparison.wins1}
                     </span>
-                    <span className="comparison__stat-label">Victoires directes</span>
+                    <span className="comparison__stat-label">{t('comparison.direct_wins')}</span>
                   </div>
                   <div className="comparison__stat">
                     <span className="comparison__stat-value">
@@ -321,7 +321,7 @@ const FencerComparison_: React.FC<FencerComparisonProps> = ({
 
                 <div className="comparison__divider">
                   <div className="comparison__total-matches">
-                    {comparison.totalMatches} match{comparison.totalMatches > 1 ? 's' : ''}
+                    {t('comparison.total_matches_count', { count: comparison.totalMatches })}
                   </div>
                 </div>
 
@@ -336,7 +336,7 @@ const FencerComparison_: React.FC<FencerComparisonProps> = ({
                     <span className="comparison__stat-value comparison__stat-value--large">
                       {comparison.wins2}
                     </span>
-                    <span className="comparison__stat-label">Victoires directes</span>
+                    <span className="comparison__stat-label">{t('comparison.direct_wins')}</span>
                   </div>
                   <div className="comparison__stat">
                     <span className="comparison__stat-value">
@@ -359,9 +359,9 @@ const FencerComparison_: React.FC<FencerComparisonProps> = ({
                         <thead>
                           <tr>
                             <th>{t('ui.poule')}</th>
-                            <th>Score {comparison.fencer1.lastName}</th>
-                            <th>Score {comparison.fencer2.lastName}</th>
-                            <th>Vainqueur</th>
+                            <th>{t('pools.score')} {comparison.fencer1.lastName}</th>
+                            <th>{t('pools.score')} {comparison.fencer2.lastName}</th>
+                            <th>{t('tableau.winner')}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -397,9 +397,9 @@ const FencerComparison_: React.FC<FencerComparisonProps> = ({
                         <thead>
                           <tr>
                             <th>{t('ui.round')}</th>
-                            <th>Score {comparison.fencer1.lastName}</th>
-                            <th>Score {comparison.fencer2.lastName}</th>
-                            <th>Vainqueur</th>
+                            <th>{t('pools.score')} {comparison.fencer1.lastName}</th>
+                            <th>{t('pools.score')} {comparison.fencer2.lastName}</th>
+                            <th>{t('tableau.winner')}</th>
                           </tr>
                         </thead>
                         <tbody>

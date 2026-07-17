@@ -181,7 +181,7 @@ export const FencerPhoto: React.FC<FencerPhotoProps> = ({
         onDrop={editable ? handleDrop : undefined}
         onDragOver={editable ? handleDragOver : undefined}
         onDragLeave={editable ? handleDragLeave : undefined}
-        title={editable ? 'Cliquer ou glisser-déposer une photo' : ''}
+        title={editable ? t('photo.click_or_drop') : ''}
       >
         {isLoading ? (
           <div className="animate-spin rounded-full h-1/2 w-1/2 border-2 border-white border-t-transparent" />

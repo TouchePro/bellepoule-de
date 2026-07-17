@@ -30,7 +30,7 @@ const FFEConnectModal: React.FC<FFEConnectModalProps> = ({ onImport, onClose }) 
 
   const handleImportFetch = async () => {
     if (!competitionCode.trim()) {
-      setErrors(['Le code de compétition est requis']);
+      setErrors([t('ffe.competition_code_required')]);
       return;
     }
     setLoading(true);
@@ -46,7 +46,7 @@ const FFEConnectModal: React.FC<FFEConnectModalProps> = ({ onImport, onClose }) 
       setErrors(
         result.errors.length > 0
           ? result.errors
-          : ['Aucun participant trouvé pour ce code de compétition']
+          : [t('ffe.no_participants_found')]
       );
       return;
     }
@@ -106,7 +106,7 @@ const FFEConnectModal: React.FC<FFEConnectModalProps> = ({ onImport, onClose }) 
               <input
                 className="form-input"
                 type="text"
-                placeholder="ex: 2024-IDF-001"
+                placeholder={t('ffe.competition_code_example')}
                 value={competitionCode}
                 onChange={e => setCompetitionCode(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleImportFetch()}
@@ -130,7 +130,7 @@ const FFEConnectModal: React.FC<FFEConnectModalProps> = ({ onImport, onClose }) 
                 onClick={handleImportFetch}
                 disabled={loading || !competitionCode.trim()}
               >
-                {loading ? 'Chargement…' : 'Importer'}
+                {loading ? t('ui.loading') : t('actions.import')}
               </button>
             </div>
           </div>
@@ -162,11 +162,13 @@ const FFEConnectModal: React.FC<FFEConnectModalProps> = ({ onImport, onClose }) 
                 }}
               >
                 <span>
-                  <strong>{participants.length}</strong> participant(s) trouvé(s) —{' '}
+                  <strong>{participants.length}</strong> {t('ffe.participants_found')} —{' '}
                   <strong>{selected.size}</strong> {t('ffe.selected')}
                 </span>
                 <button className="btn btn-secondary" onClick={toggleAll} style={{ padding: '4px 10px' }}>
-                  {selected.size === participants.length ? 'Tout désélectionner' : 'Tout sélectionner'}
+                  {selected.size === participants.length
+                    ? t('import_modal.deselect_all')
+                    : t('import_modal.select_all')}
                 </button>
               </div>
 
@@ -175,12 +177,12 @@ const FFEConnectModal: React.FC<FFEConnectModalProps> = ({ onImport, onClose }) 
                   <thead>
                     <tr>
                       <th style={{ width: 36 }}></th>
-                      <th>Licence</th>
+                      <th>{t('fencer.license')}</th>
                       <th>{t('fencer.last_name')}</th>
                       <th>{t('fencer.first_name')}</th>
-                      <th>Club</th>
-                      <th>Ligue</th>
-                      <th>Sexe</th>
+                      <th>{t('fencer.club')}</th>
+                      <th>{t('fencer.league')}</th>
+                      <th>{t('fencer.gender')}</th>
                       <th>{t('fencer.nationality')}</th>
                       <th>{t('fencer.ranking')}</th>
                     </tr>
@@ -219,14 +221,14 @@ const FFEConnectModal: React.FC<FFEConnectModalProps> = ({ onImport, onClose }) 
 
         <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', padding: '1rem' }}>
           <button className="btn btn-secondary" onClick={onClose}>
-            Annuler
+            {t('actions.cancel')}
           </button>
           <button
             className="btn btn-primary"
             onClick={handleAdd}
             disabled={selected.size === 0}
           >
-            Ajouter les sélectionnés ({selected.size})
+            {t('ffe.add_selected', { count: selected.size })}
           </button>
         </div>
       </div>

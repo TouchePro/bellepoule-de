@@ -22,6 +22,7 @@ interface State {
 
 export class ErrorBoundary extends Component<Props, State> {
   static contextType = TranslationContext;
+  declare context: React.ContextType<typeof TranslationContext>;
   constructor(props: Props) {
     super(props);
     this.state = { hasError: false };
@@ -108,7 +109,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
                 {this.state.errorInfo && (
                   <>
-                    <h4>Component Stack:</h4>
+                    <h4>{this.context?.t('errors.component_stack') ?? 'Component Stack:'}</h4>
                     <pre
                       style={{
                         backgroundColor: '#fff',

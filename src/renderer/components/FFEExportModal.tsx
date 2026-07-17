@@ -48,7 +48,7 @@ const FFEExportModal: React.FC<FFEExportModalProps> = ({ ranking, onClose }) => 
 
   const handleExport = async () => {
     if (!competitionCode.trim()) {
-      setErrors(['Le code de compétition est requis']);
+      setErrors([t('ffe.competition_code_required')]);
       return;
     }
     setSending(true);
@@ -60,7 +60,7 @@ const FFEExportModal: React.FC<FFEExportModalProps> = ({ ranking, onClose }) => 
 
     setSending(false);
     if (!result.success) {
-      setErrors(result.errors.length > 0 ? result.errors : ["Échec de l'export"]);
+      setErrors(result.errors.length > 0 ? result.errors : [t('ffe.export_failed')]);
       return;
     }
     setSuccess(true);
@@ -87,7 +87,7 @@ const FFEExportModal: React.FC<FFEExportModalProps> = ({ ranking, onClose }) => 
             <input
               className="form-input"
               type="text"
-              placeholder="ex: 2024-IDF-001"
+              placeholder={t('ffe.competition_code_example')}
               value={competitionCode}
               onChange={e => setCompetitionCode(e.target.value)}
               disabled={sending}
@@ -106,8 +106,8 @@ const FFEExportModal: React.FC<FFEExportModalProps> = ({ ranking, onClose }) => 
           </div>
 
           <p style={{ fontSize: '0.85rem', color: 'var(--color-text-light)' }}>
-            {entries.length} tireur(s) prêt(s) à exporter
-            {missingLicense > 0 && ` — ${missingLicense} sans numéro de licence (ignoré(s))`}
+            {t('ffe.fencers_ready', { count: entries.length })}
+            {missingLicense > 0 && ` — ${t('ffe.missing_license', { count: missingLicense })}`}
           </p>
 
           {errors.length > 0 && (
@@ -129,7 +129,7 @@ const FFEExportModal: React.FC<FFEExportModalProps> = ({ ranking, onClose }) => 
             onClick={handleExport}
             disabled={sending || entries.length === 0 || !competitionCode.trim()}
           >
-            {sending ? 'Envoi…' : 'Exporter'}
+            {sending ? t('ffe.sending') : t('actions.export')}
           </button>
         </div>
       </div>

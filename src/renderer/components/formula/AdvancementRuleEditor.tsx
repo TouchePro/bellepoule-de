@@ -4,6 +4,7 @@
 
 import React, { memo } from 'react';
 import { AdvancementMode, AdvancementRule } from '../../../shared/types';
+import { useTranslation } from '../../contexts/TranslationContext';
 
 interface Props {
   rule: AdvancementRule;
@@ -30,13 +31,17 @@ function computeAdvancing(fencers: number, rule: AdvancementRule): number {
   }
 }
 
-const MODE_LABELS: Record<AdvancementMode, string> = {
-  all: 'Tous avancent',
-  percentage: 'Top %',
-  fixed_count: 'Nombre fixe',
-  fixed_bracket: 'Tableau suivant',
-  pool_winner: 'Vainqueur de poule',
-};
+function getModeLabels(
+  t: (key: string, params?: { [key: string]: string | number }) => string
+): Record<AdvancementMode, string> {
+  return {
+    all: t('formula.advancement_all'),
+    percentage: t('formula.advancement_percent'),
+    fixed_count: t('formula.advancement_fixed'),
+    fixed_bracket: t('formula.advancement_bracket'),
+    pool_winner: t('formula.advancement_pool_winner'),
+  };
+}
 
 const AdvancementRuleEditor_: React.FC<Props> = ({
   rule,
@@ -44,7 +49,9 @@ const AdvancementRuleEditor_: React.FC<Props> = ({
   inputFencers,
   readOnly,
 }) => {
+  const { t } = useTranslation();
   const advancing = inputFencers ? computeAdvancing(inputFencers, rule) : null;
+  const modeLabels = getModeLabels(t);
 
   const setMode = (mode: AdvancementMode) => {
     const defaults: Record<AdvancementMode, Partial<AdvancementRule>> = {
@@ -66,7 +73,7 @@ const AdvancementRuleEditor_: React.FC<Props> = ({
           onChange={e => setMode(e.target.value as AdvancementMode)}
           disabled={readOnly}
         >
-          {(Object.entries(MODE_LABELS) as [AdvancementMode, string][]).map(([mode, label]) => (
+          {(Object.entries(modeLabels) as [AdvancementMode, string][]).map(([mode, label]) => (
             <option key={mode} value={mode}>
               {label}
             </option>
@@ -99,13 +106,13 @@ const AdvancementRuleEditor_: React.FC<Props> = ({
               onChange={e => onChange({ ...rule, count: Number(e.target.value) })}
               disabled={readOnly}
             />
-            <span className="advancement-unit">tireurs</span>
+            <span className="advancement-unit">{t('fencer.label')}</span>
           </div>
         )}
 
         {advancing !== null && (
           <span className="advancement-preview">
-            → <strong>{advancing}</strong> avancent
+            → <strong>{advancing}</strong> {t('formula.advancing_suffix')}
           </span>
         )}
       </div>

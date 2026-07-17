@@ -546,6 +546,8 @@
     "advancement_percent": "Top %",
     "advancement_fixed": "Fixed count",
     "advancement_bracket": "Next bracket",
+    "advancement_pool_winner": "Pool winner",
+    "advancing_suffix": "advance",
     "ranking_criteria": "Ranking criteria",
     "criterion_vm": "V/M (victory ratio)",
     "criterion_index": "Index (TD−TR)",
@@ -769,7 +771,8 @@
   },
   "errors": {
     "load_title": "An error occurred while loading the competition.",
-    "load_message": "The data may be corrupted. Please contact support."
+    "load_message": "The data may be corrupted. Please contact support.",
+    "component_stack": "Component Stack:"
   },
   "ffe": {
     "api_key": "Your FFE API key",
@@ -778,14 +781,29 @@
     "api_key_optional": "API key (optional)",
     "selected": "selected",
     "export_title": "Export to FFE Connect",
-    "export_success": "Results sent to FFE successfully."
+    "export_success": "Results sent to FFE successfully.",
+    "competition_code_required": "Competition code is required",
+    "export_failed": "Export failed",
+    "competition_code_example": "e.g. 2024-IDF-001",
+    "fencers_ready": "{{count}} fencer(s) ready to export",
+    "missing_license": "{{count}} without license number (ignored)",
+    "sending": "Sending…",
+    "no_participants_found": "No participant found for this competition code",
+    "participants_found": "participants found",
+    "add_selected": "Add selected ({{count}})"
   },
   "comparison": {
+    "title": "⚔️ Head-to-Head Comparison",
+    "global_stats_title": "📊 Global statistics",
     "matches_played": "Matches played:",
+    "victories": "Victories:",
     "win_rate": "Win rate:",
     "touches_given": "Touches given:",
     "touches_received": "Touches received:",
+    "index": "Index:",
+    "direct_wins": "Direct wins",
     "avg_score": "Average score",
+    "total_matches_count": "{{count}} match(es)",
     "history_title": "📜 Head-to-head history",
     "pool_matches": "Pool matches",
     "tableau_matches": "Tableau matches",
@@ -839,7 +857,8 @@
     "delete": "Delete photo",
     "take_webcam": "Take a photo with the webcam",
     "drop_here": "Drop here",
-    "take": "Take a photo"
+    "take": "Take a photo",
+    "click_or_drop": "Click or drag and drop a photo"
   },
   "historicalStats": {
     "none": "No history available"
