@@ -944,18 +944,33 @@
     "last_entry": "Letzte Eingabe",
     "no_events": "Kein Ereignis für dieses Match erfasst.",
     "type": "Typ",
-    "title": "Match-Protokoll"
+    "title": "Match-Protokoll",
+    "event_type_score": "Ergebnis",
+    "event_type_touch": "Treffer",
+    "event_type_card": "Karte",
+    "event_type_arena_exit": "Bahnaustritt",
+    "side_label": "Seite",
+    "event_count": "{{count}} Ereignis(se)",
+    "time_header": "Uhrzeit",
+    "description_header": "Beschreibung"
   },
   "multiStrip": {
+    "title": "Mehrere Pisten verwalten ({{count}} Pisten)",
     "pending": "ausstehende Matches",
     "free_strip": "Piste freigeben",
     "assign_next": "Nächstes Match zuweisen",
-    "none_pending": "Kein Match ausstehend"
+    "none_pending": "Kein Match ausstehend",
+    "status_occupied": "Besetzt",
+    "status_free": "Frei",
+    "next_prefix": "Nächstes:"
   },
   "newCompetition": {
     "placeholder": "Bsp: Regionalmeisterschaft",
     "touches_like": "Treffer (wie die anderen Waffen)",
-    "zone_points": "Kumulierte Zonepunkte (A/B/C)"
+    "zone_points": "Kumulierte Zonepunkte (A/B/C)",
+    "laser_target_label": "Ziel Laser-Säbel",
+    "location_placeholder": "Bsp: Sporthalle Jean Moulin, Paris",
+    "default_title": "Wettkampf vom {{date}}"
   },
   "team": {
     "teams_label": "Mannschaften",
@@ -991,7 +1006,21 @@
   "obs": {
     "open_browser": "Im Browser öffnen",
     "strip_arena": "Piste / Arena",
-    "json_endpoint": "JSON-Endpoint (Drittanbieter-Integrationen)"
+    "json_endpoint": "JSON-Endpoint (Drittanbieter-Integrationen)",
+    "theme_transparent": "Transparent (für OBS empfohlen)",
+    "theme_dark": "Dunkel",
+    "theme_neon": "Neon",
+    "theme_light": "Hell",
+    "hide_timer": "Stoppuhr",
+    "hide_cards": "Karten",
+    "hide_club": "Verein",
+    "hide_phase": "Phase / Piste",
+    "hide_label": "Ausblenden",
+    "dimensions_label": "Abmessungen (px)",
+    "preset_banner": "Banner {{w}}×{{h}}",
+    "preset_corner": "Eckblock {{w}}×{{h}}",
+    "url_label": "URL für OBS-Browserquelle",
+    "hint": "In OBS: Quellen → + → Browser → URL einfügen · Breite {{width}} · Höhe {{height}}"
   },
   "offline": {
     "last_sync": "Letzte Synchronisation:",
@@ -1154,6 +1183,7 @@
     "section_kiosk_views": "Kiosk-Ansichten",
     "port_invalid": "Port ungültig (1–65535)",
     "start_button": "Remote-Eingabe starten",
+    "lane_number": "Piste {{number}}",
     "server_label": "Server:",
     "cert_fingerprint_label": "🔒 Zertifikatsabdruck SHA-256:",
     "port_label": "Port:",
@@ -1253,6 +1283,8 @@
     "waiting": "Warten auf vorherige Ergebnisse…"
   },
   "theme": {
+    "toggle_to_light": "Zum hellen Modus wechseln",
+    "toggle_to_dark": "Zum dunklen Modus wechseln",
     "import_json": "Thema-JSON importieren",
     "editor_title": "Themeneditor",
     "name": "Themenname",

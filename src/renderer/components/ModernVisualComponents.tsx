@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface ThemeToggleProps {
   isDark: boolean;
@@ -6,6 +7,7 @@ interface ThemeToggleProps {
 }
 
 const ModernThemeToggle_: React.FC<ThemeToggleProps> = ({ isDark, onToggle }) => {
+  const { t } = useTranslation();
   return (
     <button
       onClick={onToggle}
@@ -22,7 +24,7 @@ const ModernThemeToggle_: React.FC<ThemeToggleProps> = ({ isDark, onToggle }) =>
         display: 'flex',
         alignItems: 'center',
       }}
-      aria-label={isDark ? 'Passer en mode clair' : 'Passer en mode sombre'}
+      aria-label={isDark ? t('theme.toggle_to_light') : t('theme.toggle_to_dark')}
     >
       {/* Sun Icon */}
       <span

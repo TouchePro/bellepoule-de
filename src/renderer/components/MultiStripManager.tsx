@@ -107,14 +107,14 @@ export const MultiStripManager: React.FC<MultiStripManagerProps> = ({
         aria-modal="true"
       >
         <div className="modal-header" style={{ flexShrink: 0 }}>
-          <h2 style={{ margin: 0 }}>Gestion multi-pistes ({stripCount} pistes)</h2>
+          <h2 style={{ margin: 0 }}>{t('multiStrip.title', { count: stripCount })}</h2>
           <button className="btn-close" onClick={onClose}>&times;</button>
         </div>
 
         <div style={{ padding: '1rem 1.5rem', background: '#f9fafb', borderBottom: '1px solid #e5e7eb', flexShrink: 0 }}>
           <div style={{ display: 'flex', gap: '2rem' }}>
             <span style={{ fontSize: '0.875rem' }}>
-              <strong>{finishedMatches}</strong>/{totalMatches} matchs terminés
+              {t('liveInterPool.matches_finished', { finished: finishedMatches, total: totalMatches })}
             </span>
             <span style={{ fontSize: '0.875rem', color: '#16a34a' }}>
               <strong>{pendingMatches.length}</strong> {t('multiStrip.pending')}
@@ -145,7 +145,7 @@ export const MultiStripManager: React.FC<MultiStripManagerProps> = ({
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                    <span style={{ fontWeight: 700, fontSize: '1rem' }}>Piste {strip.id}</span>
+                    <span style={{ fontWeight: 700, fontSize: '1rem' }}>{t('qrCode.lane_number', { number: strip.id })}</span>
                     <span
                       style={{
                         fontSize: '0.75rem',
@@ -155,14 +155,14 @@ export const MultiStripManager: React.FC<MultiStripManagerProps> = ({
                         color: isOccupied ? '#fff' : '#6b7280',
                       }}
                     >
-                      {isOccupied ? 'Occupée' : 'Libre'}
+                      {isOccupied ? t('multiStrip.status_occupied') : t('multiStrip.status_free')}
                     </span>
                   </div>
 
                   {match ? (
                     <div>
                       <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem', color: '#6b7280' }}>
-                        Poule {pools[strip.assignedPoolIndex!]?.number}
+                        {t('live.pool_title', { number: pools[strip.assignedPoolIndex!]?.number })}
                       </div>
                       <div style={{ fontSize: '0.875rem', fontWeight: 500 }}>
                         {match.fencerA?.lastName ?? '?'} vs {match.fencerB?.lastName ?? '?'}
@@ -180,7 +180,7 @@ export const MultiStripManager: React.FC<MultiStripManagerProps> = ({
                       {pendingMatches.length > 0 ? (
                         <>
                           <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginBottom: '0.5rem' }}>
-                            Prochain : Poule {pendingMatches[0].poolNumber} — {pendingMatches[0].match.fencerA?.lastName ?? '?'} vs {pendingMatches[0].match.fencerB?.lastName ?? '?'}
+                            {t('multiStrip.next_prefix')} {t('live.pool_title', { number: pendingMatches[0].poolNumber })} — {pendingMatches[0].match.fencerA?.lastName ?? '?'} vs {pendingMatches[0].match.fencerB?.lastName ?? '?'}
                           </div>
                           <button
                             className="btn btn-primary"

@@ -27,7 +27,7 @@ const setup = (stripCount = 3) => {
 describe('MultiStripManager', () => {
   it('affiche le titre avec le nombre de pistes', () => {
     setup(3);
-    expect(screen.getByText(/Gestion multi-pistes \(3 pistes\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Mehrere Pisten verwalten \(3 Pisten\)/)).toBeInTheDocument();
   });
 
   it('rend une carte par piste', () => {

@@ -18,12 +18,16 @@ interface MatchAuditLogProps {
   onClose?: () => void;
 }
 
-const EVENT_TYPE_LABELS: Record<MatchEventType, string> = {
-  score_change: 'Score',
-  touch: 'Touche',
-  card: 'Carton',
-  arena_exit: 'Sortie',
-};
+type TFunc = (key: string, params?: { [key: string]: string | number }) => string;
+
+function getEventTypeLabels(t: TFunc): Record<MatchEventType, string> {
+  return {
+    score_change: t('matchAudit.event_type_score'),
+    touch: t('matchAudit.event_type_touch'),
+    card: t('matchAudit.event_type_card'),
+    arena_exit: t('matchAudit.event_type_arena_exit'),
+  };
+}
 
 const EVENT_TYPE_COLORS: Record<MatchEventType, string> = {
   score_change: '#8b5cf6',
@@ -46,8 +50,8 @@ function formatTimestamp(ts: string, baseTs: string | null): string {
   return `${abs} (${rel})`;
 }
 
-function fencerLabel(entry: MatchEventEntry): { label: string; color: string } {
-  if (!entry.fencerSide) return { label: 'Match', color: '#6b7280' };
+function fencerLabel(entry: MatchEventEntry, t: TFunc): { label: string; color: string } {
+  if (!entry.fencerSide) return { label: t('pools.match'), color: '#6b7280' };
   const name = entry.fencerLastName ?? entry.fencerSide;
   return {
     label: `${entry.fencerSide} — ${name}`,
@@ -55,11 +59,11 @@ function fencerLabel(entry: MatchEventEntry): { label: string; color: string } {
   };
 }
 
-function buildRefereeLastActions(entries: MatchEventEntry[]): { key: string; label: string; entry: MatchEventEntry }[] {
+function buildRefereeLastActions(entries: MatchEventEntry[], t: TFunc): { key: string; label: string; entry: MatchEventEntry }[] {
   const map = new Map<string, { label: string; entry: MatchEventEntry }>();
   for (const e of entries) {
     if (e.eventType !== 'score_change') continue;
-    const key = e.refereeName ?? e.changedBy ?? e.ipAddress ?? 'inconnu';
+    const key = e.refereeName ?? e.changedBy ?? e.ipAddress ?? t('messages.unknown');
     map.set(key, { label: key, entry: e });
   }
   return Array.from(map.entries()).map(([key, v]) => ({ key, ...v }));
@@ -92,7 +96,8 @@ const MatchAuditLogComponent: React.FC<MatchAuditLogProps> = ({
   }, [error]);
 
   const baseTs = entries.length > 0 ? entries[0].timestamp : null;
-  const refereeLastActions = buildRefereeLastActions(entries);
+  const refereeLastActions = buildRefereeLastActions(entries, t);
+  const eventTypeLabels = useMemo(() => getEventTypeLabels(t), [t]);
 
   const zoneStats = useMemo(() => {
     type ZoneSide = { A: number; B: number; C: number };
@@ -153,7 +158,7 @@ const MatchAuditLogComponent: React.FC<MatchAuditLogProps> = ({
             return (
               <div key={side} style={{ flex: 1 }}>
                 <div style={{ fontSize: '0.7rem', fontWeight: 700, color: side === 'A' ? '#60a5fa' : '#f87171', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
-                  Côté {side}
+                  {t('matchAudit.side_label')} {side}
                 </div>
                 {(['A', 'B', 'C'] as const).map(z => {
                   const count = s[z];
@@ -179,29 +184,29 @@ const MatchAuditLogComponent: React.FC<MatchAuditLogProps> = ({
       {/* Filtres */}
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
         <span style={{ fontSize: '0.8rem', color: '#6b7280', marginRight: '0.25rem' }}>{t('matchAudit.filter')}</span>
-        {ALL_TYPES.map(t => {
-          const active = filterTypes.length === 0 || filterTypes.includes(t);
+        {ALL_TYPES.map(type => {
+          const active = filterTypes.length === 0 || filterTypes.includes(type);
           return (
             <button
-              key={t}
-              onClick={() => toggleType(t)}
+              key={type}
+              onClick={() => toggleType(type)}
               style={{
                 padding: '0.2rem 0.6rem',
                 fontSize: '0.75rem',
                 fontWeight: '600',
                 borderRadius: '999px',
-                border: `1px solid ${EVENT_TYPE_COLORS[t]}`,
-                background: active ? EVENT_TYPE_COLORS[t] : 'transparent',
-                color: active ? 'white' : EVENT_TYPE_COLORS[t],
+                border: `1px solid ${EVENT_TYPE_COLORS[type]}`,
+                background: active ? EVENT_TYPE_COLORS[type] : 'transparent',
+                color: active ? 'white' : EVENT_TYPE_COLORS[type],
                 cursor: 'pointer',
               }}
             >
-              {EVENT_TYPE_LABELS[t]}
+              {eventTypeLabels[type]}
             </button>
           );
         })}
         <span style={{ marginLeft: 'auto', fontSize: '0.8rem', color: '#9ca3af' }}>
-          {filtered.length} événement{filtered.length !== 1 ? 's' : ''}
+          {t('matchAudit.event_count', { count: filtered.length })}
         </span>
         <button
           onClick={() => setRefereeView(v => !v)}
@@ -278,7 +283,7 @@ const MatchAuditLogComponent: React.FC<MatchAuditLogProps> = ({
             <thead>
               <tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
                 <th style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontWeight: '600', color: '#6b7280', whiteSpace: 'nowrap' }}>
-                  Heure
+                  {t('matchAudit.time_header')}
                 </th>
                 <th style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>
                   {t('matchAudit.type')}
@@ -287,13 +292,13 @@ const MatchAuditLogComponent: React.FC<MatchAuditLogProps> = ({
                   {t('fencer.fencer_label')}
                 </th>
                 <th style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>
-                  Description
+                  {t('matchAudit.description_header')}
                 </th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((entry, i) => {
-                const { label, color } = fencerLabel(entry);
+                const { label, color } = fencerLabel(entry, t);
                 return (
                   <tr
                     key={entry.id}
@@ -317,7 +322,7 @@ const MatchAuditLogComponent: React.FC<MatchAuditLogProps> = ({
                           border: `1px solid ${EVENT_TYPE_COLORS[entry.eventType]}40`,
                         }}
                       >
-                        {EVENT_TYPE_LABELS[entry.eventType]}
+                        {eventTypeLabels[entry.eventType]}
                       </span>
                     </td>
                     <td style={{ padding: '0.5rem 0.75rem', fontWeight: '600', color }}>

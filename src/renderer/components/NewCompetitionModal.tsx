@@ -81,7 +81,9 @@ const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCr
           : undefined;
 
     onCreate({
-      title: title || `Compétition du ${new Date(date).toLocaleDateString('fr-FR')}`,
+      title:
+        title ||
+        t('newCompetition.default_title', { date: new Date(date).toLocaleDateString('fr-FR') }),
       date: new Date(date),
       weapon,
       gender,
@@ -246,7 +248,7 @@ const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCr
                 </div>
                 {weapon === Weapon.LASER && (
                   <div className="form-group">
-                    <label className="form-label">Cible Sabre Laser</label>
+                    <label className="form-label">{t('newCompetition.laser_target_label')}</label>
                     <select
                       className="form-input form-select"
                       value={laserTeamMode}
@@ -267,7 +269,7 @@ const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCr
               <input
                 type="text"
                 className="form-input"
-                placeholder="Ex: Gymnase Jean Moulin, Paris"
+                placeholder={t('newCompetition.location_placeholder')}
                 value={location}
                 onChange={e => setLocation(e.target.value)}
               />

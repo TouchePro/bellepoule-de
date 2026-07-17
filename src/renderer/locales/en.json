@@ -944,18 +944,33 @@
     "last_entry": "Last entry",
     "no_events": "No event recorded for this match.",
     "type": "Type",
-    "title": "Match log"
+    "title": "Match log",
+    "event_type_score": "Score",
+    "event_type_touch": "Touch",
+    "event_type_card": "Card",
+    "event_type_arena_exit": "Arena exit",
+    "side_label": "Side",
+    "event_count": "{{count}} event(s)",
+    "time_header": "Time",
+    "description_header": "Description"
   },
   "multiStrip": {
+    "title": "Manage multiple strips ({{count}} strips)",
     "pending": "pending matches",
     "free_strip": "Free the strip",
     "assign_next": "Assign next match",
-    "none_pending": "No pending match"
+    "none_pending": "No pending match",
+    "status_occupied": "Occupied",
+    "status_free": "Free",
+    "next_prefix": "Next:"
   },
   "newCompetition": {
     "placeholder": "Ex: Regional Championship",
     "touches_like": "Touches (like other weapons)",
-    "zone_points": "Cumulative zone points (A/B/C)"
+    "zone_points": "Cumulative zone points (A/B/C)",
+    "laser_target_label": "Laser Sabre Target",
+    "location_placeholder": "Ex: Gymnasium Jean Moulin, Paris",
+    "default_title": "Competition of {{date}}"
   },
   "team": {
     "teams_label": "teams",
@@ -991,7 +1006,21 @@
   "obs": {
     "open_browser": "Open in browser",
     "strip_arena": "Strip / Arena",
-    "json_endpoint": "JSON endpoint (third-party integrations)"
+    "json_endpoint": "JSON endpoint (third-party integrations)",
+    "theme_transparent": "Transparent (recommended for OBS)",
+    "theme_dark": "Dark",
+    "theme_neon": "Neon",
+    "theme_light": "Light",
+    "hide_timer": "Timer",
+    "hide_cards": "Cards",
+    "hide_club": "Club",
+    "hide_phase": "Phase / Strip",
+    "hide_label": "Hide",
+    "dimensions_label": "Dimensions (px)",
+    "preset_banner": "Banner {{w}}×{{h}}",
+    "preset_corner": "Corner block {{w}}×{{h}}",
+    "url_label": "OBS Browser Source URL",
+    "hint": "In OBS: Sources → + → Browser → paste URL · Width {{width}} · Height {{height}}"
   },
   "offline": {
     "last_sync": "Last sync:",
@@ -1154,6 +1183,7 @@
     "section_kiosk_views": "Kiosk views",
     "port_invalid": "Invalid port (1–65535)",
     "start_button": "Start remote input",
+    "lane_number": "Strip {{number}}",
     "server_label": "Server:",
     "cert_fingerprint_label": "🔒 Certificate fingerprint SHA-256:",
     "port_label": "Port:",
@@ -1253,6 +1283,8 @@
     "waiting": "Waiting for previous results…"
   },
   "theme": {
+    "toggle_to_light": "Switch to light mode",
+    "toggle_to_dark": "Switch to dark mode",
     "import_json": "Import a theme JSON",
     "editor_title": "Theme editor",
     "name": "Theme name",

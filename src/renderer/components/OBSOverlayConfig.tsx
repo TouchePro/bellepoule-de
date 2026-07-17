@@ -13,18 +13,18 @@ interface OBSOverlayConfigProps {
 
 type OverlayTheme = 'transparent' | 'dark' | 'neon' | 'light';
 
-const THEMES: { value: OverlayTheme; label: string }[] = [
-  { value: 'transparent', label: 'Transparent (recommandé OBS)' },
-  { value: 'dark', label: 'Sombre' },
-  { value: 'neon', label: 'Néon' },
-  { value: 'light', label: 'Clair' },
+const THEMES: { value: OverlayTheme; labelKey: string }[] = [
+  { value: 'transparent', labelKey: 'obs.theme_transparent' },
+  { value: 'dark', labelKey: 'obs.theme_dark' },
+  { value: 'neon', labelKey: 'obs.theme_neon' },
+  { value: 'light', labelKey: 'obs.theme_light' },
 ];
 
-const HIDE_OPTIONS: { key: string; label: string }[] = [
-  { key: 'timer', label: 'Chronomètre' },
-  { key: 'cards', label: 'Cartons' },
-  { key: 'club', label: 'Club' },
-  { key: 'phase', label: 'Phase / Piste' },
+const HIDE_OPTIONS: { key: string; labelKey: string }[] = [
+  { key: 'timer', labelKey: 'obs.hide_timer' },
+  { key: 'cards', labelKey: 'obs.hide_cards' },
+  { key: 'club', labelKey: 'obs.hide_club' },
+  { key: 'phase', labelKey: 'obs.hide_phase' },
 ];
 
 export const OBSOverlayConfig: React.FC<OBSOverlayConfigProps> = ({ serverUrl, arenaCount }) => {
@@ -84,7 +84,7 @@ export const OBSOverlayConfig: React.FC<OBSOverlayConfigProps> = ({ serverUrl, a
           onChange={e => setArena(Number(e.target.value))}
         >
           {Array.from({ length: Math.max(arenaCount, 1) }, (_, i) => (
-            <option key={i + 1} value={i + 1}>Piste {i + 1}</option>
+            <option key={i + 1} value={i + 1}>{t('remote_score.lane_number', { number: i + 1 })}</option>
           ))}
         </select>
       </div>
@@ -93,13 +93,13 @@ export const OBSOverlayConfig: React.FC<OBSOverlayConfigProps> = ({ serverUrl, a
       <div style={S.row}>
         <label style={S.labelText}>{t('settings.theme')}</label>
         <select style={S.select} value={theme} onChange={e => setTheme(e.target.value as OverlayTheme)}>
-          {THEMES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+          {THEMES.map(opt => <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>)}
         </select>
       </div>
 
       {/* Dimensions */}
       <div style={S.row}>
-        <label style={S.labelText}>Dimensions (px)</label>
+        <label style={S.labelText}>{t('obs.dimensions_label')}</label>
         <div style={S.dimRow}>
           <input
             type="number" style={S.dimInput} value={width} min={200} max={3840}
@@ -110,15 +110,15 @@ export const OBSOverlayConfig: React.FC<OBSOverlayConfigProps> = ({ serverUrl, a
             type="number" style={S.dimInput} value={height} min={60} max={2160}
             onChange={e => setHeight(Number(e.target.value))}
           />
-          <button style={S.presetBtn} onClick={() => { setWidth(1280); setHeight(160); }} title="Bandeau 1280×160">1280×160</button>
-          <button style={S.presetBtn} onClick={() => { setWidth(1920); setHeight(80); }} title="Bandeau 1920×80">1920×80</button>
-          <button style={S.presetBtn} onClick={() => { setWidth(400); setHeight(200); }} title="Bloc coin 400×200">400×200</button>
+          <button style={S.presetBtn} onClick={() => { setWidth(1280); setHeight(160); }} title={t('obs.preset_banner', { w: 1280, h: 160 })}>1280×160</button>
+          <button style={S.presetBtn} onClick={() => { setWidth(1920); setHeight(80); }} title={t('obs.preset_banner', { w: 1920, h: 80 })}>1920×80</button>
+          <button style={S.presetBtn} onClick={() => { setWidth(400); setHeight(200); }} title={t('obs.preset_corner', { w: 400, h: 200 })}>400×200</button>
         </div>
       </div>
 
       {/* Masquer éléments */}
       <div style={S.hideSection}>
-        <span style={S.labelText}>Masquer</span>
+        <span style={S.labelText}>{t('obs.hide_label')}</span>
         <div style={S.checkboxRow}>
           {HIDE_OPTIONS.map(opt => (
             <label key={opt.key} style={S.checkLabel}>
@@ -127,7 +127,7 @@ export const OBSOverlayConfig: React.FC<OBSOverlayConfigProps> = ({ serverUrl, a
                 checked={hidden.has(opt.key)}
                 onChange={() => toggleHide(opt.key)}
               />
-              {opt.label}
+              {t(opt.labelKey)}
             </label>
           ))}
         </div>
@@ -135,7 +135,7 @@ export const OBSOverlayConfig: React.FC<OBSOverlayConfigProps> = ({ serverUrl, a
 
       {/* URL générée */}
       <div style={S.urlBox}>
-        <div style={S.urlLabel}>URL OBS Browser Source</div>
+        <div style={S.urlLabel}>{t('obs.url_label')}</div>
         <div style={S.urlRow}>
           <code style={S.urlCode}>{overlayUrl}</code>
           <button style={S.copyBtn} onClick={copyUrl}>{copied ? '✓' : '📋'}</button>
@@ -157,7 +157,7 @@ export const OBSOverlayConfig: React.FC<OBSOverlayConfigProps> = ({ serverUrl, a
       </div>
 
       <div style={S.hint}>
-        Dans OBS : Sources → + → Navigateur → coller l'URL · Largeur {width} · Hauteur {height}
+        {t('obs.hint', { width, height })}
       </div>
     </div>
   );
