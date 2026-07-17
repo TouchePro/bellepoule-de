@@ -34,10 +34,10 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
         .catch(err => {
           console.error('[PhotoBooth] video.play() rejected:', err);
           logger.error(LogCategory.UI, 'Error playing video stream', err as Error);
-          setError(`Erreur lecture vidéo : ${(err as Error).message}`);
+          setError(t('photoBooth.error_video_playback', { message: (err as Error).message }));
         });
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     return () => {
@@ -59,7 +59,7 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
     setError(null);
     console.log('[PhotoBooth] startCamera — navigator.mediaDevices:', !!navigator.mediaDevices?.getUserMedia);
     if (!navigator.mediaDevices?.getUserMedia) {
-      const msg = "L'accès à la webcam n'est pas disponible dans ce contexte (mediaDevices absent).";
+      const msg = t('photoBooth.error_media_unavailable');
       setError(msg);
       return;
     }
@@ -78,13 +78,13 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
       const domErr = err as DOMException;
       const msg =
         domErr.name === 'NotAllowedError'
-          ? `Permission refusée [${domErr.name}]. Vérifiez que l'application a accès à la caméra dans les paramètres système.`
+          ? t('photoBooth.error_permission_denied', { name: domErr.name })
           : domErr.name === 'NotFoundError'
-            ? `Aucune caméra détectée [${domErr.name}]. Vérifiez que la webcam est connectée.`
-            : `Impossible d'accéder à la caméra [${domErr.name}] : ${domErr.message || String(err)}`;
+            ? t('photoBooth.error_no_camera', { name: domErr.name })
+            : t('photoBooth.error_camera_access', { name: domErr.name, message: domErr.message || String(err) });
       setError(msg);
     }
-  }, []);
+  }, [t]);
 
   // Ref so capturePhoto closure always calls the latest takePhoto
   const takePhotoRef = useRef<() => void>(() => {});
@@ -96,7 +96,11 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
 
     console.log('[PhotoBooth] takePhoto — readyState:', video.readyState, 'size:', video.videoWidth, 'x', video.videoHeight);
     if (video.readyState < 2 || video.videoWidth === 0 || video.videoHeight === 0) {
-      setError(`Caméra pas encore prête (readyState=${video.readyState}, ${video.videoWidth}×${video.videoHeight}). Réessayez.`);
+      setError(t('photoBooth.error_not_ready', {
+        readyState: video.readyState,
+        width: video.videoWidth,
+        height: video.videoHeight,
+      }));
       return;
     }
 
@@ -131,9 +135,9 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
     } catch (err) {
       console.error('[PhotoBooth] capture error:', err);
       logger.error(LogCategory.UI, 'Error capturing photo', err as Error);
-      setError(`Erreur capture : ${(err as Error).message || String(err)}`);
+      setError(t('photoBooth.error_capture', { message: (err as Error).message || String(err) }));
     }
-  }, [stopCamera]);
+  }, [stopCamera, t]);
 
   takePhotoRef.current = takePhoto;
 
@@ -171,7 +175,7 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
             wordBreak: 'break-word',
           }}
         >
-          <strong>Erreur webcam :</strong> {error}
+          <strong>{t('photoBooth.error_webcam_prefix')}</strong> {error}
         </div>
       )}
 
@@ -194,7 +198,7 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
           </div>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
             <button type="button" className="btn btn-secondary" onClick={onClose}>
-              Annuler
+              {t('actions.cancel')}
             </button>
             <button type="button" className="btn btn-primary" onClick={startCamera}>
               {t('photoBooth.start_camera')}
@@ -242,14 +246,14 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
               className="btn btn-primary"
               style={{ flex: 1 }}
             >
-              {countdown > 0 ? `${countdown}…` : '📸 Capturer'}
+              {countdown > 0 ? `${countdown}…` : t('photoBooth.capture')}
             </button>
             <button
               type="button"
               onClick={() => { stopCamera(); onClose(); }}
               className="btn btn-secondary"
             >
-              Annuler
+              {t('actions.cancel')}
             </button>
           </div>
         </div>
@@ -268,10 +272,10 @@ export const PhotoBooth: React.FC<PhotoBoothProps> = ({ onConfirm, onClose }) =>
           />
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
             <button type="button" onClick={retake} className="btn btn-secondary">
-              Recommencer
+              {t('photoBooth.retake')}
             </button>
             <button type="button" onClick={() => onConfirm(photo)} className="btn btn-primary">
-              Utiliser cette photo
+              {t('photoBooth.use_photo')}
             </button>
           </div>
         </div>

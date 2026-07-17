@@ -79,18 +79,18 @@ const OfflineStatus_: React.FC<OfflineStatusProps> = ({ className = '' }) => {
   };
 
   const formatLastSync = (timestamp: number | null): string => {
-    if (!timestamp) return 'Jamais';
+    if (!timestamp) return t('offline.never');
 
     const date = new Date(timestamp);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
 
-    if (diffMins < 1) return "À l'instant";
-    if (diffMins < 60) return `Il y a ${diffMins} min`;
+    if (diffMins < 1) return t('offline.just_now');
+    if (diffMins < 60) return t('offline.minutes_ago', { count: diffMins });
 
     const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `Il y a ${diffHours}h`;
+    if (diffHours < 24) return t('offline.hours_ago', { count: diffHours });
 
     return date.toLocaleDateString('fr-FR');
   };
@@ -104,11 +104,11 @@ const OfflineStatus_: React.FC<OfflineStatusProps> = ({ className = '' }) => {
   };
 
   const getStatusText = () => {
-    if (!isOnline) return 'Hors ligne';
-    if (isSyncing) return 'Synchronisation...';
-    if (syncStatus.pendingActions > 0) return `${syncStatus.pendingActions} en attente`;
-    if (syncStatus.conflicts > 0) return `${syncStatus.conflicts} conflits`;
-    return 'Connecté';
+    if (!isOnline) return t('offline.status_offline');
+    if (isSyncing) return t('offline.syncing');
+    if (syncStatus.pendingActions > 0) return t('offline.status_pending', { count: syncStatus.pendingActions });
+    if (syncStatus.conflicts > 0) return t('offline.status_conflicts', { count: syncStatus.conflicts });
+    return t('offline.status_connected');
   };
 
   return (
@@ -145,7 +145,7 @@ const OfflineStatus_: React.FC<OfflineStatusProps> = ({ className = '' }) => {
               <span
                 className={`text-sm font-medium ${isOnline ? 'text-green-600' : 'text-red-600'}`}
               >
-                {isOnline ? 'En ligne' : 'Hors ligne'}
+                {isOnline ? t('offline.status_online') : t('offline.status_offline')}
               </span>
             </div>
 
@@ -168,12 +168,12 @@ const OfflineStatus_: React.FC<OfflineStatusProps> = ({ className = '' }) => {
             {/* Conflicts */}
             {syncStatus.conflicts > 0 && (
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Conflits:</span>
+                <span className="text-sm text-gray-600">{t('offline.conflicts_label')}</span>
                 <button
                   onClick={() => setShowConflictModal(true)}
                   className="text-sm font-medium text-red-600 underline hover:text-red-700 transition-colors"
                 >
-                  Résoudre {syncStatus.conflicts} conflit{syncStatus.conflicts > 1 ? 's' : ''}
+                  {t('offline.resolve_conflicts', { count: syncStatus.conflicts })}
                 </button>
               </div>
             )}
@@ -184,7 +184,7 @@ const OfflineStatus_: React.FC<OfflineStatusProps> = ({ className = '' }) => {
                 onClick={handleManualSync}
                 className="w-full mt-3 px-3 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition-colors"
               >
-                Synchroniser maintenant
+                {t('offline.sync_now')}
               </button>
             )}
 

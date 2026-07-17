@@ -5,10 +5,10 @@ import type { PdfTemplate, PdfElementConfig, PdfColorScheme } from '../../shared
 
 const LOGO_KEY = 'bellepoule-logo';
 
-const COLOR_PRESETS: { label: string; colors: PdfColorScheme }[] = [
-  { label: 'Classique', colors: { navy: '#1a2e4a', gold: '#c9a227', green: '#166534' } },
-  { label: '⚡ Sabre Laser', colors: { navy: '#1e0a5c', gold: '#6d28d9', green: '#2563eb' } },
-  { label: '🇫🇷 FFE Officielle', colors: { navy: '#990000', gold: '#e30613', green: '#003189' } },
+const COLOR_PRESETS: { labelKey: string; colors: PdfColorScheme }[] = [
+  { labelKey: 'pdfTemplate.presets.classic', colors: { navy: '#1a2e4a', gold: '#c9a227', green: '#166534' } },
+  { labelKey: 'pdfTemplate.presets.laserSabre', colors: { navy: '#1e0a5c', gold: '#6d28d9', green: '#2563eb' } },
+  { labelKey: 'pdfTemplate.presets.ffeOfficial', colors: { navy: '#990000', gold: '#e30613', green: '#003189' } },
 ];
 
 interface Props {
@@ -134,12 +134,12 @@ const PdfTemplateEditor: React.FC<Props> = ({ template, onChange, onReset }) => 
 
       {/* Logo */}
       <div>
-        <div style={SUBHEAD}>Logo</div>
+        <div style={SUBHEAD}>{t('pdfTemplate.logoHeading')}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           {logo ? (
             <img
               src={logo}
-              alt="Logo"
+              alt={t('pdfTemplate.logoHeading')}
               style={{ height: '48px', maxWidth: '120px', objectFit: 'contain', border: '1px solid var(--color-border, #d1d5db)', borderRadius: '4px', padding: '2px', background: '#fff' }}
             />
           ) : (
@@ -148,11 +148,11 @@ const PdfTemplateEditor: React.FC<Props> = ({ template, onChange, onReset }) => 
             </div>
           )}
           <button className="btn btn-secondary" style={SM} onClick={() => logoInputRef.current?.click()}>
-            {logo ? 'Changer' : 'Importer'}
+            {logo ? t('pdfTemplate.logoChange') : t('actions.import')}
           </button>
           {logo && (
             <button className="btn btn-secondary" style={{ fontSize: '0.8rem', color: 'var(--danger, #ef4444)' }} onClick={handleLogoRemove}>
-              Supprimer
+              {t('actions.delete')}
             </button>
           )}
           <input ref={logoInputRef} type="file" accept="image/*" style={HIDDEN} onChange={handleLogoUpload} />
@@ -162,13 +162,13 @@ const PdfTemplateEditor: React.FC<Props> = ({ template, onChange, onReset }) => 
       {/* Couleurs */}
       <div>
         <div style={SUBHEAD}>
-          Couleurs
+          {t('pdfTemplate.colorsHeading')}
         </div>
         {/* Presets */}
         <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
           {COLOR_PRESETS.map(preset => (
             <button
-              key={preset.label}
+              key={preset.labelKey}
               className="btn btn-secondary"
               style={{ ...SM, display: 'flex', alignItems: 'center', gap: '0.35rem' }}
               onClick={() => onChange({ ...template, colors: { ...preset.colors }, updatedAt: new Date().toISOString() })}
@@ -176,7 +176,7 @@ const PdfTemplateEditor: React.FC<Props> = ({ template, onChange, onReset }) => 
               {(['navy', 'gold', 'green'] as const).map(k => (
                 <span key={k} style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: preset.colors[k], border: '1px solid rgba(0,0,0,0.2)' }} />
               ))}
-              {preset.label}
+              {t(preset.labelKey)}
             </button>
           ))}
         </div>
@@ -198,7 +198,7 @@ const PdfTemplateEditor: React.FC<Props> = ({ template, onChange, onReset }) => 
       {/* Ordre et visibilité des sections */}
       <div>
         <div style={SUBHEAD}>
-          Sections
+          {t('pdfTemplate.sectionsHeading')}
         </div>
         <div style={{ border: '1px solid var(--color-border, #d1d5db)', borderRadius: '6px', overflow: 'hidden' }}>
           {sorted.map((el, idx) => (

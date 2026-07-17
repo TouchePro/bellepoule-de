@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState, useMemo } from 'react';
 import type { PdfTemplate, PdfDocType } from '../../shared/types/pdfTemplate.types';
 import { generatePoolHTML, generateTableauHTML, generateRankingHTML } from '../../shared/utils/pdfExport';
 import { PREVIEW_POOL, PREVIEW_TABLEAU, PREVIEW_RANKING } from '../../shared/utils/pdfPreviewData';
+import { useTranslation } from '../hooks/useTranslation';
 
 const LOGO_KEY = 'bellepoule-logo';
 const A4_W = 794;
@@ -14,6 +15,7 @@ interface Props {
 }
 
 const PdfPreview: React.FC<Props> = ({ template, docType }) => {
+  const { t } = useTranslation();
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.5);
@@ -76,7 +78,7 @@ const PdfPreview: React.FC<Props> = ({ template, docType }) => {
       }}>
         <iframe
           ref={iframeRef}
-          title="PDF Preview"
+          title={t('pdfTemplate.preview')}
           sandbox="allow-same-origin"
           style={{
             width: `${A4_W}px`,

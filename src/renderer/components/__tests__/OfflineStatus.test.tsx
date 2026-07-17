@@ -61,7 +61,7 @@ describe('OfflineStatus', () => {
     await act(async () => {
       render(<OfflineStatus />);
     });
-    expect(screen.getByText('Connecté')).toBeInTheDocument();
+    expect(screen.getByText('Verbunden')).toBeInTheDocument();
   });
 
   it('affiche "Hors ligne" quand hors ligne', async () => {
@@ -71,7 +71,7 @@ describe('OfflineStatus', () => {
       render(<OfflineStatus />);
     });
 
-    expect(screen.getByText('Hors ligne')).toBeInTheDocument();
+    expect(screen.getByText('Offline')).toBeInTheDocument();
   });
 
   it('le clic sur le status toggle affiche les détails', async () => {
@@ -79,8 +79,8 @@ describe('OfflineStatus', () => {
       render(<OfflineStatus />);
     });
 
-    const toggle = screen.getByText('Connecté').closest('[class*="cursor-pointer"]')
-      ?? screen.getByText('Connecté').parentElement?.parentElement;
+    const toggle = screen.getByText('Verbunden').closest('[class*="cursor-pointer"]')
+      ?? screen.getByText('Verbunden').parentElement?.parentElement;
 
     expect(toggle).toBeTruthy();
 
@@ -88,7 +88,7 @@ describe('OfflineStatus', () => {
       fireEvent.click(toggle!);
     });
 
-    expect(screen.getByText('Connexion:')).toBeInTheDocument();
+    expect(screen.getByText('Verbindung:')).toBeInTheDocument();
   });
 
   it('affiche le nombre d\'actions en attente', async () => {
@@ -102,7 +102,7 @@ describe('OfflineStatus', () => {
       render(<OfflineStatus />);
     });
 
-    expect(screen.getByText('3 en attente')).toBeInTheDocument();
+    expect(screen.getByText('3 ausstehend')).toBeInTheDocument();
   });
 
   it('affiche "Synchronisation..." pendant la synchro', async () => {
@@ -112,6 +112,6 @@ describe('OfflineStatus', () => {
       render(<OfflineStatus />);
     });
 
-    expect(screen.getByText('Synchronisation...')).toBeInTheDocument();
+    expect(screen.getByText('Synchronisierung läuft...')).toBeInTheDocument();
   });
 });

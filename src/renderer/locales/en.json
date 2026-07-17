@@ -429,6 +429,15 @@
       "gold": "Accent color",
       "green": "Victory color"
     },
+    "colorsHeading": "Colors",
+    "logoHeading": "Logo",
+    "logoChange": "Change",
+    "presets": {
+      "classic": "Classic",
+      "laserSabre": "⚡ Laser Sabre",
+      "ffeOfficial": "🇫🇷 FFE Official"
+    },
+    "sectionsHeading": "Sections",
     "elements": {
       "header": "Header",
       "gold-bar": "Gold separator",
@@ -1028,11 +1037,34 @@
     "syncing": "Syncing...",
     "will_sync": "Changes will be synced automatically when the connection is restored.",
     "connect": "Connection:",
-    "mode": "Offline mode:"
+    "mode": "Offline mode:",
+    "never": "Never",
+    "just_now": "Just now",
+    "minutes_ago": "{{count}} min ago",
+    "hours_ago": "{{count}}h ago",
+    "status_offline": "Offline",
+    "status_online": "Online",
+    "status_pending": "{{count}} pending",
+    "status_conflicts": "{{count}} conflicts",
+    "status_connected": "Connected",
+    "conflicts_label": "Conflicts:",
+    "resolve_conflicts": "Resolve {{count}} conflict(s)",
+    "sync_now": "Sync now"
   },
   "photoBooth": {
     "preview": "Preview",
-    "start_camera": "Start camera"
+    "start_camera": "Start camera",
+    "error_video_playback": "Error playing video: {{message}}",
+    "error_media_unavailable": "Webcam access is not available in this context (mediaDevices missing).",
+    "error_permission_denied": "Permission denied [{{name}}]. Check that the application has access to the camera in system settings.",
+    "error_no_camera": "No camera detected [{{name}}]. Check that the webcam is connected.",
+    "error_camera_access": "Unable to access the camera [{{name}}]: {{message}}",
+    "error_not_ready": "Camera not ready yet (readyState={{readyState}}, {{width}}×{{height}}). Please try again.",
+    "error_capture": "Capture error: {{message}}",
+    "error_webcam_prefix": "Webcam error:",
+    "capture": "📸 Capture",
+    "retake": "Retake",
+    "use_photo": "Use this photo"
   },
   "poolPrep": {
     "single_pool": "Put all fencers in a single pool",

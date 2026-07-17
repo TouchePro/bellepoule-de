@@ -320,6 +320,7 @@
       "green": "Siegesfarbe",
       "navy": "Hauptfarbe"
     },
+    "colorsHeading": "Farben",
     "customTitle": "Benutzerdefinierter Titel",
     "customTitlePlaceholder": "Leer lassen für automatischen Titel",
     "docType": {
@@ -342,9 +343,17 @@
     "exportJson": "JSON exportieren",
     "importError": "Ungültige JSON-Datei",
     "importJson": "JSON importieren",
+    "logoChange": "Ändern",
+    "logoHeading": "Logo",
     "modalTitle": "PDF-Exporte anpassen",
     "openButton": "PDFs anpassen",
+    "presets": {
+      "classic": "Klassisch",
+      "ffeOfficial": "🇫🇷 FFE Offiziell",
+      "laserSabre": "⚡ Laser-Säbel"
+    },
     "reset": "Zurücksetzen",
+    "sectionsHeading": "Abschnitte",
     "no_logo": "Kein Logo",
     "preview": "Vorschau"
   },
@@ -1028,11 +1037,34 @@
     "syncing": "Synchronisierung läuft...",
     "will_sync": "Änderungen werden automatisch synchronisiert, sobald die Verbindung wiederhergestellt ist.",
     "connect": "Verbindung:",
-    "mode": "Offline-Modus:"
+    "mode": "Offline-Modus:",
+    "never": "Nie",
+    "just_now": "Gerade eben",
+    "minutes_ago": "Vor {{count}} Min.",
+    "hours_ago": "Vor {{count}} Std.",
+    "status_offline": "Offline",
+    "status_online": "Online",
+    "status_pending": "{{count}} ausstehend",
+    "status_conflicts": "{{count}} Konflikte",
+    "status_connected": "Verbunden",
+    "conflicts_label": "Konflikte:",
+    "resolve_conflicts": "{{count}} Konflikt(e) lösen",
+    "sync_now": "Jetzt synchronisieren"
   },
   "photoBooth": {
     "preview": "Vorschau",
-    "start_camera": "Kamera starten"
+    "start_camera": "Kamera starten",
+    "error_video_playback": "Fehler bei der Videowiedergabe: {{message}}",
+    "error_media_unavailable": "Der Zugriff auf die Webcam ist in diesem Kontext nicht verfügbar (mediaDevices fehlt).",
+    "error_permission_denied": "Zugriff verweigert [{{name}}]. Prüfen Sie, ob die Anwendung in den Systemeinstellungen Zugriff auf die Kamera hat.",
+    "error_no_camera": "Keine Kamera gefunden [{{name}}]. Prüfen Sie, ob die Webcam angeschlossen ist.",
+    "error_camera_access": "Zugriff auf die Kamera nicht möglich [{{name}}] : {{message}}",
+    "error_not_ready": "Kamera noch nicht bereit (readyState={{readyState}}, {{width}}×{{height}}). Bitte erneut versuchen.",
+    "error_capture": "Fehler bei der Aufnahme: {{message}}",
+    "error_webcam_prefix": "Webcam-Fehler:",
+    "capture": "📸 Aufnehmen",
+    "retake": "Wiederholen",
+    "use_photo": "Dieses Foto verwenden"
   },
   "poolPrep": {
     "single_pool": "Alle Fechter in eine einzige Poule",
