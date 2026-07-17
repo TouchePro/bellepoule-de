@@ -121,12 +121,15 @@ const PoolMatchOrderModal: React.FC<PoolMatchOrderModalProps> = ({ onClose }) =>
           >
             {[3, 4, 5, 6, 7, 8, 9].map(n => (
               <option key={n} value={n}>
-                {n} tireurs — {(n * (n - 1)) / 2} matchs{n >= 9 ? ' (Berger)' : ''}
+                {t(
+                  n >= 9 ? 'poolMatchOrder.option_label_berger' : 'poolMatchOrder.option_label',
+                  { count: n, matches: (n * (n - 1)) / 2 }
+                )}
               </option>
             ))}
           </select>
           <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>
-            {matchCount} matchs
+            {t('poolMatchOrder.matches_count', { count: matchCount })}
           </span>
         </div>
 
@@ -149,9 +152,13 @@ const PoolMatchOrderModal: React.FC<PoolMatchOrderModalProps> = ({ onClose }) =>
               <span style={{ color: '#9ca3af', fontSize: '0.875rem', minWidth: '30px' }}>
                 #{i + 1}
               </span>
-              <span style={{ flex: 1, fontWeight: 500 }}>Tireur {a}</span>
+              <span style={{ flex: 1, fontWeight: 500 }}>
+                {t('poolMatchOrder.fencer_label', { number: a })}
+              </span>
               <span style={{ color: '#9ca3af', padding: '0 0.5rem' }}>vs</span>
-              <span style={{ flex: 1, textAlign: 'right', fontWeight: 500 }}>Tireur {b}</span>
+              <span style={{ flex: 1, textAlign: 'right', fontWeight: 500 }}>
+                {t('poolMatchOrder.fencer_label', { number: b })}
+              </span>
             </div>
           ))}
         </div>

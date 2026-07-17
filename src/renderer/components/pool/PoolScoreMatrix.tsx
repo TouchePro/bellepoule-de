@@ -197,10 +197,20 @@ const ScoreCell = React.memo<ScoreCellProps>(
         onMouseLeave={quickMouseScoring || simplifiedInputMode ? onHoverOut : undefined}
         role="button"
         tabIndex={isLocked ? -1 : 0}
-        aria-label={`${rowFencer.lastName} ${rowFencer.firstName} contre ${colFencer.lastName} ${colFencer.firstName}${
+        aria-label={`${t('poolScoreMatrix.cell_vs', {
+          rowLast: rowFencer.lastName,
+          rowFirst: rowFencer.firstName,
+          colLast: colFencer.lastName,
+          colFirst: colFencer.firstName,
+        })}${
           score
-            ? ` : ${score.isVictory ? 'victoire ' : 'défaite '}${score.value}`
-            : ', saisir le score'
+            ? t(
+                score.isVictory
+                  ? 'poolScoreMatrix.cell_result_victory'
+                  : 'poolScoreMatrix.cell_result_defeat',
+                { value: score.value ?? '' }
+              )
+            : t('poolScoreMatrix.cell_enter_score')
         }`}
         style={{
           cursor: isLocked ? 'default' : 'pointer',
@@ -609,7 +619,9 @@ const PoolScoreMatrix: React.FC<PoolScoreMatrixProps> = ({
                     onFencerChangePool(rowFencer);
                   }}
                   title={t('pools.change_pool')}
-                  aria-label={`Changer ${rowFencer.lastName} de poule`}
+                  aria-label={t('poolScoreMatrix.change_pool_for', {
+                    name: rowFencer.lastName,
+                  })}
                   style={{
                     padding: '0.125rem 0.25rem',
                     fontSize: '0.625rem',

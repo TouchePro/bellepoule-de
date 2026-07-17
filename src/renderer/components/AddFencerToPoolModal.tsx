@@ -104,7 +104,7 @@ const AddFencerToPoolModalComponent: React.FC<AddFencerToPoolModalProps> = ({
         aria-labelledby="add-fencer-title"
       >
         <div className="modal-header">
-          <h2 id="add-fencer-title">Ajouter un tireur – Poule {pool.number}</h2>
+          <h2 id="add-fencer-title">{t('addFencerToPool.title', { number: pool.number })}</h2>
           <button className="btn-close" onClick={onClose}>&times;</button>
         </div>
 
@@ -208,14 +208,14 @@ const AddFencerToPoolModalComponent: React.FC<AddFencerToPoolModalProps> = ({
 
         <div className="modal-footer">
           <button className="btn btn-secondary" onClick={onClose}>
-            Annuler
+            {t('actions.cancel')}
           </button>
           <button
             className="btn btn-primary"
             onClick={handleAdd}
             disabled={!selectedFencer || isLoading}
           >
-            {isLoading ? 'Ajout…' : 'Ajouter le tireur'}
+            {isLoading ? t('addFencerToPool.adding') : t('addFencerToPool.add_button')}
           </button>
         </div>
       </div>

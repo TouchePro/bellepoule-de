@@ -590,11 +590,14 @@
     "easter_sound": "Cluck-cluck!"
   },
   "addFencerToPool": {
+    "title": "Add fencer – Pool {{number}}",
     "search_placeholder": "Search by name…",
     "search_aria": "Search a fencer by name",
     "rescue_title": "Rescue operation:",
     "rescue_desc": "The fencer will be added without rebalancing. Matches against all present fencers will be created.",
-    "none_available": "No fencer available"
+    "none_available": "No fencer available",
+    "add_button": "Add fencer",
+    "adding": "Adding…"
   },
   "ui": {
     "loading": "Loading…",
@@ -1077,7 +1080,14 @@
     "match_order": "Match order",
     "direct_to_ranking": "Direct passage to initial fencer ranking",
     "drop_here": "Drop fencers here",
-    "drag_hint": "Drag fencers between pools or use arrows (← →) to move, (↑ ↓) to reorder."
+    "drag_hint": "Drag fencers between pools or use arrows (← →) to move, (↑ ↓) to reorder.",
+    "priority_drag_hint": "Priority {{number}} — drag to reorder",
+    "fencers_distributed": "{{count}} fencers distributed",
+    "stats_summary": "Min {{min}} · Max {{max}} · Avg {{avg}}",
+    "unique_badge": "unique",
+    "strip_label": "Strip",
+    "skip_to_ranking_button": "Skip to initial ranking →",
+    "start_pools_button": "Start pools →"
   },
   "poolRanking": {
     "recalculate": "Recalculate ranking",
@@ -1716,12 +1726,23 @@
     "next_match": "⚔ Next match",
     "enter_score": "Enter score",
     "pool_done": "Pool finished",
-    "all_played": "All matches have been played"
+    "all_played": "All matches have been played",
+    "click_to_reassign": "Click to reassign",
+    "remote_not_started": "Remote server not started",
+    "upcoming": "Upcoming ({{count}})",
+    "finished_section": "Finished ({{count}})",
+    "cancelled_section": "Cancelled ({{count}})",
+    "default_arena_label": "Default strip",
+    "relaunch_button": "▶ Relaunch"
   },
   "poolMatchOrder": {
     "official": "Official match order",
     "reference": "FIE / FFE reference",
-    "pool_size": "Pool size:"
+    "pool_size": "Pool size:",
+    "option_label": "{{count}} fencers — {{matches}} matches",
+    "option_label_berger": "{{count}} fencers — {{matches}} matches (Berger)",
+    "matches_count": "{{count}} matches",
+    "fencer_label": "Fencer {{number}}"
   },
   "poolScoreMatrix": {
     "not_fenced": "Match not fenced (abandon/forfeit)",
@@ -1733,6 +1754,11 @@
     "td": "TS",
     "tr": "TR",
     "index": "Ind",
+    "cell_vs": "{{rowLast}} {{rowFirst}} vs {{colLast}} {{colFirst}}",
+    "cell_result_victory": ": victory {{value}}",
+    "cell_result_defeat": ": defeat {{value}}",
+    "cell_enter_score": ", enter score",
+    "change_pool_for": "Change pool for {{name}}",
     "rank": "Rk",
     "club": "Club",
     "nation": "Nat"

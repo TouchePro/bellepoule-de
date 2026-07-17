@@ -57,9 +57,9 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
 
   interface SeparationCriterion { key: SeparationCriterionKey; label: string; enabled: boolean }
   const [separationCriteria, setSeparationCriteria] = useState<SeparationCriterion[]>([
-    { key: 'byClub', label: 'Club', enabled: true },
-    { key: 'byRegion', label: 'Région', enabled: true },
-    { key: 'byNation', label: 'Nation', enabled: false },
+    { key: 'byClub', label: 'columns.club', enabled: true },
+    { key: 'byRegion', label: 'columns.region', enabled: true },
+    { key: 'byNation', label: 'columns.nation', enabled: false },
   ]);
   const [dragCriterionIdx, setDragCriterionIdx] = useState<number | null>(null);
 
@@ -442,7 +442,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
         {/* Pool count stepper */}
         <div>
           <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 600, marginBottom: '0.4rem', color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Nombre de poules
+            {t('poolPrep.num_pools')}
           </label>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <div className="pool-prep-stepper">
@@ -529,10 +529,10 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
                 }}
                 className={`pool-prep-pill-toggle${criterion.enabled ? ' active' : ''}`}
                 style={{ cursor: 'grab', userSelect: 'none' }}
-                title={`Priorité ${idx + 1} — glisser pour réordonner`}
+                title={t('poolPrep.priority_drag_hint', { number: idx + 1 })}
               >
                 <span style={{ fontSize: '0.6rem', opacity: 0.6, marginRight: '0.2rem' }}>{idx + 1}.</span>
-                {criterion.label}
+                {t(criterion.label)}
               </button>
             ))}
           </div>
@@ -549,10 +549,10 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
 
         <div style={{ marginLeft: 'auto' }} className="pool-prep-stats-badge">
           <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-text)' }}>
-            {fencers.length} tireurs répartis
+            {t('poolPrep.fencers_distributed', { count: fencers.length })}
           </span>
           <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '0.15rem' }}>
-            Min {stats.min} · Max {stats.max} · Moy {stats.avg}
+            {t('poolPrep.stats_summary', { min: stats.min, max: stats.max, avg: stats.avg })}
           </span>
         </div>
       </div>
@@ -601,19 +601,19 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0, color: accent }}>
-                    Poule {pool.number}
+                    {t('live.pool_title', { number: pool.number })}
                   </h3>
-                  {pools.length === 1 && <span className="pool-prep-badge-unique">unique</span>}
+                  {pools.length === 1 && <span className="pool-prep-badge-unique">{t('poolPrep.unique_badge')}</span>}
                   {hasConflicts && (
                     <span className="pool-prep-conflict-warning" title={t('poolPrep.same_club')}>
-                      ⚠ club
+                      ⚠ {t('columns.club')}
                     </span>
                   )}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   {expertMode && (
                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
-                      Piste
+                      {t('poolPrep.strip_label')}
                       <input
                         type="number"
                         min={1}
@@ -660,10 +660,10 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
                       {hasClubConflict && <span className="pool-prep-conflict-dot" />}
                       <div className="pool-prep-row-actions">
                         {fencerIndex > 0 && (
-                          <button onClick={() => handleMoveFencerUp(poolIndex, fencerIndex)} title="Monter" className="pool-prep-btn-move">↑</button>
+                          <button onClick={() => handleMoveFencerUp(poolIndex, fencerIndex)} title={t('formulaPhaseCard.move_up')} className="pool-prep-btn-move">↑</button>
                         )}
                         {fencerIndex < pool.fencers.length - 1 && (
-                          <button onClick={() => handleMoveFencerDown(poolIndex, fencerIndex)} title="Descendre" className="pool-prep-btn-move">↓</button>
+                          <button onClick={() => handleMoveFencerDown(poolIndex, fencerIndex)} title={t('formulaPhaseCard.move_down')} className="pool-prep-btn-move">↓</button>
                         )}
                         {poolIndex > 0 && (
                           <button onClick={() => handleMoveFencer(fencer.id, poolIndex, poolIndex - 1)} title={t('ui.previous_pool')} className="pool-prep-btn-shift">←</button>
@@ -704,7 +704,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
             disabled={!canRestore()}
             style={{ fontSize: '0.875rem', padding: '0.5rem 1rem', opacity: canRestore() ? 1 : 0.5 }}
           >
-            ↩ Annuler
+            ↩ {t('shortcuts.undo')}
           </button>
           {canRestore() && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
@@ -727,7 +727,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
           disabled={poolCount > 0 && (pools.length === 0 || pools.some(p => p.fencers.length < 3))}
           style={{ fontSize: '1rem', padding: '0.75rem 2rem', borderRadius: '10px' }}
         >
-          {poolCount === 0 ? 'Passer au classement initial →' : 'Lancer les poules →'}
+          {poolCount === 0 ? t('poolPrep.skip_to_ranking_button') : t('poolPrep.start_pools_button')}
         </button>
       </div>
     </div>

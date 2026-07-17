@@ -590,11 +590,14 @@
     "easter_sound": "Gack-gack!"
   },
   "addFencerToPool": {
+    "title": "Fechter hinzufügen – Poule {{number}}",
     "search_placeholder": "Nach Name suchen…",
     "search_aria": "Einen Fechter nach Namen suchen",
     "rescue_title": "Rettungsaktion:",
     "rescue_desc": "Der Fechter wird ohne Neuverteilung hinzugefügt. Gegen alle anwesenden Fechter werden Matches erstellt.",
-    "none_available": "Kein Fechter verfügbar"
+    "none_available": "Kein Fechter verfügbar",
+    "add_button": "Fechter hinzufügen",
+    "adding": "Wird hinzugefügt…"
   },
   "ui": {
     "loading": "Laden…",
@@ -1077,7 +1080,14 @@
     "match_order": "Match-Reihenfolge",
     "direct_to_ranking": "Direkter Übergang zur Anfangsrangliste der Fechter",
     "drop_here": "Fechter hier ablegen",
-    "drag_hint": "Ziehen Sie Fechter zwischen Pools oder nutzen Sie die Pfeile (← →) zum Verschieben, (↑ ↓) zum Neusortieren."
+    "drag_hint": "Ziehen Sie Fechter zwischen Pools oder nutzen Sie die Pfeile (← →) zum Verschieben, (↑ ↓) zum Neusortieren.",
+    "priority_drag_hint": "Priorität {{number}} — zum Neuordnen ziehen",
+    "fencers_distributed": "{{count}} Fechter verteilt",
+    "stats_summary": "Min {{min}} · Max {{max}} · Ø {{avg}}",
+    "unique_badge": "einzige",
+    "strip_label": "Piste",
+    "skip_to_ranking_button": "Weiter zum Ausgangsklassement →",
+    "start_pools_button": "Poulen starten →"
   },
   "poolRanking": {
     "recalculate": "Rangliste neu berechnen",
@@ -1716,12 +1726,23 @@
     "next_match": "⚔ Nächstes Match",
     "enter_score": "Punktzahl eingeben",
     "pool_done": "Poule beendet",
-    "all_played": "Alle Matches wurden gespielt"
+    "all_played": "Alle Matches wurden gespielt",
+    "click_to_reassign": "Klicken zum Neuzuweisen",
+    "remote_not_started": "Remote-Server nicht gestartet",
+    "upcoming": "Kommende ({{count}})",
+    "finished_section": "Beendet ({{count}})",
+    "cancelled_section": "Annulliert ({{count}})",
+    "default_arena_label": "Standard-Piste",
+    "relaunch_button": "▶ Neu starten"
   },
   "poolMatchOrder": {
     "official": "Offizielle Matchreihenfolge",
     "reference": "Referenz FIE / FFE",
-    "pool_size": "Poolgröße:"
+    "pool_size": "Poolgröße:",
+    "option_label": "{{count}} Fechter — {{matches}} Matches",
+    "option_label_berger": "{{count}} Fechter — {{matches}} Matches (Berger)",
+    "matches_count": "{{count}} Matches",
+    "fencer_label": "Fechter {{number}}"
   },
   "poolScoreMatrix": {
     "not_fenced": "Match nicht ausgetragen (Aufgabe/Nichtantreten)",
@@ -1735,7 +1756,12 @@
     "index": "Ind",
     "rank": "Rg",
     "club": "Club",
-    "nation": "Nat"
+    "nation": "Nat",
+    "cell_vs": "{{rowLast}} {{rowFirst}} gegen {{colLast}} {{colFirst}}",
+    "cell_result_victory": " : Sieg {{value}}",
+    "cell_result_defeat": " : Niederlage {{value}}",
+    "cell_enter_score": ", Ergebnis eingeben",
+    "change_pool_for": "Pool wechseln für {{name}}"
   },
   "windowSizePresets": {
     "label": "Fenster:"

@@ -56,10 +56,10 @@ const f3 = fencer('3', 'Bernard');
 describe('PoolMatchList', () => {
   it('affiche le prochain match et déclenche openScoreModal', () => {
     const props = renderList({ pending: [pending(f1, f2, 0)], finished: [], cancelled: [] });
-    expect(screen.getByText('⚔ Prochain match')).toBeInTheDocument();
+    expect(screen.getByText('⚔ Nächstes Match')).toBeInTheDocument();
     expect(screen.getByText('Dupont')).toBeInTheDocument();
     expect(screen.getByText('Martin')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('Saisir le score'));
+    fireEvent.click(screen.getByText('Punktzahl eingeben'));
     expect(props.openScoreModal).toHaveBeenCalledWith(0);
   });
 
@@ -69,17 +69,17 @@ describe('PoolMatchList', () => {
       finished: [],
       cancelled: [],
     });
-    expect(screen.getByText(/À venir/)).toBeInTheDocument();
+    expect(screen.getByText(/Kommende/)).toBeInTheDocument();
   });
 
   it('affiche « Poule terminée » sans match en attente', () => {
     renderList({ pending: [], finished: [], cancelled: [] });
-    expect(screen.getByText('Poule terminée')).toBeInTheDocument();
+    expect(screen.getByText('Poule beendet')).toBeInTheDocument();
   });
 
   it('le bouton supprimer d\'un match terminé n\'apparaît qu\'au survol de la ligne', () => {
     renderList({ pending: [], finished: [finished(f1, f2, 0)], cancelled: [] }, { onMatchReset: vi.fn() });
-    const deleteBtn = screen.getByTitle(/Supprimer ce résultat/);
+    const deleteBtn = screen.getByTitle(/Dieses Ergebnis löschen/);
     expect(deleteBtn).toHaveStyle({ opacity: '0' });
 
     fireEvent.mouseEnter(deleteBtn.closest('div')!);
@@ -94,7 +94,7 @@ describe('PoolMatchList', () => {
       { pending: [], finished: [finished(f1, f2, 0)], cancelled: [] },
       { onMatchReset: vi.fn() }
     );
-    fireEvent.click(screen.getByTitle(/Supprimer ce résultat/));
+    fireEvent.click(screen.getByTitle(/Dieses Ergebnis löschen/));
     expect(props.onMatchReset).toHaveBeenCalledWith(0);
   });
 });

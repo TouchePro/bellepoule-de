@@ -66,7 +66,7 @@ describe('PoolScoreMatrix', () => {
   it('clic sur une cellule éditable déclenche onCellClick', () => {
     const props = renderMatrix(match(MatchStatus.NOT_STARTED));
     // cellule Dupont vs Martin (aria-label commence par "Dupont")
-    const cell = screen.getByLabelText(/Dupont F contre Martin F/i);
+    const cell = screen.getByLabelText(/Dupont F gegen Martin F/i);
     fireEvent.click(cell);
     expect(props.onCellClick).toHaveBeenCalledTimes(1);
     expect(props.onCellClick.mock.calls[0][0].id).toBe('1');
@@ -75,7 +75,7 @@ describe('PoolScoreMatrix', () => {
 
   it('ne déclenche pas onCellClick si verrouillé', () => {
     const props = renderMatrix(match(MatchStatus.NOT_STARTED), { isLocked: true });
-    const cell = screen.getByLabelText(/Dupont F contre Martin F/i);
+    const cell = screen.getByLabelText(/Dupont F gegen Martin F/i);
     fireEvent.click(cell);
     expect(props.onCellClick).not.toHaveBeenCalled();
   });

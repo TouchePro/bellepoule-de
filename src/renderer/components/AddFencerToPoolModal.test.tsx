@@ -49,7 +49,7 @@ describe('AddFencerToPoolModal', () => {
     const onConfirm = vi.fn();
     render(<AddFencerToPoolModal pool={pool} competitionId="c1" onConfirm={onConfirm} onClose={vi.fn()} />);
     fireEvent.click(await screen.findByText(/Martin/));
-    fireEvent.click(screen.getByText('Ajouter le tireur'));
+    fireEvent.click(screen.getByText('Fechter hinzufügen'));
     await waitFor(() =>
       expect((window as any).electronAPI.db.addFencerToPoolMidCompetition).toHaveBeenCalledWith('p1', '2', 5)
     );
@@ -59,6 +59,6 @@ describe('AddFencerToPoolModal', () => {
   it('le bouton ajouter est désactivé sans sélection', async () => {
     render(<AddFencerToPoolModal pool={pool} competitionId="c1" onConfirm={vi.fn()} onClose={vi.fn()} />);
     await screen.findByText(/Martin/);
-    expect(screen.getByText('Ajouter le tireur')).toBeDisabled();
+    expect(screen.getByText('Fechter hinzufügen')).toBeDisabled();
   });
 });

@@ -69,6 +69,7 @@ const ArenaBadge: React.FC<ArenaBadgeProps> = ({
   dark = false,
   onClick,
 }) => {
+  const { t } = useTranslation();
   if (arenaCount <= 0) return null;
   const assignedArena = matchArenaOverrides?.get(match.id) ?? defaultArena;
   const isOverridden = matchArenaOverrides?.has(match.id) ?? false;
@@ -103,7 +104,11 @@ const ArenaBadge: React.FC<ArenaBadgeProps> = ({
   return (
     <button
       onClick={isRemoteActive ? onClick : undefined}
-      title={isRemoteActive ? `Piste ${assignedArena} — Cliquer pour réassigner` : 'Serveur distant non démarré'}
+      title={
+        isRemoteActive
+          ? `${t('remote_score.lane_number', { number: assignedArena })} — ${t('poolMatchList.click_to_reassign')}`
+          : t('poolMatchList.remote_not_started')
+      }
       disabled={!isRemoteActive}
       style={{ ...baseStyle, ...(isRemoteActive ? activeStyle : inactiveStyle) }}
     >
@@ -276,7 +281,7 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
     {orderedMatches.pending.length > 1 && (
       <div style={{ marginBottom: '1rem' }}>
         <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>
-          À venir ({orderedMatches.pending.length - 1})
+          {t('poolMatchList.upcoming', { count: orderedMatches.pending.length - 1 })}
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
           {orderedMatches.pending.slice(1).map(({ match, index }, i) => {
@@ -340,7 +345,7 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
     {orderedMatches.finished.length > 0 && (
       <div>
         <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>
-          Terminés ({orderedMatches.finished.length})
+          {t('poolMatchList.finished_section', { count: orderedMatches.finished.length })}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
           {orderedMatches.finished.map(({ match, index }) => {
@@ -471,7 +476,7 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
     {orderedMatches.cancelled.length > 0 && (
       <div style={{ marginBottom: '1.5rem', marginTop: '0.75rem' }}>
         <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>
-          Annulés ({orderedMatches.cancelled.length})
+          {t('poolMatchList.cancelled_section', { count: orderedMatches.cancelled.length })}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
           {orderedMatches.cancelled.map(({ match, index }) => (
@@ -508,7 +513,7 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
                     flexShrink: 0,
                   }}
                 >
-                  ▶ Relancer
+                  {t('poolMatchList.relaunch_button')}
                 </button>
               )}
             </div>
@@ -544,7 +549,7 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
                 onClick={() => handleAssignArena(null)}
                 style={{ padding: '0.75rem', gridColumn: '1 / -1', fontSize: '0.875rem' }}
               >
-                ↩ Piste par défaut (Piste {defaultArena})
+                ↩ {t('poolMatchList.default_arena_label')} ({t('remote_score.lane_number', { number: defaultArena })})
               </button>
               {Array.from({ length: arenaCount }, (_, i) => i + 1).map(arenaNum => {
                 const arenaObj = arenas.find(a => a.number === arenaNum);
@@ -563,7 +568,7 @@ const PoolMatchListComponent: React.FC<PoolMatchListProps> = ({
                     onClick={() => handleAssignArena(arenaNum)}
                     style={{ padding: '0.75rem', fontSize: '0.875rem' }}
                   >
-                    Piste {arenaNum}{statusIcon}
+                    {t('remote_score.lane_number', { number: arenaNum })}{statusIcon}
                   </button>
                 );
               })}
