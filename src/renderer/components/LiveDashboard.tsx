@@ -145,9 +145,12 @@ export const LiveDashboard: React.FC<LiveDashboardProps> = ({
               color: '#374151',
             }}
           >
-            <span>Progression: {completionRate}%</span>
+            <span>{t('live.progress', { percent: completionRate })}</span>
             <span>
-              {completedMatches.length} / {totalMatches} matchs terminés
+              {t('live.matches_completed', {
+                completed: completedMatches.length,
+                total: totalMatches,
+              })}
             </span>
           </div>
           <div
@@ -206,7 +209,7 @@ export const LiveDashboard: React.FC<LiveDashboardProps> = ({
             {matchesInProgress.length > 0 && (
               <div style={{ marginBottom: '2rem' }}>
                 <h2 style={PANEL_TITLE}>
-                  🔴 Matchs en cours ({matchesInProgress.length})
+                  🔴 {t('live.matches_in_progress', { count: matchesInProgress.length })}
                 </h2>
                 <div
                   style={{
@@ -275,7 +278,7 @@ export const LiveDashboard: React.FC<LiveDashboardProps> = ({
           {t('live.subtitle')}
         </p>
         <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.875rem', opacity: 0.6 }}>
-          Actualisation automatique toutes les {refreshInterval / 1000} secondes
+          {t('live.auto_refresh', { seconds: refreshInterval / 1000 })}
         </p>
       </footer>
     </div>
@@ -284,6 +287,7 @@ export const LiveDashboard: React.FC<LiveDashboardProps> = ({
 
 // Live Match Card Component
 const LiveMatchCard_: React.FC<{ match: Match; index: number }> = ({ match, index }) => {
+  const { t } = useTranslation();
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
@@ -329,7 +333,7 @@ const LiveMatchCard_: React.FC<{ match: Match; index: number }> = ({ match, inde
           🔴 LIVE • {formatElapsed(elapsed)}
         </span>
         <span style={{ color: '#6b7280', fontSize: '0.875rem' }}>
-          Piste {match.strip || index + 1}
+          {t('qrCode.lane_number', { number: match.strip || index + 1 })}
         </span>
       </div>
 
@@ -388,7 +392,9 @@ const PoolResultsCard_: React.FC<{ pool: Pool; isLaserSabre?: boolean }> = ({
           marginBottom: '1rem',
         }}
       >
-        <h3 style={{ margin: 0, color: '#1f2937', fontSize: '1.25rem' }}>Poule {pool.number}</h3>
+        <h3 style={{ margin: 0, color: '#1f2937', fontSize: '1.25rem' }}>
+          {t('live.pool_title', { number: pool.number })}
+        </h3>
         <span
           style={{
             background: pool.isComplete ? '#d1fae5' : '#fef3c7',
@@ -399,7 +405,7 @@ const PoolResultsCard_: React.FC<{ pool: Pool; isLaserSabre?: boolean }> = ({
             fontWeight: '600',
           }}
         >
-          {pool.isComplete ? '✓ Terminée' : `${Math.round(progress)}%`}
+          {pool.isComplete ? t('team.complete') : `${Math.round(progress)}%`}
         </span>
       </div>
 
@@ -415,7 +421,7 @@ const PoolResultsCard_: React.FC<{ pool: Pool; isLaserSabre?: boolean }> = ({
                   fontSize: '0.875rem',
                 }}
               >
-                Rang
+                {t('columns.rank')}
               </th>
               <th
                 style={{
@@ -435,7 +441,7 @@ const PoolResultsCard_: React.FC<{ pool: Pool; isLaserSabre?: boolean }> = ({
                   fontSize: '0.875rem',
                 }}
               >
-                V
+                {t('poolScoreMatrix.victories')}
               </th>
               {isLaserSabre && (
                 <th
@@ -457,7 +463,7 @@ const PoolResultsCard_: React.FC<{ pool: Pool; isLaserSabre?: boolean }> = ({
                   fontSize: '0.875rem',
                 }}
               >
-                TD
+                {t('poolScoreMatrix.td')}
               </th>
               <th
                 style={{
@@ -467,7 +473,7 @@ const PoolResultsCard_: React.FC<{ pool: Pool; isLaserSabre?: boolean }> = ({
                   fontSize: '0.875rem',
                 }}
               >
-                TR
+                {t('poolScoreMatrix.tr')}
               </th>
               <th
                 style={{
@@ -477,7 +483,7 @@ const PoolResultsCard_: React.FC<{ pool: Pool; isLaserSabre?: boolean }> = ({
                   fontSize: '0.875rem',
                 }}
               >
-                Ind
+                {t('poolScoreMatrix.index')}
               </th>
             </tr>
           </thead>
@@ -579,7 +585,11 @@ const TableauView_: React.FC<{ matches: Match[] }> = ({ matches }) => {
                     letterSpacing: '0.05em',
                   }}
                 >
-                  {round === 1 ? 'Finale' : round === 2 ? 'Demi-finales' : `1/${round}`}
+                  {round === 1
+                    ? t('tableau.round_final')
+                    : round === 2
+                      ? t('tableau.round_semifinals')
+                      : `1/${round}`}
                 </h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   {roundMatches.map(match => (
@@ -682,7 +692,7 @@ const FinalRankingView_: React.FC<{ results: any[] }> = ({ results }) => {
                   fontWeight: '600',
                 }}
               >
-                Rang
+                {t('columns.rank')}
               </th>
               <th
                 style={TH}
@@ -692,7 +702,7 @@ const FinalRankingView_: React.FC<{ results: any[] }> = ({ results }) => {
               <th
                 style={TH}
               >
-                Club
+                {t('columns.club')}
               </th>
               <th
                 style={{
@@ -739,9 +749,9 @@ const FinalRankingView_: React.FC<{ results: any[] }> = ({ results }) => {
                 <td style={{ padding: '1rem', color: '#6b7280' }}>{result.fencer?.club || '-'}</td>
                 <td style={{ padding: '1rem', textAlign: 'center', color: '#6b7280' }}>
                   {result.round === 1
-                    ? '🥇 Finale'
+                    ? `🥇 ${t('tableau.round_final')}`
                     : result.round === 2
-                      ? '🥈 Demi'
+                      ? `🥈 ${t('tableau.round_semifinals')}`
                       : `1/${result.round}`}
                 </td>
               </tr>

@@ -96,7 +96,7 @@ export const LiveInterPoolRanking: React.FC<LiveInterPoolRankingProps> = ({
         <div style={{ padding: '0.75rem 1.5rem', background: '#f9fafb', borderBottom: '1px solid #e5e7eb', flexShrink: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-              Matchs terminés : {finishedMatches}/{totalMatches}
+              {t('liveInterPool.matches_finished', { finished: finishedMatches, total: totalMatches })}
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <div style={{ width: '200px', height: '6px', background: '#e5e7eb', borderRadius: '3px' }}>
@@ -113,7 +113,7 @@ export const LiveInterPoolRanking: React.FC<LiveInterPoolRankingProps> = ({
               <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{progress}%</span>
             </div>
             <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
-              Mis à jour {lastUpdate.toLocaleTimeString('fr-FR')}
+              {t('liveInterPool.last_updated', { time: lastUpdate.toLocaleTimeString('fr-FR') })}
             </span>
           </div>
         </div>
@@ -122,15 +122,15 @@ export const LiveInterPoolRanking: React.FC<LiveInterPoolRankingProps> = ({
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
             <thead>
               <tr style={{ background: '#f3f4f6', position: 'sticky', top: 0 }}>
-                <th style={thStyle}>Rg</th>
+                <th style={thStyle}>{t('ranking.rank')}</th>
                 <th style={{ ...thStyle, textAlign: 'left' }}>{t('fencer.last_name')}</th>
-                <th style={{ ...thStyle, textAlign: 'left' }}>Club</th>
+                <th style={{ ...thStyle, textAlign: 'left' }}>{t('ranking.club')}</th>
                 <th style={thStyle}>{t('ui.poule')}</th>
-                <th style={thStyle}>V</th>
-                <th style={thStyle}>D</th>
-                <th style={thStyle}>TD</th>
-                <th style={thStyle}>TR</th>
-                <th style={thStyle}>Ind.</th>
+                <th style={thStyle}>{t('ranking.victories')}</th>
+                <th style={thStyle}>{t('ranking.defeats')}</th>
+                <th style={thStyle}>{t('ranking.touches_scored')}</th>
+                <th style={thStyle}>{t('ranking.touches_received')}</th>
+                <th style={thStyle}>{t('ranking.index')}</th>
                 {isLaserSabre && <th style={thStyle}>{t('quest.label')}</th>}
               </tr>
             </thead>

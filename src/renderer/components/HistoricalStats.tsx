@@ -78,7 +78,7 @@ export const HistoricalStats: React.FC<HistoricalStatsProps> = ({
         aria-modal="true"
       >
         <div className="modal-header" style={{ flexShrink: 0 }}>
-          <h2 style={{ margin: 0 }}>Historique — {fencerName}</h2>
+          <h2 style={{ margin: 0 }}>{t('historicalStats.title', { fencerName })}</h2>
           <button className="btn-close" onClick={onClose}>&times;</button>
         </div>
 
@@ -100,9 +100,9 @@ export const HistoricalStats: React.FC<HistoricalStatsProps> = ({
               }}
             >
               <StatCard label={t('stats.competitions')} value={totalCompetitions.toString()} />
-              <StatCard label="Meilleur rang" value={bestRank !== null ? `${bestRank}e` : '—'} />
-              <StatCard label="Victoires" value={totalVictories.toString()} color="#16a34a" />
-              <StatCard label="% victoires" value={`${ratio}%`} />
+              <StatCard label={t('historicalStats.best_rank')} value={bestRank !== null ? `${bestRank}e` : '—'} />
+              <StatCard label={t('historicalStats.victories')} value={totalVictories.toString()} color="#16a34a" />
+              <StatCard label={t('historicalStats.victories_percent')} value={`${ratio}%`} />
             </div>
 
             <div style={{ overflowY: 'auto', flex: 1 }}>
@@ -113,18 +113,18 @@ export const HistoricalStats: React.FC<HistoricalStatsProps> = ({
               ) : (
                 <>
                   <div style={{ padding: '0.75rem 1.5rem', fontSize: '0.75rem', color: '#6b7280', fontFamily: 'monospace' }}>
-                    {sparkline(results.map(r => r.rank))}
+                    {sparkline(results.map(r => r.rank), t)}
                   </div>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
                     <thead>
                       <tr style={{ background: '#f3f4f6' }}>
-                        <th style={thS}>Date</th>
+                        <th style={thS}>{t('historicalStats.table_date')}</th>
                         <th style={{ ...thS, textAlign: 'left' }}>{t('stats.competition')}</th>
-                        <th style={thS}>Arme</th>
-                        <th style={thS}>Rang</th>
-                        <th style={thS}>V</th>
-                        <th style={thS}>D</th>
-                        <th style={thS}>TD/TR</th>
+                        <th style={thS}>{t('historicalStats.table_weapon')}</th>
+                        <th style={thS}>{t('historicalStats.table_rank')}</th>
+                        <th style={thS}>{t('historicalStats.table_wins')}</th>
+                        <th style={thS}>{t('historicalStats.table_losses')}</th>
+                        <th style={thS}>{t('historicalStats.table_touches')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -160,11 +160,14 @@ function StatCard({ label, value, color }: { label: string; value: string; color
   );
 }
 
-function sparkline(ranks: number[]): string {
+function sparkline(
+  ranks: number[],
+  t: (key: string, params?: { [key: string]: string | number }) => string
+): string {
   if (ranks.length === 0) return '';
   const max = Math.max(...ranks);
   const bars = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
-  return 'Évolution des rangs : ' + ranks.map(r => {
+  return t('historicalStats.rank_evolution') + ranks.map(r => {
     const pct = max > 1 ? 1 - (r - 1) / (max - 1) : 1;
     return bars[Math.floor(pct * (bars.length - 1))];
   }).join('');

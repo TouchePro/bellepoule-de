@@ -384,6 +384,7 @@
   },
   "ranking": {
     "club": "Verein",
+    "defeats": "N",
     "first_name": "Vorname",
     "go_to_results": "Zu Ergebnissen",
     "go_to_tableau": "Zur Tabelle",
@@ -867,7 +868,18 @@
     "click_or_drop": "Klicken oder Foto hierher ziehen"
   },
   "historicalStats": {
-    "none": "Keine Historie verfügbar"
+    "none": "Keine Historie verfügbar",
+    "title": "Historie — {{fencerName}}",
+    "best_rank": "Bester Rang",
+    "victories": "Siege",
+    "victories_percent": "% Siege",
+    "table_date": "Datum",
+    "table_weapon": "Waffe",
+    "table_rank": "Rang",
+    "table_wins": "S",
+    "table_losses": "N",
+    "table_touches": "TG/TE",
+    "rank_evolution": "Rangentwicklung: "
   },
   "kiosk": {
     "ranking": "📊 Rangliste",
@@ -911,11 +923,18 @@
     "subtitle": "BellePoule Modern • Verfolgen Sie den Wettkampf in Echtzeit",
     "no_results_yet": "Noch keine Ergebnisse",
     "tableau_not_started": "Das Tableau hat noch nicht begonnen",
-    "not_finished": "Der Wettkampf ist noch nicht beendet"
+    "not_finished": "Der Wettkampf ist noch nicht beendet",
+    "progress": "Fortschritt: {{percent}}%",
+    "matches_completed": "{{completed}} / {{total}} Kämpfe beendet",
+    "matches_in_progress": "Kämpfe im Gange ({{count}})",
+    "auto_refresh": "Automatische Aktualisierung alle {{seconds}} Sekunden",
+    "pool_title": "Poule {{number}}"
   },
   "liveInterPool": {
     "title": "Gesamtrangliste — Live",
-    "no_result": "Kein Ergebnis verfügbar"
+    "no_result": "Kein Ergebnis verfügbar",
+    "matches_finished": "Beendete Matches: {{finished}}/{{total}}",
+    "last_updated": "Aktualisiert um {{time}}"
   },
   "matchAudit": {
     "filter": "Filtern:",
@@ -1767,7 +1786,9 @@
     "select_all": "Alle auswählen",
     "col_gender": "Geschlecht",
     "no_fencers_found": "Keine Fechter gefunden",
-    "loading": "Wird geladen…"
+    "loading": "Wird geladen…",
+    "update_n_rankings": "{{count}} Ranglistenplätze aktualisieren",
+    "import_n_fencers": "{{count}} Fechter importieren"
   },
   "update": {
     "redirecting": "Wird umgeleitet…",
