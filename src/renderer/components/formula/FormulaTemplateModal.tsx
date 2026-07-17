@@ -38,7 +38,7 @@ const FormulaTemplateModal_: React.FC<Props> = ({
 
   const handleSave = () => {
     if (!name.trim()) {
-      setError('Entrez un nom pour la formule.');
+      setError(t('formulaTemplate.error_name_required'));
       return;
     }
     if (!currentFormula) return;
@@ -75,7 +75,7 @@ const FormulaTemplateModal_: React.FC<Props> = ({
         onLoad(formula);
         onClose();
       } else {
-        setError('Fichier invalide — impossible de lire la formule.');
+        setError(t('formulaTemplate.error_invalid_file'));
       }
     };
     reader.readAsText(file);
@@ -86,7 +86,7 @@ const FormulaTemplateModal_: React.FC<Props> = ({
       <div ref={modalRef} className="modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
         <div className="modal-header">
           <h2 className="modal-title">
-            {mode === 'save' ? 'Enregistrer la formule' : 'Charger une formule'}
+            {mode === 'save' ? t('formulaTemplate.save_title') : t('formulaTemplate.load_title')}
           </h2>
           <button className="btn btn-icon btn-secondary" onClick={onClose}>
             ✕
@@ -108,7 +108,7 @@ const FormulaTemplateModal_: React.FC<Props> = ({
                   autoFocus
                 />
                 <button type="button" className="btn btn-primary" onClick={handleSave}>
-                  Enregistrer
+                  {t('actions.save')}
                 </button>
               </div>
               {error && <p className="form-error">{error}</p>}
@@ -127,8 +127,7 @@ const FormulaTemplateModal_: React.FC<Props> = ({
                       {new Date(entry.savedAt).toLocaleDateString('fr-FR')}
                     </span>
                     <span className="template-entry-phases">
-                      {entry.formula.phases.length} phase
-                      {entry.formula.phases.length > 1 ? 's' : ''}
+                      {t('formulaTemplate.phase_count', { count: entry.formula.phases.length })}
                     </span>
                   </div>
                   <div className="template-entry-actions">
@@ -141,7 +140,7 @@ const FormulaTemplateModal_: React.FC<Props> = ({
                           onClose();
                         }}
                       >
-                        Charger
+                        {t('formulaTemplate.load_button')}
                       </button>
                     )}
                     <button
@@ -149,7 +148,7 @@ const FormulaTemplateModal_: React.FC<Props> = ({
                       className="btn btn-secondary btn-sm"
                       onClick={() => handleExport(entry.formula, entry.name)}
                     >
-                      Exporter JSON
+                      {t('formulaTemplate.export_json')}
                     </button>
                     <button
                       type="button"

@@ -27,11 +27,13 @@ interface Props {
   onMoveDown?: () => void;
 }
 
-const NODE_TYPE_LABELS: Record<FormulaPhaseNodeType, string> = {
-  pool_round: 'Tour de poules',
-  direct_elimination: 'Élimination directe',
-  classification: 'Classement final',
-};
+const getNodeTypeLabels = (
+  t: (key: string, params?: { [key: string]: string | number }) => string
+): Record<FormulaPhaseNodeType, string> => ({
+  pool_round: t('formula.pool_round_label'),
+  direct_elimination: t('formula.de_phase_label'),
+  classification: t('formula.classification_phase_label'),
+});
 
 const NODE_TYPE_COLORS: Record<FormulaPhaseNodeType, string> = {
   pool_round: '#3B82F6',
@@ -53,6 +55,7 @@ const FormulaPhaseCard_: React.FC<Props> = ({
 }) => {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(index === 0);
+  const NODE_TYPE_LABELS = getNodeTypeLabels(t);
 
   const updatePoolConfig = (partial: Partial<CustomPoolRoundConfig>) => {
     onUpdate({ ...node, config: { ...node.config, ...partial } });
@@ -98,7 +101,7 @@ const FormulaPhaseCard_: React.FC<Props> = ({
                 className="btn btn-icon btn-secondary"
                 onClick={onMoveUp}
                 disabled={!canMoveUp}
-                title="Monter"
+                title={t('formulaPhaseCard.move_up')}
               >
                 ↑
               </button>
@@ -107,7 +110,7 @@ const FormulaPhaseCard_: React.FC<Props> = ({
                 className="btn btn-icon btn-secondary"
                 onClick={onMoveDown}
                 disabled={!canMoveDown}
-                title="Descendre"
+                title={t('formulaPhaseCard.move_down')}
               >
                 ↓
               </button>
@@ -125,7 +128,7 @@ const FormulaPhaseCard_: React.FC<Props> = ({
             type="button"
             className="btn btn-icon btn-secondary"
             onClick={() => setExpanded(e => !e)}
-            title={expanded ? 'Réduire' : 'Développer'}
+            title={expanded ? t('formulaPhaseCard.collapse') : t('formulaPhaseCard.expand')}
           >
             {expanded ? '▲' : '▼'}
           </button>
@@ -153,7 +156,7 @@ const FormulaPhaseCard_: React.FC<Props> = ({
                       }
                       disabled={readOnly}
                     />
-                    <span>à</span>
+                    <span>{t('formulaPhaseCard.range_to')}</span>
                     <input
                       type="number"
                       className="form-input"
@@ -178,7 +181,7 @@ const FormulaPhaseCard_: React.FC<Props> = ({
                   >
                     {[3, 5, 8, 10, 15, 20].map(v => (
                       <option key={v} value={v}>
-                        {v} touches
+                        {t('formulaPhaseCard.touches_count', { count: v })}
                       </option>
                     ))}
                   </select>
@@ -208,7 +211,7 @@ const FormulaPhaseCard_: React.FC<Props> = ({
                     }
                     disabled={readOnly}
                   >
-                    <option value="serpentine">Serpentine</option>
+                    <option value="serpentine">{t('formulaPhaseCard.serpentine')}</option>
                     <option value="sequential">{t('formulaPhaseCard.sequential')}</option>
                     <option value="random">{t('formulaPhaseCard.random')}</option>
                   </select>
@@ -230,7 +233,11 @@ const FormulaPhaseCard_: React.FC<Props> = ({
                         }
                         disabled={readOnly}
                       />
-                      {key === 'byClub' ? 'Club' : key === 'byRegion' ? 'Région' : 'Nation'}
+                      {key === 'byClub'
+                        ? t('columns.club')
+                        : key === 'byRegion'
+                          ? t('columns.region')
+                          : t('columns.nation')}
                     </label>
                   ))}
                 </div>
@@ -280,7 +287,7 @@ const FormulaPhaseCard_: React.FC<Props> = ({
                   >
                     {[5, 10, 15, 20, 25].map(v => (
                       <option key={v} value={v}>
-                        {v} touches
+                        {t('formulaPhaseCard.touches_count', { count: v })}
                       </option>
                     ))}
                   </select>
@@ -311,10 +318,10 @@ const FormulaPhaseCard_: React.FC<Props> = ({
                     }}
                     disabled={readOnly}
                   >
-                    <option value={0}>Auto</option>
+                    <option value={0}>{t('formulaPhaseCard.auto_size')}</option>
                     {[4, 8, 16, 32, 64, 128].map(v => (
                       <option key={v} value={v}>
-                        Tableau de {v}
+                        {t('formulaPhaseCard.tableau_of', { count: v })}
                       </option>
                     ))}
                   </select>
@@ -330,7 +337,7 @@ const FormulaPhaseCard_: React.FC<Props> = ({
                       onChange={e => updateDEConfig({ thirdPlaceMatch: e.target.checked })}
                       disabled={readOnly}
                     />
-                    Petite finale (3e place)
+                    {t('competition.third_place_match_label')}
                   </label>
                   <label className="checkbox-label">
                     <input

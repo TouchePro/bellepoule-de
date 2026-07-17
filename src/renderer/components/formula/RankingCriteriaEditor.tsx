@@ -6,15 +6,17 @@ import React, { useRef, useState , memo} from 'react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { RankingCriterion, RankingCriterionId } from '../../../shared/types';
 
-const CRITERION_LABELS: Record<RankingCriterionId, string> = {
-  vm_ratio: 'V/M (ratio victoires)',
-  index: 'Indice (TD − TR)',
-  touches_scored: 'Touches données',
-  touches_received: 'Touches reçues',
-  direct_bout: 'Confrontation directe',
-  initial_ranking: 'Classement initial',
-  custom_points: 'Points personnalisés',
-};
+const getCriterionLabels = (
+  t: (key: string, params?: { [key: string]: string | number }) => string
+): Record<RankingCriterionId, string> => ({
+  vm_ratio: t('formula.criterion_vm'),
+  index: t('formula.criterion_index'),
+  touches_scored: t('formula.criterion_td'),
+  touches_received: t('formula.criterion_tr'),
+  direct_bout: t('formula.criterion_direct'),
+  initial_ranking: t('formula.criterion_initial'),
+  custom_points: t('formula.criterion_custom'),
+});
 
 interface Props {
   criteria: RankingCriterion[];
@@ -26,6 +28,7 @@ const RankingCriteriaEditor_: React.FC<Props> = ({ criteria, onChange, readOnly 
   const { t } = useTranslation();
   const dragIndex = useRef<number | null>(null);
   const [dragOver, setDragOver] = useState<number | null>(null);
+  const CRITERION_LABELS = getCriterionLabels(t);
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
     dragIndex.current = index;
@@ -110,7 +113,11 @@ const RankingCriteriaEditor_: React.FC<Props> = ({ criteria, onChange, readOnly 
                 type="button"
                 className="btn-direction"
                 onClick={() => toggleDirection(index)}
-                title={criterion.direction === 'desc' ? 'Décroissant' : 'Croissant'}
+                title={
+                  criterion.direction === 'desc'
+                    ? t('tableau.order_descending')
+                    : t('tableau.order_ascending')
+                }
               >
                 {criterion.direction === 'desc' ? '↓' : '↑'}
               </button>
@@ -118,7 +125,10 @@ const RankingCriteriaEditor_: React.FC<Props> = ({ criteria, onChange, readOnly 
 
             {/* Toggle */}
             {!readOnly && (
-              <label className="criterion-toggle" title={criterion.enabled ? 'Désactiver' : 'Activer'}>
+              <label
+                className="criterion-toggle"
+                title={criterion.enabled ? t('formula.criterion_disable') : t('formula.criterion_enable')}
+              >
                 <input
                   type="checkbox"
                   checked={criterion.enabled}

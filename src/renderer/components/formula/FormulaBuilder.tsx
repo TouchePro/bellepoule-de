@@ -28,19 +28,22 @@ function uid(): string {
   return `phase_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 }
 
-function makePoolRound(roundIndex: number): FormulaPhaseNode {
+function makePoolRound(
+  roundIndex: number,
+  t: (key: string, params?: { [key: string]: string | number }) => string
+): FormulaPhaseNode {
   const defaultFormula = createDefaultCustomFormula();
   const defaultPoolPhase = defaultFormula.phases[0] as FormulaPhaseNode;
   const defaultCfg = defaultPoolPhase.config as CustomPoolRoundConfig;
   return {
     id: uid(),
     type: 'pool_round',
-    label: `Tour de poules ${roundIndex + 1}`,
+    label: t('formula.pool_round_n', { n: roundIndex + 1 }),
     config: { ...defaultCfg, roundIndex },
   };
 }
 
-function makeDE(): FormulaPhaseNode {
+function makeDE(t: (key: string, params?: { [key: string]: string | number }) => string): FormulaPhaseNode {
   const cfg: CustomDEConfig = {
     maxScore: 15,
     timerSeconds: 180,
@@ -48,10 +51,12 @@ function makeDE(): FormulaPhaseNode {
     placesToFence: [1, 3],
     scoring: { type: 'standard', maxScore: 15 },
   };
-  return { id: uid(), type: 'direct_elimination', label: 'Élimination directe', config: cfg };
+  return { id: uid(), type: 'direct_elimination', label: t('formula.de_phase_label'), config: cfg };
 }
 
-function makeClassification(): FormulaPhaseNode {
+function makeClassification(
+  t: (key: string, params?: { [key: string]: string | number }) => string
+): FormulaPhaseNode {
   const cfg: CustomDEConfig = {
     maxScore: 15,
     timerSeconds: 180,
@@ -59,7 +64,12 @@ function makeClassification(): FormulaPhaseNode {
     placesToFence: [],
     scoring: { type: 'standard', maxScore: 15 },
   };
-  return { id: uid(), type: 'classification', label: 'Classement final', config: cfg };
+  return {
+    id: uid(),
+    type: 'classification',
+    label: t('formula.classification_phase_label'),
+    config: cfg,
+  };
 }
 
 function computeInputFencers(phases: FormulaPhaseNode[], index: number, initial: number): number {
@@ -129,7 +139,7 @@ const FormulaBuilder_: React.FC<Props> = ({
     const deIndex = formula.phases.findIndex(p => p.type === 'direct_elimination');
     const insertAt = deIndex >= 0 ? deIndex : formula.phases.length;
     const phases = [...formula.phases];
-    phases.splice(insertAt, 0, makePoolRound(poolCount));
+    phases.splice(insertAt, 0, makePoolRound(poolCount, t));
     onChange({ ...formula, phases });
   };
 
@@ -138,12 +148,12 @@ const FormulaBuilder_: React.FC<Props> = ({
     const classIndex = formula.phases.findIndex(p => p.type === 'classification');
     const insertAt = classIndex >= 0 ? classIndex : formula.phases.length;
     const phases = [...formula.phases];
-    phases.splice(insertAt, 0, makeDE());
+    phases.splice(insertAt, 0, makeDE(t));
     onChange({ ...formula, phases });
   };
 
   const addClassification = () => {
-    onChange({ ...formula, phases: [...formula.phases, makeClassification()] });
+    onChange({ ...formula, phases: [...formula.phases, makeClassification(t)] });
   };
 
   const updateFormulaName = (name: string) => onChange({ ...formula, formulaName: name });
@@ -173,7 +183,7 @@ const FormulaBuilder_: React.FC<Props> = ({
               onClick={addPoolRound}
               title={t('formulaBuilder.add_pool')}
             >
-              + Poules
+              {t('formulaBuilder.add_pool_short')}
             </button>
             <button
               type="button"
@@ -253,7 +263,7 @@ const FormulaBuilder_: React.FC<Props> = ({
           <FormulaSimulationPreview simulation={simulation} fencerCount={fencerCount} />
 
           <div className="formula-notes-group">
-            <label className="form-label">Notes</label>
+            <label className="form-label">{t('formulaBuilder.notes_label')}</label>
             <textarea
               className="form-input formula-notes-input"
               value={formula.notes ?? ''}

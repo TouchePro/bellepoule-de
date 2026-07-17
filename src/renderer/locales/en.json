@@ -555,8 +555,14 @@
     "criterion_tr": "Touches received",
     "criterion_direct": "Direct bout",
     "criterion_initial": "Initial ranking",
+    "criterion_custom": "Custom points",
+    "criterion_enable": "Enable",
+    "criterion_disable": "Disable",
     "simulation_title": "Simulation",
     "pool_round_n": "Pool round {{n}}",
+    "pool_round_label": "Pool round",
+    "de_phase_label": "Direct elimination",
+    "classification_phase_label": "Classification phase",
     "scoring_standard": "Standard (1 touch = 1 pt)",
     "scoring_zones": "Custom zones",
     "zone_label": "Zone",
@@ -1540,6 +1546,8 @@
     "save_template": "Save as template",
     "load_template": "Load a template",
     "notes": "Notes on the formula (optional)",
+    "notes_label": "Notes",
+    "add_pool_short": "+ Pools",
     "add_de_short": "+ DE",
     "add_classification_short": "+ Classification",
     "save_model": "Save model",
@@ -1561,17 +1569,39 @@
     "advancement": "Advancement to the next phase",
     "tableau_size": "Tableau (size)",
     "fifth_place": "Match for 5th place",
-    "final_classification": "Final classification phase — no configuration required."
+    "final_classification": "Final classification phase — no configuration required.",
+    "move_up": "Move up",
+    "move_down": "Move down",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "range_to": "to",
+    "touches_count": "{{count}} touches",
+    "serpentine": "Serpentine",
+    "auto_size": "Auto",
+    "tableau_of": "Tableau of {{count}}"
   },
   "formulaSim": {
     "total_matches": "Total matches",
-    "estimated_duration": "Estimated duration"
+    "estimated_duration": "Estimated duration",
+    "fencers_label": "fencers",
+    "pools_label": "pool(s)",
+    "bracket_size": "Tableau of {{size}}",
+    "match_count": "{{count}} match(es)",
+    "direct_elimination": "Direct elimination",
+    "final_classification": "Final ranking"
   },
   "formulaTemplate": {
     "placeholder": "Ex: Club Tournament Standard",
     "name_label": "Formula name",
     "none": "No saved formula.",
-    "import_json": "Import from a JSON file"
+    "import_json": "Import from a JSON file",
+    "save_title": "Save formula",
+    "load_title": "Load formula",
+    "error_name_required": "Enter a name for the formula.",
+    "error_invalid_file": "Invalid file — could not read the formula.",
+    "phase_count": "{{count}} phase(s)",
+    "load_button": "Load",
+    "export_json": "Export JSON"
   },
   "rankingCriteria": {
     "drag_reorder": "Drag to reorder"
@@ -1583,7 +1613,13 @@
     "custom": "Custom zones",
     "add_zone": "+ Add a zone",
     "delete": "Delete this zone",
-    "delete_zone": "Delete zone"
+    "delete_zone": "Delete zone",
+    "color": "Color",
+    "pts_suffix": "pts",
+    "max_per_touch": "Max per touch:",
+    "default_head": "Head",
+    "default_torso": "Torso",
+    "default_arms_legs": "Arms/Legs"
   },
   "globalPoolColumns": {
     "title": "🧱 Columns (all pools)",

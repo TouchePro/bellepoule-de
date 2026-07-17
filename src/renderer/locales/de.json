@@ -190,6 +190,9 @@
     "advancing_suffix": "kommen weiter",
     "builder_title": "Formeleditor",
     "criterion_direct": "Direktgefecht",
+    "criterion_disable": "Deaktivieren",
+    "criterion_enable": "Aktivieren",
+    "criterion_custom": "Benutzerdefinierte Punkte",
     "criterion_index": "Index (TD−TR)",
     "criterion_initial": "Anfangsplatzierung",
     "criterion_td": "Treffer gesetzt",
@@ -197,6 +200,9 @@
     "criterion_vm": "V/M (Siege/Gefecht)",
     "load_template": "Vorlage laden",
     "pool_round_n": "Gruppenrunde {{n}}",
+    "pool_round_label": "Gruppenrunde",
+    "de_phase_label": "Direktausscheidung",
+    "classification_phase_label": "Klassifizierungsphase",
     "ranking_criteria": "Rangierungskriterien",
     "save_template": "Als Vorlage speichern",
     "scoring_standard": "Standard (1 Treffer = 1 Punkt)",
@@ -1540,6 +1546,8 @@
     "save_template": "Als Vorlage speichern",
     "load_template": "Eine Vorlage laden",
     "notes": "Notizen zur Formel (optional)",
+    "notes_label": "Notizen",
+    "add_pool_short": "+ Pools",
     "add_de_short": "+ DE",
     "add_classification_short": "+ Klassierung",
     "save_model": "Modell speichern",
@@ -1561,17 +1569,39 @@
     "advancement": "Aufstieg in die nächste Phase",
     "tableau_size": "Tableau (Größe)",
     "fifth_place": "Match um den 5. Platz",
-    "final_classification": "Finale Klassifizierungsphase — keine Konfiguration erforderlich."
+    "final_classification": "Finale Klassifizierungsphase — keine Konfiguration erforderlich.",
+    "move_up": "Nach oben verschieben",
+    "move_down": "Nach unten verschieben",
+    "collapse": "Reduzieren",
+    "expand": "Erweitern",
+    "range_to": "bis",
+    "touches_count": "{{count}} Treffer",
+    "serpentine": "Serpentine",
+    "auto_size": "Automatisch",
+    "tableau_of": "Tableau {{count}}"
   },
   "formulaSim": {
     "total_matches": "Gesamtmatches",
-    "estimated_duration": "Geschätzte Dauer"
+    "estimated_duration": "Geschätzte Dauer",
+    "fencers_label": "Fechter",
+    "pools_label": "Gruppe(n)",
+    "bracket_size": "Tableau von {{size}}",
+    "match_count": "{{count}} Gefecht(e)",
+    "direct_elimination": "Direktausscheidung",
+    "final_classification": "Endrangliste"
   },
   "formulaTemplate": {
     "placeholder": "Bsp: Club-Turnier Standard",
     "name_label": "Name der Formel",
     "none": "Keine gespeicherte Formel.",
-    "import_json": "Aus einer JSON-Datei importieren"
+    "import_json": "Aus einer JSON-Datei importieren",
+    "save_title": "Formel speichern",
+    "load_title": "Formel laden",
+    "error_name_required": "Bitte einen Namen für die Formel eingeben.",
+    "error_invalid_file": "Ungültige Datei — Formel konnte nicht gelesen werden.",
+    "phase_count": "{{count}} Phase(n)",
+    "load_button": "Laden",
+    "export_json": "JSON exportieren"
   },
   "rankingCriteria": {
     "drag_reorder": "Ziehen zum Neusortieren"
@@ -1583,7 +1613,13 @@
     "custom": "Eigene Zonen",
     "add_zone": "+ Zone hinzufügen",
     "delete": "Diese Zone löschen",
-    "delete_zone": "Zone löschen"
+    "delete_zone": "Zone löschen",
+    "color": "Farbe",
+    "pts_suffix": "Pkt.",
+    "max_per_touch": "Max. pro Treffer:",
+    "default_head": "Kopf",
+    "default_torso": "Rumpf",
+    "default_arms_legs": "Arme/Beine"
   },
   "globalPoolColumns": {
     "title": "🧱 Spalten (alle Pools)",

@@ -36,9 +36,9 @@ const ScoringZoneEditor_: React.FC<Props> = ({ scoring, onChange, readOnly }) =>
         zones: scoring.zones?.length
           ? scoring.zones
           : [
-              { id: 'zone_head', label: 'Tête', points: 3, color: '#EF4444' },
-              { id: 'zone_torso', label: 'Tronc', points: 2, color: '#F59E0B' },
-              { id: 'zone_arm', label: 'Bras/Jambes', points: 1, color: '#10B981' },
+              { id: 'zone_head', label: t('scoringZone.default_head'), points: 3, color: '#EF4444' },
+              { id: 'zone_torso', label: t('scoringZone.default_torso'), points: 2, color: '#F59E0B' },
+              { id: 'zone_arm', label: t('scoringZone.default_arms_legs'), points: 1, color: '#10B981' },
             ],
       });
     } else {
@@ -100,7 +100,7 @@ const ScoringZoneEditor_: React.FC<Props> = ({ scoring, onChange, readOnly }) =>
                 value={zone.color ?? '#3B82F6'}
                 onChange={e => updateZone(i, { color: e.target.value })}
                 disabled={readOnly}
-                title="Couleur"
+                title={t('scoringZone.color')}
               />
               <input
                 type="text"
@@ -119,7 +119,7 @@ const ScoringZoneEditor_: React.FC<Props> = ({ scoring, onChange, readOnly }) =>
                 onChange={e => updateZone(i, { points: Number(e.target.value) })}
                 disabled={readOnly}
               />
-              <span className="zone-pts-label">pts</span>
+              <span className="zone-pts-label">{t('scoringZone.pts_suffix')}</span>
               {!readOnly && (
                 <button
                   type="button"
@@ -143,8 +143,10 @@ const ScoringZoneEditor_: React.FC<Props> = ({ scoring, onChange, readOnly }) =>
           )}
           {(scoring.zones ?? []).length > 0 && (
             <p className="zone-preview-text">
-              Max sur touche :{' '}
-              <strong>{Math.max(...(scoring.zones ?? []).map(z => z.points))} pts</strong>
+              {t('scoringZone.max_per_touch')}{' '}
+              <strong>
+                {Math.max(...(scoring.zones ?? []).map(z => z.points))} {t('scoringZone.pts_suffix')}
+              </strong>
             </p>
           )}
         </div>

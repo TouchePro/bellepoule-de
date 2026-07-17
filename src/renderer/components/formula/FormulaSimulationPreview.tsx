@@ -18,33 +18,39 @@ function formatDuration(minutes: number): string {
   return m > 0 ? `${h}h${String(m).padStart(2, '0')}` : `${h}h`;
 }
 
-function phaseLabel(type: string, index: number): string {
-  if (type === 'pool_round') return `Tour de poules ${index + 1}`;
-  if (type === 'direct_elimination') return 'Élimination directe';
-  return 'Classement final';
+function phaseLabel(
+  t: (key: string, params?: { [key: string]: string | number }) => string,
+  type: string,
+  index: number
+): string {
+  if (type === 'pool_round') return t('formula.pool_round_n', { n: index + 1 });
+  if (type === 'direct_elimination') return t('formulaSim.direct_elimination');
+  return t('formulaSim.final_classification');
 }
 
 const FormulaSimulationPreview_: React.FC<Props> = ({ simulation, fencerCount }) => {
   const { t } = useTranslation();
   return (
     <div className="formula-simulation-preview">
-      <h4 className="simulation-title">Simulation — {fencerCount} tireurs</h4>
+      <h4 className="simulation-title">
+        {t('formula.simulation_title')} — {fencerCount} {t('formulaSim.fencers_label')}
+      </h4>
 
       <div className="simulation-flowchart">
         <div className="sim-node sim-node-input">
           <span className="sim-fencer-count">{fencerCount}</span>
-          <span className="sim-label">tireurs</span>
+          <span className="sim-label">{t('formulaSim.fencers_label')}</span>
         </div>
 
         {simulation.phases.map((phase, i) => (
           <React.Fragment key={i}>
             <div className="sim-arrow">↓</div>
             <div className={`sim-node sim-node-${phase.type}`}>
-              <div className="sim-phase-name">{phaseLabel(phase.type, i)}</div>
+              <div className="sim-phase-name">{phaseLabel(t, phase.type, i)}</div>
 
               {phase.type === 'pool_round' && phase.poolCount !== undefined && (
                 <div className="sim-phase-detail">
-                  {phase.poolCount} poule{phase.poolCount > 1 ? 's' : ''}
+                  {phase.poolCount} {t('formulaSim.pools_label')}
                   {phase.poolSizes && phase.poolSizes.length > 0 && (
                     <span className="sim-pool-sizes">
                       {' '}
@@ -52,23 +58,27 @@ const FormulaSimulationPreview_: React.FC<Props> = ({ simulation, fencerCount })
                       {Array.from(new Set(phase.poolSizes))
                         .sort((a, b) => a - b)
                         .join('-')}{' '}
-                      tireurs)
+                      {t('formulaSim.fencers_label')})
                     </span>
                   )}
                 </div>
               )}
 
               {phase.type === 'direct_elimination' && phase.bracketSize !== undefined && (
-                <div className="sim-phase-detail">Tableau de {phase.bracketSize}</div>
+                <div className="sim-phase-detail">
+                  {t('formulaSim.bracket_size', { size: phase.bracketSize })}
+                </div>
               )}
 
               {phase.matchCount !== undefined && (
-                <div className="sim-match-count">{phase.matchCount} matchs</div>
+                <div className="sim-match-count">
+                  {t('formulaSim.match_count', { count: phase.matchCount })}
+                </div>
               )}
 
               {phase.advancingFencers !== undefined && phase.type !== 'classification' && (
                 <div className="sim-advancing">
-                  → <strong>{phase.advancingFencers}</strong> avancent
+                  → <strong>{phase.advancingFencers}</strong> {t('formula.advancing_suffix')}
                 </div>
               )}
             </div>
