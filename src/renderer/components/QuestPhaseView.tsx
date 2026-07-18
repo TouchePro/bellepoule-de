@@ -229,7 +229,7 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
             key={pool.id}
             pool={pool}
             weapon={competitionWeapon as any}
-            competitionName="Tour Quest"
+            competitionName={t('quest.tour_quest')}
             maxScore={maxScore}
             onScoreUpdate={(matchIndex, scoreA, scoreB, winner, specialStatus) =>
               updateScore(matchIndex, scoreA, scoreB, winner, specialStatus)
@@ -286,11 +286,11 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
               <thead>
                 <tr style={{ background: '#f3f4f6' }}>
-                  <th style={{ padding: '0.5rem 0.75rem', textAlign: 'center', borderBottom: '2px solid #e5e7eb', width: '3rem' }}>Rg</th>
+                  <th style={{ padding: '0.5rem 0.75rem', textAlign: 'center', borderBottom: '2px solid #e5e7eb', width: '3rem' }}>{t('ranking.rank')}</th>
                   <th style={TH_LEFT}>{t('fencer.fencer_label')}</th>
-                  <th style={TH_CENTER} title={t('quest.victories_played')}>V/M</th>
-                  <th style={TH_CENTER} title={t('quest.points')}>Pts Q</th>
-                  <th style={TH_CENTER} title={t('quest.cards_received')}>Cart.</th>
+                  <th style={TH_CENTER} title={t('quest.victories_played')}>{t('ranking.ratio')}</th>
+                  <th style={TH_CENTER} title={t('quest.points')}>{t('quest.points_short')}</th>
+                  <th style={TH_CENTER} title={t('quest.cards_received')}>{t('quest.cards_short')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -391,8 +391,8 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
           }}
         >
           <span style={{ fontSize: '0.875rem', color: '#1e40af' }}>
-            Formule : (2 × {timeMinutes} min × {arenas} arènes) / ({fencers.length} tireurs × 5 min) ={' '}
-            <strong>{autoFights} combats/tireur</strong>
+            {t('quest.formula_display', { time: timeMinutes, arenas, fencers: fencers.length })}{' '}
+            <strong>{t('quest.fights_per_fencer', { count: autoFights })}</strong>
           </span>
         </div>
 
@@ -411,9 +411,12 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
             }}
           />
           <p style={smallText}>
-            Valeur effective :{' '}
-            <strong>{effectiveFights} combats/tireur</strong>
-            {fencers.length > 1 && ` → ${Math.floor((fencers.length * effectiveFights) / 2)} combats au total`}
+            {t('quest.effective_value')}{' '}
+            <strong>{t('quest.fights_per_fencer', { count: effectiveFights })}</strong>
+            {fencers.length > 1 &&
+              t('quest.total_fights', {
+                count: Math.floor((fencers.length * effectiveFights) / 2),
+              })}
           </p>
         </div>
       </div>
@@ -434,10 +437,10 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
                   onConfigUpdate?.({ opponentConstraint: c });
                 }}
               />
-              {c === 'none' && 'Aucune'}
-              {c === 'club' && 'Pas même club (régionale)'}
-              {c === 'region' && 'Pas même région (nationale)'}
-              {c === 'nation' && 'Pas même nation (internationale)'}
+              {c === 'none' && t('quest.constraint_none')}
+              {c === 'club' && t('quest.constraint_club')}
+              {c === 'region' && t('quest.constraint_region')}
+              {c === 'nation' && t('quest.constraint_nation')}
             </label>
           ))}
         </div>
@@ -450,7 +453,7 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
           onClick={handleGenerate}
           disabled={fencers.length < 2 || effectiveFights <= 0}
         >
-          {schedule.length === 0 ? 'Générer le planning' : 'Régénérer'}
+          {schedule.length === 0 ? t('quest.generate_schedule') : t('quest.regenerate')}
         </button>
         {fencers.length < 2 && (
           <p style={{ ...smallText, color: '#dc2626', marginTop: '0.5rem' }}>
@@ -463,7 +466,7 @@ const QuestPhaseView: React.FC<QuestPhaseViewProps> = ({
       {schedule.length > 0 && (
         <div style={CARD}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <p style={sectionTitle}>Planning — {schedule.length} combats</p>
+            <p style={sectionTitle}>{t('quest.schedule_title', { count: schedule.length })}</p>
             {!isValid && (
               <span style={{ fontSize: '0.75rem', color: '#dc2626' }}>
                 ⚠ {errors[0]}

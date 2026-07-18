@@ -18,6 +18,13 @@ const PRESETS = [
 
 type PresetLabel = (typeof PRESETS)[number]['label'];
 
+const PRESET_LABEL_KEYS: Record<PresetLabel, string> = {
+  Compact: 'windowSizePresets.presets.compact',
+  Normal: 'windowSizePresets.presets.normal',
+  Large: 'windowSizePresets.presets.large',
+  XL: 'windowSizePresets.presets.xl',
+};
+
 const WindowSizePresets: React.FC = () => {
   const { t } = useTranslation();
   const [active, setActive] = useState<PresetLabel>('Normal');
@@ -46,7 +53,7 @@ const WindowSizePresets: React.FC = () => {
           title={`${preset.width}×${preset.height}`}
           style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
         >
-          {preset.label}
+          {t(PRESET_LABEL_KEYS[preset.label])}
         </button>
       ))}
     </div>

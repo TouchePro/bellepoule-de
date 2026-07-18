@@ -40,9 +40,7 @@ const QRCodeShare_: React.FC<QRCodeShareProps> = ({ competition, onClose, mode: 
     try {
       const info = await window.electronAPI.remote.getServerInfo(competition.id);
       if (!info.success || !info.serverInfo) {
-        setError(
-          "Le serveur distant doit être démarré pour partager les résultats.\nActivez la saisie distante depuis l'onglet correspondant."
-        );
+        setError(t('qrCode.server_not_started'));
         setIsGenerating(false);
         return;
       }
@@ -58,7 +56,7 @@ const QRCodeShare_: React.FC<QRCodeShareProps> = ({ competition, onClose, mode: 
       setQrCodeUrl(dataUrl);
     } catch (err) {
       logger.error(LogCategory.UI, 'Erreur génération QR', err as Error);
-      setError('Erreur lors de la génération du QR code');
+      setError(t('qrCode.generation_error'));
     } finally {
       setIsGenerating(false);
     }
@@ -83,14 +81,14 @@ const QRCodeShare_: React.FC<QRCodeShareProps> = ({ competition, onClose, mode: 
 
   const modeConfig = {
     results: {
-      title: 'Partager les résultats',
-      description: `Scannez ce QR code pour accéder aux résultats de la compétition "${competition.title}"`,
-      info: 'Les spectateurs peuvent voir les résultats en temps réel.',
+      title: t('qrCode.results_title'),
+      description: t('qrCode.results_description', { title: competition.title }),
+      info: t('qrCode.results_info'),
     },
     checkin: {
-      title: 'QR Code de pointage',
-      description: `Les tireurs de "${competition.title}" scannent pour se pointer eux-mêmes.`,
-      info: 'Affichez ce QR code à l\'entrée de la salle pour que les tireurs confirment leur présence.',
+      title: t('qrCode.checkin_title'),
+      description: t('qrCode.checkin_description', { title: competition.title }),
+      info: t('qrCode.checkin_info'),
     },
   };
 
@@ -121,7 +119,7 @@ const QRCodeShare_: React.FC<QRCodeShareProps> = ({ competition, onClose, mode: 
                 fontSize: '0.875rem',
               }}
             >
-              {m === 'results' ? '🏆 Résultats' : '✅ Pointage'}
+              {m === 'results' ? t('qrCode.tab_results') : t('qrCode.tab_checkin')}
             </button>
           ))}
         </div>
@@ -139,13 +137,13 @@ const QRCodeShare_: React.FC<QRCodeShareProps> = ({ competition, onClose, mode: 
               ) : error ? (
                 <div className="alert alert--error" style={{ whiteSpace: 'pre-line' }}>{error}</div>
               ) : (
-                <img src={qrCodeUrl} alt="QR Code" className="qrcode__canvas" width={300} height={300} />
+                <img src={qrCodeUrl} alt={t('qrCode.alt_text')} className="qrcode__canvas" width={300} height={300} />
               )}
             </div>
 
             {!error && shareUrl && (
               <div className="qrcode__url">
-                <label className="form-label">URL :</label>
+                <label className="form-label">{t('qrCode.url_label')}</label>
                 <div className="qrcode__url-input">
                   <input type="text" value={shareUrl} readOnly className="form-control" />
                   <button className="btn btn-secondary" onClick={copyToClipboard}>{t('actions.copy')}</button>

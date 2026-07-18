@@ -672,7 +672,29 @@
     "assign": "Assign a referee",
     "none": "✕ No referee",
     "none_registered": "No referee registered for this competition",
-    "select_for_match": "Select the referee for this match:"
+    "select_for_match": "Select the referee for this match:",
+    "club_conflict_warning": "⚠️ Conflict: Referee from club {{club}}",
+    "tab_referees": "👥 Referees",
+    "tab_assignments": "📋 Assignments",
+    "tab_history": "📜 History",
+    "club_placeholder": "Club",
+    "license_placeholder": "License",
+    "name_required": "The name is required",
+    "import_file": "Import referee file",
+    "export_file": "Export referee file",
+    "import_success_count": "{{count}} referee(s) imported",
+    "import_error_count": "{{count}} error(s)",
+    "col_name": "Name",
+    "status_available": "Available",
+    "auto_assign": "Automatic Assignment",
+    "hide_report": "Hide Report",
+    "show_report": "Show Report",
+    "col_consecutive": "Consecutive",
+    "col_fatigue": "Fatigue",
+    "col_violations": "Violations",
+    "col_conflicts": "Conflicts",
+    "today_matches": "Matches today: {{count}}",
+    "total_matches": "Total: {{count}}"
   },
   "changePool": {
     "drag_hint": "↕ Fencer (drag to a pool)",
@@ -742,7 +764,20 @@
     "launch": "Launch the Quest round →",
     "label": "Quest",
     "formula_summary_with_pools": "Formula: 1 pool round → Top {{count}} qualified → Quest round → Tableau",
-    "formula_summary_direct": "Formula: Direct Quest round → Tableau"
+    "formula_summary_direct": "Formula: Direct Quest round → Tableau",
+    "points_short": "Pts Q",
+    "cards_short": "Cards",
+    "formula_display": "Formula: (2 × {{time}} min × {{arenas}} arenas) / ({{fencers}} fencers × 5 min) =",
+    "fights_per_fencer": "{{count}} fights/fencer",
+    "effective_value": "Effective value:",
+    "total_fights": " → {{count}} fights in total",
+    "constraint_none": "None",
+    "constraint_club": "Not same club (regional)",
+    "constraint_region": "Not same region (national)",
+    "constraint_nation": "Not same nation (international)",
+    "generate_schedule": "Generate schedule",
+    "regenerate": "Regenerate",
+    "schedule_title": "Schedule — {{count}} fights"
   },
   "competitionView": {
     "show_grid_attr": "Show all pools in a grid",
@@ -1162,7 +1197,19 @@
   },
   "qrCode": {
     "generating": "Generating QR code...",
-    "download": "💾 Download QR Code"
+    "download": "💾 Download QR Code",
+    "results_title": "Share results",
+    "results_description": "Scan this QR code to access the results of the \"{{title}}\" competition",
+    "results_info": "Spectators can see the results in real time.",
+    "checkin_title": "Check-in QR code",
+    "checkin_description": "Fencers from \"{{title}}\" scan this to check themselves in.",
+    "checkin_info": "Display this QR code at the entrance so fencers can confirm their attendance.",
+    "tab_results": "🏆 Results",
+    "tab_checkin": "✅ Check-in",
+    "server_not_started": "The remote server must be started to share results.\nEnable remote scoring from the corresponding tab.",
+    "generation_error": "Error generating the QR code",
+    "url_label": "URL:",
+    "alt_text": "QR Code"
   },
   "remote_score": {
     "unsaved": "Unsaved changes",
@@ -1764,7 +1811,13 @@
     "nation": "Nat"
   },
   "windowSizePresets": {
-    "label": "Window:"
+    "label": "Window:",
+    "presets": {
+      "compact": "Compact",
+      "normal": "Normal",
+      "large": "Large",
+      "xl": "XL"
+    }
   },
   "seedingTable": {
     "after_pools": "Ranking after pools"
@@ -1824,10 +1877,12 @@
     "fencer_col": "Fencer column"
   },
   "presentation": {
+    "pool_of": "Pool {{number}} of {{total}}",
     "matches_done": "Matches done",
     "ranking": "Ranking",
     "no_club": "No club",
     "matches_live": "Live matches",
+    "strip_in_progress": "Strip {{strip}} in progress",
     "no_matches_live": "No match in progress",
     "nav_hint": "← → switch pools · Esc to quit"
   },

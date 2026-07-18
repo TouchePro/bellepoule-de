@@ -672,7 +672,29 @@
     "assign": "Schiedsrichter zuweisen",
     "none": "✕ Kein Schiedsrichter",
     "none_registered": "Kein Schiedsrichter für diesen Wettkampf erfasst",
-    "select_for_match": "Wählen Sie den Schiedsrichter für dieses Match:"
+    "select_for_match": "Wählen Sie den Schiedsrichter für dieses Match:",
+    "club_conflict_warning": "⚠️ Konflikt: Schiedsrichter des Vereins {{club}}",
+    "tab_referees": "👥 Schiedsrichter",
+    "tab_assignments": "📋 Zuweisungen",
+    "tab_history": "📜 Verlauf",
+    "club_placeholder": "Verein",
+    "license_placeholder": "Lizenz",
+    "name_required": "Der Name ist erforderlich",
+    "import_file": "Schiedsrichterdatei importieren",
+    "export_file": "Schiedsrichterdatei exportieren",
+    "import_success_count": "{{count}} Schiedsrichter importiert",
+    "import_error_count": "{{count}} Fehler",
+    "col_name": "Name",
+    "status_available": "Verfügbar",
+    "auto_assign": "Automatische Zuweisung",
+    "hide_report": "Bericht ausblenden",
+    "show_report": "Bericht anzeigen",
+    "col_consecutive": "Aufeinanderfolgend",
+    "col_fatigue": "Müdigkeit",
+    "col_violations": "Verstöße",
+    "col_conflicts": "Konflikte",
+    "today_matches": "Matches heute: {{count}}",
+    "total_matches": "Gesamt: {{count}}"
   },
   "changePool": {
     "drag_hint": "↕ Fechter (in eine Poule ziehen)",
@@ -742,7 +764,20 @@
     "launch": "Quest-Runde starten →",
     "label": "Quest",
     "formula_summary_with_pools": "Formel: 1 Gruppenrunde → Top {{count}} qualifiziert → Quest-Runde → Tableau",
-    "formula_summary_direct": "Formel: Direkte Quest-Runde → Tableau"
+    "formula_summary_direct": "Formel: Direkte Quest-Runde → Tableau",
+    "points_short": "Pkt. Q",
+    "cards_short": "Kart.",
+    "formula_display": "Formel: (2 × {{time}} Min × {{arenas}} Arenen) / ({{fencers}} Fechter × 5 Min) =",
+    "fights_per_fencer": "{{count}} Kämpfe/Fechter",
+    "effective_value": "Effektiver Wert:",
+    "total_fights": " → {{count}} Kämpfe insgesamt",
+    "constraint_none": "Keine",
+    "constraint_club": "Nicht gleicher Verein (regional)",
+    "constraint_region": "Nicht gleiche Region (national)",
+    "constraint_nation": "Nicht gleiche Nation (international)",
+    "generate_schedule": "Zeitplan generieren",
+    "regenerate": "Neu generieren",
+    "schedule_title": "Zeitplan — {{count}} Kämpfe"
   },
   "competitionView": {
     "show_grid_attr": "Alle Pools in einem Raster anzeigen",
@@ -1162,7 +1197,19 @@
   },
   "qrCode": {
     "generating": "QR-Code wird erzeugt...",
-    "download": "💾 QR-Code herunterladen"
+    "download": "💾 QR-Code herunterladen",
+    "results_title": "Ergebnisse teilen",
+    "results_description": "QR-Code scannen, um die Ergebnisse des Wettbewerbs \"{{title}}\" aufzurufen",
+    "results_info": "Zuschauer können die Ergebnisse in Echtzeit einsehen.",
+    "checkin_title": "QR-Code für den Check-in",
+    "checkin_description": "Die Fechter von \"{{title}}\" scannen den Code, um sich selbst einzuchecken.",
+    "checkin_info": "Diesen QR-Code am Saaleingang anzeigen, damit sich die Fechter selbst einchecken können.",
+    "tab_results": "🏆 Ergebnisse",
+    "tab_checkin": "✅ Check-in",
+    "server_not_started": "Der Remote-Server muss gestartet sein, um Ergebnisse zu teilen.\nAktivieren Sie die Ferneingabe im entsprechenden Tab.",
+    "generation_error": "Fehler bei der Erzeugung des QR-Codes",
+    "url_label": "URL:",
+    "alt_text": "QR-Code"
   },
   "remote_score": {
     "unsaved": "Nicht gespeicherte Änderungen",
@@ -1764,7 +1811,13 @@
     "change_pool_for": "Pool wechseln für {{name}}"
   },
   "windowSizePresets": {
-    "label": "Fenster:"
+    "label": "Fenster:",
+    "presets": {
+      "compact": "Kompakt",
+      "normal": "Normal",
+      "large": "Groß",
+      "xl": "XL"
+    }
   },
   "seedingTable": {
     "after_pools": "Rangliste nach Pools"
@@ -1824,10 +1877,12 @@
     "fencer_col": "Fechter-Spalte"
   },
   "presentation": {
+    "pool_of": "Pool {{number}} von {{total}}",
     "matches_done": "Kämpfe beendet",
     "ranking": "Rangliste",
     "no_club": "Kein Verein",
     "matches_live": "Laufende Kämpfe",
+    "strip_in_progress": "Bahn {{strip}} läuft",
     "no_matches_live": "Kein Kampf läuft",
     "nav_hint": "← → Pools wechseln · Esc zum Beenden"
   },

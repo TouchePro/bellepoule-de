@@ -23,26 +23,26 @@ afterEach(() => { delete (window as any).electronAPI; });
 describe('QRCodeShare', () => {
   it('affiche le titre du mode résultats et les onglets', () => {
     render(<QRCodeShare competition={competition} onClose={vi.fn()} />);
-    expect(screen.getByText(/Partager les résultats/)).toBeInTheDocument();
-    expect(screen.getByText('🏆 Résultats')).toBeInTheDocument();
-    expect(screen.getByText('✅ Pointage')).toBeInTheDocument();
+    expect(screen.getByText(/Ergebnisse teilen/)).toBeInTheDocument();
+    expect(screen.getByText('🏆 Ergebnisse')).toBeInTheDocument();
+    expect(screen.getByText('✅ Check-in')).toBeInTheDocument();
   });
 
   it('affiche un message si le serveur distant n’est pas démarré', async () => {
     render(<QRCodeShare competition={competition} onClose={vi.fn()} />);
-    expect(await screen.findByText(/serveur distant doit être démarré/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Remote-Server muss gestartet sein/i)).toBeInTheDocument();
   });
 
   it('bascule vers l’onglet pointage', () => {
     render(<QRCodeShare competition={competition} onClose={vi.fn()} />);
-    fireEvent.click(screen.getByText('✅ Pointage'));
-    expect(screen.getByText(/QR Code de pointage/)).toBeInTheDocument();
+    fireEvent.click(screen.getByText('✅ Check-in'));
+    expect(screen.getByText(/QR-Code für den Check-in/)).toBeInTheDocument();
   });
 
   it('le bouton Fermer déclenche onClose', () => {
     const onClose = vi.fn();
     render(<QRCodeShare competition={competition} onClose={onClose} />);
-    fireEvent.click(screen.getByText('Fermer'));
+    fireEvent.click(screen.getByText('Schließen'));
     expect(onClose).toHaveBeenCalled();
   });
 });
