@@ -1,5 +1,6 @@
 import React from 'react';
 import { TableauMatch } from './tableauTypes';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface MatchCardProps {
   match: TableauMatch;
@@ -24,6 +25,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
   onRefereeClick,
   readOnly = false,
 }) => {
+  const { t } = useTranslation();
   const canEdit = !readOnly && !!(match.fencerA && match.fencerB && !match.isBye) && !!onMatchClick;
   const hasScore = match.scoreA !== null && match.scoreB !== null;
 
@@ -82,7 +84,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
       <span
         className="match-status-dot"
         style={{ background: statusColor }}
-        title={isMatchComplete ? 'Terminé' : isInProgress ? 'À jouer' : 'En attente'}
+        title={isMatchComplete ? t('tableau.finished') : isInProgress ? t('tableau.to_play') : t('tableau.waiting')}
       />
 
       {/* Arena + Referee badges */}
@@ -92,20 +94,20 @@ const MatchCard: React.FC<MatchCardProps> = ({
             <button
               className={`match-badge-btn ${match.arena ? 'match-badge-btn--active' : ''}`}
               onClick={handleArenaClick}
-              title={match.arena ? `Piste ${match.arena}` : 'Assigner une piste'}
+              title={match.arena ? t('tableau.strip_number', { number: match.arena }) : t('tableau.assign_strip')}
             >
-              {match.arena ? `P${match.arena}` : '+P'}
+              {match.arena ? `${t('tableau.strip_short')}${match.arena}` : `+${t('tableau.strip_short')}`}
             </button>
           )}
           {onRefereeClick && (
             <button
               className={`match-badge-btn ${match.referee ? 'match-badge-btn--active' : ''}`}
               onClick={handleRefereeClick}
-              title={match.referee ? `Arbitre : ${match.referee.lastName} ${match.referee.firstName}` : 'Assigner un arbitre'}
+              title={match.referee ? t('tableau.referee_assigned', { lastName: match.referee.lastName, firstName: match.referee.firstName }) : t('referee.assign')}
             >
               {match.referee
                 ? `${match.referee.lastName.charAt(0)}${match.referee.firstName.charAt(0)}`
-                : '+A'}
+                : `+${t('tableau.referee_short')}`}
             </button>
           )}
         </div>
@@ -158,13 +160,13 @@ const MatchCard: React.FC<MatchCardProps> = ({
 
       {/* Bye */}
       {match.isBye && (
-        <div className="match-bye">Exempt</div>
+        <div className="match-bye">{t('kiosk.bye')}</div>
       )}
 
       {/* CTA bar — mode liste seulement */}
       {canEdit && viewMode !== 'full' && (
         <div className={`match-cta ${hasScore ? 'match-cta-edit' : 'match-cta-enter'}`}>
-          {hasScore ? '✏️ Modifier' : '➕ Saisir score'}
+          {hasScore ? `✏️ ${t('actions.edit')}` : `➕ ${t('pools.enter_score')}`}
         </div>
       )}
     </div>

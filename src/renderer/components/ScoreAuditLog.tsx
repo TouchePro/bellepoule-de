@@ -144,22 +144,22 @@ const ScoreAuditLog_: React.FC<Props> = ({ competitionId }) => {
           disabled={loading}
           style={{ marginLeft: 'auto' }}
         >
-          {loading ? '…' : '↻ Actualiser'}
+          {loading ? '…' : t('scoreAudit.refresh')}
         </button>
       </div>
 
       {filtered.length === 0 ? (
         <div style={{ textAlign: 'center', color: '#6B7280', padding: '3rem' }}>
-          {loading ? 'Chargement…' : 'Aucune entrée dans le journal.'}
+          {loading ? t('scoreAudit.loading') : t('scoreAudit.no_entries')}
         </div>
       ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
           <thead>
             <tr style={{ background: '#F3F4F6', textAlign: 'left' }}>
-              <th style={th}>Horodatage</th>
+              <th style={th}>{t('scoreAudit.timestamp')}</th>
               <th style={th}>{t('ui.poule')}</th>
               <th style={th}>{t('pools.match')}</th>
-              <th style={th}>Avant</th>
+              <th style={th}>{t('scoreAudit.before')}</th>
               <th style={th}>{t('scoreAudit.after')}</th>
               <th style={th}>{t('referee.label')}</th>
               <th style={th}>IP</th>
@@ -188,8 +188,8 @@ const ScoreAuditLog_: React.FC<Props> = ({ competitionId }) => {
       )}
 
       <div style={{ marginTop: '0.75rem', color: '#9CA3AF', fontSize: '0.75rem' }}>
-        {filtered.length} entrée{filtered.length !== 1 ? 's' : ''}
-        {entries.length !== filtered.length ? ` (${entries.length} au total)` : ''}
+        {t(filtered.length === 1 ? 'scoreAudit.entry_one' : 'scoreAudit.entry_other', { count: filtered.length })}
+        {entries.length !== filtered.length ? ` ${t('scoreAudit.in_total', { total: entries.length })}` : ''}
       </div>
     </div>
   );

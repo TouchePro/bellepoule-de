@@ -72,7 +72,15 @@ const ConsolationBracketsSection: React.FC<ConsolationBracketsSectionProps> = ({
               <div style={CONS_STYLES.consolationRoundsRow}>
                 {bracketRounds.map(round => {
                   const roundMatches = bracket.matches.filter(m => m.round === round).sort((a, b) => a.position - b.position);
-                  const roundName = round === 3 ? 'Petite finale' : round === 2 ? 'Finale' : round === 4 ? 'Demi-finales' : round === 8 ? 'Quarts' : `Tableau de ${round}`;
+                  const roundName =
+                    round === 2 ? t('tableau.round_final')
+                    : round === 3 ? t('tableau.round_third_place')
+                    : round === 4 ? t('tableau.round_semifinals')
+                    : round === 8 ? t('tableau.round_quarterfinals')
+                    : round === 16 ? t('tableau.round_of_16')
+                    : round === 32 ? t('tableau.round_of_32')
+                    : round === 64 ? t('tableau.round_of_64')
+                    : t('tableau.round_of_n', { round });
                   return (
                     <div key={round} style={CONS_STYLES.consolationRoundCol}>
                       <div style={CONS_STYLES.consolationRoundTitle}>{roundName}</div>

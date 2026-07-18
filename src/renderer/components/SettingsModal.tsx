@@ -33,14 +33,14 @@ const DEFAULT_TTS_CONFIG: TtsConfig = {
   announce: { '60': true, '30': true, '10': true, '5': true, countdown: true, '0': true },
 };
 
-// Paliers annoncés par le minuteur vocal — clé de config + libellé affiché
-const TTS_THRESHOLDS: { key: string; label: string }[] = [
-  { key: '60', label: '1 minute' },
-  { key: '30', label: '30 secondes' },
-  { key: '10', label: '10 secondes' },
-  { key: '5', label: '5 secondes' },
-  { key: 'countdown', label: 'Décompte 4 → 1' },
-  { key: '0', label: '« Temps ! » (fin)' },
+// Paliers annoncés par le minuteur vocal — clé de config + clé de libellé affiché
+const TTS_THRESHOLDS: { key: string; labelKey: string }[] = [
+  { key: '60', labelKey: 'settings.tts_threshold_60' },
+  { key: '30', labelKey: 'settings.tts_test_phrase' },
+  { key: '10', labelKey: 'settings.tts_threshold_10' },
+  { key: '5', labelKey: 'settings.tts_threshold_5' },
+  { key: 'countdown', labelKey: 'settings.tts_threshold_countdown' },
+  { key: '0', labelKey: 'settings.tts_threshold_0' },
 ];
 
 function loadTtsConfig(): TtsConfig {
@@ -191,7 +191,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
   const handleTtsTestVoice = () => {
     if (!('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
-    const utt = new SpeechSynthesisUtterance('30 secondes');
+    const utt = new SpeechSynthesisUtterance(t('settings.tts_test_phrase'));
     const v = voices.find(x => x.name === ttsConfig.voiceName);
     if (v) { utt.voice = v; utt.lang = v.lang; }
     utt.rate = ttsConfig.rate;
@@ -213,11 +213,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
   const applyLogo = useCallback(async (file: File) => {
     setLogoError(null);
     if (file.size > 5 * 1024 * 1024) {
-      setLogoError('Image trop grande (max 5 Mo)');
+      setLogoError(t('settings.logo_error_size'));
       return;
     }
     if (!file.type.startsWith('image/')) {
-      setLogoError('Fichier non supporté — choisissez une image');
+      setLogoError(t('settings.logo_error_type'));
       return;
     }
     try {
@@ -229,7 +229,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
         logger.warn(LogCategory.NETWORK, 'Échec mise à jour logo remote', err instanceof Error ? err : undefined);
       });
     } catch {
-      setLogoError('Impossible de lire l\'image');
+      setLogoError(t('settings.logo_error_read'));
     }
   }, []);
 
@@ -267,7 +267,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
     if (!webhookUrl.trim()) return;
     if (!isWebhookUrlSafe(webhookUrl)) {
       setWebhookTestStatus('error');
-      setWebhookTestMessage('URL invalide — doit être https vers un hôte public (pas localhost ni IP privée)');
+      setWebhookTestMessage(t('settings.webhook_error_invalid_url'));
       return;
     }
     setWebhookTestStatus('testing');
@@ -277,15 +277,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          text: '✅ BellePoule Modern — test de notification webhook',
+          text: t('settings.webhook_test_notification_text'),
           username: 'BellePoule',
         }),
       });
       setWebhookTestStatus('success');
-      setWebhookTestMessage('Webhook envoyé avec succès !');
+      setWebhookTestMessage(t('settings.webhook_success'));
     } catch {
       setWebhookTestStatus('error');
-      setWebhookTestMessage('Échec de l\'envoi — vérifiez l\'URL et la connectivité réseau');
+      setWebhookTestMessage(t('settings.webhook_error_send'));
     }
   };
 
@@ -359,7 +359,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
 
           {/* Logo organisateur */}
           <div className="form-group">
-            <label>Logo organisateur</label>
+            <label>{t('settings.logo_title')}</label>
             <p style={HINT}>
               {t('settings.logo_position')}
             </p>
@@ -381,7 +381,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
               {logo ? (
                 <img
                   src={logo}
-                  alt="Logo organisateur"
+                  alt={t('settings.logo_title')}
                   style={{ maxHeight: '60px', maxWidth: '100%', objectFit: 'contain', display: 'block', margin: '0 auto 0.5rem' }}
                 />
               ) : (
@@ -415,7 +415,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
           </div>
           {/* PDF Templates */}
           <div className="form-group" style={SECTION_DIVIDER}>
-            <label style={BOLD}>Exports PDF</label>
+            <label style={BOLD}>{t('settings.pdf_exports_title')}</label>
             <p style={HINT}>
               {t('settings.pdf_appearance')}
             </p>
@@ -430,11 +430,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
 
           {/* Saisie rapide souris */}
           <div className="form-group" style={SECTION_DIVIDER}>
-            <label style={BOLD}>Saisie rapide souris</label>
+            <label style={BOLD}>{t('settings.quick_mouse_title')}</label>
             <p style={HINT}>
-              Survol d'une cellule : met en évidence la cellule miroir et les noms.
-              Roulette : ±1 au score du tireur (ligne). Shift+roulette : score de l'adversaire (colonne).
-              Score nul en laser sabre → ouvre la modal de victoire.
+              {t('settings.quick_mouse_hint')}
             </p>
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
               <input
@@ -450,8 +448,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
           <div className="form-group" style={SECTION_DIVIDER}>
             <label style={BOLD}>{t('settings.simplified_mode')}</label>
             <p style={HINT}>
-              Clic sur une cellule de poule : saisie directe des scores dans la case, sans ouverture de modal.
-              Score nul en laser sabre → ouvre tout de même la modal de victoire.
+              {t('settings.simplified_mode_hint')}
             </p>
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
               <input
@@ -481,7 +478,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
 
           {/* Notifications webhook */}
           <div className="form-group" style={SECTION_DIVIDER}>
-            <label style={BOLD}>Notifications webhook</label>
+            <label style={BOLD}>{t('settings.webhook_title')}</label>
             <p style={HINT}>
               {t('settings.webhook_url')}
             </p>
@@ -500,7 +497,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
                 onClick={handleTestWebhook}
                 disabled={!webhookUrl.trim() || webhookTestStatus === 'testing'}
               >
-                {webhookTestStatus === 'testing' ? '⏳ Test…' : '🔔 Tester'}
+                {webhookTestStatus === 'testing' ? `⏳ ${t('settings.testing_ellipsis')}` : `🔔 ${t('settings.test_button')}`}
               </button>
               {webhookUrl && (
                 <button
@@ -508,7 +505,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
                   style={SMALL_BTN}
                   onClick={() => handleWebhookUrlChange('')}
                 >
-                  Supprimer
+                  {t('actions.delete')}
                 </button>
               )}
             </div>
@@ -530,7 +527,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
               {t('settings.tts_desc')}
             </p>
 
-            <label style={{ fontSize: '0.85rem' }}>Voix</label>
+            <label style={{ fontSize: '0.85rem' }}>{t('settings.tts_voice_label')}</label>
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
               <select
                 className="form-input form-select"
@@ -544,12 +541,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
                 ))}
               </select>
               <button className="btn btn-secondary" style={SMALL_BTN} onClick={handleTtsTestVoice}>
-                🔊 Tester
+                {`🔊 ${t('settings.test_button')}`}
               </button>
             </div>
 
             <label style={{ fontSize: '0.85rem' }}>
-              Vitesse : {ttsConfig.rate.toFixed(1)}×
+              {t('settings.tts_rate_label', { rate: ttsConfig.rate.toFixed(1) })}
             </label>
             <input
               type="range"
@@ -565,14 +562,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
               {t('settings.tts_thresholds')}
             </label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-              {TTS_THRESHOLDS.map(({ key, label }) => (
+              {TTS_THRESHOLDS.map(({ key, labelKey }) => (
                 <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
                   <input
                     type="checkbox"
                     checked={ttsConfig.announce[key] !== false}
                     onChange={e => handleTtsThresholdToggle(key, e.target.checked)}
                   />
-                  <span style={{ fontSize: '0.875rem' }}>{label}</span>
+                  <span style={{ fontSize: '0.875rem' }}>{t(labelKey)}</span>
                 </label>
               ))}
             </div>

@@ -43,8 +43,14 @@ interface SeasonRankingViewProps {
   availablePoolsByComp?: Record<string, import('../../shared/types').Pool[]>;
 }
 
-function exportCSV(entries: SeasonEntry[]) {
-  const headers = ['Rang', 'Nom', 'Prénom', 'Club', 'V', 'M', 'V/M', 'QP', 'V4', 'V3', 'V2', 'V1', 'TD', 'TR', 'Ind', 'Cartons 🔴', 'Compétitions'];
+function exportCSV(entries: SeasonEntry[], t: (key: string, params?: { [key: string]: string | number }) => string) {
+  const headers = [
+    t('columns.rank'), t('columns.lastName'), t('columns.firstName'), t('columns.club'),
+    t('columns.victories'), t('columns.matches'), t('columns.ratio'),
+    'QP', 'V4', 'V3', 'V2', 'V1',
+    t('columns.td'), t('columns.tr'), t('columns.index'),
+    `${t('stats.red_cards')} 🔴`, t('stats.competitions'),
+  ];
   const rows = entries.map((e, i) => [
     i + 1,
     e.fencerLastName, e.fencerFirstName, e.fencerClub ?? '',
@@ -189,12 +195,12 @@ export const SeasonRankingView: React.FC<SeasonRankingViewProps> = ({
           <div>
             <h2 className="text-xl font-bold text-gray-900">{t('seasonRanking.title')}</h2>
             <p className="text-sm text-gray-500">
-              {competitions.length} compétition{competitions.length > 1 ? 's' : ''} · {ranking.length} tireurs
+              {t('seasonRanking.summary', { competitions: competitions.length, fencers: ranking.length })}
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => exportCSV(sortedRanking)}
+              onClick={() => exportCSV(sortedRanking, t)}
               disabled={ranking.length === 0}
               className="px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-40"
             >
@@ -219,7 +225,7 @@ export const SeasonRankingView: React.FC<SeasonRankingViewProps> = ({
               className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${activeTab === tab ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
               onClick={() => setActiveTab(tab)}
             >
-              {tab === 'ranking' ? 'Classement' : 'Compétitions'}
+              {tab === 'ranking' ? t('fencer.ranking') : t('stats.competitions')}
             </button>
           ))}
         </div>
@@ -241,14 +247,14 @@ export const SeasonRankingView: React.FC<SeasonRankingViewProps> = ({
                     <tr>
                       <th className="px-2 py-2 text-xs font-semibold text-gray-500 uppercase text-center w-8">#</th>
                       <th className="px-2 py-2 text-xs font-semibold text-gray-500 uppercase text-left">{t('fencer.last_name')}</th>
-                      <th className="px-2 py-2 text-xs font-semibold text-gray-500 uppercase text-left">Club</th>
-                      <Th k="ratio" label="V/M" title="Ratio victoires/matchs" />
+                      <th className="px-2 py-2 text-xs font-semibold text-gray-500 uppercase text-left">{t('columns.club')}</th>
+                      <Th k="ratio" label="V/M" title={t('formula.criterion_vm')} />
                       <Th k="totalQuestPoints" label="QP" title={t('seasonRanking.quest_points')} />
                       <Th k="totalQuestV4" label="V4" title={t('seasonRanking.v4')} />
                       <Th k="totalQuestV3" label="V3" title={t('seasonRanking.v3')} />
                       <Th k="totalQuestV2" label="V2" title={t('seasonRanking.v2')} />
                       <Th k="totalQuestV1" label="V1" title={t('seasonRanking.v1')} />
-                      <Th k="totalRedCards" label="🔴" title="Cartons rouges" />
+                      <Th k="totalRedCards" label="🔴" title={t('stats.red_cards')} />
                       <Th k="totalTouchesScored" label="TD" title={t('seasonRanking.touches_given')} />
                       <Th k="totalTouchesReceived" label="TR" title={t('seasonRanking.touches_received')} />
                       <Th k="competitionCount" label={t('seasonRanking.competition_short')} title={t('seasonRanking.num_competitions')} />
@@ -294,13 +300,13 @@ export const SeasonRankingView: React.FC<SeasonRankingViewProps> = ({
                       <div key={c.competitionId} className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-4 py-3">
                         <div>
                           <div className="font-medium text-gray-900">{c.competitionTitle}</div>
-                          <div className="text-xs text-gray-500">{new Date(c.competitionDate).toLocaleDateString()} · {c.fencerCount} tireurs</div>
+                          <div className="text-xs text-gray-500">{new Date(c.competitionDate).toLocaleDateString()} · {t('competitionList.fencers_count', { count: c.fencerCount })}</div>
                         </div>
                         <button
                           onClick={() => handleRemove(c.competitionId)}
                           className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50"
                         >
-                          Retirer
+                          {t('seasonRanking.remove')}
                         </button>
                       </div>
                     ))}
@@ -329,7 +335,7 @@ export const SeasonRankingView: React.FC<SeasonRankingViewProps> = ({
                             disabled={adding || !hasPools}
                             className="text-sm bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 disabled:opacity-40"
                           >
-                            {adding ? '…' : '+ Ajouter'}
+                            {adding ? '…' : `+ ${t('actions.add')}`}
                           </button>
                         </div>
                       );
