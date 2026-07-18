@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { TableauMatch } from './tableauTypes';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface TableauPendingSectionProps {
   round: number;
@@ -22,10 +23,11 @@ const TableauPendingSectionComponent: React.FC<TableauPendingSectionProps> = ({
   onToggle,
   renderMatch,
 }) => {
+  const { t } = useTranslation();
   const roundMatches = matches
     .filter(m => m.round === round)
     .sort((a, b) => a.position - b.position);
-  const roundName = round === 3 ? 'Petite Finale' : `Tableau de ${round}`;
+  const roundName = round === 3 ? t('tableau.round_third_place') : t('tableau.bracket_of', { round });
 
   return (
     <div
@@ -54,7 +56,7 @@ const TableauPendingSectionComponent: React.FC<TableauPendingSectionProps> = ({
           <span style={{ fontWeight: '600', color: '#374151' }}>{roundName}</span>
         </div>
         <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-          {roundMatches.length} match{roundMatches.length !== 1 ? 's' : ''}
+          {t(roundMatches.length === 1 ? 'tableau.pending_matches_count_one' : 'tableau.pending_matches_count_other', { count: roundMatches.length })}
         </span>
       </div>
       {isExpanded && (

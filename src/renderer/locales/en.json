@@ -209,6 +209,7 @@
     "round_quarters_short": "Quarters",
     "bracket_of_size": "Bracket of {{size}}",
     "bracket_tree_of_size": "Tree — Bracket of {{size}}",
+    "bracket_of": "Bracket {{round}}",
     "places_range": "Places {{firstPlace}}–{{lastPlace}}",
     "order_ascending": "Ascending",
     "order_descending": "Descending",
@@ -220,7 +221,9 @@
     "strip_number": "Strip {{number}}",
     "strip_short": "S",
     "referee_short": "R",
-    "referee_assigned": "Referee: {{lastName}} {{firstName}}"
+    "referee_assigned": "Referee: {{lastName}} {{firstName}}",
+    "pending_matches_count_one": "{{count}} match",
+    "pending_matches_count_other": "{{count}} matches"
   },
   "results": {
     "header_rank": "Rank",

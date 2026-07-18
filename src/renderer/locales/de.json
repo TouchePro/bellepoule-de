@@ -584,6 +584,7 @@
     "round_quarters_short": "Viertel",
     "bracket_of_size": "Direktausscheidungen ({{size}})",
     "bracket_tree_of_size": "Baum — Direktausscheidungen ({{size}})",
+    "bracket_of": "Tableau {{round}}",
     "places_range": "Plätze {{firstPlace}}–{{lastPlace}}",
     "order_ascending": "Aufsteigend",
     "order_descending": "Absteigend",
@@ -595,7 +596,9 @@
     "strip_number": "Piste {{number}}",
     "strip_short": "P",
     "referee_short": "S",
-    "referee_assigned": "Schiedsrichter: {{lastName}} {{firstName}}"
+    "referee_assigned": "Schiedsrichter: {{lastName}} {{firstName}}",
+    "pending_matches_count_one": "{{count}} Gefecht",
+    "pending_matches_count_other": "{{count}} Gefechte"
   },
   "time": {
     "days": "Tage",
