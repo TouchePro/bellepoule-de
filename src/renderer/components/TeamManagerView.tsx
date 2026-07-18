@@ -19,6 +19,7 @@ import { createCard } from '../../shared/utils/cardSystem';
 import TeamPoolView, { CardTarget } from './TeamPoolView';
 import TeamTableauView from './TeamTableauView';
 import { useConfirm } from './ConfirmDialog';
+import { useTranslation } from '../hooks/useTranslation';
 
 // ── Composant ─────────────────────────────────────────────────────────────────
 
@@ -43,6 +44,7 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
   const isLaserPoints = competition.weapon === Weapon.LASER && targetRule.mode === 'points';
   const tableId = competition.id; // Un seul tableau équipes par compétition
   const { confirm } = useConfirm();
+  const { t } = useTranslation();
   const [view, setView] = useState<ViewMode>('teams');
   const [teams, setTeams] = useState<TeamRow[]>([]);
   const [matches, setMatches] = useState<TeamMatchRow[]>([]);
@@ -698,15 +700,15 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
                       </th>
                       <th
                         className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase text-center"
-                        title="Relais individuels gagnés/perdus"
+                        title={t('teams.relaysTooltip')}
                       >
-                        Relais G
+                        {t('teams.relaysWon')}
                       </th>
                       <th
                         className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase text-center"
-                        title="Relais individuels gagnés/perdus"
+                        title={t('teams.relaysTooltip')}
                       >
-                        Relais P
+                        {t('teams.relaysLost')}
                       </th>
                       <th className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase text-center">
                         Ind.

@@ -224,7 +224,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
     const filterName = format === 'fff' ? 'Fichier FFE' : 'Fichier texte';
 
     const result = await window.electronAPI.dialog.saveFile({
-      title: `Exporter les tireurs (.${extension})`,
+      title: t('dialogs.exportFencers', { ext: extension }),
       defaultPath: `tireurs.${extension}`,
       filters: [
         { name: filterName, extensions: [extension] },
@@ -252,7 +252,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
   const handleExportPhotos = async () => {
     if (!competitionId) return;
     const result = await window.electronAPI.dialog.saveFile({
-      title: 'Exporter les photos (.zip)',
+      title: t('dialogs.exportPhotos'),
       defaultPath: 'photos-tireurs.zip',
       filters: [{ name: 'Archive ZIP', extensions: ['zip'] }],
     });
@@ -274,7 +274,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
   const handleImportPhotos = async () => {
     if (!competitionId) return;
     const result = await window.electronAPI.dialog.openFile({
-      title: 'Importer les photos (.zip)',
+      title: t('dialogs.importPhotos'),
       filters: [{ name: 'Archive ZIP', extensions: ['zip'] }],
     });
     if (result && result.filePath) {
@@ -295,7 +295,7 @@ const FencerListComponent: React.FC<FencerListProps> = ({
   const handleExportFencersArchive = async () => {
     if (!competitionId) return;
     const result = await window.electronAPI.dialog.saveFile({
-      title: 'Exporter tireurs + photos (.bpf)',
+      title: t('dialogs.exportFencersArchive'),
       defaultPath: 'tireurs.bpf',
       filters: [{ name: 'BellePoule Fencers', extensions: ['bpf'] }],
     });
