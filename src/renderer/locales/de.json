@@ -1412,14 +1412,32 @@
   },
   "teamPool": {
     "add_card": "Eine Karte hinzufügen",
+    "bout": "Gefecht",
+    "card_for": "Karte für ",
+    "score_button": "Werten",
+    "select_reason": "-- Grund --",
     "simultaneous": "Gleichzeitiger Doppeltreffer (keine Priorität beim Degen)",
-    "reset_bout": "Diesen Assaut zurücksetzen"
+    "status_in_progress": "In Bearbeitung",
+    "status_to_start": "Zu beginnen",
+    "reset_bout": "Dieses Gefecht zurücksetzen",
+    "won": "gewinnt"
   },
   "teamTableau": {
     "need_two": "Mindestens 2 Mannschaften werden benötigt, um ein Tableau zu erstellen.",
     "none": "Kein Tableau erstellt.",
     "regenerate": "↻ Neu generieren / Tableau voranbringen",
-    "waiting": "Warten auf vorherige Ergebnisse…"
+    "waiting": "Warten auf vorherige Ergebnisse…",
+    "round_1_label": "Finale",
+    "round_2_label": "Halbfinale",
+    "round_4_label": "Viertelfinale",
+    "round_8_label": "Achtelfinale",
+    "round_16_label": "Sechzehnerfinale",
+    "round_32_label": "Zweiunddreißigerfinale",
+    "generate_one": "Tableau generieren (1 Mannschaft)",
+    "generate_other": "Tableau generieren ({{count}} Mannschaften)",
+    "bye": "qualifiziert direkt (freilos)",
+    "round_fallback_one": "Runde (1 Match)",
+    "round_fallback_other": "Runde ({{count}} Matches)"
   },
   "theme": {
     "toggle_to_light": "Zum hellen Modus wechseln",
@@ -1553,15 +1571,36 @@
     "gradient_placeholder": "z. B. linear-gradient(135deg,#000,#111)"
   },
   "tiebreaker": {
-    "time_up": "Zeit abgelaufen — anhaltendes Unentschieden"
+    "color_green": "GRÜN",
+    "color_red": "ROT",
+    "continue_button": "Fortfahren",
+    "time_up": "Zeit abgelaufen — anhaltendes Unentschieden",
+    "title": "Münzwurf",
+    "wins": "gewinnt!"
   },
   "touchReferee": {
+    "finish_match": "Match beenden",
+    "first_to": "Erste(r) zu {{count}} Punkten",
+    "listening": "Hört zu...",
+    "match_log": "Kampfprotokoll",
+    "no_event": "Kein Ereignis erfasst",
+    "pause_button": "PAUSE",
+    "refresh_tooltip": "Aktualisieren",
+    "reset_score": "Punktzahl zurücksetzen",
+    "show_all": "Alle anzeigen",
+    "show_less": "Reduzieren",
+    "start_button": "START",
+    "strip_label": "Piste {{number}}",
+    "sudden_death": "⚡ PLÖTZLICHES ENDE",
+    "supplementary_time": "⏱ 30s ZUSATZZEIT",
     "swipe_left": "Nach links wischen oder +1 antippen, um einen Punkt hinzuzufügen",
     "swipe_right": "Nach rechts wischen oder +1 antippen, um einen Punkt hinzuzufügen",
-    "no_event": "Kein Ereignis erfasst",
-    "reset_score": "Punktzahl zurücksetzen",
-    "finish_match": "Match beenden",
-    "listening": "Hört zu..."
+    "voice_active": "Aktiv",
+    "voice_commands": "Befehle: \"Rot/Grün-Punkt\", \"Pause\", \"Fortsetzen\", \"Beenden\"",
+    "voice_inactive": "Inaktiv",
+    "zone_hand": "Hand",
+    "zone_arm": "Arm",
+    "zone_head": "Kopf"
   },
   "voice": {
     "control": "Sprachsteuerung",

@@ -1412,14 +1412,32 @@
   },
   "teamPool": {
     "add_card": "Add a card",
+    "bout": "Bout",
+    "card_for": "Card for ",
+    "score_button": "Score",
+    "select_reason": "-- reason --",
     "simultaneous": "Simultaneous double touch (no priority in epee)",
-    "reset_bout": "Reset this bout"
+    "status_in_progress": "In progress",
+    "status_to_start": "To start",
+    "reset_bout": "Reset this bout",
+    "won": "won"
   },
   "teamTableau": {
     "need_two": "At least 2 teams are needed to generate a table.",
     "none": "No table generated.",
     "regenerate": "↻ Regenerate / advance the table",
-    "waiting": "Waiting for previous results…"
+    "waiting": "Waiting for previous results…",
+    "round_1_label": "Final",
+    "round_2_label": "Semi-finals",
+    "round_4_label": "Quarter-finals",
+    "round_8_label": "Round of 8",
+    "round_16_label": "Round of 16",
+    "round_32_label": "Round of 32",
+    "generate_one": "Generate table (1 team)",
+    "generate_other": "Generate table ({{count}} teams)",
+    "bye": "qualified directly (bye)",
+    "round_fallback_one": "Round (1 match)",
+    "round_fallback_other": "Round ({{count}} matches)"
   },
   "theme": {
     "toggle_to_light": "Switch to light mode",
@@ -1553,15 +1571,36 @@
     "gradient_placeholder": "e.g. linear-gradient(135deg,#000,#111)"
   },
   "tiebreaker": {
-    "time_up": "Time elapsed — persistent tie"
+    "color_green": "GREEN",
+    "color_red": "RED",
+    "continue_button": "Continue",
+    "time_up": "Time elapsed — persistent tie",
+    "title": "Coin Toss",
+    "wins": "wins!"
   },
   "touchReferee": {
+    "finish_match": "Finish Match",
+    "first_to": "First to {{count}} points",
+    "listening": "Listening...",
+    "match_log": "Match Log",
+    "no_event": "No event recorded",
+    "pause_button": "PAUSE",
+    "refresh_tooltip": "Refresh",
+    "reset_score": "Reset Score",
+    "show_all": "Show All",
+    "show_less": "Show Less",
+    "start_button": "START",
+    "strip_label": "Strip {{number}}",
+    "sudden_death": "⚡ SUDDEN DEATH",
+    "supplementary_time": "⏱ 30s SUPPLEMENTARY",
     "swipe_left": "Swipe left or tap +1 to add a point",
     "swipe_right": "Swipe right or tap +1 to add a point",
-    "no_event": "No event recorded",
-    "reset_score": "Reset Score",
-    "finish_match": "Finish Match",
-    "listening": "Listening..."
+    "voice_active": "Active",
+    "voice_commands": "Commands: \"Red/green point\", \"Pause\", \"Resume\", \"Finish\"",
+    "voice_inactive": "Inactive",
+    "zone_hand": "Hand",
+    "zone_arm": "Arm",
+    "zone_head": "Head"
   },
   "voice": {
     "control": "Voice Control",

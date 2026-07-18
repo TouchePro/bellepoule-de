@@ -56,19 +56,19 @@ const TiebreakerAnimation: React.FC<TiebreakerAnimationProps> = ({
   return (
     <div className="tiebreaker-overlay" onClick={e => e.stopPropagation()}>
       <div className="tiebreaker-container">
-        <h2 className="tiebreaker-title">Tirage au sort</h2>
+        <h2 className="tiebreaker-title">{t('tiebreaker.title')}</h2>
         <p className="tiebreaker-subtitle">{t('tiebreaker.time_up')}</p>
 
         <div className="coin-scene">
           <div className="coin-3d" ref={coinRef}>
             {/* Face verte — Tireur A */}
             <div className="coin-face coin-green">
-              <span className="coin-color-label">VERT</span>
+              <span className="coin-color-label">{t('tiebreaker.color_green')}</span>
               <span className="coin-fencer-name">{nameA}</span>
             </div>
             {/* Face rouge — Tireur B */}
             <div className="coin-face coin-red">
-              <span className="coin-color-label">ROUGE</span>
+              <span className="coin-color-label">{t('tiebreaker.color_red')}</span>
               <span className="coin-fencer-name">{nameB}</span>
             </div>
           </div>
@@ -76,14 +76,14 @@ const TiebreakerAnimation: React.FC<TiebreakerAnimationProps> = ({
 
         {phase === 'done' && winner && (
           <div className={`tiebreaker-result ${winner === 'A' ? 'result-green' : 'result-red'}`}>
-            🏆 {winner === 'A' ? nameA : nameB} gagne !
-            <span className="result-color">({winner === 'A' ? 'VERT' : 'ROUGE'})</span>
+            🏆 {winner === 'A' ? nameA : nameB} {t('tiebreaker.wins')}
+            <span className="result-color">({winner === 'A' ? t('tiebreaker.color_green') : t('tiebreaker.color_red')})</span>
           </div>
         )}
 
         {phase === 'done' && (
           <button className="btn btn-primary btn-continue" onClick={handleContinue}>
-            Continuer
+            {t('tiebreaker.continue_button')}
           </button>
         )}
       </div>

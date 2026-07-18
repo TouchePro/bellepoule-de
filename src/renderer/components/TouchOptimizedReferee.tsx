@@ -28,16 +28,17 @@ interface TouchOptimizedRefereeProps {
   onVoiceCommand?: (command: string) => void;
 }
 
-const ZONES = [
-  { zone: TargetZone.ZONE_A, points: 1, label: 'A', desc: 'Main', color: 'bg-blue-500' },
-  { zone: TargetZone.ZONE_B, points: 3, label: 'B', desc: 'Bras', color: 'bg-purple-500' },
-  { zone: TargetZone.ZONE_C, points: 5, label: 'C', desc: 'Tête', color: 'bg-pink-500' },
+const getZones = (t: ReturnType<typeof useTranslation>['t']) => [
+  { zone: TargetZone.ZONE_A, points: 1, label: 'A', desc: t('touchReferee.zone_hand'), color: 'bg-blue-500' },
+  { zone: TargetZone.ZONE_B, points: 3, label: 'B', desc: t('touchReferee.zone_arm'), color: 'bg-purple-500' },
+  { zone: TargetZone.ZONE_C, points: 5, label: 'C', desc: t('touchReferee.zone_head'), color: 'bg-pink-500' },
 ];
 
 function chipFromEntry(
   entry: MatchEventEntry,
   nameA: string,
-  nameB: string
+  nameB: string,
+  t: ReturnType<typeof useTranslation>['t']
 ): { key: string; name: string; delta: string; score: string; bg: string; border: string; textColor: string } | null {
   const side = entry.fencerSide;
   const isA = side === 'A';
@@ -69,7 +70,7 @@ function chipFromEntry(
       key: entry.id,
       name,
       delta: icon,
-      score: entry.cardType ?? 'carton',
+      score: entry.cardType ?? t('matchAudit.event_type_card'),
       bg: '#fffbeb',
       border: '#f59e0b',
       textColor: '#b45309',
@@ -81,7 +82,7 @@ function chipFromEntry(
       key: entry.id,
       name,
       delta: '↗',
-      score: entry.exitType ?? 'sortie',
+      score: entry.exitType ?? t('matchAudit.event_type_arena_exit'),
       bg: '#fef3c7',
       border: '#f59e0b',
       textColor: '#92400e',
@@ -127,6 +128,7 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
   const [showFullLog, setShowFullLog] = useState(false);
 
   const { t } = useTranslation();
+  const ZONES = getZones(t);
   const { entries, loadMatchTimeline, reset: resetAuditLog } = useMatchAuditStore();
   const reloadTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -422,7 +424,7 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
   const reversedEntries = [...entries].reverse();
   const visibleEntries = showFullLog ? reversedEntries : reversedEntries.slice(0, 5);
   const chips = visibleEntries
-    .map(e => chipFromEntry(e, fencerA.lastName, fencerB.lastName))
+    .map(e => chipFromEntry(e, fencerA.lastName, fencerB.lastName, t))
     .filter((c): c is NonNullable<typeof c> => c !== null);
 
   return (
@@ -434,16 +436,16 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
       {/* Header */}
       <div className="bg-white shadow-md p-4">
         <div className="flex justify-between items-center">
-          <div className="text-2xl font-bold text-gray-800">Piste {match.number || 1}</div>
+          <div className="text-2xl font-bold text-gray-800">{t('touchReferee.strip_label', { number: match.number || 1 })}</div>
           <div className="flex items-center space-x-4">
             {overtimeActive && (matchMode === MatchMode.SUDDEN_DEATH_TIMEOUT || matchMode === MatchMode.SUDDEN_DEATH_CHALLENGER) && (
               <div className="px-3 py-1 rounded-full text-sm font-bold animate-pulse bg-orange-100 text-orange-700">
-                ⚡ MORT SUBITE
+                {t('touchReferee.sudden_death')}
               </div>
             )}
             {overtimeActive && (matchMode === MatchMode.SUPPLEMENTARY_TIME || supplementaryActive) && (
               <div className="px-3 py-1 rounded-full text-sm font-bold animate-pulse bg-blue-100 text-blue-700">
-                ⏱ 30s SUPPLEMENTAIRE
+                {t('touchReferee.supplementary_time')}
               </div>
             )}
             <div
@@ -457,7 +459,7 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
                 isRunning ? 'bg-red-500 text-white' : 'bg-green-500 text-white'
               }`}
             >
-              {isRunning ? 'PAUSE' : 'START'}
+              {isRunning ? t('touchReferee.pause_button') : t('touchReferee.start_button')}
             </button>
           </div>
         </div>
@@ -576,7 +578,7 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
               <span>
                 {scoreA} / {maxScore}
               </span>
-              <span>Premier à {maxScore} points</span>
+              <span>{t('touchReferee.first_to', { count: maxScore })}</span>
               <span>
                 {scoreB} / {maxScore}
               </span>
@@ -599,7 +601,7 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
           <div className="bg-white rounded-lg p-3 mb-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                Log du combat
+                {t('touchReferee.match_log')}
                 {entries.length > 0 && (
                   <span className="ml-2 font-normal text-gray-400">({entries.length})</span>
                 )}
@@ -610,13 +612,13 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
                     onClick={() => setShowFullLog(v => !v)}
                     className="text-xs text-blue-500 underline"
                   >
-                    {showFullLog ? 'Réduire' : `Tout voir`}
+                    {showFullLog ? t('touchReferee.show_less') : t('touchReferee.show_all')}
                   </button>
                 )}
                 <button
                   onClick={() => loadMatchTimeline(match.id)}
                   className="text-xs text-gray-400 hover:text-gray-600"
-                  title="Actualiser"
+                  title={t('touchReferee.refresh_tooltip')}
                 >
                   ↺
                 </button>
@@ -693,7 +695,7 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
                 voiceEnabled ? 'bg-blue-500 text-white' : 'bg-gray-300 text-gray-700'
               }`}
             >
-              🎤 {voiceEnabled ? 'Actif' : 'Inactif'}
+              🎤 {voiceEnabled ? t('touchReferee.voice_active') : t('touchReferee.voice_inactive')}
             </button>
             {isListening && (
               <div className="flex items-center space-x-2">
@@ -703,7 +705,7 @@ const TouchOptimizedReferee_: React.FC<TouchOptimizedRefereeProps> = ({
             )}
           </div>
           <div className="text-sm text-gray-600">
-            Commandes: "Point rouge/vert", "Pause", "Reprendre", "Terminer"
+            {t('touchReferee.voice_commands')}
           </div>
         </div>
       </div>

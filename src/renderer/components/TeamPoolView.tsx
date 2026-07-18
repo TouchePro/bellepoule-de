@@ -61,7 +61,7 @@ const TeamPoolView: React.FC<Props> = ({
   emptyLabel,
 }) => {
   const { t } = useTranslation();
-  const teamById = new Map(teams.map(t => [t.id, t]));
+  const teamById = new Map(teams.map(team => [team.id, team]));
 
   if (matches.length === 0) {
     return <div className="text-center text-gray-400 py-10">{emptyLabel}</div>;
@@ -97,10 +97,10 @@ const TeamPoolView: React.FC<Props> = ({
                     className={`text-xs font-medium ${m.status === 'finished' ? 'text-green-600' : m.status === 'in_progress' ? 'text-yellow-600' : 'text-gray-400'}`}
                   >
                     {m.status === 'finished'
-                      ? (m.winnerId === m.teamAId ? ta?.name : tb?.name) + ' gagne'
+                      ? `${m.winnerId === m.teamAId ? ta?.name : tb?.name} ${t('teamPool.won')}`
                       : m.status === 'in_progress'
-                        ? 'En cours'
-                        : 'À commencer'}
+                        ? t('teamPool.status_in_progress')
+                        : t('teamPool.status_to_start')}
                   </div>
                 </div>
                 <div className="text-center flex-1">
@@ -112,7 +112,7 @@ const TeamPoolView: React.FC<Props> = ({
                 onClick={() => onToggleScoring(m.id)}
                 className={`ml-4 text-xs px-3 py-1.5 rounded border ${isScoring ? 'bg-gray-200 border-gray-300 text-gray-700' : 'bg-blue-600 border-blue-600 text-white hover:bg-blue-700'}`}
               >
-                {isScoring ? 'Fermer' : 'Scorer'}
+                {isScoring ? t('actions.close') : t('teamPool.score_button')}
               </button>
             </div>
 
@@ -121,7 +121,7 @@ const TeamPoolView: React.FC<Props> = ({
               <div className="border-t border-gray-200 px-4 py-3 space-y-1">
                 <div className="grid grid-cols-[1fr_auto_1fr] text-xs text-gray-500 font-medium mb-2">
                   <span>{ta?.name}</span>
-                  <span className="text-center w-24">Assaut</span>
+                  <span className="text-center w-24">{t('teamPool.bout')}</span>
                   <span className="text-right">{tb?.name}</span>
                 </div>
                 {m.bouts.map(bout => {
@@ -280,14 +280,14 @@ const TeamPoolView: React.FC<Props> = ({
                       {cardTarget?.boutId === bout.id && (
                         <div className="flex items-center gap-2 px-2 py-1.5 bg-yellow-50 border border-yellow-200 rounded text-xs">
                           <span className="text-gray-600">
-                            Carton pour {fencerName(cardTarget.fencerId)} :
+                            {t('teamPool.card_for')}{fencerName(cardTarget.fencerId)} :
                           </span>
                           <select
                             value={selectedReason}
                             onChange={e => onSelectReason(e.target.value as CardReason)}
                             className="border border-gray-300 rounded px-1.5 py-1 text-xs"
                           >
-                            <option value="">-- motif --</option>
+                            <option value="">{t('teamPool.select_reason')}</option>
                             {getAvailableReasons(weapon as any).map(reason => (
                               <option key={reason} value={reason}>
                                 {CARD_REASON_LABELS[reason]}
@@ -299,13 +299,13 @@ const TeamPoolView: React.FC<Props> = ({
                             disabled={!selectedReason}
                             className="px-2 py-1 bg-yellow-600 text-white rounded disabled:opacity-40"
                           >
-                            Ajouter
+                            {t('actions.add')}
                           </button>
                           <button
                             onClick={() => onSetCardTarget(null)}
                             className="text-gray-400 hover:text-gray-600"
                           >
-                            Annuler
+                            {t('actions.cancel')}
                           </button>
                         </div>
                       )}

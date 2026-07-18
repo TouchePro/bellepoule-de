@@ -41,13 +41,11 @@ interface Props {
   onGenerate: () => void;
 }
 
-const ROUND_LABELS: Record<number, string> = {
-  1: 'Finale',
-  2: 'Demi-finales',
-  4: 'Quarts de finale',
-  8: 'Huitièmes de finale',
-  16: 'Seizièmes de finale',
-  32: 'Trente-deuxièmes de finale',
+const KNOWN_TEAM_TABLEAU_ROUNDS = [1, 2, 4, 8, 16, 32];
+
+const getRoundLabel = (round: number, t: ReturnType<typeof useTranslation>['t']): string | undefined => {
+  if (!KNOWN_TEAM_TABLEAU_ROUNDS.includes(round)) return undefined;
+  return t(`teamTableau.round_${round}_label` as any);
 };
 
 const TeamTableauView: React.FC<Props> = ({
@@ -88,7 +86,9 @@ const TeamTableauView: React.FC<Props> = ({
           onClick={onGenerate}
           className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
         >
-          Générer le tableau ({rankedTeams.length} équipes)
+          {rankedTeams.length === 1
+            ? t('teamTableau.generate_one')
+            : t('teamTableau.generate_other', { count: rankedTeams.length })}
         </button>
       </div>
     );
@@ -96,7 +96,7 @@ const TeamTableauView: React.FC<Props> = ({
 
   const tableSize = calculateTableSize(rankedTeams.length);
   const placements = placeRankedTeamsInTable(rankedTeams, tableSize);
-  const teamById = new Map(teams.map(t => [t.id, t]));
+  const teamById = new Map(teams.map(team => [team.id, team]));
   const matchesByKey = new Map(tableauMatches.map(m => [`${m.round}-${m.position}`, m]));
 
   const rounds: number[] = [];
@@ -115,7 +115,9 @@ const TeamTableauView: React.FC<Props> = ({
       {rounds.map(round => (
         <div key={round}>
           <h3 className="text-sm font-semibold text-gray-700 mb-2">
-            {ROUND_LABELS[round] ?? `Tour (${round} matchs)`}
+            {getRoundLabel(round, t) ?? (round === 1
+              ? t('teamTableau.round_fallback_one')
+              : t('teamTableau.round_fallback_other', { count: round }))}
           </h3>
           <div className="space-y-3">
             {Array.from({ length: round }, (_, position) => {
@@ -134,7 +136,7 @@ const TeamTableauView: React.FC<Props> = ({
                     key={position}
                     className="text-xs text-gray-500 px-3 py-2 bg-gray-50 border border-gray-200 rounded"
                   >
-                    {slot.team?.name ?? '—'} qualifié(e) directement (exempt)
+                    {slot.team?.name ?? '—'} {t('teamTableau.bye')}
                   </div>
                 );
               }
