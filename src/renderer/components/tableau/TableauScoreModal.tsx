@@ -26,18 +26,6 @@ interface TableauScoreModalProps {
   getRoundName: (round: number) => string;
 }
 
-const STATUS_LABELS: Record<'abandon' | 'forfait' | 'exclusion', string> = {
-  abandon: 'Abandon',
-  forfait: 'Forfait',
-  exclusion: 'Exclusion',
-};
-
-const STATUS_ACTION: Record<'abandon' | 'forfait' | 'exclusion', string> = {
-  abandon: 'Quel tireur abandonne ?',
-  forfait: 'Quel tireur déclare forfait ?',
-  exclusion: 'Quel tireur est exclu ?',
-};
-
 const TableauScoreModalComponent: React.FC<TableauScoreModalProps> = ({
   match,
   editScoreA,
@@ -57,6 +45,18 @@ const TableauScoreModalComponent: React.FC<TableauScoreModalProps> = ({
     'abandon' | 'forfait' | 'exclusion' | null
   >(null);
 
+  const statusLabels = {
+    abandon: t('tableau.abandon'),
+    forfait: t('tableau.forfait'),
+    exclusion: t('tableau.exclusion'),
+  };
+
+  const statusActions = {
+    abandon: t('tableau.who_abandons'),
+    forfait: t('tableau.who_forfeits'),
+    exclusion: t('tableau.who_gets_excluded'),
+  };
+
   const fencerName = (f: TableauMatch['fencerA']) =>
     f ? `${f.lastName} ${f.firstName}`.trim() : '';
 
@@ -75,7 +75,7 @@ const TableauScoreModalComponent: React.FC<TableauScoreModalProps> = ({
         aria-modal="true"
       >
         <div className="modal-header" style={{ cursor: 'move' }}>
-          <h3 className="modal-title">{getRoundName(match.round)} - Saisie rapide</h3>
+          <h3 className="modal-title">{getRoundName(match.round)} - {t('tableau.quick_entry')}</h3>
         </div>
         <div className="modal-body" style={{ padding: '2rem' }}>
           {/* Ligne unique avec les deux tireurs côte à côte */}
@@ -217,7 +217,7 @@ const TableauScoreModalComponent: React.FC<TableauScoreModalProps> = ({
               className="text-sm text-muted"
               style={{ textAlign: 'center', marginBottom: '1rem', fontSize: '1rem' }}
             >
-              💡 Score maximum : {maxScore} touches
+              💡 {t('tableau.max_score_info', { count: maxScore })}
             </p>
           )}
 
@@ -238,21 +238,21 @@ const TableauScoreModalComponent: React.FC<TableauScoreModalProps> = ({
                 onClick={() => setPendingStatus('abandon')}
                 style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
               >
-                🚴 Abandon
+                🚴 {t('tableau.abandon')}
               </button>
               <button
                 className="btn btn-warning"
                 onClick={() => setPendingStatus('forfait')}
                 style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
               >
-                📋 Forfait
+                📋 {t('tableau.forfait')}
               </button>
               <button
                 className="btn btn-danger"
                 onClick={() => setPendingStatus('exclusion')}
                 style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
               >
-                🚫 Exclusion
+                🚫 {t('tableau.exclusion')}
               </button>
             </div>
           ) : (
@@ -268,7 +268,7 @@ const TableauScoreModalComponent: React.FC<TableauScoreModalProps> = ({
               }}
             >
               <p style={{ fontWeight: 600, margin: 0 }}>
-                {STATUS_LABELS[pendingStatus]} — {STATUS_ACTION[pendingStatus]}
+                {statusLabels[pendingStatus]} — {statusActions[pendingStatus]}
               </p>
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
                 <button

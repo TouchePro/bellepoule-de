@@ -39,7 +39,7 @@ const setup = (over: Partial<Record<string, any>> = {}) => {
 describe('TableauScoreModal', () => {
   it('affiche le nom du tour et les tireurs', () => {
     setup();
-    expect(screen.getByText('Tour 8 - Saisie rapide')).toBeInTheDocument();
+    expect(screen.getByText('Tour 8 - Schnelleingabe')).toBeInTheDocument();
     expect(screen.getByText(/Dupont/)).toBeInTheDocument();
     expect(screen.getByText(/Martin/)).toBeInTheDocument();
   });
@@ -53,7 +53,7 @@ describe('TableauScoreModal', () => {
 
   it('Valider déclenche onSubmit', () => {
     const { props } = setup();
-    fireEvent.click(screen.getByText('Valider'));
+    fireEvent.click(screen.getByText('Validieren'));
     expect(props.onSubmit).toHaveBeenCalledTimes(1);
   });
 });

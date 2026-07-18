@@ -598,7 +598,15 @@
     "referee_short": "S",
     "referee_assigned": "Schiedsrichter: {{lastName}} {{firstName}}",
     "pending_matches_count_one": "{{count}} Gefecht",
-    "pending_matches_count_other": "{{count}} Gefechte"
+    "pending_matches_count_other": "{{count}} Gefechte",
+    "abandon": "Aufgeben",
+    "exclusion": "Ausschluss",
+    "forfait": "Nicht Antreten",
+    "max_score_info": "Max. Punktzahl: {{count}} Treffer",
+    "quick_entry": "Schnelleingabe",
+    "who_abandons": "Welcher Kämpfer gibt auf?",
+    "who_forfeits": "Welcher Kämpfer tritt nicht an?",
+    "who_gets_excluded": "Welcher Kämpfer wird ausgeschlossen?"
   },
   "time": {
     "days": "Tage",

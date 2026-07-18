@@ -223,7 +223,15 @@
     "referee_short": "R",
     "referee_assigned": "Referee: {{lastName}} {{firstName}}",
     "pending_matches_count_one": "{{count}} match",
-    "pending_matches_count_other": "{{count}} matches"
+    "pending_matches_count_other": "{{count}} matches",
+    "abandon": "Abandon",
+    "exclusion": "Exclusion",
+    "forfait": "No-show",
+    "max_score_info": "Maximum score: {{count}} touches",
+    "quick_entry": "Quick entry",
+    "who_abandons": "Which fencer abandons?",
+    "who_forfeits": "Which fencer does not show?",
+    "who_gets_excluded": "Which fencer gets excluded?"
   },
   "results": {
     "header_rank": "Rank",
