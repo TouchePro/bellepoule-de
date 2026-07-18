@@ -86,7 +86,7 @@ const UpdateNotification: React.FC<UpdateNotificationProps> = ({ visible: propVi
           </p>
           {updateInfo.latestBuild - updateInfo.currentBuild > 1 && (
             <p className="update-notification-multiple">
-              {t('update.behind', { count: String(updateInfo.latestBuild - updateInfo.currentBuild) })}
+              {t(updateInfo.latestBuild - updateInfo.currentBuild === 1 ? 'update.behind_one' : 'update.behind_other', { count: updateInfo.latestBuild - updateInfo.currentBuild })}
             </p>
           )}
         </div>

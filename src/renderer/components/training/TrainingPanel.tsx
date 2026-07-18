@@ -3,10 +3,6 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { X, Swords, Clock, Trophy, Copy, QrCode, ChevronDown, ChevronUp, Check, Settings, Monitor } from 'lucide-react';
 import type { TrainingMatchRecord } from '../../../shared/types/preload';
 
-const WEAPON_LABELS: Record<string, string> = {
-  E: 'Épée', F: 'Fleuret', S: 'Sabre', L: 'Laser', C: 'Custom',
-};
-
 function formatDuration(sec: number): string {
   const m = Math.floor(sec / 60);
   const s = sec % 60;
@@ -157,7 +153,7 @@ const ArenaBlock: React.FC<ArenaBlockProps> = ({ number, refereeUrl, displayUrl 
           border: 'none', cursor: 'pointer', color: 'var(--color-text)',
         }}
       >
-        <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>Piste {number}</span>
+        <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>{t('trainingPanel.strip_label')} {number}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
           <QrCode size={13} />
           {open ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
@@ -169,7 +165,7 @@ const ArenaBlock: React.FC<ArenaBlockProps> = ({ number, refereeUrl, displayUrl 
         <div style={{ padding: '0.5rem 0.75rem', borderTop: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           <UrlRow label={t('referee.arbitre')} url={refereeUrl} qrDataUrl={qrReferee} />
           <div style={{ height: '1px', background: 'var(--color-border)', margin: '0.25rem 0' }} />
-          <UrlRow label="Affichage" url={displayUrl} qrDataUrl={qrDisplay} />
+          <UrlRow label={t('trainingPanel.display')} url={displayUrl} qrDataUrl={qrDisplay} />
         </div>
       )}
     </div>
@@ -189,6 +185,14 @@ interface Props {
 const TrainingPanel: React.FC<Props> = ({ serverUrl, strips, weapon, onClose, onStop, onOpenSettings }) => {
   const { t } = useTranslation();
   const [history, setHistory] = useState<TrainingMatchRecord[]>([]);
+
+  const WEAPON_LABELS: Record<string, string> = {
+    E: t('weapons.epee'),
+    F: t('weapons.foil'),
+    S: t('weapons.sabre'),
+    L: t('weapons.laser'),
+    C: t('weapons.custom'),
+  };
 
   const refreshHistory = useCallback(async () => {
     const result = await window.electronAPI?.training?.getHistory();
@@ -235,7 +239,7 @@ const TrainingPanel: React.FC<Props> = ({ serverUrl, strips, weapon, onClose, on
         }}>
           <h2 style={{ margin: 0, fontSize: '1.125rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Swords size={18} />
-            Entraînement — {WEAPON_LABELS[weapon] ?? weapon}
+            {t('trainingPanel.header_title')} — {WEAPON_LABELS[weapon] ?? weapon}
             <span style={{
               display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
               background: '#22c55e20', color: '#16a34a',
@@ -257,7 +261,7 @@ const TrainingPanel: React.FC<Props> = ({ serverUrl, strips, weapon, onClose, on
           <div>
             <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               <QrCode size={13} style={{ verticalAlign: 'middle', marginRight: '0.25rem' }} />
-              Pistes — {strips} piste{strips > 1 ? 's' : ''} (clic pour QR + copier)
+              {t('trainingPanel.strips_label')} — {strips} {t(strips > 1 ? 'trainingPanel.strip_other' : 'trainingPanel.strip_one')} {t('trainingPanel.strips_hint')}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
               {arenas.map(({ number, referee, display }) => (
@@ -270,7 +274,7 @@ const TrainingPanel: React.FC<Props> = ({ serverUrl, strips, weapon, onClose, on
           <div>
             <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               <Trophy size={13} style={{ verticalAlign: 'middle', marginRight: '0.25rem' }} />
-              Historique session ({history.length} combat{history.length !== 1 ? 's' : ''})
+              {t('trainingPanel.history_label')} ({history.length} {t(history.length !== 1 ? 'trainingPanel.bout_other' : 'trainingPanel.bout_one')})
             </div>
             {history.length === 0 ? (
               <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', padding: '0.75rem', textAlign: 'center', background: 'var(--color-surface-raised, rgba(0,0,0,0.04))', borderRadius: '8px' }}>
@@ -285,7 +289,7 @@ const TrainingPanel: React.FC<Props> = ({ serverUrl, strips, weapon, onClose, on
                     background: idx % 2 === 0 ? 'var(--color-surface-raised, rgba(0,0,0,0.03))' : 'transparent',
                     borderRadius: '6px', fontSize: '0.875rem',
                   }}>
-                    <span style={{ minWidth: '4rem', color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>Piste {rec.arenaNumber}</span>
+                    <span style={{ minWidth: '4rem', color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>{t('trainingPanel.strip_label')} {rec.arenaNumber}</span>
                     <span style={{ flex: 1, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{rec.scoreA} — {rec.scoreB}</span>
                     {rec.durationSec > 0 && (
                       <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>

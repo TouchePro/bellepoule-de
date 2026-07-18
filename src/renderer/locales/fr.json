@@ -520,5 +520,26 @@
     "rank": "Rg",
     "club": "Club",
     "nation": "Nat"
+  },
+  "wifi": {
+    "ssid_placeholder": "Mon-Réseau-WiFi",
+    "password_placeholder": "Mot de passe WiFi",
+    "title": "📶 Générateur de Code QR WiFi",
+    "desc": "Les tablettes des arbitres scannent ce code QR pour rejoindre le réseau WiFi.",
+    "network_name": "Nom du réseau (SSID)",
+    "security_type": "Type de sécurité",
+    "open_network": "Aucun (réseau ouvert)",
+    "password": "Mot de passe",
+    "hidden_network": "Réseau caché (SSID masqué)",
+    "network_label": "Réseau :",
+    "download": "💾 Télécharger",
+    "ssid_required": "Le SSID est requis.",
+    "password_required": "Le mot de passe est requis.",
+    "generation_error": "Erreur lors de la génération du code QR.",
+    "wpa_label": "WPA / WPA2 / WPA3",
+    "wep_label": "WEP",
+    "open": "Ouvert",
+    "generating": "Génération...",
+    "generate_qr": "📶 Générer le code QR"
   }
 }

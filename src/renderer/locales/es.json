@@ -212,6 +212,9 @@
     "default": "No Especificado",
     "save_and_add": "Guardar y añadir"
   },
+  "wiki": {
+    "button_title": "Documentación"
+  },
   "messages": {
     "confirm_delete_fencer": "¿Está seguro de que desea eliminar a este esgrimista? Esta acción es irreversible.",
     "confirm_abandon": "{{name}} abandona la competición. Todos los partidos restantes se perderán por no presentarse. ¿Confirmar?",

@@ -49,11 +49,11 @@ const WifiQRModal_: React.FC<WifiQRModalProps> = ({ onClose }) => {
 
   const generate = useCallback(async () => {
     if (!config.ssid.trim()) {
-      setError('Le SSID est requis.');
+      setError(t('wifi.ssid_required'));
       return;
     }
     if (config.security !== 'nopass' && !config.password) {
-      setError('Le mot de passe est requis.');
+      setError(t('wifi.password_required'));
       return;
     }
     setError('');
@@ -68,11 +68,11 @@ const WifiQRModal_: React.FC<WifiQRModalProps> = ({ onClose }) => {
       setQrDataUrl(url);
     } catch (err) {
       logger.error(LogCategory.UI, 'Erreur génération QR WiFi', err as Error);
-      setError('Erreur lors de la génération du QR code.');
+      setError(t('wifi.generation_error'));
     } finally {
       setIsGenerating(false);
     }
-  }, [config]);
+  }, [config, t]);
 
   const download = () => {
     if (!qrDataUrl) return;
@@ -131,8 +131,8 @@ const WifiQRModal_: React.FC<WifiQRModalProps> = ({ onClose }) => {
               value={config.security}
               onChange={e => handleChange('security', e.target.value as SecurityType)}
             >
-              <option value="WPA">WPA / WPA2 / WPA3</option>
-              <option value="WEP">WEP</option>
+              <option value="WPA">{t('wifi.wpa_label')}</option>
+              <option value="WEP">{t('wifi.wep_label')}</option>
               <option value="nopass">{t('wifi.open_network')}</option>
             </select>
           </div>
@@ -171,7 +171,7 @@ const WifiQRModal_: React.FC<WifiQRModalProps> = ({ onClose }) => {
             <div style={{ textAlign: 'center', marginTop: '1.25rem' }}>
               <img src={qrDataUrl} alt="QR Code WiFi" width={280} height={280} style={{ borderRadius: '8px' }} />
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted, #6b7280)', marginTop: '0.5rem' }}>
-                {t('wifi.network_label')} <strong>{config.ssid}</strong> · {config.security !== 'nopass' ? config.security : 'Ouvert'}
+                {t('wifi.network_label')} <strong>{config.ssid}</strong> · {config.security !== 'nopass' ? config.security : t('wifi.open')}
               </p>
             </div>
           )}
@@ -189,7 +189,7 @@ const WifiQRModal_: React.FC<WifiQRModalProps> = ({ onClose }) => {
             onClick={generate}
             disabled={isGenerating || !config.ssid.trim()}
           >
-            {isGenerating ? 'Génération...' : '📶 Générer le QR Code'}
+            {isGenerating ? t('wifi.generating') : t('wifi.generate_qr')}
           </button>
         </div>
       </div>

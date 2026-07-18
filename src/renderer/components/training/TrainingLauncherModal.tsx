@@ -10,13 +10,6 @@ interface Props {
   isLoading: boolean;
 }
 
-const WEAPON_LABELS: Record<string, string> = {
-  [Weapon.EPEE]: 'Épée',
-  [Weapon.FOIL]: 'Fleuret',
-  [Weapon.SABRE]: 'Sabre',
-  [Weapon.LASER]: 'Sabre Laser',
-};
-
 const ALL_ZONES: TargetZone[] = [TargetZone.ZONE_A, TargetZone.ZONE_B, TargetZone.ZONE_C];
 
 const DURATION_PRESETS = [
@@ -33,6 +26,13 @@ const TrainingLauncherModal: React.FC<Props> = ({ onClose, onLaunch, isLoading }
   const [matchDuration, setMatchDuration] = useState(180);
   const [allowedZones, setAllowedZones] = useState<TargetZone[]>([]);
   const [disableSuddenDeath, setDisableSuddenDeath] = useState(false);
+
+  const WEAPON_LABELS: Record<string, string> = {
+    [Weapon.EPEE]: t('weapons.epee'),
+    [Weapon.FOIL]: t('weapons.foil'),
+    [Weapon.SABRE]: t('weapons.sabre'),
+    [Weapon.LASER]: t('weapons.laser'),
+  };
 
   const isLaser = weapon === Weapon.LASER;
 
@@ -96,7 +96,7 @@ const TrainingLauncherModal: React.FC<Props> = ({ onClose, onLaunch, isLoading }
           {/* Arme */}
           <div style={{ marginBottom: '1.25rem' }}>
             <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.5rem', fontSize: '0.875rem' }}>
-              Arme
+              {t('trainingLauncher.weapon_label')}
             </label>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
               {Object.entries(WEAPON_LABELS).map(([key, label]) => (
@@ -148,7 +148,7 @@ const TrainingLauncherModal: React.FC<Props> = ({ onClose, onLaunch, isLoading }
                 <Plus size={14} />
               </button>
               <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', marginLeft: '0.25rem' }}>
-                piste{strips > 1 ? 's' : ''}
+                {t(strips > 1 ? 'trainingLauncher.strip_other' : 'trainingLauncher.strip_one')}
               </span>
             </div>
           </div>
@@ -196,9 +196,9 @@ const TrainingLauncherModal: React.FC<Props> = ({ onClose, onLaunch, isLoading }
               {/* Zones autorisées */}
               <div style={{ marginBottom: '1.25rem' }}>
                 <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.5rem', fontSize: '0.875rem' }}>
-                  Zones autorisées{' '}
+                  {t('trainingLauncher.allowed_zones')}{' '}
                   <span style={{ fontWeight: 400, color: 'var(--color-text-muted)', fontSize: '0.8125rem' }}>
-                    (vide = toutes)
+                    {t('trainingLauncher.zones_hint')}
                   </span>
                 </label>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -230,7 +230,7 @@ const TrainingLauncherModal: React.FC<Props> = ({ onClose, onLaunch, isLoading }
                           transition: 'all 0.15s',
                         }}
                       >
-                        <div style={{ fontSize: '1rem', fontWeight: 700 }}>Zone {zone}</div>
+                        <div style={{ fontSize: '1rem', fontWeight: 700 }}>{t('trainingLauncher.zone_label', { zone })}</div>
                         <div style={{ fontSize: '0.75rem' }}>{pts} pt{pts > 1 ? 's' : ''}</div>
                         <div style={{ fontSize: '0.7rem', opacity: 0.8 }}>{label}</div>
                       </button>
@@ -284,7 +284,7 @@ const TrainingLauncherModal: React.FC<Props> = ({ onClose, onLaunch, isLoading }
               {t('actions.cancel')}
             </button>
             <button type="submit" className="btn btn-primary" disabled={isLoading}>
-              {isLoading ? 'Démarrage…' : 'Lancer'}
+              {isLoading ? t('trainingLauncher.starting_label') : t('trainingLauncher.launch_button')}
             </button>
           </div>
         </form>

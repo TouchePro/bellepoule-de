@@ -212,6 +212,9 @@
     "default": "No especificat",
     "save_and_add": "Desar i afegir"
   },
+  "wiki": {
+    "button_title": "Documentació"
+  },
   "messages": {
     "confirm_delete_fencer": "Esteu segur que voleu eliminar aquest tirador? Aquesta acció és irreversible.",
     "confirm_abandon": "{{name}} abandona la competició. Tots els combats restants es perdran per no presentació. Confirmeu?",

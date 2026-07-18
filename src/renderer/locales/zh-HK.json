@@ -212,6 +212,9 @@
     "default": "未指定",
     "save_and_add": "儲存並新增"
   },
+  "wiki": {
+    "button_title": "文件"
+  },
   "messages": {
     "confirm_delete_fencer": "確定要刪除此劍手嗎？此操作不可復原。",
     "confirm_abandon": "{{name}} 退出比賽。所有剩餘賽事將以棄權計負。確認？",

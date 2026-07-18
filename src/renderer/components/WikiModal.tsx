@@ -55,13 +55,13 @@ const WikiModal: React.FC<Props> = ({ onClose }) => {
         ref={ref}
         role="dialog"
         aria-modal="true"
-        aria-label="Documentation"
+        aria-label={t('wiki.button_title')}
         style={{ background: 'var(--color-surface, #fff)', borderRadius: 12, width: '100%', maxWidth: 900, height: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.3)', overflow: 'hidden' }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem 1.25rem', borderBottom: '1px solid var(--color-border, #e5e7eb)', flexShrink: 0 }}>
           <span style={{ fontSize: '1.4rem' }}>📖</span>
           <h1 style={{ fontSize: '1.1rem', fontWeight: 700, flex: 1, color: 'var(--color-text, #1f2937)' }}>
-            Documentation
+            {t('wiki.button_title')}
           </h1>
           <input
             type="search"

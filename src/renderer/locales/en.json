@@ -1634,7 +1634,15 @@
     "password": "Password",
     "hidden_network": "Hidden network (SSID hidden)",
     "network_label": "Network:",
-    "download": "💾 Download"
+    "download": "💾 Download",
+    "ssid_required": "SSID is required.",
+    "password_required": "Password is required.",
+    "generation_error": "Error generating QR code.",
+    "wpa_label": "WPA / WPA2 / WPA3",
+    "wep_label": "WEP",
+    "open": "Open",
+    "generating": "Generating...",
+    "generate_qr": "📶 Generate QR Code"
   },
   "xiaomi": {
     "arena_label": "Arena",
@@ -1955,14 +1963,32 @@
     "num_strips": "Number of strips",
     "duration": "Bout duration —",
     "disable_sudden_death": "Disable sudden death",
-    "tie_note": "Tie at time → end of match without overtime."
+    "tie_note": "Tie at time → end of match without overtime.",
+    "weapon_label": "Weapon",
+    "strip_one": "strip",
+    "strip_other": "strips",
+    "allowed_zones": "Allowed zones",
+    "zones_hint": "(empty = all)",
+    "zone_label": "Zone {{zone}}",
+    "starting_label": "Starting…",
+    "launch_button": "Launch"
   },
   "trainingPanel": {
     "close_continue": "Close (training continues)",
     "settings": "Settings",
     "kiosk": "Large-screen kiosk",
     "no_bout": "No bout finished",
-    "stop": "Stop training"
+    "stop": "Stop training",
+    "header_title": "Training",
+    "display": "Display",
+    "strip_label": "Strip",
+    "strips_label": "Strips",
+    "strip_one": "strip",
+    "strip_other": "strips",
+    "strips_hint": "(click for QR + copy)",
+    "history_label": "Session history",
+    "bout_one": "bout",
+    "bout_other": "bouts"
   },
   "language_selector": {
     "loading": "Loading languages…",
@@ -2040,6 +2066,8 @@
     "redirecting": "Redirecting…",
     "later": "Later",
     "available": "Update available",
+    "behind_one": "{{count}} build behind",
+    "behind_other": "{{count}} builds behind",
     "download": "Download",
     "view_notes": "View release notes"
   },

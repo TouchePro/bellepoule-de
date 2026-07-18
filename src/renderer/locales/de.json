@@ -1634,7 +1634,15 @@
     "password": "Passwort",
     "hidden_network": "Verstecktes Netzwerk (SSID verborgen)",
     "network_label": "Netzwerk:",
-    "download": "💾 Herunterladen"
+    "download": "💾 Herunterladen",
+    "ssid_required": "Das SSID ist erforderlich.",
+    "password_required": "Das Passwort ist erforderlich.",
+    "generation_error": "Fehler beim Generieren des QR-Codes.",
+    "wpa_label": "WPA / WPA2 / WPA3",
+    "wep_label": "WEP",
+    "open": "Offen",
+    "generating": "Wird generiert...",
+    "generate_qr": "📶 QR-Code generieren"
   },
   "xiaomi": {
     "arena_label": "Arena",
@@ -1955,14 +1963,32 @@
     "num_strips": "Anzahl Pisten",
     "duration": "Kampfdauer —",
     "disable_sudden_death": "Sudden Death deaktivieren",
-    "tie_note": "Zeitgleich → Match Ende ohne Verlängerung."
+    "tie_note": "Zeitgleich → Match Ende ohne Verlängerung.",
+    "weapon_label": "Waffe",
+    "strip_one": "Piste",
+    "strip_other": "Pisten",
+    "allowed_zones": "Zonen erlaubt",
+    "zones_hint": "(leer = alle)",
+    "zone_label": "Zone {{zone}}",
+    "starting_label": "Startet…",
+    "launch_button": "Starten"
   },
   "trainingPanel": {
     "close_continue": "Schließen (Training läuft weiter)",
     "settings": "Einstellungen",
     "kiosk": "Kiosk-Großbild",
     "no_bout": "Kein Kampf beendet",
-    "stop": "Training stoppen"
+    "stop": "Training stoppen",
+    "header_title": "Training",
+    "display": "Anzeige",
+    "strip_label": "Piste",
+    "strips_label": "Pisten",
+    "strip_one": "Piste",
+    "strip_other": "Pisten",
+    "strips_hint": "(klick für QR + kopieren)",
+    "history_label": "Sitzungsverlauf",
+    "bout_one": "Kampf",
+    "bout_other": "Kämpfe"
   },
   "language_selector": {
     "loading": "Sprachen werden geladen…",
@@ -2040,6 +2066,8 @@
     "redirecting": "Wird umgeleitet…",
     "later": "Später",
     "available": "Aktualisierung verfügbar",
+    "behind_one": "{{count}} Build zurück",
+    "behind_other": "{{count}} Builds zurück",
     "download": "Herunterladen",
     "view_notes": "Versionshinweise ansehen"
   },
