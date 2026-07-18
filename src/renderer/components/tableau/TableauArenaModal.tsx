@@ -66,7 +66,7 @@ const TableauArenaModal: React.FC<TableauArenaModalProps> = ({
                   onClick={() => onAssign(arenaNum)}
                   style={{ padding: '0.75rem', position: 'relative' }}
                 >
-                  Piste {arenaNum}
+                  {t('tableau.strip_number', { number: arenaNum })}
                   {queueCount > 0 && (
                     <span style={ARENA_STYLES.arenaQueueHint}>
                       (+{queueCount})
