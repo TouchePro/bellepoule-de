@@ -93,7 +93,7 @@ const ScoreAuditLog_: React.FC<Props> = ({ competitionId }) => {
     const csv = header + rows.join('\n');
     try {
       const result = await window.electronAPI.dialog.saveFile({
-        title: t('messages.export_scores_log_title'),
+        title: t('dialogs.exportScoreHistory'),
         defaultPath: `historique_scores_${new Date().toISOString().slice(0,10)}.csv`,
         filters: [{ name: 'CSV / TXT', extensions: ['csv', 'txt'] }],
       });

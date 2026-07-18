@@ -170,7 +170,9 @@
     "reset_scores": "Adwekaat ar skorioù",
     "waiting_match": "C'hort an emgann war heñ d'ar",
     "in_progress": "E-brient",
-    "finished": "Echuet"
+    "finished": "Echuet",
+    "inactive_title": "Enrollañ a-bell dizoberiant",
+    "active_title": "Enrollañ a-bell oberiant"
   },
   "settings": {
     "title": "Arventennoù",
@@ -385,5 +387,17 @@
     "scoring_zones": "Takadoù personelaet",
     "zone_label": "Takad",
     "zone_points": "Poentoù"
+  },
+  "dialogs": {
+    "exportScoreHistory": "Ezporñ istor ar skorioù",
+    "exportFencers": "Ezporñ klezeourion (.{{ext}})",
+    "exportPhotos": "Ezporñ fotoioù (.zip)",
+    "importPhotos": "Importañ fotoioù (.zip)",
+    "exportFencersArchive": "Ezporñ klezeourion + fotoioù (.bpf)"
+  },
+  "teams": {
+    "relaysWon": "Relev G",
+    "relaysLost": "Relev P",
+    "relaysTooltip": "Relev unan hag unan gounezet/kollet"
   }
 }

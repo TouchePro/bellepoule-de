@@ -170,7 +170,9 @@
     "reset_scores": "重設分數",
     "waiting_match": "等待下一場比賽",
     "in_progress": "進行中",
-    "finished": "已結束"
+    "finished": "已結束",
+    "inactive_title": "遠程輸入未啟動",
+    "active_title": "遠程輸入已啟動"
   },
   "settings": {
     "title": "設定",
@@ -385,5 +387,17 @@
     "scoring_zones": "自訂區域",
     "zone_label": "區域",
     "zone_points": "分數"
+  },
+  "dialogs": {
+    "exportScoreHistory": "匯出比分記錄",
+    "exportFencers": "匯出劍手 (.{{ext}})",
+    "exportPhotos": "匯出照片 (.zip)",
+    "importPhotos": "匯入照片 (.zip)",
+    "exportFencersArchive": "匯出劍手 + 照片 (.bpf)"
+  },
+  "teams": {
+    "relaysWon": "接力勝",
+    "relaysLost": "接力負",
+    "relaysTooltip": "個人接力勝/負"
   }
 }

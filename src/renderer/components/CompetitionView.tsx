@@ -647,7 +647,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     onExportFencers: format => exportFencersList(fencers, format),
     onExportFencersBpf: async () => {
       const result = await window.electronAPI.dialog.saveFile({
-        title: t('messages.export_fencers_archive_title'),
+        title: t('dialogs.exportFencersArchive'),
         defaultPath: `tireurs-${competition.title}.bpf`,
         filters: [{ name: 'BellePoule Fencers', extensions: ['bpf'] }],
       });
@@ -658,7 +658,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     },
     onExportPhotos: async () => {
       const result = await window.electronAPI.dialog.saveFile({
-        title: t('messages.export_photos_title'),
+        title: t('dialogs.exportPhotos'),
         defaultPath: `photos-${competition.title}.zip`,
         filters: [{ name: 'Archive ZIP', extensions: ['zip'] }],
       });

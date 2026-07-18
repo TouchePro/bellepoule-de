@@ -677,7 +677,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           <div className="rsm-hero">
             <span className="rsm-status-dot rsm-status-dot--off" />
             <div>
-              <h3 className="rsm-hero-title">{t('remote_score.title_inactive')}</h3>
+              <h3 className="rsm-hero-title">{t('remote.inactive_title')}</h3>
               <p className="rsm-hero-desc">
                 {t('remote_score.desc')}
               </p>
@@ -793,7 +793,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     <div className="remote-score-manager">
       <div className="remote-header">
         <div className="remote-status active">
-          <h3>🟢 {t('remote_score.title_active')}</h3>
+          <h3>🟢 {t('remote.active_title')}</h3>
           <p>
             {t('remote_score.server_label')} <strong>{serverUrl}</strong>
           </p>

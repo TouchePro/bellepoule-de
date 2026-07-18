@@ -273,7 +273,9 @@
     "reset_scores": "Reset Scores",
     "waiting_match": "Waiting for next match",
     "in_progress": "In Progress",
-    "finished": "Finished"
+    "finished": "Finished",
+    "active_title": "Remote entry active",
+    "inactive_title": "Remote entry inactive"
   },
   "settings": {
     "title": "Settings",
@@ -1336,7 +1338,6 @@
     "org_note_hide": "✕ Hide",
     "screen_type_display": "Display",
     "public_label": "Public",
-    "lane_number": "Strip {{number}}",
     "qr_label_referee": "Strip {{number}} – Referee",
     "qr_label_display": "Strip {{number}} – Display",
     "qr_label_pool": "Strip {{number}} – Pool",
@@ -2096,5 +2097,17 @@
     "vs_last_month": "vs last month",
     "current_user_tag": "(You)",
     "abbr_points": "pts"
+  },
+  "dialogs": {
+    "exportScoreHistory": "Export score history",
+    "exportFencers": "Export fencers (.{{ext}})",
+    "exportPhotos": "Export photos (.zip)",
+    "importPhotos": "Import photos (.zip)",
+    "exportFencersArchive": "Export fencers + photos (.bpf)"
+  },
+  "teams": {
+    "relaysWon": "Relays W",
+    "relaysLost": "Relays L",
+    "relaysTooltip": "Individual relays won/lost"
   }
 }

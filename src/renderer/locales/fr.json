@@ -213,7 +213,9 @@
     "reset_scores": "Réinitialiser scores",
     "waiting_match": "En attente du prochain match",
     "in_progress": "En cours",
-    "finished": "Terminé"
+    "finished": "Terminé",
+    "active_title": "Saisie distante active",
+    "inactive_title": "Saisie distante inactive"
   },
   "settings": {
     "title": "Paramètres",
@@ -541,5 +543,17 @@
     "open": "Ouvert",
     "generating": "Génération...",
     "generate_qr": "📶 Générer le code QR"
+  },
+  "dialogs": {
+    "exportScoreHistory": "Exporter le journal des scores",
+    "exportFencers": "Exporter les tireurs (.{{ext}})",
+    "exportPhotos": "Exporter les photos (.zip)",
+    "importPhotos": "Importer les photos (.zip)",
+    "exportFencersArchive": "Exporter tireurs + photos (.bpf)"
+  },
+  "teams": {
+    "relaysWon": "Relais G",
+    "relaysLost": "Relais P",
+    "relaysTooltip": "Relais individuels gagnés/perdus"
   }
 }

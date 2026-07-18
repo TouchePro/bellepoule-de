@@ -426,7 +426,9 @@
     "start_match": "Starten",
     "stop": "Ferne Eingabe Stoppen",
     "title": "Ferne Punkteingabe",
-    "waiting_match": "Warten auf nächstes Match"
+    "waiting_match": "Warten auf nächstes Match",
+    "active_title": "Ferneingabe aktiv",
+    "inactive_title": "Ferneingabe inaktiv"
   },
   "results": {
     "header_rank": "Rang",
@@ -1336,7 +1338,6 @@
     "org_note_hide": "✕ Ausblenden",
     "screen_type_display": "Anzeige",
     "public_label": "Öffentlich",
-    "lane_number": "Piste {{number}}",
     "qr_label_referee": "Piste {{number}} – Schiedsrichter",
     "qr_label_display": "Piste {{number}} – Anzeige",
     "qr_label_pool": "Piste {{number}} – Poule",
@@ -2096,5 +2097,17 @@
     "vs_last_month": "vs. letzten Monat",
     "current_user_tag": "(Sie)",
     "abbr_points": "Pkt."
+  },
+  "dialogs": {
+    "exportScoreHistory": "Punkteverlauf exportieren",
+    "exportFencers": "Fechter exportieren (.{{ext}})",
+    "exportPhotos": "Fotos exportieren (.zip)",
+    "importPhotos": "Fotos importieren (.zip)",
+    "exportFencersArchive": "Fechter + Fotos exportieren (.bpf)"
+  },
+  "teams": {
+    "relaysWon": "Staffeln G",
+    "relaysLost": "Staffeln V",
+    "relaysTooltip": "Einzelstaffeln gewonnen/verloren"
   }
 }

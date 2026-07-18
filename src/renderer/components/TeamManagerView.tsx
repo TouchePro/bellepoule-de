@@ -711,15 +711,15 @@ export const TeamManagerView: React.FC<Props> = ({ competition, fencers, onClose
                       </th>
                       <th
                         className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase text-center"
-                        title={t('messages.individual_relays_column_tooltip')}
+                        title={t('teams.relaysTooltip')}
                       >
-                        {t('team.relay_won_header')}
+                        {t('teams.relaysWon')}
                       </th>
                       <th
                         className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase text-center"
-                        title={t('messages.individual_relays_column_tooltip')}
+                        title={t('teams.relaysTooltip')}
                       >
-                        {t('team.relay_lost_header')}
+                        {t('teams.relaysLost')}
                       </th>
                       <th className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase text-center">
                         {t('poolScoreMatrix.index')}

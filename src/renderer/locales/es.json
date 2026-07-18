@@ -170,7 +170,9 @@
     "reset_scores": "Restablecer Puntuaciones",
     "waiting_match": "Esperando siguiente partido",
     "in_progress": "En Curso",
-    "finished": "Terminado"
+    "finished": "Terminado",
+    "inactive_title": "Entrada remota inactiva",
+    "active_title": "Entrada remota activa"
   },
   "settings": {
     "title": "Ajustes",
@@ -385,5 +387,17 @@
     "scoring_zones": "Zonas personalizadas",
     "zone_label": "Zona",
     "zone_points": "Puntos"
+  },
+  "dialogs": {
+    "exportScoreHistory": "Exportar historial de puntuaciones",
+    "exportFencers": "Exportar tiradores (.{{ext}})",
+    "exportPhotos": "Exportar fotos (.zip)",
+    "importPhotos": "Importar fotos (.zip)",
+    "exportFencersArchive": "Exportar tiradores + fotos (.bpf)"
+  },
+  "teams": {
+    "relaysWon": "Relevos G",
+    "relaysLost": "Relevos P",
+    "relaysTooltip": "Relevos individuales ganados/perdidos"
   }
 }
