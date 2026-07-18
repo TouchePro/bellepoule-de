@@ -15,6 +15,7 @@ import ThemeEditor from './ThemeEditor';
 import { OBSOverlayConfig } from './OBSOverlayConfig';
 import { CustomTheme, DisplayTheme } from '../../shared/types/remote';
 import { ConnectedClient, KioskScreenConfig } from '../../shared/types/preload';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface RemoteScoreManagerProps {
   competition: Competition;
@@ -106,6 +107,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   isVisible = false,
 }) => {
   const { showToast } = useToast();
+  const { t } = useTranslation();
   const [session, setSession] = useState<RemoteSession | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [serverUrl, setServerUrl] = useState<string>('');
@@ -672,7 +674,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           <div className="rsm-hero">
             <span className="rsm-status-dot rsm-status-dot--off" />
             <div>
-              <h3 className="rsm-hero-title">Saisie distante inactive</h3>
+              <h3 className="rsm-hero-title">{t('remote.inactive_title')}</h3>
               <p className="rsm-hero-desc">
                 Les arbitres saisissent les scores depuis une tablette via navigateur web sur le réseau local.
               </p>
@@ -788,7 +790,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     <div className="remote-score-manager">
       <div className="remote-header">
         <div className="remote-status active">
-          <h3>🟢 Saisie distante active</h3>
+          <h3>🟢 {t('remote.active_title')}</h3>
           <p>
             Serveur: <strong>{serverUrl}</strong>
           </p>

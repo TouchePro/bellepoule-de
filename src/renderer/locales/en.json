@@ -170,7 +170,9 @@
     "reset_scores": "Reset Scores",
     "waiting_match": "Waiting for next match",
     "in_progress": "In Progress",
-    "finished": "Finished"
+    "finished": "Finished",
+    "inactive_title": "Remote entry inactive",
+    "active_title": "Remote entry active"
   },
   "settings": {
     "title": "Settings",
@@ -385,5 +387,17 @@
   },
   "wiki": {
     "button_title": "Documentation"
+  },
+  "dialogs": {
+    "exportScoreHistory": "Export score history",
+    "exportFencers": "Export fencers (.{{ext}})",
+    "exportPhotos": "Export photos (.zip)",
+    "importPhotos": "Import photos (.zip)",
+    "exportFencersArchive": "Export fencers + photos (.bpf)"
+  },
+  "teams": {
+    "relaysWon": "Relays W",
+    "relaysLost": "Relays L",
+    "relaysTooltip": "Individual relays won/lost"
   }
 }

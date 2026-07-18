@@ -291,7 +291,9 @@
     "start_match": "Starten",
     "stop": "Ferne Eingabe Stoppen",
     "title": "Ferne Punkteingabe",
-    "waiting_match": "Warten auf nächstes Match"
+    "waiting_match": "Warten auf nächstes Match",
+    "inactive_title": "Ferneingabe inaktiv",
+    "active_title": "Ferneingabe aktiv"
   },
   "results": {
     "congratulations": "Herzlichen Glückwunsch an die Gewinner!",
@@ -382,5 +384,17 @@
     "foil": "Florett",
     "laser": "Laser-Säbel",
     "sabre": "Säbel"
+  },
+  "dialogs": {
+    "exportScoreHistory": "Punkteverlauf exportieren",
+    "exportFencers": "Fechter exportieren (.{{ext}})",
+    "exportPhotos": "Fotos exportieren (.zip)",
+    "importPhotos": "Fotos importieren (.zip)",
+    "exportFencersArchive": "Fechter + Fotos exportieren (.bpf)"
+  },
+  "teams": {
+    "relaysWon": "Staffeln G",
+    "relaysLost": "Staffeln V",
+    "relaysTooltip": "Einzelstaffeln gewonnen/verloren"
   }
 }

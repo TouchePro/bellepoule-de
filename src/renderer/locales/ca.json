@@ -170,7 +170,9 @@
     "reset_scores": "Restablir Puntuacions",
     "waiting_match": "Esperant el combat següent",
     "in_progress": "En Curs",
-    "finished": "Finalitzat"
+    "finished": "Finalitzat",
+    "inactive_title": "Entrada remota inactiva",
+    "active_title": "Entrada remota activa"
   },
   "settings": {
     "title": "Configuració",
@@ -382,5 +384,17 @@
     "scoring_zones": "Zones personalitzades",
     "zone_label": "Zona",
     "zone_points": "Punts"
+  },
+  "dialogs": {
+    "exportScoreHistory": "Exportar historial de puntuacions",
+    "exportFencers": "Exportar tiradors (.{{ext}})",
+    "exportPhotos": "Exportar fotos (.zip)",
+    "importPhotos": "Importar fotos (.zip)",
+    "exportFencersArchive": "Exportar tiradors + fotos (.bpf)"
+  },
+  "teams": {
+    "relaysWon": "Relleus G",
+    "relaysLost": "Relleus P",
+    "relaysTooltip": "Relleus individuals guanyats/perduts"
   }
 }

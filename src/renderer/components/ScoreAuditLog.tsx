@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useCallback , memo} from 'react';
 import { ScoreAuditEntry, ScoreIpConflict } from '../../shared/types/preload';
 import { useToast } from './Toast';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface Props {
   competitionId: string;
@@ -22,6 +23,7 @@ function formatScore(score: any): string {
 
 const ScoreAuditLog_: React.FC<Props> = ({ competitionId }) => {
   const { showToast } = useToast();
+  const { t } = useTranslation();
   const [entries, setEntries] = useState<ScoreAuditEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [filterPool, setFilterPool] = useState('');
@@ -84,7 +86,7 @@ const ScoreAuditLog_: React.FC<Props> = ({ competitionId }) => {
     const csv = header + rows.join('\n');
     try {
       const result = await window.electronAPI.dialog.saveFile({
-        title: 'Exporter le journal des scores',
+        title: t('dialogs.exportScoreHistory'),
         defaultPath: `historique_scores_${new Date().toISOString().slice(0,10)}.csv`,
         filters: [{ name: 'CSV / TXT', extensions: ['csv', 'txt'] }],
       });
