@@ -1862,7 +1862,19 @@
     "after_pools": "Ranking after pools"
   },
   "tableauPdf": {
-    "sheet_desc": "Each sheet contains the full name of the fighters, a score box and a signature box."
+    "export_button": "📄 Generate PDF",
+    "export_title": "PDF Export",
+    "match_one": "Match",
+    "match_other": "Matches",
+    "matches_per_sheet_label": "Matches per A4 sheet",
+    "preview_button": "👁️ Preview",
+    "preview_title": "Print Preview",
+    "print_button": "🖨️ Print",
+    "print_title": "Print",
+    "sheet_desc": "Each sheet contains the full name of the fighters, a score box and a signature box.",
+    "sheet_one": "Sheet",
+    "sheet_other": "Sheets",
+    "sheets_title": "Match Sheets"
   },
   "tableauToolbar": {
     "qualified_count": "{{count}} qualified",

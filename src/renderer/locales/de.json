@@ -1862,7 +1862,19 @@
     "after_pools": "Rangliste nach Pools"
   },
   "tableauPdf": {
-    "sheet_desc": "Jede Karte enthält den vollständigen Namen der Kämpfer, ein Punktefeld und ein Unterschriftsfeld."
+    "export_button": "📄 PDF generieren",
+    "export_title": "PDF-Export",
+    "match_one": "Match",
+    "match_other": "Matches",
+    "matches_per_sheet_label": "Matches pro A4-Blatt",
+    "preview_button": "👁️ Vorschau",
+    "preview_title": "Druckvorschau",
+    "print_button": "🖨️ Drucken",
+    "print_title": "Drucken",
+    "sheet_desc": "Jede Karte enthält den vollständigen Namen der Kämpfer, ein Punktefeld und ein Unterschriftsfeld.",
+    "sheet_one": "Blatt",
+    "sheet_other": "Blätter",
+    "sheets_title": "Kampfblätter"
   },
   "tableauToolbar": {
     "qualified_count": "{{count}} qualifiziert",

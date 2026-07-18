@@ -49,7 +49,7 @@ const TableauPdfModal: React.FC<TableauPdfModalProps> = ({
       <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
         <div className="modal-header">
           <h3 className="modal-title">
-            {pdfMode === 'print' ? 'Imprimer' : pdfMode === 'preview' ? 'Aperçu avant impression' : 'Export PDF'} – Feuilles de match
+            {t(pdfMode === 'print' ? 'tableauPdf.print_title' : pdfMode === 'preview' ? 'tableauPdf.preview_title' : 'tableauPdf.export_title')} – {t('tableauPdf.sheets_title')}
           </h3>
           <button className="btn-close" onClick={onClose}>
             &times;
@@ -60,7 +60,7 @@ const TableauPdfModal: React.FC<TableauPdfModalProps> = ({
             {t('tableauPdf.sheet_desc')}
           </p>
           <label style={PDF_STYLES.pdfModalLabel}>
-            Matchs par feuille A4{' '}
+            {t('tableauPdf.matches_per_sheet_label')}{' '}
             <span style={PDF_STYLES.pdfModalMaxHint}>(max {MAX_MATCHES_PER_PAGE_TABLEAU})</span>
           </label>
           <div style={PDF_STYLES.pdfModalBtnRow}>
@@ -103,19 +103,21 @@ const TableauPdfModal: React.FC<TableauPdfModalProps> = ({
                   />
                   {getRoundName(round)}
                   <span style={{ color: '#9ca3af', fontSize: '0.75rem' }}>
-                    ({matches.filter(m => m.round === round && m.fencerA && m.fencerB && !m.isBye).length} match
-                    {matches.filter(m => m.round === round && m.fencerA && m.fencerB && !m.isBye).length > 1 ? 's' : ''})
+                    ({(() => {
+                      const count = matches.filter(m => m.round === round && m.fencerA && m.fencerB && !m.isBye).length;
+                      return `${count} ${t(count === 1 ? 'tableauPdf.match_one' : 'tableauPdf.match_other', { count })}`;
+                    })()})
                   </span>
                 </label>
               ))}
           </div>
           {(() => {
             const count = matches.filter(m => selectedRounds.has(m.round) && !m.isBye && m.fencerA && m.fencerB).length;
+            const sheetCount = Math.ceil(count / pdfMatchesPerPage);
             return (
               <p style={PDF_STYLES.pdfModalCountHint}>
-                {count} match{count > 1 ? 's' : ''} →{' '}
-                {Math.ceil(count / pdfMatchesPerPage)} feuille
-                {Math.ceil(count / pdfMatchesPerPage) > 1 ? 's' : ''}
+                {count} {t(count === 1 ? 'tableauPdf.match_one' : 'tableauPdf.match_other', { count })} →{' '}
+                {sheetCount} {t(sheetCount === 1 ? 'tableauPdf.sheet_one' : 'tableauPdf.sheet_other', { count: sheetCount })}
               </p>
             );
           })()}
@@ -125,7 +127,7 @@ const TableauPdfModal: React.FC<TableauPdfModalProps> = ({
             {t('actions.cancel')}
           </button>
           <button className="btn btn-primary" onClick={onExport} disabled={selectedRounds.size === 0}>
-            {pdfMode === 'print' ? '🖨️ Imprimer' : pdfMode === 'preview' ? '👁️ Aperçu' : '📄 Générer PDF'}
+            {t(pdfMode === 'print' ? 'tableauPdf.print_button' : pdfMode === 'preview' ? 'tableauPdf.preview_button' : 'tableauPdf.export_button')}
           </button>
         </div>
       </div>
