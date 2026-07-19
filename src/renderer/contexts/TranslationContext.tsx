@@ -24,7 +24,7 @@ export interface Translations {
   };
 }
 
-interface TranslationContextValue {
+export interface TranslationContextValue {
   language: Language;
   theme: Theme;
   translations: Translations;
