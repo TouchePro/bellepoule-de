@@ -9,6 +9,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import AddFencerToPoolModal from './AddFencerToPoolModal';
+import { TranslationProvider } from '../contexts/TranslationContext';
 import { Fencer, Pool, Gender, FencerStatus } from '../../shared/types';
 
 const fencer = (id: string, last: string): Fencer => ({
@@ -39,7 +40,11 @@ afterEach(() => { delete (window as any).electronAPI; });
 
 describe('AddFencerToPoolModal', () => {
   it('affiche les tireurs disponibles (hors poule)', async () => {
-    render(<AddFencerToPoolModal pool={pool} competitionId="c1" onConfirm={vi.fn()} onClose={vi.fn()} />);
+    render(
+      <TranslationProvider>
+        <AddFencerToPoolModal pool={pool} competitionId="c1" onConfirm={vi.fn()} onClose={vi.fn()} />
+      </TranslationProvider>
+    );
     expect(await screen.findByText(/Martin/)).toBeInTheDocument();
     // Dupont est déjà dans la poule → absent de la liste des disponibles
     expect(screen.queryByText(/Dupont/)).not.toBeInTheDocument();
@@ -47,7 +52,11 @@ describe('AddFencerToPoolModal', () => {
 
   it('sélectionne un tireur et confirme l’ajout', async () => {
     const onConfirm = vi.fn();
-    render(<AddFencerToPoolModal pool={pool} competitionId="c1" onConfirm={onConfirm} onClose={vi.fn()} />);
+    render(
+      <TranslationProvider>
+        <AddFencerToPoolModal pool={pool} competitionId="c1" onConfirm={onConfirm} onClose={vi.fn()} />
+      </TranslationProvider>
+    );
     fireEvent.click(await screen.findByText(/Martin/));
     fireEvent.click(screen.getByText('Fechter hinzufügen'));
     await waitFor(() =>
@@ -57,7 +66,11 @@ describe('AddFencerToPoolModal', () => {
   });
 
   it('le bouton ajouter est désactivé sans sélection', async () => {
-    render(<AddFencerToPoolModal pool={pool} competitionId="c1" onConfirm={vi.fn()} onClose={vi.fn()} />);
+    render(
+      <TranslationProvider>
+        <AddFencerToPoolModal pool={pool} competitionId="c1" onConfirm={vi.fn()} onClose={vi.fn()} />
+      </TranslationProvider>
+    );
     await screen.findByText(/Martin/);
     expect(screen.getByText('Fechter hinzufügen')).toBeDisabled();
   });

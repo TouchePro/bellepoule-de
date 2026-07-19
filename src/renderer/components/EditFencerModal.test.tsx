@@ -9,6 +9,7 @@ import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import EditFencerModal from './EditFencerModal';
+import { TranslationProvider } from '../contexts/TranslationContext';
 import { Fencer, Gender, FencerStatus } from '../../shared/types';
 
 const fencer: Fencer = {
@@ -20,7 +21,11 @@ const fencer: Fencer = {
 const setup = () => {
   const onSave = vi.fn();
   const onClose = vi.fn();
-  const { container } = render(<EditFencerModal fencer={fencer} onSave={onSave} onClose={onClose} />);
+  const { container } = render(
+    <TranslationProvider>
+      <EditFencerModal fencer={fencer} onSave={onSave} onClose={onClose} />
+    </TranslationProvider>
+  );
   return { onSave, onClose, container };
 };
 

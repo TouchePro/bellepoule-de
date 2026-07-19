@@ -9,6 +9,7 @@ import { describe, it, expect, vi } from 'vitest';
 import React, { useState } from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ConfirmProvider, useConfirm } from './ConfirmDialog';
+import { TranslationProvider } from '../contexts/TranslationContext';
 
 // Composant exposant le résultat de confirm()
 const Harness: React.FC<{ options?: any }> = ({ options }) => {
@@ -22,7 +23,11 @@ const Harness: React.FC<{ options?: any }> = ({ options }) => {
 };
 
 const renderWithProvider = (ui: React.ReactNode) =>
-  render(<ConfirmProvider>{ui}</ConfirmProvider>);
+  render(
+    <TranslationProvider>
+      <ConfirmProvider>{ui}</ConfirmProvider>
+    </TranslationProvider>
+  );
 
 describe('ConfirmProvider / useConfirm', () => {
   it('affiche le message et les libellés par défaut', async () => {
@@ -30,7 +35,7 @@ describe('ConfirmProvider / useConfirm', () => {
     fireEvent.click(screen.getByText('ask'));
     expect(await screen.findByText('Continuer ?')).toBeInTheDocument();
     expect(screen.getByText('OK')).toBeInTheDocument();
-    expect(screen.getByText('Annuler')).toBeInTheDocument();
+    expect(screen.getByText('Abbrechen')).toBeInTheDocument();
   });
 
   it('résout true sur confirmation', async () => {
@@ -55,7 +60,7 @@ describe('ConfirmProvider / useConfirm', () => {
     };
     renderWithProvider(<Probe />);
     fireEvent.click(screen.getByText('ask'));
-    fireEvent.click(await screen.findByText('Annuler'));
+    fireEvent.click(await screen.findByText('Abbrechen'));
     await waitFor(() => expect(screen.getByTestId('res').textContent).toBe('false'));
   });
 

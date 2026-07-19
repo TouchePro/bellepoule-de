@@ -333,7 +333,7 @@ const LiveMatchCard_: React.FC<{ match: Match; index: number }> = ({ match, inde
           🔴 LIVE • {formatElapsed(elapsed)}
         </span>
         <span style={{ color: '#6b7280', fontSize: '0.875rem' }}>
-          {t('qrCode.lane_number', { number: match.strip || index + 1 })}
+          {t('remote_score.lane_number', { number: match.strip || index + 1 })}
         </span>
       </div>
 

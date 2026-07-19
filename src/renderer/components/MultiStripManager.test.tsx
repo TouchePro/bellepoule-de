@@ -9,17 +9,20 @@ import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MultiStripManager } from './MultiStripManager';
+import { TranslationProvider } from '../contexts/TranslationContext';
 
 const setup = (stripCount = 3) => {
   const onClose = vi.fn();
   const onMatchAssigned = vi.fn();
   render(
-    <MultiStripManager
-      pools={[]}
-      stripCount={stripCount}
-      onMatchAssigned={onMatchAssigned}
-      onClose={onClose}
-    />
+    <TranslationProvider>
+      <MultiStripManager
+        pools={[]}
+        stripCount={stripCount}
+        onMatchAssigned={onMatchAssigned}
+        onClose={onClose}
+      />
+    </TranslationProvider>
   );
   return { onClose, onMatchAssigned };
 };

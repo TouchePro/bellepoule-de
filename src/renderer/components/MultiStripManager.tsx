@@ -145,7 +145,7 @@ export const MultiStripManager: React.FC<MultiStripManagerProps> = ({
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                    <span style={{ fontWeight: 700, fontSize: '1rem' }}>{t('qrCode.lane_number', { number: strip.id })}</span>
+                    <span style={{ fontWeight: 700, fontSize: '1rem' }}>{t('remote_score.lane_number', { number: strip.id })}</span>
                     <span
                       style={{
                         fontSize: '0.75rem',
