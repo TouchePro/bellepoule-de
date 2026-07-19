@@ -9,10 +9,10 @@ import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
-vi.mock('../hooks/useTranslation', () => ({ useTranslation: () => ({ t: (k: string) => k }) }));
 vi.mock('./ConfirmDialog', () => ({ useConfirm: () => ({ confirm: vi.fn(async () => true) }) }));
 
 import FencerList from './FencerList';
+import { TranslationProvider } from '../contexts/TranslationContext';
 import { Fencer, Gender, FencerStatus } from '../../shared/types';
 
 const fencer = (id: string, last: string): Fencer => ({
@@ -25,12 +25,14 @@ const setup = (over: Partial<Record<string, any>> = {}) => {
   const onAddFencer = vi.fn();
   const onCheckIn = vi.fn();
   render(
-    <FencerList
-      fencers={[fencer('1', 'Dupont'), fencer('2', 'Martin')]}
-      onCheckIn={onCheckIn}
-      onAddFencer={onAddFencer}
-      {...(over as any)}
-    />
+    <TranslationProvider>
+      <FencerList
+        fencers={[fencer('1', 'Dupont'), fencer('2', 'Martin')]}
+        onCheckIn={onCheckIn}
+        onAddFencer={onAddFencer}
+        {...(over as any)}
+      />
+    </TranslationProvider>
   );
   return { onAddFencer, onCheckIn };
 };
@@ -44,14 +46,14 @@ describe('FencerList', () => {
 
   it('filtre via la recherche (debounce)', async () => {
     setup();
-    fireEvent.change(screen.getByPlaceholderText('Rechercher un tireur…'), { target: { value: 'martin' } });
+    fireEvent.change(screen.getByPlaceholderText('Fechter suchen…'), { target: { value: 'martin' } });
     await waitFor(() => expect(screen.queryByText('Dupont')).not.toBeInTheDocument());
     expect(screen.getByText('Martin')).toBeInTheDocument();
   });
 
   it('le bouton ajouter déclenche onAddFencer', () => {
     const { onAddFencer } = setup();
-    fireEvent.click(screen.getByRole('button', { name: /fencer\.add/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Fechter Hinzufügen/ }));
     expect(onAddFencer).toHaveBeenCalled();
   });
 });

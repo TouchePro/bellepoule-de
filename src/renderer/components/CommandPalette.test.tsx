@@ -48,15 +48,19 @@ describe('CommandPalette', () => {
 
   it('filtre selon la requête', () => {
     setup();
-    fireEvent.change(screen.getByLabelText('Search commands'), { target: { value: 'beta' } });
+    fireEvent.change(screen.getByLabelText('commandPalette.search_aria_label'), {
+      target: { value: 'beta' },
+    });
     expect(screen.getByText('Trophée Beta')).toBeInTheDocument();
     expect(screen.queryByText('Coupe Alpha')).not.toBeInTheDocument();
   });
 
   it('affiche un message si aucun résultat', () => {
     setup();
-    fireEvent.change(screen.getByLabelText('Search commands'), { target: { value: 'zzz-introuvable' } });
-    expect(screen.getByText('Aucun résultat')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('commandPalette.search_aria_label'), {
+      target: { value: 'zzz-introuvable' },
+    });
+    expect(screen.getByText('ui.no_result')).toBeInTheDocument();
   });
 
   it('clic sur une compétition déclenche la sélection', () => {
@@ -68,7 +72,9 @@ describe('CommandPalette', () => {
 
   it('Échap ferme la palette', () => {
     const props = setup();
-    fireEvent.keyDown(screen.getByLabelText('Search commands'), { key: 'Escape' });
+    fireEvent.keyDown(screen.getByLabelText('commandPalette.search_aria_label'), {
+      key: 'Escape',
+    });
     expect(props.onClose).toHaveBeenCalled();
   });
 

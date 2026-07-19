@@ -36,7 +36,7 @@ describe('ErrorBoundary', () => {
         <Boom />
       </ErrorBoundary>
     );
-    expect(screen.getByText(/Une erreur est survenue/i)).toBeInTheDocument();
+    expect(screen.getByText(/Ein Fehler ist aufgetreten/i)).toBeInTheDocument();
   });
 
   it('affiche le fallback personnalisé s’il est fourni', () => {
