@@ -33,6 +33,7 @@ vi.mock('../ConflictResolutionModal', () => ({
 
 // Import après les mocks
 import { OfflineStatus } from '../OfflineStatus';
+import { TranslationProvider } from '../../contexts/TranslationContext';
 import { offlineSync } from '../../../renderer/services/offlineSync';
 import { offlineStorage } from '../../../renderer/services/offlineStorage';
 
@@ -51,7 +52,11 @@ describe('OfflineStatus', () => {
 
   it('se rend sans crash', async () => {
     await act(async () => {
-      render(<OfflineStatus />);
+      render(
+        <TranslationProvider>
+          <OfflineStatus />
+        </TranslationProvider>
+      );
     });
     // Le composant doit être monté sans exception
     expect(document.body).toBeTruthy();
@@ -59,7 +64,11 @@ describe('OfflineStatus', () => {
 
   it('affiche "Connecté" quand en ligne sans actions en attente', async () => {
     await act(async () => {
-      render(<OfflineStatus />);
+      render(
+        <TranslationProvider>
+          <OfflineStatus />
+        </TranslationProvider>
+      );
     });
     expect(screen.getByText('Verbunden')).toBeInTheDocument();
   });
@@ -68,7 +77,11 @@ describe('OfflineStatus', () => {
     (offlineSync.isCurrentlyOnline as any).mockReturnValue(false);
 
     await act(async () => {
-      render(<OfflineStatus />);
+      render(
+        <TranslationProvider>
+          <OfflineStatus />
+        </TranslationProvider>
+      );
     });
 
     expect(screen.getByText('Offline')).toBeInTheDocument();
@@ -76,7 +89,11 @@ describe('OfflineStatus', () => {
 
   it('le clic sur le status toggle affiche les détails', async () => {
     await act(async () => {
-      render(<OfflineStatus />);
+      render(
+        <TranslationProvider>
+          <OfflineStatus />
+        </TranslationProvider>
+      );
     });
 
     const toggle = screen.getByText('Verbunden').closest('[class*="cursor-pointer"]')
@@ -99,7 +116,11 @@ describe('OfflineStatus', () => {
     });
 
     await act(async () => {
-      render(<OfflineStatus />);
+      render(
+        <TranslationProvider>
+          <OfflineStatus />
+        </TranslationProvider>
+      );
     });
 
     expect(screen.getByText('3 ausstehend')).toBeInTheDocument();
@@ -109,7 +130,11 @@ describe('OfflineStatus', () => {
     (offlineSync.isCurrentlySyncing as any).mockReturnValue(true);
 
     await act(async () => {
-      render(<OfflineStatus />);
+      render(
+        <TranslationProvider>
+          <OfflineStatus />
+        </TranslationProvider>
+      );
     });
 
     expect(screen.getByText('Synchronisierung läuft...')).toBeInTheDocument();

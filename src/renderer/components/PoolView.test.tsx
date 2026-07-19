@@ -9,6 +9,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import PoolView from './PoolView';
+import { TranslationProvider } from '../contexts/TranslationContext';
 import { Pool, Fencer, Match, MatchStatus, Gender, FencerStatus } from '../../shared/types';
 
 const fencer = (id: string, last: string): Fencer => ({
@@ -52,14 +53,16 @@ describe('PoolView - saisie simplifiée : suppression au survol', () => {
   it('survoler une case scorée puis appuyer sur Suppr efface le score du match', () => {
     const onMatchReset = vi.fn();
     render(
-      <PoolView
-        pool={testPool}
-        onScoreUpdate={vi.fn()}
-        onMatchReset={onMatchReset}
-      />
+      <TranslationProvider>
+        <PoolView
+          pool={testPool}
+          onScoreUpdate={vi.fn()}
+          onMatchReset={onMatchReset}
+        />
+      </TranslationProvider>
     );
 
-    const cell = screen.getByLabelText(/Dupont F contre Martin F/i);
+    const cell = screen.getByLabelText(/Dupont F gegen Martin F/i);
     fireEvent.mouseEnter(cell);
     fireEvent.keyDown(document, { key: 'Delete' });
 
@@ -70,11 +73,13 @@ describe('PoolView - saisie simplifiée : suppression au survol', () => {
   it("n'efface rien si la souris ne survole aucune case", () => {
     const onMatchReset = vi.fn();
     render(
-      <PoolView
-        pool={testPool}
-        onScoreUpdate={vi.fn()}
-        onMatchReset={onMatchReset}
-      />
+      <TranslationProvider>
+        <PoolView
+          pool={testPool}
+          onScoreUpdate={vi.fn()}
+          onMatchReset={onMatchReset}
+        />
+      </TranslationProvider>
     );
 
     fireEvent.keyDown(document, { key: 'Delete' });
@@ -86,14 +91,16 @@ describe('PoolView - saisie simplifiée : suppression au survol', () => {
     localStorage.setItem('bellepoule-simplified-input-mode', 'false');
     const onMatchReset = vi.fn();
     render(
-      <PoolView
-        pool={testPool}
-        onScoreUpdate={vi.fn()}
-        onMatchReset={onMatchReset}
-      />
+      <TranslationProvider>
+        <PoolView
+          pool={testPool}
+          onScoreUpdate={vi.fn()}
+          onMatchReset={onMatchReset}
+        />
+      </TranslationProvider>
     );
 
-    const cell = screen.getByLabelText(/Dupont F contre Martin F/i);
+    const cell = screen.getByLabelText(/Dupont F gegen Martin F/i);
     fireEvent.mouseEnter(cell);
     fireEvent.keyDown(document, { key: 'Delete' });
 

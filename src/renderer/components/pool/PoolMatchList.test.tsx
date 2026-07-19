@@ -9,6 +9,7 @@ import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import PoolMatchList from './PoolMatchList';
+import { TranslationProvider } from '../../contexts/TranslationContext';
 import { Fencer, Match, MatchStatus, Gender, FencerStatus } from '../../../shared/types';
 
 const fencer = (id: string, last: string): Fencer => ({
@@ -45,7 +46,11 @@ const renderList = (orderedMatches: any, over: Partial<Record<string, any>> = {}
     openScoreModal: vi.fn(),
     ...over,
   };
-  render(<PoolMatchList {...(props as any)} />);
+  render(
+    <TranslationProvider>
+      <PoolMatchList {...(props as any)} />
+    </TranslationProvider>
+  );
   return props;
 };
 

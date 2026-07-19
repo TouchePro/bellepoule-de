@@ -9,6 +9,7 @@ import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import TableauScoreModal from './TableauScoreModal';
+import { TranslationProvider } from '../../contexts/TranslationContext';
 
 const match = {
   id: 'm1', round: 8,
@@ -32,7 +33,11 @@ const setup = (over: Partial<Record<string, any>> = {}) => {
     getRoundName: (r: number) => `Tour ${r}`,
     ...over,
   };
-  const utils = render(<TableauScoreModal {...(props as any)} />);
+  const utils = render(
+    <TranslationProvider>
+      <TableauScoreModal {...(props as any)} />
+    </TranslationProvider>
+  );
   return { props, utils };
 };
 

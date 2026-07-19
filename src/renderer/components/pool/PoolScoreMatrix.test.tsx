@@ -9,6 +9,7 @@ import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import PoolScoreMatrix from './PoolScoreMatrix';
+import { TranslationProvider } from '../../contexts/TranslationContext';
 import { Pool, Fencer, Match, MatchStatus, Gender, FencerStatus } from '../../../shared/types';
 
 const fencer = (id: string, last: string): Fencer => ({
@@ -42,7 +43,11 @@ const renderMatrix = (m: Match, over: Partial<Record<string, any>> = {}) => {
     onCellClick: vi.fn(),
     ...over,
   };
-  render(<PoolScoreMatrix {...(props as any)} />);
+  render(
+    <TranslationProvider>
+      <PoolScoreMatrix {...(props as any)} />
+    </TranslationProvider>
+  );
   return props;
 };
 
@@ -55,7 +60,7 @@ describe('PoolScoreMatrix', () => {
 
   it('affiche la colonne Victoires quand isVisible le permet', () => {
     renderMatrix(match(MatchStatus.NOT_STARTED));
-    expect(screen.getByText('V')).toBeInTheDocument();
+    expect(screen.getByText('S')).toBeInTheDocument();
   });
 
   it('affiche le score V5 pour un match gagné', () => {
