@@ -21,7 +21,6 @@ interface UseMenuEventsProps {
   onExportRanking: (format: 'csv' | 'json') => void;
   onExportResults: (format: 'csv' | 'json') => void;
   onImport: (format: string, filepath: string, content: string) => void;
-  onReportIssue: () => void;
   onNextPhase: () => void;
   loadFencers: () => void;
   hasPools: boolean;
@@ -40,7 +39,6 @@ export const useMenuEvents = ({
   onExportRanking,
   onExportResults,
   onImport,
-  onReportIssue,
   onNextPhase,
   loadFencers,
   hasPools,
@@ -125,10 +123,6 @@ export const useMenuEvents = ({
       window.electronAPI.onMenuExport(handleExport);
     }
 
-    if (window.electronAPI.onMenuReportIssue) {
-      window.electronAPI.onMenuReportIssue(onReportIssue);
-    }
-
     if (window.electronAPI.onFileOpened) {
       window.electronAPI.onFileOpened(async (filepath: string) => {
         logger.debug(LogCategory.UI, 'Fichier ouvert', { filepath });
@@ -150,7 +144,6 @@ export const useMenuEvents = ({
         window.electronAPI.removeAllListeners('menu:competition-properties');
         window.electronAPI.removeAllListeners('menu:import');
         window.electronAPI.removeAllListeners('menu:export');
-        window.electronAPI.removeAllListeners('menu:report-issue');
         window.electronAPI.removeAllListeners('file:opened');
         window.electronAPI.removeAllListeners('menu:add-fencer');
         window.electronAPI.removeAllListeners('menu:next-phase');
@@ -160,7 +153,6 @@ export const useMenuEvents = ({
     onShowProperties,
     onImport,
     handleExport,
-    onReportIssue,
     loadFencers,
     onShowAddFencer,
     onNextPhase,
