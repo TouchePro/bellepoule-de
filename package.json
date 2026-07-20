@@ -27,6 +27,8 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\"",
     "type-check": "tsc --noEmit",
+    "check:i18n": "node scripts/check-i18n-completeness.js",
+    "check:bundle-size": "node scripts/check-bundle-size.js",
     "test:e2e": "playwright test",
     "e2e:debug": "playwright test --debug",
     "analyze": "webpack --config webpack.renderer.config.js --env analyze",
