@@ -679,7 +679,6 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       }
       setImportData({ format, filepath, content });
     },
-    onReportIssue: () => {}, // À implémenter
     onNextPhase: () => {},
     loadFencers,
     hasPools: pools.length > 0,
