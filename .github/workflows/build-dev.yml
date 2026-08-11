@@ -32,8 +32,16 @@ jobs:
       - name: Type check
         run: npm run type-check
 
+      - name: i18n completeness
+        run: npm run check:i18n
+
       - name: Unit tests
         run: npm run test:run
+
+      - name: Bundle size budget
+        run: |
+          npm run build:renderer
+          node scripts/check-bundle-size.js
 
   increment-version:
     runs-on: ubuntu-latest

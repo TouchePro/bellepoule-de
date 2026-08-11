@@ -38,7 +38,7 @@ interface PoolRankingViewProps {
   onGoToTableau?: (splitGroup?: string) => void;
   onGoToResults?: () => void;
   hasDirectElimination?: boolean;
-  onExport?: (format: 'csv' | 'xml' | 'pdf') => void;
+  onExport?: (format: 'csv') => void;
   onPoolsChange?: (pools: Pool[], rankingChanged: boolean) => void;
   onRankingChange?: (ranking: PoolRanking[]) => void;
   poolWinnersOnly?: boolean;
@@ -184,27 +184,22 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
     }
   }, [editedRanking, isEditing]);
 
-  const handleExport = (format: 'csv' | 'xml' | 'pdf') => {
+  const handleExport = (format: 'csv') => {
     if (onExport) {
       onExport(format);
-    } else if (format === 'csv') {
-      const content = generateCSV();
-      const blob = new Blob(['\uFEFF' + content], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'classement.csv';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      showToast(t('messages.export_csv_success'), 'success');
-    } else {
-      showToast(
-        t('messages.export_format_not_implemented', { format: format.toUpperCase() }),
-        'warning'
-      );
+      return;
     }
+    const content = generateCSV();
+    const blob = new Blob(['\uFEFF' + content], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'classement.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(t('messages.export_csv_success'), 'success');
   };
 
   const handlePrint = () => {
