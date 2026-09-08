@@ -40,6 +40,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Overlay BellePoule</title>
     <script src="/socket.io.min.js"></script>
+    <script src="/i18n.js"></script>
     <style>
       /* ── Police 7 segments (embarquée, identique à arena.html) ── */
       @font-face {
@@ -352,7 +353,7 @@
         <img class="center-logo" id="center-logo" alt="logo" />
         <div class="timer-display" id="timer">03:00</div>
         <div class="phase-label" id="phase-label">Piste 1</div>
-        <div class="sd-badge" id="sd-badge">⚡ Mort subite</div>
+        <div class="sd-badge" id="sd-badge" data-i18n="referee.sudden_death">⚡ Mort subite</div>
       </div>
 
       <!-- Tireur B (droite / rouge) -->
@@ -369,12 +370,12 @@
     </div>
 
     <!-- Écran d'attente affiché quand aucun match n'est en cours -->
-    <div class="idle-screen" id="idle-screen">
+    <div class="idle-screen" id="idle-screen" data-i18n="overlay.idle_waiting">
       En attente d'un match…
     </div>
 
     <script>
-      (() => {
+      (async () => {
         /* ── Lecture des paramètres ── */
         const params  = new URLSearchParams(window.location.search);
         const theme   = params.get('theme') || 'transparent';
@@ -409,6 +410,10 @@
           logoEl.classList.add('visible');
         }
 
+        /* ── i18n (n'attend pas la mise en page ci-dessus, déjà appliquée de façon synchrone) ── */
+        await window.initRemoteI18n();
+        document.title = window.T('overlay.page_title');
+
         /* ── Extraction de l'arenaId depuis l'URL ou le query param ── */
         function getArenaId() {
           const p = params.get('arena');
@@ -420,7 +425,7 @@
         const arenaId     = getArenaId();
         const arenaNumber = arenaId.replace('arena', '');
 
-        document.getElementById('phase-label').textContent = 'Piste ' + arenaNumber;
+        document.getElementById('phase-label').textContent = window.T('remote.piste') + ' ' + arenaNumber;
 
         /* ── État ── */
         let scoreA    = 0, scoreB    = 0;
@@ -429,7 +434,7 @@
         let timerStat = 'paused';
         let isSuddenDeath = false;
         let matchStatus   = 'idle';
-        let phaseLabel    = 'Piste ' + arenaNumber;
+        let phaseLabel    = window.T('remote.piste') + ' ' + arenaNumber;
         let swapped       = params.get('swap') === '1';
         let currentFencerA = {}, currentFencerB = {};
 
@@ -460,7 +465,7 @@
 
         function renderCards(cards) {
           return cards.map(c => {
-            const label = c === 'white' ? 'B' : c === 'yellow' ? 'J' : 'R';
+            const label = c === 'white' ? window.T('overlay.card_abbr_white') : c === 'yellow' ? window.T('overlay.card_abbr_yellow') : window.T('overlay.card_abbr_red');
             return `<span class="card-badge ${c}">${label}</span>`;
           }).join('');
         }
