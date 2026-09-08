@@ -1059,7 +1059,10 @@
     "zone_points": "Cumulative zone points (A/B/C)",
     "laser_target_label": "Laser Sabre Target",
     "location_placeholder": "Ex: Gymnasium Jean Moulin, Paris",
-    "default_title": "Competition of {{date}}"
+    "default_title": "Competition of {{date}}",
+    "team_format_label": "Match format",
+    "team_format_fie_relay": "Classic FIE relay (cumulative target)",
+    "team_format_laser_arena": "Team arena (5-touch/3-min bouts, ASL-FFE rules)"
   },
   "team": {
     "teams_label": "teams",
@@ -1090,7 +1093,26 @@
     "position_label": "Position",
     "assign": "Assign",
     "fencers_missing": "{{count}} fencer(s) missing",
-    "defeats_header": "D"
+    "defeats_header": "D",
+    "arena_number_prompt": "Arena number for tablet entry (e.g. 1)",
+    "send_to_arena_tooltip": "Send this match to an arena for real-time tablet entry",
+    "arena_button_label": "Arena",
+    "team_card_e_heading": "Team cards \"E\"",
+    "card_label": "Card",
+    "suggested_suffix": " (suggested)",
+    "laser_schedule_unavailable": "The fixed pool schedule \"Laser Sabre team\" is only defined for 8 or 12 teams (currently {{count}}).",
+    "arena_assign_failed": "Unable to assign this match to the arena (remote server started?).",
+    "laser_export_csv": "Export CSV",
+    "laser_points_for_header": "Points+",
+    "laser_points_against_header": "Points-",
+    "laser_ratio_header": "Ratio",
+    "laser_tied_header": "Tie",
+    "laser_points_for": "Points+",
+    "laser_points_for_tooltip": "Main criterion of the rules: total points scored across all pool matches",
+    "laser_points_against": "Points-",
+    "laser_ratio": "Ratio",
+    "laser_ratio_tooltip": "1st tie-break criterion: ratio of points scored / points received",
+    "laser_tied_tooltip": "Total tie with a neighboring team — to be resolved by draw"
   },
   "obs": {
     "open_browser": "Open in browser",

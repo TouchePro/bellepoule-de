@@ -10,13 +10,14 @@
 import React from 'react';
 import { useTranslation } from '../hooks/useTranslation';
 import { Card, CardReason } from '../../shared/types';
-import { TeamRow, TeamMatchRow, TeamBoutRow } from '../../features/teams/types/team.types';
+import { TeamRow, TeamMatchRow, TeamBoutRow, TeamMatchCardRow } from '../../features/teams/types/team.types';
 import {
   TeamTargetRule,
   calculateTableSize,
   placeRankedTeamsInTable,
   resolveTeamTableauSlot,
 } from '../../features/teams/utils/teamCalculations';
+import { LaserArenaBoutCap } from '../../features/teams/utils/laserArenaCalculations';
 import TeamPoolView, { CardTarget } from './TeamPoolView';
 
 interface Props {
@@ -39,6 +40,11 @@ interface Props {
   onSelectReason: (reason: CardReason | '') => void;
   onAddCard: (matchId: string) => void;
   onGenerate: () => void;
+  isLaserArena?: boolean;
+  boutCap?: LaserArenaBoutCap;
+  matchCards?: Record<string, TeamMatchCardRow[]>;
+  onAddTeamCard?: (matchId: string, teamId: string, type: 'white' | 'yellow' | 'red' | 'black') => void;
+  onAssignArena?: (matchId: string, arenaId: string) => void;
 }
 
 const KNOWN_TEAM_TABLEAU_ROUNDS = [1, 2, 4, 8, 16, 32];
@@ -68,6 +74,11 @@ const TeamTableauView: React.FC<Props> = ({
   onSelectReason,
   onAddCard,
   onGenerate,
+  isLaserArena,
+  boutCap,
+  matchCards,
+  onAddTeamCard,
+  onAssignArena,
 }) => {
   const { t } = useTranslation();
   if (rankedTeams.length < 2) {
@@ -173,6 +184,11 @@ const TeamTableauView: React.FC<Props> = ({
                   onSelectReason={onSelectReason}
                   onAddCard={onAddCard}
                   emptyLabel=""
+                  isLaserArena={isLaserArena}
+                  boutCap={boutCap}
+                  matchCards={matchCards}
+                  onAddTeamCard={onAddTeamCard}
+                  onAssignArena={onAssignArena}
                 />
               );
             })}

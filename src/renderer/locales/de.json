@@ -1059,7 +1059,10 @@
     "zone_points": "Kumulierte Zonepunkte (A/B/C)",
     "laser_target_label": "Ziel Laser-Säbel",
     "location_placeholder": "Bsp: Sporthalle Jean Moulin, Paris",
-    "default_title": "Wettkampf vom {{date}}"
+    "default_title": "Wettkampf vom {{date}}",
+    "team_format_label": "Begegnungsformat",
+    "team_format_fie_relay": "Klassische FIE-Staffel (kumuliertes Ziel)",
+    "team_format_laser_arena": "Mannschaftsarena (Gefechte 5 Treffer/3 Min, ASL-FFE-Reglement)"
   },
   "team": {
     "teams_label": "Mannschaften",
@@ -1090,7 +1093,26 @@
     "position_label": "Position",
     "assign": "Zuweisen",
     "fencers_missing": "{{count}} Fechter fehlen",
-    "defeats_header": "N"
+    "defeats_header": "N",
+    "arena_number_prompt": "Arenen-Nummer für die Tablet-Eingabe (z. B. 1)",
+    "send_to_arena_tooltip": "Diese Begegnung an eine Arena für Echtzeit-Tablet-Eingabe senden",
+    "arena_button_label": "Arena",
+    "team_card_e_heading": "Mannschaftskarten „E“",
+    "card_label": "Karte",
+    "suggested_suffix": " (vorgeschlagen)",
+    "laser_schedule_unavailable": "Der feste Poule-Spielplan „Laser-Säbel-Team\" ist nur für 8 oder 12 Mannschaften definiert (aktuell {{count}}).",
+    "arena_assign_failed": "Diese Begegnung konnte der Arena nicht zugewiesen werden (Remote-Server gestartet?).",
+    "laser_export_csv": "CSV exportieren",
+    "laser_points_for_header": "Punkte+",
+    "laser_points_against_header": "Punkte-",
+    "laser_ratio_header": "Ratio",
+    "laser_tied_header": "Gleichstand",
+    "laser_points_for": "Punkte+",
+    "laser_points_for_tooltip": "Hauptkriterium des Reglements: Gesamtzahl der erzielten Punkte über alle Poule-Begegnungen",
+    "laser_points_against": "Punkte-",
+    "laser_ratio": "Ratio",
+    "laser_ratio_tooltip": "1. Stichentscheid-Kriterium: Verhältnis erzielte / erhaltene Punkte",
+    "laser_tied_tooltip": "Vollständiger Gleichstand mit einer benachbarten Mannschaft — wird durch Losentscheid aufgelöst"
   },
   "obs": {
     "open_browser": "Im Browser öffnen",
