@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Arène équipe — BellePoule</title>
+    <script src="/i18n.js"></script>
     <script src="/socket.io.min.js"></script>
     <style>
       * { box-sizing: border-box; }
@@ -62,9 +63,9 @@
     </style>
   </head>
   <body>
-    <div id="waiting">En attente d'une rencontre équipe sur cette arène…</div>
+    <div id="waiting" data-i18n="team_arena.waiting">En attente d'une rencontre équipe sur cette arène…</div>
     <div id="match">
-      <div class="bout-info" id="bout-info">Assaut —/—</div>
+      <div class="bout-info" id="bout-info" data-i18n="team_arena.bout_placeholder">Assaut —/—</div>
       <div class="teams">
         <div>
           <div class="team-name" id="team-a-name">—</div>
@@ -84,11 +85,13 @@
       <div class="cap" id="cap-label"></div>
       <div class="timer" id="timer">3:00</div>
       <div class="cards" id="cards"></div>
-      <div class="match-complete" id="match-complete" style="display: none">Rencontre terminée</div>
+      <div class="match-complete" id="match-complete" style="display: none" data-i18n="team_arena.match_complete">Rencontre terminée</div>
     </div>
 
     <script>
-      (function () {
+      (async function () {
+        await window.initRemoteI18n();
+        document.title = window.T('team_arena.title');
         const CARD_BADGE = { white: '⬜', yellow: '🟨', red: '🟥', black: '⬛' };
 
         function getArenaId() {
@@ -133,7 +136,7 @@
             complete.style.display = 'none';
             const bout = lastState.currentBout;
             document.getElementById('bout-info').textContent = bout
-              ? `Assaut ${bout.boutOrder}/${lastState.bouts.length}`
+              ? window.T('team_arena.bout_info', { n: bout.boutOrder, total: lastState.bouts.length })
               : '';
             document.getElementById('fencer-a-name').textContent = bout ? bout.fencerAName : '';
             document.getElementById('fencer-b-name').textContent = bout ? bout.fencerBName : '';
@@ -141,8 +144,10 @@
 
           document.getElementById('score-a').textContent = lastState.liveScoreA;
           document.getElementById('score-b').textContent = lastState.liveScoreB;
-          document.getElementById('cap-label').textContent =
-            `Plafond : ${lastState.cap.maxTouches} touches valides ou ${formatTime(lastState.cap.maxDurationSec)}`;
+          document.getElementById('cap-label').textContent = window.T('team_arena.cap_label', {
+            touches: lastState.cap.maxTouches,
+            time: formatTime(lastState.cap.maxDurationSec),
+          });
 
           const remaining = Math.max(0, lastState.cap.maxDurationSec - lastState.elapsedSec);
           const timerEl = document.getElementById('timer');
