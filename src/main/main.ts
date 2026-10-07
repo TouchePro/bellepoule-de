@@ -1596,6 +1596,7 @@ ipcMain.handle('remote:startServer', async (_event, competitionId: string, port?
     }
 
     const server = new RemoteScoreServer(db, effectivePort, effectiveHost, tlsOptions);
+    server.setLanguage(currentMenuLanguage);
     try {
       await server.start();
     } catch (startError: any) {
@@ -2180,6 +2181,7 @@ ipcMain.handle('remote:changePort', async (_, competitionId: string, newPort: nu
     entry.server.stop();
     usedPorts.delete(entry.port);
     const server = new RemoteScoreServer(db, newPort, host, tlsOptions);
+    server.setLanguage(currentMenuLanguage);
     server.start();
     remoteServers.set(competitionId, { server, port: newPort, host, useHttps: !!tlsOptions, certFingerprint });
     usedPorts.add(newPort);
@@ -2308,6 +2310,7 @@ ipcMain.handle('training:startServer', async (_event, port?: number, host?: stri
       }
     }
     const server = new RemoteScoreServer(db, effectivePort, effectiveHost, tlsOptions);
+    server.setLanguage(currentMenuLanguage);
     try {
       await server.start();
     } catch (startError: any) {

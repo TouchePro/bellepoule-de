@@ -743,16 +743,16 @@
     <!-- Overlay tirage au sort (pièce 3D) -->
     <div id="coin-flip-overlay" class="hidden">
       <div class="coin-flip-content">
-        <div class="coin-flip-title">Tirage au sort</div>
-        <div class="coin-flip-subtitle">Égalité persistante — fin du temps supplémentaire</div>
+        <div class="coin-flip-title" data-i18n="arena.coin_flip_title">Tirage au sort</div>
+        <div class="coin-flip-subtitle" data-i18n="arena.coin_flip_subtitle">Égalité persistante — fin du temps supplémentaire</div>
         <div class="coin-scene">
           <div class="coin" id="coin-3d">
             <div class="coin-face coin-front">
-              <span class="coin-face-label">VERT</span>
+              <span class="coin-face-label" data-i18n="arena.color_green">Vert</span>
               <span class="coin-face-name" id="coin-name-green">—</span>
             </div>
             <div class="coin-face coin-back">
-              <span class="coin-face-label">ROUGE</span>
+              <span class="coin-face-label" data-i18n="arena.color_red">Rouge</span>
               <span class="coin-face-name" id="coin-name-red">—</span>
             </div>
           </div>
@@ -766,7 +766,7 @@
     <div class="header">
       <div class="arena-title">
         <span>⚔️</span>
-        <span><span id="arena-word-label">Arène</span> <span id="arena-number">1</span></span>
+        <span><span id="arena-word-label" data-i18n="remote.arena">Arène</span> <span id="arena-number">1</span></span>
       </div>
       <div class="status-section">
         <div class="inversion-toggle">
@@ -809,7 +809,7 @@
         </div>
 
         <!-- VS -->
-        <div class="vs-center">VS</div>
+        <div class="vs-center" data-i18n="dashboard.vs_label">VS</div>
 
         <!-- Tireur B (Rouge) -->
         <div class="photo-card photo-card-b">
@@ -843,7 +843,7 @@
           </div>
 
           <!-- VS -->
-          <div class="vs-divider">VS</div>
+          <div class="vs-divider" data-i18n="dashboard.vs_label">VS</div>
 
           <!-- Tireur B (Vert) -->
           <div id="fencer-b-display" class="fencer-display green-side">
@@ -857,10 +857,10 @@
 
         <!-- Chronomètre -->
         <div class="timer-section">
-          <div class="mort-subite-banner" id="mort-subite-banner">⚡ MORT SUBITE</div>
+          <div class="mort-subite-banner" id="mort-subite-banner" data-i18n="referee.sudden_death">⚡ MORT SUBITE</div>
           <div class="timer-display" id="timer-display">03:00</div>
-          <div class="sudden-death-banner" id="sudden-death-banner">⏱ 30s SUPPLEMENTAIRE</div>
-          <div class="timer-label">Temps restant</div>
+          <div class="sudden-death-banner" id="sudden-death-banner" data-i18n="referee.supplementary_time">⏱ 30s SUPPLEMENTAIRE</div>
+          <div class="timer-label" data-i18n="arena.time_remaining">Temps restant</div>
         </div>
       </div>
     </div>
@@ -951,7 +951,7 @@
           }
           ov.innerHTML = '<div style="background:rgba(0,0,0,0.85);border:3px solid #3b82f6;border-radius:1.5rem;padding:2rem 4rem;text-align:center;max-width:80vw;">'
             + '<div style="font-size:2.5rem;font-weight:900;color:#fff;margin-bottom:0.5rem;">📺 ' + String(label).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c])) + '</div>'
-            + '<div style="font-size:1rem;color:#94a3b8;">Identification écran</div>'
+            + '<div style="font-size:1rem;color:#94a3b8;">' + window.T('lobby.identify_screen_label') + '</div>'
             + '</div>';
           ov.style.display = 'flex';
           clearTimeout(ov._t);
@@ -1018,8 +1018,10 @@
 
           const fA = this.inversionEnabled ? fencerB : fencerA;
           const fB = this.inversionEnabled ? fencerA : fencerB;
-          const nameA = fA ? `${fA.lastName || ''} ${fA.firstName || ''}`.trim() || 'VERT'  : 'VERT';
-          const nameB = fB ? `${fB.lastName || ''} ${fB.firstName || ''}`.trim() || 'ROUGE' : 'ROUGE';
+          const greenFallback = window.T('arena.color_green').toUpperCase();
+          const redFallback   = window.T('arena.color_red').toUpperCase();
+          const nameA = fA ? (`${fA.lastName || ''} ${fA.firstName || ''}`.trim() || greenFallback) : greenFallback;
+          const nameB = fB ? (`${fB.lastName || ''} ${fB.firstName || ''}`.trim() || redFallback) : redFallback;
           nameGreen.textContent = nameA;
           nameRed.textContent   = nameB;
 
@@ -1045,8 +1047,8 @@
           setTimeout(() => {
             const winnerName = visualWinner === 'A' ? nameA : nameB;
             const colorClass  = visualWinner === 'A' ? 'winner-red' : 'winner-green';
-            const colorLabel  = visualWinner === 'A' ? 'ROUGE' : 'VERT';
-            result.textContent = `🏆 ${winnerName} gagne ! (${colorLabel})`;
+            const colorLabel  = visualWinner === 'A' ? window.T('arena.color_red') : window.T('arena.color_green');
+            result.textContent = window.T('arena.coin_winner', { name: winnerName, color: colorLabel });
             result.className   = colorClass;
           }, 3600);
 
@@ -1059,14 +1061,14 @@
           const banner = document.getElementById('card-announcement-banner');
           if (!banner) return;
 
-          const typeLabel = ann.cardType === 'white' ? 'BLANC' : ann.cardType === 'yellow' ? 'JAUNE' : ann.cardType === 'red' ? 'ROUGE' : 'NOIR';
+          const typeLabel = ann.cardType === 'white' ? window.T('arena.card_color_white') : ann.cardType === 'yellow' ? window.T('arena.card_color_yellow') : ann.cardType === 'red' ? window.T('arena.card_color_red') : window.T('arena.card_color_black');
           let line1, line2;
 
           if (ann.isRevalorisation) {
-            const fromLabel = ann.fromCard === 'white' ? 'blanc' : ann.fromCard === 'yellow' ? 'jaune' : ann.fromCard;
-            line1 = `⚠️ Revalorisation 2ème ${fromLabel} → ${typeLabel} — ${ann.fencerName}`;
+            const fromLabel = ann.fromCard === 'white' ? window.T('arena.card_color_white') : ann.fromCard === 'yellow' ? window.T('arena.card_color_yellow') : ann.fromCard;
+            line1 = window.T('arena.card_revalorisation', { from: fromLabel, to: typeLabel, name: ann.fencerName });
           } else {
-            line1 = `Carton ${typeLabel} — ${ann.fencerName}`;
+            line1 = window.T('arena.card_announcement', { color: typeLabel, name: ann.fencerName });
           }
           line2 = ann.reason || null;
 

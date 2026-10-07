@@ -1235,7 +1235,7 @@
     <div class="header">
       <h1>
         <span>⚔️</span>
-        <span><span id="arena-label">Arène</span> <span id="arena-number">1</span></span>
+        <span><span id="arena-label" data-i18n="remote.arena">Arène</span> <span id="arena-number">1</span></span>
       </h1>
       <div class="connection-status">
         <button id="btn-swap" class="swap-btn" onclick="refereeApp.toggleSwap()" data-i18n-title="referee.swap_colors" title="Inverser rouge/vert">⇄</button>
@@ -1271,6 +1271,7 @@
             font-size: 0.7rem;
             margin-left: 0.4rem;
           "
+          data-i18n-title="referee.battery_low_title"
           title="Batterie faible"
         >
           🔋 <span id="battery-level">--</span>%
@@ -1278,12 +1279,14 @@
         <button
           id="btn-dt-icon"
           class="dt-icon-btn"
+          data-i18n-title="referee.dt_call"
           title="Appel DT (appui long = annuler)"
           aria-label="Appel DT"
         >📣</button>
         <button
           id="btn-journal"
           onclick="window.open(`/arene${refereeApp?.arenaNumber || document.getElementById('arena-number').textContent}/journal`, '_blank')"
+          data-i18n-title="referee.journal_title"
           title="Journal du match"
           aria-label="Journal"
           style="background:rgba(139,92,246,0.15); border:1px solid rgba(139,92,246,0.4); color:#c4b5fd; border-radius:0.5rem; padding:0.3rem 0.6rem; font-size:1rem; cursor:pointer;"
@@ -1299,8 +1302,9 @@
             id="btn-back-to-list"
             onclick="if(!refereeApp.timerRunning) window.location.reload();"
             style="background:rgba(0,0,0,0.12);border:none;border-radius:0.5rem;color:#374151;padding:0.35rem 0.85rem;font-size:0.85rem;cursor:pointer;"
+            data-i18n-title="referee.back_enabled_title"
             title="Retour à la liste des matchs"
-          >← Retour</button>
+          ><span data-i18n="referee.back_btn">← Retour</span></button>
         </div>
         <div class="fencers-container">
           <!-- Tireur A (Rouge) -->
@@ -1389,6 +1393,7 @@
         <div class="timer-section">
           <div
             id="mort-subite-label"
+            data-i18n="referee.sudden_death_zone_c_label"
             style="
               display: none;
               color: #ea580c;
@@ -1426,9 +1431,10 @@
             <button
               id="btn-tts-toggle"
               onclick="refereeApp.toggleTTS()"
+              data-i18n-title="referee.tts_voice_title"
               title="Minuteur vocal"
               style="background:none;border:1px solid rgba(255,255,255,0.3);border-radius:0.5rem;color:rgba(255,255,255,0.7);font-size:0.8rem;padding:0.2rem 0.6rem;cursor:pointer;"
-            >🔇 Voix</button>
+            ><span data-i18n="referee.tts_voice_off">🔇 Voix</span></button>
           </div>
         </div>
 
@@ -1478,12 +1484,12 @@
 
         <!-- Barre arbitre (visible si refereeFeatureEnabled) -->
         <div class="referee-bar hidden" id="referee-bar">
-          <div class="referee-bar-label">⚖️ Arbitre :</div>
+          <div class="referee-bar-label" data-i18n="arena.referee_label">⚖️ Arbitre :</div>
           <div class="referee-bar-name" id="referee-bar-name">—</div>
-          <button class="referee-change-btn" id="referee-change-btn" onclick="refereeApp.toggleRefereeSelector()">Changer</button>
+          <button class="referee-change-btn" id="referee-change-btn" onclick="refereeApp.toggleRefereeSelector()" data-i18n="referee.referee_change_btn">Changer</button>
           <div class="referee-selector hidden" id="referee-selector">
             <select id="referee-select" onchange="refereeApp.changeReferee(this.value)">
-              <option value="">— Sélectionner un arbitre —</option>
+              <option value="" data-i18n="referee.referee_select_placeholder">— Sélectionner un arbitre —</option>
             </select>
           </div>
         </div>
@@ -1491,7 +1497,7 @@
 
       <!-- Écran de sélection de match -->
       <div class="next-matches-screen" id="next-matches-screen">
-        <h2>📋 Matchs — <span id="next-arena-label">Arène</span> <span id="next-arena-number">1</span></h2>
+        <h2><span data-i18n="referee.matches_header">📋 Matchs —</span> <span id="next-arena-label" data-i18n="remote.arena">Arène</span> <span id="next-arena-number">1</span></h2>
         <input
           type="search"
           id="match-search"
@@ -1541,15 +1547,15 @@
     <!-- Overlay confirmation carton noir -->
     <div class="modal-overlay" id="black-card-modal">
       <div class="modal-content" style="border:3px solid #111">
-        <div class="modal-title" style="background:#111;color:#fff">⬛ Carton Noir</div>
+        <div class="modal-title" style="background:#111;color:#fff" data-i18n="referee.black_card_title">⬛ Carton Noir</div>
         <div class="modal-body">
           <p id="black-card-fencer-name" style="font-size:1.1rem;font-weight:bold;text-align:center;margin-bottom:0.5rem">—</p>
-          <p style="text-align:center;color:#dc2626">2ème carton rouge = <strong>CARTON NOIR</strong></p>
-          <p style="text-align:center;font-size:0.875rem;color:#6b7280">Le combattant sera éliminé du match.</p>
+          <p style="text-align:center;color:#dc2626"><span data-i18n="referee.black_card_second_red_prefix">2ème carton rouge = </span><strong data-i18n="referee.black_card_second_red_bold">CARTON NOIR</strong></p>
+          <p style="text-align:center;font-size:0.875rem;color:#6b7280" data-i18n="referee.black_card_body_note">Le combattant sera éliminé du match.</p>
         </div>
         <div class="modal-buttons">
-          <button class="modal-btn modal-btn-cancel" onclick="refereeApp.cancelBlackCard()">Annuler</button>
-          <button class="modal-btn modal-btn-confirm" style="background:#111;color:#fff" onclick="refereeApp.confirmBlackCard()">⬛ Confirmer l'élimination</button>
+          <button class="modal-btn modal-btn-cancel" onclick="refereeApp.cancelBlackCard()" data-i18n="referee.cancel">Annuler</button>
+          <button class="modal-btn modal-btn-confirm" style="background:#111;color:#fff" onclick="refereeApp.confirmBlackCard()" data-i18n="referee.black_card_confirm_btn">⬛ Confirmer l'élimination</button>
         </div>
       </div>
     </div>
@@ -1558,10 +1564,10 @@
     <div id="coin-flip-confirm">
       <div class="coin-flip-confirm-content">
         <div style="font-size:2.5rem;margin-bottom:0.75rem">🪙</div>
-        <div class="coin-flip-confirm-label">Tirage au sort — Vainqueur :</div>
+        <div class="coin-flip-confirm-label" data-i18n="referee.coinflip_label">Tirage au sort — Vainqueur :</div>
         <div class="coin-flip-confirm-winner" id="coin-flip-confirm-name">—</div>
         <div class="coin-flip-confirm-color" id="coin-flip-confirm-color">—</div>
-        <button class="btn-confirm-coin-flip" onclick="refereeApp.confirmCoinFlipFinish()">
+        <button class="btn-confirm-coin-flip" onclick="refereeApp.confirmCoinFlipFinish()" data-i18n="referee.coinflip_confirm_btn">
           🏁 Terminer le match
         </button>
       </div>
@@ -1704,45 +1710,45 @@
       const FAULT_REASONS = [
         {
           group: 1,
-          label: 'Groupe 1 — Blanc → Jaune → Jaune',
+          label: 'referee.fault_group_1',
           faults: [
-            "Abandon de l'aire de combat sans autorisation",
-            'Contre-attaque',
-            'Corps à corps pour éviter une touche',
-            'Couverture ou substitution de cible',
-            'Touche lourde',
-            'Interruption abusive du combat',
-            'Matériel non conforme',
-            "Non-présentation sur l'aire de combat",
-            'Réclamation injustifiée',
-            'Bousculade / jeu désordonné / enlèvement du masque avant « Cessez ! »',
-            'Commencer avant le « Combattez ! »',
-            'Poursuivre après le « Cessez ! »',
+            'referee.fault_g1_01',
+            'referee.fault_g1_02',
+            'referee.fault_g1_03',
+            'referee.fault_g1_04',
+            'referee.fault_g1_05',
+            'referee.fault_g1_06',
+            'referee.fault_g1_07',
+            'referee.fault_g1_08',
+            'referee.fault_g1_09',
+            'referee.fault_g1_10',
+            'referee.fault_g1_11',
+            'referee.fault_g1_12',
           ],
         },
         {
           group: 2,
-          label: 'Groupe 2 — Jaune → Rouge → Rouge',
+          label: 'referee.fault_group_2',
           faults: [
-            'Acte violent, vindicatif ou dangereux',
-            "Refus d'obéissance",
-            "Demande d'arrêt pour traumatisme non reconnu",
-            "Touche d'estoc",
-            'Touche portée très brutalement',
-            'Touche pendant / après une chute ou déplacement non maîtrisé',
-            "Sortie volontaire de l'arène pour éviter une touche",
-            'Utilisation du bras ou de la main non armée',
-            'Absence de marque de contrôle sur le matériel',
+            'referee.fault_g2_01',
+            'referee.fault_g2_02',
+            'referee.fault_g2_03',
+            'referee.fault_g2_04',
+            'referee.fault_g2_05',
+            'referee.fault_g2_06',
+            'referee.fault_g2_07',
+            'referee.fault_g2_08',
+            'referee.fault_g2_09',
           ],
         },
         {
           group: 3,
-          label: 'Groupe 3 — Rouge direct',
+          label: 'referee.fault_group_3',
           faults: [
-            'Combat non loyal',
-            "Combattant troublant l'ordre sur l'arène",
-            "Toute personne troublant l'ordre hors de l'arène",
-            'Comportement antisportif',
+            'referee.fault_g3_01',
+            'referee.fault_g3_02',
+            'referee.fault_g3_03',
+            'referee.fault_g3_04',
           ],
         },
       ];
@@ -1889,7 +1895,7 @@
           this.showSyncIndicator(false);
           this.updateOfflineBadge();
           if (result.synced > 0) {
-            this.showNotification(`✅ ${result.synced} action(s) synchronisée(s)`);
+            this.showNotification(window.T('referee.sync_success', { count: result.synced }));
           }
         }
 
@@ -2096,7 +2102,7 @@
           }
           ov.innerHTML = '<div style="background:rgba(0,0,0,0.85);border:3px solid #3b82f6;border-radius:1.5rem;padding:2rem 4rem;text-align:center;max-width:80vw;">'
             + '<div style="font-size:2.5rem;font-weight:900;color:#fff;margin-bottom:0.5rem;">🤺 ' + String(label).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c])) + '</div>'
-            + '<div style="font-size:1rem;color:#94a3b8;">Identification tablette arbitre</div>'
+            + '<div style="font-size:1rem;color:#94a3b8;">' + window.T('referee.identify_overlay_label') + '</div>'
             + '</div>';
           ov.style.display = 'flex';
           clearTimeout(ov._t);
@@ -2118,7 +2124,7 @@
             this.updateConnectionStatus(true);
             this.socket.emit('join_arena', { arenaId: this.arenaId, role: 'referee' });
             this.socket.emit('client:register', { clientType: 'referee', arenaId: this.arenaId, userAgent: navigator.userAgent, screenId: _screenId });
-            this.showNotification('✅ Connecté au serveur');
+            this.showNotification(window.T('referee.connected_notif'));
             // Synchroniser les actions mises en file hors-ligne
             this.syncOfflineQueue();
           });
@@ -2141,13 +2147,13 @@
 
           this.socket.on('disconnect', () => {
             this.updateConnectionStatus(false);
-            this.showNotification('❌ Déconnecté', true);
+            this.showNotification(window.T('referee.disconnected_notif'), true);
           });
 
           this.socket.on('connect_error', (err) => {
             this.updateConnectionStatus(false);
             const text = document.getElementById('connection-text');
-            if (text) text.textContent = `❌ ${err?.message || 'Erreur réseau'}`;
+            if (text) text.textContent = `❌ ${err?.message || window.T('arena.network_error')}`;
           });
 
           this.socket.on('auth_error', () => {
@@ -2168,13 +2174,13 @@
             if (btn) {
               btn.classList.remove('dt-active');
               btn.classList.add('dt-ack');
-              btn.title = 'DT en route (appui long = annuler)';
+              btn.title = window.T('referee.dt_en_route_title');
             }
-            this.showNotification('✅ DT en route !');
+            this.showNotification(window.T('referee.dt_en_route'));
             setTimeout(() => {
               this._resetDTButton();
               const b = document.getElementById('btn-dt-icon');
-              if (b) b.title = 'Appel DT (appui long = annuler)';
+              if (b) b.title = window.T('referee.dt_call');
             }, 10000);
           });
         }
@@ -2266,7 +2272,7 @@
               }
             }
             if (low && force) {
-              this.showNotification(`🔋 Batterie faible (${pct}%)`, true);
+              this.showNotification(window.T('referee.battery_low_notif', { pct }), true);
             }
           };
 
@@ -2329,7 +2335,7 @@
         addScore(fencer, points) {
           if (!this.currentMatch) return;
           if (this.matchStatus === 'not_started') {
-            this.showNotification('⏱ Démarrez le match pour saisir des touches');
+            this.showNotification(window.T('referee.start_match_first'));
             return;
           }
           if (this.matchStatus === 'finished') return;
@@ -2340,7 +2346,7 @@
             (this.overtimeType === 'challenger' || this.overtimeType === 'challenger_supplementary') &&
             points !== 5
           ) {
-            this.showNotification('⚡ Mort subite : Zone C uniquement !');
+            this.showNotification(window.T('referee.sudden_death_zone_c_notif'));
             return;
           }
 
@@ -2353,7 +2359,7 @@
             !this.trainingCustomRules.allowedZones.includes(_zone)
           ) {
             const allowed = this.trainingCustomRules.allowedZones.join(', ');
-            this.showNotification(`Zone ${_zone} non autorisée (entraînement : ${allowed} uniquement)`);
+            this.showNotification(window.T('referee.zone_not_allowed', { zone: _zone, allowed }));
             return;
           }
 
@@ -2392,7 +2398,7 @@
         addCard(fencer, cardType, noBlackEscalation = false) {
           if (!this.currentMatch) return;
           if (this.matchStatus === 'not_started') {
-            this.showNotification('⏱ Démarrez le match pour saisir des touches');
+            this.showNotification(window.T('referee.start_match_first'));
             return;
           }
           if (this.matchStatus === 'finished') return;
@@ -2408,7 +2414,7 @@
             const whiteCount = cards.filter(c => c === 'white').length;
             if (whiteCount >= 1) {
               cardType = 'yellow';
-              this.showNotification('⚠️ 2ème blanc = Jaune automatique');
+              this.showNotification(window.T('referee.white_to_yellow_auto'));
             }
           }
 
@@ -2420,7 +2426,7 @@
               this._pendingBlackCardFencer = ef;
               const displayPos = this._effectiveFencer(ef); // logique → position affichée
               const nameEl = document.getElementById(`fencer-${displayPos.toLowerCase()}-name`);
-              const fencerName = nameEl ? nameEl.textContent.trim() : `Tireur ${ef}`;
+              const fencerName = nameEl ? nameEl.textContent.trim() : window.T('referee.fencer_fallback', { letter: ef });
               document.getElementById('black-card-fencer-name').textContent = fencerName;
               document.getElementById('black-card-modal').classList.add('active');
               return; // attendre confirmation
@@ -2433,17 +2439,17 @@
             if (cardType === 'red') {
               if (ef === 'A') this.scoreB += 1;
               else this.scoreA += 1;
-              this.showNotification("🟥 +1 point pour l'adversaire");
+              this.showNotification(window.T('referee.point_opponent_1'));
             }
             // jaune = avertissement sans point en escrime moderne
           } else if (cardType === 'yellow') {
             if (ef === 'A') this.scoreB += 3;
             else this.scoreA += 3;
-            this.showNotification("🟨 +3 points pour l'adversaire");
+            this.showNotification(window.T('referee.point_opponent_3'));
           } else if (cardType === 'red') {
             if (ef === 'A') this.scoreB += 5;
             else this.scoreA += 5;
-            this.showNotification("🟥 +5 points pour l'adversaire");
+            this.showNotification(window.T('referee.point_opponent_5'));
           }
 
           this.updateScores();
@@ -2493,9 +2499,9 @@
 
           const displayPos = this._effectiveFencer(fencer); // _effectiveFencer is its own inverse
           const nameEl = document.getElementById(`fencer-${displayPos.toLowerCase()}-name`);
-          const fencerName = nameEl ? nameEl.textContent.trim() : `Tireur ${fencer}`;
+          const fencerName = nameEl ? nameEl.textContent.trim() : window.T('referee.fencer_fallback', { letter: fencer });
           document.getElementById('reason-selector-title').textContent =
-            `Raison du carton — ${fencerName}`;
+            window.T('referee.reason_selector_title_named', { name: fencerName });
 
           // Construire la liste des raisons filtrée selon le carton cliqué
           const body = document.getElementById('reason-selector-body');
@@ -2506,16 +2512,17 @@
             if (originalCardType === 'red') return group === 3;
             return true;
           });
+          const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
           filteredReasons.forEach(({ group, label, faults }) => {
             const preview = this.determineCardFromGroup(group, fencer);
-            const previewLabel =
-              preview === 'white' ? 'Blanc' : preview === 'yellow' ? 'Jaune' : 'Rouge';
+            const previewLabel = cap(window.T(`arena.card_color_${preview}`));
             const titleEl = document.createElement('div');
             titleEl.className = 'reason-group-title';
-            titleEl.textContent = `${label} → ${previewLabel}`;
+            titleEl.textContent = `${window.T(label)} → ${previewLabel}`;
             body.appendChild(titleEl);
 
-            faults.forEach(fault => {
+            faults.forEach(faultKey => {
+              const fault = window.T(faultKey);
               const btn = document.createElement('button');
               btn.className = 'reason-btn';
               btn.textContent = fault;
@@ -2543,7 +2550,7 @@
 
           // Annonce avec raison
           const nameEl = document.getElementById(`fencer-${fencer.toLowerCase()}-name`);
-          const fencerName = nameEl ? nameEl.textContent.trim() : `Tireur ${fencer}`;
+          const fencerName = nameEl ? nameEl.textContent.trim() : window.T('referee.fencer_fallback', { letter: fencer });
           this.socket.emit('arena_control', {
             arenaId: this.arenaId,
             action: 'card_announcement',
@@ -2589,7 +2596,7 @@
           this.updateCardsDisplay();
           this.broadcastUpdate();
 
-          this.showNotification('⬛ Carton noir — combattant éliminé !');
+          this.showNotification(window.T('referee.black_card_notif'));
           if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
 
           // Terminer le match : l'adversaire du fautif est vainqueur
@@ -2670,7 +2677,7 @@
           if (!btn || (!btn.classList.contains('dt-active') && !btn.classList.contains('dt-ack'))) return;
           this._resetDTButton();
           this.socket.emit('arena_control', { arenaId: this.arenaId, action: 'dt_cancel' });
-          this.showNotification('❌ Appel DT annulé');
+          this.showNotification(window.T('referee.dt_cancelled'));
         }
 
         _resetDTButton() {
@@ -2698,7 +2705,7 @@
           this.updateControlButtons();
           this.broadcastUpdate();
           this.saveScore();
-          this.showNotification('↩ Action annulée');
+          this.showNotification(window.T('referee.action_undone'));
           document.getElementById('btn-undo').disabled = this.actionHistory.length === 0;
         }
 
@@ -2712,9 +2719,7 @@
             : 'challenger';
           if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
           this.updateSuddenDeathUI();
-          this.showNotification(
-            '⚡ MORT SUBITE – Les deux tireurs ont 10 pts ! Zone C uniquement.'
-          );
+          this.showNotification(window.T('referee.sudden_death_triggered'));
         }
 
         // Afficher les labels selon l'état courant
@@ -2762,8 +2767,8 @@
           });
           // label = couleur affichée pour le tireur qui a quitté la piste
           const exitColor = fencer === 'A'
-            ? (this.swapped ? 'Vert' : 'Rouge')
-            : (this.swapped ? 'Rouge' : 'Vert');
+            ? (this.swapped ? window.T('arena.color_green') : window.T('arena.color_red'))
+            : (this.swapped ? window.T('arena.color_red') : window.T('arena.color_green'));
           this.showNotification(window.T('referee.arena_exit_notif', { label: exitColor, points }));
           if (this.cardAnnounceEnabled) {
             const nameEl = document.getElementById(`fencer-${fencer.toLowerCase()}-name`);
@@ -2813,7 +2818,7 @@
           this.updateScores();
           this.broadcastUpdate();
           this.saveScore();
-          this.showNotification(`-${points} point${points > 1 ? 's' : ''}`);
+          this.showNotification(window.T('referee.points_removed', { points }));
         }
 
         // Retirer le dernier carton (appui long sur n'importe quel bouton carton)
@@ -2827,7 +2832,7 @@
           const history = ef === 'A' ? this.faultHistoryA : this.faultHistoryB;
 
           if (cards.length === 0) {
-            this.showNotification('Aucun carton à retirer');
+            this.showNotification(window.T('referee.no_card_to_remove'));
             return;
           }
 
@@ -2872,8 +2877,8 @@
           this.updateCardsDisplay();
           this.broadcastUpdate();
           this.saveScore();
-          const label = lastCard === 'white' ? 'blanc' : lastCard === 'yellow' ? 'jaune' : 'rouge';
-          this.showNotification(`↩ Dernier carton ${label} annulé`);
+          const label = lastCard === 'white' ? window.T('arena.card_color_white') : lastCard === 'yellow' ? window.T('arena.card_color_yellow') : window.T('arena.card_color_red');
+          this.showNotification(window.T('referee.card_removed', { color: label }));
         }
 
         toggleSwap() {
@@ -2959,12 +2964,12 @@
             btn.disabled = true;
             btn.style.opacity = '0.4';
             btn.style.cursor = 'not-allowed';
-            btn.title = 'Retour désactivé pendant le chrono';
+            btn.title = window.T('referee.back_disabled_title');
           } else {
             btn.disabled = false;
             btn.style.opacity = '1';
             btn.style.cursor = 'pointer';
-            btn.title = 'Retour à la liste des matchs';
+            btn.title = window.T('referee.back_enabled_title');
           }
         }
 
@@ -2996,7 +3001,7 @@
                   // Fin des 30s supplémentaires avec égalité → tirage au sort
                   this.triggerTiebreaker();
                 } else {
-                  this.showNotification('⏰ Temps écoulé !');
+                  this.showNotification(window.T('referee.time_up'));
                 }
               }
             }
@@ -3029,13 +3034,13 @@
           this.broadcastTimerUpdate();
           this.updateSuddenDeathUI();
           this.updateControlButtons();
-          this.showNotification('🔄 Chronomètre réinitialisé');
+          this.showNotification(window.T('referee.timer_reset_notif'));
         }
 
         toggleTTS() {
           this.ttsEnabled = !this.ttsEnabled;
           const btn = document.getElementById('btn-tts-toggle');
-          if (btn) btn.textContent = this.ttsEnabled ? '🔊 Voix' : '🔇 Voix';
+          if (btn) btn.textContent = window.T(this.ttsEnabled ? 'referee.tts_voice_on' : 'referee.tts_voice_off');
           if (this.ttsEnabled) {
             const MSG = {
               fr: 'Minuteur vocal activé', en: 'Voice timer enabled',
@@ -3128,7 +3133,7 @@
             time: 0,
             timerStatus: 'paused',
           });
-          this.showNotification('⚖️ Égalité ! Appuyez sur "Lancer 30s" pour démarrer le temps supplémentaire.');
+          this.showNotification(window.T('referee.tie_launch_30s'));
         }
 
         launchSuddenDeath() {
@@ -3150,8 +3155,8 @@
           this.broadcastTimerUpdate();
           this.updateSuddenDeathUI();
           const msg = this.overtimeType === 'challenger_supplementary'
-            ? '⏱ 30s SUPPLEMENTAIRE – Égalité ! Zone C uniquement (Mort Subite Challenger).'
-            : '⏱ 30s SUPPLEMENTAIRE – Égalité à temps ! Toutes les zones sont valides.';
+            ? window.T('referee.overtime_zone_c_only')
+            : window.T('referee.overtime_all_zones');
           this.showNotification(msg);
           this.startTimer();
         }
@@ -3167,7 +3172,7 @@
             winner,
           });
 
-          this.showNotification('🪙 Tirage au sort — animation en cours...');
+          this.showNotification(window.T('referee.coinflip_animating'));
 
           // Afficher la confirmation sur la tablette après la fin de l'animation
           setTimeout(() => this.showCoinFlipConfirm(winner), 4500);
@@ -3176,10 +3181,10 @@
         showCoinFlipConfirm(winner) {
           const winnerFencer = winner === 'A' ? this.currentMatch?.fencerA : this.currentMatch?.fencerB;
           const winnerName = winnerFencer
-            ? `${winnerFencer.lastName || ''} ${winnerFencer.firstName || ''}`.trim() || `Tireur ${winner}`
-            : `Tireur ${winner}`;
+            ? `${winnerFencer.lastName || ''} ${winnerFencer.firstName || ''}`.trim() || window.T('referee.fencer_fallback', { letter: winner })
+            : window.T('referee.fencer_fallback', { letter: winner });
           // fencerA est toujours côté VERT (logical), fencerB toujours ROUGE
-          const colorLabel = winner === 'A' ? 'VERT' : 'ROUGE';
+          const colorLabel = (winner === 'A' ? window.T('arena.color_green') : window.T('arena.color_red')).toUpperCase();
 
           const nameDisplay = document.getElementById('coin-flip-confirm-name');
           const colorDisplay = document.getElementById('coin-flip-confirm-color');
@@ -3205,8 +3210,8 @@
           if (!this.currentMatch) return;
 
           const nameEl = document.getElementById(`fencer-${winner.toLowerCase()}-name`);
-          const winnerName = nameEl ? nameEl.textContent.trim() : `Tireur ${winner}`;
-          this.showNotification(`🏆 ${winnerName} remporte le match (tirage au sort)`);
+          const winnerName = nameEl ? nameEl.textContent.trim() : window.T('referee.fencer_fallback', { letter: winner });
+          this.showNotification(window.T('referee.coinflip_winner_notif', { name: winnerName }));
 
           this.isSuddenDeath = false;
           this.waitingOvertimeStart = false;
@@ -3356,7 +3361,7 @@
             action: 'start',
           });
 
-          this.showNotification('▶️ Match démarré !');
+          this.showNotification(window.T('referee.match_started'));
         }
 
         showFinishModal() {
@@ -3414,7 +3419,7 @@
               action: 'finish',
             });
 
-            this.showNotification('✅ Match terminé et enregistré !');
+            this.showNotification(window.T('referee.match_finished_saved'));
 
             // Signature requise sur tablette après un match du tableau
             if (result.requireSignature && finishedMatch.fencerA?.id && finishedMatch.fencerB?.id) {
@@ -3524,7 +3529,7 @@
           const canvasA = document.getElementById('match-sig-canvas-a');
           const canvasB = document.getElementById('match-sig-canvas-b');
           if (!canvasA._hasInk || !canvasB._hasInk) {
-            this.showNotification('✍️ Les deux tireurs doivent signer', true);
+            this.showNotification(window.T('referee.match_sig_both_required'), true);
             return;
           }
           const btn = document.getElementById('match-sig-submit');
@@ -3540,7 +3545,7 @@
               send(match.fencerA.id, canvasA.toDataURL('image/png')),
               send(match.fencerB.id, canvasB.toDataURL('image/png')),
             ]);
-            this.showNotification('✅ Signatures enregistrées');
+            this.showNotification(window.T('referee.match_sig_saved'));
             this.closeMatchSignature();
           } catch (e) {
             console.error('Erreur signatures match:', e);
@@ -3561,7 +3566,7 @@
           // État d'attente : l'arbitre doit déclencher manuellement les 30s
           if (this.waitingOvertimeStart) {
             startBtn.disabled = false;
-            startBtn.textContent = '⏱ Lancer 30s';
+            startBtn.textContent = window.T('referee.launch_30s_btn');
             startBtn.className = 'control-btn btn-launch-overtime';
             if (finishBtn) finishBtn.disabled = false;
             this.updateScoreButtons();
@@ -3659,7 +3664,7 @@
               return;
             }
             if (this.matchStatus === 'in_progress') {
-              this.showNotification('⚠️ Match clôturé depuis l\'application principale');
+              this.showNotification(window.T('referee.arena_exit_from_app'));
               this.stopTimer();
               setTimeout(() => {
                 this._clearActiveMatch();
@@ -3690,7 +3695,7 @@
             if (idx >= 0) this.matches[idx] = restored; else this.matches.push(restored);
             this.loadNextMatches();
             this.showNextMatchesScreen();
-            this.showNotification('↩ Match en cours — appuyez pour reprendre');
+            this.showNotification(window.T('referee.match_in_progress_resume'));
             return;
           }
 
@@ -3701,7 +3706,7 @@
             if (this.currentMatch && this.currentMatch.id === data.match.id) return;
             // Notifier sans interrompre un match en cours
             if (this.matchStatus === 'in_progress') {
-              this.showNotification('⏭️ Prochain match disponible après ce match');
+              this.showNotification(window.T('referee.next_match_after'));
               return;
             }
 
@@ -3738,7 +3743,7 @@
             // Rafraîchir et afficher l'écran de sélection
             this.loadNextMatches();
             this.showNextMatchesScreen();
-            this.showNotification('⏭️ Match suivant disponible !');
+            this.showNotification(window.T('referee.next_match_ready'));
           }
         }
 
@@ -3778,7 +3783,7 @@
 
           const sel = document.getElementById('referee-select');
           if (sel) {
-            sel.innerHTML = '<option value="">— Sélectionner un arbitre —</option>';
+            sel.innerHTML = `<option value="">${window.T('referee.referee_select_placeholder')}</option>`;
             for (const r of (this.refereesList || [])) {
               const opt = document.createElement('option');
               opt.value = r.id;
@@ -3810,7 +3815,7 @@
           }
           const sel = document.getElementById('referee-selector');
           if (sel) sel.classList.add('hidden');
-          this.showNotification('✅ Arbitre mis à jour');
+          this.showNotification(window.T('referee.referee_updated'));
         }
 
         showNextMatchesScreen() {
@@ -3866,27 +3871,27 @@
           if (matches.length === 0) {
             const arenaNum = this.arenaNumber || document.getElementById('arena-number').textContent;
             container.innerHTML = `
-              <div class="next-matches-empty">✅ Tous les matchs de cette arène sont terminés</div>
+              <div class="next-matches-empty">${window.T('referee.all_matches_done')}</div>
               <div style="display:flex;gap:0.75rem;justify-content:center;margin-top:1.25rem;flex-wrap:wrap;">
                 <a href="/arene${arenaNum}/poule" style="display:inline-flex;align-items:center;gap:0.4rem;padding:0.85rem 1.5rem;background:#4f46e5;color:#fff;border-radius:0.75rem;font-size:1rem;font-weight:700;text-decoration:none;">
-                  ✍️ SIGNATURE
+                  ${window.T('referee.pco_signature_btn')}
                 </a>
                 <a href="/arene${arenaNum}/journal" target="_blank" style="display:inline-flex;align-items:center;gap:0.4rem;padding:0.85rem 1.5rem;background:#4c1d95;color:#c4b5fd;border-radius:0.75rem;font-size:1rem;font-weight:700;text-decoration:none;">
-                  📋 JOURNAL
+                  ${window.T('referee.pco_journal_btn')}
                 </a>
               </div>`;
             return;
           }
           const statusBadge = status => {
             if (status === 'in_progress')
-              return '<span style="background:#f59e0b;color:#fff;font-size:0.7rem;padding:0.15rem 0.4rem;border-radius:0.75rem;margin-left:0.4rem;">⚔️ En cours</span>';
-            return '<span style="background:#3b82f6;color:#fff;font-size:0.7rem;padding:0.15rem 0.4rem;border-radius:0.75rem;margin-left:0.4rem;">🕐 À jouer</span>';
+              return `<span style="background:#f59e0b;color:#fff;font-size:0.7rem;padding:0.15rem 0.4rem;border-radius:0.75rem;margin-left:0.4rem;">${window.T('referee.status_in_progress')}</span>`;
+            return `<span style="background:#3b82f6;color:#fff;font-size:0.7rem;padding:0.15rem 0.4rem;border-radius:0.75rem;margin-left:0.4rem;">${window.T('referee.status_pending')}</span>`;
           };
           container.innerHTML = matches
             .map(match => {
               const poolNum = match.poolNumber ?? (match.poolId ? match.poolId.replace(/\D/g, '') || '?' : '');
               const poolLabel = (match.poolNumber !== undefined || match.poolId)
-                ? `<span style="opacity:0.5;font-size:0.72rem;">Poule ${escHtml(String(poolNum))}</span>`
+                ? `<span style="opacity:0.5;font-size:0.72rem;">${window.T('dashboard.pool_label', { number: escHtml(String(poolNum)) })}</span>`
                 : '';
               const safeId = escHtml(match.id);
               const clubLine =
@@ -3898,7 +3903,7 @@
               <div class="next-match-card" onclick="refereeApp.selectMatchFromNextScreen('${safeId}')">
                 <div>
                   <div class="next-match-card-names">
-                    ${escHtml(match.fencerA?.lastName) || '?'} <span style="opacity:0.6;font-weight:400">vs</span> ${escHtml(match.fencerB?.lastName) || '?'}
+                    ${escHtml(match.fencerA?.lastName) || '?'} <span style="opacity:0.6;font-weight:400">${window.T('pool.vs_label')}</span> ${escHtml(match.fencerB?.lastName) || '?'}
                     ${statusBadge(match.status)}
                   </div>
                   <div class="next-match-card-sub">
@@ -3963,7 +3968,7 @@
           const dot = document.getElementById('status-dot');
           const text = document.getElementById('connection-text');
           if (dot) { dot.classList.add('disconnected'); dot.classList.remove('connected'); }
-          if (text) text.textContent = '❌ Erreur: ' + (e?.message || e);
+          if (text) text.textContent = window.T('referee.init_error_prefix') + (e?.message || e);
         }
       });
     </script>
@@ -3971,12 +3976,12 @@
     <!-- Modal sélecteur de raison de carton -->
     <div id="reason-selector-overlay" class="reason-selector-overlay">
       <div class="reason-selector-header">
-        <h2 id="reason-selector-title">Raison du carton</h2>
+        <h2 id="reason-selector-title" data-i18n="referee.reason_selector_title">Raison du carton</h2>
         <span id="reason-card-preview" class="reason-card-preview"></span>
       </div>
       <div class="reason-selector-body" id="reason-selector-body"></div>
       <div class="reason-selector-footer">
-        <button class="reason-cancel-btn" onclick="refereeApp.cancelReasonSelector()">
+        <button class="reason-cancel-btn" onclick="refereeApp.cancelReasonSelector()" data-i18n="referee.reason_cancel_btn">
           ✕ Annuler — carton donné sans annonce
         </button>
       </div>
@@ -3985,12 +3990,12 @@
     <!-- Overlay plein-écran : fin de poule / signature -->
     <div id="pool-complete-overlay" class="pool-complete-overlay">
       <div class="pco-icon">✍️</div>
-      <h1 class="pco-title">POULE TERMINÉE</h1>
-      <p class="pco-sub">Tous les matchs sont terminés</p>
-      <button class="pco-btn" onclick="refereeApp.goToSignature()">
+      <h1 class="pco-title" data-i18n="pool.finished">POULE TERMINÉE</h1>
+      <p class="pco-sub" data-i18n="referee.pco_sub">Tous les matchs sont terminés</p>
+      <button class="pco-btn" onclick="refereeApp.goToSignature()" data-i18n="referee.pco_signature_btn">
         ✍️ SIGNATURE
       </button>
-      <button class="pco-btn" onclick="window.open(`/arene${refereeApp.arenaNumber}/journal`, '_blank')" style="margin-top:1rem; background:#4c1d95; animation:none; font-size:1.2rem; padding:0.9rem 2rem;">
+      <button class="pco-btn" onclick="window.open(`/arene${refereeApp.arenaNumber}/journal`, '_blank')" style="margin-top:1rem; background:#4c1d95; animation:none; font-size:1.2rem; padding:0.9rem 2rem;" data-i18n="referee.pco_journal_btn">
         📋 JOURNAL
       </button>
     </div>
@@ -3998,27 +4003,27 @@
     <!-- Overlay signature des combattants après un match du tableau -->
     <div id="match-sig-overlay" class="match-sig-overlay">
       <div class="match-sig-box">
-        <h2>✍️ Signature des combattants</h2>
-        <p class="match-sig-instructions">Chaque tireur signe pour valider le score du match</p>
+        <h2 data-i18n="referee.match_sig_title">✍️ Signature des combattants</h2>
+        <p class="match-sig-instructions" data-i18n="referee.match_sig_instructions">Chaque tireur signe pour valider le score du match</p>
         <div class="match-sig-score-recall">
-          <span class="match-sig-score-label">Score final</span>
+          <span class="match-sig-score-label" data-i18n="referee.match_sig_score_label">Score final</span>
           <span id="match-sig-score" class="match-sig-score-value"></span>
         </div>
         <div class="match-sig-grid">
           <div id="match-sig-pad-a" class="match-sig-pad">
             <div class="match-sig-fencer"><span class="match-sig-letter">A</span> <strong id="match-sig-name-a"></strong></div>
             <canvas id="match-sig-canvas-a" class="match-sig-canvas"></canvas>
-            <button class="match-sig-clear" onclick="refereeApp.clearMatchSig('a')">Effacer</button>
+            <button class="match-sig-clear" onclick="refereeApp.clearMatchSig('a')" data-i18n="pool.signature_clear">Effacer</button>
           </div>
           <div id="match-sig-pad-b" class="match-sig-pad">
             <div class="match-sig-fencer"><span class="match-sig-letter">B</span> <strong id="match-sig-name-b"></strong></div>
             <canvas id="match-sig-canvas-b" class="match-sig-canvas"></canvas>
-            <button class="match-sig-clear" onclick="refereeApp.clearMatchSig('b')">Effacer</button>
+            <button class="match-sig-clear" onclick="refereeApp.clearMatchSig('b')" data-i18n="pool.signature_clear">Effacer</button>
           </div>
         </div>
         <div class="match-sig-actions">
-          <button class="match-sig-skip" onclick="refereeApp.closeMatchSignature()">Passer</button>
-          <button id="match-sig-submit" class="match-sig-validate" onclick="refereeApp.submitMatchSignatures()">Valider les signatures</button>
+          <button class="match-sig-skip" onclick="refereeApp.closeMatchSignature()" data-i18n="referee.match_sig_skip">Passer</button>
+          <button id="match-sig-submit" class="match-sig-validate" onclick="refereeApp.submitMatchSignatures()" data-i18n="referee.match_sig_validate">Valider les signatures</button>
         </div>
       </div>
     </div>

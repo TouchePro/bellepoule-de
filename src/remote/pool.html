@@ -683,9 +683,9 @@
         <div class="header-title" id="pool-title" data-i18n="pool.loading">Chargement…</div>
         <div class="header-badge" id="match-count-badge" style="display:none"></div>
       </div>
-      <button class="back-to-referee-btn" onclick="goBackToReferee()">← Arbitre</button>
-      <a href="/poule-ocr" class="back-to-referee-btn" style="text-decoration:none;margin-left:6px" title="Saisie par photo (OCR)" aria-label="Saisie par photo (OCR)">📷</a>
-      <div class="connection-badge" id="connection-badge" role="status" aria-live="polite">⚡ Connexion…</div>
+      <button class="back-to-referee-btn" onclick="goBackToReferee()" data-i18n="pool.back_to_referee">← Arbitre</button>
+      <a href="/poule-ocr" class="back-to-referee-btn" style="text-decoration:none;margin-left:6px" data-i18n-title="pool.ocr_entry_title" title="Saisie par photo (OCR)" aria-label="Saisie par photo (OCR)">📷</a>
+      <div class="connection-badge" id="connection-badge" role="status" aria-live="polite" data-i18n="pool.connecting">⚡ Connexion…</div>
     </header>
 
     <div class="tabs" role="tablist" aria-label="Vue de la poule">
@@ -728,19 +728,19 @@
     <div class="fin-overlay" id="fin-overlay">
       <span class="fin-icon">🏆</span>
       <h1 data-i18n="pool.finished">POULE TERMINÉE</h1>
-      <span style="color:#94a3b8;font-size:0.85rem;font-weight:500;">— Phase de signature</span>
+      <span style="color:#94a3b8;font-size:0.85rem;font-weight:500;" data-i18n="pool.signature_phase">— Phase de signature</span>
     </div>
 
     <!-- Modal signature -->
     <div class="sig-modal-overlay" id="sig-modal-overlay">
       <div class="sig-modal">
-        <h2>Signature<strong id="sig-modal-name"></strong></h2>
-        <p class="sig-instructions">Signez dans le cadre ci-dessous</p>
+        <h2><span data-i18n="pool.signature_label">Signature</span><strong id="sig-modal-name"></strong></h2>
+        <p class="sig-instructions" data-i18n="pool.signature_instructions">Signez dans le cadre ci-dessous</p>
         <canvas id="sig-canvas"></canvas>
         <div class="sig-modal-actions">
-          <button class="btn btn-secondary" id="sig-btn-clear">Effacer</button>
-          <button class="btn btn-secondary" id="sig-btn-cancel">Annuler</button>
-          <button class="btn btn-primary" id="sig-btn-submit">Valider</button>
+          <button class="btn btn-secondary" id="sig-btn-clear" data-i18n="pool.signature_clear">Effacer</button>
+          <button class="btn btn-secondary" id="sig-btn-cancel" data-i18n="pool.cancel">Annuler</button>
+          <button class="btn btn-primary" id="sig-btn-submit" data-i18n="pool.validate">Valider</button>
         </div>
       </div>
     </div>
@@ -758,7 +758,9 @@
         styleEl.textContent = `:root {\n${vars}\n}`;
       }
 
-      window.initRemoteI18n().catch(() => {});
+      window.initRemoteI18n().then(() => {
+        document.title = window.T('pool.page_title');
+      }).catch(() => {});
 
       // ── Extraction de l'arenaId depuis l'URL (/areneN/poule → "N") ──
       const pathMatch = window.location.pathname.match(/\/arene(\w+)\/poule/);
@@ -843,8 +845,10 @@
           finBanner.classList.remove('visible');
         }
 
-        document.getElementById('pool-title').textContent =
-          `${data.poolName || 'Poule'} — Piste ${arenaNumber}`;
+        document.getElementById('pool-title').textContent = window.T('pool.title_with_track', {
+          pool: data.poolName || window.T('pool.default_name'),
+          track: arenaNumber,
+        });
 
         const done = data.matches.filter(m => m.status === 'finished').length;
         const total = data.matches.length;
@@ -921,11 +925,11 @@
           const isSigned = !!signaturesData[rowFencer.id];
           if (!isDone) {
             sigBtn.disabled = true;
-            sigBtn.title = 'Matchs non terminés';
+            sigBtn.title = window.T('pool.signature_disabled_title');
             sigBtn.textContent = '✍';
           } else {
             sigBtn.textContent = isSigned ? '✓' : '✍';
-            sigBtn.title = isSigned ? 'Re-signer' : 'Signer';
+            sigBtn.title = isSigned ? window.T('pool.signature_resign_title') : window.T('pool.signature_sign_title');
             if (isSigned) sigBtn.classList.add('signed');
             sigBtn.addEventListener('click', e => {
               e.stopPropagation();
@@ -978,7 +982,7 @@
         if (pending.length > 0) {
           const lbl = document.createElement('div');
           lbl.className = 'section-label';
-          lbl.textContent = `À jouer (${pending.length})`;
+          lbl.textContent = window.T('pool.pending_matches_label', { count: pending.length });
           view.appendChild(lbl);
           pending.forEach(m => view.appendChild(buildMatchItem(m, fencers, m.number, false, locked)));
         }
@@ -986,7 +990,7 @@
         if (finished.length > 0) {
           const lbl = document.createElement('div');
           lbl.className = 'section-label';
-          lbl.textContent = `Terminés (${finished.length})`;
+          lbl.textContent = window.T('pool.finished_matches_label', { count: finished.length });
           view.appendChild(lbl);
           finished.forEach(m => view.appendChild(buildMatchItem(m, fencers, m.number, true, locked)));
         }
@@ -994,7 +998,7 @@
         if (matches.length === 0) {
           const empty = document.createElement('div');
           empty.className = 'status-message';
-          empty.textContent = 'Aucun match dans cette poule.';
+          empty.textContent = window.T('pool.no_matches');
           view.appendChild(empty);
         }
 
@@ -1035,7 +1039,7 @@
 
         const sep = document.createElement('span');
         sep.className = 'match-score-sep';
-        sep.textContent = isFinished ? '' : 'vs';
+        sep.textContent = isFinished ? '' : window.T('pool.vs_label');
 
         const scoreB = document.createElement('span');
         scoreB.className = 'match-score ' + scoreClass(sB, isFinished);
@@ -1074,10 +1078,12 @@
 
       function scoreLabel(score) {
         if (!score) return '–';
-        if (score.isAbstention) return 'Ab';
-        if (score.isForfait) return 'Ff';
-        if (score.isExclusion) return 'Ex';
-        return score.isVictory ? `V${score.value ?? ''}` : `D${score.value ?? ''}`;
+        if (score.isAbstention) return window.T('pool.abbr_abstention');
+        if (score.isForfait) return window.T('pool.abbr_forfait');
+        if (score.isExclusion) return window.T('pool.abbr_exclusion');
+        return score.isVictory
+          ? `${window.T('pool.abbr_victory')}${score.value ?? ''}`
+          : `${window.T('pool.abbr_defeat')}${score.value ?? ''}`;
       }
 
       // ── Helpers ──
@@ -1105,15 +1111,15 @@
         }
 
         if (scoreForRow.isAbstention) {
-          td.classList.add('special'); td.textContent = 'Ab';
+          td.classList.add('special'); td.textContent = window.T('pool.abbr_abstention');
         } else if (scoreForRow.isForfait) {
-          td.classList.add('special'); td.textContent = 'Ff';
+          td.classList.add('special'); td.textContent = window.T('pool.abbr_forfait');
         } else if (scoreForRow.isExclusion) {
-          td.classList.add('special'); td.textContent = 'Ex';
+          td.classList.add('special'); td.textContent = window.T('pool.abbr_exclusion');
         } else if (scoreForRow.isVictory) {
-          td.classList.add('victory'); td.textContent = `V${scoreForRow.value ?? ''}`;
+          td.classList.add('victory'); td.textContent = `${window.T('pool.abbr_victory')}${scoreForRow.value ?? ''}`;
         } else {
-          td.classList.add('defeat'); td.textContent = `D${scoreForRow.value ?? ''}`;
+          td.classList.add('defeat'); td.textContent = `${window.T('pool.abbr_defeat')}${scoreForRow.value ?? ''}`;
         }
 
         if (!locked) {
@@ -1225,14 +1231,14 @@
           );
           if (!res.ok) {
             const err = await res.json().catch(() => ({}));
-            alert(err.error || 'Erreur lors de la sauvegarde de la signature.');
+            alert(err.error || window.T('pool.error_save_signature'));
             return;
           }
           signaturesData[signingFencer.id] = dataURL;
           closeSignatureModal();
           if (poolData) renderAll(poolData);
         } catch {
-          alert('Erreur réseau.');
+          alert(window.T('pool.error_network'));
         } finally {
           submitBtn.disabled = false;
         }
@@ -1294,20 +1300,20 @@
         const rawB = parseInt(document.getElementById('input-score-b').value, 10);
 
         if (isNaN(rawA) || isNaN(rawB) || rawA < 0 || rawB < 0) {
-          document.getElementById('modal-error').textContent = 'Scores invalides.';
+          document.getElementById('modal-error').textContent = window.T('pool.error_invalid_scores');
           return;
         }
 
         const maxScore = pendingMatch.match.maxScore || 5;
         if (rawA > maxScore || rawB > maxScore) {
           document.getElementById('modal-error').textContent =
-            `Score maximum dépassé (max : ${maxScore}).`;
+            window.T('pool.error_max_score', { max: maxScore });
           return;
         }
 
         if (rawA === rawB) {
           document.getElementById('modal-error').textContent =
-            'Égalité non autorisée en poule.';
+            window.T('pool.error_tie_not_allowed');
           return;
         }
 
@@ -1330,13 +1336,13 @@
           if (!res.ok) {
             const err = await res.json().catch(() => ({}));
             document.getElementById('modal-error').textContent =
-              err.error || 'Erreur lors de la sauvegarde.';
+              err.error || window.T('pool.error_save_score');
             return;
           }
           closeModal();
           setTimeout(() => { if (poolData) loadPoolData(); }, 1500);
         } catch (e) {
-          document.getElementById('modal-error').textContent = 'Erreur réseau.';
+          document.getElementById('modal-error').textContent = window.T('pool.error_network');
         } finally {
           document.getElementById('btn-submit').disabled = false;
         }

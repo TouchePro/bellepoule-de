@@ -1280,16 +1280,16 @@
     <!-- Overlay tirage au sort (pièce 3D) -->
     <div id="coin-flip-overlay" class="hidden">
       <div class="coin-flip-content">
-        <div class="coin-flip-title">Tirage au sort</div>
-        <div class="coin-flip-subtitle">Égalité persistante — fin du temps supplémentaire</div>
+        <div class="coin-flip-title" data-i18n="arena.coin_flip_title">Tirage au sort</div>
+        <div class="coin-flip-subtitle" data-i18n="arena.coin_flip_subtitle">Égalité persistante — fin du temps supplémentaire</div>
         <div class="coin-scene">
           <div class="coin" id="coin-3d">
             <div class="coin-face coin-front">
-              <span class="coin-face-label">VERT</span>
+              <span class="coin-face-label" data-i18n="arena.color_green">Vert</span>
               <span class="coin-face-name" id="coin-name-green">—</span>
             </div>
             <div class="coin-face coin-back">
-              <span class="coin-face-label">ROUGE</span>
+              <span class="coin-face-label" data-i18n="arena.color_red">Rouge</span>
               <span class="coin-face-name" id="coin-name-red">—</span>
             </div>
           </div>
@@ -1301,13 +1301,13 @@
     <div id="card-announcement-banner" class="card-announcement-banner"></div>
 
     <div class="arena-number-strip">
-      <span class="arena-word-label">Arène</span> <span id="arena-strip-number">1</span>
+      <span class="arena-word-label" data-i18n="remote.arena">Arène</span> <span id="arena-strip-number">1</span>
     </div>
 
     <header class="header">
       <div class="arena-title">
         <span aria-hidden="true">⚔️</span>
-        <span><span class="arena-word-label">Arène</span> <span id="arena-number">1</span></span>
+        <span><span class="arena-word-label" data-i18n="remote.arena">Arène</span> <span id="arena-number">1</span></span>
       </div>
       <div class="status-section">
         <div class="inversion-toggle">
@@ -1327,7 +1327,7 @@
       <div class="waiting-screen" id="waiting-screen">
         <!-- Aperçu prochain combat (visible quand nextMatch disponible) -->
         <div class="next-idle-preview hidden" id="next-idle-preview">
-          <div class="next-idle-label">⚔ Prochain combat</div>
+          <div class="next-idle-label" data-i18n="arena.next_match_idle_label">⚔ Prochain combat</div>
           <div class="next-idle-fighters">
             <!-- Tireur A (Vert) -->
             <div class="photo-card photo-card-a">
@@ -1366,7 +1366,7 @@
               <div class="intro-fencer-club" id="idle-club-b"></div>
             </div>
           </div>
-          <div class="idle-referee-banner hidden" id="idle-referee-banner">⚖️ Arbitre : <span id="idle-referee-label"></span></div>
+          <div class="idle-referee-banner hidden" id="idle-referee-banner"><span data-i18n="arena.referee_label">⚖️ Arbitre :</span> <span id="idle-referee-label"></span></div>
         </div>
         <!-- Grand numéro (visible quand pas de nextMatch) -->
         <div class="arena-idle-number" id="arena-idle-number">1</div>
@@ -1442,16 +1442,16 @@
 
         <!-- Chronomètre -->
         <div class="timer-section">
-          <div class="mort-subite-banner" id="mort-subite-banner">⚡ MORT SUBITE</div>
+          <div class="mort-subite-banner" id="mort-subite-banner" data-i18n="referee.sudden_death">⚡ MORT SUBITE</div>
           <div class="timer-display" id="timer-display" role="timer" aria-label="Temps restant">03:00</div>
-          <div class="waiting-overtime-banner" id="waiting-overtime-banner">⚖️ ÉGALITÉ – attente arbitre</div>
-          <div class="sudden-death-banner" id="sudden-death-banner">⏱ 30s SUPPLEMENTAIRE</div>
-          <div class="timer-label">Temps restant</div>
+          <div class="waiting-overtime-banner" id="waiting-overtime-banner" data-i18n="arena.waiting_overtime">⚖️ ÉGALITÉ – attente arbitre</div>
+          <div class="sudden-death-banner" id="sudden-death-banner" data-i18n="referee.supplementary_time">⏱ 30s SUPPLEMENTAIRE</div>
+          <div class="timer-label" data-i18n="arena.time_remaining">Temps restant</div>
         </div>
 
         <!-- Prochain combat (affiché quand status=finished et nextMatch disponible) -->
         <div class="next-match-panel hidden" id="next-match-panel">
-          <div class="next-match-label">⚔ Prochain</div>
+          <div class="next-match-label" data-i18n="arena.next_match_label">⚔ Prochain</div>
           <div class="next-match-fighters">
             <div class="next-fighter next-fighter-a">
               <div class="next-photo-wrap">
@@ -1651,7 +1651,7 @@
           this.socket.on('connect_error', (err) => {
             this.updateConnectionStatus(false);
             const text = document.getElementById('connection-text');
-            if (text) text.textContent = `❌ ${err?.message || 'Erreur réseau'}`;
+            if (text) text.textContent = `❌ ${err?.message || window.T('arena.network_error')}`;
           });
 
           this.socket.on(`arena:${this.arenaId}:update`, data => {
@@ -1693,7 +1693,7 @@
           }
           ov.innerHTML = '<div style="background:rgba(0,0,0,0.85);border:3px solid #3b82f6;border-radius:1.5rem;padding:2rem 4rem;text-align:center;max-width:80vw;">'
             + '<div style="font-size:2.5rem;font-weight:900;color:#fff;margin-bottom:0.5rem;">📺 ' + String(label).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c])) + '</div>'
-            + '<div style="font-size:1rem;color:#94a3b8;">Identification écran</div>'
+            + '<div style="font-size:1rem;color:#94a3b8;">' + window.T('lobby.identify_screen_label') + '</div>'
             + '</div>';
           ov.style.display = 'flex';
           clearTimeout(ov._t);
@@ -1730,8 +1730,8 @@
 
           // fencerA est TOUJOURS VERT, fencerB est TOUJOURS ROUGE
           // (l'inversion ne change que la position gauche/droite, pas la couleur)
-          const nameGreenStr = fencerA ? `${fencerA.lastName || ''} ${fencerA.firstName || ''}`.trim() || 'VERT'  : 'VERT';
-          const nameRedStr   = fencerB ? `${fencerB.lastName || ''} ${fencerB.firstName || ''}`.trim() || 'ROUGE' : 'ROUGE';
+          const nameGreenStr = fencerA ? `${fencerA.lastName || ''} ${fencerA.firstName || ''}`.trim() || window.T('arena.color_green')  : window.T('arena.color_green');
+          const nameRedStr   = fencerB ? `${fencerB.lastName || ''} ${fencerB.firstName || ''}`.trim() || window.T('arena.color_red') : window.T('arena.color_red');
           nameGreen.textContent = nameGreenStr;
           nameRed.textContent   = nameRedStr;
 
@@ -1760,8 +1760,8 @@
           setTimeout(() => {
             const winnerName = isGreenWinner ? nameGreenStr : nameRedStr;
             const colorClass  = isGreenWinner ? 'winner-green' : 'winner-red';
-            const colorLabel  = isGreenWinner ? 'VERT' : 'ROUGE';
-            result.textContent = `🏆 ${winnerName} gagne ! (${colorLabel})`;
+            const colorLabel  = isGreenWinner ? window.T('arena.color_green') : window.T('arena.color_red');
+            result.textContent = window.T('arena.coin_winner', { name: winnerName, color: colorLabel });
             result.className   = colorClass;
           }, 3600);
 
@@ -1770,8 +1770,8 @@
         showExitAnnouncement(ann) {
           const banner = document.getElementById('card-announcement-banner');
           if (!banner) return;
-          const line1 = `🚪 Sortie d'arène — ${ann.fencerName}`;
-          const line2 = `+${ann.points} pts pour l'adversaire`;
+          const line1 = window.T('arena.exit_announcement', { name: ann.fencerName });
+          const line2 = window.T('arena.exit_announcement_points', { points: ann.points });
           banner.innerHTML = `<div>${line1}</div><div style="font-size:0.65em;font-weight:600;margin-top:0.25em;opacity:0.9;">${line2}</div>`;
           banner.className = 'card-announcement-banner visible card-exit';
           if (this._cardAnnouncementTimer) clearTimeout(this._cardAnnouncementTimer);
@@ -1784,14 +1784,16 @@
           const banner = document.getElementById('card-announcement-banner');
           if (!banner) return;
 
-          const typeLabel = ann.cardType === 'white' ? 'BLANC' : ann.cardType === 'yellow' ? 'JAUNE' : ann.cardType === 'red' ? 'ROUGE' : 'NOIR';
+          const cardColorKey = ann.cardType === 'white' ? 'arena.card_color_white' : ann.cardType === 'yellow' ? 'arena.card_color_yellow' : ann.cardType === 'red' ? 'arena.card_color_red' : 'arena.card_color_black';
+          const typeLabel = window.T(cardColorKey);
           let line1, line2;
 
           if (ann.isRevalorisation) {
-            const fromLabel = ann.fromCard === 'white' ? 'blanc' : ann.fromCard === 'yellow' ? 'jaune' : ann.fromCard;
-            line1 = `⚠️ Revalorisation 2ème ${fromLabel} → ${typeLabel} — ${ann.fencerName}`;
+            const fromColorKey = ann.fromCard === 'white' ? 'arena.card_color_white' : ann.fromCard === 'yellow' ? 'arena.card_color_yellow' : null;
+            const fromLabel = fromColorKey ? window.T(fromColorKey) : ann.fromCard;
+            line1 = window.T('arena.card_revalorisation', { from: fromLabel, to: typeLabel, name: ann.fencerName });
           } else {
-            line1 = `Carton ${typeLabel} — ${ann.fencerName}`;
+            line1 = window.T('arena.card_announcement', { color: typeLabel, name: ann.fencerName });
           }
           line2 = ann.reason || null;
 
@@ -2000,7 +2002,7 @@
             cards
               .map(
                 card =>
-                  `<div class="card card-${card}">${card === 'white' ? 'B' : card === 'yellow' ? 'J' : 'R'}</div>`
+                  `<div class="card card-${card}">${card === 'white' ? window.T('overlay.card_abbr_white') : card === 'yellow' ? window.T('overlay.card_abbr_yellow') : window.T('overlay.card_abbr_red')}</div>`
               )
               .join('');
 

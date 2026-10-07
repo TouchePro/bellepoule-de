@@ -483,16 +483,16 @@
       <!-- Header -->
       <header class="dashboard-header">
         <div class="header-left">
-          <h1>🏆 Classement en Direct</h1>
+          <h1 data-i18n="dashboard.header_title">🏆 Classement en Direct</h1>
           <div class="competition-name" id="competition-name">Coupe Régionale - Sabre Laser</div>
         </div>
         <div class="header-right">
           <div class="last-update" role="status" aria-live="polite">
-            Mis à jour: <span class="time" id="last-update-time">--:--:--</span>
+            <span data-i18n="dashboard.last_update_label">Mis à jour:</span> <span class="time" id="last-update-time">--:--:--</span>
           </div>
           <div class="connection-status" role="status" aria-live="polite">
             <div id="status-dot" class="status-dot" aria-hidden="true"></div>
-            <span id="connection-text">Connexion...</span>
+            <span id="connection-text" data-i18n="remote.connecting">Connexion...</span>
           </div>
         </div>
       </header>
@@ -525,11 +525,11 @@
           <table class="overall-table">
             <thead>
               <tr>
-                <th>Rg</th>
-                <th>Tireur</th>
-                <th>Club</th>
-                <th>V</th>
-                <th>Quest</th>
+                <th data-i18n="dashboard.col_rank">Rg</th>
+                <th data-i18n="dashboard.col_fencer">Tireur</th>
+                <th data-i18n="dashboard.col_club">Club</th>
+                <th data-i18n="dashboard.col_victories">V</th>
+                <th data-i18n="dashboard.col_quest">Quest</th>
               </tr>
             </thead>
             <tbody id="ranking-body">
@@ -610,10 +610,10 @@
 
         if (connected) {
           statusDot.classList.add('connected');
-          connectionText.textContent = 'Connecté';
+          connectionText.textContent = window.T('remote.connected');
         } else {
           statusDot.classList.remove('connected');
-          connectionText.textContent = 'Déconnecté';
+          connectionText.textContent = window.T('remote.disconnected');
         }
       }
 
@@ -662,7 +662,7 @@
         const tbody = document.getElementById('ranking-body');
         if (!data.rankings || data.rankings.length === 0) {
           tbody.innerHTML =
-            '<tr><td colspan="5" style="text-align: center; color: #9ca3af; padding: 2rem;">En attente des résultats...</td></tr>';
+            '<tr><td colspan="5" style="text-align: center; color: #9ca3af; padding: 2rem;">' + window.T('dashboard.ranking_waiting') + '</td></tr>';
           return;
         }
 
@@ -694,8 +694,8 @@
           container.innerHTML = `
             <div class="no-data">
               <div class="no-data-icon">🤺</div>
-              <h3>Aucune poule en cours</h3>
-              <p>Les poules apparaîtront ici une fois la compétition démarrée</p>
+              <h3>${window.T('dashboard.no_pools')}</h3>
+              <p>${window.T('dashboard.no_pools_hint')}</p>
             </div>
           `;
           return;
@@ -706,20 +706,20 @@
             pool => `
           <div class="pool-card">
             <div class="pool-header">
-              <h3>Poule ${pool.number}</h3>
+              <h3>${window.T('dashboard.pool_label', { number: pool.number })}</h3>
               <span class="pool-status ${pool.isComplete ? '' : 'in-progress'}">
-                ${pool.isComplete ? 'Terminée' : 'En cours'}
+                ${pool.isComplete ? window.T('dashboard.pool_finished') : window.T('arena.status_in_progress')}
               </span>
             </div>
             <table class="pool-table">
               <thead>
                 <tr>
-                  <th>Rg</th>
-                  <th>Tireur</th>
-                  <th>V</th>
-                  <th>Quest</th>
-                  <th>Ind</th>
-                  <th>TD</th>
+                  <th>${window.T('dashboard.col_rank')}</th>
+                  <th>${window.T('dashboard.col_fencer')}</th>
+                  <th>${window.T('dashboard.col_victories')}</th>
+                  <th>${window.T('dashboard.col_quest')}</th>
+                  <th>${window.T('dashboard.col_indicator')}</th>
+                  <th>${window.T('dashboard.col_td')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -757,8 +757,8 @@
           container.innerHTML = `
             <div class="no-data">
               <div class="no-data-icon">⏱️</div>
-              <h3>Aucun match en cours</h3>
-              <p>Les matchs en direct apparaîtront ici</p>
+              <h3>${window.T('dashboard.no_live')}</h3>
+              <p>${window.T('dashboard.no_live_hint')}</p>
             </div>
           `;
           return;
@@ -769,8 +769,8 @@
             match => `
           <div class="match-card">
             <div class="match-header">
-              <span class="match-number">Match #${match.number}</span>
-              <span class="match-pool">Poule ${match.poolNumber || '-'}</span>
+              <span class="match-number">${window.T('dashboard.match_number_label', { number: match.number })}</span>
+              <span class="match-pool">${window.T('dashboard.pool_label', { number: match.poolNumber || '-' })}</span>
             </div>
             <div class="match-score">
               <div class="match-fencer ${match.winner === 'A' ? 'winner' : ''}">
@@ -778,7 +778,7 @@
                 <div class="club">${match.clubA || ''}</div>
               </div>
               <div class="score-display score-a">${match.scoreA}</div>
-              <span class="vs">VS</span>
+              <span class="vs">${window.T('dashboard.vs_label')}</span>
               <div class="score-display score-b">${match.scoreB}</div>
               <div class="match-fencer ${match.winner === 'B' ? 'winner' : ''}">
                 <div class="name">${match.fencerB}</div>
@@ -804,6 +804,7 @@
       // Initialize on load
       window.addEventListener('DOMContentLoaded', async () => {
         await window.initRemoteI18n();
+        document.title = window.T('dashboard.page_title');
         init();
       });
 
